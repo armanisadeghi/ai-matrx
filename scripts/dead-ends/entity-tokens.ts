@@ -25,9 +25,9 @@ export interface EntityTokenInfo {
  * `loadEntityTokens()`, so a renamed token drops out instead of misreporting.
  *
  * Matching is on WHOLE camel/underscore segments (with a naive plural strip),
- * never substrings: `applet` must not resolve to `app`, and `appName` must not
- * be dragged in by `application`. Substring matching mis-attributed 32 findings
- * in `features/applet` to the agent-apps token on the first run.
+ * never substrings: `appName` must not be dragged in by `application`.
+ * Substring matching mis-attributed 32 findings to the agent-apps token on
+ * the first run.
  *
  * DELIBERATELY ABSENT — words whose everyday meaning swamps the entity:
  *   `list` (any array), `page` (pagination), `store` (the Redux store),

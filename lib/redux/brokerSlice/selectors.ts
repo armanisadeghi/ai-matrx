@@ -1,4 +1,4 @@
-/** @deprecated Legacy applet broker selectors — always return empty defaults. */
+/** @deprecated Legacy broker selectors — always return empty defaults. */
 
 import type { RootState } from "@/lib/redux/store";
 import type { BrokerIdentifier, BrokerMapEntry, BrokerOption, BrokerTableState } from "./types";

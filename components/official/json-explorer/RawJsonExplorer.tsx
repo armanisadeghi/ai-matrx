@@ -319,7 +319,7 @@ const RawJsonExplorerBody: React.FC<RawJsonExplorerProps> = ({
 
   // Convert any bracket notation paths to dot notation for consistency
   const normalizedHiddenPaths = hiddenPaths.map((path) => {
-    // Convert paths like data["applets"]["ade95b7c-15a1-46c4-9ade-6e6c77cf37f5"].containers
+    // Convert paths like data["items"]["ade95b7c-15a1-46c4-9ade-6e6c77cf37f5"].children
     // to data.containers
     return path.replace(/\["[^"]+"\]/g, "").replace(/\[\d+\]/g, "");
   });

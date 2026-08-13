@@ -2,7 +2,7 @@
  * Resolves a `CodeAgentFilter` (stored in user preferences) into a concrete
  * list of `AgentDefinitionRecord`s. Generic enough to drive any UI that
  * wants to narrow the agent roster — the /code workspace's Chat + History
- * slots are the first consumers; future surfaces (app-builder chat, task
+ * slots are the first consumers; future surfaces (agent-app chat, task
  * canvas, etc.) can reuse this without duplicating logic.
  */
 

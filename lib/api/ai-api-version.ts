@@ -148,7 +148,7 @@ export function toV1FallbackUrl(url: string): string {
 /**
  * Apply the active AI API version to an ALREADY-INTERPOLATED in-app path. This
  * is the bridge for direct-fetch callers that build a concrete path themselves
- * (useBackendApi, applet follow-up, public-chat, api-test demos) instead of
+ * (useBackendApi, public-chat, api-test demos) instead of
  * going through `resolveEndpointPath`.
  *
  * - Covered surface + v2  → `/v2` prefix inserted.

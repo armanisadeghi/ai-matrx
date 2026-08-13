@@ -10,8 +10,8 @@
  * Mirrors `agent-shortcuts/thunks.ts` in shape: each thunk reads/writes
  * Supabase, then dispatches the matching reducer to keep the slice in sync.
  *
- * Composition (embedded shortcuts) is Phase 10 / applets — those two thunks
- * remain stubbed below until the composition table lands.
+ * Composition (embedded shortcuts) is Phase 10 — those two thunks remain
+ * stubbed below until the composition table lands.
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
@@ -257,11 +257,11 @@ export const deleteApp = createAsyncThunk<void, string, ThunkApi>(
 
 // ---------------------------------------------------------------------------
 // Composition — shortcuts embedded within an app
-// Stubbed until the composition table lands (Phase 10 / applets).
+// Stubbed until the composition table lands (Phase 10).
 // ---------------------------------------------------------------------------
 
 const COMPOSITION_NOT_IMPLEMENTED =
-  "Embedded-shortcut composition lands in Phase 10 (applets); the shared_context_slots column on aga_apps is the persistence target but no UI/RPC exists yet.";
+  "Embedded-shortcut composition lands in Phase 10; the shared_context_slots column on aga_apps is the persistence target but no UI/RPC exists yet.";
 
 export const addEmbeddedShortcut = createAsyncThunk<
   void,

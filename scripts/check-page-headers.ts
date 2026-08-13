@@ -79,9 +79,7 @@ function scanFile(path: string): Violation[] {
   const src = readFileSync(path, "utf8");
 
   const hasPageHeader =
-    src.includes("PageHeader") ||
-    src.includes("PageSpecificHeaderPortal") ||
-    src.includes("AppletHeader");
+    src.includes("PageHeader") || src.includes("PageSpecificHeaderPortal");
 
   const marker = FAUX_HEADER_MARKERS.find((m) => src.includes(m));
   if (!marker) return [];

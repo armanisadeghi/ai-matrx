@@ -1238,6 +1238,30 @@
       "new": null,
       "since": "2026-08-12",
       "reason": "RETIRED — no successor. Per-user persistent KV from the 2026-05-19 matrx-extend port; backed the `storage` tool, retired the same day. Superseded by the `memory` tool (chat.agent_memory), which already scopes to user / project / organization."
+    },
+    {
+      "relation": "applet",
+      "old": "public.applet",
+      "newSchema": "graveyard",
+      "new": "graveyard.applet",
+      "since": "2026-08-13",
+      "reason": "legacy applet/app-builder feature KILLED (Arman); moved to graveyard (6 rows preserved)."
+    },
+    {
+      "relation": "custom_app_configs",
+      "old": "public.custom_app_configs",
+      "newSchema": "graveyard",
+      "new": "graveyard.custom_app_configs",
+      "since": "2026-08-13",
+      "reason": "legacy applet/app-builder feature KILLED (Arman); moved to graveyard (46 rows preserved)."
+    },
+    {
+      "relation": "custom_applet_configs",
+      "old": "public.custom_applet_configs",
+      "newSchema": "graveyard",
+      "new": "graveyard.custom_applet_configs",
+      "since": "2026-08-13",
+      "reason": "legacy applet/app-builder feature KILLED (Arman); moved to graveyard (130 rows preserved)."
     }
   ]
 }

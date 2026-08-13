@@ -76,36 +76,6 @@ export function RecipeEditHeader(props: RecipeEditHeaderProps) {
   );
 }
 
-interface AppletHeaderProps {
-  appId?: string;
-  isDemo?: boolean;
-  isDebug?: boolean;
-  activeAppletSlug?: string;
-  isCreator?: boolean;
-  isAdmin?: boolean;
-  isPreview?: boolean;
-}
-
-export function AppletHeader(props: AppletHeaderProps) {
-  const pathname = usePathname();
-  const [AppletHeaderCompact, setAppletHeaderCompact] = useState<any>(null);
-
-  useEffect(() => {
-    if (!pathname?.includes("/apps/custom/")) return;
-    // Applet header component not yet implemented
-  }, [pathname]);
-
-  if (!pathname?.includes("/apps/custom/") || !AppletHeaderCompact) {
-    return null;
-  }
-
-  return (
-    <PageSpecificHeader>
-      <AppletHeaderCompact {...props} />
-    </PageSpecificHeader>
-  );
-}
-
 interface ModuleHeaderProps {
   pages: ModulePage[];
   currentPath: string;

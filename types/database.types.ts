@@ -5334,57 +5334,54 @@ export type Database = {
           conversation_id: string
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           domains: string[] | null
           estimated_minutes: number | null
           id: string
           metadata: Json
           organization_id: string
-          project_id: string | null
           reasoning: string | null
           status: Database["public"]["Enums"]["cx_plan_status"]
           steps: Json
           title: string
           updated_at: string
           updated_by: string | null
-          user_id: string | null
           version: number
         }
         Insert: {
           conversation_id: string
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           domains?: string[] | null
           estimated_minutes?: number | null
           id?: string
           metadata?: Json
           organization_id: string
-          project_id?: string | null
           reasoning?: string | null
           status?: Database["public"]["Enums"]["cx_plan_status"]
           steps?: Json
           title: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           version?: number
         }
         Update: {
           conversation_id?: string
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           domains?: string[] | null
           estimated_minutes?: number | null
           id?: string
           metadata?: Json
           organization_id?: string
-          project_id?: string | null
           reasoning?: string | null
           status?: Database["public"]["Enums"]["cx_plan_status"]
           steps?: Json
           title?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           version?: number
         }
         Relationships: [
@@ -5542,10 +5539,11 @@ export type Database = {
         Row: {
           conversation_id: string
           created_at: string
-          created_by: Database["public"]["Enums"]["cx_agent_task_creator"]
+          created_by: string | null
           creator_kind:
             | Database["public"]["Enums"]["cx_agent_task_creator"]
             | null
+          deleted_at: string | null
           id: string
           metadata: Json
           note: string | null
@@ -5556,16 +5554,16 @@ export type Database = {
           title: string
           updated_at: string
           updated_by: string | null
-          user_id: string | null
           version: number
         }
         Insert: {
           conversation_id: string
           created_at?: string
-          created_by?: Database["public"]["Enums"]["cx_agent_task_creator"]
+          created_by?: string | null
           creator_kind?:
             | Database["public"]["Enums"]["cx_agent_task_creator"]
             | null
+          deleted_at?: string | null
           id?: string
           metadata?: Json
           note?: string | null
@@ -5576,16 +5574,16 @@ export type Database = {
           title: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           version?: number
         }
         Update: {
           conversation_id?: string
           created_at?: string
-          created_by?: Database["public"]["Enums"]["cx_agent_task_creator"]
+          created_by?: string | null
           creator_kind?:
             | Database["public"]["Enums"]["cx_agent_task_creator"]
             | null
+          deleted_at?: string | null
           id?: string
           metadata?: Json
           note?: string | null
@@ -5596,7 +5594,6 @@ export type Database = {
           title?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           version?: number
         }
         Relationships: [
@@ -5640,7 +5637,6 @@ export type Database = {
           message_id: string | null
           metadata: Json
           organization_id: string
-          project_id: string | null
           source_id: string | null
           source_system: string | null
           status: Database["public"]["Enums"]["artifact_status"]
@@ -5668,7 +5664,6 @@ export type Database = {
           message_id?: string | null
           metadata?: Json
           organization_id: string
-          project_id?: string | null
           source_id?: string | null
           source_system?: string | null
           status?: Database["public"]["Enums"]["artifact_status"]
@@ -5696,7 +5691,6 @@ export type Database = {
           message_id?: string | null
           metadata?: Json
           organization_id?: string
-          project_id?: string | null
           source_id?: string | null
           source_system?: string | null
           status?: Database["public"]["Enums"]["artifact_status"]
@@ -5739,6 +5733,7 @@ export type Database = {
           conversation_id: string
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           id: string
           message_file_id: string
           message_id: string
@@ -5752,7 +5747,6 @@ export type Database = {
           status: Database["public"]["Enums"]["code_edit_status"]
           updated_at: string
           updated_by: string | null
-          user_id: string | null
           version: number
         }
         Insert: {
@@ -5761,6 +5755,7 @@ export type Database = {
           conversation_id: string
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           id?: string
           message_file_id: string
           message_id: string
@@ -5774,7 +5769,6 @@ export type Database = {
           status: Database["public"]["Enums"]["code_edit_status"]
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           version?: number
         }
         Update: {
@@ -5783,6 +5777,7 @@ export type Database = {
           conversation_id?: string
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           id?: string
           message_file_id?: string
           message_id?: string
@@ -5796,7 +5791,6 @@ export type Database = {
           status?: Database["public"]["Enums"]["code_edit_status"]
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           version?: number
         }
         Relationships: [
@@ -5837,6 +5831,7 @@ export type Database = {
           conversation_id: string
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           edits_applied_count: number
           edits_pending_count: number
           edits_rejected_count: number
@@ -5853,7 +5848,6 @@ export type Database = {
           status: Database["public"]["Enums"]["code_message_file_status"]
           updated_at: string
           updated_by: string | null
-          user_id: string | null
           version: number
         }
         Insert: {
@@ -5862,6 +5856,7 @@ export type Database = {
           conversation_id: string
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           edits_applied_count?: number
           edits_pending_count?: number
           edits_rejected_count?: number
@@ -5878,7 +5873,6 @@ export type Database = {
           status?: Database["public"]["Enums"]["code_message_file_status"]
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           version?: number
         }
         Update: {
@@ -5887,6 +5881,7 @@ export type Database = {
           conversation_id?: string
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           edits_applied_count?: number
           edits_pending_count?: number
           edits_rejected_count?: number
@@ -5903,7 +5898,6 @@ export type Database = {
           status?: Database["public"]["Enums"]["code_message_file_status"]
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           version?: number
         }
         Relationships: [
@@ -6379,7 +6373,6 @@ export type Database = {
           updated_at: string
           updated_by: string | null
           url: string
-          user_id: string | null
           version: number
         }
         Insert: {
@@ -6397,7 +6390,6 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           url: string
-          user_id?: string | null
           version?: number
         }
         Update: {
@@ -6415,7 +6407,6 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           url?: string
-          user_id?: string | null
           version?: number
         }
         Relationships: [
@@ -6658,6 +6649,7 @@ export type Database = {
           cost: number
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           duration_ms: number | null
           error: string | null
           event_type: string
@@ -6673,7 +6665,6 @@ export type Database = {
           triggered_at: string
           updated_at: string
           updated_by: string | null
-          user_id: string | null
           user_request_id: string | null
           version: number
         }
@@ -6683,6 +6674,7 @@ export type Database = {
           cost?: number
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           duration_ms?: number | null
           error?: string | null
           event_type: string
@@ -6698,7 +6690,6 @@ export type Database = {
           triggered_at?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           user_request_id?: string | null
           version?: number
         }
@@ -6708,6 +6699,7 @@ export type Database = {
           cost?: number
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           duration_ms?: number | null
           error?: string | null
           event_type?: string
@@ -6723,7 +6715,6 @@ export type Database = {
           triggered_at?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           user_request_id?: string | null
           version?: number
         }
@@ -6774,6 +6765,7 @@ export type Database = {
           conversation_id: string
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           delivery: string
           enqueued_seq: number
           id: string
@@ -6786,7 +6778,6 @@ export type Database = {
           status: string
           updated_at: string
           updated_by: string | null
-          user_id: string | null
           version: number
         }
         Insert: {
@@ -6797,6 +6788,7 @@ export type Database = {
           conversation_id: string
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           delivery?: string
           enqueued_seq?: never
           id?: string
@@ -6809,7 +6801,6 @@ export type Database = {
           status?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           version?: number
         }
         Update: {
@@ -6820,6 +6811,7 @@ export type Database = {
           conversation_id?: string
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           delivery?: string
           enqueued_seq?: never
           id?: string
@@ -6832,7 +6824,6 @@ export type Database = {
           status?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           version?: number
         }
         Relationships: [
@@ -6992,6 +6983,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           cx_request_id: string | null
+          deleted_at: string | null
           id: string
           iteration: number
           metadata: Json
@@ -7013,6 +7005,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           cx_request_id?: string | null
+          deleted_at?: string | null
           id?: string
           iteration?: number
           metadata?: Json
@@ -7034,6 +7027,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           cx_request_id?: string | null
+          deleted_at?: string | null
           id?: string
           iteration?: number
           metadata?: Json
@@ -7131,7 +7125,6 @@ export type Database = {
           total_tokens: number | null
           updated_at: string
           updated_by: string | null
-          user_id: string | null
           user_request_id: string | null
           value_ref_key: string | null
           version: number
@@ -7185,7 +7178,6 @@ export type Database = {
           total_tokens?: number | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           user_request_id?: string | null
           value_ref_key?: string | null
           version?: number
@@ -7239,7 +7231,6 @@ export type Database = {
           total_tokens?: number | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           user_request_id?: string | null
           value_ref_key?: string | null
           version?: number
@@ -7296,6 +7287,7 @@ export type Database = {
           conversation_id: string
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           duration_ms: number | null
           err_msg: string | null
           err_type: string | null
@@ -7312,7 +7304,6 @@ export type Database = {
           ts: string
           updated_at: string
           updated_by: string | null
-          user_id: string | null
           version: number
         }
         Insert: {
@@ -7321,6 +7312,7 @@ export type Database = {
           conversation_id: string
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           duration_ms?: number | null
           err_msg?: string | null
           err_type?: string | null
@@ -7337,7 +7329,6 @@ export type Database = {
           ts?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           version?: number
         }
         Update: {
@@ -7346,6 +7337,7 @@ export type Database = {
           conversation_id?: string
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           duration_ms?: number | null
           err_msg?: string | null
           err_type?: string | null
@@ -7362,7 +7354,6 @@ export type Database = {
           ts?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           version?: number
         }
         Relationships: [
@@ -7491,6 +7482,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           ctx_task_id: string | null
+          deleted_at: string | null
           done: boolean
           done_at: string | null
           due: string | null
@@ -7500,7 +7492,6 @@ export type Database = {
           title: string
           updated_at: string
           updated_by: string | null
-          user_id: string | null
           version: number
         }
         Insert: {
@@ -7509,6 +7500,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           ctx_task_id?: string | null
+          deleted_at?: string | null
           done?: boolean
           done_at?: string | null
           due?: string | null
@@ -7518,7 +7510,6 @@ export type Database = {
           title: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           version?: number
         }
         Update: {
@@ -7527,6 +7518,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           ctx_task_id?: string | null
+          deleted_at?: string | null
           done?: boolean
           done_at?: string | null
           due?: string | null
@@ -7536,7 +7528,6 @@ export type Database = {
           title?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           version?: number
         }
         Relationships: [
@@ -16645,6 +16636,87 @@ export type Database = {
         }
         Relationships: []
       }
+      applet: {
+        Row: {
+          compiled_recipe_id: string | null
+          created_at: string
+          created_by: string | null
+          creator: string | null
+          cta_text: string | null
+          data_source_config: Json | null
+          deleted_at: string | null
+          description: string | null
+          id: string
+          is_public: boolean | null
+          metadata: Json
+          name: string
+          next_step_config: Json | null
+          organization_id: string
+          result_component_config: Json | null
+          slug: string
+          subcategory_id: string | null
+          theme: string | null
+          type: Database["public"]["Enums"]["app_type"]
+          updated_at: string | null
+          updated_by: string | null
+          user_id: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          compiled_recipe_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          creator?: string | null
+          cta_text?: string | null
+          data_source_config?: Json | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          is_public?: boolean | null
+          metadata?: Json
+          name: string
+          next_step_config?: Json | null
+          organization_id: string
+          result_component_config?: Json | null
+          slug: string
+          subcategory_id?: string | null
+          theme?: string | null
+          type: Database["public"]["Enums"]["app_type"]
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          compiled_recipe_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          creator?: string | null
+          cta_text?: string | null
+          data_source_config?: Json | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          is_public?: boolean | null
+          metadata?: Json
+          name?: string
+          next_step_config?: Json | null
+          organization_id?: string
+          result_component_config?: Json | null
+          slug?: string
+          subcategory_id?: string | null
+          theme?: string | null
+          type?: Database["public"]["Enums"]["app_type"]
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
       arg: {
         Row: {
           data_type: Database["public"]["Enums"]["data_type"]
@@ -18591,6 +18663,215 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      custom_app_configs: {
+        Row: {
+          accent_color: string | null
+          app_data_context: Json | null
+          applet_list: Json | null
+          created_at: string
+          created_by: string | null
+          creator: string | null
+          deleted_at: string | null
+          description: string | null
+          extra_buttons: Json | null
+          id: string
+          image_file_id: string | null
+          image_url: string | null
+          is_public: boolean | null
+          layout_type: string | null
+          main_app_icon: string | null
+          main_app_submit_icon: string | null
+          metadata: Json
+          name: string
+          organization_id: string
+          primary_color: string | null
+          public_read: boolean | null
+          slug: string
+          updated_at: string | null
+          updated_by: string | null
+          user_id: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          accent_color?: string | null
+          app_data_context?: Json | null
+          applet_list?: Json | null
+          created_at?: string
+          created_by?: string | null
+          creator?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          extra_buttons?: Json | null
+          id?: string
+          image_file_id?: string | null
+          image_url?: string | null
+          is_public?: boolean | null
+          layout_type?: string | null
+          main_app_icon?: string | null
+          main_app_submit_icon?: string | null
+          metadata?: Json
+          name: string
+          organization_id: string
+          primary_color?: string | null
+          public_read?: boolean | null
+          slug: string
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          accent_color?: string | null
+          app_data_context?: Json | null
+          applet_list?: Json | null
+          created_at?: string
+          created_by?: string | null
+          creator?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          extra_buttons?: Json | null
+          id?: string
+          image_file_id?: string | null
+          image_url?: string | null
+          is_public?: boolean | null
+          layout_type?: string | null
+          main_app_icon?: string | null
+          main_app_submit_icon?: string | null
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          primary_color?: string | null
+          public_read?: boolean | null
+          slug?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      custom_applet_configs: {
+        Row: {
+          accent_color: string | null
+          app_id: string | null
+          applet_icon: string | null
+          applet_submit_text: string | null
+          broker_map: Json | null
+          compiled_recipe_id: string | null
+          containers: Json | null
+          created_at: string
+          created_by: string | null
+          creator: string | null
+          data_destination_config: Json | null
+          data_source_config: Json | null
+          deleted_at: string | null
+          description: string | null
+          id: string
+          image_file_id: string | null
+          image_url: string | null
+          is_public: boolean | null
+          layout_type: string | null
+          metadata: Json
+          name: string
+          next_step_config: Json | null
+          organization_id: string
+          overview_label: string | null
+          primary_color: string | null
+          public_read: boolean | null
+          result_component_config: Json | null
+          slug: string
+          subcategory_id: string | null
+          updated_at: string | null
+          updated_by: string | null
+          user_id: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          accent_color?: string | null
+          app_id?: string | null
+          applet_icon?: string | null
+          applet_submit_text?: string | null
+          broker_map?: Json | null
+          compiled_recipe_id?: string | null
+          containers?: Json | null
+          created_at?: string
+          created_by?: string | null
+          creator?: string | null
+          data_destination_config?: Json | null
+          data_source_config?: Json | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          image_file_id?: string | null
+          image_url?: string | null
+          is_public?: boolean | null
+          layout_type?: string | null
+          metadata?: Json
+          name: string
+          next_step_config?: Json | null
+          organization_id: string
+          overview_label?: string | null
+          primary_color?: string | null
+          public_read?: boolean | null
+          result_component_config?: Json | null
+          slug: string
+          subcategory_id?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          accent_color?: string | null
+          app_id?: string | null
+          applet_icon?: string | null
+          applet_submit_text?: string | null
+          broker_map?: Json | null
+          compiled_recipe_id?: string | null
+          containers?: Json | null
+          created_at?: string
+          created_by?: string | null
+          creator?: string | null
+          data_destination_config?: Json | null
+          data_source_config?: Json | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          image_file_id?: string | null
+          image_url?: string | null
+          is_public?: boolean | null
+          layout_type?: string | null
+          metadata?: Json
+          name?: string
+          next_step_config?: Json | null
+          organization_id?: string
+          overview_label?: string | null
+          primary_color?: string | null
+          public_read?: boolean | null
+          result_component_config?: Json | null
+          slug?: string
+          subcategory_id?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_applet_configs_app_id_fkey"
+            columns: ["app_id"]
+            isOneToOne: false
+            referencedRelation: "custom_app_configs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       dashboard_saved_views: {
         Row: {
@@ -31125,87 +31406,6 @@ export type Database = {
         }
         Relationships: []
       }
-      applet: {
-        Row: {
-          compiled_recipe_id: string | null
-          created_at: string
-          created_by: string | null
-          creator: string | null
-          cta_text: string | null
-          data_source_config: Json | null
-          deleted_at: string | null
-          description: string | null
-          id: string
-          is_public: boolean | null
-          metadata: Json
-          name: string
-          next_step_config: Json | null
-          organization_id: string
-          result_component_config: Json | null
-          slug: string
-          subcategory_id: string | null
-          theme: string | null
-          type: Database["public"]["Enums"]["app_type"]
-          updated_at: string | null
-          updated_by: string | null
-          user_id: string | null
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          compiled_recipe_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          creator?: string | null
-          cta_text?: string | null
-          data_source_config?: Json | null
-          deleted_at?: string | null
-          description?: string | null
-          id?: string
-          is_public?: boolean | null
-          metadata?: Json
-          name: string
-          next_step_config?: Json | null
-          organization_id: string
-          result_component_config?: Json | null
-          slug: string
-          subcategory_id?: string | null
-          theme?: string | null
-          type: Database["public"]["Enums"]["app_type"]
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          compiled_recipe_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          creator?: string | null
-          cta_text?: string | null
-          data_source_config?: Json | null
-          deleted_at?: string | null
-          description?: string | null
-          id?: string
-          is_public?: boolean | null
-          metadata?: Json
-          name?: string
-          next_step_config?: Json | null
-          organization_id?: string
-          result_component_config?: Json | null
-          slug?: string
-          subcategory_id?: string | null
-          theme?: string | null
-          type?: Database["public"]["Enums"]["app_type"]
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Relationships: []
-      }
       catalog_entries: {
         Row: {
           app: string
@@ -31385,215 +31585,6 @@ export type Database = {
           version?: number
         }
         Relationships: []
-      }
-      custom_app_configs: {
-        Row: {
-          accent_color: string | null
-          app_data_context: Json | null
-          applet_list: Json | null
-          created_at: string
-          created_by: string | null
-          creator: string | null
-          deleted_at: string | null
-          description: string | null
-          extra_buttons: Json | null
-          id: string
-          image_file_id: string | null
-          image_url: string | null
-          is_public: boolean | null
-          layout_type: string | null
-          main_app_icon: string | null
-          main_app_submit_icon: string | null
-          metadata: Json
-          name: string
-          organization_id: string
-          primary_color: string | null
-          public_read: boolean | null
-          slug: string
-          updated_at: string | null
-          updated_by: string | null
-          user_id: string | null
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          accent_color?: string | null
-          app_data_context?: Json | null
-          applet_list?: Json | null
-          created_at?: string
-          created_by?: string | null
-          creator?: string | null
-          deleted_at?: string | null
-          description?: string | null
-          extra_buttons?: Json | null
-          id?: string
-          image_file_id?: string | null
-          image_url?: string | null
-          is_public?: boolean | null
-          layout_type?: string | null
-          main_app_icon?: string | null
-          main_app_submit_icon?: string | null
-          metadata?: Json
-          name: string
-          organization_id: string
-          primary_color?: string | null
-          public_read?: boolean | null
-          slug: string
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          accent_color?: string | null
-          app_data_context?: Json | null
-          applet_list?: Json | null
-          created_at?: string
-          created_by?: string | null
-          creator?: string | null
-          deleted_at?: string | null
-          description?: string | null
-          extra_buttons?: Json | null
-          id?: string
-          image_file_id?: string | null
-          image_url?: string | null
-          is_public?: boolean | null
-          layout_type?: string | null
-          main_app_icon?: string | null
-          main_app_submit_icon?: string | null
-          metadata?: Json
-          name?: string
-          organization_id?: string
-          primary_color?: string | null
-          public_read?: boolean | null
-          slug?: string
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Relationships: []
-      }
-      custom_applet_configs: {
-        Row: {
-          accent_color: string | null
-          app_id: string | null
-          applet_icon: string | null
-          applet_submit_text: string | null
-          broker_map: Json | null
-          compiled_recipe_id: string | null
-          containers: Json | null
-          created_at: string
-          created_by: string | null
-          creator: string | null
-          data_destination_config: Json | null
-          data_source_config: Json | null
-          deleted_at: string | null
-          description: string | null
-          id: string
-          image_file_id: string | null
-          image_url: string | null
-          is_public: boolean | null
-          layout_type: string | null
-          metadata: Json
-          name: string
-          next_step_config: Json | null
-          organization_id: string
-          overview_label: string | null
-          primary_color: string | null
-          public_read: boolean | null
-          result_component_config: Json | null
-          slug: string
-          subcategory_id: string | null
-          updated_at: string | null
-          updated_by: string | null
-          user_id: string | null
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          accent_color?: string | null
-          app_id?: string | null
-          applet_icon?: string | null
-          applet_submit_text?: string | null
-          broker_map?: Json | null
-          compiled_recipe_id?: string | null
-          containers?: Json | null
-          created_at?: string
-          created_by?: string | null
-          creator?: string | null
-          data_destination_config?: Json | null
-          data_source_config?: Json | null
-          deleted_at?: string | null
-          description?: string | null
-          id?: string
-          image_file_id?: string | null
-          image_url?: string | null
-          is_public?: boolean | null
-          layout_type?: string | null
-          metadata?: Json
-          name: string
-          next_step_config?: Json | null
-          organization_id: string
-          overview_label?: string | null
-          primary_color?: string | null
-          public_read?: boolean | null
-          result_component_config?: Json | null
-          slug: string
-          subcategory_id?: string | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          accent_color?: string | null
-          app_id?: string | null
-          applet_icon?: string | null
-          applet_submit_text?: string | null
-          broker_map?: Json | null
-          compiled_recipe_id?: string | null
-          containers?: Json | null
-          created_at?: string
-          created_by?: string | null
-          creator?: string | null
-          data_destination_config?: Json | null
-          data_source_config?: Json | null
-          deleted_at?: string | null
-          description?: string | null
-          id?: string
-          image_file_id?: string | null
-          image_url?: string | null
-          is_public?: boolean | null
-          layout_type?: string | null
-          metadata?: Json
-          name?: string
-          next_step_config?: Json | null
-          organization_id?: string
-          overview_label?: string | null
-          primary_color?: string | null
-          public_read?: boolean | null
-          result_component_config?: Json | null
-          slug?: string
-          subcategory_id?: string | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Relationships: [
-          {
-            foreignKeyName: "custom_applet_configs_app_id_fkey"
-            columns: ["app_id"]
-            isOneToOne: false
-            referencedRelation: "custom_app_configs"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       dev_login_audit: {
         Row: {
@@ -36030,10 +36021,6 @@ export type Database = {
         Returns: Json
       }
       fetch_all_with_children: { Args: { p_table_name: string }; Returns: Json }
-      fetch_app_and_applet_config: {
-        Args: { p_id?: string; p_slug?: string }
-        Returns: Json
-      }
       fetch_by_id_display_option: {
         Args: { record_id: string }
         Returns: {
@@ -36435,10 +36422,6 @@ export type Database = {
           last_message_type: string
           unread_count: number
         }[]
-      }
-      get_custom_app_with_applets: {
-        Args: { p_id?: string; p_slug?: string }
-        Returns: Json
       }
       get_cx_conversation_bundle: {
         Args: {
