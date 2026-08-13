@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 import { useAppDispatch } from "@/lib/redux/hooks";
+import { removeRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
 import { useOpenLiveRunWindow } from "@/features/overlays/openers/liveRunWindow";
 import { toast } from "@/lib/toast";
 import {
@@ -47,12 +48,36 @@ export function YouTubeResearchActions({
   const openLiveRunWindow = useOpenLiveRunWindow();
   /** True once this run's stream was adopted — see the catch branch in analyze. */
   const adoptedRef = useRef(false);
+  /** The adopted `activeRequests` row this component owns, so it can reap it. */
+  const adoptedRequestIdRef = useRef<string | null>(null);
+  /** The in-flight stream's abort controller — the SAME object the fetch and
+   * the adopter watchdog share. Aborted on unmount and before a new run so an
+   * orphaned stream never keeps draining into a reaped row (events on a
+   * missing row are silently dropped — the disappearing-run class; see
+   * features/agents/docs/LIVE_RUN_RETENTION.md seam #3). */
+  const streamAbortRef = useRef<AbortController | null>(null);
   const [record, setRecord] = useState<YouTubeVideoLibraryRecord | null>(null);
   const [status, setStatus] = useState(initialStatus ?? "unprocessed");
   const [processing, setProcessing] = useState(false);
   const [loadingComments, setLoadingComments] = useState(false);
   const [progressMessage, setProgressMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+
+  useEffect(
+    () => () => {
+      // Stop the client fetch FIRST (the analysis keeps running server-side
+      // and the polling/saved record recovers it), then reap the adopted row.
+      // The reap defers while the floating run window still renders it
+      // (viewer retention) and completes when the window closes.
+      streamAbortRef.current?.abort();
+      streamAbortRef.current = null;
+      if (adoptedRequestIdRef.current) {
+        dispatch(removeRequest(adoptedRequestIdRef.current));
+        adoptedRequestIdRef.current = null;
+      }
+    },
+    [dispatch],
+  );
 
   useEffect(() => {
     if (!showAnalysis) return;
@@ -115,7 +140,16 @@ export function YouTubeResearchActions({
       label: "Analyzing this video",
       pending: true,
     });
+    // Abort the previous run's stream BEFORE reaping its row — otherwise the
+    // orphaned fetch keeps draining into a missing row and the response body
+    // leaks for the run's lifetime.
+    streamAbortRef.current?.abort();
+    if (adoptedRequestIdRef.current) {
+      dispatch(removeRequest(adoptedRequestIdRef.current));
+      adoptedRequestIdRef.current = null;
+    }
     const abortController = new AbortController();
+    streamAbortRef.current = abortController;
     adoptedRef.current = false;
     try {
       await streamYouTubeVideoAnalysis(dispatch, videoId, force, {
@@ -123,6 +157,7 @@ export function YouTubeResearchActions({
         abortController,
         onAdopted: ({ requestId }) => {
           adoptedRef.current = true;
+          adoptedRequestIdRef.current = requestId;
           runWindow.update({ requestId, pending: false });
         },
         onEvent: (event) => {
@@ -180,6 +215,9 @@ export function YouTubeResearchActions({
         );
       }
     } catch (caught) {
+      // Cancelled by teardown or a newer run — settle silently; the analysis
+      // keeps running server-side and the saved record picks it up.
+      if (abortController.signal.aborted) return;
       const message =
         caught instanceof Error ? caught.message : "Analysis could not start.";
       // Never strand an empty "pending" window on a run that never began. Once

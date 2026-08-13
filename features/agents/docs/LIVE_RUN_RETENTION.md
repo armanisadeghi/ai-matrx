@@ -61,6 +61,11 @@ Redux devtools before touching retention seams.
 
 ## Change Log
 
+- 2026-08-12 — Seam #3 swept across every `adoptForeignStream` consumer: reputation
+  analysis, competitor autopsy, AI visibility (hook + public tool), setup passes,
+  authority router, and both YouTube-analysis callers now store the stream's
+  controller in a ref, abort on unmount and before every pre-run reap, and settle
+  silently when the abort is their own.
 - 2026-08-12 — Doc created. Retention moved to the `StreamAwareChatMarkdown` seam (covers every
   `MarkdownStream` viewer, not just `LiveRunDisplay`); `createRequest` made non-destructive;
   `useKeywordResearch` aborts before reaping. Tests: `request-viewer-retention.test.ts`.

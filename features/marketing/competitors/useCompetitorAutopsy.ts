@@ -76,6 +76,12 @@ export function useCompetitorAutopsy(siteId: string | null) {
   const dispatch = useAppDispatch();
   const queryClient = useQueryClient();
   const adoptedRequestId = useRef<string | null>(null);
+  /** The in-flight stream's abort controller — the SAME object the fetch and
+   * the adopter watchdog share. Aborted on unmount and before a new run so an
+   * orphaned stream never keeps draining into a reaped row (events on a
+   * missing row are silently dropped — the disappearing-run class; see
+   * features/agents/docs/LIVE_RUN_RETENTION.md seam #3). */
+  const streamAbortRef = useRef<AbortController | null>(null);
   const [run, setRun] = useState<CompetitorRunState>({ status: "idle" });
   const sites = useQuery({
     queryKey: ["marketing", "competitors", "sites"],
@@ -94,7 +100,14 @@ export function useCompetitorAutopsy(siteId: string | null) {
 
   useEffect(
     () => () => {
-      if (adoptedRequestId.current) dispatch(removeRequest(adoptedRequestId.current));
+      // Stop the client fetch FIRST (the server-side run is durable and keeps
+      // going), then reap the row.
+      streamAbortRef.current?.abort();
+      streamAbortRef.current = null;
+      if (adoptedRequestId.current) {
+        dispatch(removeRequest(adoptedRequestId.current));
+        adoptedRequestId.current = null;
+      }
     },
     [dispatch],
   );
@@ -107,6 +120,10 @@ export function useCompetitorAutopsy(siteId: string | null) {
       forceRefresh: boolean;
     }) => {
       if (!resolvedSiteId) return;
+      // Abort the previous run's stream BEFORE reaping its row — otherwise the
+      // orphaned fetch keeps draining into a missing row and the response body
+      // leaks for the run's lifetime.
+      streamAbortRef.current?.abort();
       if (adoptedRequestId.current) {
         dispatch(removeRequest(adoptedRequestId.current));
         adoptedRequestId.current = null;
@@ -114,6 +131,7 @@ export function useCompetitorAutopsy(siteId: string | null) {
       setRun({ status: "running", stage: "Preparing the evidence plan" });
       let streamError: string | null = null;
       const abortController = new AbortController();
+      streamAbortRef.current = abortController;
       const consumeStream = dispatch(
         adoptForeignStream({
           abortController,
@@ -169,6 +187,9 @@ export function useCompetitorAutopsy(siteId: string | null) {
           signal: abortController.signal,
         }),
       );
+      // Cancelled by teardown or a newer run — settle silently; the autopsy
+      // keeps executing server-side.
+      if (abortController.signal.aborted) return;
       if (result.error || streamError) {
         const headline = streamError ?? (
           result.error

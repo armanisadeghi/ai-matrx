@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AlertTriangle, PanelRightOpen, Play, ScanSearch } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { adoptForeignStream } from "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream";
+import { removeRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
 import {
   useOpenLiveRunWindow,
   type LiveRunWindowHandle,
@@ -51,6 +52,12 @@ export function AiVisibilityTool() {
   const openLiveRunWindow = useOpenLiveRunWindow();
   const liveWindow = useRef<LiveRunWindowHandle | null>(null);
   const liveRequestId = useRef<string | null>(null);
+  /** The in-flight stream's abort controller — the SAME object the fetch and
+   * the adopter watchdog share. Aborted on unmount and before a new run so an
+   * orphaned stream never keeps draining into a reaped row (events on a
+   * missing row are silently dropped — the disappearing-run class; see
+   * features/agents/docs/LIVE_RUN_RETENTION.md seam #3). */
+  const streamAbortRef = useRef<AbortController | null>(null);
   const liveProgress = useRef<LiveRunProgressState>(initialProgress());
   const [brandName, setBrandName] = useState("");
   const [websiteUrl, setWebsiteUrl] = useState("");
@@ -61,6 +68,21 @@ export function AiVisibilityTool() {
   const [stage, setStage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<PublicVisibilityResult | null>(null);
+
+  useEffect(
+    () => () => {
+      // Stop the client fetch FIRST (the report keeps running server-side),
+      // then reap the adopted row. The reap defers while the floating window
+      // still renders it (viewer retention) and completes when it closes.
+      streamAbortRef.current?.abort();
+      streamAbortRef.current = null;
+      if (liveRequestId.current) {
+        dispatch(removeRequest(liveRequestId.current));
+        liveRequestId.current = null;
+      }
+    },
+    [dispatch],
+  );
 
   const updateEngine = useCallback(
     (engine: string, patch: Partial<LiveRunProgressItem>) => {
@@ -96,6 +118,14 @@ export function AiVisibilityTool() {
     setError(null);
     setResult(null);
     setStage("Starting the comparison");
+    // Abort the previous run's stream BEFORE reaping its row — otherwise the
+    // orphaned fetch keeps draining into a missing row and the response body
+    // leaks for the run's lifetime.
+    streamAbortRef.current?.abort();
+    if (liveRequestId.current) {
+      dispatch(removeRequest(liveRequestId.current));
+      liveRequestId.current = null;
+    }
     liveProgress.current = initialProgress();
     liveWindow.current = openLiveRunWindow({
       instanceId: "public-ai-visibility",
@@ -105,6 +135,7 @@ export function AiVisibilityTool() {
       height: "70vh",
     });
     const abortController = new AbortController();
+    streamAbortRef.current = abortController;
     let finalResult: PublicVisibilityResult | null = null;
     const consumeStream = dispatch(
       adoptForeignStream({
@@ -227,10 +258,13 @@ export function AiVisibilityTool() {
           signal: abortController.signal,
         }),
       );
+      // Cancelled by teardown or a newer run — settle silently.
+      if (abortController.signal.aborted) return;
       if (response.error) throw new Error(response.error.message);
       if (!finalResult)
         throw new Error("The stream ended before the durable report arrived.");
     } catch (caught) {
+      if (abortController.signal.aborted) return;
       const message = caught instanceof Error ? caught.message : String(caught);
       setError(message);
       failProgress(message);

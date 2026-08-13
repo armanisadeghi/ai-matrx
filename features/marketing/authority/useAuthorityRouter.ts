@@ -75,8 +75,14 @@ export function useAuthorityRouter(siteId: string) {
 
   useEffect(
     () => () => {
+      // Abort FIRST, then reap — an orphaned fetch draining into a missing
+      // row is the disappearing-run class (LIVE_RUN_RETENTION.md seam #3).
       abortRef.current?.abort();
-      if (requestRef.current) dispatch(removeRequest(requestRef.current));
+      abortRef.current = null;
+      if (requestRef.current) {
+        dispatch(removeRequest(requestRef.current));
+        requestRef.current = null;
+      }
     },
     [dispatch],
   );
@@ -86,7 +92,14 @@ export function useAuthorityRouter(siteId: string) {
       if (!siteId || inFlight.current) return;
       inFlight.current = true;
       let streamError: string | null = null;
-      if (requestRef.current) dispatch(removeRequest(requestRef.current));
+      // Abort the previous run's stream BEFORE reaping its row — otherwise the
+      // orphaned fetch keeps draining into a missing row and the response body
+      // leaks for the run's lifetime.
+      abortRef.current?.abort();
+      if (requestRef.current) {
+        dispatch(removeRequest(requestRef.current));
+        requestRef.current = null;
+      }
       const abortController = new AbortController();
       abortRef.current = abortController;
       setRun({ status: "running", stage: "Starting the authority map…" });
@@ -135,6 +148,9 @@ export function useAuthorityRouter(siteId: string) {
         }),
       );
       inFlight.current = false;
+      // Cancelled by teardown or a newer run — settle silently (no error
+      // state, no toast); the run keeps executing server-side.
+      if (abortController.signal.aborted) return;
       abortRef.current = null;
       if (response.error || streamError) {
         const headline =

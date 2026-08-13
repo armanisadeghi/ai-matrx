@@ -71,10 +71,20 @@ export function useReputationAnalysis(input: {
   const dispatch = useAppDispatch();
   const queryClient = useQueryClient();
   const adoptedRequestId = useRef<string | null>(null);
+  /** The in-flight stream's abort controller — the SAME object the fetch and
+   * the adopter watchdog share. Aborted on unmount and before a new run so an
+   * orphaned stream never keeps draining into a reaped row (events on a
+   * missing row are silently dropped — the disappearing-run class; see
+   * features/agents/docs/LIVE_RUN_RETENTION.md seam #3). */
+  const streamAbortRef = useRef<AbortController | null>(null);
   const [run, setRun] = useState<ReputationAnalysisState>({ status: "idle" });
 
   useEffect(
     () => () => {
+      // Stop the client fetch FIRST (the server-side run is durable and keeps
+      // going), then reap the row.
+      streamAbortRef.current?.abort();
+      streamAbortRef.current = null;
       if (adoptedRequestId.current) {
         dispatch(removeRequest(adoptedRequestId.current));
         adoptedRequestId.current = null;
@@ -92,12 +102,17 @@ export function useReputationAnalysis(input: {
       let completed: ReputationRunResult | null = null;
       let busy = false;
       let failure: string | null = null;
+      // Abort the previous run's stream BEFORE reaping its row — otherwise the
+      // orphaned fetch keeps draining into a missing row and the response body
+      // leaks for the run's lifetime.
+      streamAbortRef.current?.abort();
       if (adoptedRequestId.current) {
         dispatch(removeRequest(adoptedRequestId.current));
         adoptedRequestId.current = null;
       }
       setRun((current) => ({ ...current, status: "running", error: undefined }));
       const controller = new AbortController();
+      streamAbortRef.current = controller;
       const consumeStream = dispatch(
         adoptForeignStream({
           abortController: controller,
@@ -171,6 +186,9 @@ export function useReputationAnalysis(input: {
               signal: controller.signal,
             }),
       );
+      // Cancelled by teardown or a newer run — settle silently. The run keeps
+      // executing server-side and the stored run id keeps rejoin possible.
+      if (controller.signal.aborted) return;
       if (response.error) {
         failure = describeBackendFailure(parseCallApiError(response.error)).headline;
       }

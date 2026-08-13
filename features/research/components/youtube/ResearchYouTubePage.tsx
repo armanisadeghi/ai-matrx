@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowUpRight,
   Brain,
@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAppDispatch } from "@/lib/redux/hooks";
+import { removeRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
 import { toast } from "@/lib/toast";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { YouTubeDiscovery } from "@/features/marketing/discovery/youtube/YouTubeDiscovery";
@@ -35,6 +36,29 @@ export default function ResearchYouTubePage() {
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [batchProgress, setBatchProgress] = useState<string | null>(null);
+  /** The adopted `activeRequests` row the current batch item streams into. */
+  const adoptedRequestIdRef = useRef<string | null>(null);
+  /** The in-flight stream's abort controller — the SAME object the fetch and
+   * the adopter watchdog share. Aborted on unmount and before each batch item
+   * so an orphaned stream never keeps draining into a reaped row (events on a
+   * missing row are silently dropped — the disappearing-run class; see
+   * features/agents/docs/LIVE_RUN_RETENTION.md seam #3). */
+  const streamAbortRef = useRef<AbortController | null>(null);
+
+  useEffect(
+    () => () => {
+      // Stop the client fetch FIRST (server-side processing continues and the
+      // saved records recover it), then reap the adopted row. The aborted
+      // controller stays in the ref so the batch loop's catch can recognize
+      // its own cancellation and settle silently.
+      streamAbortRef.current?.abort();
+      if (adoptedRequestIdRef.current) {
+        dispatch(removeRequest(adoptedRequestIdRef.current));
+        adoptedRequestIdRef.current = null;
+      }
+    },
+    [dispatch],
+  );
 
   const loadLibrary = async () => {
     setLoading(true);
@@ -91,7 +115,21 @@ export default function ResearchYouTubePage() {
     try {
       for (const [index, videoId] of videoIds.entries()) {
         setBatchProgress(`Analyzing video ${index + 1} of ${videoIds.length}…`);
+        // Abort any prior item's stream BEFORE reaping its row — an orphaned
+        // fetch draining into a missing row is the disappearing-run class.
+        streamAbortRef.current?.abort();
+        if (adoptedRequestIdRef.current) {
+          dispatch(removeRequest(adoptedRequestIdRef.current));
+          adoptedRequestIdRef.current = null;
+        }
+        const abortController = new AbortController();
+        streamAbortRef.current = abortController;
         await streamYouTubeVideoAnalysis(dispatch, videoId, false, {
+          signal: abortController.signal,
+          abortController,
+          onAdopted: ({ requestId }) => {
+            adoptedRequestIdRef.current = requestId;
+          },
           onEvent: (event) => {
             if (event.event === "info" && event.data.user_message) {
               setBatchProgress(
@@ -112,6 +150,9 @@ export default function ResearchYouTubePage() {
       );
       setSelected(new Set());
     } catch (caught) {
+      // Cancelled by teardown — settle silently; server-side processing of
+      // the current video continues and its saved record recovers it.
+      if (streamAbortRef.current?.signal.aborted) return;
       toast.error(
         caught instanceof Error ? caught.message : "Analysis could not start.",
       );
