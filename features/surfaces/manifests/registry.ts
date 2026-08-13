@@ -109,6 +109,10 @@ import { educationMindMapsManifest } from "./education-mind-maps.manifest";
 import { educationMemoryManifest } from "./education-memory.manifest";
 import { educationPracticeOralManifest } from "./education-practice-oral.manifest";
 import { educationLearnAuthoringManifest } from "./education-learn-authoring.manifest";
+import { educationAudioStudyManifest } from "./education-audio-study.manifest";
+import { educationGameManifest } from "./education-game.manifest";
+import { educationLearnManifest } from "./education-learn.manifest";
+import { educationProgressManifest } from "./education-progress.manifest";
 import { settingsManifest } from "./settings.manifest";
 import { agentAppsManifest } from "./agent-apps.manifest";
 import { agentConnectionsManifest } from "./agent-connections.manifest";
@@ -175,6 +179,9 @@ import { shapesManifest } from "./shapes.manifest";
 import { crmManifest } from "./crm.manifest";
 import { crmManagerManifest } from "./crm-manager.manifest";
 import { crmCreatePartyManifest } from "./crm-create-party.manifest";
+import { adminKnowledgeManifest } from "./admin-knowledge.manifest";
+import { adminKindRegistryManifest } from "./admin-kind-registry.manifest";
+import { adminSkillsManifest } from "./admin-skills.manifest";
 
 /**
  * Manifests exactly as authored. Do NOT consume directly — generic baselines
@@ -272,6 +279,10 @@ const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   educationMemoryManifest,
   educationPracticeOralManifest,
   educationLearnAuthoringManifest,
+  educationAudioStudyManifest,
+  educationGameManifest,
+  educationLearnManifest,
+  educationProgressManifest,
   settingsManifest,
   agentAppsManifest,
   agentConnectionsManifest,
@@ -340,6 +351,9 @@ const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   crmManifest,
   crmManagerManifest,
   crmCreatePartyManifest,
+  adminKnowledgeManifest,
+  adminKindRegistryManifest,
+  adminSkillsManifest,
 ];
 
 // ---------------------------------------------------------------------------

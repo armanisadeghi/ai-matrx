@@ -8,11 +8,12 @@
  * flows hit today. Add a row to `SURFACE_BY_ROUTE_PREFIX` when a new
  * route ships AND the corresponding surface exists in `ui.ui_surface`.
  *
- * Mapping discipline: prefer specific over general. The longest matching
- * prefix wins — `/agents/{id}/run` should resolve to
- * `matrx-user/agent-run` even though `/agents` would match
- * `matrx-user/agents`. The list is iterated in declared order so put
- * specific prefixes BEFORE their general ancestors.
+ * Mapping discipline: prefer specific over general. Resolution is
+ * FIRST-MATCH-WINS in declared array order (NOT longest-prefix), so a
+ * specific prefix like `/agents/{id}/run` resolves only because it is
+ * declared BEFORE its general ancestor `/agents`. Always put specific
+ * prefixes ABOVE their ancestors — a child added below its hub silently
+ * never matches.
  *
  * Returns null when no mapping matches; the request then omits
  * `client.surface` and the server resolves tools from
@@ -92,7 +93,6 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   { prefix: "/context-items", surface: "matrx-user/context-items" },
   { prefix: "/scopes", surface: "matrx-user/scopes" },
   { prefix: "/canvas", surface: "matrx-user/canvas" },
-  { prefix: "/ai-results", surface: "matrx-user/ai-results" },
   { prefix: "/rag/search", surface: "matrx-user/rag-search" },
   { prefix: "/rag/library-catalog", surface: "matrx-user/rag-library" },
   { prefix: "/rag/library", surface: "matrx-user/rag-library" },
@@ -188,6 +188,15 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
     surface: "matrx-admin/mcp-servers",
   },
   { prefix: "/administration/agents/lookups", surface: "matrx-admin/lookups" },
+  { prefix: "/administration/agents/skills", surface: "matrx-admin/skills" },
+  {
+    prefix: "/administration/knowledge",
+    surface: "matrx-admin/knowledge",
+  },
+  {
+    prefix: "/administration/utilities/kind-registry",
+    surface: "matrx-admin/kind-registry",
+  },
   {
     prefix: "/administration/agents/slots",
     surface: "matrx-admin/agent-slots",

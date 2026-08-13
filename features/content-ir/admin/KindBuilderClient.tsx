@@ -24,6 +24,11 @@ import { Hammer, Table2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindow";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ADMIN_KIND_REGISTRY_SURFACE_NAME,
+  createAdminKindRegistryScope,
+} from "@/features/surfaces/manifests/admin-kind-registry.manifest";
 
 /**
  * The admin one-shot kind builder (agent.definition 'kind_architect', builtin).
@@ -61,6 +66,18 @@ export default function KindBuilderClient() {
   };
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_KIND_REGISTRY_SURFACE_NAME}
+      getScope={() =>
+        createAdminKindRegistryScope({
+          kind_registry_section: "build",
+          kind_builder_structure: structure,
+          kind_builder_notes: notes,
+          kind_builder_architect_agent_id: architect?.agentId,
+          kind_builder_can_start: canStart,
+        })
+      }
+    >
     <div className="mx-auto max-w-3xl space-y-4 p-4">
       <div className="rounded-md border border-border bg-card p-4">
         <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
@@ -135,5 +152,6 @@ export default function KindBuilderClient() {
         chat to see it render.
       </p>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

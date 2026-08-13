@@ -283,9 +283,10 @@ export interface RequestOptions {
   /** Override base URL (tests, staging, etc.). */
   baseUrlOverride?: string;
   /**
-   * Hard timeout (ms) for byte downloads via `downloadBlobWithProgress`.
-   * Defaults to 90s. Past this the request rejects with a retryable error
-   * instead of hanging forever.
+   * Hard request timeout (ms). Supported by transports that opt into bounded
+   * execution (currently JSON reads, multipart POSTs, and byte downloads).
+   * Past this the request rejects with a structured `request_timeout` error
+   * instead of masquerading as a caller cancellation.
    */
   timeoutMs?: number;
   /**
@@ -722,19 +723,23 @@ export async function postMultipart<T>(
     "postMultipart",
     "POST",
   );
+  let requestId: string | undefined;
   try {
-    const { headers, requestId } = await buildHeaders(opts, false);
-    const response = await fetch(url, {
+    const built = await buildHeaders(opts, false);
+    requestId = built.requestId;
+    const init = {
       method: "POST",
-      headers,
+      headers: built.headers,
       body: form,
-      signal: opts.signal,
-    });
+    } satisfies RequestInit;
+    const response = opts.timeoutMs
+      ? await fetchWithTimeout(url, init, opts.signal, opts.timeoutMs)
+      : await fetch(url, { ...init, signal: opts.signal });
     if (!response.ok) throw await parseHttpError(response);
     const data = (await response.json()) as T;
     return { data, meta: meta(response, requestId) };
   } catch (err) {
-    failClient(err, "POST", path, url);
+    failClient(err, "POST", path, url, requestId);
   }
 }
 

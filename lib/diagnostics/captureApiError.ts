@@ -54,8 +54,11 @@ export function captureApiError(
     const backendCode = typeof sd.code === "string" ? sd.code : undefined;
     const userMessage =
       typeof sd.user_message === "string" ? sd.user_message : undefined;
-    const requestId =
-      typeof sd.request_id === "string" ? sd.request_id : ctx.requestId;
+    const backendRequestId =
+      typeof sd.request_id === "string" && sd.request_id.trim()
+        ? sd.request_id
+        : undefined;
+    const requestId = backendRequestId ?? ctx.requestId;
     const structuredDetail = sd.details ?? sd.detail;
 
     captureError({
@@ -74,8 +77,7 @@ export function captureApiError(
           ? safeStringify(structuredDetail)
           : undefined,
       // AbortError → name lets the seed downgrade rule silence cancellations.
-      name:
-        error.type === "abort_error" ? "AbortError" : error.name,
+      name: error.type === "abort_error" ? "AbortError" : error.name,
       stack: error.stack,
       raw: {
         type: error.type,

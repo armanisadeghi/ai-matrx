@@ -7,6 +7,10 @@
  * hosts a `SmartAgentInput` for the user's reply, and may auto-advance
  * after a bypass countdown; continuing marks the gate satisfied and opens
  * the downstream overlay.
+ *
+ * Emitter: `AgentGateBody` mounts `<SurfaceRuntimeProvider>` around the
+ * input area, reading the same `instanceUIState` selectors the gate's own
+ * title/countdown logic already uses.
  */
 
 import type {
@@ -15,6 +19,8 @@ import type {
   SurfaceValue,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+
+export const AGENT_GATE_SURFACE_NAME = "matrx-user/agent-gate";
 
 const surfaceSpecific: SurfaceValue[] = [
   {
@@ -61,10 +67,9 @@ const surfaceSpecific: SurfaceValue[] = [
 ];
 
 export const agentGateManifest: SurfaceManifest = {
-  surfaceName: "matrx-user/agent-gate",
-  readiness: "stub",
-  readinessNote:
-    "Values authored from a code audit of AgentGateWindow/AgentGateBody; no runtime emitter yet — nothing emits this scope.",
+  surfaceName: AGENT_GATE_SURFACE_NAME,
+  readiness: "partial",
+  readinessNote: "emitter wired, browser verification pending",
   overlayId: "agentGateWindow",
   label: "Agent Gate",
   intro: `<surface_intro>

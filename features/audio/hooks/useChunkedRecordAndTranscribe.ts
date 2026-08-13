@@ -44,6 +44,7 @@ import {
 } from "../streamLevelMeter";
 import { toAudioFile } from "../utils/audio-mime";
 import { transcribeAudioFile } from "../services/speechApi";
+import { resolveTranscriptionFinalization } from "../services/transcriptionFinalization";
 
 /**
  * The capture constraints for a recording. Shared by `startRecording` and
@@ -321,17 +322,21 @@ export function useChunkedRecordAndTranscribe({
     if (!isStoppingRef.current || pendingRef.current > 0) return;
 
     const hasFailures = failedIndicesRef.current.length > 0;
-    let finalText = accumulatedRef.current.trim();
+    let fallbackResult: TranscriptionResult | null = null;
 
     if (hasFailures && allChunkBlobsRef.current.length > 0) {
-      const fallbackResult = await runFallbackTranscription();
-      if (fallbackResult?.success && fallbackResult.text.trim()) {
-        finalText = fallbackResult.text.trim();
-        accumulatedRef.current = finalText;
-        setLiveTranscript(finalText);
-        await persistText(finalText);
-      }
+      fallbackResult = await runFallbackTranscription();
     }
+
+    const decision = resolveTranscriptionFinalization({
+      partialText: accumulatedRef.current,
+      hadChunkFailures: hasFailures,
+      fallbackResult,
+    });
+    const finalText = decision.finalText;
+    accumulatedRef.current = finalText;
+    setLiveTranscript(finalText);
+    await persistText(finalText);
 
     setIsTranscribing(false);
 
@@ -341,7 +346,14 @@ export function useChunkedRecordAndTranscribe({
 
     if (safetyIdRef.current) {
       try {
-        await audioSafetyStore.markComplete(safetyIdRef.current);
+        if (decision.safetyStatus === "complete") {
+          await audioSafetyStore.markComplete(safetyIdRef.current);
+        } else {
+          await audioSafetyStore.markFailed(
+            safetyIdRef.current,
+            decision.result.error ?? "Transcription failed",
+          );
+        }
       } catch {}
     }
 
@@ -353,13 +365,10 @@ export function useChunkedRecordAndTranscribe({
         ? new Blob(allChunkBlobsRef.current, { type: mimeTypeRef.current })
         : null;
 
-    onTranscriptionCompleteRef.current?.(
-      { success: true, text: finalText },
-      finalAudioBlob,
-    );
+    onTranscriptionCompleteRef.current?.(decision.result, finalAudioBlob);
 
     // Auto-persist into transcripts system silently (skip on page unload).
-    if (finalText && !isPageHidingRef.current) {
+    if (decision.result.success && finalText && !isPageHidingRef.current) {
       import("@/utils/auth/getUserId").then(({ getUserId }) => {
         const userId = getUserId();
         if (userId) {
@@ -492,23 +501,14 @@ export function useChunkedRecordAndTranscribe({
         // Bound the request: on bad networks a chunk fetch can hang
         // indefinitely, leaving `pendingRef` > 0 forever so `maybeFireFinal`
         // never fires and the recording is never finalized (card stuck
-        // "Saving…"). An abort surfaces as a normal failed chunk — its audio is
-        // already in IndexedDB and the stop-time fallback re-transcribes it.
-        const ctrl = new AbortController();
-        const timeoutId = setTimeout(
-          () => ctrl.abort(),
-          AUDIO_LIMITS.CHUNK_FETCH_TIMEOUT_MS,
+        // "Saving…"). The canonical multipart client turns this deadline into
+        // a structured `request_timeout` (not a fake caller cancellation); the
+        // audio is already in IndexedDB and stop-time fallback re-transcribes it.
+        const data = await transcribeAudioFile(
+          audioFile,
+          { language: opts?.language },
+          { timeoutMs: AUDIO_LIMITS.CHUNK_FETCH_TIMEOUT_MS },
         );
-        let data: TranscriptionResult;
-        try {
-          data = await transcribeAudioFile(
-            audioFile,
-            { language: opts?.language },
-            ctrl.signal,
-          );
-        } finally {
-          clearTimeout(timeoutId);
-        }
 
         if (data.success && data.text?.trim()) {
           const snippet = (data.text as string).trim();
@@ -574,8 +574,6 @@ export function useChunkedRecordAndTranscribe({
       } catch (err) {
         const msg =
           err instanceof Error ? err.message : "Chunk transcription failed";
-        console.error(`[chunked-transcription] chunk ${idx} failed:`, msg);
-
         failedIndicesRef.current.push(idx);
         setFailedChunkCount(failedIndicesRef.current.length);
 
@@ -782,7 +780,13 @@ export function useChunkedRecordAndTranscribe({
     } finally {
       startingRef.current = false;
     }
-  }, [cleanup, startLevelMeter, startDurationTimer, createRecorder, rotateChunk]);
+  }, [
+    cleanup,
+    startLevelMeter,
+    startDurationTimer,
+    createRecorder,
+    rotateChunk,
+  ]);
 
   const stopRecording = useCallback(() => {
     isStoppingRef.current = true;

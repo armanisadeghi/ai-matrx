@@ -13,17 +13,24 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Gamepad2, Users, LogIn, Zap, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createEducationGameScope } from "@/features/surfaces/manifests/education-game.manifest";
 import { ENGAGE_ROUTES } from "../constants";
 import { StreakCard } from "./streak/StreakCard";
 import { LeaguePanel } from "./league/LeaguePanel";
 import { BadgeShelf } from "./badges/BadgeShelf";
+
+const SURFACE_NAME = "matrx-user/education-game";
 
 export function EngageHome() {
   const router = useRouter();
   const [navigating, startNav] = useTransition();
   const go = (href: string) => startNav(() => router.push(href));
 
+  const buildScope = () => createEducationGameScope({ view: "home" });
+
   return (
+    <SurfaceRuntimeProvider surfaceName={SURFACE_NAME} getScope={buildScope}>
     <div className="mx-auto flex h-full w-full max-w-4xl flex-col gap-5 overflow-y-auto p-4">
       <header>
         <h1 className="flex items-center gap-2 text-xl font-bold text-foreground">
@@ -68,6 +75,7 @@ export function EngageHome() {
         <BadgeShelf />
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 

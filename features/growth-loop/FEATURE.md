@@ -33,12 +33,13 @@ Rules (also stated at the top of the file):
 
 ## Structure
 
-| File | Role |
-|---|---|
-| `map/loop-map.ts` | Pure data + helpers. No React, no imports from the app. |
-| `components/GrowthLoopCanvas.tsx` | The ONE `next/dynamic({ ssr: false })` front door. |
-| `components/GrowthLoopCanvasImpl.tsx` | React Flow canvas + custom stage node + detail rail. |
-| `app/(admin)/administration/knowledge/growth-loop/page.tsx` | Admin route. |
+| File                                                        | Role                                                                          |
+| ----------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `map/loop-map.ts`                                           | Pure data + helpers. No React, no imports from the app.                       |
+| `components/GrowthLoopCanvas.tsx`                           | The ONE `next/dynamic({ ssr: false })` front door.                            |
+| `components/GrowthLoopCanvasImpl.tsx`                       | React Flow canvas + custom stage node + detail rail.                          |
+| `features/canvas/edges/rounded-orthogonal-path.ts`          | Shared rounded waypoint path builder used for collision-free fixed-map lanes. |
+| `app/(admin)/administration/knowledge/growth-loop/page.tsx` | Admin route.                                                                  |
 
 ## Doctrine
 
@@ -51,12 +52,22 @@ Rules (also stated at the top of the file):
   new graph library, no new state store, and no new suggestion or status system.
 - **No dead ends:** every pipe entry renders its `ref` path so a reader can go straight to the
   code. When a gap gains an owner, its lane is shown on the gap card.
+- **Collision-free routing:** every connection owns a unique source and target handle. The two
+  cross-loop feedback connections use explicit outer lanes through the shared rounded orthogonal
+  path builder; adding an unconfigured edge fails loudly instead of falling back to overlapping
+  automatic geometry. Clicking a stage traces its immediate incoming and outgoing connections,
+  emphasizes the connected stages, and suppresses unrelated paths.
 
 ## Change log
 
+- 2026-08-12 — Codex: replaced implicit smooth-step routing with per-connection handles and
+  dedicated rounded outer lanes for both cross-loop feedback paths. Stage selection now traces
+  every direct incoming/outgoing connection and dims unrelated stages and arrows; arrow selection
+  highlights both endpoints. Canvas clicks clear the trace.
+
 - 2026-08-12 — claude: full verification audit (five parallel auditors + live DB + deployment
   checks) after the first chip wave. Corrected all 20 gap entries against SHIPPED code rather than
-  docs or commit messages, and added **rule 1b** to `loop-map.ts`: *"live" means SHIPPED* — code in
+  docs or commit messages, and added **rule 1b** to `loop-map.ts`: _"live" means SHIPPED_ — code in
   a working tree is `in-progress`, never `live`. That rule exists because its absence let ~10 gaps
   sit fully built on one laptop (several with their migrations already applied to the live
   database) while the map showed no movement. Closed and evidenced: sitemap/robots (live-verified

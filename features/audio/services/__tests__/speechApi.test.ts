@@ -1,5 +1,9 @@
-import { apiPost } from "@/lib/api/typed-client";
-import { generateSpeech, transcribeAudioUrl } from "../speechApi";
+import { apiMultipart, apiPost } from "@/lib/api/typed-client";
+import {
+  generateSpeech,
+  transcribeAudioFile,
+  transcribeAudioUrl,
+} from "../speechApi";
 
 jest.mock("@/lib/api/typed-client", () => ({
   apiPost: jest.fn(),
@@ -10,11 +14,17 @@ jest.mock("@/lib/organizations/personalOrg", () => ({
 }));
 
 const apiPostMock = jest.mocked(apiPost);
-const responseMeta = { requestId: "request-1", status: 200, serverRequestId: null };
+const apiMultipartMock = jest.mocked(apiMultipart);
+const responseMeta = {
+  requestId: "request-1",
+  status: 200,
+  serverRequestId: null,
+};
 
 describe("speechApi", () => {
   beforeEach(() => {
     apiPostMock.mockReset();
+    apiMultipartMock.mockReset();
   });
 
   it("normalizes optional segment fields at the frontend boundary", async () => {
@@ -71,5 +81,25 @@ describe("speechApi", () => {
       voice: undefined,
       quality: "fast",
     });
+  });
+
+  it("passes a transcription deadline to the canonical multipart client", async () => {
+    apiMultipartMock.mockResolvedValueOnce({
+      data: {
+        text: "Hello",
+        segments: [],
+        meta: { attempts: 1, hallucinations_filtered: 0, model: "test" },
+      },
+      meta: responseMeta,
+    });
+
+    const file = new File(["audio"], "chunk.webm", { type: "audio/webm" });
+    await transcribeAudioFile(file, undefined, { timeoutMs: 30_000 });
+
+    expect(apiMultipartMock).toHaveBeenCalledWith(
+      "/audio/transcribe",
+      expect.any(FormData),
+      { timeoutMs: 30_000 },
+    );
   });
 });

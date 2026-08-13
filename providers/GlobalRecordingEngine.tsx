@@ -26,9 +26,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 // eslint-disable-next-line no-restricted-syntax -- THE one legal importer: this engine IS the single shared recorder, mounted only inside the lazy AudioSystemHostImpl.
-import {
-  useChunkedRecordAndTranscribe,
-} from "@/features/audio/hooks/useChunkedRecordAndTranscribe";
+import { useChunkedRecordAndTranscribe } from "@/features/audio/hooks/useChunkedRecordAndTranscribe";
 import { claimCapture, releaseCapture } from "@/features/audio/captureLock";
 import { beginRecordingSession } from "@/features/audio/session/audioSessionRegistry";
 import type { PlaybackSessionHandle } from "@/features/audio/session/types";
@@ -139,10 +137,18 @@ export function GlobalRecordingEngine() {
         dispatch(liveTranscriptUpdated(""));
       } else {
         if (result.text) dispatch(liveTranscriptUpdated(result.text));
+        if (!result.success) {
+          const message = result.error ?? "Recording transcription failed";
+          dispatch(recordingErrored(message));
+          errorSubRef.current?.(message, "TRANSCRIPTION_FAILED");
+        }
         completeSubRef.current?.(result, audioBlob);
       }
       dispatch(recordingFinalized());
-      recordingSessionRef.current?.end("done");
+      recordingSessionRef.current?.end(
+        result.success || cancelled ? "done" : "error",
+        result.success || cancelled ? undefined : result.error,
+      );
       recordingSessionRef.current = null;
       contextRef.current = null;
       chunkSubRef.current = undefined;
@@ -150,8 +156,12 @@ export function GlobalRecordingEngine() {
       chunkErrorSubRef.current = undefined;
       errorSubRef.current = undefined;
       setIsFinalizing(false);
-      // Clean finalize — the boot marker's job is done (no orphan to recover).
-      if (!pendingStartRef.current) clearAudioBootMarker();
+      // Clear the boot marker only when no recoverable failure remains. A
+      // failed transcription keeps its IndexedDB row + marker so the recovery
+      // provider surfaces the saved audio on the next boot.
+      if ((result.success || cancelled) && !pendingStartRef.current) {
+        clearAudioBootMarker();
+      }
       // Recording fully done — drop the capture lock unless a takeover is queued.
       releaseGlobalCaptureIfIdle();
     },
