@@ -13,32 +13,6 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
-### D173 — shortcut/template ↔ project/task has NO canonical association path at all (2026-08-12)
-
-The forbidden `platform._mirror_fk_to_assoc` triggers on `agent.shortcut` and
-`agent.template` were dropped (migration
-`drop_mirror_fk_triggers_agent_shortcut_template.sql`) — safely: 0 of 206
-shortcuts and 0 of 11 templates carried `project_id`/`task_id`, and
-`platform.associations` held ZERO shortcut/agent_template ↔ project/task edges,
-so the mirror never fired in anger. **But the doctrine-required replacement does
-not exist:** nothing writes canonical `platform.associations` edges for these
-relationships. The FE still writes the forbidden FK columns directly
-(`features/agents/redux/agent-shortcuts/converters.ts:370`,
-`features/agents/redux/agent-shortcut-categories/converters.ts:50`) and
-`agx_get_shortcuts_for_context(project_id, task_id)` reads by column — so the
-moment anyone scopes a shortcut/template to a project/task, it flows through
-the banned FK path with no edge. The fix (per CLAUDE.md § Forbidden relationship
-shortcuts): drop the four `project_id`/`task_id` columns, move both write paths
-onto the registered association RPCs, and repoint `agx_get_shortcuts_for_context`
-at `platform.associations`. Deliberately not expanded here — this is the
-remainder of the agent-schema legacy column cut (chip task_7ef8679f). The shared
-`platform._mirror_fk_to_assoc` function still has **11 trigger dependents on 7
-other tables** (canvas.canvas_items, chat.agent_plan,
-docproc.page_extraction_jobs, education.quiz_sessions,
-graveyard.education_flashcard_data, public.app_instances ×2,
-public.sandbox_instances ×2, workbench.udt_datasets ×2) — each is the same
-forbidden pattern awaiting its own cut.
-
 ### D172 — `normalisePageUrl` rejects a URL its own test says it must accept (2026-08-11)
 
 `features/marketing/lib/page-url.test.ts` "lowercases scheme and host" FAILS on
@@ -1216,6 +1190,7 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 
 ## RESOLVED
 
+- **D173 — shortcut/template project/task scoping had NO canonical path after the mirror-trigger disarm — RESOLVED 2026-08-12.** The four forbidden FK columns are DROPPED live (proven 0 scoped rows); `agent_shortcut→project/task` association types registered (target-container, editor — the agent→project precedent); 7 RPCs + `agent.context_menu_view` rewritten with edge projections (signatures and output shapes unchanged, so read paths needed zero changes); writes now create `platform.associations` edges (agx_create_shortcut, create_shortcut_from_agent_surface, POST /api/agent-shortcuts); FE converters/API allowlists cut; aidream agent models regenerated (zero real consumers existed). Both `agent.shortcut` and `agent.template` are now CERTIFIED. Migration `agent_shortcut_scoping_to_associations.sql` (ledgered). Remaining mirror-function dependents were separately eliminated the same day (only graveyard remains).
 - **D168 — Claude-only, untracked `preview_start` replaced by tracked provider-neutral `pnpm preview:start`; Claude/Codex hooks block duplicate raw launches.** 2026-08-12 — `scripts/agent-dev-server.sh`, `scripts/agent-harness/`.
 - **D165 — the Redux execution system could not carry a `context_anchor` — RESOLVED 2026-08-11.** `HeadlessAgentJsonOptions` now carries `contextAnchor` / `organizationId` (`run-headless-agent-json.ts:82,88`) straight into `launchAgentExecution`, so migrating a surface to the live posture no longer drops its durable-entity anchor. Filed and closed the same day while migrating the Research Outputs Studio SEO card, which passes `{resource_type:"research_topic", resource_id: topicId}` on the live path.
 
