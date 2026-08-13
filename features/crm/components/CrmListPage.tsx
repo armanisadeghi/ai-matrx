@@ -12,7 +12,7 @@
 //     query (search, filters, page, scope) deliberately does not
 //   * ONE "…" menu per row carrying every record action
 
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
@@ -26,6 +26,8 @@ import {
   Trash2,
   ArchiveRestore,
   FileUp,
+  Megaphone,
+  Merge,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
@@ -43,7 +45,13 @@ import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
 import { LIST_VIEW_PAGE_SIZES } from "@/lib/list-views/defaults";
 import { cn } from "@/lib/utils";
 import { usePartyList } from "../hooks/usePartyList";
-import { deleteParty, purgeParty, restoreParty } from "../service";
+import {
+  deleteParty,
+  fetchPendingCandidateCount,
+  purgeParty,
+  restoreParty,
+} from "../service";
+import { CrmAssistStrip } from "./dedup/CrmAssistStrip";
 import type {
   DateBucket,
   PartyKind,
@@ -71,6 +79,7 @@ import {
   PARTY_TEXT_FILTER_KEYS,
 } from "../types";
 import { PARTY_COLUMNS } from "./columns";
+import { AddToCampaignDialog } from "./campaigns/AddToCampaignDialog";
 import { useOpenCrmCreatePartyWindow } from "@/features/overlays/openers/crmCreatePartyWindow";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
@@ -368,7 +377,30 @@ export function CrmListPage({
   const effectiveOrgId = useAppSelector(selectEffectiveOrganizationId);
   const openRow = (row: PartyListRow) => router.push(`/crm/${row.id}`);
 
+  // Duplicates indicator — a true pending-pair count behind the header door.
+  // The assist-strip sweep refreshes it after detection runs.
+  const [dupCount, setDupCount] = useState<number | null>(null);
+  useEffect(() => {
+    if (!list.ctx || list.ctx.orgIds.length === 0) return;
+    let cancelled = false;
+    void fetchPendingCandidateCount(list.ctx.orgIds)
+      .then((n) => {
+        if (!cancelled) setDupCount(n);
+      })
+      .catch((e) => console.error("[crm] duplicate count failed:", e));
+    return () => {
+      cancelled = true;
+    };
+  }, [list.ctx]);
+
   const inTrash = list.query.view === "trash";
+
+  // Checked rows → "Add to campaign" (the campaign builder's list on-ramp).
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [addToCampaignOpen, setAddToCampaignOpen] = useState(false);
+  const selectedLoadedRows = list.rows.filter((row) =>
+    selectedIds.includes(row.id),
+  );
 
   const menuFor = (row: PartyListRow): (() => ItemMenuConfig) => {
     if (inTrash) {
@@ -559,6 +591,21 @@ export function CrmListPage({
         className="h-11 gap-1 px-2 text-xs lg:h-7"
         asChild
       >
+        {/* Window mounts keep their state: campaigns open in a new tab. */}
+        <Link
+          href="/crm/campaigns"
+          target={presentation === "route" ? undefined : "_blank"}
+        >
+          <Megaphone className="h-3.5 w-3.5" />
+          Campaigns
+        </Link>
+      </Button>
+      <Button
+        size="sm"
+        variant="ghost"
+        className="h-11 gap-1 px-2 text-xs lg:h-7"
+        asChild
+      >
         {/* Window mounts keep their state: the wizard opens in a new tab. */}
         <Link
           href="/crm/import"
@@ -660,6 +707,22 @@ export function CrmListPage({
             <div className="ml-auto flex items-center gap-1.5">
               <Button
                 size="sm"
+                variant="ghost"
+                className="h-11 gap-1 px-2 text-xs lg:h-7"
+                asChild
+              >
+                <Link href="/crm/duplicates">
+                  <Merge className="h-3.5 w-3.5" />
+                  Duplicates
+                  {dupCount !== null && dupCount > 0 && (
+                    <span className="ml-0.5 rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-primary">
+                      {dupCount}
+                    </span>
+                  )}
+                </Link>
+              </Button>
+              <Button
+                size="sm"
                 variant={inTrash ? "secondary" : "ghost"}
                 className="h-11 gap-1 px-2 text-xs lg:h-7"
                 onClick={() =>
@@ -681,6 +744,14 @@ export function CrmListPage({
               {list.error}
             </div>
           )}
+          {/* Dedup assists: runs the once-per-session scan and shows the
+              resulting chips right where the user is standing. */}
+          <CrmAssistStrip
+            userId={list.ctx?.userId ?? null}
+            orgIds={list.ctx?.orgIds ?? null}
+            onPendingCount={setDupCount}
+            className="mt-2"
+          />
         </div>
 
         <div className="min-h-0 flex-1 px-3 pb-2 pt-2">
@@ -746,6 +817,25 @@ export function CrmListPage({
             detail={{ enabled: false }}
             window={{ enabled: false }}
             onRowOpen={openRow}
+            selection={
+              inTrash
+                ? undefined
+                : {
+                    selectedIds,
+                    onSelectedIdsChange: setSelectedIds,
+                    noun: "record",
+                    actions: () => (
+                      <Button
+                        size="sm"
+                        className="h-7 gap-1 px-2 text-xs"
+                        onClick={() => setAddToCampaignOpen(true)}
+                      >
+                        <Megaphone className="h-3.5 w-3.5" />
+                        Add to campaign
+                      </Button>
+                    ),
+                  }
+            }
             rowActions={(row) => (
               <ItemMenu config={menuFor(row)} align="end">
                 <button
@@ -787,6 +877,14 @@ export function CrmListPage({
             }
           />
         </div>
+
+        <AddToCampaignDialog
+          open={addToCampaignOpen}
+          onOpenChange={setAddToCampaignOpen}
+          selectedRows={selectedLoadedRows}
+          selectedIds={selectedIds}
+          onDone={() => setSelectedIds([])}
+        />
       </div>
     </SurfaceRuntimeProvider>
   );
