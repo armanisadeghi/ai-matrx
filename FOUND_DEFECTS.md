@@ -13,6 +13,67 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D182 — 🚨 The RLS kernel materializes EVERY row id: `seo.search_performance_daily` (13.2M rows) is unreadable to any signed-in user (2026-08-13)
+
+**Every `authenticated` read of that table — and of any `security_invoker` view
+over it — dies at the 8s statement timeout.** Live symptom: 10× Postgres
+`57014 canceling statement due to statement timeout` on
+`seo.v_site_keyword_performance` (HTTP 500), captured on
+`/marketing/content-plan/*` while the Keyword Intelligence window was open.
+The only caller is `listSitePerformanceForKeyword`
+(`features/marketing/seo/keyword/data.ts:613`), and React Query's global
+`retry: 1` doubles every failure.
+
+**Root cause — measured, not inferred.** The table's `std_select` policy is
+`id IN (SELECT unnest(iam.accessible_entity_ids('seo_search_performance_daily','viewer')))`.
+That function (`iam.accessible_entity_ids`, `STABLE SECURITY DEFINER`, returns
+`uuid[]`) builds its answer with
+`select coalesce(array_agg(t.id),'{}') from <the table> t where <trusted lanes>`
+— i.e. it **materializes an array of every accessible row id**. For this table
+and a normal org member the trusted lane matches **13,183,309 rows** (verified),
+so each read aggregates ~13.2M UUIDs (~200 MB+) before returning a single row.
+Just COUNTING that predicate took **44.6 s** (`pg_stat_statements`), against an
+8 s timeout. The view itself is innocent: as `postgres` the same query plans at
+cost 5.72 with the `site_id` filter pushed into `idx_seo_sperf_site_date`, and
+the 2026-08-09 `NOT MATERIALIZED` fix (`migrations/seo_v_site_keyword_performance_site_pushdown.sql`)
+is still correct. `security_invoker=true` on the view is what puts the caller's
+RLS on the 13.2M-row table.
+
+**This is a CLASS, not one table.** The array-materializing kernel is fine for
+ordinary entity tables (hundreds/thousands of rows) and catastrophic for any
+high-volume derived/telemetry table registered in `platform.entity_types`.
+Audit every registered token whose table is large before assuming this is one
+row. Nobody grants per-row permissions on GSC telemetry — this table's access is
+structural (site → org), so the per-row-id enumeration lane is the wrong model
+for it, not merely slow.
+
+**NOT FIXED HERE, deliberately.** CLAUDE.md: *never add or change a security
+layer on your own authority*, and this is a live RLS policy on a shared DB.
+The fix is a predicate-shaped policy (org/site-scoped, index-friendly, same
+rows) or a kernel that returns a predicate instead of an array — **Arman's
+call, one owner, one change.** Do not "fix" it by widening access, and do not
+narrow it by dropping the sparse permission lanes without checking they are
+empty for the table.
+
+Secondary, same incident, filed here so they are not lost:
+- **A paid SEO keyword-research result was destroyed.** `SeoKeywordResearch`
+  (request `4f293980-4f9a-4329-954b-a1d652e1c277`) timed out on its single
+  `INSERT INTO content_ir.kind_instance … RETURNING *` (matrx-orm
+  `command_timeout` = 10 s). Verified live: **the row did not commit** (zero
+  `kind_instance` rows for that title) and the failure path writes only the
+  error to `seo.collection_run`, never the artifact — so the agent output is
+  gone and re-running re-pays. `content_ir.kind_instance` holds just 82 rows and
+  its policies use per-row `iam.has_access`, so the stall was environmental
+  (this INSERT landed inside the 05:27–05:41 window of the timeouts above);
+  the durable gap is that **a successful, paid agent result has no
+  keep-the-work path when the persistence write fails**.
+- **A transport drop reads as a hard failure.** `agent-stream-transport`
+  `internal_error` / "The connection to the AI response was lost."
+  (`lib/api/stream-parser.ts:122-144`) cannot distinguish "socket dropped, the
+  server run is still completing and is resumable" from "the backend blew up",
+  and nothing dispatches a resume on it — against the repo's own
+  `detach_on_disconnect` doctrine.
+
 ### D179 — Keyword Research workbench: remaining UI debt (2026-08-13, Arman review)
 
 Arman reviewed `/marketing/keyword-research` during the sharing pilot and named
