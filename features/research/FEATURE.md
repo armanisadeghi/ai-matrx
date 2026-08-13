@@ -288,6 +288,14 @@ find yourself writing code to add an output, something above is wrong.
 
 ## Change log
 
+- 2026-08-13 — **AI topic review restores its missing launch actions.** The
+  review canvas requires the canonical `research_topic` destination before it
+  renders **Start Research** and **View & Edit First**, but the shared entity
+  registry had no frontend overlay for that registered token. The resulting
+  `null` route removed the entire action row and looked like long keyword lists
+  had pushed it off-screen. `research_topic` now owns its canonical
+  `/research/topics/{id}` door in `entityRegistry`; focused coverage pins the
+  route so the review actions cannot silently disappear again.
 - 2026-08-11 — **Outputs Studio: the slide deck streams as its content-IR kind —
   and D165 is closed, so both live cards keep their topic anchor.** The deck
   generator awaited its whole run behind `GeneratingNote`, `parseJsonLoose`d the

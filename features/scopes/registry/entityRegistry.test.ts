@@ -35,4 +35,10 @@ describe("entityRegistry content-role resolution", () => {
   ] as const)("gives the %s access-tree node a real ID-only door", (token, href) => {
     expect(getEntityInfo(token).hrefFor?.("resource-id")).toBe(href);
   });
+
+  it("gives research topics a canonical detail door", () => {
+    expect(getEntityInfo("research_topic").hrefFor?.("topic-id")).toBe(
+      "/research/topics/topic-id",
+    );
+  });
 });

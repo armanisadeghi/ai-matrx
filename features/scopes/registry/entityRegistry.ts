@@ -347,6 +347,11 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     labelPlural: "Conversations",
     hrefFor: (id) => `/chat/${id}`,
   },
+  research_topic: {
+    Icon: FlaskConical,
+    labelPlural: "Research Topics",
+    hrefFor: (id) => `/research/topics/${id}`,
+  },
   flashcard_set: {
     Icon: Layers,
     labelPlural: "Flashcard Sets",
