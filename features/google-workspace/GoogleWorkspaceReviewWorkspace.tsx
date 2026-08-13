@@ -457,17 +457,19 @@ export function GoogleWorkspaceReviewWorkspace({
                     const link = metadataLink(resource);
                     const selected = resource.id === selectedResourceId;
                     return (
-                      <button
-                        type="button"
+                      <div
                         key={resource.id}
-                        onClick={() => setSelectedResourceId(resource.id)}
-                        className={`rounded-lg border p-3 text-left transition-colors ${
+                        className={`flex items-center rounded-lg border transition-colors ${
                           selected
                             ? "border-primary bg-primary/5"
                             : "hover:bg-muted/50"
                         }`}
                       >
-                        <span className="flex items-start gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedResourceId(resource.id)}
+                          className="flex min-w-0 flex-1 items-start gap-3 p-3 text-left"
+                        >
                           {resource.resource_type === "google_document" ? (
                             <FileText className="mt-0.5 h-5 w-5 text-blue-600" />
                           ) : (
@@ -483,11 +485,20 @@ export function GoogleWorkspaceReviewWorkspace({
                                 : "Google Sheet"}
                             </span>
                           </span>
-                          {link && (
-                            <ExternalLink className="h-4 w-4 text-muted-foreground" />
-                          )}
-                        </span>
-                      </button>
+                        </button>
+                        {link && (
+                          <a
+                            href={link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mr-3 inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-primary hover:bg-primary/10"
+                            aria-label={`Open ${resource.display_name} in Google`}
+                          >
+                            Open in Google
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
+                        )}
+                      </div>
                     );
                   })}
                 </div>
