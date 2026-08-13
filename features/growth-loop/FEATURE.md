@@ -65,6 +65,15 @@ Rules (also stated at the top of the file):
   every direct incoming/outgoing connection and dims unrelated stages and arrows; arrow selection
   highlights both endpoints. Canvas clicks clear the trace.
 
+- 2026-08-13 — claude: re-audit after an agent proposed dropping `growth.*` as unused. **Root
+  cause found and fixed:** `growth_loop` was the only one of aidream `app.py`'s 138 routers never
+  mounted, so 3,209 rescued lines were unreachable — mounted now (13 routes, `/api/growth-loop/*`).
+  Four gaps closed against live scheduler evidence (`G-PUBLISH-CRAWL` 198 runs/0 failed,
+  `G-RESEARCH-TRIGGER` 394/2, `G-TEMPLATE`, `G-PLAN-STATUS`); the "`pipes.py` is a competing fork"
+  claim retracted as **false** — it is a pure resolver that refuses to execute by design. Doc set
+  collapsed five → four: `HANDOFF.md` deleted (its narrative status is what fed the drop
+  proposal), its durable content folded into the campaign PLAN. Settled decisions (pipe default,
+  1h escalation, explicit loop start) recorded in the system doc so no agent re-asks them.
 - 2026-08-12 — claude: full verification audit (five parallel auditors + live DB + deployment
   checks) after the first chip wave. Corrected all 20 gap entries against SHIPPED code rather than
   docs or commit messages, and added **rule 1b** to `loop-map.ts`: _"live" means SHIPPED_ — code in
@@ -74,8 +83,7 @@ Rules (also stated at the top of the file):
   200), server-rendered collections, the findings→assists ledger producer. Still true at audit
   time: the growth-loop router is unmounted, the pipe primitive's AI leg is unwired and forked, the
   human-escalation sweeper has no caller, and aidream's deployed server is 13 commits behind so
-  publish→crawl, templates, research triggers and GA4 are committed but not running. Handoff:
-  `common-docs/projects/growth-loop-gaps/HANDOFF.md`.
+  publish→crawl, templates, research triggers and GA4 are committed but not running.
 
 - 2026-08-11 — Codex: corrected the Measure pipe and `G-MEASURE-SCHEDULE` after PageSpeed gained a live resumable ten-minute coverage scheduler; the remaining scheduling gap is GA4 only.
 - 2026-08-09 — claude: feature created. Loop mapped from live code by six parallel explorers
