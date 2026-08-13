@@ -9,7 +9,8 @@
  *   2. An upsert for every SurfaceValue (incl. auto_context).
  *   3. An upsert for every SurfaceAgentRole.
  *   4. An upsert for every SurfaceWriteTarget.
- *   5. Per-surface ui_surface updates for url_pattern / intro /
+ *   5. An upsert for every SurfaceClientTool.
+ *   6. Per-surface ui_surface updates for url_pattern / intro /
  *      parent_surface_name — only for fields the manifest actually declares
  *      (code-first ownership never clears a DB-authored value the manifest
  *      doesn't claim).
@@ -79,6 +80,7 @@ function main() {
   const valueRows: string[] = [];
   const roleRows: string[] = [];
   const writeTargetRows: string[] = [];
+  const clientToolRows: string[] = [];
   const surfaceUpdates: string[] = [];
 
   for (const m of manifests) {
@@ -113,6 +115,16 @@ function main() {
         )}, ${sqlStringOrNull(t.updatesValue)}, ${sqlString(
           t.group ?? "general",
         )}, ${t.sortOrder ?? 1000}, ${sqlString(t.applyPolicy ?? "manual")})`,
+      );
+    }
+
+    for (const t of m.clientTools ?? []) {
+      clientToolRows.push(
+        `(${sqlString(m.surfaceName)}, ${sqlString(t.name)}, ${sqlString(
+          t.label,
+        )}, ${sqlString(t.description)}, ${sqlString(
+          JSON.stringify(t.inputSchema),
+        )}::jsonb, ${sqlString(t.mode ?? "ui")})`,
       );
     }
 
@@ -178,6 +190,17 @@ function main() {
     console.log(writeTargetRows.join(",\n"));
     console.log(
       `ON CONFLICT (surface_name, name) DO UPDATE SET label = EXCLUDED.label, description = EXCLUDED.description, value_type = EXCLUDED.value_type, mode = EXCLUDED.mode, updates_value = EXCLUDED.updates_value, group_key = EXCLUDED.group_key, sort_order = EXCLUDED.sort_order, apply_policy = EXCLUDED.apply_policy, updated_at = now();`,
+    );
+  }
+  if (clientToolRows.length > 0) {
+    console.log("");
+    console.log("-- Upsert all manifest client tools");
+    console.log(
+      `INSERT INTO ui.ui_surface_client_tool (surface_name, name, label, description, input_schema, mode) VALUES`,
+    );
+    console.log(clientToolRows.join(",\n"));
+    console.log(
+      `ON CONFLICT (surface_name, name) DO UPDATE SET label = EXCLUDED.label, description = EXCLUDED.description, input_schema = EXCLUDED.input_schema, mode = EXCLUDED.mode, updated_at = now();`,
     );
   }
   if (surfaceUpdates.length > 0) {

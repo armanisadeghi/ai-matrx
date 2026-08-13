@@ -4,6 +4,9 @@
  * - Diffs the code-side `SurfaceManifest` registry against
  *   `ui.ui_surface_value` (values) and `ui.ui_surface_agent_role`
  *   (agent roles).
+ * - Mirrors the manifest's WRITE half (`ui.ui_surface_write_target`) and
+ *   ACTION half (`ui.ui_surface_client_tool`) so the server — and every
+ *   server-side agent — can see what a surface accepts and what it can do.
  * - Flags config namespaces (manifest `configNamespaces` declarations and
  *   `ui.ui_surface_config` rows) with no handler in the namespace
  *   registry.
@@ -33,6 +36,7 @@ import type {
   BrokenMapping,
   SurfaceAgentRole,
   SurfaceAgentRoleDrift,
+  SurfaceClientTool,
   SurfaceDriftReport,
   SurfaceLabelDrift,
   SurfaceUrlPatternDrift,
@@ -59,6 +63,8 @@ type UiSurfaceAgentRoleInsert =
   Database["ui"]["Tables"]["ui_surface_agent_role"]["Insert"];
 type UiSurfaceWriteTargetInsert =
   Database["ui"]["Tables"]["ui_surface_write_target"]["Insert"];
+type UiSurfaceClientToolInsert =
+  Database["ui"]["Tables"]["ui_surface_client_tool"]["Insert"];
 
 const VALUE_TYPES = [
   "string",
@@ -202,6 +208,35 @@ function manifestWriteTargetRowFor(
     updates_value: t.updatesValue ?? null,
     group_key: t.group ?? "general",
     sort_order: t.sortOrder ?? 1000,
+  };
+}
+
+/**
+ * The ACTION half of the manifest, mirrored to the DB for the same reason the
+ * write half is: the inline tool specs are assembled on the CLIENT at launch,
+ * so without this row nothing server-side knows a surface offers tools at all.
+ *
+ * A row here means DECLARED, not live — the page must also be mounted with a
+ * registered handler before the tool is actually offered on a run. The
+ * mirror deliberately reports the declaration, since that is the stable,
+ * code-owned fact; liveness is a per-run property of the client.
+ *
+ * Code stays truth: the row is a projection, never edited by hand.
+ */
+function manifestClientToolRowFor(
+  surfaceName: string,
+  t: SurfaceClientTool,
+): UiSurfaceClientToolInsert {
+  return {
+    surface_name: surfaceName,
+    name: t.name,
+    label: t.label,
+    description: t.description,
+    input_schema: t.inputSchema as unknown as Json,
+    // Omitted mode reads as "ui" (ephemeral view state) — the safe reading,
+    // written explicitly so a tool never drifts into a stronger mode by
+    // omission. Matches the DB column default.
+    mode: t.mode ?? "ui",
   };
 }
 
@@ -636,6 +671,10 @@ export interface ApplyManifestSyncResult {
   writeTargetUpserted: { surfaceName: string; targetName: string }[];
   /** Write targets deleted (only when `deleteStale: true`). */
   writeTargetDeleted: { surfaceName: string; targetName: string }[];
+  /** Client tools inserted / updated (the manifest's action half). */
+  clientToolUpserted: { surfaceName: string; toolName: string }[];
+  /** Client tools deleted (only when `deleteStale: true`). */
+  clientToolDeleted: { surfaceName: string; toolName: string }[];
   /** Agent roles deleted (only when `deleteStale: true`). */
   roleDeleted: { surfaceName: string; roleName: string }[];
   /** `ui_surface_agent_pref` rows swept by FK CASCADE when stale roles were deleted. */
@@ -846,6 +885,30 @@ export async function applyManifestSync(
       writeTargetUpserted.push({
         surfaceName: row.surface_name,
         targetName: row.name,
+      });
+    }
+  }
+
+  // 3b3. Upsert all manifest CLIENT TOOLS — what agents may DO on each
+  //      surface. Same code-is-truth contract as values, roles, write targets.
+  const clientToolRows: UiSurfaceClientToolInsert[] = [];
+  for (const manifest of targetManifests) {
+    for (const t of manifest.clientTools ?? []) {
+      clientToolRows.push(manifestClientToolRowFor(manifest.surfaceName, t));
+    }
+  }
+  const clientToolUpserted: ApplyManifestSyncResult["clientToolUpserted"] = [];
+  if (clientToolRows.length > 0) {
+    const ctRes = await sb
+      .schema("ui")
+      .from("ui_surface_client_tool")
+      .upsert(clientToolRows, { onConflict: "surface_name,name" })
+      .select("surface_name, name");
+    if (ctRes.error) throw ctRes.error;
+    for (const row of ctRes.data ?? []) {
+      clientToolUpserted.push({
+        surfaceName: row.surface_name,
+        toolName: row.name,
       });
     }
   }
@@ -1066,6 +1129,43 @@ export async function applyManifestSync(
     }
   }
 
+  // 4d. Delete stale client tools — a tool removed from a manifest must stop
+  //     being advertised, or a server-side agent plans a call into a page that
+  //     can no longer service it.
+  const clientToolDeleted: ApplyManifestSyncResult["clientToolDeleted"] = [];
+  if (deleteStale) {
+    const allDbTools = await sb
+      .schema("ui")
+      .from("ui_surface_client_tool")
+      .select("surface_name, name");
+    if (allDbTools.error) throw allDbTools.error;
+
+    const managedForTools = new Set(targetManifests.map((m) => m.surfaceName));
+    const manifestToolKeys = new Set(
+      targetManifests.flatMap((m) =>
+        (m.clientTools ?? []).map((t) => `${m.surfaceName}::${t.name}`),
+      ),
+    );
+    const toolsToDelete = (allDbTools.data ?? []).filter(
+      (t) =>
+        managedForTools.has(t.surface_name) &&
+        !manifestToolKeys.has(`${t.surface_name}::${t.name}`),
+    );
+    for (const row of toolsToDelete) {
+      const del = await sb
+        .schema("ui")
+        .from("ui_surface_client_tool")
+        .delete()
+        .eq("surface_name", row.surface_name)
+        .eq("name", row.name);
+      if (del.error) throw del.error;
+      clientToolDeleted.push({
+        surfaceName: row.surface_name,
+        toolName: row.name,
+      });
+    }
+  }
+
   const driftAfter = await computeDriftReport(sb);
 
   return {
@@ -1075,6 +1175,8 @@ export async function applyManifestSync(
     roleDeleted,
     writeTargetUpserted,
     writeTargetDeleted,
+    clientToolUpserted,
+    clientToolDeleted,
     sweptPrefCount,
     skippedMissingSurface,
     urlPatternsUpdated,

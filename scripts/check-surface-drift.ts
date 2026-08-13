@@ -23,6 +23,14 @@
  *      always|never|user-choice.
  *   9. configNamespaces: namespace exists in the namespace registry and is
  *      unique per surface.
+ *  10. writeTargets: name regex + uniqueness, label/description present,
+ *      valueType/mode enums, updatesValue references a declared value,
+ *      group references a declared group.
+ *  11. clientTools: name regex, unique per surface AND globally across every
+ *      manifest (the tool namespace is per CONVERSATION, so a cross-surface
+ *      collision is a real defect), label/description present, optional mode
+ *      enum, and `inputSchema` conforming to the CustomToolInputSchema wire
+ *      shape `{type:"object", properties, required}`.
  *
  * The DB-side drift report (orphan rows, broken mappings) lives behind
  * /api/admin/surfaces/drift-report and isn't checked here — that requires
@@ -111,6 +119,13 @@ async function main() {
       group?: string;
       sortOrder?: number;
     }>;
+    clientTools?: ReadonlyArray<{
+      name: string;
+      label: string;
+      description: string;
+      inputSchema: unknown;
+      mode?: string;
+    }>;
   }> = mod.ALL_MANIFESTS;
 
   const nsMod = await import(
@@ -128,6 +143,11 @@ async function main() {
   const seenSurfaces = new Set<string>();
   // THE NAMING LAW — one canonical label per surface, unique within a client.
   const labelsByClient = new Map<string, Map<string, string>>();
+  // Client-tool names are GLOBAL, not per-surface: the tool namespace is per
+  // CONVERSATION, and two surfaces can be mounted at once (an overlay over its
+  // page). Track every declared name across all manifests so a cross-surface
+  // collision is caught here rather than silently dropped at injection time.
+  const clientToolOwners = new Map<string, string>();
 
   for (const m of ALL_MANIFESTS) {
     const label = m.label?.trim();
@@ -351,6 +371,131 @@ async function main() {
       }
     }
 
+    // 12. Client tools (the ACTION tier) — a declared tool goes on the wire as
+    // an inline tool spec, so a defect here is invisible until an agent tries
+    // to call it. Same naming regime as values/write targets, plus the two
+    // things only this tier has: a GLOBALLY unique name (the tool namespace is
+    // per conversation, not per surface) and a well-formed `inputSchema`.
+    const seenClientTools = new Set<string>();
+    for (const t of m.clientTools ?? []) {
+      const where = `Surface "${m.surfaceName}" client tool "${t.name}"`;
+      if (seenClientTools.has(t.name)) {
+        errors.push(
+          `Surface "${m.surfaceName}" declares duplicate client tool "${t.name}" — remove one; a tool name may appear once per surface.`,
+        );
+      }
+      seenClientTools.add(t.name);
+
+      const owner = clientToolOwners.get(t.name);
+      if (owner && owner !== m.surfaceName) {
+        errors.push(
+          `Client tool name "${t.name}" is declared by BOTH "${owner}" and "${m.surfaceName}" — tool names are global per conversation, so prefix each with its surface domain (e.g. "${m.surfaceName.split("/").pop()?.replace(/-/g, "_")}_${t.name}") to make it unique.`,
+        );
+      } else if (!owner) {
+        clientToolOwners.set(t.name, m.surfaceName);
+      }
+
+      if (!NAME_RE.test(t.name)) {
+        errors.push(
+          `${where} doesn't match /^[a-z][a-z0-9_]*$/ — rename it to lower_snake_case (the server's tool-name rule and the DB CHECK constraint both reject anything else).`,
+        );
+      }
+      if (t.name.length > 64) {
+        errors.push(
+          `${where} is ${t.name.length} characters — the server caps tool names at 64. Shorten it.`,
+        );
+      }
+      if (!t.label?.trim()) {
+        errors.push(
+          `${where} has no label — add the ONE canonical human label (THE NAMING LAW).`,
+        );
+      }
+      if (!t.description?.trim()) {
+        errors.push(
+          `${where} has no description — add the model-facing prose telling the agent when to call it and what the result means.`,
+        );
+      }
+      if (t.mode !== undefined && !ALLOWED_WRITE_MODES.has(t.mode)) {
+        errors.push(
+          `${where} has invalid mode "${t.mode}" (expected "draft" | "entity" | "ui", or omit it for "ui").`,
+        );
+      }
+
+      // `inputSchema` is the generated CustomToolInputSchema wire shape —
+      // `{type:"object", properties, required}`. Anything else is rejected by
+      // the server's schema validation on the inline spec.
+      const schema = t.inputSchema;
+      if (
+        typeof schema !== "object" ||
+        schema === null ||
+        Array.isArray(schema)
+      ) {
+        errors.push(
+          `${where} has an invalid inputSchema — it must be an object of the shape { type: "object", properties: {...}, required: [...] }.`,
+        );
+      } else {
+        const s = schema as {
+          type?: unknown;
+          properties?: unknown;
+          required?: unknown;
+        };
+        if (s.type !== "object") {
+          errors.push(
+            `${where} inputSchema has type ${JSON.stringify(s.type)} — set it to "object"; that is the only shape the wire contract accepts.`,
+          );
+        }
+        let propertyNames: Set<string> | null = null;
+        if (s.properties !== undefined) {
+          if (
+            typeof s.properties !== "object" ||
+            s.properties === null ||
+            Array.isArray(s.properties)
+          ) {
+            errors.push(
+              `${where} inputSchema.properties must be an object keyed by argument name (use {} for a tool that takes no arguments).`,
+            );
+          } else {
+            const props = s.properties as Record<string, unknown>;
+            propertyNames = new Set(Object.keys(props));
+            for (const [propName, spec] of Object.entries(props)) {
+              if (
+                typeof spec !== "object" ||
+                spec === null ||
+                Array.isArray(spec)
+              ) {
+                errors.push(
+                  `${where} inputSchema property "${propName}" must be a JSON Schema object (e.g. { type: "string", description: "..." }).`,
+                );
+              }
+            }
+          }
+        }
+        if (s.required !== undefined) {
+          if (
+            !Array.isArray(s.required) ||
+            s.required.some((entry) => typeof entry !== "string")
+          ) {
+            errors.push(
+              `${where} inputSchema.required must be an array of argument-name strings.`,
+            );
+          } else if (propertyNames) {
+            const undeclared = (s.required as string[]).filter(
+              (entry) => !propertyNames.has(entry),
+            );
+            if (undeclared.length > 0) {
+              errors.push(
+                `${where} inputSchema requires argument(s) it never declares: ${undeclared.join(", ")}. Add them to inputSchema.properties or drop them from required.`,
+              );
+            }
+          } else if ((s.required as string[]).length > 0) {
+            errors.push(
+              `${where} inputSchema has required arguments but no properties block — declare each required argument in inputSchema.properties.`,
+            );
+          }
+        }
+      }
+    }
+
     // 10. Generic baseline coverage (the loud second layer).
     // `registry.ts` injects the baselines into every manifest; this canary
     // screams if that injection ever breaks or a hand-built manifest list
@@ -379,8 +524,16 @@ async function main() {
       (sum, m) => sum + m.values.length,
       0,
     );
+    const totalWriteTargets = ALL_MANIFESTS.reduce(
+      (sum, m) => sum + (m.writeTargets?.length ?? 0),
+      0,
+    );
+    const totalClientTools = ALL_MANIFESTS.reduce(
+      (sum, m) => sum + (m.clientTools?.length ?? 0),
+      0,
+    );
     console.log(
-      `Surface manifests OK: ${ALL_MANIFESTS.length} surface${ALL_MANIFESTS.length === 1 ? "" : "s"}, ${totalValues} value${totalValues === 1 ? "" : "s"} declared.`,
+      `Surface manifests OK: ${ALL_MANIFESTS.length} surface${ALL_MANIFESTS.length === 1 ? "" : "s"}, ${totalValues} value${totalValues === 1 ? "" : "s"}, ${totalWriteTargets} write target${totalWriteTargets === 1 ? "" : "s"}, ${totalClientTools} client tool${totalClientTools === 1 ? "" : "s"} declared.`,
     );
     process.exit(0);
   }

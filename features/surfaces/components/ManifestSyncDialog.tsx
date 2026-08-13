@@ -43,12 +43,14 @@ export function ManifestSyncDialog({ onClose, onSynced }: Props) {
         res.roleDeleted.length +
         res.writeTargetUpserted.length +
         res.writeTargetDeleted.length +
+        res.clientToolUpserted.length +
+        res.clientToolDeleted.length +
         res.urlPatternsUpdated.length;
       if (changeCount === 0) {
         toast.success("Already in sync — no changes applied.");
       } else {
         toast.success(
-          `Sync applied: ${res.upserted.length + res.roleUpserted.length + res.writeTargetUpserted.length} upserted, ${res.deleted.length + res.roleDeleted.length + res.writeTargetDeleted.length} deleted`,
+          `Sync applied: ${res.upserted.length + res.roleUpserted.length + res.writeTargetUpserted.length + res.clientToolUpserted.length} upserted, ${res.deleted.length + res.roleDeleted.length + res.writeTargetDeleted.length + res.clientToolDeleted.length} deleted`,
         );
       }
     } catch (e) {
@@ -149,6 +151,18 @@ export function ManifestSyncDialog({ onClose, onSynced }: Props) {
               </span>
               <span className="tabular-nums font-mono">
                 {result.writeTargetDeleted.length}
+              </span>
+              <span className="text-muted-foreground">
+                Client tools upserted:
+              </span>
+              <span className="tabular-nums font-mono">
+                {result.clientToolUpserted.length}
+              </span>
+              <span className="text-muted-foreground">
+                Client tools deleted:
+              </span>
+              <span className="tabular-nums font-mono">
+                {result.clientToolDeleted.length}
               </span>
               <span className="text-muted-foreground">Agent prefs swept:</span>
               <span className="tabular-nums font-mono">

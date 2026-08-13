@@ -50967,6 +50967,47 @@ export type Database = {
           },
         ]
       }
+      ui_surface_client_tool: {
+        Row: {
+          created_at: string
+          description: string
+          input_schema: Json
+          label: string
+          mode: string
+          name: string
+          surface_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          input_schema?: Json
+          label?: string
+          mode?: string
+          name: string
+          surface_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          input_schema?: Json
+          label?: string
+          mode?: string
+          name?: string
+          surface_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ui_surface_client_tool_surface_name_fkey"
+            columns: ["surface_name"]
+            isOneToOne: false
+            referencedRelation: "ui_surface"
+            referencedColumns: ["name"]
+          },
+        ]
+      }
       ui_surface_config: {
         Row: {
           config: Json

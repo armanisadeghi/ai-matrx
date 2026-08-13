@@ -299,7 +299,9 @@ export type SurfaceClientToolInputSchema =
  * client-delegated tool the server has no registry entry for), so the agent
  * can call it; the `tool_delegated` event routes back to the page's handler.
  *
- * Code-only (like `writeTargets` v1): not yet mirrored to the DB.
+ * Mirrored to `ui.ui_surface_client_tool` by `manifest-sync.service.ts`, so
+ * server-side agents can see a surface's action vocabulary (the inline specs
+ * themselves are assembled on the client at launch). Code stays truth.
  */
 export interface SurfaceClientTool {
   /**
@@ -431,8 +433,12 @@ export interface SurfaceManifest {
    * specs at launch and executed on the page via the surface client-tool
    * runtime (`runtime/surface-client-tools.ts`). A declared tool with no
    * registered handler is NOT offered to the agent (and a delegated call to
-   * one fails LOUDLY) — never silently. Code-only for now (not mirrored to
-   * the DB).
+   * one fails LOUDLY) — never silently. Mirrored to
+   * `ui.ui_surface_client_tool`; a row there means DECLARED, not live.
+   *
+   * Tool names are GLOBAL per conversation, not per surface —
+   * `check:surface-drift` enforces cross-surface uniqueness, because a
+   * collision with an already-present spec is silently skipped at injection.
    */
   clientTools?: readonly SurfaceClientTool[];
   /**
