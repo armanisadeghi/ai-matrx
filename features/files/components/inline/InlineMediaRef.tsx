@@ -40,7 +40,7 @@ import {
   VideoOff,
   VolumeX,
 } from "lucide-react";
-import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
+import { useFileAs } from "@/features/files/handler/hooks/useFileAs";
 import { useOutputSinkRef } from "@/features/audio/useOutputSinkRef";
 import { useMediaElementPlaybackSession } from "@/features/audio/session/useMediaElementPlaybackSession";
 import {
@@ -567,7 +567,13 @@ export function InlineMediaRef({
   className,
 }: InlineMediaRefProps) {
   const source = useMemo(() => toFileSource(ref), [ref]);
-  const resolvedUrl = useFileSrc(source);
+  // Canvas-capable consumers need a URL whose bytes remain readable after
+  // load. Let the universal handler select its CORS-safe transport instead
+  // of leaking a signed/CDN URL decision into each canvas feature.
+  const { result: resolvedUrl } = useFileAs(
+    source,
+    crossOrigin ? { kind: "fetchable_url" } : { kind: "html_src" },
+  );
   // Routes <audio>/<video> to the user's chosen output device (setSinkId) and
   // re-applies on device change. No-op on Safari. Forwards to mediaElementRef.
   const outputSinkRef = useOutputSinkRef(mediaElementRef);
@@ -630,7 +636,7 @@ export function InlineMediaRef({
       >,
     ) => {
       // Owned file (file_id source) → re-mint before surfacing an error.
-      if (sourceFileId && remintAttempts.current < 2) {
+      if (sourceFileId && !crossOrigin && remintAttempts.current < 2) {
         remintAttempts.current += 1;
         console.warn(
           "[file-handler] inline media failed to load — re-minting owned " +
@@ -653,7 +659,7 @@ export function InlineMediaRef({
       setHasLoadError(true);
       onError?.(event);
     },
-    [onError, sourceFileId],
+    [crossOrigin, onError, sourceFileId],
   );
 
   const defaultIcon =

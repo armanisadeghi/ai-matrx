@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { toast } from "@/lib/toast";
 import {
   MultiFileUpload,
@@ -12,7 +18,7 @@ import {
 } from "@/utils/file-operations/constants";
 import { composeUploadFolderPath } from "@/features/files/handler/utils/upload-folder-path";
 import type { Visibility } from "@/features/files/types";
-import type { NormalizedFile } from "@/features/files/handler/types";
+import type { UploadedNormalizedFile } from "@/features/files/handler/types";
 import type { StorageMetadata } from "@/utils/file-operations/types";
 import { UploadedFileResult } from "./types";
 
@@ -55,7 +61,7 @@ function synthesizeMetadata(file: File): StorageMetadata {
 }
 
 function normalizedToUploadResult(
-  normalized: NormalizedFile,
+  normalized: UploadedNormalizedFile,
   file: File,
 ): UploadedFileResult {
   if (!normalized.url) {
@@ -146,7 +152,8 @@ export const FileUploadWithStorage: React.FC<FileUploadWithStorageProps> = ({
             );
             results.push(normalizedToUploadResult(normalized, file));
           } catch (err) {
-            const message = err instanceof Error ? err.message : "Upload failed";
+            const message =
+              err instanceof Error ? err.message : "Upload failed";
             lastErrorRef.current = message;
             console.error("FileUploadWithStorage upload failed:", message);
           }

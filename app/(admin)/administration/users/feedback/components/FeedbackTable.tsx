@@ -95,6 +95,7 @@ import { cn } from "@/lib/utils";
 import { idMatchesQuery } from "@/utils/search-scoring";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { getFeedbackScreenshotRefs } from "@/features/feedback/screenshot-refs";
 
 const statusOptions: { value: FeedbackStatus; label: string; color: string }[] =
   [
@@ -157,11 +158,7 @@ const feedbackTypeIcons: Record<FeedbackType, React.ReactNode> = {
 };
 
 type SortField =
-  | "created_at"
-  | "status"
-  | "feedback_type"
-  | "username"
-  | "work_priority";
+  "created_at" | "status" | "feedback_type" | "username" | "work_priority";
 type SortDirection = "asc" | "desc";
 
 // Mutually exclusive pipeline stages
@@ -1295,9 +1292,7 @@ export default function FeedbackTable() {
                   size="icon"
                   label="Feedback list"
                   human={() =>
-                    filteredAndSortedFeedback
-                      .map(feedbackRowSummary)
-                      .join("\n")
+                    filteredAndSortedFeedback.map(feedbackRowSummary).join("\n")
                   }
                   json={() => filteredAndSortedFeedback}
                   agent={() => ({
@@ -1322,7 +1317,7 @@ export default function FeedbackTable() {
                       build: () => ({
                         kind: "feedback-items",
                         location:
-                      "AI Matrx Admin — Feedback Management · Feedback tab (/administration/users/feedback)",
+                          "AI Matrx Admin — Feedback Management · Feedback tab (/administration/users/feedback)",
                         description:
                           "Compact triage digest of all user-feedback records.",
                         data: feedback.map(feedbackBrief),
@@ -1336,7 +1331,7 @@ export default function FeedbackTable() {
                       build: () => ({
                         kind: "feedback-items",
                         location:
-                      "AI Matrx Admin — Feedback Management · Feedback tab (/administration/users/feedback)",
+                          "AI Matrx Admin — Feedback Management · Feedback tab (/administration/users/feedback)",
                         description:
                           "Compact digest of the currently filtered feedback view.",
                         data: filteredAndSortedFeedback.map(feedbackBrief),
@@ -1508,9 +1503,10 @@ export default function FeedbackTable() {
                             </span>
                           </>
                         )}
-                        {!loadFailed && (activeStage === "done" || activeStage === "all") && (
-                          <span className="text-sm">No items found</span>
-                        )}
+                        {!loadFailed &&
+                          (activeStage === "done" || activeStage === "all") && (
+                            <span className="text-sm">No items found</span>
+                          )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -1751,16 +1747,19 @@ export default function FeedbackTable() {
                                 <Brain className="w-3 h-3 mr-1 text-indigo-600 dark:text-indigo-400" />
                               </Badge>
                             )}
-                            {item.image_urls && item.image_urls.length > 0 && (
+                            {getFeedbackScreenshotRefs(item).length > 0 && (
                               <button
                                 onClick={(e) =>
-                                  handleViewImages(e, item.image_urls)
+                                  handleViewImages(
+                                    e,
+                                    getFeedbackScreenshotRefs(item),
+                                  )
                                 }
                                 className="flex-shrink-0 flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors text-xs"
                                 title="View screenshots"
                               >
                                 <ImageIcon className="h-3 w-3" />
-                                {item.image_urls.length}
+                                {getFeedbackScreenshotRefs(item).length}
                               </button>
                             )}
                           </div>
@@ -1812,7 +1811,9 @@ export default function FeedbackTable() {
                               return (
                                 <span className="inline-flex max-w-[150px] items-center gap-1">
                                   <button
-                                    onClick={() => setFilterAssignee(assignedTo)}
+                                    onClick={() =>
+                                      setFilterAssignee(assignedTo)
+                                    }
                                     className="inline-flex min-w-0 items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded border bg-primary/5 text-primary border-primary/20 hover:bg-primary/10 transition-colors"
                                     title={`Filter by ${label}`}
                                   >

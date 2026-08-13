@@ -34,7 +34,7 @@ import {
   type WindowPanelProps,
 } from "@/features/window-panels/WindowPanel";
 import { submitFeedback, getUserFeedback } from "@/actions/feedback.actions";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { MediaAttachmentThumbnail } from "@/features/files/components/inline/MediaAttachmentThumbnail";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import {
   FileUploadWithStorage,
@@ -74,7 +74,7 @@ type AttachmentSlot =
       status: "ready";
       id: string;
       url: string;
-      fileId?: string;
+      fileId: string;
       filename?: string;
     };
 
@@ -121,8 +121,8 @@ function buildAgentPrompt(
   const date = new Date(item.created_at).toLocaleString();
 
   const imageSection =
-    item.image_urls && item.image_urls.length > 0
-      ? `\n## Screenshots\n${item.image_urls.map((url, i) => `${i + 1}. ${url}`).join("\n")}\n`
+    item.image_file_ids && item.image_file_ids.length > 0
+      ? `\n## Screenshots (file IDs)\n${item.image_file_ids.map((fileId, i) => `${i + 1}. ${fileId}`).join("\n")}\n`
       : "";
 
   return `\
@@ -327,13 +327,14 @@ function useFeedbackForm({ onClose }: { onClose: () => void }) {
     };
   }, [isAdmin]);
 
-  // Derive the final URL list for submission
-  const uploadedImages = attachments
+  // Persist owned identity. URLs are derived views and never cross this
+  // storage boundary for newly uploaded feedback.
+  const uploadedImageFileIds = attachments
     .filter(
       (a): a is Extract<AttachmentSlot, { status: "ready" }> =>
         a.status === "ready",
     )
-    .map((a) => a.url);
+    .map((a) => a.fileId);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -363,7 +364,7 @@ function useFeedbackForm({ onClose }: { onClose: () => void }) {
   const resolveSlot = useCallback(
     (
       id: string,
-      result: { url: string; fileId?: string; filename?: string },
+      result: { url: string; fileId: string; filename?: string },
     ) => {
       setAttachments((prev) =>
         prev.map((attachment) =>
@@ -534,12 +535,12 @@ function useFeedbackForm({ onClose }: { onClose: () => void }) {
   const annotateAttachment = useCallback(
     (slot: Extract<AttachmentSlot, { status: "ready" }>) => {
       openImageAnnotation({
-        sourceFileId: slot.fileId ?? null,
-        sourceUrl: slot.fileId ? null : slot.url,
+        sourceFileId: slot.fileId,
+        sourceUrl: null,
         sourceFilename: slot.filename ?? null,
         defaultFolder: CloudFolders.FEEDBACK_IMAGES,
         title: "Mark up feedback screenshot",
-        overwriteSource: Boolean(slot.fileId),
+        overwriteSource: true,
         onSaved: ({ result }) => {
           resolveSlot(slot.id, {
             url: result.shareUrl,
@@ -633,7 +634,8 @@ function useFeedbackForm({ onClose }: { onClose: () => void }) {
         feedback_type: feedbackType,
         route: pathname,
         description: description.trim(),
-        image_urls: uploadedImages.length > 0 ? uploadedImages : undefined,
+        image_file_ids:
+          uploadedImageFileIds.length > 0 ? uploadedImageFileIds : undefined,
         // Admin-only fields. Server silently drops these for non-admins, but we
         // also skip sending them entirely when the caller isn't an admin so
         // the wire payload stays clean.
@@ -680,7 +682,7 @@ function useFeedbackForm({ onClose }: { onClose: () => void }) {
     feedbackType,
     pathname,
     isSubmitting,
-    uploadedImages,
+    uploadedImageFileIds,
     isAdmin,
     categoryId,
     assigneeId,
@@ -828,7 +830,7 @@ function useFeedbackForm({ onClose }: { onClose: () => void }) {
     assignableAdmins,
     isLoadingAdminOptions,
     // derived
-    uploadedImages,
+    uploadedImageFileIds,
     textareaRef,
     isCapturing,
     // surface seam
@@ -880,7 +882,6 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
     categories,
     assignableAdmins,
     isLoadingAdminOptions,
-    uploadedImages,
     textareaRef,
     isCapturing,
     handlePasteButton,
@@ -1182,10 +1183,24 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
         {attachments.length > 0 && (
           <div className="flex flex-wrap gap-2 pt-1">
             {attachments.map((slot) => (
-              <AttachmentThumbnail
+              <MediaAttachmentThumbnail
                 key={slot.id}
-                slot={slot}
-                onAnnotate={() => {
+                mediaRef={slot.status === "ready" ? slot.fileId : null}
+                status={slot.status}
+                title={
+                  slot.status === "ready"
+                    ? (slot.filename ?? "Feedback screenshot")
+                    : "Feedback screenshot"
+                }
+                openLabel="Mark up attachment"
+                removeLabel="Remove attachment"
+                readyIcon={
+                  <PenLine className="h-4 w-4 text-white drop-shadow" />
+                }
+                errorMessage={
+                  slot.status === "error" ? slot.message : undefined
+                }
+                onOpen={() => {
                   if (slot.status === "ready") annotateAttachment(slot);
                 }}
                 onRemove={() => removeAttachment(slot.id)}
@@ -1224,78 +1239,6 @@ function StatPill({
         {value}
       </span>
       <span className="text-[10px] text-muted-foreground">{label}</span>
-    </div>
-  );
-}
-
-function AttachmentThumbnail({
-  slot,
-  onAnnotate,
-  onRemove,
-}: {
-  slot: AttachmentSlot;
-  onAnnotate: () => void;
-  onRemove: () => void;
-}) {
-  const isReady = slot.status === "ready";
-  const isPending = slot.status === "pending";
-  const isError = slot.status === "error";
-
-  return (
-    <div className="relative group w-14 h-14 rounded-md overflow-hidden border border-border bg-muted shrink-0">
-      {isPending && (
-        <div className="flex flex-col items-center justify-center w-full h-full gap-1 bg-muted animate-pulse">
-          <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />
-          <span className="text-[9px] text-muted-foreground leading-none">
-            saving…
-          </span>
-        </div>
-      )}
-
-      {isError && (
-        <div
-          className="flex flex-col items-center justify-center w-full h-full gap-1 bg-destructive/10 cursor-default"
-          title={slot.message}
-        >
-          <AlertCircle className="w-4 h-4 text-destructive" />
-          <span className="text-[9px] text-destructive leading-none">
-            failed
-          </span>
-        </div>
-      )}
-
-      {isReady && (
-        <button
-          type="button"
-          onClick={onAnnotate}
-          className="block w-full h-full"
-          aria-label="Mark up attachment"
-          title="Click to draw, circle, or write on this screenshot"
-        >
-          <InlineMediaRef
-            ref={slot.url ?? null}
-            size="fill"
-            fit="cover"
-            rounded="none"
-            fallback={null}
-            className="group-hover:brightness-90 transition-[filter]"
-            alt="Attachment"
-          />
-          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
-            <PenLine className="w-4 h-4 text-white drop-shadow" />
-          </div>
-        </button>
-      )}
-
-      {/* Remove button — always shown on hover */}
-      <button
-        type="button"
-        onClick={onRemove}
-        className="absolute top-0 right-0 p-0.5 bg-black/60 text-white rounded-bl-md opacity-0 group-hover:opacity-100 transition-opacity z-10"
-        aria-label="Remove attachment"
-      >
-        <X className="w-3 h-3" />
-      </button>
     </div>
   );
 }

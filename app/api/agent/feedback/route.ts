@@ -41,7 +41,7 @@ const ACTION_HANDLERS: Record<string, ActionHandler> = {
       description,
       route,
       priority,
-      screenshot_urls,
+      screenshot_file_ids,
     } = body as {
       agent_id?: string;
       agent_name?: string;
@@ -49,7 +49,7 @@ const ACTION_HANDLERS: Record<string, ActionHandler> = {
       description: string;
       route?: string;
       priority?: FeedbackPriority;
-      screenshot_urls?: string[];
+      screenshot_file_ids?: string[];
     };
 
     if (!description) {
@@ -61,7 +61,7 @@ const ACTION_HANDLERS: Record<string, ActionHandler> = {
       description,
       route,
       priority,
-      image_urls: screenshot_urls,
+      image_file_ids: screenshot_file_ids,
     });
   },
 

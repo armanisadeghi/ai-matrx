@@ -68,7 +68,7 @@ The API key is the **entire** security boundary. The service layer deliberately 
 
 **Database tables (Supabase)**
 
-- `users.user_feedback` — core items. `user_id` is a real `auth.users.id`; external no-session submissions use `claude-01@aimatrx.com`, while optional legacy `agent_id` is metadata only. `image_urls` stores durable public screenshots.
+- `users.user_feedback` — core items. `user_id` is a real `auth.users.id`; external no-session submissions use `claude-01@aimatrx.com`, while optional legacy `agent_id` is metadata only. `image_file_ids` stores canonical Files identities; `image_urls` is historical read-only data.
 - `public.feedback_comments` — internal comments per item; read via `get_feedback_comments`, written via `add_feedback_comment`.
 - `platform.categories` — canonical category registry referenced by `category_id`.
 
@@ -104,9 +104,9 @@ The common call is `feedback({ description: "..." })`: action defaults to
 
 | Action                        |                          ID needed? | Purpose                                                                                      |
 | ----------------------------- | ----------------------------------: | -------------------------------------------------------------------------------------------- |
-| `report`                      |                                  No | Create an item; optional type, route, priority, display name, and durable `screenshot_urls`. |
+| `report`                      |                                  No | Create an item; optional type, route, priority, display name, and `screenshot_file_ids`.     |
 | `list` / `search`             |                                  No | Newest-first discovery by text, status, priority, or type. Returns item IDs and screenshots. |
-| `get`                         |                                 Yes | Full item, including `image_urls`.                                                           |
+| `get`                         |                                 Yes | Full item, including `image_file_ids` and historical `image_urls`.                           |
 | `update`                      |                                 Yes | Typed patch: status, priority, screenshots, triage, resolution, testing, or decision fields. |
 | `comment` / `comments`        |                                 Yes | Append/read the internal thread.                                                             |
 | `triage` / `queue` / `rework` | Item actions need ID; queues do not | Drive analysis and work discovery through existing RPCs.                                     |
@@ -118,7 +118,7 @@ no agent/user ID parameter on the preferred tool.
 
 **Screenshot rule:** accept only public HTTPS URLs that will remain valid.
 Signed S3 URLs and `server.app.matrxserver.com/share/...` URLs are rejected.
-Every item read returns stored screenshots as `image_urls`.
+Every item read returns stored screenshots as canonical `image_file_ids`; historical rows may also carry read-only `image_urls`.
 
 ### Compatibility tools
 
@@ -127,7 +127,7 @@ now needs only `description`; `agent_id` and `agent_name` are optional.
 
 | #   | MCP tool               | REST action    | Purpose                                                                                                                                      | Required params                                                                                                     |
 | --- | ---------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| 1   | `submit_feedback`      | `submit`       | Compatibility report alias                                                                                                                   | `description`. Optional: `agent_id`, `agent_name`, `feedback_type`, `route`, `priority`, `screenshot_urls`.         |
+| 1   | `submit_feedback`      | `submit`       | Compatibility report alias                                                                                                                   | `description`. Optional: `agent_id`, `agent_name`, `feedback_type`, `route`, `priority`, `screenshot_file_ids`.     |
 | 2   | `get_feedback_item`    | `get_item`     | Fetch a single item by ID                                                                                                                    | `feedback_id`                                                                                                       |
 | 3   | `get_triage_batch`     | `get_batch`    | Batch of untriaged items + pipeline counts + previews                                                                                        | — (optional `batch_size`, default 3, max 10)                                                                        |
 | 4   | `get_work_queue`       | `get_queue`    | Approved items ordered by `work_priority`                                                                                                    | —                                                                                                                   |

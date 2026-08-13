@@ -452,6 +452,7 @@ Same wire consumer in `ImageAssetUploader`'s Generate tab.
   (it was written out in three places). Live-verified with a real Badass Agent
   run on `/images/generate` — see the surfaces FEATURE.md entry of the same
   date.
+- **2026-08-12** — Annotation sources now stay in the canonical file language. `AnnotateModeShell` renders cloud-owned sources through `InlineMediaRef` using the `file_id` and its canvas-safe `fetchable_url` lane, rather than resolving an ID and then hand-rendering the resulting URL in a raw image tag. The shared markup WindowPanel therefore receives the same durable identity as `/images/annotate`, while URL-only input remains available only for genuinely external/local sources.
 - **2026-08-08** — Added `preserveSource` to `ModeShellProps` +
   `EditModeShell`: derivative-only editing (save-as-new-file default, no
   version writes onto the source, AI ops chain on their result rows, versions

@@ -32,6 +32,7 @@ import type { ModeShellProps } from "../shared/types";
 import { detectFaces } from "../../api/python";
 import { IMAGE_STUDIO_BACKEND_CAPABILITIES } from "../../constants/backend-capabilities";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 
 const ANNOTATE_FOLDER = CloudFolders.IMAGES_ANNOTATED;
 
@@ -50,6 +51,7 @@ export function AnnotateModeShell({
   onCancel,
 }: ModeShellProps) {
   const { url, filename } = useImageSource(source);
+  const sourceRef = source?.kind === "cloudFileId" ? source.cloudFileId : url;
   const imgRef = useRef<HTMLImageElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const markerAreaRef = useRef<unknown>(null);
@@ -170,7 +172,7 @@ export function AnnotateModeShell({
     }
   };
 
-  if (!url) {
+  if (!sourceRef) {
     return (
       <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
         No image loaded.
@@ -198,88 +200,90 @@ export function AnnotateModeShell({
       surfaceName={IMAGE_ANNOTATE_SURFACE_NAME}
       getScope={getAnnotateScope}
     >
-    <div className="h-full min-h-0 flex flex-col">
-      <div className="flex items-center gap-1.5 overflow-x-auto border-b border-border bg-card/40 px-3 py-1.5 shrink-0">
-        <span className="text-xs text-muted-foreground mr-1 flex items-center gap-1">
-          <Zap className="h-3 w-3" />
-          AI assist
-        </span>
+      <div className="h-full min-h-0 flex flex-col">
+        <div className="flex items-center gap-1.5 overflow-x-auto border-b border-border bg-card/40 px-3 py-1.5 shrink-0">
+          <span className="text-xs text-muted-foreground mr-1 flex items-center gap-1">
+            <Zap className="h-3 w-3" />
+            AI assist
+          </span>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-8 shrink-0"
-          onClick={handleSuggestAnnotations}
-          disabled={aiBusy !== null}
-        >
-          <Zap className="h-3.5 w-3.5 mr-1.5" />
-          Suggest annotations
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-8 shrink-0"
-          onClick={handleRedact}
-          disabled={aiBusy !== null}
-        >
-          <ShieldAlert className="h-3.5 w-3.5 mr-1.5" />
-          Redact PII
-        </Button>
-
-        {IMAGE_STUDIO_BACKEND_CAPABILITIES.faceDetection && (
           <Button
             variant="ghost"
             size="sm"
             className="h-8 shrink-0"
-            onClick={handleBlurFaces}
+            onClick={handleSuggestAnnotations}
             disabled={aiBusy !== null}
           >
-            {aiBusy === "faces" ? (
-              <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-            ) : (
-              <ShieldAlert className="h-3.5 w-3.5 mr-1.5" />
-            )}
-            Detect faces
+            <Zap className="h-3.5 w-3.5 mr-1.5" />
+            Suggest annotations
           </Button>
-        )}
 
-        <div className="flex-1" />
-
-        {presentation === "modal" && (
           <Button
             variant="ghost"
             size="sm"
             className="h-8 shrink-0"
-            onClick={onCancel}
-            disabled={saving}
+            onClick={handleRedact}
+            disabled={aiBusy !== null}
           >
-            <X className="h-3.5 w-3.5 mr-1.5" />
-            Cancel
+            <ShieldAlert className="h-3.5 w-3.5 mr-1.5" />
+            Redact PII
           </Button>
-        )}
-      </div>
 
-      <div ref={containerRef} className="flex-1 min-h-0 relative bg-muted/30">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          ref={imgRef}
-          src={url}
-          alt={filename}
-          onLoad={handleImgLoad}
-          crossOrigin="anonymous"
-          className="absolute inset-0 m-auto max-h-full max-w-full"
-        />
-        {saving && (
-          <div className="absolute inset-0 bg-background/60 flex items-center justify-center z-50">
-            <div className="flex items-center gap-2 px-4 py-2 rounded-md bg-card border border-border shadow">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span className="text-sm">Saving annotated image...</span>
+          {IMAGE_STUDIO_BACKEND_CAPABILITIES.faceDetection && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 shrink-0"
+              onClick={handleBlurFaces}
+              disabled={aiBusy !== null}
+            >
+              {aiBusy === "faces" ? (
+                <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+              ) : (
+                <ShieldAlert className="h-3.5 w-3.5 mr-1.5" />
+              )}
+              Detect faces
+            </Button>
+          )}
+
+          <div className="flex-1" />
+
+          {presentation === "modal" && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 shrink-0"
+              onClick={onCancel}
+              disabled={saving}
+            >
+              <X className="h-3.5 w-3.5 mr-1.5" />
+              Cancel
+            </Button>
+          )}
+        </div>
+
+        <div ref={containerRef} className="flex-1 min-h-0 relative bg-muted/30">
+          <InlineMediaRef
+            ref={sourceRef}
+            mediaElementRef={imgRef}
+            size="fill"
+            fit="contain"
+            rounded="none"
+            alt={filename}
+            onLoad={handleImgLoad}
+            crossOrigin="anonymous"
+            className="absolute inset-0 m-auto max-h-full max-w-full"
+          />
+          {saving && (
+            <div className="absolute inset-0 bg-background/60 flex items-center justify-center z-50">
+              <div className="flex items-center gap-2 px-4 py-2 rounded-md bg-card border border-border shadow">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-sm">Saving annotated image...</span>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-    </div>
     </SurfaceRuntimeProvider>
   );
 }
