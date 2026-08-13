@@ -23,14 +23,23 @@ The failure classes are:
 
 | Command | Effect |
 |---|---|
-| `pnpm preview:start` | Reuse any running dev server; otherwise launch the tracked shared preview on port 3001 with `NEXT_DISTDIR=.next-preview`. |
-| `pnpm preview:status` | Show server pid, RAM, uptime, port, distdir, tracking state, and build-dir disk use. |
-| `pnpm preview:stop` | Stop the tracked shared preview; preserve its build cache for the next run. |
+| `pnpm preview:start` | Reuse the preview only when this exact checkout owns it; otherwise fail loudly so another worktree's code can never be mistaken for the diff under test. |
+| `pnpm preview:status` | Show the machine-wide lease owner, pid, port, and process-group RSS from every worktree. |
+| `pnpm preview:stop` | Stop the preview only from its owning checkout; preserve its build cache for the next run. |
 
-`scripts/agent-dev-server.sh` owns this lifecycle. It is provider-neutral:
+`scripts/agent-dev-server.sh` owns this lifecycle. Its state and start lock live
+in the user's machine-wide temporary directory, not inside a checkout, so two
+worktrees cannot both acquire the slot. It is provider-neutral:
 Claude and Codex start the same process, then open `http://localhost:3001` in
-their own in-app browser. State lives in `.matrx/dev-sessions/` (gitignored),
-so `scripts/dev-cleanup.sh` recognizes the server as managed.
+their own in-app browser. The state records the exact owning checkout; another
+checkout must wait for an explicit release and then start its own build.
+
+The launcher continuously measures the whole preview process group. At 8 GB RSS
+it stops the server and records a loud failure instead of allowing the old
+23–27 GB runaway. It also stops startup after five minutes without log progress.
+Neither limit automatically restarts the server. Advanced local use can override
+the defaults with `MATRX_PREVIEW_MAX_RSS_GB` and
+`MATRX_PREVIEW_NO_PROGRESS_SEC`.
 
 **Named `preview_start` and raw `pnpm dev` are banned.** The installed hook
 blocks both and names `pnpm preview:start` as the repair. The shared server is
@@ -48,7 +57,7 @@ can share a process group with its agent; killing that group can kill the agent.
 
 | Command | Effect |
 |---|---|
-| `pnpm dev:status` | Same process inventory as `preview:status`. Non-destructive. |
+| `pnpm dev:status` | Show the repo-scoped process and build-cache inventory. Non-destructive; use `preview:status` for the machine-wide lease. |
 | `pnpm dev:reap:dry` | Show exactly which runaway/abandoned/orphan trees would be killed. |
 | `pnpm dev:reap` | Kill only trees that cross the rules below. |
 | `pnpm dev:stop` | Stop every matrx-frontend dev server. Leaves disk. |

@@ -28,6 +28,7 @@ set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 STATE_DIR="$REPO_ROOT/.matrx/dev-sessions"
+GLOBAL_PREVIEW_STATE_DIR="${MATRX_PREVIEW_STATE_DIR:-${TMPDIR:-/tmp}/matrx-frontend-preview-${UID:-$(id -u)}}"
 
 # --- reap thresholds (override via env) -------------------------------------
 # A server over the RSS ceiling is the machine-killer; a server past the age
@@ -110,7 +111,8 @@ killtree() {
 
 # Every PID recorded in the session state dir (hook-managed servers).
 tracked_pids() {
-  grep -h '^PID=' "$STATE_DIR"/*.meta 2>/dev/null | sed 's/^PID=//' | tr -d ' '
+  grep -h '^PID=' "$STATE_DIR"/*.meta "$GLOBAL_PREVIEW_STATE_DIR"/*.meta 2>/dev/null |
+    sed 's/^PID=//' | tr -d ' '
 }
 
 is_tracked() {
