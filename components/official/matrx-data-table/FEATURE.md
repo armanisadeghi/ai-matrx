@@ -172,11 +172,11 @@ Do not drop these when replacing `AiModelTable`:
 
 ## Reuse gate
 
-| Source                        | Took                                        | Left behind                             |
+| Source                        | Took                                             | Left behind                             |
 | ----------------------------- | ------------------------------------------------ | --------------------------------------- |
 | AiModelTable                  | sticky + filters + canonical `AiModelRef showId` | domain coupling, split-pane sidebar     |
-| aidream UuidDisplay / IdField | short + copy + FK open semantics            | `/database/…` routes, GlobalRecordSheet |
-| GenericDataTable              | pagination, empty/loading                   | no sticky / filters / panels            |
+| aidream UuidDisplay / IdField | short + copy + FK open semantics                 | `/database/…` routes, GlobalRecordSheet |
+| GenericDataTable              | pagination, empty/loading                        | no sticky / filters / panels            |
 
 ## Change log
 
