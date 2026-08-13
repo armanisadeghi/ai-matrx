@@ -285,6 +285,17 @@ pending count. Every party named on these surfaces opens (THE DOOR LAW).
 
 ## Change log
 
+- 2026-08-13 — **`plan.entity` fold executed (Wave 2, partial by design).**
+  Per the ratified SoR ruling, person/org rows folded into `crm.party`
+  (source-stamped `import` / `plan_entity_person_org_fold`, legacy ids in
+  `metadata.folded_from_plan_entity`); `plan.entity` survives as the
+  citation store (source/media only, DB-guarded). Content-plan surfaces now
+  consume the CRM: site rosters are `party → web_site` `writes_for` edges,
+  node author/reviewer edges are `plan_node → party` (the `plan_review`
+  payload binding moved to that pair). Service gained `fetchPartiesByIds`,
+  `searchPartiesByName`, and `attributes` on `createParty`;
+  `PartyCreateForm` is reused inside the content-plan entity manager.
+
 - 2026-08-12 — Record-page access hardening (Error Inspector evidence: a
   non-UUID `/crm/<id>` fired six parallel 22P02s and rendered the raw DB
   message). `fetchPartyDetail` now guards `isUuid` at the choke point and

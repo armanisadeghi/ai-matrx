@@ -8818,135 +8818,6 @@ export type Database = {
   }
   content_ir: {
     Tables: {
-      _backup_kind_example_20260715: {
-        Row: {
-          captured_at: string | null
-          created_at: string | null
-          created_by: string | null
-          data: Json | null
-          deleted_at: string | null
-          description: string | null
-          id: string | null
-          is_canonical: boolean | null
-          kind_definition_id: string | null
-          kind_version: number | null
-          label: string | null
-          metadata: Json | null
-          organization_id: string | null
-          source: string | null
-          source_ref: Json | null
-          updated_at: string | null
-          updated_by: string | null
-          validated_at: string | null
-          validation_status: string | null
-          version: number | null
-        }
-        Insert: {
-          captured_at?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          data?: Json | null
-          deleted_at?: string | null
-          description?: string | null
-          id?: string | null
-          is_canonical?: boolean | null
-          kind_definition_id?: string | null
-          kind_version?: number | null
-          label?: string | null
-          metadata?: Json | null
-          organization_id?: string | null
-          source?: string | null
-          source_ref?: Json | null
-          updated_at?: string | null
-          updated_by?: string | null
-          validated_at?: string | null
-          validation_status?: string | null
-          version?: number | null
-        }
-        Update: {
-          captured_at?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          data?: Json | null
-          deleted_at?: string | null
-          description?: string | null
-          id?: string | null
-          is_canonical?: boolean | null
-          kind_definition_id?: string | null
-          kind_version?: number | null
-          label?: string | null
-          metadata?: Json | null
-          organization_id?: string | null
-          source?: string | null
-          source_ref?: Json | null
-          updated_at?: string | null
-          updated_by?: string | null
-          validated_at?: string | null
-          validation_status?: string | null
-          version?: number | null
-        }
-        Relationships: []
-      }
-      _backup_kind_surface_20260715: {
-        Row: {
-          created_at: string | null
-          created_by: string | null
-          deleted_at: string | null
-          id: string | null
-          is_active: boolean | null
-          kind_definition_id: string | null
-          metadata: Json | null
-          organization_id: string | null
-          parser_config: Json | null
-          parser_strategy: string | null
-          priority: number | null
-          streaming: boolean | null
-          surface_type: string | null
-          token: string | null
-          updated_at: string | null
-          updated_by: string | null
-          version: number | null
-        }
-        Insert: {
-          created_at?: string | null
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string | null
-          is_active?: boolean | null
-          kind_definition_id?: string | null
-          metadata?: Json | null
-          organization_id?: string | null
-          parser_config?: Json | null
-          parser_strategy?: string | null
-          priority?: number | null
-          streaming?: boolean | null
-          surface_type?: string | null
-          token?: string | null
-          updated_at?: string | null
-          updated_by?: string | null
-          version?: number | null
-        }
-        Update: {
-          created_at?: string | null
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string | null
-          is_active?: boolean | null
-          kind_definition_id?: string | null
-          metadata?: Json | null
-          organization_id?: string | null
-          parser_config?: Json | null
-          parser_strategy?: string | null
-          priority?: number | null
-          streaming?: boolean | null
-          surface_type?: string | null
-          token?: string | null
-          updated_at?: string | null
-          updated_by?: string | null
-          version?: number | null
-        }
-        Relationships: []
-      }
       admission_config: {
         Row: {
           enforce: boolean
@@ -15977,6 +15848,135 @@ export type Database = {
   }
   graveyard: {
     Tables: {
+      _backup_kind_example_20260715: {
+        Row: {
+          captured_at: string | null
+          created_at: string | null
+          created_by: string | null
+          data: Json | null
+          deleted_at: string | null
+          description: string | null
+          id: string | null
+          is_canonical: boolean | null
+          kind_definition_id: string | null
+          kind_version: number | null
+          label: string | null
+          metadata: Json | null
+          organization_id: string | null
+          source: string | null
+          source_ref: Json | null
+          updated_at: string | null
+          updated_by: string | null
+          validated_at: string | null
+          validation_status: string | null
+          version: number | null
+        }
+        Insert: {
+          captured_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          data?: Json | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string | null
+          is_canonical?: boolean | null
+          kind_definition_id?: string | null
+          kind_version?: number | null
+          label?: string | null
+          metadata?: Json | null
+          organization_id?: string | null
+          source?: string | null
+          source_ref?: Json | null
+          updated_at?: string | null
+          updated_by?: string | null
+          validated_at?: string | null
+          validation_status?: string | null
+          version?: number | null
+        }
+        Update: {
+          captured_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          data?: Json | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string | null
+          is_canonical?: boolean | null
+          kind_definition_id?: string | null
+          kind_version?: number | null
+          label?: string | null
+          metadata?: Json | null
+          organization_id?: string | null
+          source?: string | null
+          source_ref?: Json | null
+          updated_at?: string | null
+          updated_by?: string | null
+          validated_at?: string | null
+          validation_status?: string | null
+          version?: number | null
+        }
+        Relationships: []
+      }
+      _backup_kind_surface_20260715: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          deleted_at: string | null
+          id: string | null
+          is_active: boolean | null
+          kind_definition_id: string | null
+          metadata: Json | null
+          organization_id: string | null
+          parser_config: Json | null
+          parser_strategy: string | null
+          priority: number | null
+          streaming: boolean | null
+          surface_type: string | null
+          token: string | null
+          updated_at: string | null
+          updated_by: string | null
+          version: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          kind_definition_id?: string | null
+          metadata?: Json | null
+          organization_id?: string | null
+          parser_config?: Json | null
+          parser_strategy?: string | null
+          priority?: number | null
+          streaming?: boolean | null
+          surface_type?: string | null
+          token?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          version?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          kind_definition_id?: string | null
+          metadata?: Json | null
+          organization_id?: string | null
+          parser_config?: Json | null
+          parser_strategy?: string | null
+          priority?: number | null
+          streaming?: boolean | null
+          surface_type?: string | null
+          token?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          version?: number | null
+        }
+        Relationships: []
+      }
       action: {
         Row: {
           id: string

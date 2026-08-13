@@ -224,10 +224,12 @@ A newcomer will otherwise be tempted to undo these. Don't.
   4 parties, 1 interaction, 0 campaigns. ~~Nothing server-side consumes the CRM ORM~~
   **Server consumption started 2026-08-12:** the party resolver (`aidream/services/crm/`),
   the `party` `agent_data` resource, and the `resolve_contact` operation (see Wave 1).
-- **The fold debt is compounding:** `plan.entity` 6 → 49 rows, `public.contact_submissions`
-  4 → 21, `web.brand` 22 → 25 since this doc was written.
-- **The duplicates persist as parallel CRUD surfaces** — content-plan's `EntityManager.tsx` is
-  full person/org CRUD beside `/crm`. (Universal-picker hygiene is already correct: only `party`
+- **The fold debt is compounding:** `public.contact_submissions`
+  4 → 21, `web.brand` 22 → 25 since this doc was written. ~~`plan.entity`~~
+  **person/org fold DONE 2026-08-13** (see Wave 2).
+- ~~content-plan's `EntityManager.tsx` person/org CRUD beside `/crm`~~ **FIXED 2026-08-13**:
+  people/companies there are now crm parties (create via `PartyCreateForm`, doors to `/crm/[id]`);
+  only source/media citations remain plan.entity CRUD. (Universal-picker hygiene is already correct: only `party`
   and `crm_campaign` are curated tokens; the duplicate tables have `contentRole: null`.)
 - **`party.expert_status` has no producer and no reader anywhere.** The research pipeline extracts
   the exact promotion signals (`NotableQuote.speaker`, `has_author_credentials`, `expert_opinion`
@@ -310,8 +312,12 @@ contact" · `features/crm/agent-context/` builder.
 dry-run preview → commit; engine `features/crm/import/`; dedup via bulk medium/
 name/domain lookups in `service.ts`. Found D181 en route: component
 `INSERT…RETURNING` 42501s platform-wide — chip fired for the `iam.apply_rls`
-generator fix; CRM service inserts bare as a hedge) · `plan.entity` fold (chip
-fired 2026-08-13; cheapest now, most expensive later) · `invitation_requests` +
+generator fix; CRM service inserts bare as a hedge) · ~~`plan.entity` fold~~
+**DONE 2026-08-13** (person/org rows → `crm.party`, source-stamped, edges
+repointed onto `plan_node→party` / `party→web_site` `writes_for`; `plan.entity`
+kept as the source/media citation store per the ratified split, DB guard
+`plan._entity_kind_guard`; migration `plan_entity_person_org_fold.sql`) ·
+`invitation_requests` +
 `contact_submissions` + `user_form_profile` folds (each needs `scripts/dead-relations.json` +
 `platform.deprecated_relations` BEFORE repointing) · YouTube channel → party (the original forcing
 function; `channel_id` is a stable key, no fuzzy matching).
