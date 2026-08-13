@@ -3782,6 +3782,8 @@ export type Database = {
     Views: {
       summary: {
         Row: {
+          audit_class: string | null
+          audit_class_reason: string | null
           certified: boolean | null
           fails: number | null
           schema_name: string | null
@@ -29265,6 +29267,8 @@ export type Database = {
           agent_writable: boolean
           agent_write_notes: string | null
           allow_preview: boolean
+          audit_class: string
+          audit_class_reason: string | null
           base_tier: number
           category: string | null
           content_role: string | null
@@ -29296,6 +29300,8 @@ export type Database = {
           agent_writable?: boolean
           agent_write_notes?: string | null
           allow_preview?: boolean
+          audit_class?: string
+          audit_class_reason?: string | null
           base_tier?: number
           category?: string | null
           content_role?: string | null
@@ -29329,6 +29335,8 @@ export type Database = {
           agent_writable?: boolean
           agent_write_notes?: string | null
           allow_preview?: boolean
+          audit_class?: string
+          audit_class_reason?: string | null
           base_tier?: number
           category?: string | null
           content_role?: string | null

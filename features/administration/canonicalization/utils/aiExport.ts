@@ -57,7 +57,9 @@ export function auditSummaryToHuman(row: AuditSummaryRow): string {
     `Table: ${row.schema_name}.${row.table_name}`,
     `Token: ${row.token}`,
     `Gate: ${row.fails} FAIL · ${row.warns} WARN`,
-    `Certified: ${row.certified ? "yes" : "no"}`,
+    row.audit_class === "machinery"
+      ? `Class: machinery — outside the certification universe (${row.audit_class_reason ?? "no reason recorded"})`
+      : `Certified: ${row.certified ? "yes" : "no"}`,
   ].join("\n");
 }
 
@@ -512,7 +514,7 @@ export function tableImpactRunToAgentInput(
 export function overviewToHuman(data: CanonicalizationOverview): string {
   const last = data.lastRefresh?.run_at ?? "never";
   return [
-    `Registered tables: ${data.totalTables} (${data.certifiedTables} certified · ${data.notCertifiedTables} not)`,
+    `Registered tables: ${data.totalTables} (${data.certifiedTables} certified · ${data.notCertifiedTables} not · ${data.machineryTables} machinery, outside the certification universe)`,
     `Gate totals: ${data.totalFails} FAIL · ${data.totalWarns} WARN`,
     `Broken functions: ${data.brokenFunctionCount}`,
     `M2M candidates: ${data.m2mCandidateCount}`,

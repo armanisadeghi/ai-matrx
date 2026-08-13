@@ -75,11 +75,17 @@ export async function fetchOverview(): Promise<CanonicalizationOverview> {
   const totalFails = summary.reduce((sum, r) => sum + Number(r.fails ?? 0), 0);
   const totalWarns = summary.reduce((sum, r) => sum + Number(r.warns ?? 0), 0);
   const certifiedTables = summary.filter((r) => r.certified).length;
+  // Machinery rows are outside the certification universe: never certified,
+  // never counted as failures (db-rules FEATURE.md §11).
+  const machineryTables = summary.filter(
+    (r) => r.audit_class === "machinery",
+  ).length;
 
   return {
     totalTables: summary.length,
     certifiedTables,
-    notCertifiedTables: summary.length - certifiedTables,
+    notCertifiedTables: summary.length - certifiedTables - machineryTables,
+    machineryTables,
     totalFails,
     totalWarns,
     brokenFunctionCount: brokenFns.length,

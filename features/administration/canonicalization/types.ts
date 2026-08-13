@@ -13,6 +13,14 @@ export interface AuditSummaryRow {
   fails: number;
   warns: number;
   certified: boolean;
+  /**
+   * Certification-universe membership (entity_types.audit_class, 2026-08-12):
+   * 'entity' = scored by the gate; 'machinery' = shared platform machinery
+   * permanently outside the certification universe (never certified, never
+   * failing — the written reason lives in audit_class_reason).
+   */
+  audit_class: "entity" | "machinery";
+  audit_class_reason: string | null;
 }
 
 export interface CanonicalFindingRow {
@@ -128,7 +136,10 @@ export type CanonicalizationDataset = (typeof CANONICALIZATION_DATASETS)[number]
 export interface CanonicalizationOverview {
   totalTables: number;
   certifiedTables: number;
+  /** Uncertified tables IN the certification universe (excludes machinery). */
   notCertifiedTables: number;
+  /** Registered rows marked audit_class='machinery' — outside the certification universe. */
+  machineryTables: number;
   totalFails: number;
   totalWarns: number;
   brokenFunctionCount: number;
@@ -167,7 +178,9 @@ export function isAuditSummaryRow(v: unknown): v is AuditSummaryRow {
     typeof v.token === "string" &&
     typeof v.fails === "number" &&
     typeof v.warns === "number" &&
-    typeof v.certified === "boolean"
+    typeof v.certified === "boolean" &&
+    (v.audit_class === "entity" || v.audit_class === "machinery") &&
+    isStrOrNull(v.audit_class_reason)
   );
 }
 

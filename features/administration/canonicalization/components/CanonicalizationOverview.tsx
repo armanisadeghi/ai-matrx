@@ -52,6 +52,7 @@ function isOverviewData(v: unknown): v is OverviewData {
     typeof r.totalTables === "number" &&
     typeof r.certifiedTables === "number" &&
     typeof r.notCertifiedTables === "number" &&
+    typeof r.machineryTables === "number" &&
     typeof r.totalFails === "number" &&
     typeof r.totalWarns === "number" &&
     (r.lastRefresh === null || isRefreshLogRow(r.lastRefresh))
@@ -221,6 +222,12 @@ export function CanonicalizationOverview() {
               label="Not certified"
               value={overview.notCertifiedTables}
               tone="bad"
+              href="/administration/database/canonicalization/summary"
+            />
+            <KpiTile
+              icon={ShieldCheck}
+              label="Machinery (outside universe)"
+              value={overview.machineryTables}
               href="/administration/database/canonicalization/summary"
             />
             <KpiTile

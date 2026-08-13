@@ -13,7 +13,7 @@ export const DATASET_QUERIES: Record<
   Exclude<CanonicalizationDataset, "overview">,
   string
 > = {
-  summary: `select schema_name, table_name, token, fails, warns, certified
+  summary: `select schema_name, table_name, token, fails, warns, certified, audit_class, audit_class_reason
     from audit.summary
     order by fails desc, warns desc, schema_name, table_name;`,
   findings: `select id, schema_name, table_name, token, source, check_name, status, detail

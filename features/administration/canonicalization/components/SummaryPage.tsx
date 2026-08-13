@@ -73,18 +73,36 @@ export function SummaryPage() {
         align: "right",
       },
       {
+        key: "audit_class",
+        label: "Class",
+        type: "enum",
+        getValue: (r) => r.audit_class,
+        width: "120px",
+      },
+      {
         key: "certified",
         label: "Certified",
         type: "enum",
-        getValue: (r) => String(r.certified),
+        getValue: (r) =>
+          r.audit_class === "machinery" ? "machinery" : String(r.certified),
         width: "130px",
-        render: (r) => (
-          <BoolBadge
-            value={r.certified}
-            trueLabel="Certified"
-            falseLabel="Not certified"
-          />
-        ),
+        render: (r) =>
+          // Machinery is OUTSIDE the certification universe — neither certified
+          // nor failing; the ruling reason travels on the row (title tooltip).
+          r.audit_class === "machinery" ? (
+            <span
+              title={r.audit_class_reason ?? undefined}
+              className="inline-flex items-center rounded-full border border-border bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
+            >
+              Machinery
+            </span>
+          ) : (
+            <BoolBadge
+              value={r.certified}
+              trueLabel="Certified"
+              falseLabel="Not certified"
+            />
+          ),
       },
     ],
     [],
