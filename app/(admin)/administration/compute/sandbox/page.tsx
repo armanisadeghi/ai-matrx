@@ -52,6 +52,13 @@ import type {
   SandboxStatus,
   SandboxAccessResponse,
 } from "@/types/sandbox";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ADMIN_SANDBOX_SURFACE_NAME,
+  createAdminSandboxScope,
+  type AdminSandboxExpandedInstance,
+  type AdminSandboxInstanceEntry,
+} from "@/features/surfaces/manifests/admin-sandbox.manifest";
 
 const STATUS_BADGE_MAP: Record<
   SandboxStatus,
@@ -89,6 +96,45 @@ interface SandboxStats {
   total: number;
   uniqueUsers: number;
   failed: number;
+}
+
+// ── Surface projections (`matrx-admin/sandbox`) ─────────────────────────────
+// The scope emits EXACTLY the fields the manifest declares, never the raw row.
+// A `SandboxInstance` is structurally assignable to the declared entry type, so
+// spreading it would compile and silently ship `metadata`, `labels`,
+// `organization_id`, `project_id` and the rest into agent context under a
+// description that promises eleven fields. Projecting by hand is what keeps the
+// declaration and the payload the same thing.
+function toScopeEntry(instance: SandboxInstance): AdminSandboxInstanceEntry {
+  return {
+    id: instance.id,
+    sandbox_id: instance.sandbox_id,
+    user_id: instance.user_id,
+    status: instance.status,
+    created_at: instance.created_at,
+    expires_at: instance.expires_at,
+    tier: instance.tier,
+    container_id: instance.container_id,
+    ttl_seconds: instance.ttl_seconds,
+    hot_path: instance.hot_path,
+    cold_path: instance.cold_path,
+  };
+}
+
+/**
+ * The expanded row's detail panel, field for field. Everything here is on
+ * screen when a row is open — `stop_reason` and `last_heartbeat_at` render
+ * conditionally, hence the nullable passthrough rather than an omission.
+ */
+function toExpandedEntry(
+  instance: SandboxInstance,
+): AdminSandboxExpandedInstance {
+  return {
+    ...toScopeEntry(instance),
+    stop_reason: instance.stop_reason,
+    last_heartbeat_at: instance.last_heartbeat_at,
+    config: instance.config,
+  };
 }
 
 function humanAll(
@@ -288,7 +334,48 @@ export default function AdminSandboxManagementPage() {
     "expired",
   ];
 
+  // ── Surface runtime (`matrx-admin/sandbox`) ──────────────────────────────
+  // This page is the surface's ONLY mount. The manifest shipped with nine
+  // declared values and no provider, so nothing ever registered and an agent
+  // launched here saw an empty scope — the route mapping named the surface in
+  // the Agents popover while the surface emitted nothing at all.
+  //
+  // `getScope` is SYNCHRONOUS over live render state, and must stay that way:
+  // `useLiveSurfaceScope` samples it every 400ms for as long as a Surface
+  // Context window is open. An async builder that re-read `/api/admin/sandbox`
+  // to "freshen" the values would hammer the fleet-wide admin endpoint
+  // continuously behind a debug panel that looks idle. The 15s interval above
+  // is this page's ONLY fetch; this callback just reads what that already put
+  // in state, so the values are exactly what the admin is looking at.
+  const expandedInstance = expandedRow
+    ? instances.find((i) => i.id === expandedRow)
+    : undefined;
+
+  const getAdminSandboxScope = () =>
+    createAdminSandboxScope({
+      sandbox_active_count: activeCount,
+      sandbox_total_count: instances.length,
+      sandbox_unique_user_count: uniqueUsers,
+      sandbox_failed_count: failedCount,
+      sandbox_status_filter: statusFilter,
+      sandbox_instances: instances.map(toScopeEntry),
+      sandbox_list_loading: loading,
+      ...(error ? { sandbox_list_error: error } : {}),
+      // `expandedRow` can name a row that the next poll dropped from the list
+      // (an admin expands an instance, it expires out of the active filter).
+      // The id still describes what the page thinks is open, but the detail
+      // object is only emitted when the row is genuinely there to project.
+      ...(expandedRow ? { expanded_sandbox_instance_id: expandedRow } : {}),
+      ...(expandedInstance
+        ? { expanded_sandbox_instance: toExpandedEntry(expandedInstance) }
+        : {}),
+    });
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_SANDBOX_SURFACE_NAME}
+      getScope={getAdminSandboxScope}
+    >
     <div className="min-h-dvh bg-textured">
       <div className="p-4 border-b border-border bg-textured">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
@@ -353,7 +440,7 @@ export default function AdminSandboxManagementPage() {
 
       <div className="p-4 max-w-7xl mx-auto space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
+          <Card data-surface-value="sandbox_active_count">
             <CardContent className="p-4 flex items-center gap-3">
               <Server className="w-8 h-8 text-green-500" />
               <div>
@@ -364,7 +451,7 @@ export default function AdminSandboxManagementPage() {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card data-surface-value="sandbox_total_count">
             <CardContent className="p-4 flex items-center gap-3">
               <Activity className="w-8 h-8 text-blue-500" />
               <div>
@@ -373,7 +460,7 @@ export default function AdminSandboxManagementPage() {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card data-surface-value="sandbox_unique_user_count">
             <CardContent className="p-4 flex items-center gap-3">
               <Users className="w-8 h-8 text-purple-500" />
               <div>
@@ -382,7 +469,7 @@ export default function AdminSandboxManagementPage() {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card data-surface-value="sandbox_failed_count">
             <CardContent className="p-4 flex items-center gap-3">
               <AlertCircle className="w-8 h-8 text-red-500" />
               <div>
@@ -394,7 +481,7 @@ export default function AdminSandboxManagementPage() {
         </div>
 
         {error && (
-          <Card className="border-destructive">
+          <Card className="border-destructive" data-surface-value="sandbox_list_error">
             <CardContent className="flex items-center gap-2 p-4">
               <AlertCircle className="w-4 h-4 text-destructive" />
               <p className="text-sm text-destructive">{error}</p>
@@ -402,7 +489,10 @@ export default function AdminSandboxManagementPage() {
           </Card>
         )}
 
-        <div className="flex items-center gap-2 flex-wrap">
+        <div
+          className="flex items-center gap-2 flex-wrap"
+          data-surface-value="sandbox_status_filter"
+        >
           {statusFilters.map((s) => (
             <Button
               key={s}
@@ -428,7 +518,7 @@ export default function AdminSandboxManagementPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="rounded-md border">
+          <div className="rounded-md border" data-surface-value="sandbox_instances">
             {isRefreshing && (
               <div className="absolute top-2 right-2 z-10">
                 <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
@@ -573,7 +663,11 @@ export default function AdminSandboxManagementPage() {
                       </TableRow>
                       {isExpanded && (
                         <TableRow key={`${instance.id}-detail`}>
-                          <TableCell colSpan={8} className="bg-muted/30 p-4">
+                          <TableCell
+                            colSpan={8}
+                            className="bg-muted/30 p-4"
+                            data-surface-value="expanded_sandbox_instance"
+                          >
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                               <div>
                                 <span className="text-xs font-medium text-muted-foreground block mb-0.5">
@@ -798,5 +892,6 @@ export default function AdminSandboxManagementPage() {
         </DialogContent>
       </Dialog>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

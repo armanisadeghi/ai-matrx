@@ -173,6 +173,24 @@ that existing editor; private keys and client secrets remain outside
   place: `componentList` is a hardcoded in-repo array with no backing table,
   edit form, or mutation path, so the registry stays a read-only report.
 
+- `2026-08-13` — Claude: mounted `<SurfaceRuntimeProvider>` on the Sandbox
+  Management console (`/administration/compute/sandbox`), which had a full
+  9-value surface manifest and no emitter — `createAdminSandboxScope` had zero
+  call sites, so the route mapping named the surface in the Agents popover
+  while it emitted nothing and every agent launched there saw an empty scope.
+  `getScope` is synchronous over live render state (the Surface Context window
+  samples it every 400ms, so an emitter that re-fetched `/api/admin/sandbox`
+  would hammer the fleet-wide admin endpoint behind an idle-looking panel);
+  the page's existing 15s poll stays the only fetch. Added
+  `expanded_sandbox_instance` so the expanded row's detail reaches agent
+  context — the `instance_detail` group promised "container, TTL, paths,
+  config" while declaring only an id, and `sandbox_instances` is
+  bindable-only. Values are projected field-by-field rather than spread, so
+  `metadata` / `organization_id` / `project_id` cannot leak in behind a
+  description that promises eleven fields. Write targets ruled OUT with
+  reasons recorded in the manifest — the page has zero inputs and its only
+  mutations are stop / delete / mint-SSH. See `features/surfaces/FEATURE.md`
+  for the full entry.
 - `2026-08-12` — Claude: corrected the Email Users surface's `readinessNote`,
   which claimed `writeTargets` had no DB mirror. It has had one since
   2026-08-11: `ui.ui_surface_write_target` carries `email_draft` with every
