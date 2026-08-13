@@ -1,13 +1,13 @@
 ---
 name: window-panel-authoring
-description: Create, modify, or audit floating window panels in the matrx-admin window-panels system. Covers the full 5-step registration flow (registry → component → OverlayController → SidebarWindowToggle → optional URL hydrator), the Supabase window_sessions persistence contract, onCollectData patterns, ephemeral vs persisted windows, sidebar/footer layout rules, and the multi-window pattern. Use when creating a new window panel, editing an existing window component, adding persistence to a window, wiring a window into the Tools grid, or debugging why a window fails to restore after page reload.
+description: Create, modify, or audit floating window panels in the matrx-admin window-panels system. Covers the full 5-step registration flow (registry → component → OverlayController → SidebarWindowToggle → optional URL hydrator), the local-first workspace persistence contract, onCollectData patterns, ephemeral vs persisted windows, sidebar/footer layout rules, and the multi-window pattern. Use when creating a new window panel, editing an existing window component, adding persistence to a window, wiring a window into the Tools grid, or debugging why a window fails to restore after page reload.
 ---
 
 # Window Panel Authoring
 
 ## Quick Orientation
 
-All floating windows share one shell (`WindowPanel`), one persistence system (`window_sessions` Supabase table via `WindowPersistenceManager`), and one central registry (`windowRegistry.ts`). The registry is the single source of truth — every window must be registered there.
+All floating windows share one shell (`WindowPanel`), one persistence system (local-first IndexedDB/localStorage workspace cache via `WindowPersistenceManager` — the old `window_sessions` Supabase table was dropped 2026-08-12), and one central registry (`windowRegistry.ts`). The registry is the single source of truth — every window must be registered there.
 
 **Key files:**
 
@@ -28,7 +28,7 @@ All floating windows share one shell (`WindowPanel`), one persistence system (`w
 ```ts
 // features/window-panels/registry/windowRegistry.ts — add to REGISTRY array
 {
-  slug: "my-feature-window",       // kebab-case; stored in window_sessions.window_type
+  slug: "my-feature-window",       // kebab-case; the persistence identity slug
   overlayId: "myFeatureWindow",    // camelCase; must match overlaySlice key exactly
   label: "My Feature",
   defaultData: {
