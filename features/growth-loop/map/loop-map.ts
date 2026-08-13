@@ -350,8 +350,8 @@ export const STAGES: LoopStage[] = [
         entry: "/marketing/brands/[brandId]/sites/[siteId]",
         pipes: {
             code: {
-                state: "partial",
-                note: "One crawl world as of 2026-08-10 (G-CRAWL-DUAL): the legacy scraper.crawl_* store is in graveyard and the every-minute dispatcher drives web.crawl_schedule. Still partial only because the schedule WRITER side is G-CRAWL-SCHEDULE's remaining work.",
+                state: "live",
+                note: "One crawl world as of 2026-08-10 (G-CRAWL-DUAL): the legacy scraper.crawl_* store is in graveyard and the every-minute dispatcher drives web.crawl_schedule. The writer side closed 2026-08-11 (G-CRAWL-SCHEDULE): CrawlScheduleCard writes intent direct to Supabase under the column-scoped grants of aidream migration 0322.",
                 ref: "aidream/packages/matrx-scraper/matrx_scraper/web_crawl/schedules.py#dispatch_due_crawl_schedules",
             },
             human: {
@@ -581,12 +581,12 @@ export const EDGES: LoopEdge[] = [
         from: "publish",
         to: "serve",
         label: "reachable",
-        gaps: ["G-SITEMAP", "G-COLLECTIONS"],
+        gaps: [],
         pipes: {
             code: {
                 state: "partial",
-                note: "Rendering + domains work; discovery does not — no sitemap.xml, no robots.txt, no IndexNow/GSC submit.",
-                ref: "my-matrx/pages/_sites/[host]/[[...slug]].js",
+                note: "Rendering, domains, server-rendered collections, sitemap.xml, and robots.txt are live. Still missing on this edge: an IndexNow/GSC submit on publish (G-PUBLISH-CRAWL).",
+                ref: "my-matrx/lib/render/sitemap.js",
             },
             human: { state: "n/a", note: "Nothing for a human to do." },
             ai: { state: "n/a", note: "Nothing for an agent to do." },
@@ -597,7 +597,7 @@ export const EDGES: LoopEdge[] = [
         from: "serve",
         to: "crawl",
         label: "what shipped",
-        gaps: ["G-PUBLISH-CRAWL", "G-CRAWL-SCHEDULE"],
+        gaps: ["G-PUBLISH-CRAWL"],
         pipes: {
             code: {
                 state: "missing",
@@ -734,11 +734,11 @@ export const GAPS: LoopGap[] = [
         id: "G-CRAWL-SCHEDULE",
         title: "No UI can set a site's crawl cadence",
         severity: "major",
-        status: "in-progress",
+        status: "closed",
         at: "crawl",
         breaks: ["human"],
         detail:
-            "The DISPATCHER half is done and live: web_crawl_schedule_dispatch is registered on origin and the live task has run 41,230 times (5,061 failed — worth its own look). The WRITER half is built but unshipped and does not compile: crawl-schedule-service.ts, crawl-schedule-hooks.ts and CrawlScheduleCard.tsx are untracked and reference a CrawlSchedule type that features/marketing/types never exports. The live web.crawl_schedule table is still empty, so the dispatcher has nothing to dispatch.",
+            "CLOSED 2026-08-11. The writer half shipped: CrawlScheduleCard in the new-crawl workspace (plus CrawlScheduleSummary in SiteOverview) creates, edits, and toggles a site's recurring schedule directly through crawl-schedule-service.ts with guardedUpdate version CAS. aidream migration 0322 is applied and ledgered: authenticated has column-scoped INSERT/UPDATE for intent columns plus version, while dispatcher lease/outcome columns stay server-only. Every save clears next_run_at so the dispatcher recomputes the occurrence from the new cadence. Verified live with a schedule row written from the card. Still open elsewhere: historical dispatcher failures and the AI pipe (no agent tool starts or reads a crawl).",
         lane: "L1",
     },
     {
