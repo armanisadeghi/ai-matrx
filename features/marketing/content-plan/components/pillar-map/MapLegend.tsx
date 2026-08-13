@@ -28,7 +28,7 @@ export function MapLegend({
   statuses: { slug: string; label: string }[];
 }) {
   return (
-    <div className="max-h-[45vh] w-52 overflow-y-auto rounded-md border border-border bg-card/95 p-2.5 text-[10px] leading-tight text-foreground shadow-md backdrop-blur">
+    <div className="max-h-[45dvh] w-52 overflow-y-auto rounded-md border border-border bg-card/95 p-2.5 text-[10px] leading-tight text-foreground shadow-md backdrop-blur">
       <p className="mb-1 font-semibold uppercase tracking-wide text-muted-foreground">
         Color · status
       </p>

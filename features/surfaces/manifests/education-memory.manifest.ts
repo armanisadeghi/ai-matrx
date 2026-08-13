@@ -34,18 +34,35 @@
  * `MemoryDetail` as `/[id]` (it is an access gate, not an editor) and therefore
  * emits `view: "detail"` too.
  *
- * NO WRITE TARGETS — deliberate, and the reason is documented here so the next
- * agent does not re-litigate it. The only editable fields in the entire subtree
- * are `MemoryNew`'s topic and focus inputs; `MemoryDetail` and `MemoryAidView`
- * hold zero inputs and the aid's own text is not editable anywhere in the app
- * (the human path for changing an aid is Regenerate, which routes back to
- * `/new`). Topic and focus are filled together and consumed by a SINGLE button
- * press, so they are one composite generation request, not two targets — and
- * that button spends metered `education.memory_generate` quota, so it stays
- * human-pressed. One composite target below the ~2-YES floor does not earn the
- * write half; `matrx-user/canvas` is the precedent for stopping there. If an
- * editor for the aid text ever ships (a `studyMediaService.update` next to an
- * input), the aid's title and mnemonic/analogy text become a strong write half.
+ * WRITE TARGETS — two, on the CREATE view only, and the scoping is the whole
+ * ruling. The only editable fields in this entire subtree are `MemoryNew`'s
+ * source picker, topic and focus; `MemoryDetail` and `MemoryAidView` hold zero
+ * inputs, and the aid's own text is not editable anywhere in the app (the human
+ * path for changing an aid is Regenerate, which routes back to `/new`). So the
+ * composer is the write half, and it splits into TWO independent decisions
+ * rather than one composite: WHERE the aids come from (`generation_source` — a
+ * deck or a topic, mutually exclusive) and WHAT ANGLE to take on it
+ * (`generation_focus` — optional, applies in both source modes and does not
+ * change which source is selected). Changing the focus while keeping the deck
+ * is a real, distinct intent, which is what makes these two targets and not
+ * one. Same design as the `education-mind-maps` sibling, deliberately — these
+ * two generator forms are near-identical and should not drift.
+ *
+ * Both are `mode: "draft"` / `applyPolicy: "ask"`: they stage into the SAME
+ * setters the learner's own typing uses, and nothing is generated or persisted.
+ * Generation spends metered `education.memory_generate` quota, so the Generate
+ * button stays human-pressed WITHOUT exception — that is where the COPPA gate,
+ * the entitlement guard and `studyMediaService.create` run. Staging the request
+ * is the agent's job; spending the quota is the learner's.
+ *
+ * NEVER targets here, and none of these is an oversight: deleting an aid
+ * (destructive stays human), pressing Generate (metered spend), sharing or
+ * visibility (permissions), and everything on the detail view — the stored
+ * mnemonics, analogies and palace are generated content with no editor, and the
+ * trust envelope is derived evidence. The list and detail mounts of this surface
+ * register NO handlers at all. If an editor for the aid text ever ships (a
+ * `studyMediaService.update` next to an input), the aid's title and its
+ * mnemonic/analogy text become a strong third and fourth target.
  *
  * Deliberately does NOT `inheritsFrom: "matrx-user/education"` — the hub
  * guarantees `study_snapshot_available` / `discovery_axes` / `study_tools` /
@@ -69,8 +86,15 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
+import { MEDIA_GENERATOR_SOURCE_KINDS } from "@/features/education/media/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+
+/** Bounds the handler enforces, spelled into the target prose so they match. */
+export const MEMORY_TOPIC_MIN = 3;
+export const MEMORY_TOPIC_MAX = 500;
+export const MEMORY_FOCUS_MAX = 300;
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -400,25 +424,51 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "generation_source",
+    label: "Draft source",
+    description: `Stages WHERE the memory aids are built from into the create form. Value is an OBJECT; include only the fields you mean to set: { source_kind?: ${MEDIA_GENERATOR_SOURCE_KINDS.map((k) => `"${k}"`).join(" | ")}, topic?: string (the material to build aids for, ${MEMORY_TOPIC_MIN}-${MEMORY_TOPIC_MAX} characters, e.g. "The twelve cranial nerves and their functions" — the subject itself, not an instruction), deck_id?: string (the id of one of the learner's flashcard decks — it MUST be an \`id\` from available_decks; read that list first) }. The fields are GATED and the combination is validated together: sending topic implies and switches to topic mode, sending deck_id implies and switches to deck mode, and sending both is rejected because only one can be the source. Sending source_kind alone just flips the picker, keeping whatever topic/deck was already there. Nothing is generated or saved — generating spends the learner's metered allowance, so they review the form and press "Generate memory aids" themselves.`,
+    valueType: "object",
+    updatesValue: "generation_request",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "generation_request",
+    sortOrder: 100,
+  },
+  {
+    name: "generation_focus",
+    label: "Draft focus",
+    description: `Stages the optional steer that narrows what the aids cover into the create form (e.g. "the four nerves carrying both sensory and motor fibers", "just the enzyme names, not the pathway"). Plain text string, not JSON and not JSON-encoded, no code fence; max ${MEMORY_FOCUS_MAX} characters. REPLACES the whole field, so read \`request_focus\` first if you mean to extend it, and the empty string clears it back to no focus. Applies in both source modes and does not change which source is selected. The learner still presses "Generate memory aids".`,
+    valueType: "string",
+    updatesValue: "request_focus",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "generation_request",
+    sortOrder: 110,
+  },
+];
+
 export const educationMemoryManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-memory",
   readiness: "partial",
   readinessNote:
-    "Manifest + all three emitters (list, new, detail) are shipped, DB-synced, and verified against a live agent run: the Agents popover names this surface and the run receives real page scope instead of the empty-scope fallback it took before. Not yet stamped verified: the surface declares NO write targets (a deliberate, documented judgment — the only editable fields are the composer's topic and focus, which are one composite request consumed by a metered, human-pressed Generate button), no agent roles or config namespaces are declared, and two child controls on the new view load state this manifest does not declare — EntitlementMeter's `education.memory_generate` allowance and useAiComplianceGate's COPPA status.",
+    "Manifest, all three emitters (list, new, detail) and the two create-view write targets are shipped, DB-synced, and verified against live agent runs: the Agents popover names this surface, runs receive real page scope instead of the empty-scope fallback they took before, and both targets stage into the learner's own inputs behind an ask. Not yet stamped verified: no agent roles or config namespaces are declared, and two child controls on the new view load state this manifest does not declare — EntitlementMeter's `education.memory_generate` allowance and useAiComplianceGate's COPPA status.",
   label: "Memory Aids",
   urlPattern: "/education/memory",
   intro: `<surface_intro>
 You are in Memory Aids at /education/memory — the tool that turns hard-to-retain material into mnemonics, analogies, and memory-palace scaffolds. It is three views in one surface, so read \`view\` FIRST: it is \`list\`, \`new\`, or \`detail\`, and it tells you which values are even present. Nothing else on this surface is guaranteed.
 On \`list\` you see the learner's saved aid sets (\`aid_library\`, \`aid_count\`). Wait for \`library_loaded\` before calling the library empty.
-On \`new\` the learner is composing a generation request: \`request_source_kind\` is \`deck\` or \`topic\`, and \`generation_request\` carries the whole composer state — the chosen deck (\`request_deck_id\`, \`request_deck_title\`, picked from \`available_decks\`) or the typed \`request_topic\`, plus an optional \`request_focus\`. Nothing has been generated yet, and generating spends a metered allowance, so help them decide what to ask for — suggest a sharper focus, or which deck is worth aiding — and leave the Generate button to them.
+On \`new\` the learner is composing a generation request: \`request_source_kind\` is \`deck\` or \`topic\`, and \`generation_request\` carries the whole composer state — the chosen deck (\`request_deck_id\`, \`request_deck_title\`, picked from \`available_decks\`) or the typed \`request_topic\`, plus an optional \`request_focus\`. This is the ONE view you can write to, and it is worth doing: \`generation_source\` stages the deck or topic and \`generation_focus\` stages the angle, both into the form the learner is looking at. Propose confidently — every write asks them first and declining costs nothing. Nothing is generated or saved by a write, and generating spends a metered allowance, so the Generate button is theirs to press; never imply you pressed it or that aids exist because you staged a request.
 On \`detail\` one stored set is open. \`mnemonics\` carries each device with the \`technique\` it uses and the \`target\` material it covers; \`analogies\` carries concept/analogy/mapping triples; \`memory_palace\` is the method-of-loci scaffold and is often \`applicable: false\` for small material. Explaining an aid, drilling the learner on one, or judging whether a device actually helps is the work this surface exists for.
-You cannot WRITE anything here — this surface declares no write targets, and the aid text is not editable in the app at all. Do not offer to edit, rename, or fix a stored aid; the learner's path to different aids is to regenerate them. \`aid_confidence\` and \`aid_citations\` are derived grounding evidence — cite them, never claim to change them.
+A stored aid is READ-ONLY: the write targets apply to the create form only, and the aid text is not editable in the app at all. On \`detail\`, do not offer to edit, rename, or fix a stored aid — the learner's path to different aids is to regenerate them, and you can help by staging a sharper request on \`new\`. \`aid_confidence\` and \`aid_citations\` are derived grounding evidence — cite them, never claim to change them.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 /** One entry in `aid_library`. */

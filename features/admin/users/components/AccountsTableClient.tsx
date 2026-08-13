@@ -48,19 +48,32 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { confirm } from "@/components/dialogs/confirm/confirmDialogOpener";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
-import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { filterAndSortRows } from "@/components/official/matrx-data-table/filter-engine";
+import type {
+  MatrxColumnDef,
+  MatrxDataTableQueryState,
+} from "@/components/official/matrx-data-table/types";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { ADMIN_USERS_SURFACE_NAME } from "@/features/surfaces/manifests/admin-users.manifest";
+import { buildAdminUsersScope } from "../lib/admin-users-scope";
 import { AdminUserRef } from "./AdminUserRef";
 import { USERS_ADMIN_LOCATION, ADMIN_LEVEL_LABEL } from "../constants";
 import type { AdminUserRow } from "../types";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import {
-  ADMIN_USERS_SURFACE_NAME,
-  createAdminUsersScope,
-} from "@/features/surfaces/manifests/admin-users.manifest";
 
-/** Cap on the roster sample handed to the surface scope — shape inspection, not the whole table. */
-const ROSTER_SAMPLE_LIMIT = 20;
+const ROSTER_PAGE_SIZE = 50;
+
+/** Fresh table query state — the shape `MatrxDataTable` reads in controlled mode. */
+function initialQueryState(): MatrxDataTableQueryState {
+  return {
+    page: 1,
+    pageSize: ROSTER_PAGE_SIZE,
+    search: "",
+    anyOf: "",
+    columnFilters: {},
+    sort: null,
+  };
+}
 
 function fmtDate(iso: string | null): string {
   if (!iso) return "—";
@@ -98,6 +111,15 @@ export function AccountsTableClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  // The table's search / column filters / sort / page live HERE rather than
+  // inside MatrxDataTable ("controlled-local": the table still filters the
+  // local rows, the caller just owns the query). Without this the admin's
+  // live query is invisible to everything outside the table — including the
+  // surface emitter, which has to be able to say how many accounts still
+  // match what the admin is looking at.
+  const [queryState, setQueryState] = useState<MatrxDataTableQueryState>(
+    initialQueryState,
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -423,6 +445,26 @@ export function AccountsTableClient() {
     focusedUserId && !loading && !error && focusedUser === null,
   );
 
+  // How many accounts survive the admin's current query. Computed with the
+  // table's OWN engine over the table's OWN inputs, so the number the surface
+  // emits cannot drift from the number the table renders — a re-implemented
+  // count would be a second source of truth that silently disagrees the first
+  // time a filter kind is added.
+  const matchingRows = useMemo(
+    () =>
+      filterAndSortRows(
+        visibleRows,
+        columns.filter((column) => !column.hidden),
+        queryState.columnFilters,
+        queryState.sort,
+        queryState.search,
+        undefined,
+        queryState.layeredFilters,
+        queryState.searchMatchMode,
+      ),
+    [visibleRows, columns, queryState],
+  );
+
   function clearUserFocus() {
     const params = new URLSearchParams(searchParams.toString());
     params.delete("user");
@@ -431,35 +473,46 @@ export function AccountsTableClient() {
   }
 
   return (
+    // The roster's agent emitter. `getScope` is SYNCHRONOUS over the live
+    // render state above — the Surface Context window polls it every 400ms
+    // while it is open, so a build step that fetched would hammer
+    // /api/admin/users behind a panel that looks idle.
     <SurfaceRuntimeProvider
       surfaceName={ADMIN_USERS_SURFACE_NAME}
       getScope={() =>
-        createAdminUsersScope({
-          user_count: rows.length,
-          roster_sample: rows.slice(0, ROSTER_SAMPLE_LIMIT).map((r) => ({
-            id: r.id,
-            email: r.email,
-            display_name: r.display_name,
-            admin_level: r.admin_level,
-            providers: r.providers,
-            email_confirmed: r.email_confirmed,
-            onboarding_completed: r.onboarding_completed,
-            organizations: r.organizations,
-          })),
-          roster_load_error: error ?? undefined,
+        buildAdminUsersScope({
+          rows,
+          loading,
+          error,
+          focusedUserId,
+          focusedUser,
+          focusMissed,
+          matchingCount: matchingRows.length,
+          search: queryState.search,
+          columnFilters: queryState.columnFilters,
+          sort: queryState.sort,
+          page: queryState.page,
+          pageSize: queryState.pageSize,
+          dmRecipientId: dmTarget?.id ?? null,
+          dmDraft: dmContent,
         })
       }
-      isEditable={false}
     >
     <div className="flex h-full flex-col gap-3 p-4">
       {error ? (
-        <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+        <div
+          data-surface-value="roster_load_error"
+          className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
+        >
           {error}
         </div>
       ) : null}
 
       {focusedUserId ? (
-        <div className="flex items-center justify-between gap-3 rounded-md border bg-card px-3 py-2">
+        <div
+          data-surface-value="focused_user"
+          className="flex items-center justify-between gap-3 rounded-md border bg-card px-3 py-2"
+        >
           <div className="flex min-w-0 items-center gap-2 text-sm">
             <UserRound className="h-4 w-4 shrink-0 text-primary" />
             {focusMissed ? (
@@ -489,14 +542,20 @@ export function AccountsTableClient() {
         </div>
       ) : null}
 
-      <div className="min-h-0 flex-1">
+      <div className="min-h-0 flex-1" data-surface-value="visible_user_count">
         <MatrxDataTable
           urlState={{ id: "user-accounts" }}
           data={visibleRows}
           columns={columns}
           getRowId={(r) => r.id}
           isLoading={loading}
-          pageSize={50}
+          pageSize={ROSTER_PAGE_SIZE}
+          // Local filtering, caller-owned query — see `queryState` above.
+          query={{
+            mode: "controlled-local",
+            state: queryState,
+            onStateChange: setQueryState,
+          }}
           // A focused id that is not in the roster must NOT be reported as a
           // filter miss — that blames a control the user never touched for a
           // record that simply is not in this list. The banner above says what
@@ -674,6 +733,7 @@ export function AccountsTableClient() {
             (the DM system). They see it in Messages.
           </p>
           <Textarea
+            data-surface-value="dm_draft"
             value={dmContent}
             onChange={(e) => setDmContent(e.target.value)}
             placeholder="Write your message…"

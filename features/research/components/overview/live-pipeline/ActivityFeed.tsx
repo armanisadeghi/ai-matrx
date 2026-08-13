@@ -262,7 +262,7 @@ export function ActivityFeed({ rawEvents, state, className }: Props) {
       </div>
       <div
         ref={scrollRef}
-        className="flex-1 min-h-0 max-h-[55vh] lg:max-h-none overflow-y-auto px-2 py-1.5 font-mono text-[10.5px] space-y-0.5"
+        className="flex-1 min-h-0 max-h-[55dvh] lg:max-h-none overflow-y-auto px-2 py-1.5 font-mono text-[10.5px] space-y-0.5"
       >
         {visible.length === 0 && (
           <div className="text-muted-foreground italic text-[11px] py-4 text-center">

@@ -412,7 +412,7 @@ function DocPickerStep({
           </Button>
         </div>
       ) : (
-        <ul className="flex flex-col gap-1.5 max-h-[60vh] overflow-y-auto">
+        <ul className="flex flex-col gap-1.5 max-h-[60dvh] overflow-y-auto">
           {docs.map((doc) => (
             <li key={doc.id}>
               <button
@@ -515,7 +515,7 @@ function CurateStep({
             This document has no chunked passages yet.
           </p>
         ) : (
-          <ul className="flex max-h-[45vh] flex-col gap-1.5 overflow-y-auto rounded-lg border border-border p-1.5">
+          <ul className="flex max-h-[45dvh] flex-col gap-1.5 overflow-y-auto rounded-lg border border-border p-1.5">
             {sorted.map((chunk) => (
               <ChunkRowItem
                 key={chunk.chunk_id}

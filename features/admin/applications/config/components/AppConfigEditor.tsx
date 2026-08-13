@@ -555,7 +555,7 @@ export function AppConfigEditor({
         contentClassName="sm:max-w-4xl"
         content={
           pendingSave ? (
-            <div className="max-h-[55vh] overflow-y-auto rounded-md border border-border">
+            <div className="max-h-[55dvh] overflow-y-auto rounded-md border border-border">
               <DiffViewer
                 original={currentJson}
                 modified={configSnapshotJson({

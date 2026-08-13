@@ -15,6 +15,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
+import { announceComingSoon } from "@/lib/coming-soon/announce";
 import {
   ArrowRight,
   Check,
@@ -67,7 +68,7 @@ export function EducationPricing({ pricing }: { pricing: EducationPricingData })
         return;
       }
       if (res.status === 503) {
-        toast.info("Checkout isn't switched on yet — hang tight, it's coming soon.");
+        void announceComingSoon("education.premium-checkout");
         return;
       }
       const body = (await res.json().catch(() => ({}))) as { url?: string; error?: string };

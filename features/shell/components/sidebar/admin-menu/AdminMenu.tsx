@@ -73,7 +73,7 @@ export default function AdminMenu() {
         side="right"
         align="end"
         sideOffset={8}
-        className="max-h-[80vh] w-60 overflow-y-auto"
+        className="max-h-[80dvh] w-60 overflow-y-auto"
       >
         <DropdownMenuLabel>Administration</DropdownMenuLabel>
         <DropdownMenuItem asChild className="gap-2">
@@ -117,7 +117,7 @@ export default function AdminMenu() {
               </span>
             </DropdownMenuSubTrigger>
             <DropdownMenuPortal>
-              <DropdownMenuSubContent className="max-h-[80vh] w-72 overflow-y-auto">
+              <DropdownMenuSubContent className="max-h-[80dvh] w-72 overflow-y-auto">
                 <DropdownMenuItem asChild className="gap-2 font-medium">
                   <Link href={adminDomainHref(domain)}>
                     <span className={iconSlot}>

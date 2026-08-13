@@ -9,8 +9,9 @@
  * asset-intake widget — no text/content concept, so generic baselines are
  * skipped.
  *
- * Emitter: `ImageUploaderWindow` mounts `<SurfaceRuntimeProvider>` around
- * the uploader body — live opener config + upload result at trigger time.
+ * Emitter: `<SurfaceRuntimeProvider>` inside `ImageUploaderWindow` — the
+ * overlay nesting is deliberate (a nested provider out-depths the page's, so
+ * while the window is open ITS scope wins).
  */
 
 import type {
@@ -27,18 +28,30 @@ const groups: SurfaceValueGroup[] = [
     key: "upload_config",
     label: "Upload configuration",
     sortOrder: 100,
-    description: "How the opener configured this upload capture.",
+    description: "How the opener spawned and configured this upload capture.",
   },
   {
     key: "upload_result",
     label: "Upload result",
     sortOrder: 200,
-    description: "The uploaded asset, once an upload has completed.",
+    description:
+      "The outcome of the upload attempt — the produced asset, or the error that stopped it.",
   },
 ];
 
 const surfaceSpecific: SurfaceValue[] = [
   // ── Upload configuration ──────────────────────────────────────────────
+  {
+    name: "window_instance_id",
+    label: "Window instance",
+    description:
+      "Instance id of this uploader window. The overlay is multi-instance, so several uploaders can be open at once; this is the one currently emitting. Always populated while the window is mounted.",
+    valueType: "string",
+    alwaysAvailable: true,
+    typicalCharCount: 36,
+    sortOrder: 290,
+    group: "upload_config",
+  },
   {
     name: "preset",
     label: "Asset preset",
@@ -129,12 +142,46 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 410,
     group: "upload_result",
   },
+  {
+    name: "result_file_id",
+    label: "Result file id",
+    description:
+      "cld_files UUID of the uploaded asset, for looking the file up elsewhere. Absent until an upload completes, and also absent for a CORS-blocked pasted URL (which is used directly and never becomes a cloud file).",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 36,
+    sortOrder: 420,
+    group: "upload_result",
+  },
+  {
+    name: "result_variant_urls",
+    label: "Result variant URLs",
+    description:
+      "Map of every produced variant key (original, og_url, thumbnail_url, …) to its URL, as generated for the active preset. Absent until an upload completes; holds only `original` for a pasted URL that could not be fetched.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 600,
+    sortOrder: 430,
+    group: "upload_result",
+  },
+  {
+    name: "last_error",
+    label: "Last upload error",
+    description:
+      "Message from the most recent failed upload attempt in this window. Absent when nothing has failed, and cleared as soon as a later attempt succeeds.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 80,
+    sortOrder: 440,
+    group: "upload_result",
+  },
 ];
 
 export const imageUploaderManifest: SurfaceManifest = {
   surfaceName: IMAGE_UPLOADER_SURFACE_NAME,
   readiness: "partial",
-  readinessNote: "emitter wired, browser verification pending",
+  readinessNote:
+    "Emitter wired in ImageUploaderWindow and verified live. Gap: the in-flight upload status (idle/uploading/success), the name of the file being uploaded, and the URL-paste draft live inside the shared `ImageAssetUploader` official component (17 callers) and are not handed up to the window, so they are neither declared nor emitted.",
   overlayId: "imageUploaderWindow",
   label: "Image Uploader",
   intro: `<surface_intro>
@@ -151,6 +198,7 @@ You are in the floating Image Uploader window — an ephemeral asset-intake surf
  * true` value above; optional keys mirror the rest.
  */
 export function createImageUploaderScope(values: {
+  window_instance_id: string;
   preset: string;
   allow_url_paste: boolean;
   has_upload_result: boolean;
@@ -159,6 +207,9 @@ export function createImageUploaderScope(values: {
   uploader_description?: string;
   current_url?: string;
   result_primary_url?: string;
+  result_file_id?: string;
+  result_variant_urls?: Record<string, string>;
+  last_error?: string;
 }): SurfaceScopePayload {
   return values as SurfaceScopePayload;
 }

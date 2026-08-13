@@ -144,7 +144,7 @@ export function SurfaceRolesSection({
       </button>
 
       {open && (
-        <div className="max-h-[38vh] overflow-auto border-t border-border p-2.5 space-y-2">
+        <div className="max-h-[38dvh] overflow-auto border-t border-border p-2.5 space-y-2">
           {roleList.map((view) => (
             <RoleCard
               key={view.role.name}

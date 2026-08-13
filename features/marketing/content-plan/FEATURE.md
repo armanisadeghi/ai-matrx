@@ -67,15 +67,22 @@ plan CRUD through it.
   2026-08-10; `initial_message` now actually arrives as an info event).
 - **Setup step agents (`setup/ai.ts`)** — every Setup step has a real AI,
   grounded in the RESEARCH system's final report (the "Document",
-  `research.rs_document.content`, picked by topic in the `SetupAiBar` strip):
-  the **Content Plan Shape Planner** (`b600975c-…`, archetype + counts +
-  concept names) and the **Content Plan Family Namer** (`7a16db8c-…`, real
-  page names for one family — services, locations, guides). Both are platform
-  agents (agx, created via the AI Dream MCP) with json_schema output, run
-  HEADLESS through `launchAgentExecution` + JSON extraction (the
-  useGenerateQuiz pattern). Results stage into the view's own setters — the
-  USER commits. The `site_shaper` surface role is bound to the Shape Planner
-  (manifest + `ui.ui_surface_agent_role`).
+  `research.rs_document.content`, picked by topic in the `SetupAiBar` strip).
+  **Three run on the client** — shape planner, family namer (which also writes
+  count-only families' article topics), entity curator — through
+  `useSetupAgents` → `useLiveAgentRun` → `useHeadlessAgentJson`, so each one
+  streams into `<LiveRunDisplay>`. The other four moved server-side (the two
+  bullets below).
+  🚨 **Agents are addressed by SLOT KEY, never a UUID.** `content_plan.*` slots
+  resolve through `resolveAgentSlot` (`features/agents/slots/service.ts`) —
+  `agent.slot_definition` for the platform default, `agent.slot_binding` for
+  the user's own override. An unseeded, disabled, or version-pinned slot
+  THROWS with the reason; it never falls back to a hardcoded agent. Adding a
+  step means declaring a slot in aidream's `agent_slots/client_slots.py` and
+  consuming its key here. **Known gap:** `launchAgentExecution` consumers
+  (this feature included) apply a binding's *agent* but not its
+  `config_overrides`, so a model/thinking-only override is inert here.
+  Results stage into the view's own setters — the USER commits.
 - 🚨 **The three WHOLE-PLAN Setup passes RUN ON THE SERVER** (since
   2026-08-11) — keyword strategy, entity attachment and the plan review are
   `POST /content-plan/sites/{id}/{keyword-strategy|entity-attachments|review}`,

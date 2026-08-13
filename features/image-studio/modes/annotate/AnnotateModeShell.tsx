@@ -20,6 +20,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, Save, ShieldAlert, X, Zap } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { announceComingSoon } from "@/lib/coming-soon/announce";
 import { Button } from "@/components/ui/button";
 import { useImageSource } from "../shared/use-image-source";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
@@ -120,20 +121,16 @@ export function AnnotateModeShell({
   }, []);
 
   const handleSuggestAnnotations = () => {
-    toast.info(
-      "Suggest annotations agent ships next wave — see features/image-studio/AI-AGENTS.md",
-    );
+    void announceComingSoon("image-studio.suggest-annotations");
   };
 
   const handleRedact = () => {
-    toast.info(
-      "PII redaction agent ships next wave — see features/image-studio/AI-AGENTS.md",
-    );
+    void announceComingSoon("image-studio.pii-redaction");
   };
 
   const handleBlurFaces = async () => {
     if (!IMAGE_STUDIO_BACKEND_CAPABILITIES.faceDetection) {
-      toast.info("Face detection is coming soon.");
+      void announceComingSoon("image-studio.face-detection");
       return;
     }
     const sourceFileId =

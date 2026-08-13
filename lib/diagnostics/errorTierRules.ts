@@ -70,6 +70,16 @@ export interface ErrorMatch {
   messageIncludes?: string;
   /** Regular-expression source tested (case-insensitive) against the message. */
   messagePattern?: string;
+  /**
+   * The producer's own severity verdict, for sources that carry one (today:
+   * server stream warnings). A rule can only see this because the capture site
+   * passes it as a FIRST-CLASS field — it used to be buried in the stringified
+   * `details` blob, where no rule could ever reach it, which is why a
+   * self-declared recoverable warning had no way to be anything but red.
+   */
+  recoverable?: boolean;
+  /** The producer's own level, e.g. "low" | "medium" | "high". */
+  level?: OneOrMany<string>;
 }
 
 export interface DowngradeRule {
@@ -212,6 +222,30 @@ export const DOWNGRADE_RULES: DowngradeRule[] = [
       code: "unrecognized_config",
     },
   },
+  {
+    id: "assists-dedupe-race",
+    tier: "yellow",
+    reason:
+      "The assists producer is idempotent by design and races itself: it checks for a live pending row, then inserts, and `assists_dedupe_pending_key` is the partial unique index that settles the tie. `features/assists/service.ts` ALREADY treats 23505 as success (a concurrent producer won). The insert is captured by the generic PostgREST chokepoint before that happens, so a designed no-op was arriving red. The index cannot be an upsert target — it is partial (status='pending' AND deleted_at IS NULL) and PostgREST cannot express that inference — so catching it is the correct shape and this rule fixes the reporting, not the behaviour.",
+    addedAt: "2026-08-13",
+    match: {
+      source: "supabase-postgrest",
+      code: "23505",
+      relation: "assists",
+      operation: "insert",
+    },
+  },
+  {
+    id: "stream-warning-recoverable",
+    tier: "orange",
+    reason:
+      "A server stream WARNING that declares itself recoverable is a loud degrade, not a failure — the run continued and produced its result. Example: content-plan deepen warning that a page has no keyword and the site has no keyword library, which aidream emits deliberately (services/content_plan/FEATURE.md) rather than inventing a keyword. Non-recoverable warnings still fall through to red. Place any genuinely alarming warning code ABOVE this rule.",
+    addedAt: "2026-08-13",
+    match: {
+      source: "agent-stream-warning",
+      recoverable: true,
+    },
+  },
 ];
 
 // ── Matching engine ──────────────────────────────────────────────────────
@@ -249,6 +283,10 @@ export function errorMatchesRule(e: CapturedError, match: ErrorMatch): boolean {
   if (!someEq(match.schema, e.schema)) return false;
   if (!someEq(match.name, e.name)) return false;
   if (!someEq(match.status, e.status)) return false;
+  if (match.recoverable !== undefined && e.recoverable !== match.recoverable) {
+    return false;
+  }
+  if (!someEq(match.level, e.level)) return false;
 
   if (match.statusRange) {
     const [lo, hi] = match.statusRange;

@@ -2106,5 +2106,5 @@
    resize/visibilitychange (components/ui/sonner.tsx); this cap bounds the
    blast radius if a case slips through. */
 [data-sonner-toast] {
-  max-height: min(40rem, 90vh);
+  max-height: min(40rem, 90dvh);
 }

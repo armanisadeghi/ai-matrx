@@ -10,14 +10,15 @@ Format: `- [ ] <P#> | <file-or-route> | <one line> | <date>`
 
 ## Open
 
+- [ ] P9 | see `.matrx/patrol-reports/coming-soon-compliance.md` | first/full pass found 12 verified promise cases: corrected 10-case/14-handler Tier-M batch is preserved after two concrete rejections were fixed, but final interaction certification is infrastructure-blocked by a foreign preview lease; two manual proposals and 99 detector candidates remain routed | infrastructure-blocked | 2026-08-13
 - [ ] P2 | see `.matrx/patrol-reports/inventory-law.md` | 34 baseline catalogue items remain after the manually approved Master Input agent-door repair shipped in `v0.4.550`; continue item-scoped approval routing | 2026-08-12
-- [ ] P3 | see `.matrx/patrol-reports/mobile-friendly-ui.md` | 16 approved literal `vh`→`dvh` findings shipped and were verified in READY production `v0.4.550`; 47 code-bearing `vh` occurrences remain across 38 runtime files for the newly gated mechanical recipe or per-surface review | 2026-08-12
+- [ ] P3 | see `.matrx/patrol-reports/mobile-friendly-ui.md` | 37 direct literal `vh`→`dvh` tokens across 30 files were auto-fixed and independently CERTIFIED on 2026-08-13; 9 runtime/window/config tokens and four Tier-R mobile layout/control findings remain routed in the report | 2026-08-13
 - [ ] P6 | see `.matrx/patrol-reports/no-emojis-in-ui.md` | 19 approved files passed accessible-state repair, desktop/mobile × light/dark proof, and the full type gate, then shipped in `v0.4.527`; 203 lines remain in 75 files | 2026-08-12
 - [x] P5 | see `.matrx/patrol-reports/copy-everywhere.md` | six certain table gaps repaired with canonical `MatrxDataTable.copy`; certified by clean baseline delta plus focused rendered-component fallback after the direct preview exceeded the fleet memory cap | 2026-08-12
 - [x] P10 | `features/tasks/hooks/useTaskManager.ts:150` | former `TEMP-RT-DEBUG` cast was removed by its owning task before the approved P10 batch; re-verification found no remaining harness symbol or cast | resolved-before-batch | 2026-08-12
 - [ ] P4 | `.matrx/patrol-reports/light-dark-integrity-exception-review.md` | 47 active files / 100 raw-token lines are proposed fixed-palette exceptions; none is approved and every active proposal needs Arman's UI decision (5 applet files / 9 lines resolved by deletion) | 2026-08-12
 - [x] P4 | `features/applet/**` (ModernGlass.tsx, StyledComponents.tsx) | moot — the whole applet/app-builder feature was deleted 2026-08-13 (Arman); both files are gone | resolved-by-deletion | 2026-08-13
-- [ ] P7 | see `.matrx/patrol-reports/no-browser-dialogs.md` | certified recovery fixed all 16 standalone alerts in nine files; two manual findings remain: Hindsight's synchronous destructive confirm and the Slack demo's sensitive-token prompt | 2026-08-12
+- [x] P7 | see `.matrx/patrol-reports/no-browser-dialogs.md` | prior manual findings were resolved before the 2026-08-13 patrol by canonical `confirm({...})` and `TextInputDialog` replacements in `460ff2dcc`; the full scope-aware detector is clean in `v0.4.561` | resolved-before-run | 2026-08-13
 - [ ] P8 | see `.matrx/patrol-reports/real-loading-states.md` | 11 manually approved Suspense fallbacks fixed and adversarially certified in the first bounded batch; provider-sync independently became skeleton-compliant; 83 historical files remain open for re-verification under the new M/R approval recipe | fixed-certified | 2026-08-12
 
 ## Cleared
