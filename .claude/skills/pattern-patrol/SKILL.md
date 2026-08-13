@@ -62,7 +62,8 @@ system doc). The repo-specific facts it needs:
   interaction/theme changes get the full relevant matrix. CERTIFIED ships;
   REJECTED requires a concrete batch defect and is fixed/reverted;
   INFRASTRUCTURE BLOCKED preserves the approved diff for retry. A broken preview
-  is never proof that product code broke. No independent verdict → invalid run.
+  is never proof that product code broke. Only one managed preview runs
+  machine-wide; concurrent patrols queue. No independent verdict → invalid run.
 - **Scoping:** structural novelty (new `app/**/page.tsx` leaves, new
   `features/*` dirs, new files matching the patrol's surface signature) + the
   ledger + a full pass every Nth run. NEVER scope by raw git churn.
