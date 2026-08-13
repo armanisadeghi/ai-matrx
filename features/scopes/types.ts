@@ -74,7 +74,10 @@ export type EntityType =
   | "note"
   | "file"
   | "conversation"
-  | "prompt"
+  // "prompt" was removed when the prompts system was killed (2026-08-13) and
+  // `platform.entity_types` dropped the token — keeping it here broke the
+  // subset invariant above and made every EntityType -> EntityTypeToken
+  // callsite a type error (15 of them, across 8 features).
   | "scope"
   | "scope_type"
   | "context_item"
