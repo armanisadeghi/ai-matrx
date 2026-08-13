@@ -4870,6 +4870,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/seo/findings/draft-fix": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Draft Finding Fix Route
+         * @description Draft the fix for ONE finding with the purpose-built SEO Finding Fixer
+         *     (slot `seo.finding_fixer`) as a DURABLE streamed command — the AI pipe of
+         *     the Growth Loop's `suggest -> writeback` connection (gap G-FINDING-FIX).
+         *
+         *     PROPOSES ONLY. This endpoint has no write path: the drafted replacement
+         *     text comes back in the run's result document and the human applies it in
+         *     the frontend, which lands it as the page's desired metadata and a CMS
+         *     DRAFT. Nothing here touches the page, the CMS, or the live site.
+         */
+        post: operations["draft_finding_fix_route_seo_findings_draft_fix_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/seo/spend/summary": {
         parameters: {
             query?: never;
@@ -7327,6 +7354,30 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -23902,6 +23953,8 @@ export interface components {
             plan_node_id?: string | null;
             /** Plan Excluded At */
             plan_excluded_at?: string | null;
+            /** Web Page Id */
+            web_page_id?: string | null;
         };
         /** CmsPublishBody */
         CmsPublishBody: {
@@ -26954,6 +27007,33 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
+        };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description JWT expiry. Default 2h, min 60s, max 24h.
+             * @default 7200
+             */
+            ttl_seconds?: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -30013,6 +30093,54 @@ export interface components {
             /** Applied Version Number */
             applied_version_number?: number | null;
         };
+        /** FindingDraftFixBody */
+        FindingDraftFixBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Finding Id */
+            finding_id: string;
+            /**
+             * Force Refresh
+             * @default false
+             */
+            force_refresh?: boolean;
+        };
+        /** FindingFixResult */
+        FindingFixResult: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            result_kind: "findings.draft_fix";
+            /** Finding Id */
+            finding_id: string;
+            /** Site Id */
+            site_id: string;
+            /** Page Id */
+            page_id?: string | null;
+            /**
+             * Fixer Version
+             * @default findingfix-v1
+             */
+            fixer_version?: string;
+            /** Proposal */
+            proposal?: {
+                [key: string]: unknown;
+            };
+        };
         /**
          * FindingOut
          * @description One proposed improvement on one of the four levers.
@@ -32074,7 +32202,7 @@ export interface components {
          */
         JsonSchemaProperty: {
             /** Type */
-            type?: ("string" | "number" | "integer" | "boolean" | "array" | "object" | "null") | ("string" | "number" | "integer" | "boolean" | "array" | "object" | "null")[] | null;
+            type?: ("array" | "boolean" | "integer" | "null" | "number" | "object" | "string") | ("array" | "boolean" | "integer" | "null" | "number" | "object" | "string")[] | null;
             /** Description */
             description?: string | null;
             /** Enum */
@@ -42071,7 +42199,7 @@ export interface components {
             } | null;
             receipt?: components["schemas"]["CollectionReceipt"] | null;
             /** Result */
-            result?: (components["schemas"]["AiVisibilityResult"] | components["schemas"]["BacklinkEnrichmentResult"] | components["schemas"]["AuthorityRouterResult"] | components["schemas"]["CompetitorAutopsyResult"] | components["schemas"]["KeywordResearchResult"] | components["schemas"]["KeywordVolumeRefreshResult"] | components["schemas"]["PageAnalysisResult"] | components["schemas"]["PageKeywordMapResult"] | components["schemas"]["PageAuditResult"] | components["schemas"]["ReputationRunResult"] | components["schemas"]["RobotsCheckResult"] | components["schemas"]["StructuredDataValidateResult"]) | null;
+            result?: (components["schemas"]["AiVisibilityResult"] | components["schemas"]["BacklinkEnrichmentResult"] | components["schemas"]["AuthorityRouterResult"] | components["schemas"]["CompetitorAutopsyResult"] | components["schemas"]["FindingFixResult"] | components["schemas"]["KeywordResearchResult"] | components["schemas"]["KeywordVolumeRefreshResult"] | components["schemas"]["PageAnalysisResult"] | components["schemas"]["PageKeywordMapResult"] | components["schemas"]["PageAuditResult"] | components["schemas"]["ReputationRunResult"] | components["schemas"]["RobotsCheckResult"] | components["schemas"]["StructuredDataValidateResult"]) | null;
         };
         /** SeoSpendSummaryResponse */
         SeoSpendSummaryResponse: {
@@ -43598,7 +43726,7 @@ export interface components {
          *     detail and the authority.
          * @enum {string}
          */
-        StageRefKind: "workflow_run" | "runtime_execution" | "sch_run" | "chat_request" | "research_topic" | "cms_fill_job" | "crawl_session" | "analysis_result" | "finding" | "assist" | "agent_usage";
+        StageRefKind: "workflow_run" | "runtime_execution" | "sch_run" | "chat_request" | "agent_run" | "research_topic" | "cms_fill_job" | "crawl_session" | "analysis_result" | "finding" | "assist" | "agent_usage";
         /**
          * StageRunStatus
          * @description Processing outcome of one stage attempt. One meaning per status column.
@@ -58378,6 +58506,39 @@ export interface operations {
             };
         };
     };
+    draft_finding_fix_route_seo_findings_draft_fix_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FindingDraftFixBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     seo_spend_summary_seo_spend_summary_get: {
         parameters: {
             query?: {
@@ -62692,6 +62853,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
+                };
+            };
+        };
+    };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
