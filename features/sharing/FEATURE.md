@@ -248,6 +248,13 @@ default-path floor. `lenses/metadata.ts` is the server-safe half (per-token soci
 owns only the card JSX: the report card for `seo_collection_run`, the branded generic card for
 everyone else). `lenses/default-renderers.tsx`
 holds the bodies (markdown/code/flashcard/file/folder/AI-visibility/generic).
+**POLYMORPHIC tokens dispatch INSIDE their lens, never by adding token entries.**
+`content_ir_kind_instance` carries many kinds (keyword research, flashcard sets, briefs,
+decks…) and its public projection deliberately omits the kind — so
+`lenses/kind-instance.tsx` dispatches on the DATA SHAPE with `GenericRenderer` as the
+fallback (the `PublicCanvasRenderer` pattern), and `lenses/metadata.ts` dispatches the same
+way for meta + OG. Never assume a kind instance is one kind.
+
 **Adding a share rendering = one registry entry (+ optional metadata entry). Adding a per-type
 `switch` on any share surface is banned** — `SharedResourceView.tsx` is a pure shell
 (conversion chrome + lens dispatch) and must stay that way. Presentation-lens exemplar:
@@ -313,6 +320,20 @@ Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) 
 
 ## Change log
 
+- 2026-08-13 — **Pilot 1 of the sharing experience: keyword research shares as a presentation
+  report.** `content_ir_kind_instance` flipped link-shareable (`public_columns =
+  id,title,data,created_at`; label "Kind Instance" → "Saved Result" — jargon in a
+  non-technical user's share dialog), and its `urlPathTemplate` route
+  `/shapes/instances/[id]` now DISPATCHES on the instance's kind (report for keyword
+  research, previous studio redirect for every other kind, `<AccessGate>` when RLS hides
+  the row) instead of dead-ending a grantee in the shape studio. New lens
+  `lenses/kind-instance.tsx` (shape-dispatched, `GenericRenderer` fallback) + metadata/OG
+  entries (title "Keyword research: <phrase>", description with real counts). ONE
+  component — `KeywordResearchReport` — now serves owner, grantee, and anonymous token,
+  which is the level-vs-lens proof this pilot existed to produce. Anonymous metrics ride a
+  bounded token-scoped RPC (`public.share_token_keyword_metrics`) rather than a blanket
+  anon grant on the paid keyword plane. Migration
+  `mtx_share_keyword_research_lens.sql` (applied + ledgered); TS mirror + snapshot in sync.
 - 2026-08-13 — Claude: **`seo_collection_run` share path lands on a real route.** The registry's
   `urlPathTemplate` pointed at `/marketing/seo/collections/{id}` — a route that never existed, so
   every signed-in grantee 404'd from "Open in AI Matrx". Now `/marketing/ai-visibility/runs/{id}`:

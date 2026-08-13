@@ -104,7 +104,7 @@
     "id_column": "id",
     "owner_column": "created_by",
     "is_public_column": "visibility",
-    "display_label": "Kind Instance",
+    "display_label": "Saved Result",
     "url_path_template": "/shapes/instances/{id}",
     "rls_uses_has_permission": true,
     "is_active": true

@@ -21,10 +21,13 @@
 --    `resolve_share_token`, minus the view consumption (reading metrics is not
 --    a second view).
 
+-- `display_label` is what the SHARE dialog and the access gate call this thing
+-- to a human ("Share Kind Instance" was developer jargon in a user's face).
 UPDATE platform.shareable_resource_registry
    SET is_link_shareable = true,
        public_columns = ARRAY['id', 'title', 'data', 'created_at'],
-       url_path_template = '/shapes/instances/{id}'
+       url_path_template = '/shapes/instances/{id}',
+       display_label = 'Saved Result'
  WHERE resource_type = 'content_ir_kind_instance';
 
 CREATE OR REPLACE FUNCTION public.share_token_keyword_metrics(p_token text)

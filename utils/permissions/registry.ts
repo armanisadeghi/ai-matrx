@@ -776,7 +776,9 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     // boolean is_public_column slot — mirrored verbatim for parity; flagged in
     // FOUND_DEFECTS (it routes ShareModal through make_resource_public).
     isPublicColumn: "visibility",
-    displayLabel: "Kind Instance",
+    // What a HUMAN calls it in the share dialog / access gate. "Kind Instance"
+    // was developer jargon in a non-technical user's face (2026-08-13).
+    displayLabel: "Saved Result",
     urlPathTemplate: "/shapes/instances/{id}",
     rlsUsesHasPermission: true,
   },

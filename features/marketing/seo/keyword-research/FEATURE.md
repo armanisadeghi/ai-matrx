@@ -137,9 +137,38 @@ before adding any keyword field or per-keyword display anywhere.
 - `useKeywordResearch.ts` — page state + the two `callApi` actions; debounced search,
   abort-safe reloads; adopts the pipeline stream and exposes `run.requestId` +
   `run.hasStreamedContent` (the whole live-rendering contract).
-- `components/SavedResearchFeed.tsx` — durable in-place rendering of the saved
-  hierarchy plus persisted classification rows through the same selectable
-  blocks used by the live feed.
+- `components/KeywordResearchReport.tsx` — **THE one rendering of a saved
+  research artifact, for every access level**: owner workbench feed
+  (`variant="embedded"`), signed-in/grantee permalink `/shapes/instances/[id]`
+  (`variant="page"`), anonymous share link `/s/[token]` (`page` +
+  `acquisition`). Pure presentation: it takes `{artifact, keywords}` and
+  fetches nothing, so the anonymous landing ships server-rendered HTML. Clusters
+  and classification render through their REGISTERED kind components
+  (`KeywordResearchBlock` / `KeywordClassificationBatchBlock`) — this file adds
+  only chrome (header, stat tiles, the market table over `keyword_market` rows
+  built from `KeywordMetrics`, the conversion CTA). This is the level-vs-lens
+  proof of the sharing experience (`common-docs/projects/sharing-experience/`).
+- `components/SavedResearchFeed.tsx` — the OWNER host: loads the keyword plane
+  for the artifact's phrases and hands it to `KeywordResearchReport`, plus the
+  owner doors (Open full report / ShareButton) when it knows the artifact's
+  `kind_instance` id. It renders nothing itself.
+- `components/SavedResearchLibrary.tsx` — the org's saved artifacts as doors
+  (open report + share), over `listSavedKeywordResearch`. Mounted in the
+  workbench; it is also the page-level share affordance.
+- `data/artifact.ts` — pure (no Supabase import) artifact parsing +
+  `keywordResearchPhrases`. `readKeywordResearchArtifact` is the STRICT variant
+  used as the polymorphic-token discriminator: the `content_ir_kind_instance`
+  share token carries `data` without the kind, so the lens dispatches on shape.
+- `data/report.ts` — pure report data contract: `KeywordReportRow` (the subset
+  of the keyword plane a report renders; `KeywordWithMarket` satisfies it) plus
+  the kind-data and summary builders.
+- `data/server.ts` (`server-only`) — the permalink's Server Component reads:
+  the instance with its kind resolved, and the phrase→metrics join.
+- `data/shared-metrics.ts` — the ANONYMOUS metrics lane
+  (`public.share_token_keyword_metrics`). Anon has no grant on the `seo` schema
+  by design (paid provider data), so a valid token — and only a valid token —
+  returns exactly the phrases inside THAT artifact. Never widen it, and never
+  grant anon the keyword tables to avoid it.
 - `useSavedKeywordResearch.ts` — THE one query for the latest durable
   research artifact per (org, phrase): wraps `getLatestSavedKeywordResearch`,
   resolves the org exactly like `callApi` (explicit override else
@@ -218,6 +247,22 @@ and the same block renders read-only in chat.
 
 ## Change Log
 
+- 2026-08-13 — **Saved research is SHAREABLE, and the share is a presentation
+  report** (pilot 1 of the sharing experience). `content_ir_kind_instance` is
+  now link-shareable (`public_columns = id,title,data,created_at`; label
+  "Saved Result", not "Kind Instance"); `/shapes/instances/[id]` dispatches on
+  the instance's kind and renders `KeywordResearchReport` for a grantee instead
+  of dead-ending in the shape studio; `/s/[token]` renders the same component
+  with conversion chrome through the share-lens registry (shape-dispatched,
+  generic fallback for every other kind). New: the report component, the saved
+  research library, `listSavedKeywordResearch`, the pure artifact/report
+  modules, the server loaders, and the anon `share_token_keyword_metrics` RPC.
+  `SavedResearchFeed` now renders the report core (no second rendering of the
+  same shape), and `KeywordMetrics` dropped a needless `"use client"` so the
+  anonymous report is server HTML. Verified end to end in the browser: minted a
+  link, opened it signed-out (SSR title/OG/report + client metrics), opened the
+  permalink as owner. Migration `mtx_share_keyword_research_lens.sql` (applied +
+  ledgered).
 - 2026-08-11 — **The workbench floats its run (THE FLOATING LAW).**
   `KeywordResearchLauncher` gained `liveFeed="inline" | "floating"`. The
   workbench passes `floating` — its keyword table sits directly under the
