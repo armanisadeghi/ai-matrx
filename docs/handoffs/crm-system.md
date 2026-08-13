@@ -240,9 +240,9 @@ A newcomer will otherwise be tempted to undo these. Don't.
   webhook logs, org-scoped) keys on raw phone strings — no party link, and `sms_consent`
   duplicates the DNC/suppression that `crm.contact_medium` owns. One suppression check must win
   before CRM SMS campaigns ship.
-- **The raw `database` agent tool can already write `crm.party` ungoverned** (`crm` is not in its
-  schema denylist) — a duplicate factory until the resolver + proper `agent_data` registration
-  exist.
+- ~~The raw `database` agent tool can already write `crm.party` ungoverned~~ **CLOSED 2026-08-12** —
+  `crm` writes are refused by `WRITE_GOVERNED_SCHEMAS` (aidream v0.2.57); reads still work. Wave 1
+  lifts the entry once the resolver + `agent_data` registration exist.
 - The full platform-wide gap map (every fold/link/leave with efforts) lives in the cross-repo SoR
   — do not re-derive it.
 
@@ -276,10 +276,16 @@ named parameters. Parallel agent sessions sweep the working tree — re-verify y
 
 Waves are independently shippable; full rationale + per-item efforts in the SoR.
 
-**Wave 0 — defect closure (~1 day).**
-Guard the raw `database` tool against ungoverned `crm` writes (aidream) · rename the
-`matrx_legal...docket.Party` class collision before CRM server code lands · decide
-`expert_status` (wire, don't drop — its producers arrive in Wave 3).
+**Wave 0 — defect closure.** Both aidream items **DONE 2026-08-12** (shipped v0.2.57):
+raw-`database`-tool guard (`WRITE_GOVERNED_SCHEMAS = {"crm"}` in
+`matrx_ai/tools/implementations/database.py` — every write path funnels through
+`_resolve_write_target` and refuses `crm` with a governed-path message; reads and
+schema discovery deliberately untouched, unlike `_NON_APP_SCHEMAS`. **Wave 1 must
+lift this entry** when the resolver + `agent_data` registration land. Guard:
+`packages/matrx-ai/tests/test_write_governed_schemas.py`; doc:
+`aidream/services/agent_data/FEATURE.md`) · `matrx_legal...docket.Party` →
+**`DocketParty`** (all consumers + `__all__` updated, package tests green).
+**Still open:** decide `expert_status` (wire, don't drop — its producers arrive in Wave 3).
 
 **Wave 1 — the keystone + the agent premise (~1 week).**
 Build the **party resolver** in aidream (find-or-create: `name_key` canonicalization, natural keys
