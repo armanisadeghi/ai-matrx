@@ -53,6 +53,8 @@ system doc). The repo-specific facts it needs:
   as patrol gate evidence. Patrols never change dependencies; when a fresh
   worktree lacks them, run `pnpm install --offline --frozen-lockfile`. Never
   symlink `node_modules` from the canonical checkout — Turbopack rejects it.
+  Link ignored local env files when preview needs them; never print or track
+  their contents.
 - **Certification (Tier M):** a second adversarial agent ("assume this batch
   broke something; find it") compares pre-edit and post-edit type/gate
   diagnostics. New batch-caused failures reject; unchanged baseline debt is
