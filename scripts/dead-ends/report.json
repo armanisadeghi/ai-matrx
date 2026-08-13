@@ -1,35 +1,40 @@
 {
-  "generatedAt": "2026-08-13T01:16:55.612Z",
-  "commit": "8e99fec9d6467b47b3e659f9f5a539860a41fff3",
+  "generatedAt": "2026-08-13T04:24:04.736Z",
+  "commit": "5de73f800607ca2a7584c5e3def9fd4e28e148b1",
   "totals": {
-    "findings": 121,
-    "high": 75,
-    "medium": 46,
+    "findings": 108,
+    "high": 77,
+    "medium": 31,
     "low": 0,
-    "filesWithFindings": 73,
-    "filesScanned": 6982,
+    "filesWithFindings": 67,
+    "filesScanned": 6531,
     "allowlisted": 0
   },
   "byRule": {
-    "bare-id-text": 68,
-    "unlinked-entity-name": 39,
+    "bare-id-text": 53,
+    "unlinked-entity-name": 40,
     "unlinked-count": 4,
-    "no-doors-in-file": 10
+    "no-doors-in-file": 11
   },
   "worstFiles": [
     {
       "key": "components/admin/state-analyzer/sliceViewers/agent-definitions/AgentDefinitionSliceViewer.tsx",
-      "count": 5,
+      "count": 4,
       "high": 4
     },
     {
       "key": "components/admin/state-analyzer/sliceViewers/agent-definitions/AgentDefinitionSliceViewerShadcn.tsx",
-      "count": 5,
+      "count": 4,
       "high": 4
     },
     {
       "key": "components/debug/AgentExecutionDebugPanel.tsx",
       "count": 4,
+      "high": 3
+    },
+    {
+      "key": "features/agent-comparison/components/MasterInputWindow.tsx",
+      "count": 3,
       "high": 3
     },
     {
@@ -183,11 +188,6 @@
       "high": 1
     },
     {
-      "key": "features/agent-comparison/components/MasterInputWindow.tsx",
-      "count": 1,
-      "high": 1
-    },
-    {
       "key": "features/agent-connections/components/sections/ResourcesSection.tsx",
       "count": 1,
       "high": 1
@@ -276,13 +276,18 @@
     },
     {
       "key": "app/(dev)",
-      "count": 20,
+      "count": 18,
       "high": 9
     },
     {
       "key": "components/admin",
-      "count": 13,
+      "count": 9,
       "high": 9
+    },
+    {
+      "key": "features/agent-comparison",
+      "count": 5,
+      "high": 5
     },
     {
       "key": "features/surfaces",
@@ -302,11 +307,6 @@
     {
       "key": "components/debug",
       "count": 5,
-      "high": 3
-    },
-    {
-      "key": "features/agent-comparison",
-      "count": 3,
       "high": 3
     },
     {
@@ -405,18 +405,18 @@
       "high": 1
     },
     {
-      "key": "app/(transitional)",
-      "count": 6,
-      "high": 0
-    },
-    {
-      "key": "features/applet",
-      "count": 3,
-      "high": 0
-    },
-    {
       "key": "components/official",
       "count": 2,
+      "high": 0
+    },
+    {
+      "key": "features/rag",
+      "count": 2,
+      "high": 0
+    },
+    {
+      "key": "features/ai-work",
+      "count": 1,
       "high": 0
     }
   ],
@@ -627,7 +627,7 @@
     },
     {
       "file": "components/admin/state-analyzer/sliceViewers/agent-definitions/AgentDefinitionSliceViewer.tsx",
-      "line": 354,
+      "line": 353,
       "column": 18,
       "rule": "bare-id-text",
       "severity": "high",
@@ -639,7 +639,7 @@
     },
     {
       "file": "components/admin/state-analyzer/sliceViewers/agent-definitions/AgentDefinitionSliceViewer.tsx",
-      "line": 356,
+      "line": 355,
       "column": 38,
       "rule": "bare-id-text",
       "severity": "high",
@@ -651,7 +651,7 @@
     },
     {
       "file": "components/admin/state-analyzer/sliceViewers/agent-definitions/AgentDefinitionSliceViewer.tsx",
-      "line": 364,
+      "line": 363,
       "column": 18,
       "rule": "bare-id-text",
       "severity": "high",
@@ -675,7 +675,7 @@
     },
     {
       "file": "components/admin/state-analyzer/sliceViewers/agent-definitions/AgentDefinitionSliceViewerShadcn.tsx",
-      "line": 389,
+      "line": 388,
       "column": 18,
       "rule": "bare-id-text",
       "severity": "high",
@@ -687,7 +687,7 @@
     },
     {
       "file": "components/admin/state-analyzer/sliceViewers/agent-definitions/AgentDefinitionSliceViewerShadcn.tsx",
-      "line": 391,
+      "line": 390,
       "column": 38,
       "rule": "bare-id-text",
       "severity": "high",
@@ -699,7 +699,7 @@
     },
     {
       "file": "components/admin/state-analyzer/sliceViewers/agent-definitions/AgentDefinitionSliceViewerShadcn.tsx",
-      "line": 396,
+      "line": 395,
       "column": 18,
       "rule": "bare-id-text",
       "severity": "high",
@@ -771,8 +771,32 @@
     },
     {
       "file": "features/agent-comparison/components/MasterInputWindow.tsx",
-      "line": 285,
-      "column": 8,
+      "line": 1,
+      "column": 1,
+      "rule": "no-doors-in-file",
+      "severity": "high",
+      "entity": "(file)",
+      "entityHasRoute": false,
+      "expression": "features/agent-comparison/components/MasterInputWindow.tsx",
+      "feature": "features/agent-comparison",
+      "route": null
+    },
+    {
+      "file": "features/agent-comparison/components/MasterInputWindow.tsx",
+      "line": 281,
+      "column": 12,
+      "rule": "unlinked-entity-name",
+      "severity": "high",
+      "entity": "agent",
+      "entityHasRoute": true,
+      "expression": "agentName",
+      "feature": "features/agent-comparison",
+      "route": null
+    },
+    {
+      "file": "features/agent-comparison/components/MasterInputWindow.tsx",
+      "line": 307,
+      "column": 10,
       "rule": "unlinked-entity-name",
       "severity": "high",
       "entity": "agent",
@@ -963,7 +987,7 @@
     },
     {
       "file": "features/agents/ui-first-tools/ui/lists/TaskPanel.tsx",
-      "line": 318,
+      "line": 317,
       "column": 14,
       "rule": "unlinked-entity-name",
       "severity": "high",
@@ -1430,150 +1454,6 @@
       "route": null
     },
     {
-      "file": "app/(dev)/demos/tests/field-tests/direct-fields/FieldDefinitionTable.tsx",
-      "line": 157,
-      "column": 38,
-      "rule": "bare-id-text",
-      "severity": "medium",
-      "entity": "?option",
-      "entityHasRoute": false,
-      "expression": "option.parentId && <div><strong>Parent ID:</strong> {option.parentId}</div>",
-      "feature": "app/(dev)",
-      "route": null
-    },
-    {
-      "file": "app/(dev)/demos/tests/field-tests/direct-fields/FieldDefinitionTable.tsx",
-      "line": 157,
-      "column": 91,
-      "rule": "bare-id-text",
-      "severity": "medium",
-      "entity": "?option",
-      "entityHasRoute": false,
-      "expression": "option.parentId",
-      "feature": "app/(dev)",
-      "route": null
-    },
-    {
-      "file": "app/(transitional)/_apps/app-builder/applets/[id]/components/BrokerMappingsTab.tsx",
-      "line": 37,
-      "column": 59,
-      "rule": "bare-id-text",
-      "severity": "medium",
-      "entity": "?mapping",
-      "entityHasRoute": false,
-      "expression": "mapping.appletId",
-      "feature": "app/(transitional)",
-      "route": null
-    },
-    {
-      "file": "app/(transitional)/_apps/app-builder/applets/[id]/components/BrokerMappingsTab.tsx",
-      "line": 38,
-      "column": 59,
-      "rule": "bare-id-text",
-      "severity": "medium",
-      "entity": "?mapping",
-      "entityHasRoute": false,
-      "expression": "mapping.fieldId",
-      "feature": "app/(transitional)",
-      "route": null
-    },
-    {
-      "file": "app/(transitional)/_apps/app-builder/applets/[id]/components/BrokerMappingsTab.tsx",
-      "line": 39,
-      "column": 59,
-      "rule": "bare-id-text",
-      "severity": "medium",
-      "entity": "?mapping",
-      "entityHasRoute": false,
-      "expression": "mapping.brokerId",
-      "feature": "app/(transitional)",
-      "route": null
-    },
-    {
-      "file": "app/(transitional)/_apps/app-builder/applets/[id]/edit/components/BrokerMappingsEditTab.tsx",
-      "line": 65,
-      "column": 61,
-      "rule": "bare-id-text",
-      "severity": "medium",
-      "entity": "?mapping",
-      "entityHasRoute": false,
-      "expression": "mapping.appletId",
-      "feature": "app/(transitional)",
-      "route": null
-    },
-    {
-      "file": "app/(transitional)/_apps/app-builder/applets/[id]/edit/components/BrokerMappingsEditTab.tsx",
-      "line": 66,
-      "column": 61,
-      "rule": "bare-id-text",
-      "severity": "medium",
-      "entity": "?mapping",
-      "entityHasRoute": false,
-      "expression": "mapping.fieldId",
-      "feature": "app/(transitional)",
-      "route": null
-    },
-    {
-      "file": "app/(transitional)/_apps/app-builder/applets/[id]/edit/components/BrokerMappingsEditTab.tsx",
-      "line": 67,
-      "column": 61,
-      "rule": "bare-id-text",
-      "severity": "medium",
-      "entity": "?mapping",
-      "entityHasRoute": false,
-      "expression": "mapping.brokerId",
-      "feature": "app/(transitional)",
-      "route": null
-    },
-    {
-      "file": "components/admin/applet-admin/AppletConfigViewer.tsx",
-      "line": 465,
-      "column": 121,
-      "rule": "bare-id-text",
-      "severity": "medium",
-      "entity": "?broker",
-      "entityHasRoute": false,
-      "expression": "broker.fieldId",
-      "feature": "components/admin",
-      "route": null
-    },
-    {
-      "file": "components/admin/applet-admin/AppletConfigViewer.tsx",
-      "line": 470,
-      "column": 58,
-      "rule": "bare-id-text",
-      "severity": "medium",
-      "entity": "?broker",
-      "entityHasRoute": false,
-      "expression": "broker.brokerId",
-      "feature": "components/admin",
-      "route": null
-    },
-    {
-      "file": "components/admin/state-analyzer/sliceViewers/agent-definitions/AgentDefinitionSliceViewer.tsx",
-      "line": 352,
-      "column": 38,
-      "rule": "bare-id-text",
-      "severity": "medium",
-      "entity": "?record",
-      "entityHasRoute": false,
-      "expression": "record.userId ?? \"null\"",
-      "feature": "components/admin",
-      "route": null
-    },
-    {
-      "file": "components/admin/state-analyzer/sliceViewers/agent-definitions/AgentDefinitionSliceViewerShadcn.tsx",
-      "line": 387,
-      "column": 38,
-      "rule": "bare-id-text",
-      "severity": "medium",
-      "entity": "?record",
-      "entityHasRoute": false,
-      "expression": "record.userId ?? \"null\"",
-      "feature": "components/admin",
-      "route": null
-    },
-    {
       "file": "components/debug/AgentExecutionDebugPanel.tsx",
       "line": 871,
       "column": 26,
@@ -1703,42 +1583,6 @@
       "entityHasRoute": true,
       "expression": "conversation.messageCount message",
       "feature": "features/ai-work",
-      "route": null
-    },
-    {
-      "file": "features/applet/contepts/BrokerDebugger.tsx",
-      "line": 103,
-      "column": 14,
-      "rule": "bare-id-text",
-      "severity": "medium",
-      "entity": "?fieldEntry",
-      "entityHasRoute": false,
-      "expression": "fieldEntry?.brokerId || \"Not found\"",
-      "feature": "features/applet",
-      "route": null
-    },
-    {
-      "file": "features/applet/contepts/BrokerDebugger.tsx",
-      "line": 133,
-      "column": 54,
-      "rule": "bare-id-text",
-      "severity": "medium",
-      "entity": "?entry",
-      "entityHasRoute": false,
-      "expression": "entry.brokerId",
-      "feature": "features/applet",
-      "route": null
-    },
-    {
-      "file": "features/applet/runner/response/BrokerMapViewer.tsx",
-      "line": 418,
-      "column": 38,
-      "rule": "bare-id-text",
-      "severity": "medium",
-      "entity": "?entry",
-      "entityHasRoute": false,
-      "expression": "entry.brokerId",
-      "feature": "features/applet",
       "route": null
     },
     {

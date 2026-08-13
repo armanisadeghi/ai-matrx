@@ -1,9 +1,5 @@
 [
   {
-    "path": "/demos/tests/applet-tests",
-    "name": "applet-tests"
-  },
-  {
     "path": "/demos/tests/direct-chat-test",
     "name": "direct-chat-test"
   },
