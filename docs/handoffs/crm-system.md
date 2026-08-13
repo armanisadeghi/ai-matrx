@@ -290,11 +290,12 @@ everything downstream consumes it · register `party` in `agent_data` (flip `age
 `party_link`) · context-menu "Save selection as contact" · `features/crm/agent-context/` builder.
 
 **Wave 2 — adoption + cheap folds (~2 weeks).**
-CSV import (upsert media against the real unique index
-`(organization_id, channel, coalesce(platform_slug,''), value_key) WHERE deleted_at IS NULL`
-from line one — a bare 3-column `ON CONFLICT` errors; reuse
-`normalizeMediumValue`; dry-run preview; this also first-exercises the O(n) reachability-refresh
-warning) · `plan.entity` fold (cheapest now, most expensive later) · `invitation_requests` +
+~~CSV import~~ **DONE 2026-08-13** (`/crm/import`: paste/file → auto-map →
+dry-run preview → commit; engine `features/crm/import/`; dedup via bulk medium/
+name/domain lookups in `service.ts`. Found D181 en route: component
+`INSERT…RETURNING` 42501s platform-wide — chip fired for the `iam.apply_rls`
+generator fix; CRM service inserts bare as a hedge) · `plan.entity` fold (chip
+fired 2026-08-13; cheapest now, most expensive later) · `invitation_requests` +
 `contact_submissions` + `user_form_profile` folds (each needs `scripts/dead-relations.json` +
 `platform.deprecated_relations` BEFORE repointing) · YouTube channel → party (the original forcing
 function; `channel_id` is a stable key, no fuzzy matching).

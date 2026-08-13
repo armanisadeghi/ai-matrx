@@ -26,6 +26,14 @@ const CRM_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
+      url: "/crm/import",
+      label: "CSV import",
+      description:
+        "Import wizard: source file, column mapping, dedup dry-run preview, then commit through the canonical service (mediums, contact points, affiliations).",
+      filePath: "app/(core)/crm/import/page.tsx",
+      status: "Live",
+    },
+    {
       url: "/crm/admin",
       label: "CRM feature map",
       description:
@@ -68,6 +76,14 @@ const CRM_ADMIN_MAP: FeatureAdminMap = {
       name: "PartyRecordPage",
       filePath: "features/crm/components/record/PartyRecordPage.tsx",
       description: "Person/company detail workspace and relationship history.",
+      tier: "internal",
+      status: "Live",
+    },
+    {
+      name: "ImportWizard",
+      filePath: "features/crm/components/import/ImportWizard.tsx",
+      description:
+        "CSV import steps (source, mapping, dry-run preview, results) over the engine in features/crm/import/.",
       tier: "internal",
       status: "Live",
     },

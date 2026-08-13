@@ -13,6 +13,7 @@
 //   * ONE "…" menu per row carrying every record action
 
 import { useRef } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import { toastDoor } from "@/components/official/entity-ref/toastDoor";
@@ -24,6 +25,7 @@ import {
   Contact,
   Trash2,
   ArchiveRestore,
+  FileUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
@@ -551,6 +553,21 @@ export function CrmListPage({
 
   const newButtons = (
     <div className="flex items-center gap-1.5">
+      <Button
+        size="sm"
+        variant="ghost"
+        className="h-11 gap-1 px-2 text-xs lg:h-7"
+        asChild
+      >
+        {/* Window mounts keep their state: the wizard opens in a new tab. */}
+        <Link
+          href="/crm/import"
+          target={presentation === "route" ? undefined : "_blank"}
+        >
+          <FileUp className="h-3.5 w-3.5" />
+          Import
+        </Link>
+      </Button>
       <Button
         size="sm"
         variant="outline"

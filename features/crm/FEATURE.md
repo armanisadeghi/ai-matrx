@@ -169,9 +169,40 @@ attachments = `features/files` · tags/stages = `platform.categories` · the 360
 
 ---
 
+## CSV import (`/crm/import`)
+
+Wizard: source (file or pasted text) → column mapping (auto-guessed from header
+synonyms) → **dry-run preview** → commit. Engine in `features/crm/import/`
+(`engine.ts` — parse/guess/plan/commit; `types.ts`); UI in
+`components/import/ImportWizard.tsx`; bulk dedup lookups live in `service.ts`
+(`findExistingMediumOwners`, `findPartiesByNames`, `findPartiesByDomains`,
+`findOrCreateCompanyByName`). Rules paid for once:
+
+- **Nothing writes before the preview is confirmed.** The dry run resolves, per
+  row: `create` / `exists` (with a door to the owning record) /
+  `duplicate_in_file` (first claim wins) / `invalid` (no name).
+- **Dedup identity:** people dedupe on normalized email/phone values already
+  owned by a live party in the org (names are too weak to skip a person on —
+  a person row with no valid email/phone re-imports; that is the resolver's
+  Wave 1 job, not the CSV wizard's). Companies dedupe on exact domain, then
+  case-insensitive exact name.
+- **Employer cells** find-or-create the company once per distinct name and add
+  a current+primary `crm.affiliation` (the mirror trigger fills the list's
+  Employer column).
+- **Component inserts never use RETURNING** — see the service comment on
+  `addContactPoint` and D181 in `FOUND_DEFECTS.md`: the id-list `std_select`
+  policy on component tables cannot see a row being inserted, so
+  `INSERT…RETURNING` 42501s. Insert bare, re-read in the next statement.
+- **Known limits:** the commit is client-driven — a page close/reload mid-run
+  leaves the current row partial (party without its later points/affiliation);
+  re-running converges to "exists" via email/phone dedup but does NOT backfill
+  the missing pieces (no enrich-existing mode yet — that is the Wave 1 party
+  resolver's territory). Rows with no valid email/phone dedupe by nothing and
+  re-import as new people.
+
 ## Not built yet
 
-- Campaign builder, call queue, CSV import, merge review UI.
+- Campaign builder, call queue, merge review UI.
 - "Shared" list scope (needs a crm grant-reader RPC).
 - Research expert writing, dedup automation, the `web.brand` fold, expert
   registration — see [`docs/handoffs/crm-system.md`](../../docs/handoffs/crm-system.md).
@@ -180,6 +211,14 @@ attachments = `features/files` · tags/stages = `platform.categories` · the 360
 
 ## Change log
 
+- 2026-08-13 — CSV import shipped: `/crm/import` wizard (file or paste →
+  auto-mapped columns → dry-run preview → commit), engine + bulk dedup service
+  lookups, Import button on `/crm`, admin-map entry. While verifying, found and
+  hedged D181 (component `INSERT…RETURNING` 42501s platform-wide — see
+  FOUND_DEFECTS.md): all CRM component inserts (`addContactPoint`,
+  `addAddress`, `logInteraction`) now insert bare and re-read, which also
+  repairs the record page's add-email/add-phone/add-address/log-call, all
+  broken by that regression. Browser + DB verified end-to-end.
 - 2026-08-12 — Made the LIST surface agent-writable: 4 `mode: "ui"` /
   `applyPolicy: "ask"` write targets on `matrx-user/crm` — `search_query`,
   `party_kind_filter`, `column_filters` and `list_sort` — so an agent can put
