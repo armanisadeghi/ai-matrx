@@ -56,20 +56,23 @@ export function ListsHubView() {
         db
           .schema("chat").from("agent_plan")
           .select("*")
-          .eq("user_id", userId)
+          .eq("created_by", userId)
           .neq("status", "superseded")
           .order("updated_at", { ascending: false })
           .limit(500),
+        // VIEW LAW: `agent_task` has no owner column of its own — it is owned
+        // through its parent conversation, so the scope is declared as an
+        // inner join on `conversation.created_by`.
         db
           .schema("chat").from("agent_task")
-          .select("*")
-          .eq("user_id", userId)
+          .select("*, conversation!inner(created_by)")
+          .eq("conversation.created_by", userId)
           .order("updated_at", { ascending: false })
           .limit(2000),
         db
           .schema("chat").from("user_todo")
           .select("*")
-          .eq("user_id", userId)
+          .eq("created_by", userId)
           .order("updated_at", { ascending: false })
           .limit(2000),
       ]);
@@ -80,7 +83,11 @@ export function ListsHubView() {
         convoIds.add(row.conversation_id);
         dispatch(upsertPlan(row));
       }
-      for (const row of (tasksR.data ?? []) as CxAgentTaskRow[]) {
+      for (const joined of (tasksR.data ?? []) as Array<
+        CxAgentTaskRow & { conversation?: unknown }
+      >) {
+        // Drop the join-only embed so the store holds the row shape alone.
+        const { conversation: _joinOnly, ...row } = joined;
         convoIds.add(row.conversation_id);
         dispatch(upsertTask(row));
       }

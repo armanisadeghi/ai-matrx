@@ -119,14 +119,13 @@ describe("compareAgentDefinitions", () => {
 
   it("separates syncable profile fields from per-record local state", () => {
     const result = compareAgentDefinitions(
-      { name: "System", isActive: true, isPublic: true, isFavorite: false },
-      { name: "Personal", isActive: false, isPublic: false, isFavorite: true },
+      { name: "System", isActive: true, isFavorite: false },
+      { name: "Personal", isActive: false, isFavorite: true },
     );
 
     expect(result.profileFields.map((field) => field.key)).toEqual(["name"]);
     expect(result.localStateFields.map((field) => field.key)).toEqual([
       "isActive",
-      "isPublic",
       "isFavorite",
     ]);
     expect(result.behaviorMatches).toBe(true);

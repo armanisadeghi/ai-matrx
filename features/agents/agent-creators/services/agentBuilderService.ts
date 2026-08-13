@@ -121,7 +121,7 @@ export async function createAgentFromBuilder(
 
     const payload = {
       ...configToInsertPayload(config),
-      user_id: authData.user.id,
+      created_by: authData.user.id,
     } satisfies AgentInsert;
 
     const { data, error: insertError } = await supabase

@@ -152,20 +152,33 @@ This feature exists because:
 | `cx_agent_memory` | per-conversation | ephemeral KV scratchpad (cleared on conversation delete) |
 | `agent_user_kv` | per-user | persistent KV (survives conversation reset) |
 
-RLS: `auth.uid() = user_id` on all five; `service_role` bypass for
-admin maintenance. All four conversation-scoped tables added to
-`supabase_realtime` publication.
+**Ownership is `created_by`** (canonical, stamped by the `_stamp_actor`
+trigger) — never client-set, never `user_id`. Two consequences the code
+depends on:
 
-Optional FKs for future "elevate to project / task" UX:
-- `cx_agent_plan.project_id` → `ctx_projects.id` (NULL, ON DELETE SET NULL)
-- `cx_user_todo.ctx_task_id` → `ctx_tasks.id` (NULL, ON DELETE SET NULL)
+- **`chat.agent_task` has NO owner column of its own.** It is owned through
+  its parent conversation, so a cross-conversation read declares that scope
+  as an inner join (`ListsHubView`: `conversation!inner(created_by)`), never
+  a bare RLS-filtered list. Its `creator_kind` enum (`agent` | `user`)
+  records who AUTHORED the task — it is not an owner and must never be read
+  as one.
+- **No project FK.** `agent_plan.project_id` is gone: a feature table may not
+  depend on a project FK. Project membership, if it is ever wanted, is a
+  `platform.associations` edge on the conversation.
+
+`cx_user_todo.ctx_task_id` → `ctx_tasks.id` (NULL, ON DELETE SET NULL)
+remains, for the "elevate to task" UX.
+
+All four conversation-scoped tables are in the `supabase_realtime`
+publication; every subscription filters on `conversation_id`.
 
 **Key types**
 
 - `CxAgentPlanRow` / `CxAgentTaskRow` / `CxUserTodoRow` /
   `CxAgentMemoryRow` / `AgentUserKvRow` — `tools/types.ts`. Hand-typed
-  to mirror the migration; the global `database.types.ts` is only
-  regenerated on demand.
+  because `steps`/`value` come back as `Json` from the generator. **The
+  type gate therefore does NOT catch column renames here** — compare
+  against the live table whenever the schema changes.
 
 ---
 
@@ -321,6 +334,18 @@ server-side; the same Realtime subscription updates the panel with no delegation
 
 ## Change Log
 
+- `2026-08-12` — **chat legacy owner cut: `user_id` → `created_by`, `project_id`
+  dropped, `agent_task.created_by` → `creator_kind`.** Every insert stopped
+  passing an owner (the `_stamp_actor` trigger stamps `created_by`);
+  `CreateAgentPlanInput` / `CreateAgentTaskInput` / `CreateUserTodoInput` lost
+  their `user_id` field, and `agent_task` writes now set `creator_kind`
+  (`agent` | `user`) — the enum that was squatting on the canonical
+  `created_by` name. `agent_plan.project_id` reads/writes deleted outright
+  (forbidden project FK). `ListsHubView` filters plans/todos on `created_by`
+  and scopes tasks through `conversation!inner(created_by)`, since
+  `agent_task` has no owner column. The three dead hand-mirrored `*Insert`
+  interfaces in `service/supabase-typed.ts` were deleted rather than
+  repointed. Forward-only: no dual-read, no fallback.
 - `2026-08-09` — Adopted the canonical tool vocabulary and live schema names.
   The frontend Executor is `matrx-user`; its six active Bindings are `user`,
   `update_plan`, `request_user_takeover`, `user_todos`, `scratchpad`, and

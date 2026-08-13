@@ -238,7 +238,7 @@ export interface ModelTiers {
 //   isVersion = true, parentAgentId = agx_agent.id, version = agx_version.version_number
 //   id = agx_version.id (used as resolved_id for execution)
 //   Some fields that only exist on live agents will be null on version records:
-//   isPublic, isArchived, isFavorite, userId, organizationId,
+//   isArchived, isFavorite, createdBy, organizationId,
 //   taskId, sourceAgentId, sourceSnapshotAt, createdAt, updatedAt
 //
 // The UI treats them identically everywhere EXCEPT version-specific UI
@@ -263,7 +263,6 @@ export interface AgentDefinition {
 
   // Live-agent-only flags (null on version records)
   isActive: boolean;
-  isPublic: boolean;
   isArchived: boolean;
   isFavorite: boolean;
 
@@ -323,7 +322,7 @@ export interface AgentDefinition {
   matrxActions: MatrxActionsConfig;
 
   // Ownership & Hierarchy (null on version records)
-  userId: string | null;
+  createdBy: string | null;
   organizationId: string | null;
   taskId: string | null;
 
@@ -393,7 +392,7 @@ export interface AgentListRow {
   is_active: boolean;
   is_archived: boolean;
   is_favorite: boolean;
-  user_id: string;
+  created_by: string;
   organization_id: string;
   task_id: string;
   source_agent_id: string;

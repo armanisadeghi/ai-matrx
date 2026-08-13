@@ -45,7 +45,6 @@ function makeEmptyRecord(id: string): AgentDefinitionRecord {
     changeNote: null,
 
     isActive: true,
-    isPublic: false,
     isArchived: false,
     isFavorite: false,
 
@@ -69,7 +68,7 @@ function makeEmptyRecord(id: string): AgentDefinitionRecord {
     uiGates: {},
     matrxActions: {},
 
-    userId: null,
+    createdBy: null,
     organizationId: null,
     taskId: null,
 
@@ -443,7 +442,6 @@ export const agentDefinitionSlice = createSlice({
         category: data.category ?? null,
         tags: data.tags ?? [],
         isActive: data.isActive ?? true,
-        isPublic: data.isPublic ?? false,
         isArchived: data.isArchived ?? false,
         isFavorite: data.isFavorite ?? false,
         agentType: data.agentType ?? "user",
@@ -471,7 +469,7 @@ export const agentDefinitionSlice = createSlice({
         uiGates: data.uiGates ?? {},
         matrxActions: data.matrxActions ?? {},
         mcpServers: data.mcpServers ?? [],
-        userId: data.userId ?? null,
+        createdBy: data.createdBy ?? null,
         organizationId: data.organizationId ?? null,
         taskId: data.taskId ?? null,
         sourceAgentId: null,

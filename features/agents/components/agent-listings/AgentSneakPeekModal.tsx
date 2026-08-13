@@ -522,7 +522,6 @@ export function AgentSneakPeekContent({
                 value={record.tags?.length ? record.tags.join(", ") : "—"}
               />
               <MetaRow label="Active" value={record.isActive ? "Yes" : "No"} />
-              <MetaRow label="Public" value={record.isPublic ? "Yes" : "No"} />
               <MetaRow
                 label="Archived"
                 value={record.isArchived ? "Yes" : "No"}

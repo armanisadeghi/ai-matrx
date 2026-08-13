@@ -523,24 +523,6 @@ export function AgentSettingsForm({
 
                 <div className="flex items-center justify-between pl-2">
                   <div className="flex items-center gap-2.5">
-                    <div className="p-1.5 rounded-md bg-blue-500/10 text-blue-500">
-                      <Globe className="w-4 h-4" />
-                    </div>
-                    <Label
-                      className="font-medium text-foreground cursor-pointer"
-                      onClick={() => handleUpdate("isPublic", !draft.isPublic)}
-                    >
-                      Public
-                    </Label>
-                  </div>
-                  <Switch
-                    checked={draft.isPublic ?? false}
-                    onCheckedChange={(c) => handleUpdate("isPublic", c)}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between pl-2">
-                  <div className="flex items-center gap-2.5">
                     <div className="p-1.5 rounded-md bg-amber-500/10 text-amber-500">
                       <Star className="w-4 h-4" />
                     </div>

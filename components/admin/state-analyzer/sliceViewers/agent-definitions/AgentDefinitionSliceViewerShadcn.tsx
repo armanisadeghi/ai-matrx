@@ -197,7 +197,6 @@ export default function AgentDefinitionSliceViewerShadcn({
               <Separator className="my-1" />
               <SectionTitle>flags</SectionTitle>
               <KvRow label="isActive">{String(record.isActive)}</KvRow>
-              <KvRow label="isPublic">{String(record.isPublic)}</KvRow>
               <KvRow label="isArchived">{String(record.isArchived)}</KvRow>
               <KvRow label="isFavorite">{String(record.isFavorite)}</KvRow>
 
@@ -384,7 +383,7 @@ export default function AgentDefinitionSliceViewerShadcn({
 
               <Separator className="my-1" />
               <SectionTitle>ownership</SectionTitle>
-              <KvRow label="userId">{record.userId ?? "null"}</KvRow>
+              <KvRow label="createdBy">{record.createdBy ?? "null"}</KvRow>
               <KvRow label="organizationId">
                 {record.organizationId ?? "null"}
               </KvRow>

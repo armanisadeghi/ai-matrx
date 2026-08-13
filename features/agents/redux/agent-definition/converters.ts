@@ -175,7 +175,6 @@ export function dbRowToAgentDefinition(row: AgentRow): AgentDefinition {
     category: row.category,
     tags: row.tags ?? [],
     isActive: row.is_active,
-    isPublic: row.is_public,
     isArchived: row.is_archived,
     isFavorite: row.is_favorite,
     agentType: row.agent_type as AgentType,
@@ -205,7 +204,7 @@ export function dbRowToAgentDefinition(row: AgentRow): AgentDefinition {
     matrxActions: (row.matrx_actions as unknown as MatrxActionsConfig) ?? {},
     mcpServers: row.mcp_servers ?? [],
 
-    userId: row.user_id,
+    createdBy: row.created_by,
     organizationId: row.organization_id,
     taskId: row.task_id,
 
@@ -257,7 +256,6 @@ export function agentDefinitionToInsert(agent: AgentDefinition): AgentInsert {
     category: agent.category,
     tags: agent.tags,
     is_active: agent.isActive,
-    is_public: agent.isPublic,
     is_archived: agent.isArchived,
     is_favorite: agent.isFavorite,
     agent_type: agent.agentType,
@@ -288,7 +286,7 @@ export function agentDefinitionToInsert(agent: AgentDefinition): AgentInsert {
       agent.customTools as unknown as Database["agent"]["Tables"]["definition"]["Insert"]["custom_tools"],
     mcp_servers: agent.mcpServers,
 
-    user_id: agent.userId,
+    created_by: agent.createdBy,
     organization_id: agent.organizationId ?? undefined,
     task_id: agent.taskId,
 
@@ -324,7 +322,6 @@ export function agentDefinitionToUpdate(
   if (partial.category !== undefined) update.category = partial.category;
   if (partial.tags !== undefined) update.tags = partial.tags;
   if (partial.isActive !== undefined) update.is_active = partial.isActive;
-  if (partial.isPublic !== undefined) update.is_public = partial.isPublic;
   if (partial.isArchived !== undefined) update.is_archived = partial.isArchived;
   if (partial.isFavorite !== undefined) update.is_favorite = partial.isFavorite;
   if (partial.agentType !== undefined) update.agent_type = partial.agentType;
@@ -369,7 +366,7 @@ export function agentDefinitionToUpdate(
       partial.customTools as unknown as Database["agent"]["Tables"]["definition"]["Update"]["custom_tools"];
   if (partial.mcpServers !== undefined) update.mcp_servers = partial.mcpServers;
 
-  if (partial.userId !== undefined) update.user_id = partial.userId;
+  if (partial.createdBy !== undefined) update.created_by = partial.createdBy;
   if (partial.organizationId !== undefined)
     update.organization_id = partial.organizationId ?? undefined;
   if (partial.taskId !== undefined) update.task_id = partial.taskId;
@@ -435,10 +432,9 @@ export function versionSnapshotRowToAgentDefinition(
     tags: row.tags,
     isActive: row.is_active,
 
-    isPublic: false,
     isArchived: false,
     isFavorite: false,
-    userId: null,
+    createdBy: null,
     organizationId: null,
     taskId: null,
     sourceAgentId: null,

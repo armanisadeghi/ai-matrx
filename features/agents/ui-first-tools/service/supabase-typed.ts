@@ -13,63 +13,14 @@
 import { supabase } from "@/utils/supabase/client";
 import type { Database, Json } from "@/types/database.types";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type {
-  CxAgentPlanRow,
-  CxAgentTaskRow,
-  CxUserTodoRow,
-  CxAgentMemoryRow,
-  AgentUserKvRow,
-  CxPlanStatus,
-  CxAgentTaskStatus,
-  CxAgentTaskCreator,
-} from "../tools/types";
 
 // Minimal Insert / Update shapes mirroring the migration. The generated
 // types follow the same pattern (defaults nullable, generated columns
 // optional on insert).
-
-export interface CxAgentPlanInsert {
-  id?: string;
-  conversation_id: string;
-  user_id: string;
-  title: string;
-  steps?: string[];
-  reasoning?: string | null;
-  domains?: string[] | null;
-  estimated_minutes?: number | null;
-  status?: CxPlanStatus;
-  project_id?: string | null;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface CxAgentTaskInsert {
-  id?: string;
-  conversation_id: string;
-  user_id: string;
-  plan_id?: string | null;
-  title: string;
-  status?: CxAgentTaskStatus;
-  note?: string | null;
-  position?: number;
-  created_by?: CxAgentTaskCreator;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface CxUserTodoInsert {
-  id?: string;
-  conversation_id: string;
-  user_id: string;
-  title: string;
-  context?: string | null;
-  due?: string | null;
-  done?: boolean;
-  done_at?: string | null;
-  ctx_task_id?: string | null;
-  created_at?: string;
-  updated_at?: string;
-}
+//
+// `agent_plan` / `agent_task` / `user_todo` inserts go through the generated
+// `chat` types on `db` — the services build them inline, so no hand-mirrored
+// Insert shape exists here for them.
 
 export interface CxAgentMemoryInsert {
   conversation_id: string;

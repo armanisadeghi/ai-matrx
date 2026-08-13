@@ -3,6 +3,7 @@
  */
 
 import { db } from "./supabase-typed";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type {
   CxAgentTaskRow,
   CxAgentTaskStatus,
@@ -11,12 +12,12 @@ import type {
 
 export interface CreateAgentTaskInput {
   conversation_id: string;
-  user_id: string;
   title: string;
   status?: CxAgentTaskStatus;
   note?: string | null;
   position?: number;
-  created_by?: CxAgentTaskCreator;
+  /** Who authored the task (agent vs user) — not an owner. */
+  creator_kind?: CxAgentTaskCreator;
   plan_id?: string | null;
 }
 
@@ -48,14 +49,18 @@ export async function addTasks(
     .limit(1);
   const startPos = (existing?.[0]?.position ?? -1) + 1;
 
+  // The row is owned through its parent conversation; `organization_id` is
+  // also filled by `trg_inherit_org`, but the generated Insert type requires
+  // it, so it is resolved here.
+  const organizationId = await ensureOrgId(undefined);
   const rows = inputs.map((input, idx) => ({
+    organization_id: organizationId,
     conversation_id: input.conversation_id,
-    user_id: input.user_id,
     title: input.title,
     status: input.status ?? "pending",
     note: input.note ?? null,
     position: input.position ?? startPos + idx,
-    created_by: input.created_by ?? "agent",
+    creator_kind: input.creator_kind ?? "agent",
     plan_id: input.plan_id ?? null,
   }));
 

@@ -143,7 +143,6 @@ export function useAgentSettingsSurface(
         ? selectAgentIsReadOnly(redux, activeTabId)
         : undefined,
       agent_is_active: agent.isActive,
-      agent_is_public: agent.isPublic,
       agent_is_favorite: agent.isFavorite,
       agent_is_archived: agent.isArchived,
 

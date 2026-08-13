@@ -53,7 +53,6 @@ const FIELD_LABELS: Partial<Record<string, string>> = {
   tags: "Tags",
   category: "Category",
   isActive: "Active",
-  isPublic: "Public",
   isArchived: "Archived",
   isFavorite: "Favorite",
 };

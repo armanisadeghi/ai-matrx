@@ -401,7 +401,6 @@ function AgentTab({
       <Section title="Flags">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4">
           <BoolIndicator value={agentData.isActive} label="isActive" />
-          <BoolIndicator value={agentData.isPublic} label="isPublic" />
           <BoolIndicator value={agentData.isArchived} label="isArchived" />
           <BoolIndicator value={agentData.isFavorite} label="isFavorite" />
           <BoolIndicator value={agentData.isVersion} label="isVersion" />

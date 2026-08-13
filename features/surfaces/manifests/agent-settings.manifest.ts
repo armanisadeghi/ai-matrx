@@ -278,17 +278,6 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 520,
   },
   {
-    name: "agent_is_public",
-    label: "Public",
-    description:
-      "State of the Public switch for the open agent. Absent when no agent is open. Not writable from this surface — who can see an agent is a permissions decision.",
-    valueType: "boolean",
-    alwaysAvailable: false,
-    typicalCharCount: 5,
-    group: "agent_status",
-    sortOrder: 530,
-  },
-  {
     name: "agent_is_favorite",
     label: "Favorite",
     description:
@@ -482,7 +471,6 @@ export function createAgentSettingsScope(values: {
   agent_is_dirty?: boolean;
   agent_is_read_only?: boolean;
   agent_is_active?: boolean;
-  agent_is_public?: boolean;
   agent_is_favorite?: boolean;
   agent_is_archived?: boolean;
 

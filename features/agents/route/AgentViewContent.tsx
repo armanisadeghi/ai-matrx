@@ -566,14 +566,6 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
                     <span className="font-medium text-foreground">
                       {categoryLabel ?? category}
                     </span>
-                    {!agent.isVersion && agent.isPublic && (
-                      <Badge
-                        variant="outline"
-                        className="gap-1 text-emerald-600 dark:text-emerald-400 border-emerald-500/40"
-                      >
-                        <Globe className="w-3 h-3" /> Public
-                      </Badge>
-                    )}
                   </div>
                 )}
               </div>
@@ -590,17 +582,6 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
                     />
                   </span>
                 )}
-                {!categoryLabel &&
-                  !category &&
-                  !agent.isVersion &&
-                  agent.isPublic && (
-                    <Badge
-                      variant="outline"
-                      className="gap-1 text-emerald-600 dark:text-emerald-400 border-emerald-500/40"
-                    >
-                      <Globe className="w-3 h-3" /> Public
-                    </Badge>
-                  )}
                 {agent.isArchived && (
                   <Badge
                     variant="outline"

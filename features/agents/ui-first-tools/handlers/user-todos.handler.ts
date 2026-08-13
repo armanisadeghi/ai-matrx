@@ -56,7 +56,7 @@ function summarize(rows: CxUserTodoRow[]): {
 export const userTodosHandler: ToolHandler<UserTodosArgs, UserTodosResult> = {
   name: "user_todos",
   async run(args, ctx) {
-    const { conversationId, userId, dispatch } = ctx;
+    const { conversationId, dispatch } = ctx;
 
     switch (args.action) {
       case "list": {
@@ -77,7 +77,6 @@ export const userTodosHandler: ToolHandler<UserTodosArgs, UserTodosResult> = {
         }
         const row = await addUserTodo({
           conversation_id: conversationId,
-          user_id: userId,
           title: args.title,
           context: args.context ?? null,
           due: args.due ?? null,

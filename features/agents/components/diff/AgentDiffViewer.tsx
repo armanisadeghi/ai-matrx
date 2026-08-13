@@ -56,7 +56,6 @@ function buildAgentAdapterRegistry() {
   registry.register("category", { ...TextFieldAdapter, label: "Category" });
   registry.register("tags", { ...TagsFieldAdapter, label: "Tags" });
   registry.register("isActive", { ...BooleanFieldAdapter, label: "Active" });
-  registry.register("isPublic", { ...BooleanFieldAdapter, label: "Public" });
   registry.register("isArchived", {
     ...BooleanFieldAdapter,
     label: "Archived",

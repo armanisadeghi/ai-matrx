@@ -107,7 +107,6 @@ export function useAgentSaveAction(
             category: agentRecord.category,
             tags: agentRecord.tags,
             isActive: agentRecord.isActive,
-            isPublic: agentRecord.isPublic,
             isArchived: agentRecord.isArchived,
             isFavorite: agentRecord.isFavorite,
             mcpServers: agentRecord.mcpServers,

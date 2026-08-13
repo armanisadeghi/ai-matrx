@@ -195,7 +195,6 @@ export default function AgentDefinitionSliceViewer({
                 flags
               </div>
               <KvRow label="isActive">{String(record.isActive)}</KvRow>
-              <KvRow label="isPublic">{String(record.isPublic)}</KvRow>
               <KvRow label="isArchived">{String(record.isArchived)}</KvRow>
               <KvRow label="isFavorite">{String(record.isFavorite)}</KvRow>
             </section>
@@ -349,7 +348,7 @@ export default function AgentDefinitionSliceViewer({
               <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
                 ownership
               </div>
-              <KvRow label="userId">{record.userId ?? "null"}</KvRow>
+              <KvRow label="createdBy">{record.createdBy ?? "null"}</KvRow>
               <KvRow label="organizationId">
                 {record.organizationId ?? "null"}
               </KvRow>

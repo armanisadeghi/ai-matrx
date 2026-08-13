@@ -502,11 +502,6 @@ export const selectAgentIsActive = createSelector(
   (record): boolean => record?.isActive ?? false,
 );
 
-export const selectAgentIsPublic = createSelector(
-  [selectAgentById],
-  (record): boolean => record?.isPublic ?? false,
-);
-
 export const selectAgentIsArchived = createSelector(
   [selectAgentById],
   (record): boolean => record?.isArchived ?? false,

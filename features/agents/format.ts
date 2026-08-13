@@ -47,7 +47,6 @@ export function agentDefinitionSummary(
   const statusBits = [
     agent.isActive ? "active" : "inactive",
     agent.isArchived ? "archived" : null,
-    agent.isPublic ? "public" : null,
   ].filter(Boolean);
   lines.push("", `Status: ${statusBits.join(", ")}`);
   if (agent.isVersion && agent.changeNote) {

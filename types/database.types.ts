@@ -38552,6 +38552,7 @@ export type Database = {
         }
         Returns: Json
       }
+      share_token_keyword_metrics: { Args: { p_token: string }; Returns: Json }
       shareable_owner_column: {
         Args: { p_registry_owner: string; p_schema: string; p_table: string }
         Returns: string
