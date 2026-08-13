@@ -95,8 +95,8 @@ remain report-only layout judgment; no core route header was changed.
 - **Rejected batches:** none under the current policy; the old
   infrastructure/global-baseline rejection is superseded
 - **Paused mutation:** none; 47 findings remain
-- **Delivery:** recovered batch certified in isolated branch
-  `codex/p3-vh-recovery`; integration and release follow this report update
+- **Delivery:** product commit `70a7a1e4f` shipped to the main site in release
+  `v0.4.548` (`0eef3cc50`)
 
 Certification evidence:
 
