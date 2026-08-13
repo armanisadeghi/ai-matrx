@@ -21,6 +21,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { Button } from "@/components/ui/button";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { cn } from "@/lib/utils";
 import {
   addMasterField,
@@ -265,21 +266,32 @@ function ColumnMappingPicker({
   const definitions = agent?.variableDefinitions ?? [];
 
   const currentTarget = field.mappings[column.columnId];
+  const agentLabel = column.agentId ? (
+    <EntityRef
+      token="agent"
+      id={column.agentId}
+      name={agentName}
+      showIcon={false}
+      disablePeek
+      openInNewTab
+      className="shrink-0 max-w-[120px] text-foreground/80"
+      nameClassName="max-w-[120px]"
+    />
+  ) : (
+    <span
+      className="shrink-0 max-w-[120px] truncate text-muted-foreground/50"
+      title={agentName}
+    >
+      {agentName}
+    </span>
+  );
 
   // The master field is hard-wired to "User message" — every configured
   // column gets the master text in its chat input. No dropdown needed.
   if (field.kind === "master") {
     return (
       <div className="flex items-center gap-1.5 min-w-0 text-[11px]">
-        <span
-          className={cn(
-            "shrink-0 max-w-[120px] truncate",
-            column.agentId ? "text-foreground/80" : "text-muted-foreground/50",
-          )}
-          title={agentName}
-        >
-          {agentName}
-        </span>
+        {agentLabel}
         <span
           className={cn(
             "flex-1 min-w-0 px-1.5 py-0.5 rounded border border-dashed border-border text-muted-foreground bg-muted/20 italic",
@@ -297,15 +309,7 @@ function ColumnMappingPicker({
   // selecting; users can clear by picking the explicit "— skip" item.
   return (
     <div className="flex items-center gap-1.5 min-w-0 text-[11px]">
-      <span
-        className={cn(
-          "shrink-0 max-w-[120px] truncate",
-          column.agentId ? "text-foreground/80" : "text-muted-foreground/50",
-        )}
-        title={agentName}
-      >
-        {agentName}
-      </span>
+      {agentLabel}
       <select
         value={currentTarget ?? ""}
         onChange={(e) =>
