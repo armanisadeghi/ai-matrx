@@ -19,7 +19,7 @@ type ShareLensMetaResolver = (result: ResolvedShareToken) => ShareLensMeta | nul
 
 function genericTitle(resource: Record<string, unknown> | undefined): string | null {
   if (!resource) return null;
-  for (const k of ["label", "title", "name", "display_label"]) {
+  for (const k of ["label", "title", "name", "display_label", "file_name", "folder_name"]) {
     const v = resource[k];
     if (typeof v === "string" && v.trim()) return v;
   }
@@ -58,6 +58,82 @@ function aiVisibilityMeta(result: ResolvedShareToken): ShareLensMeta | null {
 const SHARE_LENS_META: Record<string, ShareLensMetaResolver> = {
   seo_collection_run: aiVisibilityMeta,
 };
+
+/**
+ * Per-lens OG-image payloads (the social-card image, `opengraph-image.tsx`).
+ * A lens without an entry gets the branded generic card — same floor
+ * guarantee as render + meta. The OG route owns the JSX; this module owns the
+ * per-token data extraction so the route never sniffs resource shapes.
+ */
+export type ShareLensOg =
+  | {
+      kind: "ai_visibility";
+      brand: string;
+      query: string;
+      enginesChecked: number;
+      mentions: number;
+      bestRank: number | null;
+    }
+  | { kind: "generic"; badge: string; title: string; description: string };
+
+function aiVisibilityOg(result: ResolvedShareToken): ShareLensOg | null {
+  const stored = result.resource?.["result"];
+  if (!stored || typeof stored !== "object" || Array.isArray(stored))
+    return null;
+  const report = stored as Record<string, unknown>;
+  if (report.result_kind !== "ai_visibility.analyze") return null;
+  const providers = Array.isArray(report.providers)
+    ? report.providers.filter(
+        (value): value is Record<string, unknown> =>
+          Boolean(value) && typeof value === "object" && !Array.isArray(value),
+      )
+    : [];
+  const completed = providers.filter(
+    (provider) => provider.status === "completed",
+  );
+  const ranks = completed
+    .map((provider) => provider.target_recommendation_rank)
+    .filter((value): value is number => typeof value === "number");
+  return {
+    kind: "ai_visibility",
+    brand:
+      typeof report.brand_name === "string"
+        ? report.brand_name
+        : "AI Visibility",
+    query:
+      typeof report.query === "string"
+        ? report.query
+        : "See how answer engines recommend this brand",
+    enginesChecked: completed.length,
+    mentions: completed.filter(
+      (provider) => provider.target_mentioned === true,
+    ).length,
+    bestRank: ranks.length ? Math.min(...ranks) : null,
+  };
+}
+
+const SHARE_LENS_OG: Record<
+  string,
+  (result: ResolvedShareToken) => ShareLensOg | null
+> = {
+  seo_collection_run: aiVisibilityOg,
+};
+
+/** Resolve the OG-image payload for a resolved token — always returns a value. */
+export function resolveShareLensOg(result: ResolvedShareToken): ShareLensOg {
+  const resolver = result.resourceType
+    ? SHARE_LENS_OG[result.resourceType]
+    : undefined;
+  const lensOg = resolver ? resolver(result) : null;
+  if (lensOg) return lensOg;
+  const meta = resolveShareLensMeta(result);
+  return {
+    kind: "generic",
+    badge: result.displayLabel ?? "Shared item",
+    title: meta.title,
+    description: meta.description,
+  };
+}
 
 /**
  * Resolve share metadata for a resolved token. Always returns a value: a

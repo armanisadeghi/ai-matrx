@@ -244,7 +244,9 @@ The product layer over the plumbing: shared content works like Google Docs/Quizl
 Lenses never touch access. `lenses/registry.tsx` maps entity token → renderer for the recipient
 landing (`/s/[token]`); any token without an entry gets `GenericRenderer` — the guaranteed
 default-path floor. `lenses/metadata.ts` is the server-safe half (per-token social/meta for
-`generateMetadata`; the OG image route is next to adopt it). `lenses/default-renderers.tsx`
+`generateMetadata` AND per-token OG-image payloads for `opengraph-image.tsx` — the OG route
+owns only the card JSX: the report card for `seo_collection_run`, the branded generic card for
+everyone else). `lenses/default-renderers.tsx`
 holds the bodies (markdown/code/flashcard/file/folder/AI-visibility/generic).
 **Adding a share rendering = one registry entry (+ optional metadata entry). Adding a per-type
 `switch` on any share surface is banned** — `SharedResourceView.tsx` is a pure shell
