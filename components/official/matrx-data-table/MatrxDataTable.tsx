@@ -1369,12 +1369,23 @@ function MatrxDataTableCore<T>({
             </div>
           }
         >
-          {detail?.render?.(selectedRow, {
-            closeDetail: () => setSelectedId(null),
-            openDetail: () => openDetail(selectedRow),
-            openWindow: () => openWindow(selectedRow),
-            closeWindow,
-          }) ?? (
+          {detail?.render ? (
+            // The panel hands children a `min-h-0 flex-1 overflow-hidden` cell
+            // and expects the child to own scrolling. `DataRowInspector` does;
+            // custom `detail.render` bodies mostly did not, so their content
+            // silently cut off at the fold with no scrollbar. Owning it here
+            // fixes the whole class at once — a custom body that already
+            // scrolls (`h-full` + `overflow-y-auto` root) still resolves to
+            // this container's height, so no second scrollbar appears.
+            <div className="h-full min-h-0 overflow-y-auto">
+              {detail.render(selectedRow, {
+                closeDetail: () => setSelectedId(null),
+                openDetail: () => openDetail(selectedRow),
+                openWindow: () => openWindow(selectedRow),
+                closeWindow,
+              })}
+            </div>
+          ) : (
             <DataRowInspector
               row={selectedRow}
               recordKind={copy?.rowKind}
