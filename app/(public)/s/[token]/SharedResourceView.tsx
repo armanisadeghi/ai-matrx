@@ -18,6 +18,7 @@ import {
 } from "@/utils/permissions/shareLinks";
 import { DuplicateToEditButton } from "@/features/sharing/components/DuplicateToEditButton";
 import { resolveShareLens } from "@/features/sharing/lenses/registry";
+import { resolveShareSourceSurface } from "@/features/sharing/lenses/source-surface";
 import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
 
 export function SharedResourceView({
@@ -31,6 +32,7 @@ export function SharedResourceView({
   const contentRef = useRef<HTMLDivElement>(null);
   useClippedContentGuard(contentRef, { label: "Shared resource content" });
   const lens = resolveShareLens(result.resourceType);
+  const source = resolveShareSourceSurface(result);
 
   return (
     <>
@@ -43,14 +45,19 @@ export function SharedResourceView({
             shareToken={token}
           />
         )}
+        {/* NEVER /sign-up: the recipient goes to the REAL feature that made
+            this — the workspace when signed in, that feature's marketing
+            landing when not. Everything basic here is free up front, so a
+            login wall at this exact moment throws away the referral. The
+            destination is per share type: features/sharing/lenses/source-surface.ts */}
         <Button
           asChild
           size="sm"
           variant="outline"
           className="h-7 px-2 sm:px-3"
         >
-          <Link href="/sign-up" aria-label="Create your own AI Matrx report">
-            <span className="hidden sm:inline">Create your own</span>
+          <Link href={source.href} aria-label={source.label}>
+            <span className="hidden sm:inline">{source.label}</span>
             <ArrowUpRight className="h-4 w-4 sm:ml-1" />
           </Link>
         </Button>

@@ -248,6 +248,28 @@ default-path floor. `lenses/metadata.ts` is the server-safe half (per-token soci
 owns only the card JSX: the report card for `seo_collection_run`, the branded generic card for
 everyone else). `lenses/default-renderers.tsx`
 holds the bodies (markdown/code/flashcard/file/folder/AI-visibility/generic).
+### 🚨 A SHARE PAGE NEVER SENDS ITS RECIPIENT TO `/sign-up` OR `/login`
+
+**Arman's ruling, 2026-08-13.** Everything basic on this platform is free up front — keyword
+research, page audits, AI visibility checks, chat. A recipient impressed by a shared report is
+the exact prospect the whole sharing system exists to win, and a login wall at that moment
+throws them away. It also misreads the product: gating belongs on ADVANCED capability, never on
+the thing the share just demonstrated.
+
+**Every "Create your own" CTA resolves through `lenses/source-surface.ts`
+(`resolveShareSourceSurface`)** — per share type, the real feature that produced the artifact.
+**One href serves both audiences**, because module routes already carry the marketing/workspace
+duality (`.claude/skills/module-landing-pages`): signed in → the workspace; signed out → that
+feature's marketing landing. Never an error, never a bounce. Preference order: a free PUBLIC
+tool the visitor can use right now (`seo_collection_run` → `/seo/ai-visibility`) → the feature's
+module route (`content_ir_kind_instance` keyword research → `/marketing/keyword-research`) →
+`/features`, the directory of every module landing, as the floor. Both public lanes consume the
+same resolver (`/s/[token]` shell + report CTAs, `/p/e/[type]/[id]` header + footer); a lane
+growing its own copy of this decision is the defect.
+
+Auth routes remain correct in exactly one place: `DuplicateToEditButton`, where the visitor is
+asking to OWN a copy and therefore needs an account.
+
 **POLYMORPHIC tokens dispatch INSIDE their lens, never by adding token entries.**
 `content_ir_kind_instance` carries many kinds (keyword research, flashcard sets, briefs,
 decks…) and its public projection deliberately omits the kind — so
@@ -323,6 +345,11 @@ Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) 
 
 ## Change log
 
+- 2026-08-13 — **No share page sends its recipient to an auth wall** (Arman ruling, above). New
+  `lenses/source-surface.ts` resolves the per-share-type destination; consumed by the `/s/[token]`
+  shell CTA, the keyword-research report CTA, the AI-visibility report CTA (now `/seo/ai-visibility`
+  — the free public tool an anonymous recipient can run immediately), and both `/p/e/` CTAs. Four
+  `/sign-up` dead ends removed; `DuplicateToEditButton` deliberately keeps its auth route.
 - 2026-08-13 — **The Public tab always answers the link question.** `ShareLinkPanel` no longer
   vanishes for owners when a type has no no-login lane (explicit state instead of `null`); the
   public-lane allowlist moved out of the `/p/e/` server loader into

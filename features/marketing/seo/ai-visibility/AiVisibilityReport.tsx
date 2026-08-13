@@ -445,9 +445,13 @@ export function AiVisibilityReport({
             AI Matrx tracks the questions buyers ask, the sources assistants
             trust, and the exact evidence that changes recommendations.
           </p>
+          {/* NEVER /sign-up. `/seo/ai-visibility` is the free public tool —
+              an anonymous recipient can run their own check right now, which
+              is the entire referral mechanic. See
+              features/sharing/lenses/source-surface.ts. */}
           <Button asChild size="lg" className="mt-5 gap-2">
-            <Link href="/sign-up">
-              Build your own visibility system
+            <Link href="/seo/ai-visibility">
+              Check your own brand
               <ArrowRight className="h-4 w-4" />
             </Link>
           </Button>

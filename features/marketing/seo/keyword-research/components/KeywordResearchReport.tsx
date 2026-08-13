@@ -56,6 +56,14 @@ export interface KeywordResearchReportProps {
   variant?: "page" | "embedded";
   /** Conversion chrome for an anonymous recipient — the referral half. */
   acquisition?: boolean;
+  /**
+   * Where the conversion CTA sends the visitor. NEVER an auth route — a
+   * recipient impressed by this report goes to the real keyword research
+   * feature (workspace signed in, marketing landing signed out). Callers
+   * resolve it from `features/sharing/lenses/source-surface.ts`.
+   */
+  ctaHref?: string;
+  ctaLabel?: string;
   /** When the artifact was saved (ISO) — rendered in the header meta line. */
   generatedAt?: string | null;
   /** Header-right slot: the owner's ShareButton, an "Open workbench" link… */
@@ -91,6 +99,8 @@ export default function KeywordResearchReport({
   keywords,
   variant = "page",
   acquisition = false,
+  ctaHref = "/marketing/keyword-research",
+  ctaLabel = "Research your own keywords",
   generatedAt,
   actions,
 }: KeywordResearchReportProps) {
@@ -264,10 +274,10 @@ export default function KeywordResearchReport({
             competition, CPC, and buyer intent.
           </p>
           <Link
-            href="/sign-up"
+            href={ctaHref}
             className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
           >
-            Create your own research
+            {ctaLabel}
             <ArrowUpRight className="h-4 w-4" />
           </Link>
         </section>

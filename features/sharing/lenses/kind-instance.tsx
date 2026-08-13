@@ -26,6 +26,7 @@ import {
   sharedKeywordMetricsQueryKey,
 } from "@/features/marketing/seo/keyword-research/data/shared-metrics";
 import { GenericRenderer } from "@/features/sharing/lenses/default-renderers";
+import { resolveShareSourceSurface } from "@/features/sharing/lenses/source-surface";
 import type { ResolvedShareToken } from "@/utils/permissions/shareLinks";
 import type { KeywordResearchArtifact } from "@/types/python-generated/stream-events";
 
@@ -33,15 +34,20 @@ function SharedKeywordResearch({
   artifact,
   createdAt,
   token,
+  result,
 }: {
   artifact: KeywordResearchArtifact;
   createdAt: string | null;
   token: string;
+  result: ResolvedShareToken;
 }) {
   const metrics = useQuery({
     queryKey: sharedKeywordMetricsQueryKey(token),
     queryFn: () => fetchSharedKeywordMetrics(token),
   });
+
+  // The CTA goes to the real feature, never to sign-up — see source-surface.ts.
+  const source = resolveShareSourceSurface(result);
 
   return (
     <KeywordResearchReport
@@ -49,6 +55,8 @@ function SharedKeywordResearch({
       keywords={metrics.data ?? []}
       generatedAt={createdAt}
       acquisition
+      ctaHref={source.href}
+      ctaLabel={source.label}
     />
   );
 }
@@ -68,6 +76,7 @@ export function KindInstanceRenderer({
       artifact={artifact}
       createdAt={typeof createdAt === "string" ? createdAt : null}
       token={token}
+      result={result}
     />
   );
 }

@@ -21,6 +21,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, SearchCheck } from "lucide-react";
 
@@ -70,6 +71,13 @@ export interface KeywordResearchLauncherProps {
    * bottom-of-page tab).
    */
   liveFeed?: "inline" | "floating";
+  /**
+   * Host-supplied controls rendered on the SAME row as the input and the
+   * Research button (e.g. the workbench's saved-research library). A host
+   * control on its own row above the input wasted a full row of vertical
+   * space and pushed the real work down the page.
+   */
+  actions?: ReactNode;
 }
 
 export default function KeywordResearchLauncher({
@@ -82,6 +90,7 @@ export default function KeywordResearchLauncher({
   organizationId,
   writeTargetSurfaceName = null,
   liveFeed = "inline",
+  actions,
 }: KeywordResearchLauncherProps) {
   const [primaryInput, setPrimaryInput] = useState(initialKeyword ?? "");
   const autoRanRef = useRef(false);
@@ -170,7 +179,11 @@ export default function KeywordResearchLauncher({
 
   return (
     <div>
-      <div className="flex max-w-2xl items-center gap-2">
+      {/* ONE row: input, Research, and whatever the host puts in `actions`.
+          `items-start` because KeywordInput renders a metrics/status line
+          BELOW its field — centering the row pushed the Research button out of
+          alignment with the input it belongs to. */}
+      <div className="flex flex-wrap items-start gap-2">
         <KeywordInput
           value={primaryInput}
           onChange={(value) => {
@@ -181,7 +194,7 @@ export default function KeywordResearchLauncher({
           scope={{ organizationId }}
           placeholder="Research a primary keyword (e.g. botox cost)"
           disabled={run.status === "running"}
-          className="min-w-0 flex-1"
+          className="min-w-0 max-w-2xl flex-1"
         />
         <button
           type="button"
@@ -196,6 +209,9 @@ export default function KeywordResearchLauncher({
           )}
           Research
         </button>
+        {actions ? (
+          <div className="ml-auto flex items-center gap-2">{actions}</div>
+        ) : null}
       </div>
       {/* Live feed: the agent's structured output rendered as real
           components key-by-key while streaming — never raw JSON. Stays

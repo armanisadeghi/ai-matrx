@@ -74,7 +74,13 @@ export default async function ShapeInstancePermalinkPage({
     const artifact = record.keywordResearch;
     const keywords = await loadKeywordMetricsForArtifact(supabase, artifact);
     return (
-      <main className="h-full overflow-y-auto bg-textured p-4 sm:p-6">
+      // The (core) shell header is glass and the body rides UNDER it, so the
+      // report must start below it — `--shell-header-h` plus the page gutter,
+      // never a hand-picked pixel value.
+      <main
+        className="h-full overflow-y-auto bg-textured p-4 sm:p-6"
+        style={{ paddingTop: "calc(var(--shell-header-h) + 1rem)" }}
+      >
         <KeywordResearchReport
           artifact={artifact}
           keywords={keywords}
