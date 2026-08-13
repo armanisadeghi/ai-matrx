@@ -18,7 +18,7 @@ const PrivacyPolicyPage = () => {
       <div className="container mx-auto max-w-3xl p-6 prose prose-neutral dark:prose-invert">
       <h1>Privacy Policy</h1>
       <p>
-        <strong>Last updated:</strong> August 11, 2026
+        <strong>Last updated:</strong> August 13, 2026
       </p>
       <p>
         AI Matrx is a technology product owned and operated by{' '}
@@ -292,6 +292,17 @@ const PrivacyPolicyPage = () => {
         over selected Workspace content, the content needed for that request may
         be sent to the model provider configured for that agent solely to return
         your requested result, as described in Section 3.1.
+      </p>
+      <p>
+        The use of information received from Google Workspace APIs will adhere
+        to the{' '}
+        <a
+          href="https://developers.google.com/workspace/workspace-api-user-data-developer-policy"
+          rel="external noopener"
+          target="_blank"
+        >
+          Google User Data Policy
+        </a>{', including the Limited Use requirements.'}
       </p>
       <p>
         Mobile information and text-message opt-in data and consent are not

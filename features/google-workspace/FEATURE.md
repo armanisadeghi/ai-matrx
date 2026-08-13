@@ -18,6 +18,7 @@ This is AI Matrx's focused, reviewer-visible Google Workspace product surface. I
 - Gmail is incremental and uses only `gmail.send`. The product cannot read, search, delete, or organize Gmail.
 - Gmail sending requires visible recipients, subject, body, and an unchecked user confirmation immediately before the send action.
 - Google Workspace content is not persisted by these endpoints and is not used to train generalized AI models.
+- `/privacy-policy` affirmatively states that Google Workspace API data use adheres to the Google User Data Policy, including Limited Use requirements.
 
 ## Data and API flow
 
@@ -39,5 +40,6 @@ This is AI Matrx's focused, reviewer-visible Google Workspace product surface. I
 
 ## Change log
 
+- 2026-08-13: Added Google's required affirmative Limited Use compliance statement to the public privacy policy.
 - 2026-08-07: Prepopulated Google Picker only on the dedicated reviewer route so verification recordings show the named review fixtures without exposing unrelated Drive file names.
 - 2026-08-06: Added the focused reviewer route, in-product disclosures, selected Doc/Sheet Picker flow, bounded read/update actions, incremental reviewed Gmail send, and explicit disconnect control.
