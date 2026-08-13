@@ -28,10 +28,10 @@ Left open by the D181 fix. (1) **21 component tables have `created_by` but no `_
 ### D180 — Hydration mismatch + "script tag while rendering" on every `(core)` marketing route (2026-08-13)
 
 Two console errors on load in dev on `/marketing/keyword-research` AND untouched `/marketing/ai-visibility` — shell-level, not feature-level: a `<script>` rendered inside a React tree somewhere in the `(core)` layout chain. Hydration failures silently re-render the whole tree client-side — real perf + correctness cost. Not yet investigated.
-### D183 — 🚨 The RLS kernel materializes EVERY row id: `seo.search_performance_daily` (13.2M rows) is unreadable to any signed-in user (2026-08-13)
+### D183 — Paid SEO output can still be lost after generation; stream drops do not resume (2026-08-13)
 
-**Every `authenticated` read of that table — and of any `security_invoker` view
-over it — dies at the 8s statement timeout.** Live symptom: 10× Postgres
+**RLS performance root is resolved.** Before the fix, every `authenticated` read of that table — and of any `security_invoker` view
+over it — died at the 8s statement timeout. Live symptom: 10× Postgres
 `57014 canceling statement due to statement timeout` on
 `seo.v_site_keyword_performance` (HTTP 500), captured on
 `/marketing/content-plan/*` while the Keyword Intelligence window was open.
@@ -62,15 +62,13 @@ row. Nobody grants per-row permissions on GSC telemetry — this table's access 
 structural (site → org), so the per-row-id enumeration lane is the wrong model
 for it, not merely slow.
 
-**NOT FIXED HERE, deliberately.** CLAUDE.md: *never add or change a security
-layer on your own authority*, and this is a live RLS policy on a shared DB.
-The fix is a predicate-shaped policy (org/site-scoped, index-friendly, same
-rows) or a kernel that returns a predicate instead of an array — **Arman's
-call, one owner, one change.** Do not "fix" it by widening access, and do not
-narrow it by dropping the sparse permission lanes without checking they are
-empty for the table.
+Fixed live by `iam_component_select_structural_parent_rls.sql`: component
+SELECT policies now resolve small composition-parent ID sets and filter on
+indexed child FKs. The original page-scoped query returns 82 rows in 3.3 ms
+under a real member JWT; `link_edge` returns 750 rows in 3.5 ms. Four proven
+class members were repaired and the generator prevents regeneration drift.
 
-Secondary, same incident, filed here so they are not lost:
+Remaining durability defects from that incident:
 - **A paid SEO keyword-research result was destroyed.** `SeoKeywordResearch`
   (request `4f293980-4f9a-4329-954b-a1d652e1c277`) timed out on its single
   `INSERT INTO content_ir.kind_instance … RETURNING *` (matrx-orm
