@@ -52,10 +52,16 @@ Arman's ruling, 2026-08-11. Two halves, both absolute:
 
 **A run that dies on refresh is the same defect as a spinner.** If the work is server-side, the surface reattaches on load; the durable record is whatever the run's own feature persisted — never this window (it is `ephemeral: true`).
 
+**A surviving viewer retains its request.** `LiveRunDisplay` registers a viewer id in `activeRequests`; `removeRequest` and `destroyInstance` defer deletion until the final viewer releases it. A route/query remount may clean up its run owner, but it can never blank a still-open floating window. Closing or rebinding the last viewer completes the deferred cleanup, so retained output does not leak.
+
 ---
 
 ## Change Log
 
+- 2026-08-12 — **Live-run viewers retain canonical request state.** Authority,
+  Keyword Research, and every other floating run survive host/query remounts
+  without going blank: owner cleanup defers while `LiveRunDisplay` is mounted,
+  and its final release completes the cleanup.
 - 2026-08-12 — **Non-token work updates stable live rows.** `LiveRunWindow`
   accepts validated `LiveRunProgressState`; `LiveRunProgress` replaces append-only
   status narration with in-place waiting/running/completed/failed rows and active
