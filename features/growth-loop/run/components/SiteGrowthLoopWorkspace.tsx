@@ -11,8 +11,10 @@
  * It renders NO spinner while the loop runs — an active loop re-reads itself
  * and its ledger every few seconds, so the rail is live progress. See the
  * FLOATING LAW in CLAUDE.md: the model-token case (an AI-pipe stage streaming
- * output) belongs in the floating live-run window, and lands the moment the
- * AI pipe has an executor (G-PIPE-SELECTOR).
+ * output) belongs in the floating live-run window. The AI pipe HAS an executor
+ * since 2026-08-13 (G-PIPE-SELECTOR closed — aidream installs the pipe.step AI
+ * runner at boot); what is still missing here is the stage service that hands
+ * a stage to it (G-ORCHESTRATOR).
  */
 
 import { useState } from "react";
