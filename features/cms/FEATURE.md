@@ -344,6 +344,29 @@ UI-complete here but only take effect once P1's service layer reads them.
 
 ## Change log
 
+- `2026-08-13` — **A CMS page now knows WHICH measured page it serves (CMS
+  migration `0037`, closes growth-loop gap `G-CMS-IDENTITY`).**
+  `client_pages.web_page_id` carries the MAIN-project `web.page` id — the
+  `plan_node_id` pattern applied to the measurement half, and deliberately not a
+  `platform.associations` edge (association endpoints must be canonical entity
+  tokens with rows in the MAIN database; `client_pages` rows are not there, so an
+  edge to them could never be validated or reaped). **UNIQUE per site**
+  (`(client_id, web_page_id)` partial) because `web.page` is unique on
+  `(site_id, url_hash)` — one measured URL is served by exactly one CMS page;
+  `plan_node_id`'s missing index and its silent-overwrite bug is the shape this
+  deliberately does not repeat. **ONE writer:** the `/api/cms/pages`
+  `set-web-page-link` action (`CmsPageService.setWebPageLink`), ownership-checked,
+  activity-logged (`page.web_page_link`), answering 409 on a conflicting claim —
+  and `web_page_id` is absent from `update`'s fieldMap so no ordinary edit can
+  forge a link. aidream's twin is `page_service.set_web_page_link`. `web_page_id`
+  and `plan_node_id` joined `LIST_COLUMNS`, so `ClientPageSummary` carries both.
+  Consumer: `features/marketing/lib/push-to-cms.ts` `resolvePushTarget` — durable
+  id first, exact route key second (which then stamps the id), a case-insensitive
+  alias only when unambiguous, and never a page already linked elsewhere. Proven
+  live on both databases in a rolled-back transaction: the old raw-string join
+  landed on the RIGHT page 1 of 3 (one wrong page, one silent miss), the id join
+  3 of 3, and the unique index refused a second claim. Cross-repo contract:
+  `common-docs/systems/content-planning/FEATURE.md` § Phase 3.
 - `2026-08-12` — **Pages list shows content VOLUME, measured in-database.** The
   list claimed placeholder pages "exist" indistinguishably from finished ones.
   CMS migration `0036` adds the PostgREST computed field `content_stats`
