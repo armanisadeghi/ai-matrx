@@ -10,8 +10,7 @@ Format: `- [ ] <P#> | <file-or-route> | <one line> | <date>`
 
 ## Open
 
-- [ ] P3 | see `.matrx/patrol-reports/mobile-friendly-ui.md` | first/full skill-level scan found 61 code-bearing `vh` unit lines across 52 runtime source files; the narrow `h-screen|100vh` registry grep misses them, and arbitrary height semantics remain Tier R until each surface is reviewed and the registry names an exact mechanical transformation | 2026-08-12
-- [ ] P3 | `components/ui/drawer.tsx:87` | canonical `DrawerContent` is fixed to the mobile viewport bottom without default `pb-safe`; 105 call sites rely on this primitive and only 28 spell safe-area padding locally; mechanical one-file fix is blocked until the required local mobile+desktop visual certifier can run | 2026-08-12
+- [ ] P3 | see `.matrx/patrol-reports/mobile-friendly-ui.md` | first/full skill-level scan found 63 code-bearing `vh` unit lines across 53 runtime source files; the narrow `h-screen|100vh` registry grep misses them, and arbitrary height semantics remain Tier R until each surface is reviewed and the registry names an exact mechanical transformation | 2026-08-12
 - [ ] P6 | see `.matrx/patrol-reports/no-emojis-in-ui.md` | first/full Tier R inventory verified 226 user-visible emoji/symbol lines in 94 files (53 production/shared, 41 admin/demo/sample); 0 fixed until a P6 skill defines the approved Lucide/delete transformation | 2026-08-12
 - [ ] P5 | see `.matrx/patrol-reports/copy-everywhere.md` | first/full Tier R inventory verified 101 missing-adoption surfaces: 28 `MatrxDataTable` instances, 10 raw-JSON displays, and 63 native-table instances; 0 fixed until a patrol-specific detector/fix recipe exists | 2026-08-12
 - [ ] P10 | `features/tasks/hooks/useTaskManager.ts:150` | current uncommitted `TEMP-RT-DEBUG` block adds an unguarded `window as unknown as { __rtTaskTest?: unknown }` cast; remove through an honest debug-harness type or keep as open debt, never suppress | 2026-08-11
@@ -25,6 +24,7 @@ Format: `- [ ] <P#> | <file-or-route> | <one line> | <date>`
 
 ## Cleared
 
+- [x] P3 | `components/ui/drawer.tsx:87` | canonical `DrawerContent` was fixed to the mobile viewport bottom without default `pb-safe` | 2026-08-12 | fixed-certified (added the approved primitive-level `pb-safe` default and regression assertion; mobile/desktop plus light/dark adversarial verdict CERTIFIED)
 - [x] P4 | `components/errors/ErrorBoundaryView.tsx:121` | shared CopyButton uses `hover:bg-white/10` on both dark code and neutral light surfaces; light-mode hover is effectively invisible | 2026-08-11 | fixed-certified (theme surfaces now use `hover:bg-accent`; the fixed dark stack surface explicitly opts into stable on-dark chrome; adversarial verdict CERTIFIED)
 - [x] P4 | 282 total `bg-white`/`text-black` files still need per-line triage | 2026-08-08 | superseded-and-reopened (the corrected property-specific 2026-08-11 pass found 150 unpaired lines; its earlier agent-cleared exception decisions were invalid under the new human-owned exception contract, and the unresolved set is now tracked under Open)
 - [x] P7 | (2 files, grep `window.confirm\|window.alert\|window.prompt` in features/components/app) | last 2 browser-dialog files in the repo — finish the eradication | 2026-08-08 — STALE (the two-file count was wrong; superseded by the full patrol report + the 2026-08-09 batch above)
