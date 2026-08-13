@@ -1,12 +1,15 @@
 # P3 Mobile-Friendly UI Patrol
 
 - **Run date:** 2026-08-12 (America/Los_Angeles)
-- **Run kind:** first/full pass, resumed to complete the safe Tier-M repair
+- **Run kind:** first/full pass, resumed for one certified repair and one
+  manually approved viewport-unit attempt
 - **Outcome:** 64 verified findings across 54 files; 1 fixed and certified, 63
   Tier-R `vh` occurrences remain open
-- **Run status:** the only registry-approved mechanical finding was repaired,
-  independently certified, and committed; release is paused because unrelated
-  shared-checkout type and migration gates are currently red
+- **Run status:** the canonical drawer repair remains certified. A later
+  manually approved 16-token literal `vh`→`dvh` batch was independently
+  REJECTED because the managed preview became runaway before the required
+  visual matrix; all 16 product substitutions were fully reverted and nothing
+  from that batch will ship
 
 ## Scope scanned
 
@@ -116,6 +119,33 @@ Certification evidence:
   and the pre-existing drifted `web_audit_rollup_gone_pages.sql`; P3 did not
   touch migrations or generated files
 
+### Manually approved literal viewport batch — REJECTED and reverted
+
+Arman manually approved 16 direct literal CSS/Tailwind `vh`→`dvh`
+substitutions across 15 runtime files. Static review confirmed the intended
+one-token-only edits, no suppression/generated/chunk changes, a clean
+`git diff --check`, and no residual plain `vh` in the proposed batch.
+
+The adversarial certifier returned **REJECTED**. The managed preview loaded one
+authenticated mobile dashboard, then became unresponsive/runaway at 24.8 GB.
+After a repository-approved stop/restart, it became runaway again at 16.3 GB;
+`/research/topics/new` timed out and the next target was connection-refused.
+None of the 15 changed surfaces completed the mandatory 375x812 + 1280x800,
+light + dark matrix, so footer reachability, overflow, and interactions were
+not proven. All 16 product substitutions were fully reverted. The 63-finding
+plain-`vh` backlog therefore remains open.
+
+Additional gate context: repo-wide `pnpm type-check` was red only in unrelated
+concurrent API routes missing `organization_id`; scoped ESLint findings were
+pre-existing and outside the changed tokens; three existing sandbox-gate tests
+also failed in unrelated state-resolution behavior. `pnpm check:ui-primitives`
+exited 0 with its existing 19 warnings.
+
+The approved general approval-routing guidance was retained. The proposed
+literal-viewport auto-approval class was **not** activated: the registry now
+records the exact manual-proposal criteria and requires one representative
+batch to complete certification before promotion.
+
 ## Structural baseline for the next run
 
 Use baseline commit `24a25f61878d6e60310eb4a907df3928afc7eaf6`, then add
@@ -132,8 +162,8 @@ raw changed-line volume.
 ## Cadence health and candidates
 
 This is the only P3 run in the preceding month, so there is not enough clean-run
-history to propose a longer cadence. No batch was rejected and no recurring
-unregistered class was established. The schedule remains unchanged. The plain
-`vh` backlog is already P3, not a candidate-bench nomination; expanding it into
-a mechanical class requires an explicit registry recipe rather than agent
-inference.
+history to propose a longer cadence. One later manual batch was rejected for an
+unavailable visual-certification harness and fully reverted; this is not yet a
+repeat-rejection pause for P3. The schedule remains unchanged. No recurring
+unregistered class was established. The plain `vh` backlog is already P3, not
+a candidate-bench nomination.
