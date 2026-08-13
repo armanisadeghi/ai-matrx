@@ -24,7 +24,10 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
 import { useCategories } from "@/features/scopes/hooks/useCategories";
 import type { AssociationEdge } from "@/features/scopes/types";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  SurfaceRuntimeProvider,
+  useSurfaceClientTools,
+} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { marketingKeys } from "@/features/marketing/data/hooks";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
@@ -50,7 +53,11 @@ import {
 } from "../setup/draft";
 import { liveMatchesById, usePlanReality } from "../hooks/usePlanReality";
 import { useCmsPageMap } from "../hooks/useCmsPageMap";
-import { usePlanWorkspaceParams } from "../hooks/usePlanWorkspaceParams";
+import {
+  PLAN_VIEWS,
+  usePlanWorkspaceParams,
+  type PlanView,
+} from "../hooks/usePlanWorkspaceParams";
 import { PlanAssistStrip } from "./PlanAssistStrip";
 import { PlanGenerateBar } from "./PlanGenerateBar";
 import { PlanRealityBar } from "./PlanRealityBar";
@@ -82,6 +89,17 @@ const PillarMap = dynamic(
     ),
   },
 );
+
+/** The surface this workspace body mounts (manifest `content-plan`). */
+const SURFACE_NAME = "matrx-user/content-plan";
+
+/**
+ * Views that actually SHOW the selected node. `table` is excluded on purpose:
+ * its detail panel is driven by MatrxDataTable's own row selection, not by
+ * `selectedNodeId`, so selecting a node while the table is open moves nothing
+ * on screen. `setup` / `entities` / `ai-runs` render no node panel at all.
+ */
+const NODE_PANEL_VIEWS: readonly PlanView[] = ["tree", "map"];
 
 export function ContentPlanWorkbench({
   defaultLayout,
@@ -287,6 +305,36 @@ export function ContentPlanWorkbench({
     setNewNodeOpen(true);
   };
 
+  // ONE resolution path for "which node did you mean" — shared by the
+  // select_node WRITE target and the content_plan_focus_node CLIENT TOOL, so
+  // there is never a second way to open a node. Throws on bad input; both
+  // seams turn a throw into a safe, loud envelope for the agent.
+  const requirePlanNode = useCallback(
+    (toolName: string, value: unknown): PlanNodeRow => {
+      if (typeof value !== "string" || !value.trim()) {
+        throw new Error(`${toolName} expects a plan node UUID string`);
+      }
+      const node = nodeById.get(value);
+      if (!node) {
+        throw new Error(
+          `${toolName}: "${value}" is not a node in this plan (see plan_tree)`,
+        );
+      }
+      return node;
+    },
+    [nodeById],
+  );
+
+  // Route → node id, for agents that name a page the way the plan does
+  // (routes are trigger-owned derived cache — matched, never recomputed).
+  const nodeIdByRoute = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const node of nodeRows) {
+      if (node.route) map.set(node.route.toLowerCase(), node.id);
+    }
+    return map;
+  }, [nodeRows]);
+
   // Workspace-level write handler (manifest writeTargets): select_node opens
   // a plan node in the panel — the same UI move as a row/node click. The
   // per-view surfaces (setup/entities/node panel) mount their own nested
@@ -295,19 +343,83 @@ export function ContentPlanWorkbench({
   const getWriteHandlers = useCallback(
     () => ({
       select_node: (value: unknown) => {
-        if (typeof value !== "string" || !value.trim()) {
-          throw new Error("select_node expects a plan node UUID string");
-        }
-        if (!nodeById.has(value)) {
-          throw new Error(
-            `select_node: "${value}" is not a node in this plan (see plan_tree)`,
-          );
-        }
-        setSelectedNodeId(value);
+        setSelectedNodeId(requirePlanNode("select_node", value).id);
       },
     }),
-    [nodeById],
+    [requirePlanNode],
   );
+
+  // Surface CLIENT TOOLS (manifest clientTools) — the ACTION half of the 360
+  // loop. These move the user's VIEW so they can see what the agent is
+  // talking about; none of them writes plan data. The dispatcher runs them
+  // immediately with no ask dialog, which is why every one of them is a
+  // reversible, visible `ui` move and nothing more.
+  useSurfaceClientTools(SURFACE_NAME, {
+    content_plan_focus_node: (input: unknown) => {
+      const args = (input ?? {}) as { node_id?: unknown; route?: unknown };
+      const rawId = typeof args.node_id === "string" ? args.node_id.trim() : "";
+      const rawRoute = typeof args.route === "string" ? args.route.trim() : "";
+      if (Boolean(rawId) === Boolean(rawRoute)) {
+        throw new Error(
+          'content_plan_focus_node needs exactly one of node_id (a UUID from plan_tree) or route (e.g. "/services/roof-repair").',
+        );
+      }
+
+      let node: PlanNodeRow;
+      if (rawId) {
+        node = requirePlanNode("content_plan_focus_node", rawId);
+      } else {
+        const route = rawRoute.startsWith("/")
+          ? rawRoute.toLowerCase()
+          : `/${rawRoute.toLowerCase()}`;
+        const foundId = nodeIdByRoute.get(route);
+        if (!foundId) {
+          throw new Error(
+            `content_plan_focus_node: no node in this plan has route "${route}" — read the routes from plan_tree, they are database-derived.`,
+          );
+        }
+        node = requirePlanNode("content_plan_focus_node", foundId);
+      }
+
+      // Selecting is not seeing: on a view with no node panel the selection
+      // would be invisible. Move to the tree first so the focus LANDS.
+      const nextView: PlanView = NODE_PANEL_VIEWS.includes(view)
+        ? view
+        : "tree";
+      if (nextView !== view) setView(nextView);
+      setSelectedNodeId(node.id);
+
+      return {
+        focused: {
+          id: node.id,
+          label: node.label,
+          route: node.route ?? null,
+        },
+        view: nextView,
+      };
+    },
+
+    content_plan_switch_view: (input: unknown) => {
+      const next = (input ?? {}) as { view?: unknown };
+      if (
+        typeof next.view !== "string" ||
+        !PLAN_VIEWS.includes(next.view as PlanView)
+      ) {
+        throw new Error(
+          `content_plan_switch_view expects view to be one of ${PLAN_VIEWS.join(
+            ", ",
+          )}; got ${JSON.stringify(next.view)}.`,
+        );
+      }
+      if (!siteId) {
+        throw new Error(
+          "content_plan_switch_view: no site is open, so the workspace has no views to switch between.",
+        );
+      }
+      setView(next.view as PlanView);
+      return { view: next.view };
+    },
+  });
 
   if (sites.isError) {
     return (

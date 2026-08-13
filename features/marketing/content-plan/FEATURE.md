@@ -539,6 +539,26 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
 
+- 2026-08-13 — **the workspace is the platform's first surface to offer agents
+  CLIENT TOOLS: an agent bound to this page can now move the user's view while
+  it talks.** Three `ui`-mode tools on the `matrx-user/content-plan` manifest,
+  none of which writes plan data: `content_plan_focus_node` (open one node by
+  UUID **or by route** — and switch to the tree first when the current view has
+  no node panel, because selecting a node the user cannot see is not focusing
+  it), `content_plan_switch_view` (tree / table / map / entities / setup /
+  ai-runs), and `content_plan_expand_tree` (all / clusters / pillars / none).
+  Handlers live where the state lives: focus + switch in
+  `ContentPlanWorkbench`, expand in `PlanTree` — which mounts only on the tree
+  view, so on every other view the expand tool is declared-but-unwired and is
+  simply not offered that turn. `select_node` (the existing write target) and
+  `content_plan_focus_node` share ONE node-resolution function, so there is
+  still exactly one way to open a node. `PLAN_VIEWS` is now exported from
+  `usePlanWorkspaceParams` so the handler validates against the real
+  vocabulary instead of re-typed literals. Verified with a live Badass Agent
+  run on `my-test.com`: focus by route selected the row, "collapse to pillars"
+  took the tree from 20 rows to 8, "switch to the map view" moved `?view=`,
+  a bogus route came back as a safe `client_tool_error` envelope the agent
+  quoted verbatim, and the next call still worked (the loop never wedged).
 - 2026-08-12 — Codex: **page intent now uses the canonical keyword and metadata
   system end to end.** The node editor accepts arbitrary primary/supporting
   phrases, resolves keyword identities only at persistence, exposes the full

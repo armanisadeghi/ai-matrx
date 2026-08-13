@@ -18,12 +18,17 @@
  */
 
 import type {
+  SurfaceClientTool,
   SurfaceManifest,
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
 } from "@/features/surfaces/types";
+// TYPE-ONLY: the view vocabulary is owned by the workspace hook, so a renamed
+// or removed view breaks this file at compile time. Erased at build — the
+// manifest registry stays free of client-component imports.
+import type { PlanView } from "@/features/marketing/content-plan/hooks/usePlanWorkspaceParams";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
@@ -275,6 +280,94 @@ const writeTargets: SurfaceWriteTarget[] = [
   },
 ];
 
+/**
+ * The views the workspace can switch to, as the agent sees them. Typed
+ * `readonly PlanView[]` so a renamed/removed view fails the build here; the
+ * HANDLER validates against the runtime `PLAN_VIEWS` constant, so nothing
+ * invalid can land even if this list drifts.
+ */
+const planViewNames: readonly PlanView[] = [
+  "tree",
+  "table",
+  "map",
+  "entities",
+  "setup",
+  "ai-runs",
+];
+
+/**
+ * Client tools — the ACTION half of the 360 loop beside `writeTargets`.
+ * These MOVE THE USER'S VIEW so they can see the page the agent is talking
+ * about; not one of them writes plan data (that is what `writeTargets` and
+ * the child node surface are for). Handlers: `ContentPlanWorkbench` (focus /
+ * switch view) and `PlanTree` (expand) via `useSurfaceClientTools`.
+ *
+ * `content_plan_expand_tree` is deliberately registered by `PlanTree`, which
+ * only mounts on the tree view — on every other view it is declared-but-
+ * unwired and simply is not offered to the agent that turn (by design; see
+ * `build-tool-injection.ts`).
+ */
+const clientTools: SurfaceClientTool[] = [
+  {
+    name: "content_plan_focus_node",
+    label: "Focus node",
+    description:
+      "Opens one plan node in the workspace so the user SEES the page you are discussing: selects it and shows its node panel, first switching to the `tree` view when the current view has no node panel (`table`, `entities`, `setup`, `ai-runs`); the `map` view keeps its own panel and is left alone. Identify the node by `node_id` (a UUID from plan_tree) OR by `route` (its database-derived route, e.g. `/services/roof-repair` — case-insensitive, a missing leading slash is tolerated); pass exactly one. This is a view move only — nothing about the node is written or changed. Returns the focused node's id, label, route, and the view now showing. Errors if neither or both arguments are given, or if nothing in the open plan matches.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        node_id: {
+          type: "string",
+          description: "UUID of the node to focus, as listed in plan_tree.",
+        },
+        route: {
+          type: "string",
+          description:
+            "Route of the node to focus, e.g. `/services/roof-repair`, as listed in plan_tree.",
+        },
+      },
+      required: [],
+    },
+    mode: "ui",
+  },
+  {
+    name: "content_plan_switch_view",
+    label: "Switch view",
+    description:
+      "Switches the Content Plan workspace to one of its views so the user is looking at the right projection while you explain: `tree` (editable tree + node panel), `table` (sortable, filterable table of every planned page), `map` (radial pillar map), `entities` (E-E-A-T entity manager), `setup` (site-shape scaffolder), `ai-runs` (every AI run recorded for this site). Exactly the move the user makes with the header's view switch, and `?view=` in the URL updates with it so the state stays shareable. Nothing in the plan is written or changed. Errors when no site is open.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        view: {
+          type: "string",
+          enum: [...planViewNames],
+          description: "Which workspace view to show.",
+        },
+      },
+      required: ["view"],
+    },
+    mode: "ui",
+  },
+  {
+    name: "content_plan_expand_tree",
+    label: "Expand tree",
+    description:
+      "Expands or collapses the plan tree so the user can see the level you are talking about: `all` opens every branch, `clusters` shows pillars and clusters, `pillars` shows just the pillar row, `none` collapses every branch (the root's first-tier pages stay visible — the root is not collapsible). Exactly the move the tree toolbar's expand/collapse controls make; nothing is written. Available only while the tree view is on screen; on the other views the tree is not rendered and this tool is not offered at all. Returns the level applied.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        level: {
+          type: "string",
+          enum: ["all", "clusters", "pillars", "none"],
+          description: "How much of the tree to leave open.",
+        },
+      },
+      required: ["level"],
+    },
+    mode: "ui",
+  },
+];
+
 export const contentPlanManifest: SurfaceManifest = {
   surfaceName: "matrx-user/content-plan",
   label: "Content Plan",
@@ -287,6 +380,7 @@ You are on the Content Plan workspace: the editable tree of every URL a managed 
 Read site (or site_id) first to know which website is being planned, then plan_tree for the whole structure and node_counts_by_status for progress. selected_node is the node the user is focused on; selected_node_edges carries its topics, secondary keywords, and entity attachments when loaded.
 Hard rules: route, depth, pillar_label, and cluster_label are computed by database triggers — treat them as observed evidence, never invent or recompute them, and never propose writing them. Read and write the primary keyword by phrase on the child node surface; its UUID is identity plumbing. Secondary keywords are association edges. A site with a null brand cannot hold plan rows — the database rejects loudly by design; the fix is assigning a brand in Marketing, not working around the error.
 This surface is the plan-editor base (tree, table, and map are three projections of the same plan). The workspace's other views are their own surfaces with their own agents: Site Setup (content-plan-setup), the entity manager (content-plan-entities), the sites front door (content-plan-list), and the open node panel (content-plan-node — where field-level write targets live). The one write target here is select_node: opening a node in the panel, exactly as a user click would.
+You can also MOVE THE USER'S VIEW while you talk, with three tools that change nothing in the plan: content_plan_focus_node opens a node (by UUID or by route) and switches to a view that can show it, content_plan_switch_view changes the projection, and content_plan_expand_tree opens or collapses the tree (offered only while the tree is on screen). Use them instead of describing where to click — when you name a page, focus it; when the shape is the point, switch to the map and expand. They are view moves, so use them freely.
 Empty values mean the workspace is still loading, no site is selected, or the data genuinely does not exist yet — say so plainly instead of guessing.
 </surface_intro>`,
   groups,
@@ -295,6 +389,7 @@ Empty values mean the workspace is still loading, no site is selected, or the da
     surfaceSpecific,
   ),
   writeTargets,
+  clientTools,
   agentRoles: [
     {
       name: "plan_architect",
