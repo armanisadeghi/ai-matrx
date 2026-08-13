@@ -13,24 +13,25 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
-### D181 — Component-table `INSERT…RETURNING` fails 42501 platform-wide (2026-08-13)
+### D182 — Component-RLS remainder: 33 tables still can't `INSERT…RETURNING` as authed; `std_insert` accepts foreign `created_by` (2026-08-13)
 
-Component tables' `std_select` policies use the id-list form
-(`id IN (SELECT unnest(iam.accessible_entity_ids('<token>','viewer')))`) with no
-row-local arm, while entity tables get `created_by = (select auth.uid()) OR
-iam.has_access(...)`. Postgres evaluates `INSERT…RETURNING` against the SELECT
-policy, and the id-list subquery runs on the statement snapshot — it can never
-see the row being inserted — so **every authenticated `.insert().select()` on
-those tables fails 42501**. Verified live: `crm.party_contact_point` insert
-succeeds bare, fails with RETURNING, same user, proven editor access on the
-parent. **132 policies across 20 schemas** have the shape (seo 33, web 22,
-chat 17, workflow 9, research 8, crm 6, content_ir 5, agent/app/tool 4 each, …).
-Fix: the component `std_select` template in the canonical generator
-(`iam.apply_rls` v2) needs the same `created_by` OR-arm entities get, then
-re-apply everywhere + `notify pgrst, 'reload schema'`; audit which FE surfaces
-silently broke. Chip fired 2026-08-13. `features/crm/service.ts` already dropped
-RETURNING on its component inserts as a hedge (its record-page add-email/
-add-phone/add-address/log-call were all broken by this).
+Left open by the D181 fix (adversarial review findings, verified live). Three
+pieces, all pre-existing base-contract drift, mostly server-written tables:
+(1) **21 component tables have `created_by` but NO `_stamp_actor` trigger and
+no default** (`files.file_versions` + 20 `seo.*`: backlink*, serp_snapshot,
+rank_observation, competitor*, change_event/assessment/metric-subset,
+page_performance, search_performance_daily, …) — the new owner arm only passes
+if the client sends `created_by` explicitly, so authed `.insert().select()`
+still 42501s there. Fix = attach the canonical trigger trio (base retrofit),
+per table. (2) **12 component `std_select` policies sit on tables with no
+`created_by` column at all** (`growth.loop_event/loop_stage_run`,
+`legal.wc_injury/wc_report`, `scheduler.sch_agent_task`, 7 `seo.*` raw-pipeline
+tables) — untouched by the repair; authed INSERT…RETURNING stays broken until
+base-retrofit. All 33 are written via service_role today (`svc_all` bypasses),
+so nothing user-facing is known broken. (3) **Product call for Arman:** the
+component `std_insert` parent-editor arm doesn't force `created_by = auth.uid()`,
+so a parent-editor can stamp another user as creator, conveying that user read
+via the owner arm — pre-existing, entity variant does force it.
 
 ### D179 — Keyword Research workbench: remaining UI debt (2026-08-13, Arman review)
 
@@ -1233,6 +1234,7 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 
 ## RESOLVED
 
+- **D181 — component-table `INSERT…RETURNING` 42501 platform-wide — RESOLVED 2026-08-13.** `iam.apply_rls` component `std_select` now leads with `created_by = (select auth.uid())` (the id-list `accessible_entity_ids` form is STABLE and can never see the in-flight row); 126 live policies repaired in place via `ALTER POLICY` (bespoke extra lanes untouched). Migration `iam_apply_rls_component_select_owner_arm.sql` (ledgered); adversarially verified + live repro confirmed (bare insert AND insert-returning both pass, `verify_canonical` still clean). Remainder (33 tables lacking `_stamp_actor`/`created_by`) → D182.
 - **D173 — shortcut/template project/task scoping had NO canonical path after the mirror-trigger disarm — RESOLVED 2026-08-12.** The four forbidden FK columns are DROPPED live (proven 0 scoped rows); `agent_shortcut→project/task` association types registered (target-container, editor — the agent→project precedent); 7 RPCs + `agent.context_menu_view` rewritten with edge projections (signatures and output shapes unchanged, so read paths needed zero changes); writes now create `platform.associations` edges (agx_create_shortcut, create_shortcut_from_agent_surface, POST /api/agent-shortcuts); FE converters/API allowlists cut; aidream agent models regenerated (zero real consumers existed). Both `agent.shortcut` and `agent.template` are now CERTIFIED. Migration `agent_shortcut_scoping_to_associations.sql` (ledgered). Remaining mirror-function dependents were separately eliminated the same day (only graveyard remains).
 - **D168 — Claude-only, untracked `preview_start` replaced by tracked provider-neutral `pnpm preview:start`; Claude/Codex hooks block duplicate raw launches.** 2026-08-12 — `scripts/agent-dev-server.sh`, `scripts/agent-harness/`.
 - **D165 — the Redux execution system could not carry a `context_anchor` — RESOLVED 2026-08-11.** `HeadlessAgentJsonOptions` now carries `contextAnchor` / `organizationId` (`run-headless-agent-json.ts:82,88`) straight into `launchAgentExecution`, so migrating a surface to the live posture no longer drops its durable-entity anchor. Filed and closed the same day while migrating the Research Outputs Studio SEO card, which passes `{resource_type:"research_topic", resource_id: topicId}` on the live path.
