@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     switch (action) {
       // ── create ───────────────────────────────────────────────────────
       // Idempotent on the natural key
-      //   (user_id, message_id, artifact_type, external_system).
+      //   (owner, message_id, artifact_type, external_system).
       // If an artifact already exists for that tuple, return it (optionally
       // applying any non-null fields from the payload as an update). This
       // makes repeat opens of the HTML preview overlay — and other
@@ -49,7 +49,6 @@ export async function POST(request: NextRequest) {
           thumbnailUrl,
           metadata = {},
           organizationId,
-          projectId,
           taskId,
         } = params;
 
@@ -80,6 +79,14 @@ export async function POST(request: NextRequest) {
         // (otherwise an empty string writes as "" but reads via `.is(null)`).
         const normalizedExternalSystem = externalSystem || null;
 
+        // `user_id` is the LAST legacy write left in this repo: it is the lead
+        // column of `uq_cx_artifact_source_natural_key`, the dedup index this
+        // upsert infers. Stopping the write before that index is rebuilt on
+        // `created_by` would make every existing row invisible to ON CONFLICT
+        // and reintroduce duplicate artifacts. Delete this line (and switch
+        // `onConflict` below) in the same change that lands the new index.
+        // Ownership itself is already canonical — `_stamp_actor` fills
+        // `created_by`, and every read below keys on it.
         const insertRow = {
           message_id: messageId,
           conversation_id: conversationId,
@@ -87,7 +94,6 @@ export async function POST(request: NextRequest) {
           source_id: messageId,
           user_id: user.id,
           organization_id: organizationId ?? null,
-          project_id: projectId ?? null,
           task_id: taskId ?? null,
           artifact_type: artifactType,
           status: "published" as const,
@@ -145,7 +151,7 @@ export async function POST(request: NextRequest) {
           .schema("chat")
           .from("artifact")
           .update(updates)
-          .eq("user_id", user.id)
+          .eq("created_by", user.id)
           .eq("source_system", "cx_message")
           .eq("source_id", messageId)
           .eq("artifact_type", artifactType);
@@ -207,7 +213,7 @@ export async function POST(request: NextRequest) {
           .from("artifact")
           .update(updates)
           .eq("id", id)
-          .eq("user_id", user.id)
+          .eq("created_by", user.id)
           .select()
           .single();
 
@@ -241,7 +247,7 @@ export async function POST(request: NextRequest) {
           .from("artifact")
           .update({ status: "archived", deleted_at: new Date().toISOString() })
           .eq("id", id)
-          .eq("user_id", user.id);
+          .eq("created_by", user.id);
 
         if (error) {
           console.error("[artifacts API] archive error:", error);
@@ -266,7 +272,7 @@ export async function POST(request: NextRequest) {
           .from("artifact")
           .delete()
           .eq("id", id)
-          .eq("user_id", user.id);
+          .eq("created_by", user.id);
 
         if (error) {
           console.error("[artifacts API] delete error:", error);
@@ -291,7 +297,7 @@ export async function POST(request: NextRequest) {
           .from("artifact")
           .select("*")
           .eq("id", id)
-          .eq("user_id", user.id)
+          .eq("created_by", user.id)
           .is("deleted_at", null)
           .single();
 
@@ -311,15 +317,13 @@ export async function POST(request: NextRequest) {
           .schema("chat")
           .from("artifact")
           .select("*")
-          .eq("user_id", user.id)
+          .eq("created_by", user.id)
           .is("deleted_at", null)
           .order("updated_at", { ascending: false });
 
         if (filters.artifactType)
           query = query.eq("artifact_type", filters.artifactType);
         if (filters.status) query = query.eq("status", filters.status);
-        if (filters.projectId)
-          query = query.eq("project_id", filters.projectId);
         if (filters.taskId) query = query.eq("task_id", filters.taskId);
         if (filters.conversationId)
           query = query.eq("conversation_id", filters.conversationId);
@@ -349,7 +353,7 @@ export async function POST(request: NextRequest) {
           .from("artifact")
           .select("*")
           .eq("message_id", messageId)
-          .eq("user_id", user.id)
+          .eq("created_by", user.id)
           .is("deleted_at", null)
           .order("created_at", { ascending: true });
 

@@ -13,7 +13,6 @@ import { updateArtifactThunk } from "@/lib/redux/thunks/artifactThunks";
 import { registerArtifactThunk } from "@/lib/redux/thunks/artifactThunks";
 import {
   selectOrganizationId,
-  selectProjectId,
   selectTaskId,
 } from "@/lib/redux/slices/appContextSlice";
 
@@ -51,7 +50,6 @@ export function HtmlPreviewBridge({
   const store = useAppStore();
   const user = useAppSelector(selectUser);
   const organizationId = useAppSelector(selectOrganizationId);
-  const projectId = useAppSelector(selectProjectId);
   const taskId = useAppSelector(selectTaskId);
 
   // Look up existing artifact for this message (O(1) via secondary index)
@@ -68,7 +66,7 @@ export function HtmlPreviewBridge({
   // On mount: if we have a messageId, fetch artifacts for it so the bridge
   // immediately knows whether an HTML page was already published from
   // this message. Duplicate prevention lives in the API + thunk layer
-  // (natural-key dedupe on user_id + message_id + artifact_type +
+  // (natural-key dedupe on owner + message_id + artifact_type +
   // external_system), so the fetch here is purely for UX — it flips the
   // publish button from "Generate" to "Update" once resolved.
   useEffect(() => {
@@ -109,7 +107,6 @@ export function HtmlPreviewBridge({
             externalSystem: "html_pages",
             externalId: newPageId,
             organizationId,
-            projectId,
             taskId,
             metadata: {},
           }),
@@ -121,7 +118,7 @@ export function HtmlPreviewBridge({
 
       dispatch(setActivePageId(newPageId));
     },
-    [dispatch, messageId, conversationId, organizationId, projectId, taskId],
+    [dispatch, messageId, conversationId, organizationId, taskId],
   );
 
   /**

@@ -37,7 +37,7 @@ interface MessageFileRow {
   id: string;
   message_id: string;
   conversation_id: string;
-  user_id: string;
+  created_by: string | null;
   organization_id: string | null;
   file_adapter: string;
   file_path: string;

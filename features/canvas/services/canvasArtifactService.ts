@@ -10,7 +10,6 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
-import { associationsService } from "@/features/scopes/service/associationsService";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { Database } from "@/types/database.types";
@@ -547,11 +546,11 @@ export const canvasArtifactService = {
       }
       if (existing) return { id: existing.id };
 
-      // Scope columns: chat rows inherit org/task from the conversation and
-      // project from its canonical association edge; non-chat rows fall back
-      // to the active/personal org.
+      // Scope columns: chat rows inherit org/task from the conversation;
+      // non-chat rows fall back to the active/personal org. A feature table
+      // may not depend on a project FK — project membership, when it exists,
+      // is a `platform.associations` edge on the conversation.
       let organizationId: string | null = null;
-      let projectId: string | null = null;
       let taskId: string | null = null;
       if (isChat) {
         // A chat row needs its conversation for scope columns; some
@@ -575,24 +574,19 @@ export const canvasArtifactService = {
         }
         organizationId = conversation.organization_id;
         taskId = conversation.task_id;
-        const projectResult = await associationsService.listForSources(
-          "conversation",
-          [input.conversationId],
-          "project",
-        );
-        if (!projectResult.ok) {
-          console.error(
-            "[canvasArtifactService.upsertDiscoveryIndex] project association lookup error:",
-            projectResult.error,
-          );
-        } else {
-          projectId = projectResult.data.edges[0]?.targetId ?? null;
-        }
       } else {
         organizationId = await ensureOrgId(undefined);
       }
 
       const normalizedExternalSystem: string | null = null;
+      // `user_id` is the LAST legacy write left in this repo: it is the lead
+      // column of `uq_cx_artifact_source_natural_key`, the dedup index this
+      // upsert infers. Stopping the write before that index is rebuilt on
+      // `created_by` would make every existing row invisible to ON CONFLICT
+      // and reintroduce duplicate artifacts. Delete this line (and switch
+      // `onConflict` below) in the same change that lands the new index.
+      // Ownership itself is already canonical — `_stamp_actor` fills
+      // `created_by`, and the natural-key read below keys on it.
       const insertRow = {
         canvas_item_id: input.canvasId,
         message_id: isChat ? input.source.id : null,
@@ -605,7 +599,6 @@ export const canvasArtifactService = {
         status: "published" as const,
         title: input.title ?? null,
         organization_id: organizationId,
-        project_id: projectId,
         task_id: taskId,
         external_system: normalizedExternalSystem,
         external_id: null,
@@ -642,7 +635,7 @@ export const canvasArtifactService = {
         .schema("chat")
         .from("artifact")
         .select("id, canvas_item_id")
-        .eq("user_id", userId)
+        .eq("created_by", userId)
         .eq("source_system", input.source.system)
         .eq("source_id", input.source.id)
         .eq("artifact_index", input.artifactIndex)

@@ -7,7 +7,7 @@ export type {
 
 export type CxConversation = {
   id: string;
-  user_id: string;
+  created_by: string | null;
   title: string | null;
   system_instruction: string | null;
   config: Record<string, unknown>;
@@ -22,7 +22,6 @@ export type CxConversation = {
   description: string | null;
   keywords: string[] | null;
   organization_id: string | null;
-  project_id: string | null;
   task_id: string | null;
   metadata: Record<string, unknown>;
   created_at: string;
@@ -106,7 +105,6 @@ export type CxToolCall = {
   id: string;
   conversation_id: string;
   message_id: string | null;
-  user_id: string;
   user_request_id: string | null;
   tool_name: string;
   tool_name_as_called: string | null;
@@ -155,7 +153,7 @@ export type CxToolCall = {
 export type CxMedia = {
   id: string;
   conversation_id: string | null;
-  user_id: string;
+  created_by: string | null;
   kind: string;
   url: string;
   mime_type: string | null;

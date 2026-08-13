@@ -14,7 +14,6 @@ import {
   selectArtifactAllIds,
   selectArtifactsByMessageIdIndex,
   selectArtifactsByConversationIdIndex,
-  selectArtifactsByProjectIdIndex,
   selectArtifactsByTaskIdIndex,
   selectArtifactFetchStatus,
   selectArtifactFetchError,
@@ -96,18 +95,7 @@ export const selectArtifactsByConversationId = createSelector(
   },
 );
 
-// ── Project / Task lookups ────────────────────────────────────────────────────
-
-/** All artifacts scoped to a project. */
-export const selectArtifactsByProjectId = createSelector(
-  selectArtifactsById,
-  selectArtifactsByProjectIdIndex,
-  (_state: RootState, projectId: string) => projectId,
-  (byId, index, projectId) => {
-    const ids = index[projectId] ?? EMPTY_ARTIFACT_IDS;
-    return ids.map((id) => byId[id]).filter(Boolean) as CxArtifactRecord[];
-  },
-);
+// ── Task lookups ────────────────────────────────────────────────────────────────
 
 /** All artifacts scoped to a task. */
 export const selectArtifactsByTaskId = createSelector(
@@ -194,7 +182,6 @@ export function makeSelectFilteredArtifacts(_instanceId: string) {
       filters: {
         artifactType?: ArtifactType;
         status?: ArtifactStatus;
-        projectId?: string;
         taskId?: string;
         conversationId?: string;
       },
@@ -207,9 +194,6 @@ export function makeSelectFilteredArtifacts(_instanceId: string) {
       }
       if (filters.status) {
         result = result.filter((a) => a.status === filters.status);
-      }
-      if (filters.projectId) {
-        result = result.filter((a) => a.projectId === filters.projectId);
       }
       if (filters.taskId) {
         result = result.filter((a) => a.taskId === filters.taskId);

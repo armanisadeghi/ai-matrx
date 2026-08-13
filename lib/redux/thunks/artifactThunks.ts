@@ -20,7 +20,6 @@ import {
 } from "@/lib/redux/slices/artifactsSlice";
 import {
   selectOrganizationId,
-  selectProjectId,
   selectTaskId,
 } from "@/lib/redux/slices/appContextSlice";
 import type {
@@ -101,10 +100,11 @@ export const registerArtifactThunk = createAsyncThunk<
     if (existing) return existing;
   }
 
-  // Read context from appContextSlice at dispatch time
+  // Read context from appContextSlice at dispatch time. No project: a feature
+  // table may not depend on a project FK — project membership rides on
+  // `platform.associations` instead.
   const context = {
     organizationId: payload.organizationId ?? selectOrganizationId(state),
-    projectId: payload.projectId ?? selectProjectId(state),
     taskId: payload.taskId ?? selectTaskId(state),
   };
 

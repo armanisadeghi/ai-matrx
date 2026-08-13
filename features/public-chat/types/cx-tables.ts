@@ -183,7 +183,7 @@ export interface CxMessageContent {
 export interface CxMedia {
   id: string; // uuid PK
   conversation_id: string | null; // uuid, FK to cx_conversation
-  user_id: string; // uuid NOT NULL
+  created_by: string | null; // uuid — canonical owner (trigger-stamped)
   kind: CxMediaKind; // text NOT NULL
   url: string; // text NOT NULL
   mime_type: string | null; // text
@@ -204,7 +204,6 @@ export type CxMediaKind =
 export interface CxMediaInsert {
   id?: string;
   conversation_id?: string | null;
-  user_id: string;
   kind: CxMediaKind;
   url: string;
   mime_type?: string | null;
