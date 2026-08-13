@@ -1,63 +1,53 @@
 # P7 — No browser dialogs
 
-- Run date: 2026-08-12
-- Run kind: recovery of the approved Tier M alert batch under baseline-delta certification
+- Run date: 2026-08-13
+- Run kind: scheduled full-repository pass
 - Registry scope: full repository every run
-- Execution: isolated worktree from current `origin/main`; no shared-checkout mutation
+- Execution: isolated Codex worktree at `origin/main` (`b4b5464f2`, release `v0.4.561`)
 
-## Scope and current baseline
+## Scope scanned
 
-- Reverified executable `window.confirm/alert/prompt` and bare `confirm/alert/prompt` calls under `app/`, `components/`, `features/`, and `lib/`; triaged imported canonical `confirm({...})`, local functions, comments/prose, and fixtures.
-- Current pre-edit baseline: **18 calls in 11 files** — 16 standalone alerts in the nine approved files, one `window.confirm`, and one token `prompt`.
-- The earlier 27-call baseline included nine app-builder confirms whose feature subtree has since been deleted; they are resolved by deletion, not by this batch.
+- Ran the P7 call-pattern grep across all repository TypeScript and JavaScript sources, excluding dependency, build, coverage, and distribution trees.
+- Ran repo-wide ESLint scope resolution for `no-alert`, `no-restricted-globals`, and `no-restricted-properties` so canonical imported `confirm({...})` calls, local functions, comments/prose, and security fixtures were not misclassified.
+- Reverified the open P7 ledger item and both formerly manual files directly.
+- Full-pass result: **0 executable browser-dialog calls in 0 files**.
 
-## Delivered Tier M batch
+## Approval routes
 
-- Fixed: **16 standalone alerts in 9 files**.
-- Transformation: add the captured `toast` import from `@/lib/toast`, then preserve each message and handler sequence while mapping informational actions to `toast.info`, completed actions to `toast.success`, and failures to `toast.error`.
-- Files:
-  - `app/(admin)/administration/ui/official-components/component-displays/floating-sheet.tsx`
-  - `app/(admin)/administration/ui/official-components/component-displays/placeholder.tsx`
-  - `app/(admin)/administration/ui/official-components/component-displays/simple-card-grid.tsx`
-  - `app/(admin)/administration/ui/official-components/component-displays/simple-card.tsx`
-  - `app/(dev)/demos/general/resizable-demo/resizable-builder/page.dev.tsx`
-  - `app/(dev)/demos/settings-primitives/page.dev.tsx`
-  - `app/(dev)/demos/tests/_maps/components/SearchControl.tsx`
-  - `app/(dev)/demos/tests/google-apis/search-console/components/DataTable.tsx`
-  - `app/(dev)/demos/tests/slack/with-brokers/components/BrokerForm.tsx`
+### Auto-fixed now
 
-## Baseline-to-post verification
+- **0 findings; 0 fixes.** No Tier M batch was created.
 
-- `pnpm type-check`: pass → pass.
-- `pnpm check:doctrine`: pass → pass.
-- `pnpm check:tsconfig`: pass → pass.
-- `pnpm check:ui-primitives`: pass with the same 19 advisory findings → same.
-- Changed-file ESLint: 43 problems (5 pre-existing errors, 38 warnings) → 11 problems (the same 5 DataTable errors and 6 unrelated warnings). All 32 P7 warnings from the 16 calls were removed.
-- Changed-file P7 detector: 16 calls → 0 calls.
-- Diff audit: exactly nine product files, nine captured-toast imports, and 16 alert-to-toast replacements; no generated file, suppression, chunk boundary, shared primitive, state model, layout, or theme behavior changed.
+### Manual approval requested
 
-## Adversarial certification
+- **0 findings.** No approval remains pending.
 
-- Verdict: **CERTIFIED** under the corrected baseline-delta and risk-based policy.
-- Independent static review reproduced every gate and detector result and found no batch-caused defect.
-- Representative browser proof used the isolated managed preview and the direct synchronous-toast risk class: Settings Primitives in dark theme rendered the exact `Would reset…` captured toast, no native browser dialog, no horizontal overflow (`innerWidth = scrollWidth = 1280`), no console errors/warnings, and legible dark-surface styling.
-- A full every-route matrix was not required: this repeated mechanical batch changes only imported callback targets and does not modify a shared primitive, interaction model, responsive layout, or theme behavior.
-- The preview was stopped after proof and its machine-wide lease was released.
+### Backlog retained
 
-## Production delivery
+- **0 findings.** No item lacks evidence or a safe decision.
 
-- Shipped in the atomic frontend release **v0.4.550** (`9419ff9bd`), which contains the certified product commit `7737c209a` and report/ledger commit `4c4a39c92`.
-- Vercel deployment `dpl_C9bwWNG9fJZqdhzpwnnbFQF61c45` reached **Ready**. The canonical production endpoint `https://www.aimatrx.com/api/version` returned that exact deployment id, verifying the release is live.
-- No redundant P7 version bump or release was created.
+## Prior open items resolved before this run
 
-## Remaining manual route
+- `features/administration/hindsight/components/EnrollmentDetailPanel.tsx` now uses the canonical imperative `confirm({...})` host for its destructive archive action.
+- `app/(dev)/demos/tests/slack/page.dev.tsx` now uses `TextInputDialog` for manual token entry.
+- Both replacements landed before this patrol in `460ff2dcc`, whose repository-wide single-rule scan reported zero P7 violations. That commit is an ancestor of release `v0.4.561`; the patrol applied no product-code mutation.
 
-- `features/administration/hindsight/components/EnrollmentDetailPanel.tsx:242` — one synchronous destructive `window.confirm`; replacement requires async control-flow review.
-- `app/(dev)/demos/tests/slack/page.dev.tsx:54` — one sensitive token `prompt`; replacement requires secure input/state UX review.
-- Remaining: **2 calls in 2 files**. Both remain Tier R; no uncertain exclusions.
+## Verification and certification
+
+- Immutable pre-edit baseline: clean git worktree; `pnpm type-check` pass; `pnpm check:doctrine` pass with 11 advisory reuse notices; `pnpm check:tsconfig` pass with two inert `.next*` include notes; `pnpm check:ui-primitives` pass with 19 unchanged advisory findings; scope-aware P7 ESLint detector 0.
+- Post-report verification: `pnpm type-check` pass; doctrine remained the same 11 advisory reuse notices; tsconfig remained the same two inert `.next*` include notes; UI-primitives remained the same 19 advisory findings; scope-aware P7 ESLint detector remained 0.
+- Finalization gates: `pnpm check:migrations` silent; `pnpm sync-types` completed with `Type-check passed.` The live generators exposed unrelated drift in `types/database.types.ts`, `types/python-generated/api-types.ts`, and `types/python-generated/openapi.json`; P7's generated-file hard rule required discarding those tool-produced diffs, so no generated file is part of this patrol.
+- Adversarial certifier verdict: **NOT APPLICABLE — no Tier M fix batch**.
+- Browser proof: not required because this run changed no product code, shared primitive, interaction, layout, responsive behavior, theme behavior, or chunk boundary.
+
+## New baseline
+
+- Executable P7 findings: **0 calls / 0 files**.
+- Approved exceptions: **0**.
+- Open ledger sightings: **0**.
 
 ## Loop health
 
-- The preceding month is not all clean, so no longer cadence is proposed.
-- The prior preview failure was infrastructure evidence under the corrected policy, not a product rejection; this recovered batch is certified.
+- Available reports from the preceding month include finding-bearing and recovery runs on 2026-08-09 and 2026-08-12, so the all-clean threshold is not met and no longer cadence is proposed.
+- The earlier infrastructure-blocked preview attempt does not count as a batch rejection; the recovered alert batch was certified and shipped.
 - No recurring unregistered class was observed, so no Candidate-bench nomination was added.

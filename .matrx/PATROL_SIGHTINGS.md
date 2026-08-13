@@ -18,7 +18,7 @@ Format: `- [ ] <P#> | <file-or-route> | <one line> | <date>`
 - [x] P10 | `features/tasks/hooks/useTaskManager.ts:150` | former `TEMP-RT-DEBUG` cast was removed by its owning task before the approved P10 batch; re-verification found no remaining harness symbol or cast | resolved-before-batch | 2026-08-12
 - [ ] P4 | `.matrx/patrol-reports/light-dark-integrity-exception-review.md` | 47 active files / 100 raw-token lines are proposed fixed-palette exceptions; none is approved and every active proposal needs Arman's UI decision (5 applet files / 9 lines resolved by deletion) | 2026-08-12
 - [x] P4 | `features/applet/**` (ModernGlass.tsx, StyledComponents.tsx) | moot — the whole applet/app-builder feature was deleted 2026-08-13 (Arman); both files are gone | resolved-by-deletion | 2026-08-13
-- [ ] P7 | see `.matrx/patrol-reports/no-browser-dialogs.md` | certified recovery fixed all 16 standalone alerts in nine files; two manual findings remain: Hindsight's synchronous destructive confirm and the Slack demo's sensitive-token prompt | 2026-08-12
+- [x] P7 | see `.matrx/patrol-reports/no-browser-dialogs.md` | prior manual findings were resolved before the 2026-08-13 patrol by canonical `confirm({...})` and `TextInputDialog` replacements in `460ff2dcc`; the full scope-aware detector is clean in `v0.4.561` | resolved-before-run | 2026-08-13
 - [ ] P8 | see `.matrx/patrol-reports/real-loading-states.md` | 11 manually approved Suspense fallbacks fixed and adversarially certified in the first bounded batch; provider-sync independently became skeleton-compliant; 83 historical files remain open for re-verification under the new M/R approval recipe | fixed-certified | 2026-08-12
 
 ## Cleared
