@@ -483,6 +483,17 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     urlPathTemplate: "/scopes/item-suggestions/{id}",
     rlsUsesHasPermission: false,
   },
+  shared_canvas_item: {
+    resourceType: "shared_canvas_item",
+    tableName: "shared_canvas_items",
+    schemaName: "canvas",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Shared Canvas",
+    urlPathTemplate: "/canvas/shared/{id}",
+    rlsUsesHasPermission: true,
+  },
   skill: {
     resourceType: "skill",
     tableName: "definition",
