@@ -32,6 +32,11 @@ import { Component, Server, ChevronDown, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { PlaceholdersVanishingSearchInput } from "@/components/matrx/search-input/PlaceholdersVanishingSearchInput";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ADMIN_OFFICIAL_COMPONENTS_SURFACE_NAME,
+  createAdminOfficialComponentsScope,
+} from "@/features/surfaces/manifests/admin-official-components.manifest";
 
 // Inner component that uses useSearchParams — must be wrapped in <Suspense>
 function OfficialComponentsContent() {
@@ -90,9 +95,26 @@ function OfficialComponentsContent() {
 
   const categoriesByGroup = getCategoriesByGroup();
 
+  // Surface emitter — SYNCHRONOUS over the live render state above. The Surface
+  // Context window polls this every 400ms while it is open, so it must never
+  // fetch: everything here is either a URL param or a derived length over the
+  // static `componentList`.
+  const getScope = () =>
+    createAdminOfficialComponentsScope({
+      page_section: "list",
+      total_component_count: componentList.length,
+      search_query: searchQuery,
+      selected_category: selectedCategory,
+      filtered_component_count: filteredComponents.length,
+    });
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_OFFICIAL_COMPONENTS_SURFACE_NAME}
+      getScope={getScope}
+    >
     <div className="flex flex-col h-[calc(100dvh-2.5rem)] w-full">
-      <header className="px-2 py-1 shrink-0">
+      <header className="px-2 py-1 shrink-0" data-surface-value="search_query">
         <PlaceholdersVanishingSearchInput
           columnNames={["name", "description", "tags"]}
           onSearchChange={handleSearchChange}
@@ -108,7 +130,10 @@ function OfficialComponentsContent() {
               <CardTitle className="text-sm font-medium flex items-center justify-between gap-2">
                 <span className="truncate">
                   Categories{" "}
-                  <span className="text-muted-foreground font-normal">
+                  <span
+                    className="text-muted-foreground font-normal"
+                    data-surface-value="total_component_count"
+                  >
                     ({componentList.length})
                   </span>
                 </span>
@@ -200,14 +225,17 @@ function OfficialComponentsContent() {
           <Card className="flex flex-col h-full overflow-hidden py-0 gap-0">
             <CardHeader className="px-3 py-2 shrink-0 border-b">
               <CardTitle className="text-sm font-medium flex items-center gap-2 min-w-0">
-                <span className="truncate">
+                <span className="truncate" data-surface-value="selected_category">
                   {searchQuery
                     ? `Results for "${searchQuery}"`
                     : selectedCategory === "all"
                       ? "All Components"
                       : categoryNames[selectedCategory]}
                 </span>
-                <span className="text-muted-foreground font-normal shrink-0">
+                <span
+                  className="text-muted-foreground font-normal shrink-0"
+                  data-surface-value="filtered_component_count"
+                >
                   ({filteredComponents.length})
                 </span>
                 {searchQuery && (
@@ -288,6 +316,7 @@ function OfficialComponentsContent() {
         </main>
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 

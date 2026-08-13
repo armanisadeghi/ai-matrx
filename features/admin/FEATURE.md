@@ -160,6 +160,19 @@ that existing editor; private keys and client secrets remain outside
 
 ## Change log
 
+- `2026-08-13` — Claude: made the Official Components registry
+  (`/administration/ui/official-components`) agent-readable. Both routes now
+  mount `SurfaceRuntimeProvider` for `matrx-admin/official-components`, which
+  previously declared 12 surface values and emitted none — the list page
+  supplies the search/category/count values, `[componentId]/page.tsx` supplies
+  the `current_component_*` set, and `data-surface-value` anchors were added to
+  the rendered elements so Locate works. Both `getScope` callbacks are
+  synchronous over live render state (the Surface Context window polls them
+  every 400ms). `readiness` `stub` → `partial`. No behavioural change to either
+  page. The surface's standing NO on write targets was re-verified and left in
+  place: `componentList` is a hardcoded in-repo array with no backing table,
+  edit form, or mutation path, so the registry stays a read-only report.
+
 - `2026-08-12` — Claude: corrected the Email Users surface's `readinessNote`,
   which claimed `writeTargets` had no DB mirror. It has had one since
   2026-08-11: `ui.ui_surface_write_target` carries `email_draft` with every

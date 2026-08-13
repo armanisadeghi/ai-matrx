@@ -23,6 +23,11 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import dynamic from "next/dynamic";
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ADMIN_OFFICIAL_COMPONENTS_SURFACE_NAME,
+  createAdminOfficialComponentsScope,
+} from "@/features/surfaces/manifests/admin-official-components.manifest";
 
 // Create a type for the dynamic component that accepts component prop
 type ComponentDisplayProps = {
@@ -70,7 +75,29 @@ export default function ComponentDetailPage({
     )
     .slice(0, 3);
 
+  // Surface emitter — SYNCHRONOUS over the entry resolved above. Everything is
+  // already in hand (the catalogue is a static in-repo array), so the Surface
+  // Context window's 400ms poll costs nothing and never touches the network.
+  // `current_component_description` is omitted rather than blanked when the
+  // entry authors none, so an absent description reads as absent, not empty.
+  const getScope = () =>
+    createAdminOfficialComponentsScope({
+      page_section: "detail",
+      total_component_count: componentList.length,
+      current_component_id: component.id,
+      current_component_name: component.name,
+      current_component_description: component.description,
+      current_component_path: component.path,
+      current_component_categories: component.categories,
+      current_component_tags: component.tags ?? [],
+      related_component_count: relatedComponents.length,
+    });
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_OFFICIAL_COMPONENTS_SURFACE_NAME}
+      getScope={getScope}
+    >
     <div className="w-full">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
         <div className="md:col-span-3">
@@ -81,7 +108,12 @@ export default function ComponentDetailPage({
                 <span className="shrink-0">
                   {categoryIcons[component.categories[0]]}
                 </span>
-                <span className="min-w-0 break-words">{component.name}</span>
+                <span
+                  className="min-w-0 break-words"
+                  data-surface-value="current_component_name"
+                >
+                  {component.name}
+                </span>
               </CardTitle>
 
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mt-2">
@@ -105,11 +137,17 @@ export default function ComponentDetailPage({
                       </Badge>
                     ))}
                   </div>
-                  <CardDescription className="mt-2">
+                  <CardDescription
+                    className="mt-2"
+                    data-surface-value="current_component_description"
+                  >
                     {component.description}
                   </CardDescription>
                   <p className="text-[11px] text-muted-foreground mt-2 break-words">
-                    <code className="text-[11px] py-1 rounded break-all">
+                    <code
+                      className="text-[11px] py-1 rounded break-all"
+                      data-surface-value="current_component_path"
+                    >
                       {component.path}
                     </code>
                   </p>
@@ -142,7 +180,10 @@ export default function ComponentDetailPage({
                 <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">
                   Categories
                 </h4>
-                <div className="flex flex-col gap-1 mt-1">
+                <div
+                  className="flex flex-col gap-1 mt-1"
+                  data-surface-value="current_component_categories"
+                >
                   {component.categories.map((cat) => (
                     <p key={cat} className="flex items-center gap-2">
                       {categoryIcons[cat]}
@@ -155,7 +196,10 @@ export default function ComponentDetailPage({
                 <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">
                   Tags
                 </h4>
-                <div className="flex flex-wrap gap-1 mt-1">
+                <div
+                  className="flex flex-wrap gap-1 mt-1"
+                  data-surface-value="current_component_tags"
+                >
                   {component.tags?.map((tag) => (
                     <Badge
                       key={tag}
@@ -171,7 +215,7 @@ export default function ComponentDetailPage({
           </Card>
 
           {relatedComponents.length > 0 && (
-            <Card>
+            <Card data-surface-value="related_component_count">
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg">Related Components</CardTitle>
               </CardHeader>
@@ -203,5 +247,6 @@ export default function ComponentDetailPage({
         </aside>
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
