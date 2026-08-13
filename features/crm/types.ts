@@ -39,6 +39,10 @@ export type InteractionInsert =
 
 export type CampaignRow = Database["crm"]["Tables"]["campaign"]["Row"];
 
+export type MergeCandidateRow =
+  Database["crm"]["Tables"]["merge_candidate"]["Row"];
+export type PartyMergeRow = Database["crm"]["Tables"]["party_merge"]["Row"];
+
 // ── Joined shapes (embeds — compositions of generated rows, never mirrors) ──
 
 /** The minimal party reference an embed resolves (employer, member, …). */
@@ -59,6 +63,53 @@ export type AffiliationWithEmployer = AffiliationRow & {
 export type AffiliationWithPerson = AffiliationRow & {
   person: PartyRef | null;
 };
+
+/** The party fields dedup decisions need beyond the display ref. */
+export type MergePartyRef = Pick<
+  PartyRow,
+  | "id"
+  | "display_name"
+  | "party_kind"
+  | "job_title"
+  | "primary_domain"
+  | "created_at"
+  | "canonical_id"
+  | "deleted_at"
+  | "organization_id"
+>;
+
+/** A duplicate suggestion joined to both parties (always ordered source<target). */
+export type MergeCandidateWithParties = MergeCandidateRow & {
+  source: MergePartyRef | null;
+  target: MergePartyRef | null;
+};
+
+/** A merge record joined to both parties (for history + unmerge). */
+export type PartyMergeWithParties = PartyMergeRow & {
+  winner: PartyRef | null;
+  loser: PartyRef | null;
+};
+
+/** One detection signal inside merge_candidate.signals (see crm_03_dedup.sql). */
+export const MERGE_SIGNAL_KINDS = [
+  "identity_collision",
+  "shared_medium",
+  "name_key",
+  "domain",
+] as const;
+export type MergeSignalKind = (typeof MERGE_SIGNAL_KINDS)[number];
+export interface MergeSignal {
+  kind: MergeSignalKind;
+  channel?: string;
+  value?: string;
+}
+
+/** What `crm_detect_merge_candidates` returns for one org scan. */
+export interface DedupScanResult {
+  auto_merged: { winner_id: string; loser_id: string; merge_id: string }[];
+  refreshed_candidates: number;
+  pending_candidates: number;
+}
 
 /** Everything the record page needs, loaded in one parallel batch. */
 export interface PartyDetail {

@@ -1,6 +1,6 @@
 # FEATURE.md — `crm`
 
-**Status:** `db-core live · route + WindowPanels live` · **Tier:** `1` · **Last updated:** `2026-08-08`
+**Status:** `db-core live · route + WindowPanels live · campaigns + call queue live` · **Tier:** `1` · **Last updated:** `2026-08-13`
 
 Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/crm/FEATURE.md` — read it before touching this feature in ANY repo.
 
@@ -54,6 +54,7 @@ schema exists to prevent.
 | `campaign`            | entity                  | ✅        | a named audience or cold campaign                       |
 | `campaign_member`     | component of `campaign` | ❌        | per-member state, attempts, dialer claim                |
 | `party_merge`         | component of `party`    | ❌        | the exact unmerge record                                |
+| `merge_candidate`     | component of `party`    | ❌        | duplicate suggestion (ordered pair, durable dismissal)  |
 
 `party_kind ('person','organization')` is the **only** closed set. Expert, lead,
 vendor, journalist, competitor, customer are **roles** — `platform.categories` rows in
@@ -91,6 +92,21 @@ DDL: [`migrations/crm_01_schema.sql`](../../migrations/crm_01_schema.sql),
   move would not collide, records every moved id in `crm.party_merge.moved`, and sets
   `canonical_id` on the loser — which stays live. `crm_unmerge_parties` replays that
   record exactly. Children that _would_ collide stay on the loser on purpose.
+- **Dedup (crm_03_dedup.sql): only identity-key collisions auto-merge.**
+  `public.crm_detect_merge_candidates(p_org)` merges two live canonical parties
+  automatically ONLY when both hold the same live email/phone medium through
+  contact points BOTH flagged `is_identity_key` (earlier-created party wins,
+  method `'auto'`). Everything weaker — shared medium without both flags, same
+  `name_key`, company domain in another company's emails — lands in
+  `crm.merge_candidate` as a suggestion (`CHECK (source_id < target_id)`, one
+  row per pair ever) for the human review queue at `/crm/duplicates`.
+  Dismissal (`crm_dismiss_merge_candidate`) is durable across scans. A party
+  gaining `canonical_id` flips its pending candidates to `merged` via the
+  `_z_candidate_on_merge` trigger, whatever path merged it.
+- **`crm.party.name_key` is stamped by `_b_party_name_key`** (from
+  `crm.name_key(display_name)`: lowercase, punctuation→space, trailing legal
+  suffixes stripped). It had NO writer before 2026-08-13 — never write it from
+  a client, and never compare raw display names for identity.
 - **`last_touch_at` is deliberately NOT stored on `party`.** `party` is versioned; a
   cold-call floor would snapshot the whole row into `history.row_versions` on every
   dial. Derive it from `crm.interaction` (indexed `(party_id, occurred_at desc)`).
@@ -109,7 +125,10 @@ DDL: [`migrations/crm_01_schema.sql`](../../migrations/crm_01_schema.sql),
 ## Entry points
 
 **Routes:** `/crm` (list: People + Companies, `app/(core)/crm/page.tsx`) ·
-`/crm/[partyId]` (record page) · `/crm/admin` (the feature admin map).
+`/crm/[partyId]` (record page) · `/crm/campaigns` (campaign console) ·
+`/crm/campaigns/[campaignId]` (campaign workspace) ·
+`/crm/campaigns/[campaignId]/dial` (call queue) · `/crm/admin` (the feature
+admin map).
 The main app menu links to the route, opens the manager window, and opens
 person/company capture directly. All consume `features/crm/`:
 
@@ -156,7 +175,7 @@ value metadata mirror the manifests.
 
 **RPCs** (`public`, `auth.uid()`-gated, `activity_log`-audited):
 `crm_set_primary_contact_point` · `crm_merge_parties` · `crm_unmerge_parties` ·
-`crm_party_purge`.
+`crm_party_purge` · `crm_detect_merge_candidates` · `crm_dismiss_merge_candidate`.
 
 **Server models:** aidream `db/models/crm.py` + `db/managers/crm/` (generated;
 `crm` is registered in `aidream/db/matrx_orm.yaml`).
@@ -200,16 +219,94 @@ synonyms) → **dry-run preview** → commit. Engine in `features/crm/import/`
   resolver's territory). Rows with no valid email/phone dedupe by nothing and
   re-import as new people.
 
+## Campaigns + call queue (`/crm/campaigns`)
+
+Data layer `features/crm/campaigns/` (`types.ts` vocabularies + dispositions,
+`service.ts` all reads/writes); UI `features/crm/components/campaigns/`
+(console, workspace, `CallQueuePage` dialer, `AddMembersDialog` filter
+enrollment, `AddToCampaignDialog` selection enrollment, `badges.tsx` — the ONE
+status→color map). Enrollment on-ramps: `/crm` row selection → bulk bar →
+"Add to campaign", or campaign workspace → "Add members" by filter. Rules paid
+for once:
+
+- **The claim lock is a CONDITIONAL UPDATE, no RPC.** `claimNextMember` reads
+  candidates then takes one with an UPDATE re-asserting claim-free
+  (`claimed_until` null/expired/ours) — zero rows back means another rep won;
+  try the next candidate. `UPDATE…RETURNING` is legal on component tables
+  (only `INSERT…RETURNING` 42501s — D181); every member insert stays bare.
+- **Suppression is resolved BEFORE a number is offered** (`computeDialTargets`
+  precedence: party `do_not_contact` → point `opt_out_at` → medium
+  `dnc_state='listed'` → `verification_status='invalid'` → `suppressed_at` /
+  `is_contactable=false`). Blocked numbers render greyed WITH the reason; a
+  claimed member with zero dialable numbers is auto-marked `suppressed`
+  (tallied visibly, capped at 25/advance) — never silently dialed or skipped.
+- **"Do not call" scrubs the MEDIUM** (`suppressed_at` +
+  `suppression_reason='dnc_request'` — one update covers every party sharing
+  the number) AND flags the party `do_not_contact`. Member status
+  `suppressed`.
+- **Dispositions write the interaction FIRST** (permanent record), then the
+  member update guarded `.eq("claimed_by", me)` — a lost claim throws loudly
+  instead of clobbering a colleague's state. Retry windows: voicemail +24h,
+  no-answer +4h; skip defers +15min without logging.
+- **Enrollment shares the list's predicate builder**
+  (`applyPartyListPredicates` in `service.ts`) so filter preview and enrolled
+  set can never diverge; dedup pre-reads member `party_id`s (the partial
+  unique index would abort a whole batch on one duplicate); DNC records are
+  excluded by default; filter enrollment throws above `FILTER_ENROLL_CAP`
+  (5000) rather than truncating.
+- **Campaign scope is blended mine + my orgs** (declared, THE VIEW LAW) — a
+  sales-floor work console, not a browse surface.
+- **Known limits:** dialing is a `tel:` handoff (no telephony integration);
+  an expired-but-unexpired-looking suppression (`suppression_expires_at`
+  passed) still blocks because generated `is_contactable` ignores expiry — an
+  unsuppress affordance is future work; member table search/status filter are
+  server-side but member columns don't sort.
+
+## Dedup + merge review (`/crm/duplicates`)
+
+Detection is `crm_detect_merge_candidates` per org (the review page's Scan
+button, and once per session from `CrmAssistStrip` on `/crm`). UI in
+`features/crm/components/dedup/`: `DuplicateReviewPage` (queue + recent merges
+with exact undo), `CandidatePairCard` (side-by-side comparison stating exactly
+what a merge moves and what stays; winner defaults to the earlier-created
+record), `MergeStatusCard` (record-page banners: merged-into, possible
+duplicate, absorbed merges), `CrmAssistStrip` (assists producer
+`crm-assists-producer.ts` — auto-merge receipt chip + review chip, both
+navigate actions). `/crm` header carries a Duplicates door with the true
+pending count. Every party named on these surfaces opens (THE DOOR LAW).
+
 ## Not built yet
 
-- Campaign builder, call queue, merge review UI.
 - "Shared" list scope (needs a crm grant-reader RPC).
-- Research expert writing, dedup automation, the `web.brand` fold, expert
+- Research expert writing, the `web.brand` fold, expert
   registration — see [`docs/handoffs/crm-system.md`](../../docs/handoffs/crm-system.md).
 
 ---
 
 ## Change log
+
+- 2026-08-13 — Campaign builder + call queue shipped (Wave 3): `/crm/campaigns`
+  console, campaign workspace (status rollup chips filter the roster,
+  server-paged member table), enrollment from `/crm` selection (table
+  `selection` bulk bar → `AddToCampaignDialog`) and from filters
+  (`AddMembersDialog` over the shared `applyPartyListPredicates`), and the
+  claim-locked power dialer at `/crm/campaigns/[id]/dial` (conditional-update
+  claim, DNC/suppression-checked dial targets, interaction-first disposition
+  writes, retry windows, session tally). Data layer live-verified against the
+  real DB (15/15: claim race, foreign-claim skip, lost-claim guard, D181 bare
+  inserts, suppression → `is_contactable`, embed counts). Registered in
+  `agent.review_queue` ×2. Consolidated onto `useCrmContext` (deleted my
+  duplicate extraction).
+- 2026-08-13 — Dedup automation + merge review shipped (`crm_03_dedup.sql`,
+  applied + ledgered): `name_key` writer/backfill, `crm.merge_candidate`
+  (ordered pair, durable dismissal), `crm_detect_merge_candidates`
+  (auto-merge ONLY on both-sides `is_identity_key` medium collisions; weak
+  signals — shared medium / name_key / email-domain — become suggestions),
+  `crm_dismiss_merge_candidate`, `_z_candidate_on_merge` trigger.
+  FE: `/crm/duplicates` review queue (side-by-side pair cards, what-moves
+  verdict, merge/dismiss, recent merges with exact undo), `/crm` Duplicates
+  door + count badge + assist chips (`crm-assists-producer.ts`), record-page
+  `MergeStatusCard`. `useCrmContext` extracted from `usePartyList`.
 
 - 2026-08-12 — Restored strict Supabase write typing for campaign status
   transitions: the dynamic lifecycle patch now uses the generated

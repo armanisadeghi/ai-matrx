@@ -18,7 +18,7 @@ import { ItemMenu } from "@/components/official/item/ItemMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { formatRelativeTime } from "@/utils/datetime";
-import { useCrmQueryContext } from "../../hooks/useCrmQueryContext";
+import { useCrmContext } from "../../hooks/useCrmContext";
 import {
   deleteCampaign,
   fetchCampaigns,
@@ -38,7 +38,7 @@ function memberCount(row: CampaignListRow): number {
 
 export function CampaignListPage() {
   const router = useRouter();
-  const ctx = useCrmQueryContext();
+  const ctx = useCrmContext();
   const [rows, setRows] = useState<CampaignListRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

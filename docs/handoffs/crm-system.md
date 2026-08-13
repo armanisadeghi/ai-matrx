@@ -317,8 +317,16 @@ fired 2026-08-13; cheapest now, most expensive later) · `invitation_requests` +
 function; `channel_id` is a stable key, no fuzzy matching).
 
 **Wave 3 — a working outreach tool (~2–3 weeks).**
-Smart views (saved dynamic filters + bulk actions — the list IS the work queue) · campaign builder
-+ call-queue UI (= power-dial a smart view; the claim lock exists) ·
+Smart views (saved dynamic filters + bulk actions — the list IS the work queue) ·
+~~campaign builder + call-queue UI~~ **DONE 2026-08-13** (`/crm/campaigns` console + campaign
+workspace + claim-locked power dialer at `/crm/campaigns/[id]/dial`; enrollment from `/crm` row
+selection and from filters over the shared `applyPartyListPredicates`; DNC/suppression enforced
+before any dial (party DNC / point opt-out / medium `is_contactable`), "Do not call" scrubs the
+medium org-wide; dispositions log `crm.interaction` first then advance the member behind a
+claim-guarded update; data layer live-DB verified 15/15 incl. the claim race. Data
+`features/crm/campaigns/`, UI `features/crm/components/campaigns/`. Known gaps: `tel:` handoff
+only — real telephony is Wave 4; no unsuppress affordance; enrollment from a *saved* view awaits
+smart views) ·
 ~~dedup automation + merge review UI~~ **DONE 2026-08-13** (`crm_03_dedup.sql`:
 `name_key` writer + backfill, `crm.merge_candidate` ordered-pair suggestions with durable
 dismissal, `crm_detect_merge_candidates` — auto-merge ONLY on both-sides `is_identity_key`

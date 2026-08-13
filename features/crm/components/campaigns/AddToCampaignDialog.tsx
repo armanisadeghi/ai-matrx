@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@/utils/datetime";
-import { useCrmQueryContext } from "../../hooks/useCrmQueryContext";
+import { useCrmContext } from "../../hooks/useCrmContext";
 import {
   addMembersByPartyIds,
   createCampaign,
@@ -49,7 +49,7 @@ export function AddToCampaignDialog({
   selectedIds: string[];
   onDone: () => void;
 }) {
-  const ctx = useCrmQueryContext();
+  const ctx = useCrmContext();
   const [campaigns, setCampaigns] = useState<CampaignListRow[] | null>(null);
   const [chosenId, setChosenId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);

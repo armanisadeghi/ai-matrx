@@ -326,6 +326,8 @@ export interface CreatePartyInput {
   jobTitle?: string;
   primaryDomain?: string;
   headline?: string;
+  /** Flexible per-record data (crm.party.attributes jsonb), e.g. research provenance. */
+  attributes?: Record<string, unknown>;
 }
 
 export async function createParty(input: CreatePartyInput): Promise<PartyRow> {
@@ -341,6 +343,7 @@ export async function createParty(input: CreatePartyInput): Promise<PartyRow> {
       job_title: input.jobTitle?.trim() || null,
       primary_domain: input.primaryDomain?.trim() || null,
       headline: input.headline?.trim() || null,
+      ...(input.attributes ? { attributes: input.attributes } : {}),
     })
     .select("*")
     .single();
@@ -683,6 +686,31 @@ export async function endAffiliation(id: string): Promise<void> {
     })
     .eq("id", id);
   if (error) throw pgError(error);
+}
+
+/**
+ * Name-search live parties (any kind) in one org workspace — the generic
+ * "link an existing person/company" picker read. Small page, canonical rows
+ * only (merged losers excluded).
+ */
+export async function searchPartiesByName(args: {
+  orgId: string;
+  search: string;
+}): Promise<PartyRef[]> {
+  let q = supabase
+    .schema("crm")
+    .from("party")
+    .select("id,display_name,party_kind")
+    .eq("organization_id", args.orgId)
+    .is("deleted_at", null)
+    .is("canonical_id", null)
+    .order("display_name", { ascending: true })
+    .limit(12);
+  const term = sanitizeSearch(args.search);
+  if (term) q = q.ilike("display_name", `%${term}%`);
+  const { data, error } = await q;
+  if (error) throw pgError(error);
+  return data ?? [];
 }
 
 /**

@@ -31,7 +31,7 @@ import type { ItemMenuConfig } from "@/components/official/item/types";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { formatRelativeTime } from "@/utils/datetime";
 import { cn } from "@/lib/utils";
-import { useCrmQueryContext } from "../../hooks/useCrmQueryContext";
+import { useCrmContext } from "../../hooks/useCrmContext";
 import {
   fetchCampaign,
   fetchCampaignMembers,
@@ -58,7 +58,7 @@ const PAGE_SIZE = 50;
 
 export function CampaignDetailPage({ campaignId }: { campaignId: string }) {
   const router = useRouter();
-  const ctx = useCrmQueryContext();
+  const ctx = useCrmContext();
   const [campaign, setCampaign] = useState<CampaignRow | null>(null);
   const [counts, setCounts] = useState<MemberStatusCounts | null>(null);
   const [members, setMembers] = useState<CampaignMemberWithParty[]>([]);
