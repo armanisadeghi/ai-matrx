@@ -25,7 +25,10 @@
 import { useState, type ReactNode } from "react";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  SurfaceRuntimeProvider,
+  type SurfaceWriteHandlers,
+} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { useSpokenPractice } from "../hooks/useSpokenPractice";
 import { buildSpokenPracticeScope } from "../spokenPracticeScope";
 import { MODE_VOCABULARY } from "../vocabulary";
@@ -74,7 +77,7 @@ export function SpokenPracticeSurface({
    * microphone is open the practice type is fixed, so we register NOTHING
    * rather than offering a target that would have to refuse every call.
    */
-  const getWriteHandlers = () =>
+  const getWriteHandlers = (): SurfaceWriteHandlers =>
     phase !== "idle"
       ? {}
       : {
