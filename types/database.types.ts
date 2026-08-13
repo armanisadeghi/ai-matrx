@@ -771,11 +771,11 @@ export type Database = {
           id: string
           is_public: boolean | null
           label: string | null
-          metadata: Json | null
+          metadata: Json
           organization_id: string
           role: Database["public"]["Enums"]["message_role"] | null
           tags: string[] | null
-          updated_at: string | null
+          updated_at: string
           updated_by: string | null
           user_id: string | null
           version: number
@@ -789,11 +789,11 @@ export type Database = {
           id?: string
           is_public?: boolean | null
           label?: string | null
-          metadata?: Json | null
+          metadata?: Json
           organization_id: string
           role?: Database["public"]["Enums"]["message_role"] | null
           tags?: string[] | null
-          updated_at?: string | null
+          updated_at?: string
           updated_by?: string | null
           user_id?: string | null
           version?: number
@@ -807,11 +807,11 @@ export type Database = {
           id?: string
           is_public?: boolean | null
           label?: string | null
-          metadata?: Json | null
+          metadata?: Json
           organization_id?: string
           role?: Database["public"]["Enums"]["message_role"] | null
           tags?: string[] | null
-          updated_at?: string | null
+          updated_at?: string
           updated_by?: string | null
           user_id?: string | null
           version?: number
