@@ -159,11 +159,9 @@ surface means importing them too, never reimplementing the RPC call.
 - **The sweep.** `pnpm check:access-errors` (advisory, in the release gates)
   measures it. **543 → 353** as the conversion waves landed: education, files,
   rag, `features/marketing` and every `app/(core)` route are at ZERO. The
-  biggest single bucket left is `lib` (59, of which ~45 are
-  `lib/redux/app-builder/**`, the gated applets subsystem — developer-facing
-  thunk errors with interpolated ids, NOT user-facing access copy; triage
-  before converting, and consider excluding the subsystem outright if it stays
-  gated). Then `features/agents` (34) and a long tail of 6–16 per feature.
+  `lib` bucket lost its ~45 `lib/redux/app-builder/**` findings when the applet
+  feature was deleted (2026-08-13). The leaders now are `features/agents` (34)
+  and a long tail of 6–16 per feature.
   **A line the regexes genuinely cannot judge** — a keyword absent from page
   text, an HTTP 404 our crawler observed on someone else's site — takes
   `// access-errors: ok — <reason>`; the reason is required, and the summary

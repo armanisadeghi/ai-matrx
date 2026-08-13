@@ -34,7 +34,6 @@ These routes have no entity imports and must stay lightweight:
 - `/prompt-apps/*` — No entity imports
 - `/ai/prompts/*` — No entity imports
 - `/workflows-new/*` — Separate workflow-nodes slice, not entity system (note: `/workflows` DOES use entity system — see table above)
-- `/apps/*`, `/apps/app-builder/*` — No entity imports
 - `/sandbox` — No entity imports
 - `/image-editing` — No entity imports
 - `/messages/*` — Uses cx-conversation slice, not entity system

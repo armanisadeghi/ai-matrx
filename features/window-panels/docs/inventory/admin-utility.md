@@ -80,7 +80,7 @@
 | **adminStateAnalyzerWindow** | ✓ `useOpenStateViewerWindow` | — | portable | ✓ "State Analyzer" / **admin (gated)** | overlay twin competes | 1 (url-hydration only) | grid-only; fine for an admin tool | — |
 | **adminStateAnalyzer** (overlay) | ✓ `useOpenStateViewerOverlay` | — | portable | ✗ no tile | redundant twin, 0 callers | 0 | unreachable from UI | retire (P2·S) |
 | **instanceUIStateWindow** | ✓ `useOpenInstanceUIStateWindow` | — | portable | ✓ "Instance UI State" / **admin (gated)** | ok | 0 (grid-only) | grid-only; fine for admin | — |
-| **feedbackDialog** | ✓ `useOpenFeedbackWindow` | — | portable | ✓ "Feedback" / general | ok — **best-distributed panel in the chunk** | **9** (cx-chat + agents messageActionRegistry, shell user menu, applet NavigationMenu, FeedbackButton, AudioRecoveryModal, rich-document app handler, MobileUnifiedMenu, content-actions registry) | none — model distribution | — |
+| **feedbackDialog** | ✓ `useOpenFeedbackWindow` | — | portable | ✓ "Feedback" / general | ok — **best-distributed panel in the chunk** | **8** (cx-chat + agents messageActionRegistry, shell user menu, FeedbackButton, AudioRecoveryModal, rich-document app handler, MobileUnifiedMenu, content-actions registry) | none — model distribution | — |
 | **emailDialogWindow** | ✓ `useOpenEmailDialogWindow` | — | portable | ✓ "Email" / general | window variant only reachable via grid; real senders use the bridge | 1 (internal close only) | window variant under-surfaced; bridge does the real work | unify (P1·M) |
 | **emailDialog** (bridge) | ✓ `useOpenEmailDialogBridge` | callback (instanceId) | portable | ✗ no tile | two doors to one feature | 4 (cx-chat + agents messageActionRegistry, rich-document export, content-actions) | — | unify (P1·M) |
 | **shareModalWindow** | ✓ `useOpenShareModalWindow` | — | portable | ✓ "Share Modal" / general (seed note) | window variant grid-only; real shares use the bridge | 0 (grid-only) | under-surfaced vs the bridge | unify (P1·M) |
@@ -132,7 +132,7 @@ Overlays in `OVERLAY_IDS` / `STATIC_REGISTRY` that no domain chunk claims — ac
 | `imagePeekHost` / `adminIndicator` / `announcements` | Floating singletons (image hover-peek host; admin size-cycler chip self-gated on super-admin; announcement banner). Widgets, always-mounted, not panels. |
 | `authGate` / `agentGateWindow` | Auth/agent gate overlays (block until signed in / agent selected). Ephemeral system gates. |
 | `jsonTruncator` | Tiny modal that truncates pasted JSON; has a tools-grid tile (general). Utility modal. |
-| `brokerState` / `socketAccordion` / `streamDebug` / `undoHistory` / `quickChatHistory` / `kgSuggestionsDrawer` | Debug/history/drawer widgets — ephemeral inspectors and side-drawers, opener- or hotkey-driven, not feature panels. |
+| `socketAccordion` / `streamDebug` / `undoHistory` / `quickChatHistory` / `kgSuggestionsDrawer` | Debug/history/drawer widgets — ephemeral inspectors and side-drawers, opener- or hotkey-driven, not feature panels. |
 
 These are intentionally NOT given full A/B/C rows: they are stateless or single-purpose system overlays whose "panel form / surfacing / functional modes" evaluation is n/a. Listing them here closes the coverage gap against the 120 registered `overlayId`s.
 

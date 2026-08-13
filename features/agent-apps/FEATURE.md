@@ -10,14 +10,13 @@
 
 An **Agent App** is a custom UI for a specific workflow. Where a Shortcut *auto-fills* variables, an App *provides a different way to supply them* — often one that doesn't look like AI at all. No chat box. Sometimes no model output in chat form — the agent's result is rendered as an **artifact** directly into the UI.
 
-Successor to the legacy `features/prompt-apps/` (still live, deprecated) and `features/applet/` (fully deprecated). Do not extend the legacy surfaces.
+Successor to the legacy `features/prompt-apps/` (still live, deprecated) and `features/applet/` (**DELETED 2026-08-13** — the applet/app-builder feature is dead; never resurrect it). Do not extend the legacy surface that remains.
 
 ---
 
 ## Entry points
 
 **Routes**
-- `app/(authenticated)/applets/` — legacy runner surface
 - `app/(authenticated)/apps/` — target surface for agent-apps (scaffolding)
 - Migration phases: `features/agents/migration/phases/phase-08-agent-apps-public.md` (public URL variant), `phase-09-admin-agent-apps.md`, `phase-10-applets-capture.md`
 
@@ -161,7 +160,7 @@ The legacy `app/api/public/agent-apps/[slug]/execute/route.ts` (deleted on `2026
 - **Author top-level declarations SHADOW the injected scope — they never collide.** The sandbox runs `new Function(...scopeKeys, body)`, so every injected scope name is a function *parameter*. A parameter plus an author top-level `const`/`let`/`class` of the same name is a hard `SyntaxError: Identifier 'X' has already been declared` (this bit an agent-authored kind whose helper was named `IconBase`; it also fires when an author redeclares an allowlisted name like `Button`). The fix is centralized and applies to BOTH sandbox stacks: `collectTopLevelBindingsPlugin` (in [`utils/patch-scope-identifiers.ts`](utils/patch-scope-identifiers.ts)) records the author's top-level bindings during the Babel pass; `getScopeFunctionParameters(scope, declared)` drops those from the parameter list and `patchScopeForMissingIdentifiers(code, scope, declared)` skips injecting a fallback for them. **Never reintroduce a compile path that turns scope into params without excluding the author's declared identifiers.** Regression tests: [`utils/compile-slot.test.ts`](utils/compile-slot.test.ts).
 - **Apps do not have a chat window by default.** Rendering agent output via artifacts is the norm; the model produces structured output, the UI renders it as real components, user actions feed back into the next turn.
 - **Composition is the design intent.** Apps embed Shortcuts; Shortcuts can point at agents from other Apps. Do not design against composition.
-- **Legacy context:** `features/prompt-apps/` and `features/applet/` are predecessors. Do not extend them. See `features/agents/migration/INVENTORY.md` for the legacy ↔ agent map.
+- **Legacy context:** `features/prompt-apps/` is the remaining predecessor — do not extend it. `features/applet/` was DELETED 2026-08-13. See `features/agents/migration/INVENTORY.md` for the legacy ↔ agent map.
 
 ---
 

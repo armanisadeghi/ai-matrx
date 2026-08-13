@@ -1168,7 +1168,7 @@ aidream never writes it; lists/RSS can't show runtimes (player recovers client-s
 
 ### D67 — doctrine says "banned", ESLint says `warn`, with live violations (2026-07-18)
 
-Browser dialogs (`no-alert` etc.), barrel files (488 warnings), banned lucide brand icons (runtime-missing → 500s; `warn` is the wrong severity). Each needs: finish cleanup and promote to `error`, or soften the doc. Don't leave doc and rule disagreeing. 2026-08-09: `features/` + `components/` + live admin pages are now dialog-clean (16-file batch); the remaining bare dialogs sit only in `app/(dev)/demos`, `app/(transitional)/_apps/app-builder`, and admin official-components display demos (~15 files) — finish those, then promote `no-alert`/`no-restricted-globals` to `error`.
+Browser dialogs (`no-alert` etc.), barrel files (488 warnings), banned lucide brand icons (runtime-missing → 500s; `warn` is the wrong severity). Each needs: finish cleanup and promote to `error`, or soften the doc. Don't leave doc and rule disagreeing. 2026-08-09: `features/` + `components/` + live admin pages are now dialog-clean (16-file batch); the remaining bare dialogs sit only in `app/(dev)/demos` and admin official-components display demos — finish those, then promote `no-alert`/`no-restricted-globals` to `error`.
 
 ### D60 — chat draft transfer never lands for VARIABLE-INPUT agents (2026-07-17)
 

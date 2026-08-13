@@ -192,7 +192,7 @@ The `app/` tree splits into purpose-named route groups. **Working on core produc
 |---|---|---|---|
 | `(core)` | **Production main app.** Slim modern shell, no entity system. New core work goes here. | `/chat`, `/agents`, `/files`, `/notes`… | `full` / `core` / `user` / `slim` |
 | `(admin)` | **Production admin.** Super-admin gated at layout level. Deploys as manage.aimatrx.com. | `/administration/*` | `full` / `core` / `admin` |
-| `(transitional)` | **On the way in/out.** Being (or to be) replaced by `(core)`; not ready to delete. Lower priority. | `/apps`, `/dashboard`, `/settings`, `/scraper`, `/projects`, `/ai`, `/applets`, `/news`… | `full` / `core` / `user` / `slim` |
+| `(transitional)` | **On the way in/out.** Being (or to be) replaced by `(core)`; not ready to delete. Lower priority. | `/dashboard`, `/settings`, `/scraper`, `/projects`, `/ai`, `/news`… | `full` / `core` / `user` / `slim` |
 | `(dev)` | **Internal demos / tests / experiments.** Auth-required. Deploys as demos.aimatrx.com. | `/demos/*` | `full` / `user` / `demos` |
 | `(public)` | Marketing / legal / share / education / canvas. | `/legal`, `/share`, `/p`… | `full` / `core` / `user` / `slim` |
 | `(auth-pages)` | Login / signup / etc. | `/login`, `/sign-up`… | always |

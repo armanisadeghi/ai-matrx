@@ -172,9 +172,6 @@ URL paths omit route-group segments `(name)` (e.g. `(authenticated)`, `(admin-au
 
 - `/tests` — `app/(authenticated)/tests/page.tsx`
 - `/tests/_maps` — `app/(authenticated)/tests/_maps/page.tsx`
-- `/tests/applet-tests` — `app/(authenticated)/tests/applet-tests/page.tsx`
-- `/tests/applet-tests/applet-builder-3` — `app/(authenticated)/tests/applet-tests/applet-builder-3/page.tsx`
-- `/tests/applet-tests/resume-builder-test` — `app/(authenticated)/tests/applet-tests/resume-builder-test/page.tsx`
 - `/tests/camera-test` — `app/(authenticated)/tests/camera-test/page.tsx`
 - `/tests/chat-tests` — `app/(authenticated)/tests/chat-tests/page.tsx`
 - `/tests/chat-tests/chat-assistant` — `app/(authenticated)/tests/chat-tests/chat-assistant/page.tsx`
@@ -273,7 +270,6 @@ URL paths omit route-group segments `(name)` (e.g. `(authenticated)`, `(admin-au
 
 - `/apps/debug/[slug]` — `app/(authenticated)/apps/debug/[slug]/page.tsx`
 - `/apps/debug/admin/[slug]` — `app/(authenticated)/apps/debug/admin/[slug]/page.tsx`
-- `/apps/debug/admin/[slug]/[appletSlug]` — `app/(authenticated)/apps/debug/admin/[slug]/[appletSlug]/page.tsx`
 
 ### Authenticated — app builder field demo
 
@@ -493,7 +489,6 @@ URL paths omit route-group segments `(name)` (e.g. `(authenticated)`, `(admin-au
 - `/apps/builder/modules/field-demo`
 - `/apps/debug/[slug]`
 - `/apps/debug/admin/[slug]`
-- `/apps/debug/admin/[slug]/[appletSlug]`
 - `/apps/demo`
 - `/demo`
 - `/demo/code-generator`
@@ -750,9 +745,6 @@ URL paths omit route-group segments `(name)` (e.g. `(authenticated)`, `(admin-au
 - `/demos/window-demo`
 - `/tests`
 - `/tests/_maps`
-- `/tests/applet-tests`
-- `/tests/applet-tests/applet-builder-3`
-- `/tests/applet-tests/resume-builder-test`
 - `/tests/camera-test`
 - `/tests/chat-tests`
 - `/tests/chat-tests/chat-assistant`

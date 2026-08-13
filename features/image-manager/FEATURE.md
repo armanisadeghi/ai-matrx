@@ -181,7 +181,7 @@ Adding a new tile is a `ToolDescriptor` append — see `ToolsTab.tsx`.
 ## Related features
 
 - **Depends on:** `features/files` (cloud-files redux + upload), `features/image-studio` (`EmbeddedImageStudio`, `Base64DecoderShell`, presets catalog), `features/window-panels` (`ImageViewerWindow`, `GalleryWindow`, overlay controller), `features/canvas/social` (curated covers).
-- **Depended on by:** every product surface that uses `<ImageManager>` (chat, applets, recipes, agent UIs, admin tools).
+- **Depended on by:** every product surface that uses `<ImageManager>` (chat, recipes, agent UIs, admin tools).
 - **Cross-links:**
   - `features/files/FEATURE.md`
   - `features/image-studio/FEATURE.md`
