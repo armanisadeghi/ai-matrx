@@ -140,6 +140,37 @@ function closeOpenReasoningRun(request: ActiveRequest, timestamp: number): void 
 export interface ActiveRequestsState {
   byRequestId: Record<string, ActiveRequest>;
   byConversationId: Record<string, string[]>;
+  /** Mounted canonical viewers that still need each request's render blocks. */
+  viewerIdsByRequestId: Record<string, string[]>;
+  /** Requests whose owner cleaned up while a viewer still retains them. */
+  pendingRemovalByRequestId: Record<string, true>;
+}
+
+function deleteRequestEntry(
+  state: ActiveRequestsState,
+  requestId: string,
+): void {
+  const request = state.byRequestId[requestId];
+  if (request) {
+    const conversationRequests = state.byConversationId[request.conversationId];
+    if (conversationRequests) {
+      state.byConversationId[request.conversationId] =
+        conversationRequests.filter((id) => id !== requestId);
+      if (state.byConversationId[request.conversationId].length === 0) {
+        delete state.byConversationId[request.conversationId];
+      }
+    }
+    delete state.byRequestId[requestId];
+  }
+  delete state.viewerIdsByRequestId[requestId];
+  delete state.pendingRemovalByRequestId[requestId];
+}
+
+function hasRequestViewers(
+  state: ActiveRequestsState,
+  requestId: string,
+): boolean {
+  return (state.viewerIdsByRequestId[requestId]?.length ?? 0) > 0;
 }
 
 // =============================================================================
@@ -225,6 +256,8 @@ function buildHydratedResult(row: HydratedRequestRow): Record<string, unknown> {
 const initialState: ActiveRequestsState = {
   byRequestId: {},
   byConversationId: {},
+  viewerIdsByRequestId: {},
+  pendingRemovalByRequestId: {},
 };
 
 // =============================================================================
