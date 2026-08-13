@@ -48,25 +48,6 @@ export interface PipeStatus {
     ref?: string;
 }
 
-/**
- * The customer-facing face of a stage. Presence of this object is the
- * "show publicly" flag — a stage without it never renders on /how-it-works.
- *
- * Copy rules (our user is a brilliant NON-technical expert):
- * - No product jargon, no file names, no internal stage names.
- *   "Realize page shell" is engineer-speak; "Create the pages" is not.
- * - `plain` is ONE sentence a stranger understands in five seconds.
- * - Never describe intent. If the stage cannot do it today, do not say it.
- */
-export interface PublicStageInfo {
-    /** Customer-facing stage name. */
-    title: string;
-    /** One plain-English sentence. */
-    plain: string;
-    /** Lucide icon NAME — this file stays React-free (see FEATURE.md). */
-    icon: string;
-}
-
 export interface LoopStage {
     id: string;
     /** Short label rendered in the node. */
@@ -80,8 +61,6 @@ export interface LoopStage {
     pipes: Record<Pipe, PipeStatus>;
     /** Where a human enters this stage today. */
     entry?: string;
-    /** Present = this stage is shown on the public /how-it-works page. */
-    publicInfo?: PublicStageInfo;
 }
 
 export interface LoopEdge {
@@ -133,11 +112,6 @@ export const STAGES: LoopStage[] = [
         id: "research",
         label: "Research",
         blurb: "Learn everything about a brand, market and keywords, and write it up as one report.",
-        publicInfo: {
-            title: "Learn the market",
-            plain: "We study your business, your competitors, and what people are actually searching for — and write it all up as one report.",
-            icon: "Search",
-        },
         repos: ["ai-matrx", "aidream", "db"],
         stores: ["research.rs_topic", "research.rs_source", "research.rs_synthesis", "research.rs_document"],
         maturity: "production",
@@ -164,11 +138,6 @@ export const STAGES: LoopStage[] = [
         id: "plan",
         label: "Content plan",
         blurb: "Turn the research into the full list of pages the site should have, as a tree.",
-        publicInfo: {
-            title: "Plan every page",
-            plain: "That research becomes the complete list of pages your site should have, organised the way your visitors actually think.",
-            icon: "ListTree",
-        },
         repos: ["ai-matrx", "aidream", "db"],
         stores: ["plan.node", "plan.entity", "plan.profile"],
         maturity: "production",
@@ -195,11 +164,6 @@ export const STAGES: LoopStage[] = [
         id: "brief",
         label: "Page brief",
         blurb: "Write the core instructions for each individual page, with its own research behind it.",
-        publicInfo: {
-            title: "Decide what each page says",
-            plain: "Every single page gets its own instructions, with its own research behind it, before a word is written.",
-            icon: "FileText",
-        },
         repos: ["ai-matrx", "aidream", "db"],
         stores: ["plan.node.brief", "plan.node.attributes"],
         maturity: "production",
@@ -226,11 +190,6 @@ export const STAGES: LoopStage[] = [
         id: "realize",
         label: "Realize page shell",
         blurb: "Create the actual (empty) page in the CMS at the address the plan promised.",
-        publicInfo: {
-            title: "Create the pages",
-            plain: "Each planned page is created for real, at the exact web address the plan promised — nothing gets lost between the plan and the site.",
-            icon: "LayoutTemplate",
-        },
         repos: ["aidream", "db"],
         stores: ["client_pages (CMS project)", "client_pages.plan_node_id"],
         maturity: "near",
@@ -257,11 +216,6 @@ export const STAGES: LoopStage[] = [
         id: "fill",
         label: "Fill page body",
         blurb: "Write the real content of each page from its brief.",
-        publicInfo: {
-            title: "Write the content",
-            plain: "Every page is written from its own instructions, so it says something specific and useful instead of something generic.",
-            icon: "PenLine",
-        },
         repos: ["aidream", "db"],
         stores: ["plan.cms_fill_job", "plan.cms_fill_item", "client_pages.html_content_draft"],
         maturity: "near",
@@ -287,11 +241,6 @@ export const STAGES: LoopStage[] = [
         id: "publish",
         label: "Publish",
         blurb: "Make the page live for the public.",
-        publicInfo: {
-            title: "Put it live",
-            plain: "Nothing becomes public on its own. You look it over, and one click makes it live.",
-            icon: "Send",
-        },
         repos: ["ai-matrx", "aidream", "db"],
         stores: ["client_pages.is_published", "client_activity_log"],
         maturity: "production",
@@ -317,18 +266,13 @@ export const STAGES: LoopStage[] = [
         id: "serve",
         label: "Live site",
         blurb: "The page is served to real visitors on a real domain.",
-        publicInfo: {
-            title: "Your site, your domain",
-            plain: "Your pages are served to real visitors on your own web address.",
-            icon: "Globe",
-        },
         repos: ["my-matrx"],
         stores: ["client_sites.domain"],
         maturity: "near",
         pipes: {
             code: {
                 state: "partial",
-                note: "One renderer + custom-domain routing + 301 ledger are live, but the site emits NO sitemap.xml and NO robots.txt, and collections render client-side only (invisible to any crawler).",
+                note: "One renderer + custom-domain routing + 301 ledger are live, and collections now server-render into the HTML a crawler receives: <template data-matrx-collection> expanded in loadSitePageProps, order from settings.default_order / ?order= instead of a hardcoded created_at DESC (G-COLLECTIONS closed 2026-08-11). Still partial: the site emits NO sitemap.xml and NO robots.txt.",
                 ref: "my-matrx/lib/render/clientSiteRenderer.js",
             },
             human: { state: "n/a", note: "Serving is infrastructure; there is no human step." },
@@ -339,19 +283,14 @@ export const STAGES: LoopStage[] = [
         id: "crawl",
         label: "Crawl",
         blurb: "Our crawler visits the live site and records what is actually there.",
-        publicInfo: {
-            title: "Check what's really there",
-            plain: "We visit your live site the way a search engine does, and record exactly what it finds — not what you hoped it would find.",
-            icon: "ScanSearch",
-        },
         repos: ["aidream", "db"],
         stores: ["web.crawl_session", "web.page", "web.snapshot", "web.link_edge"],
         maturity: "production",
         entry: "/marketing/brands/[brandId]/sites/[siteId]",
         pipes: {
             code: {
-                state: "partial",
-                note: "One crawl world as of 2026-08-10 (G-CRAWL-DUAL): the legacy scraper.crawl_* store is in graveyard and the every-minute dispatcher drives web.crawl_schedule. Still partial only because the schedule WRITER side is G-CRAWL-SCHEDULE's remaining work.",
+                state: "live",
+                note: "One crawl world as of 2026-08-10 (G-CRAWL-DUAL): the legacy scraper.crawl_* store is in graveyard and the every-minute dispatcher drives web.crawl_schedule. The writer side closed 2026-08-11 (G-CRAWL-SCHEDULE): CrawlScheduleCard writes intent direct to Supabase under the column-scoped grants of aidream migration 0322.",
                 ref: "aidream/packages/matrx-scraper/matrx_scraper/web_crawl/schedules.py#dispatch_due_crawl_schedules",
             },
             human: {
@@ -369,11 +308,6 @@ export const STAGES: LoopStage[] = [
         id: "measure",
         label: "Measure",
         blurb: "Pull in the real numbers: Search Console, analytics, speed, rankings, backlinks.",
-        publicInfo: {
-            title: "Bring in the real numbers",
-            plain: "Where you rank, who visited, how fast the page loads, who links to you — the actual results, all in one place.",
-            icon: "BarChart3",
-        },
         repos: ["aidream", "db"],
         stores: ["seo.search_performance_daily", "seo.web_analytics_daily", "seo.page_performance", "seo.backlink_*"],
         maturity: "production",
@@ -396,11 +330,6 @@ export const STAGES: LoopStage[] = [
         id: "analyze",
         label: "Analyze",
         blurb: "Judge every page against what good looks like, and against how it is actually performing.",
-        publicInfo: {
-            title: "Find what's holding you back",
-            plain: "Every page is checked against what good looks like — and against how it is actually performing out in the world.",
-            icon: "SearchCheck",
-        },
         repos: ["ai-matrx", "aidream", "db"],
         stores: ["web.analysis_result", "web.finding", "web.snapshot.audit_metrics"],
         maturity: "production",
@@ -427,11 +356,6 @@ export const STAGES: LoopStage[] = [
         id: "suggest",
         label: "Suggest",
         blurb: "Turn what we learned into a one-click suggestion the user can accept.",
-        publicInfo: {
-            title: "Get told what to do next",
-            plain: "What we learn becomes a plain-English suggestion you can accept — not a report you have to decode first.",
-            icon: "Lightbulb",
-        },
         repos: ["ai-matrx", "db"],
         stores: ["platform.assists", "web.finding.status"],
         maturity: "stub",
@@ -457,11 +381,6 @@ export const STAGES: LoopStage[] = [
         id: "writeback",
         label: "Write back",
         blurb: "Push the accepted improvement into the page and back into the plan.",
-        publicInfo: {
-            title: "Improve it, and go again",
-            plain: "An accepted improvement is written back into the page and back into the plan — so the next pass starts from what you just learned.",
-            icon: "RefreshCw",
-        },
         repos: ["ai-matrx", "aidream", "db"],
         stores: ["client_pages (draft columns)", "plan.node.status_id", "seo metrics_desired"],
         maturity: "near",
@@ -585,8 +504,8 @@ export const EDGES: LoopEdge[] = [
         pipes: {
             code: {
                 state: "partial",
-                note: "Rendering + domains work; discovery does not — no sitemap.xml, no robots.txt, no IndexNow/GSC submit.",
-                ref: "my-matrx/pages/_sites/[host]/[[...slug]].js",
+                note: "Rendering, domains and DISCOVERY work: every site serves its own sitemap.xml + robots.txt on both the platform route and its custom domain, published-only, canonical URLs, drafts and redirected URLs structurally excluded. Still missing on this edge: an IndexNow/GSC submit on publish (G-PUBLISH-CRAWL) and server-rendered collections (G-COLLECTIONS).",
+                ref: "my-matrx/lib/render/sitemap.js",
             },
             human: { state: "n/a", note: "Nothing for a human to do." },
             ai: { state: "n/a", note: "Nothing for an agent to do." },
@@ -734,34 +653,36 @@ export const GAPS: LoopGap[] = [
         id: "G-CRAWL-SCHEDULE",
         title: "No UI can set a site's crawl cadence",
         severity: "major",
-        status: "in-progress",
+        status: "closed",
         at: "crawl",
         breaks: ["human"],
         detail:
-            "The DISPATCHER half is done and live: web_crawl_schedule_dispatch is registered on origin and the live task has run 41,230 times (5,061 failed — worth its own look). The WRITER half is built but unshipped and does not compile: crawl-schedule-service.ts, crawl-schedule-hooks.ts and CrawlScheduleCard.tsx are untracked and reference a CrawlSchedule type that features/marketing/types never exports. The live web.crawl_schedule table is still empty, so the dispatcher has nothing to dispatch.",
+            "CLOSED 2026-08-11. The writer half shipped: CrawlScheduleCard in the new-crawl workspace (plus CrawlScheduleSummary in SiteOverview) creates/edits/toggles a site's one recurring schedule, direct to Supabase through crawl-schedule-service.ts with guardedUpdate version CAS. aidream migration 0322 is APPLIED + ledgered: authenticated gained column-scoped INSERT/UPDATE (intent columns + version only — dispatcher lease/outcome columns stay server-only, so a browser can never clear a live claim_token) and the claimable partial index. Every save NULLs next_run_at so the dispatcher's seed sweep recomputes the occurrence from the new cadence. Verified live: a schedule row written from the card. Still open elsewhere: the 5,061 historical dispatcher failures (worth their own look) and the AI pipe (no agent tool starts or reads a crawl).",
         lane: "L1",
     },
     {
         id: "G-SITEMAP",
         title: "Live sites emit no sitemap.xml and no robots.txt",
         severity: "major",
-        status: "in-progress",
+        status: "closed",
         at: "publish->serve",
         breaks: ["code"],
         detail:
-            "BUILT BUT UNSHIPPED. my-matrx has lib/render/sitemap.js + discovery.js and sitemap.xml.js / robots.txt.js for both the platform and custom-domain surfaces, with proxy.js updated — every one of those files is UNTRACKED in git, so production serves none of it. Still genuinely absent even locally: any IndexNow or Search Console submit ping on publish.",
+            "CLOSED 2026-08-11. Every client site serves its own sitemap.xml + robots.txt — /c/{slug}/... on the platform host and /sitemap.xml + /robots.txt at the ROOT of a custom domain (proxy.js stopped passing those two paths through to public/, where they 404'd). The sitemap lists exactly the URLs the renderer answers 200 with, in canonical form: published rows only, no plan_excluded_at rows, lastmod from last_published_at, and a redirected URL cannot appear by construction (THE 301 LAW resolves page-first, so a route only reaches the ledger when no page resolves it). robots.txt names the host it was asked on, so a client domain advertises its own sitemap. 35 cases in `pnpm test:render`; curl-verified against a production build on the platform route and two custom domains. The publish-time IndexNow/GSC ping is deliberately NOT here — it needs credentials and is tracked as G-PUBLISH-CRAWL.",
+        evidence: "my-matrx/lib/render/sitemap.js",
         lane: "L1",
     },
     {
         id: "G-COLLECTIONS",
         title: "Collections render client-side only — invisible to crawlers",
         severity: "major",
-        status: "in-progress",
+        status: "closed",
         at: "serve",
         breaks: ["code"],
         detail:
-            "BUILT BUT UNSHIPPED. my-matrx clientSiteRenderer.js now expands collection bindings server-side (findCollectionBindings / loadBoundCollections / expandCollectionBindings) with lib/collections/* helpers and a 205-line render test. The renderer edit is uncommitted and the helper files are untracked; production still renders collections in the browser.",
+            "CLOSED 2026-08-11. my-matrx expands <template data-matrx-collection> bindings server-side in loadSitePageProps (collectionBindings.js scan+expand, ssrBindings.js fetch) through the same public_read / public_read_fields gate as the HTTP route, with renderer-owned escaping. Ordering is configurable — ?order= / data-order -> site_collections.settings.default_order -> created_at:desc (the old default, unchanged) — DB-side with a stable id tiebreak, sort fields restricted to readable ones. PROOF: curl of /c/dev-website/events-and-booking with no JS returns 'Open house (Sep 3)' above 'Herbal workshop (Sep 17)' with internal_notes absent; 19 live iopbm + prp-injection-md pages render byte-identically before/after; 207 render-layer tests pass. Remaining (separate, W2C-render-binding): data-filter, MatrxData.render(), and aidream + matrx-frontend still hardcoding -created_at.",
         lane: "L1",
+        evidence: "my-matrx/lib/render/collectionBindings.js",
     },
     {
         id: "G-FINDING-ASSIST",
@@ -1019,56 +940,6 @@ export function edgeHealth(edge: LoopEdge): PipeState {
     if (states.includes("missing")) return "missing";
     if (states.includes("partial")) return "partial";
     return "live";
-}
-
-// ---------------------------------------------------------------------------
-// PUBLIC VIEW — derived, never hand-written.
-//
-// 🚨 THE HONESTY GATE. The public page at /how-it-works renders capability
-// ONLY from `state === "live"`. "partial" and "missing" produce NOTHING —
-// they can never leak out as a promise. That is deliberate: a marketing page
-// must not claim a capability this map records as unfinished, and the only
-// way to make it claim one is to flip a pipe to "live" here, which rule 1 at
-// the top of this file says requires a `ref` an auditor can open.
-//
-// Consequence, on purpose: a stage with no live pipe simply shows no
-// capability chips. Do not add a fallback.
-// ---------------------------------------------------------------------------
-
-/** How a customer can make a step happen. Derived from a LIVE pipe only. */
-export type PublicCapability = "you" | "ai" | "automatic";
-
-export const PUBLIC_CAPABILITY: Record<PublicCapability, { pipe: Pipe; label: string; short: string }> = {
-    you: { pipe: "human", label: "You can do it yourself", short: "You" },
-    ai: { pipe: "ai", label: "An AI agent can do it for you", short: "AI" },
-    automatic: { pipe: "code", label: "It happens automatically", short: "Automatic" },
-};
-
-export const PUBLIC_CAPABILITIES: PublicCapability[] = ["you", "ai", "automatic"];
-
-export type PublicStage = LoopStage & { publicInfo: PublicStageInfo };
-
-/** The stages cleared for public display, in loop order. */
-export function publicStages(): PublicStage[] {
-    return STAGES.filter((s): s is PublicStage => Boolean(s.publicInfo));
-}
-
-/** Only ways this step can ACTUALLY be run today. Never intent. */
-export function publicCapabilities(stage: LoopStage): PublicCapability[] {
-    return PUBLIC_CAPABILITIES.filter((c) => stage.pipes[PUBLIC_CAPABILITY[c].pipe].state === "live");
-}
-
-/**
- * Honest headline numbers for the public page: how many public stages you can
- * run yourself, how many an agent can run, how many run automatically.
- */
-export function publicStanding(): { stages: number } & Record<PublicCapability, number> {
-    const stages = publicStages();
-    const counts = { stages: stages.length, you: 0, ai: 0, automatic: 0 };
-    for (const stage of stages) {
-        for (const capability of publicCapabilities(stage)) counts[capability] += 1;
-    }
-    return counts;
 }
 
 export function loopScore(): { live: number; partial: number; missing: number; total: number } {
