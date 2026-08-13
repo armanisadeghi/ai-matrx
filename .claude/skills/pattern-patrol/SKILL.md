@@ -50,7 +50,9 @@ system doc). The repo-specific facts it needs:
 - **Isolation:** scheduled patrols run in an isolated Codex worktree. If this
   run is in the shared checkout or sees unrelated dirty files, stop before
   mutation and repair the execution environment; do not treat concurrent work
-  as patrol gate evidence.
+  as patrol gate evidence. Patrols never change dependencies; when a fresh
+  worktree lacks them, link the canonical checkout's `node_modules` and local
+  env instead of running another install.
 - **Certification (Tier M):** a second adversarial agent ("assume this batch
   broke something; find it") compares pre-edit and post-edit type/gate
   diagnostics. New batch-caused failures reject; unchanged baseline debt is
