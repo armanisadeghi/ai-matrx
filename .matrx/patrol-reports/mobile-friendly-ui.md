@@ -4,8 +4,9 @@
 - **Run kind:** first/full pass, resumed to complete the safe Tier-M repair
 - **Outcome:** 64 verified findings across 54 files; 1 fixed and certified, 63
   Tier-R `vh` occurrences remain open
-- **Run status:** completed; the only registry-approved mechanical finding was
-  repaired and independently certified
+- **Run status:** the only registry-approved mechanical finding was repaired,
+  independently certified, and committed; release is paused because unrelated
+  shared-checkout type and migration gates are currently red
 
 ## Scope scanned
 
@@ -93,6 +94,10 @@ remain report-only layout judgment; no core route header was changed.
 - **Adversarial certifier:** **CERTIFIED**
 - **Rejected batches:** none
 - **Paused mutation:** none; all remaining findings are registry-declared Tier R
+- **Delivery:** committed locally in `89dbf6077`; push/release paused rather than
+  bypassing unrelated shared-checkout gates (`pnpm type-check`, two unapplied
+  migrations, one drifted migration, and local `main` eight commits behind
+  `origin/main`)
 
 Certification evidence:
 
