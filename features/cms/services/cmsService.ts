@@ -257,6 +257,20 @@ export const CmsPageService = {
         return res.page;
     },
 
+    /**
+     * THE one client-side writer of `client_pages.web_page_id` — the durable
+     * link from a CMS page to the `web.page` it serves (CMS migration 0037,
+     * growth-loop gap G-CMS-IDENTITY). Pass `null` to unlink.
+     *
+     * Throws a 409-backed error when another page on the site already owns
+     * that measured page; one crawled URL is served by exactly one CMS page,
+     * and silently repointing it is the ambiguity this link exists to end.
+     */
+    async setWebPageLink(pageId: string, webPageId: string | null): Promise<ClientPage> {
+        const res = await callApi<{ page: ClientPage }>('pages', 'set-web-page-link', { pageId, webPageId });
+        return res.page;
+    },
+
     async publishDraft(pageId: string): Promise<ClientPage> {
         const res = await callApi<{ page: ClientPage }>('pages', 'publish', { pageId });
         return res.page;

@@ -83,6 +83,30 @@ export type AssistAction =
       target: string;
       value: Json;
       surfaceName?: string;
+    }
+  | {
+      /**
+       * Land a PROPOSED metadata edit on one marketing page: the page's
+       * desired title/description, plus a DRAFT on the linked CMS page.
+       *
+       * The write-back half of the Growth Loop (`G-FINDING-FIX`). It exists
+       * as its own kind rather than a `server_action` because the whole
+       * operation is client-side against Supabase + the CMS seam — routing it
+       * through Python would be the "Python as a DB gateway" anti-pattern.
+       *
+       * It NEVER publishes: `applyFindingFix` writes `_draft` twins only and
+       * never moves a route. The exact text rides on the action, so the card
+       * shows the user precisely what will be written before they click.
+       */
+      kind: "apply_page_meta";
+      siteId: string;
+      pageId: string;
+      metaTitle?: string;
+      metaDescription?: string;
+      /** Where the words came from, in the user's language. */
+      source: string;
+      /** One plain sentence: what was done and why it is safe. */
+      rationale: string;
     };
 
 /** The client-facing assist shape (the row, with `action` narrowed). */

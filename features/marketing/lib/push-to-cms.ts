@@ -11,8 +11,11 @@
  *    second client. Never auto-publish — content lands ONLY in `_draft`
  *    twins on an unpublished-or-published page; `publishDraft` stays a
  *    separate explicit act elsewhere.
- *  - Page mapping is by ROUTE: `web.page.path` vs `client_pages.route`
- *    (full path, arbitrary depth, unique per `(client_id, route)`).
+ *  - Page mapping is by DURABLE ID: `client_pages.web_page_id` holds the
+ *    `web.page` this CMS page serves (CMS migration 0037). Route matching is
+ *    the FIRST-LINK path only — once a page is linked, the route may drift,
+ *    change case, or move and the join still lands on the same row. This is
+ *    growth-loop gap `G-CMS-IDENTITY`; see `resolvePushTarget`.
  *  - THE 301 LAW: this push NEVER moves a CMS page's route. Existing pages
  *    get `saveDraft` only (no slug/category/parent writes); missing pages
  *    are created at the route, never renamed into it.
@@ -28,20 +31,25 @@ import {
   getPlanNode,
   updatePlanNode,
 } from "@/features/marketing/content-plan/data/service";
+import {
+  pageRouteKey,
+  pageRouteMatchKey,
+} from "@/features/marketing/lib/page-url";
 import { categoriesService } from "@/features/scopes/service/categoriesService";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
 
-/** Leading slash, no trailing slash; `/` stays `/`. Mirrors readiness.ts. */
-export function normalizeRoutePath(path: string | null | undefined): string {
-  let text = (path ?? "").trim();
-  if (!text) return "/";
-  if (!text.startsWith("/")) text = `/${text}`;
-  while (text.length > 1 && text.endsWith("/")) text = text.slice(0, -1);
-  return text;
-}
-
 export type PushTarget =
-  | { kind: "existing"; page: ClientPageSummary }
+  | {
+      kind: "existing";
+      page: ClientPageSummary;
+      /**
+       * How this page was found. `link` = the durable `web_page_id`; `route`
+       * = an exact route key (first link, or a page created before 0037);
+       * `alias` = a case-insensitive route key that named exactly ONE
+       * candidate — the looser matcher, never the identity.
+       */
+      matchedBy: "link" | "route" | "alias";
+    }
   | {
       kind: "create";
       route: string;
@@ -54,6 +62,24 @@ export type PushTarget =
 /**
  * Decide where this marketing page lands on the CMS site. Pure — no I/O.
  *
+ * RESOLUTION ORDER — the durable id first, strings only as a last resort:
+ *
+ *   1. `client_pages.web_page_id === page.id`. Once a page is linked this is
+ *      the whole answer: the route can move, change case, gain a trailing
+ *      slash or a query and the join still lands on the same row. THE fix for
+ *      growth-loop gap `G-CMS-IDENTITY`.
+ *   2. Exact `pageRouteKey` — the FIRST-LINK path (nothing is linked yet, or
+ *      the page predates migration 0037). `executeCmsPush` stamps the durable
+ *      link on the way through, so a route match happens at most once per page.
+ *   3. Case-insensitive `pageRouteMatchKey`, and ONLY when it names exactly
+ *      one candidate. This is the sanctioned use of the looser key: reconcile
+ *      a route that failed the exact match. Two candidates is an ambiguity we
+ *      refuse rather than guess at — guessing is what silently attached
+ *      measurement to the wrong page.
+ *
+ * A page already linked to a DIFFERENT `web.page` is never silently reused:
+ * the durable link, not the route, decides identity.
+ *
  * Create derivation follows the trigger's own rules (`_client_page_route_of`):
  * a parent page at the prefix route wins (exact, any depth); a 2-segment path
  * without a parent uses `category`; deeper paths REQUIRE the parent to exist
@@ -64,20 +90,46 @@ export function resolvePushTarget(
   page: MarketingPage,
   cmsPages: ClientPageSummary[],
 ): PushTarget {
-  const route = normalizeRoutePath(page.path);
+  const route = pageRouteKey(page.path);
+
+  // 1 — the durable link. Beats every string, including the homepage flag.
+  const linked = cmsPages.find((row) => row.web_page_id === page.id);
+  if (linked) return { kind: "existing", page: linked, matchedBy: "link" };
+
+  /** Pages free to be claimed by a route match — never one linked elsewhere. */
+  const unlinked = cmsPages.filter((row) => !row.web_page_id);
 
   if (route === "/") {
-    const home = cmsPages.find((row) => row.is_home_page);
-    if (home) return { kind: "existing", page: home };
+    const home = unlinked.find((row) => row.is_home_page);
+    if (home) return { kind: "existing", page: home, matchedBy: "route" };
     return {
       kind: "blocked",
-      reason:
-        "This is the homepage and the CMS site has no homepage yet. Create the homepage in the CMS first — a push must not decide the site's home.",
+      reason: cmsPages.some((row) => row.is_home_page)
+        ? "The CMS homepage is already linked to a different measured page. Unlink it in the CMS before pushing this one — a push never re-points an existing link."
+        : "This is the homepage and the CMS site has no homepage yet. Create the homepage in the CMS first — a push must not decide the site's home.",
     };
   }
 
-  const match = cmsPages.find((row) => normalizeRoutePath(row.route) === route);
-  if (match) return { kind: "existing", page: match };
+  // 2 — exact route key.
+  const match = unlinked.find((row) => pageRouteKey(row.route) === route);
+  if (match) return { kind: "existing", page: match, matchedBy: "route" };
+
+  // 3 — the looser alias key, only when it is unambiguous.
+  const aliasKey = pageRouteMatchKey(route);
+  const aliases = unlinked.filter(
+    (row) => pageRouteMatchKey(row.route) === aliasKey,
+  );
+  if (aliases.length === 1) {
+    return { kind: "existing", page: aliases[0], matchedBy: "alias" };
+  }
+  if (aliases.length > 1) {
+    return {
+      kind: "blocked",
+      reason: `${aliases.length} CMS pages differ from ${route} only by capitalisation (${aliases
+        .map((row) => pageRouteKey(row.route))
+        .join(", ")}). Link the right one in the CMS — a push never guesses between them.`,
+    };
+  }
 
   const segments = route.split("/").filter(Boolean);
   const slug = segments[segments.length - 1];
@@ -86,9 +138,7 @@ export function resolvePushTarget(
   }
 
   const parentRoute = `/${segments.slice(0, -1).join("/")}`;
-  const parent = cmsPages.find(
-    (row) => normalizeRoutePath(row.route) === parentRoute,
-  );
+  const parent = cmsPages.find((row) => pageRouteKey(row.route) === parentRoute);
   if (parent) {
     return { kind: "create", route, slug, category: null, parentId: parent.id };
   }
@@ -128,6 +178,11 @@ export interface PushResult {
   page: ClientPage;
   /** Non-fatal honesty notes (e.g. the trigger derived a different route). */
   warnings: string[];
+  /**
+   * True when this push wrote the durable `web_page_id` link — i.e. the page
+   * was resolved by route (or created) and is now joined by id forever after.
+   */
+  linked: boolean;
 }
 
 /**
@@ -170,8 +225,11 @@ export async function executeCmsPush(args: {
 
   let cmsPageId: string;
   let created = false;
+  /** Already joined by id? Then there is nothing to stamp. */
+  let needsLink = true;
   if (target.kind === "existing") {
     cmsPageId = target.page.id;
+    needsLink = target.matchedBy !== "link";
   } else {
     const createdPage = await CmsPageService.createPage({
       siteId: cmsSiteId,
@@ -184,12 +242,23 @@ export async function executeCmsPush(args: {
     });
     cmsPageId = createdPage.id;
     created = true;
-    const actualRoute = normalizeRoutePath(createdPage.route);
+    const actualRoute = pageRouteKey(createdPage.route);
     if (actualRoute !== target.route) {
       warnings.push(
         `The CMS derived route ${actualRoute} instead of ${target.route} — review the page's slug/category in the CMS.`,
       );
     }
+  }
+
+  // Stamp the durable link BEFORE the content write, so a page that exists at
+  // all is a page that can be found by id — a draft saved onto an unlinked
+  // page is exactly the row a later route-normalisation disagreement loses.
+  // A conflict here (another page already owns this measured page) is a real
+  // ambiguity: fail loudly rather than write content into the wrong page.
+  let linked = false;
+  if (needsLink) {
+    await CmsPageService.setWebPageLink(cmsPageId, page.id);
+    linked = true;
   }
 
   const saved = await CmsPageService.saveDraft(cmsPageId, {
@@ -201,7 +270,7 @@ export async function executeCmsPush(args: {
     provenance,
   });
 
-  return { created, page: saved, warnings };
+  return { created, page: saved, warnings, linked };
 }
 
 // ─── Plan-node status bump (push v2) ────────────────────────────────────────

@@ -22,8 +22,10 @@ import {
   bulkDismissAssists,
   bulkSnoozeAssists,
   fetchAssistStats,
+  markAssistsViewed,
   queryAssists,
   restoreAssist,
+  setAssistStarred,
 } from "../service";
 import { assistDecided } from "../redux/assistsSlice";
 import { snoozeUntilIso, type SnoozeWindowKey } from "../constants";
@@ -41,6 +43,8 @@ const SORT_FIELDS: readonly AssistSortField[] = [
   "confidence",
   "status",
   "source_key",
+  "first_seen_at",
+  "occurrences",
 ];
 
 const EMPTY_STATS: AssistStats = {
@@ -49,6 +53,7 @@ const EMPTY_STATS: AssistStats = {
   dismissed: 0,
   expired: 0,
   superseded: 0,
+  resolved: 0,
 };
 
 function selectFilter(
@@ -73,11 +78,17 @@ export interface AssistsManagerApi {
   restore: (id: string) => Promise<void>;
   dismissAll: (ids: string[]) => Promise<number>;
   snoozeAll: (ids: string[], window: SnoozeWindowKey) => Promise<number>;
+  setStarred: (id: string, starred: boolean) => Promise<void>;
 }
 
 export function useAssistsQuery(
   tableState: MatrxDataTableQueryState,
-  options: { statuses: AssistStatus[]; includeSnoozed: boolean },
+  options: {
+    statuses: AssistStatus[];
+    includeSnoozed: boolean;
+    starredOnly: boolean;
+    unseenOnly: boolean;
+  },
 ): AssistsManagerApi {
   const dispatch = useAppDispatch();
   const userId = useAppSelector(selectUserId);
@@ -89,7 +100,7 @@ export function useAssistsQuery(
   const [nonce, setNonce] = useState(0);
   const requestId = useRef(0);
 
-  const { statuses, includeSnoozed } = options;
+  const { statuses, includeSnoozed, starredOnly, unseenOnly } = options;
   const statusKey = statuses.join(",");
 
   const query = useMemo(() => {
@@ -106,6 +117,8 @@ export function useAssistsQuery(
       maxConfidence: null,
       minConfidence: null,
       includeSnoozed,
+      starredOnly,
+      unseenOnly,
       sortField,
       sortAscending: tableState.sort?.direction === "asc",
       page: tableState.page,
@@ -113,7 +126,7 @@ export function useAssistsQuery(
     };
     // `statusKey` stands in for the array identity.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tableState, statusKey, includeSnoozed]);
+  }, [tableState, statusKey, includeSnoozed, starredOnly, unseenOnly]);
 
   useEffect(() => {
     if (!userId) return;
@@ -130,6 +143,11 @@ export function useAssistsQuery(
         setRows(page.rows);
         setTotal(page.total);
         setStats(nextStats);
+        // Reading the row IS seeing it — stamp the ones that were unseen so
+        // the dot means "new since you last looked", not "never clicked".
+        void markAssistsViewed(
+          page.rows.filter((r) => !r.viewedAt).map((r) => r.id),
+        );
       } catch (err) {
         if (requestId.current !== id) return;
         const message =
@@ -173,6 +191,28 @@ export function useAssistsQuery(
     [dispatch, refresh],
   );
 
+  const setStarred = useCallback(async (id: string, starred: boolean) => {
+    // Optimistic: a triage flag must feel instant, and a failure is loud.
+    setRows((current) =>
+      current.map((row) => (row.id === id ? { ...row, isStarred: starred } : row)),
+    );
+    try {
+      await setAssistStarred(id, starred);
+    } catch (err) {
+      setRows((current) =>
+        current.map((row) =>
+          row.id === id ? { ...row, isStarred: !starred } : row,
+        ),
+      );
+      captureError({
+        source: "assists",
+        message: `Assist ${id} star failed`,
+        details: err instanceof Error ? err.message : String(err),
+      });
+      throw err;
+    }
+  }, []);
+
   return {
     rows,
     total,
@@ -183,5 +223,6 @@ export function useAssistsQuery(
     restore,
     dismissAll,
     snoozeAll,
+    setStarred,
   };
 }

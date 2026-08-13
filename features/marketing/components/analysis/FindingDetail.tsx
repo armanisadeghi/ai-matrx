@@ -50,6 +50,7 @@ import {
 } from "@/features/marketing/data/finding-mutations";
 import type { MarketingAnalysisResult } from "@/features/marketing/data/analysis-types";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
+import { FindingFixCard } from "@/features/marketing/components/analysis/FindingFixCard";
 import { FindingRemedyCard } from "@/features/marketing/components/analysis/FindingRemedyCard";
 import { FindingWriteTargets } from "@/features/marketing/components/analysis/FindingWriteTargets";
 import { toast } from "@/lib/toast";
@@ -576,6 +577,19 @@ export function FindingDetail({ findingId }: { findingId: string }) {
           ) : null}
         </div>
       </section>
+
+      {/* The write-back half of the loop: a real proposed page edit the user
+          approves, landing as desired metadata + a CMS DRAFT. Renders nothing
+          for a finding it cannot actually land (G-FINDING-FIX). */}
+      <FindingFixCard
+        findingId={finding.id}
+        itemKey={finding.item_key}
+        site={site}
+        pageId={data.page?.id ?? null}
+        pageWorkspaceHref={
+          data.page ? `${sitePath}/pages/${data.page.id}` : null
+        }
+      />
 
       {/* The fix, above the evidence. A person who is not an SEO reads this
           card and knows what to do; the result history below is the proof. */}

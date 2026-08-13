@@ -23,6 +23,7 @@ import {
   Newspaper,
   Plug,
   Radar,
+  RefreshCw,
   Route,
   ScanSearch,
   Settings,
@@ -93,6 +94,7 @@ const SITE_MODE_ICONS: Record<
   LucideIcon
 > = {
   "": Gauge,
+  "growth-loop": RefreshCw,
   capabilities: Wrench,
   performance: Timer,
   discovery: Inbox,

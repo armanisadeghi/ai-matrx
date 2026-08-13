@@ -32,6 +32,7 @@ const ALL_STATUSES: readonly AssistStatus[] = [
   "dismissed",
   "expired",
   "superseded",
+  "resolved",
 ];
 
 const SORT_COLUMNS = {
@@ -41,6 +42,8 @@ const SORT_COLUMNS = {
   confidence: "confidence",
   status: "status",
   source_key: "source_key",
+  first_seen_at: "first_seen_at",
+  occurrences: "occurrences",
 } as const;
 
 /** Narrow rows, screaming (never silently dropping) on an unaddressable one. */
@@ -111,12 +114,16 @@ export async function emitAssist(
     dedupe_key: input.dedupeKey,
     expires_at: input.expiresAt ?? null,
     priority: input.priority ?? 0,
+    evidence: (input.evidence ?? null) as Json,
+    confidence: input.confidence ?? null,
+    reasoning: input.reasoning ?? null,
+    first_seen_at: nowIso(),
   };
 
   const { data: existing, error: findError } = await supabase
     .schema("platform")
     .from(TABLE)
-    .select("id")
+    .select("id, occurrences")
     .eq("dedupe_key", input.dedupeKey)
     .eq("status", "pending")
     .is("deleted_at", null)
@@ -127,6 +134,9 @@ export async function emitAssist(
   }
 
   if (existing) {
+    // A re-notice refreshes what the user reads and COUNTS — but never moves
+    // `first_seen_at`. "You have had this for three weeks" is the signal
+    // web.finding's first_detected_at carried and a plain upsert destroys.
     const { error } = await supabase
       .schema("platform")
       .from(TABLE)
@@ -136,6 +146,10 @@ export async function emitAssist(
         action: payload.action,
         expires_at: payload.expires_at,
         priority: payload.priority,
+        evidence: payload.evidence,
+        confidence: payload.confidence,
+        reasoning: payload.reasoning,
+        occurrences: (existing.occurrences ?? 1) + 1,
       })
       .eq("id", existing.id);
     if (error) {
@@ -243,6 +257,8 @@ export async function queryAssists(
     const now = nowIso();
     request = request.or(`suppressed_until.is.null,suppressed_until.lt.${now}`);
   }
+  if (query.starredOnly) request = request.eq("is_starred", true);
+  if (query.unseenOnly) request = request.is("viewed_at", null);
   const search = query.search.trim();
   if (search) {
     // PostgREST splits an `or` list on commas — a comma in free text would
@@ -328,6 +344,9 @@ export async function restoreAssist(id: string): Promise<void> {
       decided_at: null,
       result: null,
       suppressed_until: null,
+      // `assists_resolution_valid` makes status and resolved_at inseparable —
+      // leaving the timestamp behind would make the restore fail at the DB.
+      resolved_at: null,
     })
     .eq("id", id);
   if (error) {
@@ -374,13 +393,22 @@ export async function bulkSnoozeAssists(
   return (data ?? []).length;
 }
 
-/** Decide an assist (accept / dismiss) with an optional receipt. */
+/**
+ * Decide an assist (accept / dismiss) with an optional receipt and the user's
+ * own words.
+ *
+ * `note` is written ONLY when supplied — kg-suggestions' exact rule, and for
+ * its exact reason: a later plain decide must never erase the explanation
+ * someone typed when they put the thing off.
+ */
 export async function decideAssist(
   id: string,
   status: Extract<AssistStatus, "accepted" | "dismissed">,
   result?: Json,
+  note?: string,
 ): Promise<void> {
   const supabase = createClient();
+  const trimmed = note?.trim();
   const { error } = await supabase
     .schema("platform")
     .from(TABLE)
@@ -388,10 +416,80 @@ export async function decideAssist(
       status,
       decided_at: nowIso(),
       result: result ?? null,
+      ...(trimmed ? { decision_note: trimmed } : {}),
     })
     .eq("id", id);
   if (error) {
     throw new Error(`[assists] decide failed: ${error.message}`);
   }
+}
+
+/** Flag (or unflag) an assist for triage — the manager sorts starred first. */
+export async function setAssistStarred(
+  id: string,
+  starred: boolean,
+): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .schema("platform")
+    .from(TABLE)
+    .update({ is_starred: starred })
+    .eq("id", id);
+  if (error) {
+    throw new Error(`[assists] star failed: ${error.message}`);
+  }
+}
+
+/**
+ * Stamp rows as seen (best-effort — a failed stamp must never break a list
+ * render, it only means the unseen dot stays a little longer).
+ */
+export async function markAssistsViewed(ids: string[]): Promise<void> {
+  if (ids.length === 0) return;
+  const supabase = createClient();
+  const { error } = await supabase
+    .schema("platform")
+    .from(TABLE)
+    .update({ viewed_at: nowIso() })
+    .in("id", ids)
+    .is("viewed_at", null);
+  if (error) {
+    console.error(`[assists] viewed stamp failed: ${error.message}`);
+  }
+}
+
+/**
+ * THE CONDITION WENT AWAY — close live pending assists whose thing no longer
+ * reproduces, with nobody deciding anything.
+ *
+ * Absorbed from `web.finding`'s analyzer-owned resolve (`reconcile_findings`).
+ * A producer that swept and did NOT re-notice a key calls this with that key:
+ * the chip leaves the dock honestly instead of forcing the user to accept
+ * something that no longer applies or to dismiss it forever. Because
+ * `resolved` is a decided status, `filterUndecidedKeys` also stops the
+ * producer from resurrecting the row if the condition returns — a genuine
+ * recurrence gets a NEW dedupe key or an explicit restore, never a silent
+ * re-open of a row the user already saw close.
+ */
+export async function resolveAssistsByDedupeKeys(
+  keys: string[],
+): Promise<number> {
+  if (keys.length === 0) return 0;
+  const supabase = createClient();
+  const now = nowIso();
+  const { data, error } = await supabase
+    .schema("platform")
+    .from(TABLE)
+    // No `decided_at`: nobody decided. `resolved_at` carries the moment.
+    .update({ status: "resolved", resolved_at: now })
+    .in("dedupe_key", keys)
+    .eq("status", "pending")
+    .is("deleted_at", null)
+    .select("id");
+  if (error) {
+    console.error(`[assists] resolve failed: ${error.message}`);
+    return 0;
+  }
+  return (data ?? []).length;
 }
 

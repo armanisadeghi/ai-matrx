@@ -31,6 +31,14 @@ export const MARKETING_SITE_SECTIONS = [
     exact: true,
   },
   {
+    slug: "growth-loop",
+    name: "Growth Loop",
+    titlePrefix: "Growth Loop",
+    description:
+      "Run this site end to end — research, plan, write, publish, crawl, measure, improve — and act on whatever the loop is waiting on.",
+    letter: "Gl",
+  },
+  {
     slug: "capabilities",
     name: "Capabilities",
     titlePrefix: "SEO Capabilities",

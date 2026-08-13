@@ -9,8 +9,9 @@
  */
 
 import { lazy, Suspense, useState } from "react";
-import { Clock, Lightbulb, Loader2 } from "lucide-react";
+import { Clock, ExternalLink, Lightbulb, Loader2, Quote } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,6 +37,68 @@ const SOURCE_LABEL: Record<Assist["sourceKind"], string> = {
   stream: "From a live run",
 };
 
+function firstSeenLine(assist: Assist): string | null {
+  const seen = assist.firstSeenAt ?? assist.createdAt;
+  if (!seen) return null;
+  const when = new Date(seen).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  if (assist.occurrences > 1) {
+    return `First noticed ${when} · seen ${assist.occurrences} times since`;
+  }
+  return `First noticed ${when}`;
+}
+
+/**
+ * THE RECEIPT — what the system actually saw, so the user can check the claim
+ * instead of trusting it. kg-suggestions proved this is the difference between
+ * a triaged inbox and an ignored one; `href` keeps THE DOOR LAW (the thing the
+ * evidence names is reachable).
+ */
+function EvidenceBlock({ evidence }: { evidence: NonNullable<Assist["evidence"]> }) {
+  return (
+    <div className="mt-2 rounded-md border border-border/60 bg-muted/30 px-2 py-1.5 text-xs">
+      <div className="flex items-center gap-1.5 text-[11px] font-medium text-foreground">
+        <Quote className="h-3 w-3 text-muted-foreground" />
+        What we saw
+        <span className="font-normal text-muted-foreground">
+          · {evidence.label ?? evidence.kind}
+        </span>
+        {evidence.href && (
+          <a
+            href={evidence.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ml-auto inline-flex items-center gap-1 text-primary hover:underline"
+          >
+            Open
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        )}
+      </div>
+      {evidence.snippet && (
+        <p className="mt-1 max-h-24 overflow-y-auto whitespace-pre-wrap border-l-2 border-border pl-2 text-muted-foreground">
+          {evidence.snippet}
+        </p>
+      )}
+      {evidence.items && (
+        <ul className="mt-1 list-disc space-y-0.5 pl-4 text-muted-foreground">
+          {evidence.items.slice(0, 8).map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+          {evidence.items.length > 8 && (
+            <li className="list-none text-[11px]">
+              +{evidence.items.length - 8} more
+            </li>
+          )}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 export function AssistCard({
   assist,
   onClose,
@@ -46,7 +109,10 @@ export function AssistCard({
 }) {
   const { acceptAssist, dismissAssist, snoozeAssist } = useAssistRunner();
   const [busy, setBusy] = useState<"run" | "dismiss" | "snooze" | null>(null);
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [note, setNote] = useState("");
   const descriptor = describeAssistAction(assist.action);
+  const history = firstSeenLine(assist);
 
   const run = async () => {
     if (busy) return;
@@ -80,7 +146,7 @@ export function AssistCard({
     if (busy) return;
     setBusy("dismiss");
     try {
-      await dismissAssist(assist);
+      await dismissAssist(assist, note);
       onClose();
     } finally {
       setBusy(null);
@@ -105,10 +171,15 @@ export function AssistCard({
               </span>
             )}
           </div>
+          {history && (
+            <div className="mt-0.5 text-[11px] text-muted-foreground">
+              {history}
+            </div>
+          )}
         </div>
       </div>
 
-      {(assist.body || assist.reasoning) && (
+      {(assist.body || assist.reasoning || assist.evidence || assist.decisionNote) && (
         <div className="max-h-64 overflow-y-auto px-3 py-2 text-sm">
           {assist.body && (
             <Suspense
@@ -128,6 +199,14 @@ export function AssistCard({
             <div className="mt-2 rounded-md bg-muted/50 px-2 py-1.5 text-xs text-muted-foreground">
               <span className="font-medium text-foreground">Why: </span>
               {assist.reasoning}
+            </div>
+          )}
+          {assist.evidence && <EvidenceBlock evidence={assist.evidence} />}
+          {assist.decisionNote && (
+            // A row that resurfaces explains itself in the user's own words.
+            <div className="mt-2 rounded-md border border-dashed border-border px-2 py-1.5 text-xs text-muted-foreground">
+              <span className="font-medium text-foreground">Your note: </span>
+              {assist.decisionNote}
             </div>
           )}
         </div>
@@ -199,7 +278,7 @@ export function AssistCard({
             <Button
               size="sm"
               variant="ghost"
-              onClick={dismiss}
+              onClick={() => (noteOpen ? void dismiss() : setNoteOpen(true))}
               disabled={busy !== null}
               className="ml-auto h-7 px-2 text-xs text-muted-foreground hover:text-destructive"
             >
@@ -210,6 +289,44 @@ export function AssistCard({
             </Button>
           )}
         </div>
+        {noteOpen && assist.id && (
+          // Optional, never a gate: the second click dismisses whether or not
+          // anything was typed. kg-suggestions' defer-with-note, generalised —
+          // "why did I say no" is the thing a resurfacing row must answer.
+          <div className="mt-2">
+            <Textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Optional — why not? (shown if this ever comes back)"
+              rows={2}
+              autoFocus
+              className="min-h-0 text-xs"
+            />
+            <div className="mt-1 flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="destructive"
+                className="h-7 px-2 text-xs"
+                disabled={busy !== null}
+                onClick={() => void dismiss()}
+              >
+                Dismiss for good
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 px-2 text-xs text-muted-foreground"
+                disabled={busy !== null}
+                onClick={() => {
+                  setNoteOpen(false);
+                  setNote("");
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

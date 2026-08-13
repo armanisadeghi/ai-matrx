@@ -83,6 +83,10 @@ export function useCmsPages(siteId: string | null) {
             last_published_at: page.last_published_at ?? null,
             updated_at: page.updated_at,
             created_at: page.created_at,
+            plan_node_id: page.plan_node_id ?? null,
+            // A freshly created page is never linked yet — the push stamps it
+            // immediately after, and the next list read carries the truth.
+            web_page_id: page.web_page_id ?? null,
           },
           ...prev,
         ]);

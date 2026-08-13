@@ -49,6 +49,7 @@ if $STRICT; then
         "Scroll-chain (clipped tables/lists)|pnpm exec tsx scripts/check-scroll-chain.ts --strict"
         "Migration ledger check|pnpm exec tsx scripts/check-migrations.ts --strict"
         "Dead relation references|pnpm exec tsx scripts/check-dead-relations.ts --strict"
+        "URL identity twins (TS vs Python)|pnpm exec tsx scripts/check-url-identity.ts"
         "API contract ratchet|pnpm exec tsx scripts/check-api-contracts.ts --strict"
         "Backend boundary approvals|pnpm exec tsx scripts/check-backend-boundaries.ts --strict"
         "Surface manifest drift|pnpm exec tsx scripts/check-surface-drift.ts"
@@ -109,6 +110,7 @@ else
         "Access guard check|pnpm exec tsx scripts/check-access-guards.ts"
         "Visibility vocabulary|pnpm exec tsx scripts/check-visibility-vocab.ts"
         "Protocol mirror sync (aidream)|pnpm exec tsx scripts/check-protocol-sync.ts"
+        "URL identity twins (TS vs Python)|pnpm exec tsx scripts/check-url-identity.ts"
         # Advisory-only for now: known Wave-5 backlog (confident-title claims,
         # stale common-docs pointers) would hard-block strict mode. Promote to
         # the strict list once docs/handoffs/doc-consolidation-campaign.md

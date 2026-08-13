@@ -161,6 +161,15 @@ export interface ClientPage {
    * surfaces it read-only.
    */
   plan_node_id: string | null;
+  /**
+   * Measurement → CMS linkage (CMS migration 0037): the MAIN-project
+   * `web.page` id this page SERVES, or null when nothing has linked it yet.
+   * THE durable join that replaced route-string matching (growth-loop gap
+   * G-CMS-IDENTITY) — unique per site, no FK (separate database). Written
+   * ONLY by `CmsPageService.setWebPageLink` / aidream's
+   * `page_service.set_web_page_link`; the generic page update cannot touch it.
+   */
+  web_page_id: string | null;
 }
 
 /** Result of the `promote` action on /api/cms/pages (html_page → draft page). */
@@ -215,6 +224,13 @@ export interface ClientPageSummary {
   created_at: string;
   /** Present on list reads since 0036; optional so older cached rows parse. */
   content_stats?: PageContentStats | null;
+  /** The `plan.node` this page realizes (CMS migration 0027), or null. */
+  plan_node_id: string | null;
+  /**
+   * The MAIN-project `web.page` this page serves (CMS migration 0037), or
+   * null. THE durable join used by `resolvePushTarget` — see `ClientPage`.
+   */
+  web_page_id: string | null;
 }
 
 // ─── Entity Version ────────────────────────────────────────────────────

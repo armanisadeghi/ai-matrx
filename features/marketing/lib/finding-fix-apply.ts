@@ -33,9 +33,9 @@ import type { ClientPageSummary } from "@/features/cms/types";
 import { resolveCmsLink } from "@/features/marketing/content-plan/setup/readiness";
 import { updatePageIntent } from "@/features/marketing/data/service";
 import type { FindingFixDraft } from "@/features/marketing/lib/finding-fix";
+import { pageRouteKey } from "@/features/marketing/lib/page-url";
 import {
   executeCmsPush,
-  normalizeRoutePath,
   resolvePushTarget,
 } from "@/features/marketing/lib/push-to-cms";
 import type { MarketingPage, MarketingSite } from "@/features/marketing/types";
@@ -104,7 +104,7 @@ async function resolveFixTarget(
         reason:
           target.kind === "blocked"
             ? target.reason
-            : `No page at ${normalizeRoutePath(page.path)} exists on the linked CMS site, and a fix never creates one or moves a route. The fix is saved as the page's desired metadata.`,
+            : `No page at ${pageRouteKey(page.path)} exists on the linked CMS site, and a fix never creates one or moves a route. The fix is saved as the page's desired metadata.`,
       },
     };
   }
@@ -114,7 +114,7 @@ async function resolveFixTarget(
       status: "drafted",
       cmsSiteId: link.cmsSiteId,
       cmsPageId: target.page.id,
-      route: normalizeRoutePath(target.page.route),
+      route: pageRouteKey(target.page.route),
       replacedPendingDraft: Boolean(target.page.has_draft),
       warnings: [],
     },
@@ -191,7 +191,14 @@ export async function applyFindingFix(args: {
     cmsSiteId: outcome.cmsSiteId,
     // THE 301 LAW: only ever an already-resolved EXISTING page. `resolveFixTarget`
     // is the sole producer of this value and never yields a `create` target.
-    target: { kind: "existing", page: cmsPage },
+    // `matchedBy` is re-derived from the row itself so a fix applied to a page
+    // that was resolved by route still stamps the durable link on its way
+    // through — see `resolvePushTarget`.
+    target: {
+      kind: "existing",
+      page: cmsPage,
+      matchedBy: cmsPage.web_page_id === saved.id ? "link" : "route",
+    },
     page: saved,
     // Metadata only — an empty body leaves the CMS draft's content untouched.
     payload: {
@@ -206,7 +213,7 @@ export async function applyFindingFix(args: {
     applied,
     cms: {
       ...outcome,
-      route: normalizeRoutePath(result.page.route),
+      route: pageRouteKey(result.page.route),
       warnings: result.warnings,
     },
   };

@@ -38,11 +38,11 @@ import type { ClientPage } from "@/features/cms/types";
 import { resolveCmsLink } from "@/features/marketing/content-plan/setup/readiness";
 import { usePageContent } from "@/features/marketing/data/hooks";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
+import { pageRouteKey } from "@/features/marketing/lib/page-url";
 import {
   buildPushPayload,
   bumpPlanNodeStatusAfterPush,
   executeCmsPush,
-  normalizeRoutePath,
   resolvePushTarget,
   type PushResult,
 } from "@/features/marketing/lib/push-to-cms";
@@ -73,7 +73,7 @@ export interface CmsPushFacts {
 }
 
 function useCmsPushFacts(site: MarketingSite, page: MarketingPage) {
-  const route = normalizeRoutePath(page.path);
+  const route = pageRouteKey(page.path);
   return useQuery<CmsPushFacts>({
     queryKey: cmsPushQueryKey(site.id, route),
     retry: false,
@@ -116,7 +116,7 @@ export function summarizeCmsPushFacts(
     cms_page_id: target.kind === "existing" ? target.page.id : null,
     cms_route:
       target.kind === "existing"
-        ? normalizeRoutePath(target.page.route)
+        ? pageRouteKey(target.page.route)
         : target.kind === "create"
           ? target.route
           : null,
@@ -158,7 +158,7 @@ export function PushToCmsCard({
   const [result, setResult] = useState<PushResult | null>(null);
   const [pushError, setPushError] = useState<string | null>(null);
 
-  const route = normalizeRoutePath(page.path);
+  const route = pageRouteKey(page.path);
   const link = facts.data?.link ?? null;
   const target = facts.data
     ? resolvePushTarget(page, facts.data.pages)
@@ -189,8 +189,8 @@ export function PushToCmsCard({
       setConfirmOpen(false);
       toast.success(
         outcome.created
-          ? `Created CMS draft page at ${normalizeRoutePath(outcome.page.route)}`
-          : `Updated CMS draft at ${normalizeRoutePath(outcome.page.route)}`,
+          ? `Created CMS draft page at ${pageRouteKey(outcome.page.route)}`
+          : `Updated CMS draft at ${pageRouteKey(outcome.page.route)}`,
       );
       for (const warning of outcome.warnings) {
         toast.warning(warning);
@@ -302,7 +302,7 @@ export function PushToCmsCard({
                   <span>
                     Updates the draft of
                     <span className="mx-1 font-medium text-foreground">
-                      {normalizeRoutePath(target.page.route)}
+                      {pageRouteKey(target.page.route)}
                     </span>
                     ({target.page.is_published ? "published" : "unpublished"}
                     {target.page.has_draft ? ", has a pending draft that will be overwritten" : ""})
@@ -369,7 +369,7 @@ export function PushToCmsCard({
                 <span className="text-foreground">
                   {result.created ? "Created" : "Updated"} CMS draft at
                   <span className="mx-1 font-medium">
-                    {normalizeRoutePath(result.page.route)}
+                    {pageRouteKey(result.page.route)}
                   </span>
                   — not published.
                 </span>

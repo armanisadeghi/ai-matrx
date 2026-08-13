@@ -17,7 +17,7 @@
  */
 
 import { useMemo, useState } from "react";
-import { RefreshCw, RotateCcw } from "lucide-react";
+import { RefreshCw, RotateCcw, Star } from "lucide-react";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Badge } from "@/components/ui/badge";
@@ -44,10 +44,20 @@ const STATUS_TABS: Array<{
   { value: "pending", label: "Open", statuses: ["pending"] },
   { value: "accepted", label: "Accepted", statuses: ["accepted"] },
   { value: "dismissed", label: "Dismissed", statuses: ["dismissed"] },
+  // "Went away" is not a decision — the condition stopped reproducing and the
+  // chip closed itself (web.finding's analyzer-owned resolve, generalised).
+  { value: "resolved", label: "Went away", statuses: ["resolved"] },
   {
     value: "all",
     label: "Everything",
-    statuses: ["pending", "accepted", "dismissed", "expired", "superseded"],
+    statuses: [
+      "pending",
+      "accepted",
+      "dismissed",
+      "expired",
+      "superseded",
+      "resolved",
+    ],
   },
 ];
 
@@ -58,6 +68,8 @@ const STATUS_TONE: Record<AssistStatus, string> = {
   dismissed: "bg-muted text-muted-foreground border-border",
   expired: "bg-muted text-muted-foreground border-border",
   superseded: "bg-muted text-muted-foreground border-border",
+  resolved:
+    "bg-sky-500/10 text-sky-700 dark:text-sky-400 border-sky-500/20",
 };
 
 const SOURCE_KIND_OPTIONS = [
@@ -79,6 +91,8 @@ function shortDate(value: string | null): string {
 export function AssistsManager() {
   const [tab, setTab] = useState<string>("pending");
   const [includeSnoozed, setIncludeSnoozed] = useState(false);
+  const [starredOnly, setStarredOnly] = useState(false);
+  const [unseenOnly, setUnseenOnly] = useState(false);
   const [confirmDismissAll, setConfirmDismissAll] = useState(false);
   const [bulkBusy, setBulkBusy] = useState(false);
 
@@ -103,12 +117,45 @@ export function AssistsManager() {
     restore,
     dismissAll,
     snoozeAll,
-  } = useAssistsQuery(table.queryState, { statuses, includeSnoozed });
+    setStarred,
+  } = useAssistsQuery(table.queryState, {
+    statuses,
+    includeSnoozed,
+    starredOnly,
+    unseenOnly,
+  });
 
   const shownIds = rows.filter((r) => r.status === "pending").map((r) => r.id);
 
   const columns: MatrxColumnDef<Assist>[] = useMemo(
     () => [
+      {
+        id: "star",
+        header: "",
+        sortable: false,
+        filter: false,
+        cell: (row) => (
+          <Button
+            size="sm"
+            variant="ghost"
+            aria-label={row.isStarred ? "Unflag this assist" : "Flag this assist"}
+            className="h-7 w-7 p-0"
+            onClick={() => {
+              void setStarred(row.id, !row.isStarred).catch(() =>
+                toast.error("Could not update the flag — try again"),
+              );
+            }}
+          >
+            <Star
+              className={
+                row.isStarred
+                  ? "h-3.5 w-3.5 fill-amber-400 text-amber-500"
+                  : "h-3.5 w-3.5 text-muted-foreground"
+              }
+            />
+          </Button>
+        ),
+      },
       {
         id: "title",
         header: "Assist",
@@ -118,6 +165,13 @@ export function AssistsManager() {
         // The canonical chip — hover/click expands the ONE decision card.
         cell: (row) => (
           <div className="flex min-w-0 items-center gap-2 py-0.5">
+            {!row.viewedAt && (
+              <span
+                aria-label="Not yet seen"
+                title="Not yet seen"
+                className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary"
+              />
+            )}
             <AssistChip assist={row} />
             {isLowConfidence(row.confidence) && (
               <span className="shrink-0 text-[11px] text-amber-600 dark:text-amber-500">
@@ -185,11 +239,19 @@ export function AssistsManager() {
         ),
       },
       {
-        id: "created_at",
-        header: "Noticed",
-        accessorFn: (row) => row.createdAt,
+        id: "first_seen_at",
+        header: "First noticed",
+        accessorFn: (row) => row.firstSeenAt ?? row.createdAt,
         filter: false,
-        cell: (row) => shortDate(row.createdAt),
+        cell: (row) => shortDate(row.firstSeenAt ?? row.createdAt),
+      },
+      {
+        id: "occurrences",
+        header: "Seen",
+        accessorFn: (row) => row.occurrences,
+        filter: false,
+        cell: (row) =>
+          row.occurrences > 1 ? `${row.occurrences}×` : "once",
       },
       {
         id: "decided_at",
@@ -221,7 +283,7 @@ export function AssistsManager() {
           ),
       },
     ],
-    [restore],
+    [restore, setStarred],
   );
 
   const runBulk = async (fn: () => Promise<number>, verb: string) => {
@@ -266,6 +328,23 @@ export function AssistsManager() {
           onClick={() => setIncludeSnoozed((v) => !v)}
         >
           {includeSnoozed ? "Including snoozed" : "Show snoozed"}
+        </Button>
+        <Button
+          size="sm"
+          variant={starredOnly ? "secondary" : "ghost"}
+          className="h-7 gap-1 px-2.5 text-xs"
+          onClick={() => setStarredOnly((v) => !v)}
+        >
+          <Star className="h-3 w-3" />
+          Flagged
+        </Button>
+        <Button
+          size="sm"
+          variant={unseenOnly ? "secondary" : "ghost"}
+          className="h-7 px-2.5 text-xs"
+          onClick={() => setUnseenOnly((v) => !v)}
+        >
+          Unseen
         </Button>
         <div className="ml-auto flex items-center gap-1.5">
           {shownIds.length > 0 && (

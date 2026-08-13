@@ -47,6 +47,18 @@ export function describeAssistAction(
           "Makes this change on the server. You can undo it afterwards.",
         receipt: "Done — the change has been made.",
       };
+    case "apply_page_meta": {
+      const what = action.metaTitle
+        ? action.metaDescription
+          ? "title and description"
+          : "title"
+        : "description";
+      return {
+        verb: "Apply as a draft",
+        explainer: `Saves this ${what} on the page, and — when the page exists on your linked website — writes it into that page's DRAFT. Nothing becomes public until you publish the draft yourself.`,
+        receipt: `Saved the new ${what} and drafted it on the linked website. Publish the draft when you are happy with it.`,
+      };
+    }
     case "surface_write":
       return {
         verb: "Apply to page",

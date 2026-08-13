@@ -121,7 +121,7 @@ import {
   summarizeCmsPushFacts,
   type CmsPushFacts,
 } from "@/features/marketing/components/pages/cards/PushToCmsCard";
-import { normalizeRoutePath } from "@/features/marketing/lib/push-to-cms";
+import { pageRouteKey } from "@/features/marketing/lib/page-url";
 import { LinksPlan } from "@/features/marketing/components/pages/cards/LinksPlanCard";
 import { PrimaryEntityProvider } from "@/features/scopes/components/associations/PrimaryEntityContext";
 import { AssociationCardGrid } from "@/features/scopes/components/associations/AssociationCardGrid";
@@ -481,7 +481,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
       // reads the same react-query entry without a second subscription.
       cmsPush: (() => {
         const facts = queryClient.getQueryData<CmsPushFacts>(
-          cmsPushQueryKey(site.id, normalizeRoutePath(page.path)),
+          cmsPushQueryKey(site.id, pageRouteKey(page.path)),
         );
         return facts ? summarizeCmsPushFacts(page, facts) : null;
       })(),

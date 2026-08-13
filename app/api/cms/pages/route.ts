@@ -37,6 +37,7 @@ const LIST_COLUMNS = `
     sort_order, excerpt, featured_image, author, tags,
     meta_title, meta_description,
     publish_date, last_published_at, created_at, updated_at,
+    plan_node_id, web_page_id,
     content_stats
 `
   .replace(/\s+/g, " ")
@@ -560,6 +561,76 @@ export async function POST(request: NextRequest) {
           userId: user.id,
           userEmail: user.email,
           changes: { fields: Object.keys(updateData) },
+        });
+
+        return NextResponse.json({ success: true, page: data });
+      }
+
+      // ── Link this page to the web.page it serves ──────────────────
+      //
+      // THE ONE write path for `client_pages.web_page_id` (CMS migration
+      // 0037) on this side of the wire — the twin of aidream's
+      // `page_service.set_web_page_link`. It is a separate action, and
+      // `web_page_id` is deliberately absent from `update`'s fieldMap, so the
+      // generic update can never forge a measurement link.
+      //
+      // `webPageId` is a MAIN-project `web.page.id` with no foreign key here
+      // (separate database). The caller proves it exists; this seam owns
+      // ownership, the unique-conflict answer, and the audit trail.
+      case "set-web-page-link": {
+        const { pageId, webPageId } = params;
+        if (!pageId) {
+          return NextResponse.json(
+            { error: "pageId is required" },
+            { status: 400 },
+          );
+        }
+        if (!(await verifyPageOwnership(db, pageId, user.id))) {
+          return NextResponse.json(
+            { error: "Page not found or access denied" },
+            { status: 403 },
+          );
+        }
+
+        const wanted: string | null =
+          typeof webPageId === "string" && webPageId.length > 0
+            ? webPageId
+            : null;
+
+        const { data, error } = await db
+          .from("client_pages")
+          .update({ web_page_id: wanted })
+          .eq("id", pageId)
+          .select()
+          .single();
+
+        if (error) {
+          // Unique (client_id, web_page_id): one crawled URL is served by
+          // exactly one CMS page. Say which conflict this is, never a 500.
+          if (error.code === "23505") {
+            return NextResponse.json(
+              {
+                error:
+                  "Another page on this site is already linked to that measured page. One crawled URL is served by exactly one CMS page — unlink the other page first.",
+              },
+              { status: 409 },
+            );
+          }
+          console.error("[cms/pages] set-web-page-link error:", error);
+          return NextResponse.json({ error: error.message }, { status: 500 });
+        }
+
+        await logCmsActivity(db, {
+          siteId: data.client_id,
+          activityType: "page.web_page_link",
+          entityType: "page",
+          entityId: pageId,
+          description: wanted
+            ? `Linked page to measured page ${wanted}`
+            : "Unlinked page from its measured page",
+          userId: user.id,
+          userEmail: user.email,
+          changes: { web_page_id: wanted },
         });
 
         return NextResponse.json({ success: true, page: data });

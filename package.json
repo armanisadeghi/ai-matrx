@@ -90,6 +90,7 @@
     "check:lint-debt:write": "tsx scripts/lint-debt/check-lint-debt.ts --write",
     "check:lint-debt:strict": "tsx scripts/lint-debt/check-lint-debt.ts --strict",
     "check:dead-relations": "tsx scripts/check-dead-relations.ts",
+    "check:url-identity": "tsx scripts/check-url-identity.ts",
     "check:dead-relations:strict": "tsx scripts/check-dead-relations.ts --strict",
     "check:api-contracts": "tsx scripts/check-api-contracts.ts",
     "check:api-contracts:strict": "tsx scripts/check-api-contracts.ts --strict",

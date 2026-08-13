@@ -60,6 +60,7 @@ import {
   MessagesSquare,
   Mic,
   NotebookText,
+  RefreshCw,
   Sheet,
   Sparkles,
   Table,
@@ -449,6 +450,15 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     Icon: Frame,
     labelPlural: "Web Screenshots",
     hrefFor: (id) => `/marketing/screenshots/${id}`,
+  },
+
+  growth_loop_run: {
+    Icon: RefreshCw,
+    labelPlural: "Growth Loops",
+    // Matches `platform.shareable_resource_registry.url_path_template` for this
+    // token; the route resolves the run to its site and lands on the site's
+    // Growth Loop tab.
+    hrefFor: (id) => `/marketing/growth-loop/${id}`,
   },
 
   // ─── SEO (canonical keywords — Search Console watchlist targets) ──────────

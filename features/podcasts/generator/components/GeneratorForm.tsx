@@ -238,7 +238,7 @@ export function GeneratorForm({
   const [advancedHostsOpen, setAdvancedHostsOpen] = useState(false);
   // Custom Dictionary for this run (selection persists per-user for the podcast surface).
   const { consumption: dictConsumption } = useDictionaryContext(PODCAST_DICTIONARY_SURFACE);
-  const [truncate, setTruncate] = useState(true);
+  const [truncate, setTruncate] = useState(false);
   /** Per-run image/video caps — default to the full set; the user dials them
    *  down to One or Skip for fast, cheap test runs. */
   const [imageMode, setImageMode] = useState<MediaLimitMode>("all");
@@ -1017,7 +1017,7 @@ export function GeneratorForm({
             </p>
           </div>
 
-          {/* Test mode — hidden in Advanced (defaults ON for fast, cheap runs). */}
+          {/* Test mode — hidden in Advanced and enabled only when explicitly requested. */}
           <div className="flex items-start gap-3 rounded-xl border border-border bg-muted/40 p-3.5">
             <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-500">
               <FlaskConical className="h-4.5 w-4.5" />

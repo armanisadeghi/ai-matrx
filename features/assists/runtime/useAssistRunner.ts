@@ -30,6 +30,7 @@ import type { Assist } from "../types";
 
 // Built-in capabilities register by side-effect import. New handlers are
 // added by importing them here.
+import "./handlers/apply-page-meta";
 import "./handlers/launch-agent";
 import "./handlers/navigate";
 import "./handlers/server-action";
@@ -38,8 +39,12 @@ import "./handlers/surface-write";
 export interface AssistRunnerApi {
   /** Execute the assist's action; on success, mark it accepted. */
   acceptAssist: (assist: Assist) => Promise<AssistActionResult>;
-  /** Dismiss without running — durable (the producer will not re-emit). */
-  dismissAssist: (assist: Assist) => Promise<void>;
+  /**
+   * Dismiss without running — durable (the producer will not re-emit).
+   * An optional `note` records WHY in the user's own words; it is written only
+   * when supplied, so a later plain dismiss never erases one.
+   */
+  dismissAssist: (assist: Assist, note?: string) => Promise<void>;
   /**
    * "Not now, but ask me again" — goes quiet for a window WITHOUT deciding, so
    * the producer still treats the thing as un-answered and the chip returns on
@@ -140,10 +145,10 @@ export function useAssistRunner(): AssistRunnerApi {
   );
 
   const dismissAssist = useCallback(
-    async (assist: Assist): Promise<void> => {
+    async (assist: Assist, note?: string): Promise<void> => {
       if (!assist.id) return;
       try {
-        await decideAssist(assist.id, "dismissed");
+        await decideAssist(assist.id, "dismissed", undefined, note);
         dispatch(assistDecided(assist.id));
       } catch (error) {
         toast.error("Could not dismiss — try again");
