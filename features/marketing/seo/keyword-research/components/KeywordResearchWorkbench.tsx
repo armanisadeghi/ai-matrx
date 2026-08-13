@@ -9,6 +9,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Archive,
   ArrowDownRight,
@@ -37,6 +38,7 @@ import {
   restoreKeywords,
 } from "../data/queries";
 import KeywordResearchLauncher from "./KeywordResearchLauncher";
+import SavedResearchLibrary from "./SavedResearchLibrary";
 import { parseLibrarySearchWrite } from "../keyword-research-write";
 import {
   KEYWORD_CLUSTER_WRITE_MODES,
@@ -237,6 +239,10 @@ function KeywordDetail({
 }
 
 export default function KeywordResearchWorkbench() {
+  // `?keyword=` pre-fills the launcher — the return door from a saved report
+  // ("Open workbench"). Read once; the launcher owns the input from then on.
+  const searchParams = useSearchParams();
+  const initialKeyword = searchParams.get("keyword") ?? undefined;
   const {
     clusterPhrases,
     clusterPrimaryKeyword,
@@ -630,9 +636,17 @@ export default function KeywordResearchWorkbench() {
         {/* Research launcher — the canonical shared component (also hosted by
           KeywordResearchWindow, opened from anywhere). */}
         <div className="border-b border-border px-4 py-3">
+          <div className="mb-2 flex items-center justify-end">
+            {/* The org's saved artifacts — each one a report permalink and a
+                share point (the workbench's page-level share affordance). */}
+            <SavedResearchLibrary />
+          </div>
           <KeywordResearchLauncher
             run={run}
             runResearch={runResearch}
+            // Deep link from a report ("Open workbench") pre-fills the input;
+            // it never auto-runs — a run spends a paid provider request.
+            initialKeyword={initialKeyword}
             // This page mounts the surface, so the launcher services its
             // `research_input_keyword` target here (the window mount does not).
             writeTargetSurfaceName="matrx-user/keyword-research"

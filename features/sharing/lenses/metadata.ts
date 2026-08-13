@@ -8,6 +8,7 @@
  * the render side.
  */
 
+import { readKeywordResearchArtifact } from "@/features/marketing/seo/keyword-research/data/artifact";
 import type { ResolvedShareToken } from "@/utils/permissions/shareLinks";
 
 export interface ShareLensMeta {
@@ -55,8 +56,30 @@ function aiVisibilityMeta(result: ResolvedShareToken): ShareLensMeta | null {
   };
 }
 
+/**
+ * Kind-instance meta — POLYMORPHIC token, so it dispatches on the data shape
+ * exactly like the renderer (`./kind-instance.tsx`) and returns null for any
+ * kind without a presentation, which falls back to the generic title/desc.
+ */
+function kindInstanceMeta(result: ResolvedShareToken): ShareLensMeta | null {
+  const artifact = readKeywordResearchArtifact(result.resource?.["data"]);
+  if (!artifact) return null;
+  const lists = artifact.keyword_lists ?? [];
+  const keywordCount = lists.reduce(
+    (total, list) => total + (list.keywords?.length ?? 0),
+    0,
+  );
+  return {
+    title: `Keyword research: ${artifact.primary_keyword}`,
+    description: `${keywordCount} related keywords across ${lists.length} ${
+      lists.length === 1 ? "cluster" : "clusters"
+    } — with search volume, competition, CPC, and buyer intent for “${artifact.primary_keyword}”.`,
+  };
+}
+
 const SHARE_LENS_META: Record<string, ShareLensMetaResolver> = {
   seo_collection_run: aiVisibilityMeta,
+  content_ir_kind_instance: kindInstanceMeta,
 };
 
 /**
@@ -112,11 +135,28 @@ function aiVisibilityOg(result: ResolvedShareToken): ShareLensOg | null {
   };
 }
 
+/**
+ * Kind-instance OG card: the branded generic card, but badged with the KIND
+ * ("Keyword research") instead of the token's label ("Kind Instance"), which
+ * means nothing to a recipient. Unrecognized kinds return null → generic.
+ */
+function kindInstanceOg(result: ResolvedShareToken): ShareLensOg | null {
+  const meta = kindInstanceMeta(result);
+  if (!meta) return null;
+  return {
+    kind: "generic",
+    badge: "Keyword research",
+    title: meta.title,
+    description: meta.description,
+  };
+}
+
 const SHARE_LENS_OG: Record<
   string,
   (result: ResolvedShareToken) => ShareLensOg | null
 > = {
   seo_collection_run: aiVisibilityOg,
+  content_ir_kind_instance: kindInstanceOg,
 };
 
 /** Resolve the OG-image payload for a resolved token — always returns a value. */

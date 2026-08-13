@@ -16,7 +16,7 @@ import type {
 } from "../types";
 import type { KeywordResearchArtifact } from "@/types/python-generated/stream-events";
 import { normalizeKeywordPhrase } from "@/features/marketing/seo/keyword/data";
-import { isRecord } from "@/features/content-ir/kinds/legacy-bridge-utils";
+import { parseKeywordResearchArtifact } from "./artifact";
 
 async function seoDb() {
   await requireAuthenticatedSupabaseSession(supabase);
@@ -82,31 +82,61 @@ export async function listKeywordsWithMarketByPhrases(
 export interface SavedKeywordResearch {
   id: string;
   createdAt: string;
+  title: string | null;
   artifact: KeywordResearchArtifact;
 }
 
-function jsonRecord(value: unknown): Record<string, unknown> | null {
-  return isRecord(value) ? value : null;
+/** The active `keyword_relationship_research` kind definition id, or null. */
+async function keywordResearchDefinitionId(
+  db: Awaited<ReturnType<typeof contentIrDb>>,
+): Promise<string | null> {
+  const definition = await db
+    .from("kind_definition")
+    .select("id")
+    .eq("kind", "keyword_relationship_research")
+    .eq("is_active", true)
+    .is("deleted_at", null)
+    .limit(1)
+    .maybeSingle();
+  if (definition.error) throw definition.error;
+  return definition.data?.id ?? null;
 }
 
-function parseKeywordResearchArtifact(
-  value: unknown,
-): KeywordResearchArtifact | null {
-  const record = jsonRecord(value);
-  if (!record || typeof record.primary_keyword !== "string") return null;
-  const keyword_lists = Array.isArray(record.keyword_lists)
-    ? record.keyword_lists.flatMap((candidate) => {
-        const list = jsonRecord(candidate);
-        if (!list || typeof list.label !== "string") return [];
-        const keywords = Array.isArray(list.keywords)
-          ? list.keywords.filter(
-              (keyword): keyword is string => typeof keyword === "string",
-            )
-          : [];
-        return [{ label: list.label, keywords }];
-      })
-    : [];
-  return { primary_keyword: record.primary_keyword, keyword_lists };
+/**
+ * Every saved research artifact for an organization, newest first — the list
+ * behind the workbench's saved-research library (each row is a shareable
+ * artifact with its own report permalink). Sibling of
+ * `getLatestSavedKeywordResearch`, which answers the per-phrase question.
+ */
+export async function listSavedKeywordResearch(
+  organizationId: string,
+  options?: { limit?: number; signal?: AbortSignal },
+): Promise<SavedKeywordResearch[]> {
+  const db = await contentIrDb();
+  const definitionId = await keywordResearchDefinitionId(db);
+  if (!definitionId) return [];
+  const response = await db
+    .from("kind_instance")
+    .select("id, created_at, title, data")
+    .eq("organization_id", organizationId)
+    .eq("kind_definition_id", definitionId)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false })
+    .limit(options?.limit ?? 50)
+    .abortSignal(options?.signal ?? new AbortController().signal);
+  if (response.error) throw response.error;
+  return (response.data ?? []).flatMap((row) => {
+    const artifact = parseKeywordResearchArtifact(row.data);
+    if (!artifact) return [];
+    return [
+      {
+        id: row.id,
+        createdAt: row.created_at,
+        title: row.title ?? null,
+        artifact,
+      } satisfies SavedKeywordResearch,
+    ];
+  });
 }
 
 /**
@@ -121,22 +151,14 @@ export async function getLatestSavedKeywordResearch(
   signal?: AbortSignal,
 ): Promise<SavedKeywordResearch | null> {
   const db = await contentIrDb();
-  const definition = await db
-    .from("kind_definition")
-    .select("id")
-    .eq("kind", "keyword_relationship_research")
-    .eq("is_active", true)
-    .is("deleted_at", null)
-    .limit(1)
-    .maybeSingle();
-  if (definition.error) throw definition.error;
-  if (!definition.data) return null;
+  const definitionId = await keywordResearchDefinitionId(db);
+  if (!definitionId) return null;
 
   const exact = await db
     .from("kind_instance")
-    .select("id, created_at, data")
+    .select("id, created_at, title, data")
     .eq("organization_id", organizationId)
-    .eq("kind_definition_id", definition.data.id)
+    .eq("kind_definition_id", definitionId)
     .eq("data->>primary_keyword", phrase.trim())
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
@@ -149,6 +171,7 @@ export async function getLatestSavedKeywordResearch(
     return {
       id: exact.data.id,
       createdAt: exact.data.created_at,
+      title: exact.data.title ?? null,
       artifact: exactArtifact,
     };
   }
@@ -157,9 +180,9 @@ export async function getLatestSavedKeywordResearch(
   // page phrase spelling was settled.
   const response = await db
     .from("kind_instance")
-    .select("id, created_at, data")
+    .select("id, created_at, title, data")
     .eq("organization_id", organizationId)
-    .eq("kind_definition_id", definition.data.id)
+    .eq("kind_definition_id", definitionId)
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .limit(50)
@@ -172,7 +195,12 @@ export async function getLatestSavedKeywordResearch(
       artifact &&
       normalizeKeywordPhrase(artifact.primary_keyword) === target
     ) {
-      return { id: row.id, createdAt: row.created_at, artifact };
+      return {
+        id: row.id,
+        createdAt: row.created_at,
+        title: row.title ?? null,
+        artifact,
+      };
     }
   }
   return null;

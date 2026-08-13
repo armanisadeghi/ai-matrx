@@ -31,13 +31,12 @@ async function webDb() {
 }
 
 /**
- * Client-side mirror of `seo.fn_normalize_phrase` for lookups: lowercase,
- * trimmed, single-spaced. Persisted normalization stays server-owned — this
- * exists only to match against the stored `normalized_phrase` column.
+ * `normalizeKeywordPhrase` now lives in `./normalize.ts` (a pure module server
+ * code can import without pulling in the browser Supabase client). Re-exported
+ * here so every existing import path keeps resolving to the ONE definition.
  */
-export function normalizeKeywordPhrase(phrase: string): string {
-  return phrase.toLowerCase().trim().replace(/\s+/g, " ");
-}
+import { normalizeKeywordPhrase } from "./normalize";
+export { normalizeKeywordPhrase };
 
 /**
  * Ensure the universal keyword plane contains this phrase and return its id.

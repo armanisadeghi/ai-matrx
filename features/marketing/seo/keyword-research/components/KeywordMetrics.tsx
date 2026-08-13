@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * KeywordMetrics — THE shared presentation primitives for keyword volume data.
  *
@@ -11,6 +9,10 @@
  * Extracted from KeywordResearchWorkbench 2026-07-25 when the tool renderer
  * needed the same visuals — generalized from `KeywordMarketRow` to primitives
  * so any caller with numbers can use them.
+ *
+ * NO `"use client"`: every export here is a pure function of its props, so the
+ * anonymous share report renders them in server HTML (dropped 2026-08-13 —
+ * the directive was never needed and forced a client boundary on the lens).
  */
 
 import { ArrowDownRight, ArrowUpRight } from "lucide-react";

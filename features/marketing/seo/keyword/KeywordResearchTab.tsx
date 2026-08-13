@@ -270,7 +270,15 @@ export function KeywordResearchTab({
           hideCopyButton
         />
       ) : visibleArtifact ? (
-        <SavedResearchFeed artifact={visibleArtifact} />
+        <SavedResearchFeed
+          artifact={visibleArtifact}
+          // Only the SAVED artifact is an addressable, shareable record; a
+          // just-completed run's in-memory result is not (until the saved
+          // query refetches it).
+          instanceId={
+            visibleArtifact === saved.data?.artifact ? saved.data.id : null
+          }
+        />
       ) : null}
 
       {run.status === "done" ? (

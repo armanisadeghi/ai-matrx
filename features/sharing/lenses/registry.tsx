@@ -30,6 +30,7 @@ import {
   GenericRenderer,
   MarkdownRenderer,
 } from "@/features/sharing/lenses/default-renderers";
+import { KindInstanceRenderer } from "@/features/sharing/lenses/kind-instance";
 
 export interface ShareLensProps {
   /** The resolved share payload (registry `public_columns` projection). */
@@ -56,6 +57,12 @@ const SHARE_LENS_REGISTRY: Record<string, ShareLensRender> = {
   folder: (p) => <FolderRenderer result={p.result} />,
   seo_collection_run: (p) => (
     <AiVisibilityRenderer result={p.result} token={p.token} />
+  ),
+  // POLYMORPHIC token: one entry, many kinds. The renderer dispatches on the
+  // instance's data shape and falls back to the generic floor — see
+  // ./kind-instance.tsx.
+  content_ir_kind_instance: (p) => (
+    <KindInstanceRenderer result={p.result} token={p.token} />
   ),
 };
 

@@ -228,7 +228,14 @@ export default function KeywordResearchLauncher({
                 // Rejoined or recovered run: the token stream is gone (chunk
                 // replay doesn't exist), but the persisted artifact is the
                 // same content — render it instead of a blank "waiting".
-                <SavedResearchFeed artifact={durableArtifact} />
+                <SavedResearchFeed
+                  artifact={durableArtifact}
+                  instanceId={
+                    durableArtifact === saved.data?.artifact
+                      ? saved.data.id
+                      : null
+                  }
+                />
               ) : (
                 <p className="text-xs text-muted-foreground">
                   {run.status === "error"
@@ -262,7 +269,10 @@ export default function KeywordResearchLauncher({
           <div
             className={`overflow-y-auto rounded-md border border-border bg-muted/20 px-3 py-2 ${feedMaxHeightClassName}`}
           >
-            <SavedResearchFeed artifact={saved.data.artifact} />
+            <SavedResearchFeed
+              artifact={saved.data.artifact}
+              instanceId={saved.data.id}
+            />
           </div>
         </div>
       )}
