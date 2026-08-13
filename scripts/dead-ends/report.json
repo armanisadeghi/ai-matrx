@@ -1,18 +1,18 @@
 {
-  "generatedAt": "2026-08-13T04:24:04.736Z",
-  "commit": "5de73f800607ca2a7584c5e3def9fd4e28e148b1",
+  "generatedAt": "2026-08-13T06:05:22.162Z",
+  "commit": "64c99e7088c4e81d8f4682b2672835157e192266",
   "totals": {
-    "findings": 108,
-    "high": 77,
+    "findings": 102,
+    "high": 71,
     "medium": 31,
     "low": 0,
-    "filesWithFindings": 67,
-    "filesScanned": 6531,
+    "filesWithFindings": 63,
+    "filesScanned": 6532,
     "allowlisted": 0
   },
   "byRule": {
-    "bare-id-text": 53,
-    "unlinked-entity-name": 40,
+    "bare-id-text": 51,
+    "unlinked-entity-name": 36,
     "unlinked-count": 4,
     "no-doors-in-file": 11
   },
@@ -45,16 +45,6 @@
     {
       "key": "app/(dev)/demos/scopes/context-lab/page.dev.tsx",
       "count": 4,
-      "high": 2
-    },
-    {
-      "key": "app/(admin)/administration/agents/agent-apps/analytics/page.tsx",
-      "count": 2,
-      "high": 2
-    },
-    {
-      "key": "app/(core)/organizations/page.tsx",
-      "count": 2,
       "high": 2
     },
     {
@@ -145,16 +135,6 @@
     {
       "key": "features/scopes/components/entity-context/EntityScopeTagger.tsx",
       "count": 2,
-      "high": 1
-    },
-    {
-      "key": "app/(admin)/administration/agents/agent-apps/executions/page.tsx",
-      "count": 1,
-      "high": 1
-    },
-    {
-      "key": "app/(admin)/administration/ai/ai-tasks/page.tsx",
-      "count": 1,
       "high": 1
     },
     {
@@ -266,6 +246,26 @@
       "key": "features/whatsapp-clone/modals/media/DocsTab.tsx",
       "count": 1,
       "high": 1
+    },
+    {
+      "key": "app/(dev)/demos/api-tests/tool-testing/ToolTestingClient.tsx",
+      "count": 3,
+      "high": 0
+    },
+    {
+      "key": "app/(dev)/demos/agent-cards/page.dev.tsx",
+      "count": 1,
+      "high": 0
+    },
+    {
+      "key": "app/(dev)/demos/scopes/context-lab/dense/TypeTabMatrix.tsx",
+      "count": 1,
+      "high": 0
+    },
+    {
+      "key": "components/debug/SystemPromptDebugModal.tsx",
+      "count": 1,
+      "high": 0
     }
   ],
   "worstFeatures": [
@@ -295,11 +295,6 @@
       "high": 4
     },
     {
-      "key": "app/(admin)",
-      "count": 4,
-      "high": 4
-    },
-    {
       "key": "features/window-panels",
       "count": 4,
       "high": 4
@@ -317,11 +312,6 @@
     {
       "key": "features/files",
       "count": 3,
-      "high": 2
-    },
-    {
-      "key": "app/(core)",
-      "count": 2,
       "high": 2
     },
     {
@@ -418,81 +408,19 @@
       "key": "features/ai-work",
       "count": 1,
       "high": 0
+    },
+    {
+      "key": "features/cms",
+      "count": 1,
+      "high": 0
+    },
+    {
+      "key": "features/flashcards",
+      "count": 1,
+      "high": 0
     }
   ],
   "findings": [
-    {
-      "file": "app/(admin)/administration/agents/agent-apps/analytics/page.tsx",
-      "line": 268,
-      "column": 32,
-      "rule": "unlinked-entity-name",
-      "severity": "high",
-      "entity": "app",
-      "entityHasRoute": true,
-      "expression": "app.name",
-      "feature": "app/(admin)",
-      "route": "/administration/agents/agent-apps/analytics"
-    },
-    {
-      "file": "app/(admin)/administration/agents/agent-apps/analytics/page.tsx",
-      "line": 282,
-      "column": 32,
-      "rule": "unlinked-entity-name",
-      "severity": "high",
-      "entity": "app",
-      "entityHasRoute": true,
-      "expression": "app.slug",
-      "feature": "app/(admin)",
-      "route": "/administration/agents/agent-apps/analytics"
-    },
-    {
-      "file": "app/(admin)/administration/agents/agent-apps/executions/page.tsx",
-      "line": 436,
-      "column": 20,
-      "rule": "bare-id-text",
-      "severity": "high",
-      "entity": "task",
-      "entityHasRoute": true,
-      "expression": "r.task_id",
-      "feature": "app/(admin)",
-      "route": "/administration/agents/agent-apps/executions"
-    },
-    {
-      "file": "app/(admin)/administration/ai/ai-tasks/page.tsx",
-      "line": 143,
-      "column": 26,
-      "rule": "bare-id-text",
-      "severity": "high",
-      "entity": "task",
-      "entityHasRoute": true,
-      "expression": "task.id.slice(0, 8)",
-      "feature": "app/(admin)",
-      "route": "/administration/ai/ai-tasks"
-    },
-    {
-      "file": "app/(core)/organizations/page.tsx",
-      "line": 159,
-      "column": 61,
-      "rule": "unlinked-entity-name",
-      "severity": "high",
-      "entity": "organization",
-      "entityHasRoute": true,
-      "expression": "org.name",
-      "feature": "app/(core)",
-      "route": "/organizations"
-    },
-    {
-      "file": "app/(core)/organizations/page.tsx",
-      "line": 173,
-      "column": 19,
-      "rule": "unlinked-entity-name",
-      "severity": "high",
-      "entity": "organization",
-      "entityHasRoute": true,
-      "expression": "org.slug",
-      "feature": "app/(core)",
-      "route": "/organizations"
-    },
     {
       "file": "app/(dev)/demos/api-tests/agent/AgentTestClient.tsx",
       "line": 176,

@@ -24,6 +24,7 @@ Format: `- [ ] <P#> | <file-or-route> | <one line> | <date>`
 
 ## Cleared
 
+- [x] P1 | `app/(admin)/administration/ai/ai-tasks/page.tsx`, `app/(admin)/administration/agents/agent-apps/{analytics,executions}/page.tsx`, `app/(core)/organizations/page.tsx` | six registered-token dead ends repaired with canonical EntityRef doors; adversarial heading-semantics regression fixed; final verdict CERTIFIED | fixed-certified | 2026-08-12
 - [x] P3 | see `.matrx/patrol-reports/mobile-friendly-ui.md` | attempted 16-token literal `vh`→`dvh` batch across 15 files was REJECTED because the managed preview became runaway before any changed surface completed the mobile/desktop and light/dark matrix; all 16 product substitutions were fully reverted | rejected-reverted | 2026-08-12
 - [x] P7 | see `.matrx/patrol-reports/no-browser-dialogs.md` | attempted 16-alert/9-file automatic batch was REJECTED because the managed preview became runaway before the complete browser matrix; all product changes fully reverted | rejected-reverted | 2026-08-12
 - [x] P3 | `components/ui/drawer.tsx:87` | canonical `DrawerContent` was fixed to the mobile viewport bottom without default `pb-safe` | 2026-08-12 | fixed-certified (added the approved primitive-level `pb-safe` default and regression assertion; mobile/desktop plus light/dark adversarial verdict CERTIFIED)

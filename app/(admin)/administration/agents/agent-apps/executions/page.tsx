@@ -52,6 +52,7 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { idMatchesQuery } from "@/utils/search-scoring";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   fetchAgentAppErrors,
   fetchAgentAppExecutions,
@@ -433,7 +434,12 @@ function ExecutionsTable({ active }: { active: boolean }) {
                   </div>
                 </TableCell>
                 <TableCell className="font-mono text-[11px] text-muted-foreground truncate max-w-[160px]">
-                  {r.task_id}
+                  <EntityRef
+                    token="task"
+                    id={r.task_id}
+                    name={r.task_id}
+                    showIcon={false}
+                  />
                 </TableCell>
                 <TableCell className="font-mono text-[11px] text-muted-foreground truncate max-w-[160px]">
                   {r.user_id ? `user:${r.user_id.slice(0, 8)}` : ""}
