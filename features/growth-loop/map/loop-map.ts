@@ -663,15 +663,22 @@ export const EDGES: LoopEdge[] = [
         from: "suggest",
         to: "writeback",
         label: "applied",
-        gaps: ["G-FINDING-FIX"],
         pipes: {
             code: {
-                state: "partial",
-                note: "The write-back machinery is real and safe, but nothing drives it from a finding — it only starts from a chip or a human card.",
-                ref: "push-to-cms.ts",
+                state: "live",
+                note: "planDeterministicFix drafts the derivable class free and unattended; the findings assist producer upgrades those chips to apply_page_meta, which lands desired metadata + a CMS DRAFT. Never publishes.",
+                ref: "features/marketing/lib/finding-fix.ts",
             },
-            human: { state: "live", note: "Apply meta, then push to CMS as a draft.", ref: "PushToCmsCard.tsx" },
-            ai: { state: "partial", note: "Assist chips can launch a pre-filled agent; the SEO fix agents to launch do not exist yet.", ref: "launch-agent.ts" },
+            human: {
+                state: "live",
+                note: "FindingFixCard on the finding shows before/after, risks, and one Apply-as-a-draft button; PushToCmsCard remains the page-level path.",
+                ref: "features/marketing/components/analysis/FindingFixCard.tsx",
+            },
+            ai: {
+                state: "live",
+                note: "The purpose-built SEO Finding Fixer (slot seo.finding_fixer, agent seo_finding_fixer_v1) writes the judgement-call replacements via POST /seo/findings/draft-fix. Proposes only — it has no write path.",
+                ref: "aidream/aidream/services/seo/finding_fix.py",
+            },
         },
     },
     {
@@ -800,12 +807,13 @@ export const GAPS: LoopGap[] = [
         id: "G-FINDING-FIX",
         title: "No path from a finding to a fixed page",
         severity: "blocker",
-        status: "open",
+        status: "closed",
         at: "suggest->writeback",
         breaks: ["code", "ai"],
         detail:
-            "A purpose-built fixer slot was written — aidream/services/seo/finding_fix.py declares seo.finding_fixer — but it is local-only AND orphaned: zero importers, no router, no endpoint, and the seed script its own docstring names does not exist, so no agent is bound to the slot. Of the 18 shipped remedies, 17 are copy-able manual instructions and one launches seo.page_analyzer (an analyzer, in chat). No deterministic finding-to-draft writer exists; push-to-cms still has exactly one caller, the manual page card.",
+            "CLOSED 2026-08-13, all three pipes. AI: scripts/seed_finding_fixer.py now creates the purpose-built system agent seo_finding_fixer_v1, seeds + activates its two Content-IR kinds, and pins slot seo.finding_fixer; finding_fix.py joined DECLARING_MODULES and is reachable at POST /seo/findings/draft-fix (durable streamed command, proposes only — no write path). CODE: planDeterministicFix + buildFindingFixEvidence draft the derivable class with zero model calls, and the findings assist producer upgrades those chips to the apply_page_meta action. HUMAN: FindingFixCard on every finding shows before/after plus risks behind one Apply-as-a-draft button. All three land through applyFindingFix -> updatePageIntent + executeCmsPush — the existing seams — writing draft twins only. Nothing publishes; THE 301 LAW holds (no route is ever moved, no CMS page created).",
         lane: "L2",
+        evidence: "ai-matrx/features/marketing/components/analysis/FindingFixCard.tsx",
     },
     {
         id: "G-SUGGEST-FORK",
@@ -903,12 +911,13 @@ export const GAPS: LoopGap[] = [
         id: "G-HUMAN-TIMEOUT",
         title: "No timed human-to-AI escalation",
         severity: "major",
-        status: "in-progress",
+        status: "closed",
         at: "plan",
         breaks: ["human", "ai"],
         detail:
-            "ON ORIGIN, STILL ENFORCED NOWHERE. EscalationPolicy exists, human_input and pipe.step accept an escalation config and freeze an absolute deadline, and services/human_decisions/ implements the fallback decider, notifier and caps. Re-verified 2026-08-13: decide_for_absent_human still has NO caller outside its own module, no sweeper task is registered, and the scheduler never reads the escalation key. An unanswered human_input still blocks forever. The DEFAULT this must enforce is already decided in code — growth_loop/pipes.py default_policy(): human first, AI fallback at 3600s, with realize/serve/crawl/measure pinned to CODE. Do not re-decide it.",
+            "CLOSED AND RUNNING 2026-08-13. decide_for_absent_human finally has a caller: services/human_decisions/sweeper.py runs on the sch_* spine as the 30s system task 'human_decision_escalation' (migration 0346, handler-gated like every other sweep). One tick: scan interrupted runs that declared an escalation, put the 'a workflow is waiting on you' chip in front of the person, defer until the FROZEN deadline passes, claim with a lease, let the declared fallback decide, resume through the queued worker with matrx_decision provenance stamped on the answer. THE HUMAN ALWAYS WINS — the resume goes through the same atomic interrupted->running claim the HTTP route uses, so a person who answers mid-escalation keeps their decision and the AI's is discarded. Live-verified end to end against Matrx Main: a real human_input with escalation{after_seconds:300, fallback:agent} was noticed, deferred for the full 5 minutes, escalated by the platform decider, resumed and completed, with the outcome in platform.activity_log (workflow_decision.escalated) and on the run row. Defaults unchanged (growth_loop/pipes.py default_policy: human first, AI at 3600s, realize/serve/crawl/measure pinned to CODE).",
         lane: "L5",
+        evidence: "aidream/aidream/services/human_decisions/",
     },
     {
         id: "G-ORCHESTRATOR",
@@ -916,9 +925,21 @@ export const GAPS: LoopGap[] = [
         severity: "blocker",
         status: "in-progress",
         at: "research",
-        breaks: ["code", "human", "ai"],
+        breaks: ["code", "ai"],
         detail:
-            "MOUNTED 2026-08-13, NOT YET DRIVEN. THE ROOT CAUSE, for the record: 3,209 lines landed on 2026-08-11 (aidream 7505afdf6, the stale-machine rescue) and were dead for two days because app.py mounts 138 routers and growth_loop was the one never added — the whole backend failed on its last connecting line. That is now supplied (13 routes at /api/growth-loop/*, authed). REMAINING: no stage service calls enter_stage/complete_stage, no frontend reads growth.loop_run, and all three tables still have zero rows. Closing this needs a first real loop started from a UI and advanced by a stage.",
+            "THE HUMAN PIPE IS CLOSED 2026-08-13; code and AI remain. THE ROOT CAUSE, for the record: 3,209 lines landed on 2026-08-11 (aidream 7505afdf6, the stale-machine rescue) and were dead for two days because app.py mounts 138 routers and growth_loop was the one never added. Routes supplied (13 at /api/growth-loop/*, authed), and a real UI now drives them: a site owner starts the loop, sees its stage, sees the blocker and continues/skips/pauses it at /marketing/brands/[brandId]/sites/[siteId]/growth-loop. First live loop_run row written from that button. REMAINING, and why this stays open: no STAGE SERVICE calls enter_stage/complete_stage on its own (crawl finishing does not advance the loop — every advance is still a human click), and no agent drives a stage (blocked on G-PIPE-SELECTOR).",
+        lane: "L6",
+        evidence: "ai-matrx/features/growth-loop/run/",
+    },
+    {
+        id: "G-ORCHESTRATOR-READ",
+        title: "The loop's own tables are unreadable from a browser",
+        severity: "minor",
+        status: "open",
+        at: "research",
+        breaks: ["human"],
+        detail:
+            "OPENED 2026-08-13 while building the human pipe. The `growth` schema is NOT in this project's PostgREST exposed-schemas list, so `supabase.schema('growth')` returns PGRST106 and the client cannot read growth.v_loop_state at all — every loop read is an aidream round-trip, against this repo's rule that reads go direct. Two things must land together: expose `growth` (a Supabase API setting, and the change that takes the WHOLE API down when a bad schema name is written), and fix the read grants underneath it — growth.v_loop_state is a postgres-owned view with NO security_invoker, so exposing it as-is would let any authenticated user read every org's loops, and growth.loop_stage_run's SELECT policy resolves only through iam.accessible_entity_ids with no parent-follows-loop_run clause, so a loop's own creator cannot read its stages. Do NOT expose the schema before both are fixed.",
         lane: "L6",
     },
     {

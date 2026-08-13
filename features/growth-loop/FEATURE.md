@@ -1,6 +1,13 @@
-# Growth Loop — the map of the platform's end-to-end pipeline
+# Growth Loop — the map of the pipeline, and the run object that drives it
 
-**Status:** active · **Tier:** 2 · **Route:** `/administration/knowledge/growth-loop` (admin)
+**Status:** active · **Tier:** 2 · **Routes:** `/administration/knowledge/growth-loop` (admin
+map) · `/marketing/brands/[brandId]/sites/[siteId]/growth-loop` (a site's live loop) ·
+`/marketing/growth-loop/[loopRunId]` (canonical deep link, resolves to the site)
+
+This feature is two halves. `map/` is the **map** — what the pipeline is and where it is
+broken. `run/` is the **run object** — one durable loop for one site, moving through the same
+twelve stages. They share ONE stage vocabulary (`map/loop-map.ts`); the run half never names
+a stage of its own.
 
 ## What this is
 
@@ -40,6 +47,28 @@ Rules (also stated at the top of the file):
 | `components/GrowthLoopCanvasImpl.tsx`                       | React Flow canvas + custom stage node + detail rail.                          |
 | `features/canvas/edges/rounded-orthogonal-path.ts`          | Shared rounded waypoint path builder used for collision-free fixed-map lanes. |
 | `app/(admin)/administration/knowledge/growth-loop/page.tsx` | Admin route.                                                                  |
+| `run/api.ts`                                                | Contract-bound wrappers over aidream's `/growth-loop/*`. The ONLY read path.   |
+| `run/hooks.ts`                                              | React Query bindings + the delta-poll of the loop's event ledger.              |
+| `run/stage-doors.ts`                                        | Ref-kind → URL, and stage → "where a human does this". THE DOOR LAW.          |
+| `run/components/`                                           | Workspace, stage rail, blocker card, ledger.                                   |
+
+## The run object — rules
+
+- **Reads go through aidream, on purpose.** The `growth` schema is not in this project's
+  PostgREST exposure list, so `supabase.schema("growth")` returns `PGRST106` and there is
+  exactly ONE reachable path. Do not add a second candidate. The conditions for moving reads
+  direct — and the two security holes that must be fixed in the same change — are written in
+  `G-ORCHESTRATOR-READ` in `map/loop-map.ts`.
+- **Starting is explicit and idempotent.** One live loop per site is a DB partial unique
+  index, so the button needs no guard: a second click returns the same loop.
+- **The pipe defaults are aidream's, never the client's.** `pipe_policy` is omitted on start
+  so `growth_loop/pipes.py default_policy()` decides — human first, AI after an hour, with
+  realize/serve/crawl/measure pinned to code. Never restate that policy here or in the UI.
+- **A running loop is never a spinner.** An active loop re-reads its state and delta-polls its
+  ledger on the gap-free `after_seq` cursor; a settled loop stops polling entirely.
+- **Every ref kind is a compile-time obligation.** `Record<StageRefKind, …>` in
+  `run/stage-doors.ts` means a kind added on the server fails the build here rather than
+  rendering an id nobody can open. A kind with no viewer shows its label and no id.
 
 ## Doctrine
 
@@ -60,6 +89,13 @@ Rules (also stated at the top of the file):
 
 ## Change log
 
+- 2026-08-13 — claude: **the HUMAN pipe of the run object shipped** (`run/`). A site owner can
+  start their site's loop, see which of the twelve stages it is on, see the blocker in plain
+  English, and continue / skip / pause / re-check it. `G-ORCHESTRATOR` narrowed from
+  `["code","human","ai"]` to `["code","ai"]` — what remains is that no stage service advances
+  the loop on its own and no agent runs a stage. New gap `G-ORCHESTRATOR-READ` records why
+  reads are not direct-to-Supabase and the two security defects that must be fixed before
+  `growth` is exposed to PostgREST.
 - 2026-08-12 — Codex: replaced implicit smooth-step routing with per-connection handles and
   dedicated rounded outer lanes for both cross-loop feedback paths. Stage selection now traces
   every direct incoming/outgoing connection and dims unrelated stages and arrows; arrow selection
