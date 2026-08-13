@@ -90,6 +90,10 @@ export default function SqlFunctionsContainer({
     "selected",
     stringUrlCodec(),
   );
+  const effectiveFilter: SqlFunctionFilter = {
+    ...urlFilter,
+    name: nameSearch || undefined,
+  };
 
   const {
     functions,
@@ -109,13 +113,16 @@ export default function SqlFunctionsContainer({
     replaceSort,
   } = useSqlFunctions({
     initialData: initialFunctions,
-    defaultFilter: urlFilter,
+    defaultFilter: effectiveFilter,
     defaultSort: urlSort,
   });
 
-  const filterSnapshot = JSON.stringify(urlFilter);
+  const filterSnapshot = JSON.stringify(effectiveFilter);
   const sortSnapshot = JSON.stringify(urlSort);
-  useEffect(() => replaceFilter(urlFilter), [filterSnapshot, replaceFilter]);
+  useEffect(
+    () => replaceFilter(effectiveFilter),
+    [filterSnapshot, replaceFilter],
+  );
   useEffect(() => replaceSort(urlSort), [sortSnapshot, replaceSort]);
   useEffect(() => {
     const selected =
@@ -159,7 +166,6 @@ export default function SqlFunctionsContainer({
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setCurrentPage(1);
-    updateUrlFilter({ name: nameSearch });
   };
 
   const selectedFunctionKey = selectedFunction

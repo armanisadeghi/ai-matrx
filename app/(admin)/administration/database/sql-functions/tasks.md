@@ -39,7 +39,7 @@ NOTE: Current FunctionList component found here: app\(authenticated)\admin\compo
   - [x] Implemented sortable columns in the functions table
   - [ ] Verified by Arman
 - [x] Properly handle large numbers of functions
-  - [x] Implemented efficient server-side pagination and filtering
+  - [x] Fetches every PostgREST page before applying the UI's local pagination and filters; never treat the API's 1,000-row response cap as the complete catalog.
   - [ ] Verified by Arman
 
 ### Search and Filtering
@@ -117,4 +117,8 @@ NOTE: Current FunctionList component found here: app\(authenticated)\admin\compo
 - [ ] Create function templates system
   - [ ] Verified by Arman
 - [ ] Add documentation generation for functions
-  - [ ] Verified by Arman 
+  - [ ] Verified by Arman
+
+## Change log
+
+- 2026-08-13 — Fixed catalog truncation: the database had more than 1,000 functions, while `get_database_functions` was read once and silently capped by PostgREST. The list/search now drains every page, so late-sorting functions such as `public.get_project_references` are discoverable.

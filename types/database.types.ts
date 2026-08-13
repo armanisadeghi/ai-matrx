@@ -3691,6 +3691,30 @@ export type Database = {
         }
         Relationships: []
       }
+      function_runtime_probe: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          function_signature: string
+          note: string
+          probe_sql: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          function_signature: string
+          note: string
+          probe_sql: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          function_signature?: string
+          note?: string
+          probe_sql?: string
+        }
+        Relationships: []
+      }
       m2m_candidates: {
         Row: {
           entity_fk_count: number | null
@@ -3818,6 +3842,8 @@ export type Database = {
     Functions: {
       is_m2m_shape: { Args: { p_rel: unknown }; Returns: boolean }
       refresh: { Args: never; Returns: string }
+      refresh_static: { Args: never; Returns: string }
+      run_function_runtime_probes: { Args: never; Returns: number }
       table_impact: {
         Args: { p_schema: string; p_table: string }
         Returns: {
