@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { createClient } from "@/utils/supabase/server";
 import { resolveShareToken } from "@/utils/permissions/shareLinks";
+import { resolveShareLensMeta } from "@/features/sharing/lenses/metadata";
 import { SharedResourceView } from "./SharedResourceView";
 import { ShareLinkError } from "./ShareLinkError";
 
@@ -18,29 +19,28 @@ async function resolve(token: string) {
   return resolveShareToken(token, supabase as never);
 }
 
-function resourceTitle(resource: Record<string, unknown> | undefined): string | null {
-  if (!resource) return null;
-  for (const k of ["label", "title", "name", "display_label"]) {
-    const v = resource[k];
-    if (typeof v === "string" && v.trim()) return v;
-  }
-  return null;
-}
-
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
   const { token } = await params;
   const result = await resolve(token);
   if (!result.success) {
     return { title: "Shared link · AI Matrx", robots: { index: false } };
   }
-  const title = resourceTitle(result.resource) ?? result.displayLabel ?? "Shared item";
+  const meta = resolveShareLensMeta(result);
   return {
-    title: `${title} · AI Matrx`,
-    description: `A ${result.displayLabel ?? "resource"} shared with you on AI Matrx.`,
+    title: `${meta.title} · AI Matrx`,
+    description: meta.description,
     robots: { index: false }, // link-shared, not publicly indexable
     openGraph: {
-      title,
-      description: `A ${result.displayLabel ?? "resource"} shared with you on AI Matrx.`,
+      title: meta.title,
+      description: meta.description,
+      type: "article",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: meta.title,
+      description: meta.description,
     },
   };
 }

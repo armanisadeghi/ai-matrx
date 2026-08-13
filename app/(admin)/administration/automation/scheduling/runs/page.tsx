@@ -34,6 +34,7 @@ import { scheduleHref } from "@/features/scheduling/constants/routes";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import type { RunStatus, Surface } from "@/features/scheduling/types";
 import { SURFACE_VALUES } from "@/features/scheduling/constants/surfaces";
+import { useAdminSchedulingScopeSlice } from "@/features/scheduling/lib/admin-scheduling-scope";
 
 const STATUSES: RunStatus[] = [
   "queued",
@@ -51,6 +52,14 @@ export default function AdminRunsPage() {
   const [fetching, setFetching] = useState(false);
   const [status, setStatus] = useState<"__all__" | RunStatus>("__all__");
   const [surface, setSurface] = useState<"__all__" | Surface>("__all__");
+
+  // The pickers' "__all__" sentinel is emitted as "any" — the vocabulary the
+  // manifest declares and the word the UI actually shows ("Any status").
+  useAdminSchedulingScopeSlice("runs", () => ({
+    run_status_filter: status === "__all__" ? "any" : status,
+    run_surface_filter: surface === "__all__" ? "any" : surface,
+    run_row_count: rows.length,
+  }));
 
   const load = useCallback(async () => {
     setFetching(true);
@@ -121,7 +130,9 @@ export default function AdminRunsPage() {
         id: "finished_at",
         accessorKey: "finished_at",
         header: "Finished",
-        cell: (r) => <span className="text-xs">{humanizeRelative(r.finished_at)}</span>,
+        cell: (r) => (
+          <span className="text-xs">{humanizeRelative(r.finished_at)}</span>
+        ),
         width: 120,
       },
       {
@@ -134,7 +145,13 @@ export default function AdminRunsPage() {
           </span>
         ),
       },
-      { id: "id", accessorKey: "id", header: "ID", cellKind: "uuid", width: 110 },
+      {
+        id: "id",
+        accessorKey: "id",
+        header: "ID",
+        cellKind: "uuid",
+        width: 110,
+      },
     ];
   }, []);
 
@@ -142,6 +159,7 @@ export default function AdminRunsPage() {
     <div className="flex h-full min-h-0 flex-col gap-3 p-4">
       <div className="min-h-0 flex-1">
         <MatrxDataTable
+          urlState={{ id: "scheduling-runs" }}
           data={rows}
           columns={columns}
           getRowId={(r) => r.id}
@@ -158,7 +176,12 @@ export default function AdminRunsPage() {
                 id: "server-filters",
                 render: () => (
                   <div className="flex items-center gap-2">
-                    <Select value={status} onValueChange={(v) => setStatus(v as "__all__" | RunStatus)}>
+                    <Select
+                      value={status}
+                      onValueChange={(v) =>
+                        setStatus(v as "__all__" | RunStatus)
+                      }
+                    >
                       <SelectTrigger className="h-8 w-36">
                         <SelectValue />
                       </SelectTrigger>
@@ -171,7 +194,12 @@ export default function AdminRunsPage() {
                         ))}
                       </SelectContent>
                     </Select>
-                    <Select value={surface} onValueChange={(v) => setSurface(v as "__all__" | Surface)}>
+                    <Select
+                      value={surface}
+                      onValueChange={(v) =>
+                        setSurface(v as "__all__" | Surface)
+                      }
+                    >
                       <SelectTrigger className="h-8 w-40">
                         <SelectValue />
                       </SelectTrigger>
@@ -189,7 +217,12 @@ export default function AdminRunsPage() {
               },
             ],
             actions: (
-              <Button size="sm" variant="outline" onClick={() => void load()} disabled={fetching}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => void load()}
+                disabled={fetching}
+              >
                 {fetching ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (

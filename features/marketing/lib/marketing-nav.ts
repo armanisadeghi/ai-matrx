@@ -186,6 +186,14 @@ export const MARKETING_PUBLIC_TOOL_CATEGORIES: readonly MarketingPublicToolCateg
       subtitle: "Let an LLM analyze, score, and improve your content",
       tools: [
         {
+          label: "AI Visibility Report",
+          href: "/seo/ai-visibility",
+          description:
+            "Compare how ChatGPT, Claude, Gemini, and Perplexity recommend any brand and share the report.",
+          iconName: "MessageSquareQuote",
+          external: true,
+        },
+        {
           label: "Content Quality Scorer",
           href: "/seo/content-score",
           description:
@@ -625,8 +633,7 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
   {
     key: "operations",
     label: "Data & Operations",
-    description:
-      "The plumbing — provider connections and automation.",
+    description: "The plumbing — provider connections and automation.",
     iconName: "Plug",
     landingItems: [
       "Google Search Console",

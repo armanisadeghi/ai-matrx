@@ -19,6 +19,7 @@ import { useState } from "react";
 import { AlertTriangle, ChevronRight, Loader2, RefreshCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 
 import { usePlanAiRun, usePlanAiRuns } from "../hooks/usePlanAiRuns";
 
@@ -162,7 +163,18 @@ export function PlanAiRunsView({
                   ) : detail.data ? (
                     <div className="flex flex-col gap-3">
                       <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                        <span>Model: {run.modelId ?? "unrecorded"}</span>
+                        <span className="inline-flex items-start gap-1">
+                          Model:
+                          {run.modelId ? (
+                            <AiModelRef
+                              modelId={run.modelId}
+                              showId
+                              showIcon={false}
+                            />
+                          ) : (
+                            "unrecorded"
+                          )}
+                        </span>
                         {detail.data.nodeId ? (
                           <Button
                             variant="link"

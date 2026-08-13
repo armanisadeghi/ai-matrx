@@ -114,7 +114,8 @@ features/transcripts/
 | `source_type` | TEXT | 'audio', 'video', 'meeting', 'interview', 'other' |
 | `tags` | TEXT[] | Array of tags |
 | `folder_name` | TEXT | Folder for organization |
-| `is_deleted` | BOOLEAN | Soft delete flag |
+| `deleted_at` | TIMESTAMPTZ | Canonical soft delete (NULL = live) |
+| `visibility` | ENUM | Canonical access driver (`platform.visibility`) |
 | `created_at` | TIMESTAMPTZ | Creation timestamp |
 | `updated_at` | TIMESTAMPTZ | Last update timestamp |
 

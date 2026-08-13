@@ -4,6 +4,7 @@ import { createAdminClient } from "@/utils/supabase/adminClient";
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import {
+  type GetDatabaseFunctionsRow,
   mapGetDatabaseFunctionsRows,
   type SqlFunction,
 } from "@/types/sql-functions";
@@ -14,12 +15,20 @@ import {
 export async function getSqlFunctions(): Promise<SqlFunction[]> {
   try {
     const supabase = await createClient();
+    const pageSize = 1000;
+    const rows: GetDatabaseFunctionsRow[] = [];
 
-    const { data, error } = await supabase.rpc("get_database_functions");
+    for (let from = 0; ; from += pageSize) {
+      const { data, error } = await supabase
+        .rpc("get_database_functions")
+        .range(from, from + pageSize - 1);
 
-    if (error) throw error;
+      if (error) throw error;
+      rows.push(...(data ?? []));
+      if (!data || data.length < pageSize) break;
+    }
 
-    return mapGetDatabaseFunctionsRows(data ?? []);
+    return mapGetDatabaseFunctionsRows(rows);
   } catch (error) {
     console.error("Error fetching SQL functions:", error);
     throw new Error("Failed to fetch SQL functions");
@@ -59,19 +68,7 @@ export async function searchSqlFunctions({
   returnType?: string;
 }): Promise<SqlFunction[]> {
   try {
-    const supabase = await createClient();
-
-    let query = supabase.rpc("get_database_functions");
-
-    // We'll filter the results on the client side for now
-    // In a real implementation, we would create a specialized RPC function
-    // to handle filtering on the database side
-    const { data, error } = await query;
-
-    if (error) throw error;
-
-    // Apply filters
-    let filteredData = data ?? [];
+    let filteredData = await getSqlFunctions();
 
     if (schema) {
       filteredData = filteredData.filter((func) =>
@@ -91,7 +88,7 @@ export async function searchSqlFunctions({
       );
     }
 
-    return mapGetDatabaseFunctionsRows(filteredData);
+    return filteredData;
   } catch (error) {
     console.error("Error searching SQL functions:", error);
     throw new Error("Failed to search SQL functions");

@@ -24,9 +24,9 @@ export function formatYouTubeDuration(
 }
 
 export function formatYouTubeDate(value: string | null | undefined): string {
-  if (!value) return "Unknown date";
+  if (!value) return "No Date";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
+  if (Number.isNaN(date.getTime())) return "No Date";
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",

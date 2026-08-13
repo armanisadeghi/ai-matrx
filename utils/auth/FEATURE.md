@@ -41,6 +41,39 @@ Canonical written param: **`redirectTo`**. Also READ: `next`, `returnUrl`,
 was ever read, so 25 links shipped dead. New code writes `redirectTo` (the
 helpers do this for you); the aliases stay readable so old links keep working.
 
+## The onboarding funnel never overrides a destination
+
+**`/welcome` is the DEFAULT landing for a new user with no page in mind — not an
+override.** A new user is the *most* important person to deliver to what they
+asked for: they came to make meta titles or try agent creation, and that intent
+is what earned the signup.
+
+| Arriving with | Lands on |
+|---|---|
+| no destination, or the generic hub (`/dashboard`) | `/welcome` |
+| any specific destination (`/agents/all`, `/tasks`, …) | that page |
+
+The funnel therefore lives in **exactly one route** —
+[`app/(core)/dashboard/layout.tsx`](../../app/(core)/dashboard/layout.tsx) —
+because "send me to the hub" is what "no particular intent" looks like. **Never
+add a second call site.** The root layout, the middleware and the auth actions
+all see users who DO have a destination, and would silently eat it. The
+destination system knows nothing about onboarding.
+
+Guarded by
+[`__tests__/onboarding-funnel-scope.test.ts`](./__tests__/onboarding-funnel-scope.test.ts),
+which fails the moment `isNewUser` / `WELCOME_ROUTE` appears outside that route.
+
+## Marketing surfaces never trap a signed-in user
+
+Every module landing (`features/auth/components/module-landing/landings/`)
+gates the marketing pitch behind a guest check — either redirecting authed
+visitors to the real surface (`/agents` → `/agents/all`, `/files` → `/files/all`,
+`/voice` → `/voice/playground`, `/war-room` → `/war-room/all`) or rendering the
+workspace in place (`/notes`, `/tasks`, `/rag`, …). **A new landing page must do
+one of those two things**, or a user whose destination is that route lands on a
+sales page after signing in.
+
 ## Invariants
 
 - **`safeRelativePath` ([safe-redirect.ts](./safe-redirect.ts)) owns the
@@ -70,6 +103,10 @@ the rules. [`__tests__/auth-flow.e2e.test.ts`](./__tests__/auth-flow.e2e.test.ts
 
 ## Change Log
 
+- **2026-08-12** — Verified and documented the onboarding-funnel boundary: a new
+  user with a real destination reaches it (the funnel fires only on `/dashboard`),
+  and every module landing already bounces or in-place-renders for authed users.
+  Added `onboarding-funnel-scope.test.ts` so a second funnel call site fails CI.
 - **2026-08-12** — Created. Consolidated four independent destination-losing
   mechanisms onto one primitive: `encodedRedirect` rebuilding URLs without the
   destination, `next`/`returnUrl` being written but never read, `/reset-password`

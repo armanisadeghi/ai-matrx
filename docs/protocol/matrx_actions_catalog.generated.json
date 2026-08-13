@@ -1031,6 +1031,10 @@
        "default": [],
        "title": "Messages"
       },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
       "model_id": {
        "default": null,
        "title": "Model Id"
@@ -1165,6 +1169,10 @@
       "messages": {
        "default": null,
        "title": "Messages"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
       },
       "model_id": {
        "default": null,
@@ -1365,13 +1373,13 @@
        "default": null,
        "title": "Llm Overrides"
       },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
       "pre_execution_message": {
        "default": null,
        "title": "Pre Execution Message"
-      },
-      "project_id": {
-       "default": null,
-       "title": "Project Id"
       },
       "response_density": {
        "default": "comfortable",
@@ -1404,10 +1412,6 @@
       "surface_name": {
        "default": null,
        "title": "Surface Name"
-      },
-      "task_id": {
-       "default": null,
-       "title": "Task Id"
       },
       "use_latest": {
        "default": false,
@@ -1534,13 +1538,13 @@
        "default": null,
        "title": "Llm Overrides"
       },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
       "pre_execution_message": {
        "default": null,
        "title": "Pre Execution Message"
-      },
-      "project_id": {
-       "default": null,
-       "title": "Project Id"
       },
       "response_density": {
        "default": null,
@@ -1573,10 +1577,6 @@
       "surface_name": {
        "default": null,
        "title": "Surface Name"
-      },
-      "task_id": {
-       "default": null,
-       "title": "Task Id"
       },
       "use_latest": {
        "default": null,
@@ -1783,6 +1783,10 @@
        "default": [],
        "title": "Messages"
       },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
       "model_id": {
        "default": null,
        "title": "Model Id"
@@ -1798,10 +1802,6 @@
        "default": null,
        "title": "Output Schema"
       },
-      "project_id": {
-       "default": null,
-       "title": "Project Id"
-      },
       "settings": {
        "default": {},
        "title": "Settings"
@@ -1813,10 +1813,6 @@
       "tags": {
        "default": [],
        "title": "Tags"
-      },
-      "task_id": {
-       "default": null,
-       "title": "Task Id"
       },
       "tool_config": {
        "default": {},
@@ -1894,6 +1890,10 @@
        "default": null,
        "title": "Messages"
       },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
       "model_id": {
        "default": null,
        "title": "Model Id"
@@ -1910,10 +1910,6 @@
        "default": null,
        "title": "Output Schema"
       },
-      "project_id": {
-       "default": null,
-       "title": "Project Id"
-      },
       "settings": {
        "default": null,
        "title": "Settings"
@@ -1925,10 +1921,6 @@
       "tags": {
        "default": null,
        "title": "Tags"
-      },
-      "task_id": {
-       "default": null,
-       "title": "Task Id"
       },
       "tool_config": {
        "default": null,
@@ -2614,20 +2606,6 @@
    "delete": "no",
    "family": "Conversations",
    "identity_fields": [],
-   "label": "Conversation Documents",
-   "noun": "cx_conversation_documents",
-   "reference": "no",
-   "schemas": null,
-   "table": "graveyard.conversation_documents",
-   "title_column": null,
-   "update": "no",
-   "view": "no"
-  },
-  {
-   "create": "no",
-   "delete": "no",
-   "family": "Conversations",
-   "identity_fields": [],
    "label": "Media",
    "noun": "cx_media",
    "reference": "no",
@@ -2769,6 +2747,14 @@
        "default": {},
        "title": "Metadata"
       },
+      "origin_class": {
+       "default": "unknown",
+       "title": "Origin Class"
+      },
+      "origin_witness": {
+       "default": {},
+       "title": "Origin Witness"
+      },
       "source_app": {
        "title": "Source App"
       },
@@ -2875,6 +2861,14 @@
       "metadata": {
        "default": null,
        "title": "Metadata"
+      },
+      "origin_class": {
+       "default": null,
+       "title": "Origin Class"
+      },
+      "origin_witness": {
+       "default": null,
+       "title": "Origin Witness"
       },
       "source_app": {
        "default": null,
@@ -3050,6 +3044,10 @@
       "description": {
        "title": "Description"
       },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
       "name": {
        "title": "Name"
       },
@@ -3105,6 +3103,10 @@
       "id": {
        "title": "Id",
        "type": "string"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
       },
       "name": {
        "default": null,
@@ -3232,6 +3234,10 @@
       "metadata": {
        "default": {},
        "title": "Metadata"
+      },
+      "origin_class": {
+       "default": "unknown",
+       "title": "Origin Class"
       },
       "overrides": {
        "default": {},
@@ -3375,6 +3381,10 @@
       "metadata": {
        "default": null,
        "title": "Metadata"
+      },
+      "origin_class": {
+       "default": null,
+       "title": "Origin Class"
       },
       "overrides": {
        "default": null,
@@ -3650,20 +3660,6 @@
    "title_column": "label",
    "update": "planned",
    "view": "yes"
-  },
-  {
-   "create": "planned",
-   "delete": "planned",
-   "family": "Skills",
-   "identity_fields": [],
-   "label": "Skill Category",
-   "noun": "skill_category",
-   "reference": "no",
-   "schemas": null,
-   "table": "graveyard.skill_category_legacy",
-   "title_column": null,
-   "update": "planned",
-   "view": "no"
   },
   {
    "create": "planned",
@@ -4282,20 +4278,6 @@
   {
    "create": "planned",
    "delete": "planned",
-   "family": "System",
-   "identity_fields": [],
-   "label": "Share Link",
-   "noun": "share_link",
-   "reference": "no",
-   "schemas": null,
-   "table": "graveyard.files_share_links",
-   "title_column": null,
-   "update": "planned",
-   "view": "no"
-  },
-  {
-   "create": "planned",
-   "delete": "planned",
    "family": "Tools",
    "identity_fields": [
     "id"
@@ -4349,6 +4331,10 @@
       "max_client_wait_seconds": {
        "default": null,
        "title": "Max Client Wait Seconds"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
       },
       "name": {
        "title": "Name"
@@ -4457,6 +4443,10 @@
       "max_client_wait_seconds": {
        "default": null,
        "title": "Max Client Wait Seconds"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
       },
       "name": {
        "default": null,
@@ -5162,6 +5152,482 @@
    "view": "yes"
   },
   {
+   "create": "no",
+   "delete": "no",
+   "family": "marketing",
+   "identity_fields": [],
+   "label": "Growth Loop Event",
+   "noun": "growth_loop_event",
+   "reference": "no",
+   "schemas": null,
+   "table": "growth.loop_event",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "marketing",
+   "identity_fields": [],
+   "label": "Growth Loop Stage Run",
+   "noun": "growth_loop_stage_run",
+   "reference": "no",
+   "schemas": null,
+   "table": "growth.loop_stage_run",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "marketing",
+   "identity_fields": [],
+   "label": "CMS Fill Item",
+   "noun": "plan_cms_fill_item",
+   "reference": "no",
+   "schemas": null,
+   "table": "plan.cms_fill_item",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "marketing",
+   "identity_fields": [],
+   "label": "CMS Fill Job",
+   "noun": "plan_cms_fill_job",
+   "reference": "no",
+   "schemas": null,
+   "table": "plan.cms_fill_job",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "marketing",
+   "identity_fields": [],
+   "label": "AI Visibility Citation",
+   "noun": "seo_ai_visibility_citation",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.ai_visibility_citation",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "marketing",
+   "identity_fields": [],
+   "label": "AI Visibility Claim",
+   "noun": "seo_ai_visibility_claim",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.ai_visibility_claim",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "marketing",
+   "identity_fields": [],
+   "label": "AI Visibility Response",
+   "noun": "seo_ai_visibility_response",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.ai_visibility_response",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "marketing",
+   "identity_fields": [],
+   "label": "AI Visibility Signal",
+   "noun": "seo_ai_visibility_signal",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.ai_visibility_signal",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "marketing",
+   "identity_fields": [],
+   "label": "SEO Backlink",
+   "noun": "seo_backlink",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.backlink",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "marketing",
+   "identity_fields": [],
+   "label": "Backlink Dimension Snapshot",
+   "noun": "seo_backlink_dimension_snapshot",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.backlink_dimension_snapshot",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "marketing",
+   "identity_fields": [],
+   "label": "Backlink Observation",
+   "noun": "seo_backlink_observation",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.backlink_observation",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "marketing",
+   "identity_fields": [],
+   "label": "Backlink Snapshot",
+   "noun": "seo_backlink_snapshot",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.backlink_snapshot",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "marketing",
+   "identity_fields": [],
+   "label": "SEO Change Assessment",
+   "noun": "seo_change_assessment",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.change_assessment",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "marketing",
+   "identity_fields": [],
+   "label": "SEO Change Event",
+   "noun": "seo_change_event",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.change_event",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "marketing",
+   "identity_fields": [],
+   "label": "SEO Change Item",
+   "noun": "seo_change_item",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.change_item",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "marketing",
+   "identity_fields": [],
+   "label": "SEO Change Metric",
+   "noun": "seo_change_metric",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.change_metric",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "marketing",
+   "identity_fields": [],
+   "label": "SEO Change Theory",
+   "noun": "seo_change_theory",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.change_theory",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "marketing",
+   "identity_fields": [],
+   "label": "SEO Competitor",
+   "noun": "seo_competitor",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.competitor",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "marketing",
+   "identity_fields": [],
+   "label": "Competitor Observation",
+   "noun": "seo_competitor_observation",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.competitor_observation",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "marketing",
+   "identity_fields": [],
+   "label": "Competitor Opportunity",
+   "noun": "seo_competitor_opportunity",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.competitor_opportunity",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "marketing",
+   "identity_fields": [],
+   "label": "GSC Dig Rule",
+   "noun": "seo_gsc_dig_rule",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.gsc_dig_rule",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "marketing",
+   "identity_fields": [],
+   "label": "Keyword Class Rule",
+   "noun": "seo_keyword_class_rule",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.keyword_class_rule",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "marketing",
+   "identity_fields": [],
+   "label": "Keyword Market Observation",
+   "noun": "seo_keyword_market_observation",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.keyword_market_observation",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "marketing",
+   "identity_fields": [],
+   "label": "Page Performance",
+   "noun": "seo_page_performance",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.page_performance",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "marketing",
+   "identity_fields": [],
+   "label": "SEO Provider Call",
+   "noun": "seo_provider_call",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.provider_call",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "marketing",
+   "identity_fields": [],
+   "label": "SEO Provider Task",
+   "noun": "seo_provider_task",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.provider_task",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "marketing",
+   "identity_fields": [],
+   "label": "Rank Observation",
+   "noun": "seo_rank_observation",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.rank_observation",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "marketing",
+   "identity_fields": [],
+   "label": "SEO Raw Payload",
+   "noun": "seo_raw_payload",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.raw_payload",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "marketing",
+   "identity_fields": [],
+   "label": "Referring Domain Profile",
+   "noun": "seo_referring_domain_profile",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.referring_domain_profile",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "marketing",
+   "identity_fields": [],
+   "label": "Reputation Case",
+   "noun": "seo_reputation_case",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.reputation_case",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "marketing",
+   "identity_fields": [],
+   "label": "Search Performance Daily",
+   "noun": "seo_search_performance_daily",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.search_performance_daily",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "marketing",
+   "identity_fields": [],
+   "label": "SERP Result",
+   "noun": "seo_serp_result",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.serp_result",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "marketing",
+   "identity_fields": [],
+   "label": "SERP Snapshot",
+   "noun": "seo_serp_snapshot",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.serp_snapshot",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "marketing",
+   "identity_fields": [],
+   "label": "Web Analytics Daily",
+   "noun": "seo_web_analytics_daily",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.web_analytics_daily",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
    "create": "planned",
    "delete": "planned",
    "family": "platform",
@@ -5223,6 +5689,10 @@
       "is_starred": {
        "default": false,
        "title": "Is Starred"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
       },
       "occurrences": {
        "default": 1,
@@ -5352,6 +5822,10 @@
        "default": null,
        "title": "Is Starred"
       },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
       "occurrences": {
        "default": null,
        "title": "Occurrences"
@@ -5453,6 +5927,10 @@
        "default": false,
        "title": "Is System"
       },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
       "name": {
        "title": "Name"
       },
@@ -5519,6 +5997,10 @@
       "is_system": {
        "default": null,
        "title": "Is System"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
       },
       "name": {
        "default": null,
@@ -7317,22 +7799,6 @@
    "create": "planned",
    "delete": "planned",
    "family": "Other",
-   "identity_fields": [
-    "id"
-   ],
-   "label": "Analysis Recipe",
-   "noun": "analysis_recipes",
-   "reference": "yes",
-   "schemas": null,
-   "table": "analysis_recipes",
-   "title_column": "name",
-   "update": "planned",
-   "view": "yes"
-  },
-  {
-   "create": "planned",
-   "delete": "planned",
-   "family": "Other",
    "identity_fields": [],
    "label": "App Instance",
    "noun": "app_instance",
@@ -7952,164 +8418,6 @@
    "title_column": null,
    "update": "planned",
    "view": "no"
-  },
-  {
-   "create": "planned",
-   "delete": "planned",
-   "family": "Other",
-   "identity_fields": [
-    "id"
-   ],
-   "label": "Applet",
-   "noun": "applet",
-   "reference": "yes",
-   "schemas": {
-    "create": {
-     "additionalProperties": true,
-     "properties": {
-      "compiled_recipe_id": {
-       "default": null,
-       "title": "Compiled Recipe Id"
-      },
-      "creator": {
-       "default": null,
-       "title": "Creator"
-      },
-      "cta_text": {
-       "default": "Get Results",
-       "title": "Cta Text"
-      },
-      "data_source_config": {
-       "default": null,
-       "title": "Data Source Config"
-      },
-      "description": {
-       "default": null,
-       "title": "Description"
-      },
-      "metadata": {
-       "default": {},
-       "title": "Metadata"
-      },
-      "name": {
-       "title": "Name"
-      },
-      "next_step_config": {
-       "default": null,
-       "title": "Next Step Config"
-      },
-      "result_component_config": {
-       "default": null,
-       "title": "Result Component Config"
-      },
-      "slug": {
-       "title": "Slug"
-      },
-      "subcategory_id": {
-       "default": null,
-       "title": "Subcategory Id"
-      },
-      "theme": {
-       "default": "default",
-       "title": "Theme"
-      },
-      "type": {
-       "title": "Type"
-      }
-     },
-     "required": [
-      "name",
-      "type",
-      "slug"
-     ],
-     "title": "CreateAppletItem",
-     "type": "object"
-    },
-    "delete": {
-     "additionalProperties": true,
-     "properties": {
-      "id": {
-       "title": "Id",
-       "type": "string"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "DeleteAppletItem",
-     "type": "object"
-    },
-    "update": {
-     "additionalProperties": true,
-     "properties": {
-      "compiled_recipe_id": {
-       "default": null,
-       "title": "Compiled Recipe Id"
-      },
-      "creator": {
-       "default": null,
-       "title": "Creator"
-      },
-      "cta_text": {
-       "default": null,
-       "title": "Cta Text"
-      },
-      "data_source_config": {
-       "default": null,
-       "title": "Data Source Config"
-      },
-      "description": {
-       "default": null,
-       "title": "Description"
-      },
-      "id": {
-       "title": "Id",
-       "type": "string"
-      },
-      "metadata": {
-       "default": null,
-       "title": "Metadata"
-      },
-      "name": {
-       "default": null,
-       "title": "Name"
-      },
-      "next_step_config": {
-       "default": null,
-       "title": "Next Step Config"
-      },
-      "result_component_config": {
-       "default": null,
-       "title": "Result Component Config"
-      },
-      "slug": {
-       "default": null,
-       "title": "Slug"
-      },
-      "subcategory_id": {
-       "default": null,
-       "title": "Subcategory Id"
-      },
-      "theme": {
-       "default": null,
-       "title": "Theme"
-      },
-      "type": {
-       "default": null,
-       "title": "Type"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "UpdateAppletItem",
-     "type": "object"
-    }
-   },
-   "table": "applet",
-   "title_column": "name",
-   "update": "planned",
-   "view": "yes"
   },
   {
    "create": "no",
@@ -8844,10 +9152,6 @@
        "default": null,
        "title": "Session Id"
       },
-      "share_token": {
-       "default": null,
-       "title": "Share Token"
-      },
       "source_id": {
        "default": null,
        "title": "Source Id"
@@ -8959,10 +9263,6 @@
       "session_id": {
        "default": null,
        "title": "Session Id"
-      },
-      "share_token": {
-       "default": null,
-       "title": "Share Token"
       },
       "source_id": {
        "default": null,
@@ -11134,7 +11434,7 @@
    "identity_fields": [
     "id"
    ],
-   "label": "Kind Instance",
+   "label": "Saved Result",
    "noun": "content_ir_kind_instance",
    "reference": "yes",
    "schemas": {
@@ -11799,520 +12099,6 @@
    "create": "planned",
    "delete": "planned",
    "family": "Other",
-   "identity_fields": [
-    "id"
-   ],
-   "label": "Custom App Config",
-   "noun": "custom_app_config",
-   "reference": "yes",
-   "schemas": {
-    "create": {
-     "additionalProperties": true,
-     "properties": {
-      "accent_color": {
-       "default": "rose",
-       "title": "Accent Color"
-      },
-      "app_data_context": {
-       "default": null,
-       "title": "App Data Context"
-      },
-      "applet_list": {
-       "default": null,
-       "title": "Applet List"
-      },
-      "creator": {
-       "default": null,
-       "title": "Creator"
-      },
-      "description": {
-       "default": null,
-       "title": "Description"
-      },
-      "extra_buttons": {
-       "default": null,
-       "title": "Extra Buttons"
-      },
-      "image_file_id": {
-       "default": null,
-       "title": "Image File Id"
-      },
-      "image_url": {
-       "default": null,
-       "title": "Image Url"
-      },
-      "layout_type": {
-       "default": "open",
-       "title": "Layout Type"
-      },
-      "main_app_icon": {
-       "default": "LayoutTemplate",
-       "title": "Main App Icon"
-      },
-      "main_app_submit_icon": {
-       "default": "Search",
-       "title": "Main App Submit Icon"
-      },
-      "metadata": {
-       "default": {},
-       "title": "Metadata"
-      },
-      "name": {
-       "title": "Name"
-      },
-      "primary_color": {
-       "default": "gray",
-       "title": "Primary Color"
-      },
-      "public_read": {
-       "default": true,
-       "title": "Public Read"
-      },
-      "slug": {
-       "title": "Slug"
-      }
-     },
-     "required": [
-      "name",
-      "slug"
-     ],
-     "title": "CreateCustomAppConfigItem",
-     "type": "object"
-    },
-    "delete": {
-     "additionalProperties": true,
-     "properties": {
-      "id": {
-       "title": "Id",
-       "type": "string"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "DeleteCustomAppConfigItem",
-     "type": "object"
-    },
-    "update": {
-     "additionalProperties": true,
-     "properties": {
-      "accent_color": {
-       "default": null,
-       "title": "Accent Color"
-      },
-      "app_data_context": {
-       "default": null,
-       "title": "App Data Context"
-      },
-      "applet_list": {
-       "default": null,
-       "title": "Applet List"
-      },
-      "creator": {
-       "default": null,
-       "title": "Creator"
-      },
-      "description": {
-       "default": null,
-       "title": "Description"
-      },
-      "extra_buttons": {
-       "default": null,
-       "title": "Extra Buttons"
-      },
-      "id": {
-       "title": "Id",
-       "type": "string"
-      },
-      "image_file_id": {
-       "default": null,
-       "title": "Image File Id"
-      },
-      "image_url": {
-       "default": null,
-       "title": "Image Url"
-      },
-      "layout_type": {
-       "default": null,
-       "title": "Layout Type"
-      },
-      "main_app_icon": {
-       "default": null,
-       "title": "Main App Icon"
-      },
-      "main_app_submit_icon": {
-       "default": null,
-       "title": "Main App Submit Icon"
-      },
-      "metadata": {
-       "default": null,
-       "title": "Metadata"
-      },
-      "name": {
-       "default": null,
-       "title": "Name"
-      },
-      "primary_color": {
-       "default": null,
-       "title": "Primary Color"
-      },
-      "public_read": {
-       "default": null,
-       "title": "Public Read"
-      },
-      "slug": {
-       "default": null,
-       "title": "Slug"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "UpdateCustomAppConfigItem",
-     "type": "object"
-    }
-   },
-   "table": "custom_app_configs",
-   "title_column": "name",
-   "update": "planned",
-   "view": "yes"
-  },
-  {
-   "create": "planned",
-   "delete": "planned",
-   "family": "Other",
-   "identity_fields": [
-    "id"
-   ],
-   "label": "Custom Applet Config",
-   "noun": "custom_applet_config",
-   "reference": "yes",
-   "schemas": {
-    "create": {
-     "additionalProperties": true,
-     "properties": {
-      "accent_color": {
-       "default": null,
-       "title": "Accent Color"
-      },
-      "app_id": {
-       "default": null,
-       "title": "App Id"
-      },
-      "applet_icon": {
-       "default": null,
-       "title": "Applet Icon"
-      },
-      "applet_submit_text": {
-       "default": null,
-       "title": "Applet Submit Text"
-      },
-      "broker_map": {
-       "default": null,
-       "title": "Broker Map"
-      },
-      "compiled_recipe_id": {
-       "default": null,
-       "title": "Compiled Recipe Id"
-      },
-      "containers": {
-       "default": null,
-       "title": "Containers"
-      },
-      "creator": {
-       "default": null,
-       "title": "Creator"
-      },
-      "data_destination_config": {
-       "default": null,
-       "title": "Data Destination Config"
-      },
-      "data_source_config": {
-       "default": null,
-       "title": "Data Source Config"
-      },
-      "description": {
-       "default": null,
-       "title": "Description"
-      },
-      "image_file_id": {
-       "default": null,
-       "title": "Image File Id"
-      },
-      "image_url": {
-       "default": null,
-       "title": "Image Url"
-      },
-      "layout_type": {
-       "default": null,
-       "title": "Layout Type"
-      },
-      "metadata": {
-       "default": {},
-       "title": "Metadata"
-      },
-      "name": {
-       "title": "Name"
-      },
-      "next_step_config": {
-       "default": null,
-       "title": "Next Step Config"
-      },
-      "overview_label": {
-       "default": null,
-       "title": "Overview Label"
-      },
-      "primary_color": {
-       "default": null,
-       "title": "Primary Color"
-      },
-      "public_read": {
-       "default": true,
-       "title": "Public Read"
-      },
-      "result_component_config": {
-       "default": null,
-       "title": "Result Component Config"
-      },
-      "slug": {
-       "title": "Slug"
-      },
-      "subcategory_id": {
-       "default": null,
-       "title": "Subcategory Id"
-      }
-     },
-     "required": [
-      "name",
-      "slug"
-     ],
-     "title": "CreateCustomAppletConfigItem",
-     "type": "object"
-    },
-    "delete": {
-     "additionalProperties": true,
-     "properties": {
-      "id": {
-       "title": "Id",
-       "type": "string"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "DeleteCustomAppletConfigItem",
-     "type": "object"
-    },
-    "update": {
-     "additionalProperties": true,
-     "properties": {
-      "accent_color": {
-       "default": null,
-       "title": "Accent Color"
-      },
-      "app_id": {
-       "default": null,
-       "title": "App Id"
-      },
-      "applet_icon": {
-       "default": null,
-       "title": "Applet Icon"
-      },
-      "applet_submit_text": {
-       "default": null,
-       "title": "Applet Submit Text"
-      },
-      "broker_map": {
-       "default": null,
-       "title": "Broker Map"
-      },
-      "compiled_recipe_id": {
-       "default": null,
-       "title": "Compiled Recipe Id"
-      },
-      "containers": {
-       "default": null,
-       "title": "Containers"
-      },
-      "creator": {
-       "default": null,
-       "title": "Creator"
-      },
-      "data_destination_config": {
-       "default": null,
-       "title": "Data Destination Config"
-      },
-      "data_source_config": {
-       "default": null,
-       "title": "Data Source Config"
-      },
-      "description": {
-       "default": null,
-       "title": "Description"
-      },
-      "id": {
-       "title": "Id",
-       "type": "string"
-      },
-      "image_file_id": {
-       "default": null,
-       "title": "Image File Id"
-      },
-      "image_url": {
-       "default": null,
-       "title": "Image Url"
-      },
-      "layout_type": {
-       "default": null,
-       "title": "Layout Type"
-      },
-      "metadata": {
-       "default": null,
-       "title": "Metadata"
-      },
-      "name": {
-       "default": null,
-       "title": "Name"
-      },
-      "next_step_config": {
-       "default": null,
-       "title": "Next Step Config"
-      },
-      "overview_label": {
-       "default": null,
-       "title": "Overview Label"
-      },
-      "primary_color": {
-       "default": null,
-       "title": "Primary Color"
-      },
-      "public_read": {
-       "default": null,
-       "title": "Public Read"
-      },
-      "result_component_config": {
-       "default": null,
-       "title": "Result Component Config"
-      },
-      "slug": {
-       "default": null,
-       "title": "Slug"
-      },
-      "subcategory_id": {
-       "default": null,
-       "title": "Subcategory Id"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "UpdateCustomAppletConfigItem",
-     "type": "object"
-    }
-   },
-   "table": "custom_applet_configs",
-   "title_column": "name",
-   "update": "planned",
-   "view": "yes"
-  },
-  {
-   "create": "planned",
-   "delete": "planned",
-   "family": "Other",
-   "identity_fields": [
-    "id"
-   ],
-   "label": "Dashboard Saved View",
-   "noun": "dashboard_saved_view",
-   "reference": "yes",
-   "schemas": {
-    "create": {
-     "additionalProperties": true,
-     "properties": {
-      "description": {
-       "default": null,
-       "title": "Description"
-      },
-      "metadata": {
-       "default": {},
-       "title": "Metadata"
-      },
-      "name": {
-       "title": "Name"
-      },
-      "table_name": {
-       "title": "Table Name"
-      },
-      "url_params": {
-       "title": "Url Params"
-      }
-     },
-     "required": [
-      "table_name",
-      "name",
-      "url_params"
-     ],
-     "title": "CreateDashboardSavedViewItem",
-     "type": "object"
-    },
-    "delete": {
-     "additionalProperties": true,
-     "properties": {
-      "id": {
-       "title": "Id",
-       "type": "string"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "DeleteDashboardSavedViewItem",
-     "type": "object"
-    },
-    "update": {
-     "additionalProperties": true,
-     "properties": {
-      "description": {
-       "default": null,
-       "title": "Description"
-      },
-      "id": {
-       "title": "Id",
-       "type": "string"
-      },
-      "metadata": {
-       "default": null,
-       "title": "Metadata"
-      },
-      "name": {
-       "default": null,
-       "title": "Name"
-      },
-      "table_name": {
-       "default": null,
-       "title": "Table Name"
-      },
-      "url_params": {
-       "default": null,
-       "title": "Url Params"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "UpdateDashboardSavedViewItem",
-     "type": "object"
-    }
-   },
-   "table": "dashboard_saved_views",
-   "title_column": "name",
-   "update": "planned",
-   "view": "yes"
-  },
-  {
-   "create": "planned",
-   "delete": "planned",
-   "family": "Other",
    "identity_fields": [],
    "label": "Data Store",
    "noun": "data_store",
@@ -12340,6 +12126,10 @@
       "description": {
        "default": null,
        "title": "Description"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
       },
       "project_id": {
        "default": null,
@@ -12391,6 +12181,10 @@
       "id": {
        "title": "Id",
        "type": "string"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
       },
       "project_id": {
        "default": null,
@@ -13098,238 +12892,6 @@
    "delete": "planned",
    "family": "Other",
    "identity_fields": [],
-   "label": "Flashcard",
-   "noun": "flashcard_data",
-   "reference": "no",
-   "schemas": {
-    "create": {
-     "additionalProperties": true,
-     "properties": {
-      "audio_explanation": {
-       "default": null,
-       "title": "Audio Explanation"
-      },
-      "back": {
-       "title": "Back"
-      },
-      "detailed_explanation": {
-       "default": null,
-       "title": "Detailed Explanation"
-      },
-      "difficulty": {
-       "default": null,
-       "title": "Difficulty"
-      },
-      "example": {
-       "default": null,
-       "title": "Example"
-      },
-      "front": {
-       "title": "Front"
-      },
-      "lesson": {
-       "default": null,
-       "title": "Lesson"
-      },
-      "personal_notes": {
-       "default": null,
-       "title": "Personal Notes"
-      },
-      "project_id": {
-       "default": null,
-       "title": "Project Id"
-      },
-      "public": {
-       "default": false,
-       "title": "Public"
-      },
-      "topic": {
-       "default": null,
-       "title": "Topic"
-      }
-     },
-     "required": [
-      "front",
-      "back"
-     ],
-     "title": "CreateFlashcardDataItem",
-     "type": "object"
-    },
-    "delete": {
-     "additionalProperties": true,
-     "properties": {
-      "id": {
-       "title": "Id",
-       "type": "string"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "DeleteFlashcardDataItem",
-     "type": "object"
-    },
-    "update": {
-     "additionalProperties": true,
-     "properties": {
-      "audio_explanation": {
-       "default": null,
-       "title": "Audio Explanation"
-      },
-      "back": {
-       "default": null,
-       "title": "Back"
-      },
-      "detailed_explanation": {
-       "default": null,
-       "title": "Detailed Explanation"
-      },
-      "difficulty": {
-       "default": null,
-       "title": "Difficulty"
-      },
-      "example": {
-       "default": null,
-       "title": "Example"
-      },
-      "front": {
-       "default": null,
-       "title": "Front"
-      },
-      "id": {
-       "title": "Id",
-       "type": "string"
-      },
-      "lesson": {
-       "default": null,
-       "title": "Lesson"
-      },
-      "personal_notes": {
-       "default": null,
-       "title": "Personal Notes"
-      },
-      "project_id": {
-       "default": null,
-       "title": "Project Id"
-      },
-      "public": {
-       "default": null,
-       "title": "Public"
-      },
-      "topic": {
-       "default": null,
-       "title": "Topic"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "UpdateFlashcardDataItem",
-     "type": "object"
-    }
-   },
-   "table": "education.flashcard_data",
-   "title_column": null,
-   "update": "planned",
-   "view": "no"
-  },
-  {
-   "create": "planned",
-   "delete": "planned",
-   "family": "Other",
-   "identity_fields": [
-    "id"
-   ],
-   "label": "Flashcard History",
-   "noun": "flashcard_history",
-   "reference": "yes",
-   "schemas": {
-    "create": {
-     "additionalProperties": true,
-     "properties": {
-      "correct_count": {
-       "default": 0,
-       "title": "Correct Count"
-      },
-      "flashcard_id": {
-       "default": null,
-       "title": "Flashcard Id"
-      },
-      "incorrect_count": {
-       "default": 0,
-       "title": "Incorrect Count"
-      },
-      "metadata": {
-       "default": {},
-       "title": "Metadata"
-      },
-      "review_count": {
-       "default": 0,
-       "title": "Review Count"
-      }
-     },
-     "title": "CreateFlashcardHistoryItem",
-     "type": "object"
-    },
-    "delete": {
-     "additionalProperties": true,
-     "properties": {
-      "id": {
-       "title": "Id",
-       "type": "string"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "DeleteFlashcardHistoryItem",
-     "type": "object"
-    },
-    "update": {
-     "additionalProperties": true,
-     "properties": {
-      "correct_count": {
-       "default": null,
-       "title": "Correct Count"
-      },
-      "flashcard_id": {
-       "default": null,
-       "title": "Flashcard Id"
-      },
-      "id": {
-       "title": "Id",
-       "type": "string"
-      },
-      "incorrect_count": {
-       "default": null,
-       "title": "Incorrect Count"
-      },
-      "metadata": {
-       "default": null,
-       "title": "Metadata"
-      },
-      "review_count": {
-       "default": null,
-       "title": "Review Count"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "UpdateFlashcardHistoryItem",
-     "type": "object"
-    }
-   },
-   "table": "education.flashcard_history",
-   "title_column": null,
-   "update": "planned",
-   "view": "yes"
-  },
-  {
-   "create": "planned",
-   "delete": "planned",
-   "family": "Other",
-   "identity_fields": [],
    "label": "Flashcard Review",
    "noun": "flashcard_review",
    "reference": "no",
@@ -13548,116 +13110,6 @@
    "identity_fields": [
     "id"
    ],
-   "label": "Flashcard Set",
-   "noun": "flashcard_sets",
-   "reference": "yes",
-   "schemas": {
-    "create": {
-     "additionalProperties": true,
-     "properties": {
-      "audio_overview": {
-       "default": null,
-       "title": "Audio Overview"
-      },
-      "difficulty": {
-       "default": null,
-       "title": "Difficulty"
-      },
-      "lesson": {
-       "default": null,
-       "title": "Lesson"
-      },
-      "name": {
-       "title": "Name"
-      },
-      "project_id": {
-       "default": null,
-       "title": "Project Id"
-      },
-      "public": {
-       "default": false,
-       "title": "Public"
-      },
-      "topic": {
-       "default": null,
-       "title": "Topic"
-      }
-     },
-     "required": [
-      "name"
-     ],
-     "title": "CreateFlashcardSetsItem",
-     "type": "object"
-    },
-    "delete": {
-     "additionalProperties": true,
-     "properties": {
-      "id": {
-       "title": "Id",
-       "type": "string"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "DeleteFlashcardSetsItem",
-     "type": "object"
-    },
-    "update": {
-     "additionalProperties": true,
-     "properties": {
-      "audio_overview": {
-       "default": null,
-       "title": "Audio Overview"
-      },
-      "difficulty": {
-       "default": null,
-       "title": "Difficulty"
-      },
-      "id": {
-       "title": "Id",
-       "type": "string"
-      },
-      "lesson": {
-       "default": null,
-       "title": "Lesson"
-      },
-      "name": {
-       "default": null,
-       "title": "Name"
-      },
-      "project_id": {
-       "default": null,
-       "title": "Project Id"
-      },
-      "public": {
-       "default": null,
-       "title": "Public"
-      },
-      "topic": {
-       "default": null,
-       "title": "Topic"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "UpdateFlashcardSetsItem",
-     "type": "object"
-    }
-   },
-   "table": "education.flashcard_sets",
-   "title_column": "name",
-   "update": "planned",
-   "view": "yes"
-  },
-  {
-   "create": "planned",
-   "delete": "planned",
-   "family": "Other",
-   "identity_fields": [
-    "id"
-   ],
    "label": "Flexible Data",
    "noun": "flexible_data",
    "reference": "yes",
@@ -13740,7 +13192,7 @@
      "type": "object"
     }
    },
-   "table": "flexible_data",
+   "table": "platform.flexible_data",
    "title_column": "label",
    "update": "planned",
    "view": "yes"
@@ -14458,7 +13910,7 @@
      "type": "object"
     }
    },
-   "table": "heatmap_saves",
+   "table": "workbench.heatmap_saves",
    "title_column": "title",
    "update": "planned",
    "view": "yes"
@@ -15868,12 +15320,8 @@
        "title": "Label"
       },
       "metadata": {
-       "default": null,
+       "default": {},
        "title": "Metadata"
-      },
-      "project_id": {
-       "default": null,
-       "title": "Project Id"
       },
       "role": {
        "default": null,
@@ -15920,10 +15368,6 @@
        "default": null,
        "title": "Metadata"
       },
-      "project_id": {
-       "default": null,
-       "title": "Project Id"
-      },
       "role": {
        "default": null,
        "title": "Role"
@@ -15940,142 +15384,10 @@
      "type": "object"
     }
    },
-   "table": "message_template",
+   "table": "agent.message_template",
    "title_column": "label",
    "update": "planned",
    "view": "yes"
-  },
-  {
-   "create": "planned",
-   "delete": "planned",
-   "family": "Other",
-   "identity_fields": [],
-   "label": "Microservice Project",
-   "noun": "microservice_project",
-   "reference": "no",
-   "schemas": {
-    "create": {
-     "additionalProperties": true,
-     "properties": {
-      "is_system": {
-       "default": false,
-       "title": "Is System"
-      },
-      "metadata": {
-       "default": {},
-       "title": "Metadata"
-      },
-      "project_code": {
-       "title": "Project Code"
-      },
-      "project_description": {
-       "title": "Project Description"
-      },
-      "project_name": {
-       "title": "Project Name"
-      },
-      "public_read": {
-       "default": false,
-       "title": "Public Read"
-      },
-      "repo_id": {
-       "title": "Repo Id"
-      },
-      "repo_name": {
-       "title": "Repo Name"
-      },
-      "repo_org_name": {
-       "title": "Repo Org Name"
-      },
-      "repo_url": {
-       "title": "Repo Url"
-      }
-     },
-     "required": [
-      "project_name",
-      "project_description",
-      "repo_name",
-      "repo_id",
-      "repo_org_name",
-      "repo_url",
-      "project_code"
-     ],
-     "title": "CreateMicroserviceProjectItem",
-     "type": "object"
-    },
-    "delete": {
-     "additionalProperties": true,
-     "properties": {
-      "id": {
-       "title": "Id",
-       "type": "string"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "DeleteMicroserviceProjectItem",
-     "type": "object"
-    },
-    "update": {
-     "additionalProperties": true,
-     "properties": {
-      "id": {
-       "title": "Id",
-       "type": "string"
-      },
-      "is_system": {
-       "default": null,
-       "title": "Is System"
-      },
-      "metadata": {
-       "default": null,
-       "title": "Metadata"
-      },
-      "project_code": {
-       "default": null,
-       "title": "Project Code"
-      },
-      "project_description": {
-       "default": null,
-       "title": "Project Description"
-      },
-      "project_name": {
-       "default": null,
-       "title": "Project Name"
-      },
-      "public_read": {
-       "default": null,
-       "title": "Public Read"
-      },
-      "repo_id": {
-       "default": null,
-       "title": "Repo Id"
-      },
-      "repo_name": {
-       "default": null,
-       "title": "Repo Name"
-      },
-      "repo_org_name": {
-       "default": null,
-       "title": "Repo Org Name"
-      },
-      "repo_url": {
-       "default": null,
-       "title": "Repo Url"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "UpdateMicroserviceProjectItem",
-     "type": "object"
-    }
-   },
-   "table": "microservice_project",
-   "title_column": null,
-   "update": "planned",
-   "view": "no"
   },
   {
    "create": "planned",
@@ -16215,6 +15527,10 @@
       "issue_class_id": {
        "title": "Issue Class Id"
       },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
       "model": {
        "default": null,
        "title": "Model"
@@ -16291,6 +15607,10 @@
       "issue_class_id": {
        "default": null,
        "title": "Issue Class Id"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
       },
       "model": {
        "default": null,
@@ -16370,6 +15690,10 @@
        "default": null,
        "title": "Logo Url"
       },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
       "name": {
        "title": "Name"
       },
@@ -16437,6 +15761,10 @@
       "logo_url": {
        "default": null,
        "title": "Logo Url"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
       },
       "name": {
        "default": null,
@@ -17829,6 +17157,10 @@
        "default": null,
        "title": "File Id"
       },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
       "parent_file_id": {
        "default": null,
        "title": "Parent File Id"
@@ -17891,6 +17223,10 @@
       "id": {
        "title": "Id",
        "type": "string"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
       },
       "parent_file_id": {
        "default": null,
@@ -18419,10 +17755,6 @@
        "default": {},
        "title": "Metadata"
       },
-      "project_id": {
-       "default": null,
-       "title": "Project Id"
-      },
       "quiz_metadata": {
        "default": {},
        "title": "Quiz Metadata"
@@ -18471,10 +17803,6 @@
       "metadata": {
        "default": null,
        "title": "Metadata"
-      },
-      "project_id": {
-       "default": null,
-       "title": "Project Id"
       },
       "quiz_metadata": {
        "default": null,
@@ -18581,6 +17909,10 @@
        "default": true,
        "title": "Is Current"
       },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
       "model_id": {
        "default": null,
        "title": "Model Id"
@@ -18655,6 +17987,10 @@
       "is_current": {
        "default": null,
        "title": "Is Current"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
       },
       "model_id": {
        "default": null,
@@ -18802,6 +18138,10 @@
       "last_server_failure_reason": {
        "default": null,
        "title": "Last Server Failure Reason"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
       },
       "origin": {
        "default": "search",
@@ -18993,6 +18333,10 @@
       "last_server_failure_reason": {
        "default": null,
        "title": "Last Server Failure Reason"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
       },
       "origin": {
        "default": null,
@@ -20261,9 +19605,6 @@
        "default": 0,
        "title": "Share Count"
       },
-      "share_token": {
-       "title": "Share Token"
-      },
       "tags": {
        "default": [],
        "title": "Tags"
@@ -20293,7 +19634,6 @@
       }
      },
      "required": [
-      "share_token",
       "title",
       "canvas_type",
       "canvas_data"
@@ -20418,10 +19758,6 @@
        "default": null,
        "title": "Share Count"
       },
-      "share_token": {
-       "default": null,
-       "title": "Share Token"
-      },
       "tags": {
        "default": null,
        "title": "Tags"
@@ -20462,20 +19798,6 @@
    "title_column": "title",
    "update": "planned",
    "view": "yes"
-  },
-  {
-   "create": "planned",
-   "delete": "planned",
-   "family": "Other",
-   "identity_fields": [],
-   "label": "Shortcut Category",
-   "noun": "shortcut_category",
-   "reference": "no",
-   "schemas": null,
-   "table": "graveyard.shortcut_categories_legacy",
-   "title_column": null,
-   "update": "planned",
-   "view": "no"
   },
   {
    "create": "planned",
@@ -21236,6 +20558,10 @@
       "list_name": {
        "default": null,
        "title": "List Name"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
       }
      },
      "title": "CreateStructuredListItem",
@@ -21269,6 +20595,10 @@
       "list_name": {
        "default": null,
        "title": "List Name"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
       }
      },
      "required": [
@@ -21314,6 +20644,10 @@
       },
       "file_id": {
        "title": "File Id"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
       },
       "mime_type": {
        "default": "audio/webm",
@@ -21363,6 +20697,10 @@
       "id": {
        "title": "Id",
        "type": "string"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
       },
       "mime_type": {
        "default": null,
@@ -22859,6 +22197,10 @@
       "kind": {
        "title": "Kind"
       },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
       "occurred_at": {
        "title": "Occurred At"
       },
@@ -22944,6 +22286,10 @@
        "default": null,
        "title": "Kind"
       },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
       "occurred_at": {
        "default": null,
        "title": "Occurred At"
@@ -23013,6 +22359,10 @@
        "default": null,
        "title": "Error Message"
       },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
       "resolved_at": {
        "default": null,
        "title": "Resolved At"
@@ -23057,6 +22407,10 @@
       "id": {
        "title": "Id",
        "type": "string"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
       },
       "resolved_at": {
        "default": null,
@@ -23104,6 +22458,10 @@
       },
       "failed_at": {
        "title": "Failed At"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
       },
       "op_id": {
        "title": "Op Id"
@@ -23189,6 +22547,10 @@
       "id": {
        "title": "Id",
        "type": "string"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
       },
       "op_id": {
        "default": null,
@@ -24163,6 +23525,10 @@
        "default": false,
        "title": "Has Open Issues"
       },
+      "image_file_ids": {
+       "default": [],
+       "title": "Image File Ids"
+      },
       "image_urls": {
        "default": null,
        "title": "Image Urls"
@@ -24307,6 +23673,10 @@
       "id": {
        "title": "Id",
        "type": "string"
+      },
+      "image_file_ids": {
+       "default": null,
+       "title": "Image File Ids"
       },
       "image_urls": {
        "default": null,
@@ -27108,100 +26478,6 @@
    "title_column": null,
    "update": "no",
    "view": "no"
-  },
-  {
-   "create": "planned",
-   "delete": "planned",
-   "family": "Other",
-   "identity_fields": [
-    "id"
-   ],
-   "label": "Window Session",
-   "noun": "window_session",
-   "reference": "yes",
-   "schemas": {
-    "create": {
-     "additionalProperties": true,
-     "properties": {
-      "data": {
-       "default": {},
-       "title": "Data"
-      },
-      "label": {
-       "default": null,
-       "title": "Label"
-      },
-      "metadata": {
-       "default": {},
-       "title": "Metadata"
-      },
-      "panel_state": {
-       "default": {},
-       "title": "Panel State"
-      },
-      "window_type": {
-       "title": "Window Type"
-      }
-     },
-     "required": [
-      "window_type"
-     ],
-     "title": "CreateWindowSessionItem",
-     "type": "object"
-    },
-    "delete": {
-     "additionalProperties": true,
-     "properties": {
-      "id": {
-       "title": "Id",
-       "type": "string"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "DeleteWindowSessionItem",
-     "type": "object"
-    },
-    "update": {
-     "additionalProperties": true,
-     "properties": {
-      "data": {
-       "default": null,
-       "title": "Data"
-      },
-      "id": {
-       "title": "Id",
-       "type": "string"
-      },
-      "label": {
-       "default": null,
-       "title": "Label"
-      },
-      "metadata": {
-       "default": null,
-       "title": "Metadata"
-      },
-      "panel_state": {
-       "default": null,
-       "title": "Panel State"
-      },
-      "window_type": {
-       "default": null,
-       "title": "Window Type"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "UpdateWindowSessionItem",
-     "type": "object"
-    }
-   },
-   "table": "window_sessions",
-   "title_column": "label",
-   "update": "planned",
-   "view": "yes"
   },
   {
    "create": "no",

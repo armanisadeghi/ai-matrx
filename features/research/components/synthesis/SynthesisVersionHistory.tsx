@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { ChevronDown, ChevronUp, History, Loader2 } from "lucide-react";
 
 import MarkdownStream from "@/components/MarkdownStream";
+import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 import { toast } from "@/lib/toast";
 
 import { getSynthesisVersions } from "../../service";
@@ -47,9 +48,7 @@ export function SynthesisVersionHistory({
         await getSynthesisVersions(topicId, { scope, keyword_id: keywordId }),
       );
     } catch (err) {
-      toast.error(
-        (err as Error).message ?? "Could not load previous versions",
-      );
+      toast.error((err as Error).message ?? "Could not load previous versions");
       setOpen(false);
     } finally {
       setLoading(false);
@@ -98,7 +97,18 @@ export function SynthesisVersionHistory({
                   {v.created_at
                     ? ` · ${new Date(v.created_at).toLocaleString()}`
                     : ""}
-                  {v.model_id ? ` · ${v.model_id}` : ""}
+                  {v.model_id ? (
+                    <span className="ml-1 inline-flex align-middle">
+                      ·
+                      <AiModelRef
+                        modelId={v.model_id}
+                        showId
+                        showIcon={false}
+                        disableNavigation
+                        className="ml-1"
+                      />
+                    </span>
+                  ) : null}
                 </summary>
                 <div className="border-t border-border/40 px-2.5 py-2">
                   {v.result && v.result.trim().length > 0 ? (

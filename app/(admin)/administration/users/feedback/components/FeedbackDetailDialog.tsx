@@ -13,7 +13,10 @@ import {
   forceCloseFeedback,
 } from "@/actions/feedback.actions";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
-import { imageViewUrl } from "@/features/files/handler/utils/python-base";
+import {
+  feedbackScreenshotHref,
+  getFeedbackScreenshotRefs,
+} from "@/features/feedback/screenshot-refs";
 import {
   UserFeedback,
   FeedbackStatus,
@@ -172,6 +175,7 @@ export default function FeedbackDetailDialog({
 }: FeedbackDetailDialogProps) {
   // Live local copy of the feedback item — updated from server responses
   const [item, setItem] = useState<UserFeedback>(feedback);
+  const screenshotRefs = getFeedbackScreenshotRefs(item);
 
   const [activeTab, setActiveTab] = useState(initialTab || "submission");
   const [isSaving, setIsSaving] = useState(false);
@@ -244,7 +248,7 @@ export default function FeedbackDetailDialog({
 
   const { upload: uploadFile } = useFileUpload();
   const uploadFeedbackImage = useCallback(
-    async (file: File): Promise<{ url?: string }> => {
+    async (file: File): Promise<{ fileId: string }> => {
       const normalized = await uploadFile(
         { kind: "file", file },
         {
@@ -254,7 +258,7 @@ export default function FeedbackDetailDialog({
           shareLinkPermissionLevel: "viewer",
         },
       );
-      return { url: normalized.url };
+      return { fileId: normalized.fileId };
     },
     [uploadFile],
   );
@@ -280,13 +284,8 @@ export default function FeedbackDetailDialog({
           setUploading(true);
           try {
             const result = await uploadFeedbackImage(namedFile);
-            const { url } = result;
-            if (url) {
-              setImages((prev) => [...prev, url]);
-              toast.success("Image attached");
-            } else {
-              toast.error("Couldn't upload image: no URL returned");
-            }
+            setImages((prev) => [...prev, result.fileId]);
+            toast.success("Image attached");
           } catch (err) {
             const reason = err instanceof Error ? err.message : "Upload failed";
             toast.error(`Couldn't upload image: ${reason}`);
@@ -338,11 +337,8 @@ export default function FeedbackDetailDialog({
           for (const file of files) {
             try {
               const result = await uploadFeedbackImage(file);
-              const { url } = result;
-              if (url) {
-                setImages((prev) => [...prev, url]);
-                attached += 1;
-              }
+              setImages((prev) => [...prev, result.fileId]);
+              attached += 1;
             } catch (err) {
               if (!firstError) {
                 firstError =
@@ -687,8 +683,8 @@ export default function FeedbackDetailDialog({
     try {
       const header =
         pendingTestResult === "fail"
-          ? "⛔ TEST FAILED — REQUIRES AGENT FIXES"
-          : "⚠️ TEST PARTIAL — REMAINING ISSUES";
+          ? "TEST FAILED — REQUIRES AGENT FIXES"
+          : "TEST PARTIAL — REMAINING ISSUES";
 
       const structuredComment = `${header}\n\n${testFeedbackText.trim()}\n\n---\nThe item has been sent back to your work queue (status: in_progress). Read the above carefully, fix the issues, and re-submit with resolve_with_testing().`;
 
@@ -1107,32 +1103,32 @@ export default function FeedbackDetailDialog({
                 </div>
 
                 {/* Screenshots */}
-                {item.image_urls && item.image_urls.length > 0 && (
+                {screenshotRefs.length > 0 && (
                   <div>
                     <label className="text-sm font-medium text-muted-foreground mb-1.5 flex items-center gap-2">
                       <ImageIcon className="w-4 h-4" />
-                      Screenshots ({item.image_urls.length})
+                      Screenshots ({screenshotRefs.length})
                     </label>
                     {
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                        {item.image_urls.map((url, index) => {
+                        {screenshotRefs.map((screenshotRef, index) => {
                           // <img src> renders bytes inline regardless of
                           // Content-Disposition; the click target swaps to
                           // the FE landing page so admins land on a viewer
                           // (preview + download button + Open-in-app),
                           // not on raw bytes that some browsers/CDNs
                           // attachment-force.
-                          const viewHref = imageViewUrl(url);
+                          const viewHref = feedbackScreenshotHref(screenshotRef);
                           return (
                             <a
-                              key={index}
+                              key={screenshotRef}
                               href={viewHref}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="relative aspect-video rounded-lg overflow-hidden border border-border hover:border-primary transition-colors group"
                             >
                               <InlineMediaRef
-                                ref={url}
+                                ref={screenshotRef}
                                 size="fill"
                                 fit="cover"
                                 rounded="none"
@@ -1768,76 +1764,76 @@ export default function FeedbackDetailDialog({
                     Assigned to
                   </label>
                   <div className="flex items-center gap-1">
-                  <Select value={assigneeId} onValueChange={setAssigneeId}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue>
-                        {(() => {
-                          if (assigneeId === "none")
+                    <Select value={assigneeId} onValueChange={setAssigneeId}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue>
+                          {(() => {
+                            if (assigneeId === "none")
+                              return (
+                                <span className="text-muted-foreground">
+                                  Unassigned
+                                </span>
+                              );
+                            const admin = assignableAdmins.find(
+                              (a) => a.user_id === assigneeId,
+                            );
+                            if (!admin) {
+                              // Fall back to short id when we have an assignment
+                              // recorded but the admin list hasn't loaded (or
+                              // they were since deactivated).
+                              return (
+                                <span className="text-muted-foreground">
+                                  {assigneeId.slice(0, 8)}…
+                                </span>
+                              );
+                            }
                             return (
-                              <span className="text-muted-foreground">
-                                Unassigned
+                              <span className="text-sm font-medium truncate">
+                                {admin.display_name ||
+                                  admin.email ||
+                                  admin.user_id.slice(0, 8)}
                               </span>
                             );
+                          })()}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Unassigned</SelectItem>
+                        {assignableAdmins.map((a) => (
+                          <SelectItem key={a.user_id} value={a.user_id}>
+                            <span className="flex items-center gap-2">
+                              <span className="text-sm font-medium">
+                                {a.display_name ||
+                                  a.email ||
+                                  a.user_id.slice(0, 8)}
+                              </span>
+                              {a.email &&
+                                a.display_name &&
+                                a.email !== a.display_name && (
+                                  <span className="text-[11px] text-muted-foreground">
+                                    {a.email}
+                                  </span>
+                                )}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {/* The assignee is a real user. A `<SelectItem>` can never be
+                      an anchor, so the doors ride beside the picker. */}
+                    {assigneeId !== "none" ? (
+                      <AdminUserDoorControls
+                        userId={assigneeId}
+                        label={(() => {
                           const admin = assignableAdmins.find(
                             (a) => a.user_id === assigneeId,
                           );
-                          if (!admin) {
-                            // Fall back to short id when we have an assignment
-                            // recorded but the admin list hasn't loaded (or
-                            // they were since deactivated).
-                            return (
-                              <span className="text-muted-foreground">
-                                {assigneeId.slice(0, 8)}…
-                              </span>
-                            );
-                          }
                           return (
-                            <span className="text-sm font-medium truncate">
-                              {admin.display_name ||
-                                admin.email ||
-                                admin.user_id.slice(0, 8)}
-                            </span>
+                            admin?.display_name || admin?.email || assigneeId
                           );
                         })()}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Unassigned</SelectItem>
-                      {assignableAdmins.map((a) => (
-                        <SelectItem key={a.user_id} value={a.user_id}>
-                          <span className="flex items-center gap-2">
-                            <span className="text-sm font-medium">
-                              {a.display_name ||
-                                a.email ||
-                                a.user_id.slice(0, 8)}
-                            </span>
-                            {a.email &&
-                              a.display_name &&
-                              a.email !== a.display_name && (
-                                <span className="text-[11px] text-muted-foreground">
-                                  {a.email}
-                                </span>
-                              )}
-                          </span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {/* The assignee is a real user. A `<SelectItem>` can never be
-                      an anchor, so the doors ride beside the picker. */}
-                  {assigneeId !== "none" ? (
-                    <AdminUserDoorControls
-                      userId={assigneeId}
-                      label={(() => {
-                        const admin = assignableAdmins.find(
-                          (a) => a.user_id === assigneeId,
-                        );
-                        return (
-                          admin?.display_name || admin?.email || assigneeId
-                        );
-                      })()}
-                    />
-                  ) : null}
+                      />
+                    ) : null}
                   </div>
                   {assigneeId !== "none" &&
                     assigneeId !== (item.assigned_to ?? "none") && (
@@ -2643,32 +2639,34 @@ export default function FeedbackDetailDialog({
                                   {msg.content}
                                 </p>
                               )}
-                              {msg.image_urls && msg.image_urls.length > 0 && (
+                              {getFeedbackScreenshotRefs(msg).length > 0 && (
                                 <div
                                   className={cn(
                                     "flex flex-wrap gap-2",
                                     msg.content && "mt-2",
                                   )}
                                 >
-                                  {msg.image_urls.map((url, idx) => (
-                                    <a
-                                      key={idx}
-                                      href={imageViewUrl(url)}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                    >
-                                      <InlineMediaRef
-                                        ref={url}
-                                        size={{ width: 320, height: 192 }}
-                                        fit="contain"
-                                        rounded="sm"
-                                        border="subtle"
-                                        fallback={null}
-                                        className="cursor-pointer hover:opacity-90 transition-opacity max-h-48 max-w-xs"
-                                        alt={`Attachment ${idx + 1}`}
-                                      />
-                                    </a>
-                                  ))}
+                                  {getFeedbackScreenshotRefs(msg).map(
+                                    (ref, idx) => (
+                                      <a
+                                        key={ref}
+                                        href={feedbackScreenshotHref(ref)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                      >
+                                        <InlineMediaRef
+                                          ref={ref}
+                                          size={{ width: 320, height: 192 }}
+                                          fit="contain"
+                                          rounded="sm"
+                                          border="subtle"
+                                          fallback={null}
+                                          className="cursor-pointer hover:opacity-90 transition-opacity max-h-48 max-w-xs"
+                                          alt={`Attachment ${idx + 1}`}
+                                        />
+                                      </a>
+                                    ),
+                                  )}
                                 </div>
                               )}
                             </div>

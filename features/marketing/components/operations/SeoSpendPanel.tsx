@@ -190,6 +190,7 @@ export function SeoSpendPanel() {
           rejections
         </h2>
         <MatrxDataTable
+          urlState={{ id: "seo-budget-rejections" }}
           data={data.recent_budget_rejections}
           columns={rejectionColumns}
           getRowId={(row) => row.run_id}

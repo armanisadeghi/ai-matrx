@@ -114,7 +114,7 @@ function mergeAgentListRows(dispatch: AppDispatch, rows: AgentListRow[]) {
         isActive: row.is_active,
         isArchived: row.is_archived,
         isFavorite: row.is_favorite,
-        userId: row.user_id,
+        createdBy: row.created_by,
         organizationId: row.organization_id,
         taskId: row.task_id ?? null,
         sourceAgentId: row.source_agent_id,
@@ -255,7 +255,7 @@ export const fetchAgentsListFull = createAsyncThunk<void, void, ThunkApi>(
           isActive: row.is_active,
           isArchived: row.is_archived,
           isFavorite: row.is_favorite,
-          userId: row.user_id,
+          createdBy: row.created_by,
           organizationId: row.organization_id,
           taskId: row.task_id ?? null,
           sourceAgentId: row.source_agent_id,
@@ -713,7 +713,7 @@ export const saveAgent = createAsyncThunk<void, string, ThunkApi>(
 
 /**
  * Creates a new agent and loads the returned row into state.
- * userId is pulled from Redux — not passed by the caller.
+ * createdBy is pulled from Redux — not passed by the caller.
  */
 export const createAgent = createAsyncThunk<
   string,
@@ -721,7 +721,7 @@ export const createAgent = createAsyncThunk<
     Omit<
       AgentDefinition,
       | "id"
-      | "userId"
+      | "createdBy"
       | "createdAt"
       | "updatedAt"
       | "isVersion"
@@ -742,7 +742,6 @@ export const createAgent = createAsyncThunk<
     category: partial.category ?? null,
     tags: partial.tags ?? [],
     isActive: partial.isActive ?? true,
-    isPublic: partial.isPublic ?? false,
     isArchived: partial.isArchived ?? false,
     isFavorite: partial.isFavorite ?? false,
     agentType: partial.agentType ?? "user",
@@ -773,7 +772,7 @@ export const createAgent = createAsyncThunk<
     uiGates: partial.uiGates ?? {},
     matrxActions: partial.matrxActions ?? {},
     mcpServers: partial.mcpServers ?? [],
-    userId,
+    createdBy: userId,
     organizationId: partial.organizationId ?? null,
     taskId: partial.taskId ?? null,
     sourceAgentId: null,
@@ -1188,7 +1187,7 @@ export const updateAgentFromSource = createAsyncThunk<
 // ---------------------------------------------------------------------------
 
 const LINKED_REF_COLS =
-  "id, agent_type, name, source_agent_id, source_snapshot_at, updated_at, user_id, deleted_at";
+  "id, agent_type, name, source_agent_id, source_snapshot_at, updated_at, created_by, deleted_at";
 
 interface LinkedRefRow {
   id: string;
@@ -1197,7 +1196,7 @@ interface LinkedRefRow {
   source_agent_id: string | null;
   source_snapshot_at: string | null;
   updated_at: string;
-  user_id: string | null;
+  created_by: string | null;
   deleted_at: string | null;
 }
 
@@ -1212,7 +1211,7 @@ function toLinkedRef(
     sourceAgentId: row.source_agent_id,
     sourceSnapshotAt: row.source_snapshot_at,
     updatedAt: row.updated_at,
-    isOwnedByMe: !!currentUserId && row.user_id === currentUserId,
+    isOwnedByMe: !!currentUserId && row.created_by === currentUserId,
     deletedAt: row.deleted_at,
   };
 }
@@ -1414,7 +1413,7 @@ export const createPersonalCopy = createAsyncThunk<
         .from("definition")
         .select("id")
         .eq("source_agent_id", systemAgentId)
-        .eq("user_id", uid)
+        .eq("created_by", uid)
         .eq("agent_type", "user")
         .eq("is_archived", false)
         .order("updated_at", { ascending: false })

@@ -343,6 +343,18 @@ Same wire consumer in `ImageAssetUploader`'s Generate tab.
   `IMAGE_STUDIO_BACKEND_CAPABILITIES.promptEdit` is `false`, because the popover
   it would write into never renders.
 
+- **2026-08-12** — Annotate mode assessed for agent write targets and ruled
+  out; the manifest (`features/surfaces/manifests/image-annotate.manifest.ts`)
+  now carries a WRITE DOCTRINE block explaining why, alongside the ones Edit
+  mode and `canvas` already have. Corrected a load-bearing inaccuracy in
+  `AnnotateModeShell.handleBlurFaces`: the comment claimed marker.js 2 has no
+  programmatic-marker API, but `MarkerArea` ships `createNewMarker` and
+  `restoreState`. The real blockers are that `restoreState` REPLACES the whole
+  marker set (so a programmatic write clobbers whatever the user has drawn —
+  which is also why face detection still only reports a count), and that
+  `TextMarkerState` carries its text inseparably from its box geometry, so
+  annotation content cannot be authored without seeing the pixels. No
+  behavior change; comments and docs only.
 - **2026-08-11** — Hardened the Convert write targets: the crop anchor's
   fit gate is now ENFORCED, not just documented. `conversion_settings` accepted
   `resize_position` under any fit, but `CropControls` renders the anchor picker
@@ -440,6 +452,7 @@ Same wire consumer in `ImageAssetUploader`'s Generate tab.
   (it was written out in three places). Live-verified with a real Badass Agent
   run on `/images/generate` — see the surfaces FEATURE.md entry of the same
   date.
+- **2026-08-12** — Annotation sources now stay in the canonical file language. `AnnotateModeShell` renders cloud-owned sources through `InlineMediaRef` using the `file_id` and its canvas-safe `fetchable_url` lane, rather than resolving an ID and then hand-rendering the resulting URL in a raw image tag. The shared markup WindowPanel therefore receives the same durable identity as `/images/annotate`, while URL-only input remains available only for genuinely external/local sources.
 - **2026-08-08** — Added `preserveSource` to `ModeShellProps` +
   `EditModeShell`: derivative-only editing (save-as-new-file default, no
   version writes onto the source, AI ops chain on their result rows, versions

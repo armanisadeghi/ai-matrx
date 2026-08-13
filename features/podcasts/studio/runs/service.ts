@@ -28,7 +28,7 @@ export type PcStudioRunInsert = {
 };
 
 export type PcStudioRunUpdate = Partial<
-  Omit<PcStudioRun, "id" | "user_id" | "created_at" | "updated_at">
+  Omit<PcStudioRun, "id" | "created_by" | "created_at" | "updated_at">
 >;
 
 export const studioRunsService = {
@@ -42,7 +42,7 @@ export const studioRunsService = {
 
     const row: PcStudioRunDbInsert = {
       ...payload,
-      user_id: user.id,
+      created_by: user.id,
       organization_id: await ensureOrgId(undefined),
     };
 
@@ -68,7 +68,7 @@ export const studioRunsService = {
       .schema("podcast").from("pc_studio_runs")
       .select("*")
       .is("deleted_at", null)
-      .eq("user_id", userId)
+      .eq("created_by", userId)
       .order("created_at", { ascending: false });
     if (error) throw error;
     return (data ?? []) as PcStudioRun[];

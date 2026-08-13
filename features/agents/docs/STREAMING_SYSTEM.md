@@ -107,6 +107,8 @@ State lives under `activeRequests` keyed by request ID. Each request's slice tra
 
 See [`AGENTS_OVERVIEW.MD`](./AGENTS_OVERVIEW.MD) §Layer 3 for the full slice inventory.
 
+**The request row must outlive every mounted viewer — events on a missing row are silently dropped, so reaping/resetting a row mid-stream blanks its surfaces permanently (the disappearing-run class). Read [`LIVE_RUN_RETENTION.md`](./LIVE_RUN_RETENTION.md) before touching `removeRequest`, `createRequest`, conversation cleanup, or any adoption/reap path.**
+
 ---
 
 ## Client side — where parsing happens

@@ -23,7 +23,7 @@ interface SavedHeatmap {
     scalingMethod: ColorScaleOptions['scalingMethod'];
     colorScheme: ColorScaleOptions['colorScheme'];
   };
-  is_public: boolean;
+  visibility: string;
   created_at: string;
   updated_at: string;
 }
@@ -49,7 +49,7 @@ export default function SharedHeatmapPage() {
       setError(null);
 
       const { data, error: fetchError } = await supabase
-        .from('heatmap_saves')
+        .schema('workbench').from('heatmap_saves')
         .select('*')
         .is('deleted_at', null)
         .eq('id', heatmapId)
@@ -70,7 +70,7 @@ export default function SharedHeatmapPage() {
       }
 
       // Check if user has access
-      if (!data.is_public) {
+      if (data.visibility !== "public") {
         const {
           data: { user },
         } = await supabase.auth.getUser();

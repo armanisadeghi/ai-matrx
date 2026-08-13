@@ -226,6 +226,7 @@ function ChangeList({
         {title}
       </h3>
       <MatrxDataTable
+        urlState={{ id: `performance-${direction}` }}
         data={rows}
         columns={columns}
         getRowId={(row) => `${row.page_id}-${row.strategy}`}
@@ -526,6 +527,7 @@ export function SitePerformanceWorkspace() {
             </div>
             <div className="p-3">
               <MatrxDataTable
+                urlState={{ id: "performance-suggested-pages" }}
                 data={suggestedPages}
                 columns={suggestedColumns}
                 getRowId={(row) => row.page_id}
@@ -684,6 +686,7 @@ export function SitePerformanceWorkspace() {
               </div>
               <div className="p-3">
                 <MatrxDataTable
+                  urlState={{ id: "performance-worst-pages" }}
                   data={worstPages}
                   columns={worstPageColumns}
                   getRowId={(row) => row.page_id}

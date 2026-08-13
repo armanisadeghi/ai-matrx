@@ -35,12 +35,21 @@ export type SessionSource = "studio" | "cleanup" | (string & {});
 
 export type RawSegmentSource = "chunk" | "fallback" | "imported" | "manual";
 
-export type ConceptKind =
-  | "theme"
-  | "key_idea"
-  | "entity"
-  | "question"
-  | "other";
+/**
+ * The concept vocabulary Column 3 extracts. Single source of truth: the
+ * concept-pass parser validates against it, the per-row editor renders its
+ * options from it, and the surface manifest interpolates it into the
+ * `concept_item` write-target contract — so the enum is never re-typed.
+ */
+export const CONCEPT_KINDS = [
+  "theme",
+  "key_idea",
+  "entity",
+  "question",
+  "other",
+] as const;
+
+export type ConceptKind = (typeof CONCEPT_KINDS)[number];
 
 // ── DB row shapes (camelCase domain types) ────────────────────────────
 
@@ -49,7 +58,6 @@ export interface StudioSession {
   userId: string;
   organizationId: string | null;
   projectId: string | null;
-  isPublic: boolean;
   transcriptId: string | null;
 
   title: string;
@@ -61,7 +69,6 @@ export interface StudioSession {
   endedAt: string | null;
   totalDurationMs: number;
   audioStoragePath: string | null;
-  isDeleted: boolean;
   /**
    * The audio-first assistant's persisted conversation id (cx_conversation.id).
    * Durable so the Assistant screen reuses one conversation across refreshes
@@ -296,7 +303,6 @@ export interface UpdateSessionInput {
   totalDurationMs?: number;
   audioStoragePath?: string | null;
   transcriptId?: string | null;
-  isDeleted?: boolean;
   assistantConversationId?: string | null;
   assistantConversations?: AssistantConversationRef[];
 }

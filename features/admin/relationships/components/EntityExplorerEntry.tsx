@@ -9,7 +9,7 @@
 // Manager list page and (pre-filled) as the header of the [token] page
 // itself, so switching entities never requires going back to the list.
 
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { ArrowRight, AppWindow, Loader2 } from "lucide-react";
@@ -19,6 +19,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { tokensInRules } from "../utils";
 import type { RelationshipRule } from "../types";
+import {
+  booleanUrlCodec,
+  stringUrlCodec,
+  useUrlState,
+} from "@/lib/url-state/useUrlState";
 
 const EntityRelationshipOrbitWindow = dynamic(
   () => import("./EntityRelationshipOrbitWindow"),
@@ -34,16 +39,14 @@ interface Props {
 export function EntityExplorerEntry({ rules, value }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [selected, setSelected] = useState(value ?? "");
-  const [windowOpen, setWindowOpen] = useState(false);
-
-  // Sync the picker when the route token changes — React's sanctioned
-  // adjust-state-during-render pattern (no effect, no cascading render).
-  const [prevValue, setPrevValue] = useState(value);
-  if (value !== prevValue) {
-    setPrevValue(value);
-    if (value) setSelected(value);
-  }
+  const [selected, setSelected] = useUrlState(
+    "token",
+    stringUrlCodec(value ?? ""),
+  );
+  const [windowOpen, setWindowOpen] = useUrlState(
+    "window",
+    booleanUrlCodec(false),
+  );
 
   const involvedCount = tokensInRules(rules).length;
 
@@ -64,7 +67,9 @@ export function EntityExplorerEntry({ rules, value }: Props) {
         disabled={!selected || isPending}
         onClick={() =>
           startTransition(() =>
-            router.push(`/administration/database/relationships/explorer/${selected}`),
+            router.push(
+              `/administration/database/relationships/explorer/${selected}`,
+            ),
           )
         }
       >

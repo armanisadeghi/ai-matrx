@@ -52,7 +52,7 @@ export function LeaguePanel() {
         <ul className="divide-y divide-border">
           {leaderboard.map((entry, i) => (
             <li
-              key={entry.user_id}
+              key={entry.created_by}
               className={cn(
                 "flex items-center gap-3 py-2 text-sm",
                 entry.is_me && "font-medium",

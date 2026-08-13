@@ -70,7 +70,7 @@ One-time SQL: [migrations/migrate_prompt_apps_to_aga_apps.sql](../../migrations/
 
 | Endpoint | Status | File |
 |---|---|---|
-| `GET / PATCH / DELETE /api/agent-apps/[id]` | 🟡 LIVE but missing `user_id` ownership check on DELETE | [app/api/agent-apps/[id]/route.ts](../../app/api/agent-apps/[id]/route.ts) |
+| `GET / PATCH / DELETE /api/agent-apps/[id]` | 🟡 LIVE but missing canonical `created_by` ownership check on DELETE | [app/api/agent-apps/[id]/route.ts](../../app/api/agent-apps/[id]/route.ts) |
 | `POST /api/agent-apps/[id]/duplicate` | ✅ | [app/api/agent-apps/[id]/duplicate/route.ts](../../app/api/agent-apps/[id]/duplicate/route.ts) |
 | `POST /api/agent-apps/generate-favicon` | ✅ | [app/api/agent-apps/generate-favicon/route.ts](../../app/api/agent-apps/generate-favicon/route.ts) |
 | `POST /api/agent-apps` (create — supports `scope: "global"` for admins) | ✅ | [app/api/agent-apps/route.ts](../../app/api/agent-apps/route.ts) |
@@ -118,7 +118,7 @@ One-time SQL: [migrations/migrate_prompt_apps_to_aga_apps.sql](../../migrations/
 
 ## 1.8 Block 2 — Redux thunks (real, no more stub-throws)
 
-[features/agents/redux/agent-apps/types.ts](../agents/redux/agent-apps/types.ts) was rebased onto the canonical `AgentApp` type from [features/agent-apps/types.ts](types.ts) — the aspirational `label`/`primaryAgentId`/`embeddedShortcutIds` shape is gone; the slice now mirrors the live `aga_apps` row end-to-end. All six user-facing thunks (`fetchAppsInitial`, `fetchAppById`, `saveApp`, `saveAppField`, `createApp`, `deleteApp`) hit Supabase against `aga_apps` and dispatch through the slice. Composition thunks (`addEmbeddedShortcut` / `removeEmbeddedShortcut`) remain stubbed pending Phase 10 / applets — flagged with a clear "not yet implemented" message rather than the generic stub.
+[features/agents/redux/agent-apps/types.ts](../agents/redux/agent-apps/types.ts) was rebased onto the canonical `AgentApp` type from [features/agent-apps/types.ts](types.ts) — the aspirational `label`/`primaryAgentId`/`embeddedShortcutIds` shape is gone; the slice now mirrors the live `aga_apps` row end-to-end. All six user-facing thunks (`fetchAppsInitial`, `fetchAppById`, `saveApp`, `saveAppField`, `createApp`, `deleteApp`) hit Supabase against `aga_apps` and dispatch through the slice. Composition thunks (`addEmbeddedShortcut` / `removeEmbeddedShortcut`) remain stubbed pending Phase 10 — flagged with a clear "not yet implemented" message rather than the generic stub.
 
 ## 1.9 Block 3 — User-facing route family
 
@@ -255,7 +255,7 @@ The user-facing list/edit pages will need at least `fetchAppsInitial`,
 `fetchAppById`, `saveApp`, `saveAppField`, `createApp`, `deleteApp`. Wire
 these to the existing service layer
 ([lib/services/agent-apps-admin-service.ts](../../lib/services/agent-apps-admin-service.ts))
-or to direct Supabase queries. `embeddedShortcutIds` is Phase 10 (applets);
+or to direct Supabase queries. `embeddedShortcutIds` is Phase 10 (composite apps);
 those two thunks can stay stubbed until then.
 
 ### 2.2 ✅ FORMER IMPORTANTs — all complete
@@ -266,7 +266,7 @@ those two thunks can stay stubbed until then.
 | I2 | Admin **analytics dashboard** — current admin shows summary tiles only; prompt-apps has a full insights tab. | [AnalyticsAdmin.tsx](../../app/(authenticated)/(admin-auth)/administration/prompt-apps/components/AnalyticsAdmin.tsx) | `.../administration/agents/agent-apps/analytics/page.tsx` |
 | I3 | Admin **errors-tab parity** — confirm `aga_errors` rows surface in the existing executions tab; if not, port [ErrorsAdmin.tsx](../../app/(authenticated)/(admin-auth)/administration/prompt-apps/components/ErrorsAdmin.tsx). | as needed | as needed |
 | I4 | `/agents/[id]/apps` agent-context view — currently a placeholder linking to legacy App Builder. Now trivially wireable: query `aga_apps WHERE agent_id = :id` and render via `AgentAppsGrid`. | [app/(a)/agents/[id]/apps/page.tsx](../../app/(a)/agents/[id]/apps/page.tsx) (placeholder) + [features/agents/components/apps/AgentAppsPanel.tsx](../agents/components/apps/AgentAppsPanel.tsx) (placeholder) | rewrite both to query `aga_apps` directly |
-| I5 | DELETE `/api/agent-apps/[id]` ownership check — currently relies on RLS only; prompt-apps version uses `.eq("user_id", user.id)` as belt-and-suspenders. | [app/api/prompt-apps/[id]/route.ts](../../app/api/prompt-apps/[id]/route.ts) | one-line addition to existing route |
+| I5 | DELETE `/api/agent-apps/[id]` ownership check — currently relies on RLS only; add a canonical `.eq("created_by", user.id)` belt-and-suspenders filter. | [app/api/prompt-apps/[id]/route.ts](../../app/api/prompt-apps/[id]/route.ts) | one-line addition to existing route |
 | I6 | `/org/[slug]/agent-apps/` placeholder — prompt-apps version is "Coming Soon"; keep that pattern so URL space matches before deletion. | [app/(authenticated)/org/[slug]/prompt-apps/page.tsx](../../app/(authenticated)/org/%5Bslug%5D/prompt-apps/page.tsx) | mirror as `agent-apps` placeholder |
 
 ### 2.3 ✅ FORMER NICE-TO-HAVEs — complete
@@ -384,7 +384,7 @@ the affected URL (list → click row → edit → save round-trips).
 These are real work items but live elsewhere and should not delay the
 agent-apps green light:
 
-- **Phase 10 — Applets** (composite apps that embed multiple shortcuts).
+- **Phase 10 — Composite apps** (apps that embed multiple shortcuts).
   The `app_kind` and `shared_context_slots` columns on `aga_apps` exist for
   this; the UI is a separate effort. All migrated rows are `app_kind: 'single'`.
 - **Phase 14 — Dual-run soak**. The agent-apps surface lives alongside

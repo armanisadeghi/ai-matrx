@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     switch (action) {
       // ── create ───────────────────────────────────────────────────────
       // Idempotent on the natural key
-      //   (user_id, message_id, artifact_type, external_system).
+      //   (owner, message_id, artifact_type, external_system).
       // If an artifact already exists for that tuple, return it (optionally
       // applying any non-null fields from the payload as an update). This
       // makes repeat opens of the HTML preview overlay — and other
@@ -49,7 +49,6 @@ export async function POST(request: NextRequest) {
           thumbnailUrl,
           metadata = {},
           organizationId,
-          projectId,
           taskId,
         } = params;
 
@@ -63,9 +62,9 @@ export async function POST(request: NextRequest) {
         }
 
         // Atomic get-or-create on the ANY-SURFACE natural key
-        //   (user_id, source_system, source_id, artifact_index, artifact_type,
+        //   (created_by, source_system, source_id, artifact_index, artifact_type,
         //   external_system) backed by the FULL `NULLS NOT DISTINCT` unique index
-        // `uq_cx_artifact_source_natural_key` (migration
+        // `uq_cx_artifact_source_natural_key_cb` (migration
         // chat_artifact_discovery_index_artifact_index.sql added artifact_index
         // so multi-artifact messages no longer 23505). This route is chat-only
         // and omits artifact_index (NULL) — one manual slot per message+type.
@@ -85,9 +84,7 @@ export async function POST(request: NextRequest) {
           conversation_id: conversationId,
           source_system: "cx_message",
           source_id: messageId,
-          user_id: user.id,
           organization_id: organizationId ?? null,
-          project_id: projectId ?? null,
           task_id: taskId ?? null,
           artifact_type: artifactType,
           status: "published" as const,
@@ -104,8 +101,10 @@ export async function POST(request: NextRequest) {
           .schema("chat")
           .from("artifact")
           .upsert(insertRow, {
+            // Infers `uq_cx_artifact_source_natural_key_cb` — the canonical
+            // dedup key, on `created_by` (stamped by `_stamp_actor`).
             onConflict:
-              "user_id,source_system,source_id,artifact_index,artifact_type,external_system",
+              "created_by,source_system,source_id,artifact_index,artifact_type,external_system",
             ignoreDuplicates: true,
           })
           .select()
@@ -145,7 +144,7 @@ export async function POST(request: NextRequest) {
           .schema("chat")
           .from("artifact")
           .update(updates)
-          .eq("user_id", user.id)
+          .eq("created_by", user.id)
           .eq("source_system", "cx_message")
           .eq("source_id", messageId)
           .eq("artifact_type", artifactType);
@@ -207,7 +206,7 @@ export async function POST(request: NextRequest) {
           .from("artifact")
           .update(updates)
           .eq("id", id)
-          .eq("user_id", user.id)
+          .eq("created_by", user.id)
           .select()
           .single();
 
@@ -241,7 +240,7 @@ export async function POST(request: NextRequest) {
           .from("artifact")
           .update({ status: "archived", deleted_at: new Date().toISOString() })
           .eq("id", id)
-          .eq("user_id", user.id);
+          .eq("created_by", user.id);
 
         if (error) {
           console.error("[artifacts API] archive error:", error);
@@ -266,7 +265,7 @@ export async function POST(request: NextRequest) {
           .from("artifact")
           .delete()
           .eq("id", id)
-          .eq("user_id", user.id);
+          .eq("created_by", user.id);
 
         if (error) {
           console.error("[artifacts API] delete error:", error);
@@ -291,7 +290,7 @@ export async function POST(request: NextRequest) {
           .from("artifact")
           .select("*")
           .eq("id", id)
-          .eq("user_id", user.id)
+          .eq("created_by", user.id)
           .is("deleted_at", null)
           .single();
 
@@ -311,15 +310,13 @@ export async function POST(request: NextRequest) {
           .schema("chat")
           .from("artifact")
           .select("*")
-          .eq("user_id", user.id)
+          .eq("created_by", user.id)
           .is("deleted_at", null)
           .order("updated_at", { ascending: false });
 
         if (filters.artifactType)
           query = query.eq("artifact_type", filters.artifactType);
         if (filters.status) query = query.eq("status", filters.status);
-        if (filters.projectId)
-          query = query.eq("project_id", filters.projectId);
         if (filters.taskId) query = query.eq("task_id", filters.taskId);
         if (filters.conversationId)
           query = query.eq("conversation_id", filters.conversationId);
@@ -349,7 +346,7 @@ export async function POST(request: NextRequest) {
           .from("artifact")
           .select("*")
           .eq("message_id", messageId)
-          .eq("user_id", user.id)
+          .eq("created_by", user.id)
           .is("deleted_at", null)
           .order("created_at", { ascending: true });
 

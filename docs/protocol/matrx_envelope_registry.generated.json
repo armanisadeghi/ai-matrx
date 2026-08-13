@@ -944,6 +944,10 @@
                   "default": [],
                   "title": "Messages"
                 },
+                "metadata": {
+                  "default": {},
+                  "title": "Metadata"
+                },
                 "model_id": {
                   "default": null,
                   "title": "Model Id"
@@ -1051,6 +1055,10 @@
                 "description": {
                   "default": null,
                   "title": "Description"
+                },
+                "metadata": {
+                  "default": {},
+                  "title": "Metadata"
                 },
                 "project_id": {
                   "default": null,
@@ -1446,10 +1454,6 @@
                   "default": {},
                   "title": "Metadata"
                 },
-                "project_id": {
-                  "default": null,
-                  "title": "Project Id"
-                },
                 "quiz_metadata": {
                   "default": {},
                   "title": "Quiz Metadata"
@@ -1523,6 +1527,10 @@
                 "is_current": {
                   "default": true,
                   "title": "Is Current"
+                },
+                "metadata": {
+                  "default": {},
+                  "title": "Metadata"
                 },
                 "model_id": {
                   "default": null,
@@ -1655,6 +1663,10 @@
                 "last_server_failure_reason": {
                   "default": null,
                   "title": "Last Server Failure Reason"
+                },
+                "metadata": {
+                  "default": {},
+                  "title": "Metadata"
                 },
                 "origin": {
                   "default": "search",
@@ -1981,6 +1993,10 @@
                 "list_name": {
                   "default": null,
                   "title": "List Name"
+                },
+                "metadata": {
+                  "default": {},
+                  "title": "Metadata"
                 }
               },
               "title": "CreateStructuredListItem",
@@ -4132,6 +4148,10 @@
                   "default": null,
                   "title": "Messages"
                 },
+                "metadata": {
+                  "default": null,
+                  "title": "Metadata"
+                },
                 "model_id": {
                   "default": null,
                   "title": "Model Id"
@@ -4244,6 +4264,10 @@
                 "id": {
                   "title": "Id",
                   "type": "string"
+                },
+                "metadata": {
+                  "default": null,
+                  "title": "Metadata"
                 },
                 "project_id": {
                   "default": null,
@@ -4666,10 +4690,6 @@
                   "default": null,
                   "title": "Metadata"
                 },
-                "project_id": {
-                  "default": null,
-                  "title": "Project Id"
-                },
                 "quiz_metadata": {
                   "default": null,
                   "title": "Quiz Metadata"
@@ -4750,6 +4770,10 @@
                 "is_current": {
                   "default": null,
                   "title": "Is Current"
+                },
+                "metadata": {
+                  "default": null,
+                  "title": "Metadata"
                 },
                 "model_id": {
                   "default": null,
@@ -4887,6 +4911,10 @@
                 "last_server_failure_reason": {
                   "default": null,
                   "title": "Last Server Failure Reason"
+                },
+                "metadata": {
+                  "default": null,
+                  "title": "Metadata"
                 },
                 "origin": {
                   "default": null,
@@ -5225,6 +5253,10 @@
                 "list_name": {
                   "default": null,
                   "title": "List Name"
+                },
+                "metadata": {
+                  "default": null,
+                  "title": "Metadata"
                 }
               },
               "required": [
@@ -6793,102 +6825,6 @@
     },
     {
       "category": "pure",
-      "doc": "Pointer to one Analysis Recipe (analysis_recipes) row by id (RLS-scoped, read-only).",
-      "item_model": "RecordRef",
-      "kind": "reference",
-      "purposes": [
-        "substitute",
-        "expand",
-        "inline",
-        "context"
-      ],
-      "schema": {
-        "additionalProperties": false,
-        "properties": {
-          "items": {
-            "items": {
-              "additionalProperties": true,
-              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
-              "properties": {
-                "description": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Description"
-                },
-                "id": {
-                  "title": "Id",
-                  "type": "string"
-                },
-                "label": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Label"
-                },
-                "purpose": {
-                  "default": "substitute",
-                  "title": "Purpose",
-                  "type": "string"
-                },
-                "slot": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Slot"
-                }
-              },
-              "required": [
-                "id"
-              ],
-              "title": "RecordRef",
-              "type": "object"
-            },
-            "type": "array"
-          },
-          "kind": {
-            "const": "reference",
-            "type": "string"
-          },
-          "matrx_version": {
-            "const": 1,
-            "type": "integer"
-          },
-          "type": {
-            "const": "analysis_recipes",
-            "type": "string"
-          }
-        },
-        "required": [
-          "matrx_version",
-          "kind",
-          "type",
-          "items"
-        ],
-        "type": "object"
-      },
-      "type": "analysis_recipes"
-    },
-    {
-      "category": "pure",
       "doc": "Pointer to one App (app.definition) row by id (RLS-scoped, read-only).",
       "item_model": "RecordRef",
       "kind": "reference",
@@ -6982,102 +6918,6 @@
         "type": "object"
       },
       "type": "app"
-    },
-    {
-      "category": "pure",
-      "doc": "Pointer to one Applet (applet) row by id (RLS-scoped, read-only).",
-      "item_model": "RecordRef",
-      "kind": "reference",
-      "purposes": [
-        "substitute",
-        "expand",
-        "inline",
-        "context"
-      ],
-      "schema": {
-        "additionalProperties": false,
-        "properties": {
-          "items": {
-            "items": {
-              "additionalProperties": true,
-              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
-              "properties": {
-                "description": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Description"
-                },
-                "id": {
-                  "title": "Id",
-                  "type": "string"
-                },
-                "label": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Label"
-                },
-                "purpose": {
-                  "default": "substitute",
-                  "title": "Purpose",
-                  "type": "string"
-                },
-                "slot": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Slot"
-                }
-              },
-              "required": [
-                "id"
-              ],
-              "title": "RecordRef",
-              "type": "object"
-            },
-            "type": "array"
-          },
-          "kind": {
-            "const": "reference",
-            "type": "string"
-          },
-          "matrx_version": {
-            "const": 1,
-            "type": "integer"
-          },
-          "type": {
-            "const": "applet",
-            "type": "string"
-          }
-        },
-        "required": [
-          "matrx_version",
-          "kind",
-          "type",
-          "items"
-        ],
-        "type": "object"
-      },
-      "type": "applet"
     },
     {
       "category": "pure",
@@ -8329,7 +8169,7 @@
     },
     {
       "category": "pure",
-      "doc": "Pointer to one Kind Instance (content_ir.kind_instance) row by id (RLS-scoped, read-only).",
+      "doc": "Pointer to one Saved Result (content_ir.kind_instance) row by id (RLS-scoped, read-only).",
       "item_model": "RecordRef",
       "kind": "reference",
       "purposes": [
@@ -9049,198 +8889,6 @@
     },
     {
       "category": "pure",
-      "doc": "Pointer to one Custom App Config (custom_app_configs) row by id (RLS-scoped, read-only).",
-      "item_model": "RecordRef",
-      "kind": "reference",
-      "purposes": [
-        "substitute",
-        "expand",
-        "inline",
-        "context"
-      ],
-      "schema": {
-        "additionalProperties": false,
-        "properties": {
-          "items": {
-            "items": {
-              "additionalProperties": true,
-              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
-              "properties": {
-                "description": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Description"
-                },
-                "id": {
-                  "title": "Id",
-                  "type": "string"
-                },
-                "label": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Label"
-                },
-                "purpose": {
-                  "default": "substitute",
-                  "title": "Purpose",
-                  "type": "string"
-                },
-                "slot": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Slot"
-                }
-              },
-              "required": [
-                "id"
-              ],
-              "title": "RecordRef",
-              "type": "object"
-            },
-            "type": "array"
-          },
-          "kind": {
-            "const": "reference",
-            "type": "string"
-          },
-          "matrx_version": {
-            "const": 1,
-            "type": "integer"
-          },
-          "type": {
-            "const": "custom_app_config",
-            "type": "string"
-          }
-        },
-        "required": [
-          "matrx_version",
-          "kind",
-          "type",
-          "items"
-        ],
-        "type": "object"
-      },
-      "type": "custom_app_config"
-    },
-    {
-      "category": "pure",
-      "doc": "Pointer to one Custom Applet Config (custom_applet_configs) row by id (RLS-scoped, read-only).",
-      "item_model": "RecordRef",
-      "kind": "reference",
-      "purposes": [
-        "substitute",
-        "expand",
-        "inline",
-        "context"
-      ],
-      "schema": {
-        "additionalProperties": false,
-        "properties": {
-          "items": {
-            "items": {
-              "additionalProperties": true,
-              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
-              "properties": {
-                "description": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Description"
-                },
-                "id": {
-                  "title": "Id",
-                  "type": "string"
-                },
-                "label": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Label"
-                },
-                "purpose": {
-                  "default": "substitute",
-                  "title": "Purpose",
-                  "type": "string"
-                },
-                "slot": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Slot"
-                }
-              },
-              "required": [
-                "id"
-              ],
-              "title": "RecordRef",
-              "type": "object"
-            },
-            "type": "array"
-          },
-          "kind": {
-            "const": "reference",
-            "type": "string"
-          },
-          "matrx_version": {
-            "const": 1,
-            "type": "integer"
-          },
-          "type": {
-            "const": "custom_applet_config",
-            "type": "string"
-          }
-        },
-        "required": [
-          "matrx_version",
-          "kind",
-          "type",
-          "items"
-        ],
-        "type": "object"
-      },
-      "type": "custom_applet_config"
-    },
-    {
-      "category": "pure",
       "doc": "Pointer to one Agent Memory (chat.agent_memory) row by id (RLS-scoped, read-only).",
       "item_model": "RecordRef",
       "kind": "reference",
@@ -9334,102 +8982,6 @@
         "type": "object"
       },
       "type": "cx_agent_memory"
-    },
-    {
-      "category": "pure",
-      "doc": "Pointer to one Dashboard Saved View (dashboard_saved_views) row by id (RLS-scoped, read-only).",
-      "item_model": "RecordRef",
-      "kind": "reference",
-      "purposes": [
-        "substitute",
-        "expand",
-        "inline",
-        "context"
-      ],
-      "schema": {
-        "additionalProperties": false,
-        "properties": {
-          "items": {
-            "items": {
-              "additionalProperties": true,
-              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
-              "properties": {
-                "description": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Description"
-                },
-                "id": {
-                  "title": "Id",
-                  "type": "string"
-                },
-                "label": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Label"
-                },
-                "purpose": {
-                  "default": "substitute",
-                  "title": "Purpose",
-                  "type": "string"
-                },
-                "slot": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Slot"
-                }
-              },
-              "required": [
-                "id"
-              ],
-              "title": "RecordRef",
-              "type": "object"
-            },
-            "type": "array"
-          },
-          "kind": {
-            "const": "reference",
-            "type": "string"
-          },
-          "matrx_version": {
-            "const": 1,
-            "type": "integer"
-          },
-          "type": {
-            "const": "dashboard_saved_view",
-            "type": "string"
-          }
-        },
-        "required": [
-          "matrx_version",
-          "kind",
-          "type",
-          "items"
-        ],
-        "type": "object"
-      },
-      "type": "dashboard_saved_view"
     },
     {
       "category": "pure",
@@ -10641,102 +10193,6 @@
     },
     {
       "category": "pure",
-      "doc": "Pointer to one Flashcard History (education.flashcard_history) row by id (RLS-scoped, read-only).",
-      "item_model": "RecordRef",
-      "kind": "reference",
-      "purposes": [
-        "substitute",
-        "expand",
-        "inline",
-        "context"
-      ],
-      "schema": {
-        "additionalProperties": false,
-        "properties": {
-          "items": {
-            "items": {
-              "additionalProperties": true,
-              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
-              "properties": {
-                "description": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Description"
-                },
-                "id": {
-                  "title": "Id",
-                  "type": "string"
-                },
-                "label": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Label"
-                },
-                "purpose": {
-                  "default": "substitute",
-                  "title": "Purpose",
-                  "type": "string"
-                },
-                "slot": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Slot"
-                }
-              },
-              "required": [
-                "id"
-              ],
-              "title": "RecordRef",
-              "type": "object"
-            },
-            "type": "array"
-          },
-          "kind": {
-            "const": "reference",
-            "type": "string"
-          },
-          "matrx_version": {
-            "const": 1,
-            "type": "integer"
-          },
-          "type": {
-            "const": "flashcard_history",
-            "type": "string"
-          }
-        },
-        "required": [
-          "matrx_version",
-          "kind",
-          "type",
-          "items"
-        ],
-        "type": "object"
-      },
-      "type": "flashcard_history"
-    },
-    {
-      "category": "pure",
       "doc": "Pointer to one Flashcard Set (users.user_flashcard_sets) row by id (RLS-scoped, read-only).",
       "item_model": "RecordRef",
       "kind": "reference",
@@ -10833,103 +10289,7 @@
     },
     {
       "category": "pure",
-      "doc": "Pointer to one Flashcard Set (education.flashcard_sets) row by id (RLS-scoped, read-only).",
-      "item_model": "RecordRef",
-      "kind": "reference",
-      "purposes": [
-        "substitute",
-        "expand",
-        "inline",
-        "context"
-      ],
-      "schema": {
-        "additionalProperties": false,
-        "properties": {
-          "items": {
-            "items": {
-              "additionalProperties": true,
-              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
-              "properties": {
-                "description": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Description"
-                },
-                "id": {
-                  "title": "Id",
-                  "type": "string"
-                },
-                "label": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Label"
-                },
-                "purpose": {
-                  "default": "substitute",
-                  "title": "Purpose",
-                  "type": "string"
-                },
-                "slot": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Slot"
-                }
-              },
-              "required": [
-                "id"
-              ],
-              "title": "RecordRef",
-              "type": "object"
-            },
-            "type": "array"
-          },
-          "kind": {
-            "const": "reference",
-            "type": "string"
-          },
-          "matrx_version": {
-            "const": 1,
-            "type": "integer"
-          },
-          "type": {
-            "const": "flashcard_sets",
-            "type": "string"
-          }
-        },
-        "required": [
-          "matrx_version",
-          "kind",
-          "type",
-          "items"
-        ],
-        "type": "object"
-      },
-      "type": "flashcard_sets"
-    },
-    {
-      "category": "pure",
-      "doc": "Pointer to one Flexible Data (flexible_data) row by id (RLS-scoped, read-only).",
+      "doc": "Pointer to one Flexible Data (platform.flexible_data) row by id (RLS-scoped, read-only).",
       "item_model": "RecordRef",
       "kind": "reference",
       "purposes": [
@@ -11121,7 +10481,7 @@
     },
     {
       "category": "pure",
-      "doc": "Pointer to one Heatmap Save (heatmap_saves) row by id (RLS-scoped, read-only).",
+      "doc": "Pointer to one Heatmap Save (workbench.heatmap_saves) row by id (RLS-scoped, read-only).",
       "item_model": "RecordRef",
       "kind": "reference",
       "purposes": [
@@ -18459,102 +17819,6 @@
         "type": "object"
       },
       "type": "wc_claim"
-    },
-    {
-      "category": "pure",
-      "doc": "Pointer to one Window Session (window_sessions) row by id (RLS-scoped, read-only).",
-      "item_model": "RecordRef",
-      "kind": "reference",
-      "purposes": [
-        "substitute",
-        "expand",
-        "inline",
-        "context"
-      ],
-      "schema": {
-        "additionalProperties": false,
-        "properties": {
-          "items": {
-            "items": {
-              "additionalProperties": true,
-              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
-              "properties": {
-                "description": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Description"
-                },
-                "id": {
-                  "title": "Id",
-                  "type": "string"
-                },
-                "label": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Label"
-                },
-                "purpose": {
-                  "default": "substitute",
-                  "title": "Purpose",
-                  "type": "string"
-                },
-                "slot": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Slot"
-                }
-              },
-              "required": [
-                "id"
-              ],
-              "title": "RecordRef",
-              "type": "object"
-            },
-            "type": "array"
-          },
-          "kind": {
-            "const": "reference",
-            "type": "string"
-          },
-          "matrx_version": {
-            "const": 1,
-            "type": "integer"
-          },
-          "type": {
-            "const": "window_session",
-            "type": "string"
-          }
-        },
-        "required": [
-          "matrx_version",
-          "kind",
-          "type",
-          "items"
-        ],
-        "type": "object"
-      },
-      "type": "window_session"
     },
     {
       "category": "pure",

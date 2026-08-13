@@ -59,7 +59,7 @@ export function UtilitiesOverlay({
 }: UtilitiesOverlayProps) {
   const [activeTab, setActiveTab] = useState(initialTab);
 
-  const tabs: TabDefinition[] = [
+  const tabs: TabDefinition<React.ReactNode>[] = [
     {
       id: "notes",
       label: (
@@ -67,7 +67,7 @@ export function UtilitiesOverlay({
           <StickyNote className="h-4 w-4" />
           <span>Notes</span>
         </div>
-      ) as any,
+      ),
       content: (
         <div className="h-full">
           <LazyNotesView
@@ -87,7 +87,7 @@ export function UtilitiesOverlay({
           <CheckSquare className="h-4 w-4" />
           <span>Tasks</span>
         </div>
-      ) as any,
+      ),
       content: (
         <div className="h-full">
           <TaskApp />
@@ -101,7 +101,7 @@ export function UtilitiesOverlay({
           <MessageSquare className="h-4 w-4" />
           <span>Chat</span>
         </div>
-      ) as any,
+      ),
       content: (
         <div className="h-full">
           <QuickChatSheet />
@@ -115,7 +115,7 @@ export function UtilitiesOverlay({
           <Database className="h-4 w-4" />
           <span>Data</span>
         </div>
-      ) as any,
+      ),
       content: (
         <div className="h-full">
           <QuickDataSheet />
@@ -129,7 +129,7 @@ export function UtilitiesOverlay({
           <FolderOpen className="h-4 w-4" />
           <span>Files</span>
         </div>
-      ) as any,
+      ),
       content: (
         <div className="h-full">
           <WindowPanelShell />
@@ -143,7 +143,7 @@ export function UtilitiesOverlay({
           <Flame className="h-4 w-4" />
           <span>AI Results</span>
         </div>
-      ) as any,
+      ),
       content: (
         <div className="h-full">
           <ChatHistoryWorkspace enableInput />

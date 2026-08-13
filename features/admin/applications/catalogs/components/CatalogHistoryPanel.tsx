@@ -204,6 +204,7 @@ export function CatalogHistoryPanel({
       </p>
 
       <MatrxDataTable
+        urlState={{ id: "application-catalog-history" }}
         data={entries ?? []}
         columns={columns}
         getRowId={(row) => String(row.id)}
@@ -296,7 +297,7 @@ export function CatalogHistoryPanel({
         contentClassName="sm:max-w-4xl"
         content={
           restoreTarget ? (
-            <div className="max-h-[55vh] overflow-y-auto rounded-md border border-border">
+            <div className="max-h-[55dvh] overflow-y-auto rounded-md border border-border">
               <DiffViewer
                 original={currentJson}
                 modified={historySnapshotJson(restoreTarget)}

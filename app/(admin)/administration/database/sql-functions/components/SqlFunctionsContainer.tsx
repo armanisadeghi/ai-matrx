@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useSqlFunctions } from "@/lib/hooks/useSqlFunctions";
 import { SqlFunction } from "@/types/sql-functions";
 import { Input } from "@/components/ui/input";
@@ -27,6 +27,15 @@ import SqlFunctionDetail from "./SqlFunctionDetail";
 import SqlFunctionForm from "./SqlFunctionForm";
 import { getSqlFunctionKey } from "../utils/functionIdentity";
 import { DEFAULT_DATABASE_SCHEMA } from "../../config";
+import {
+  booleanUrlCodec,
+  enumUrlCodec,
+  jsonUrlCodec,
+  positiveIntegerUrlCodec,
+  stringUrlCodec,
+  useUrlState,
+} from "@/lib/url-state/useUrlState";
+import type { SqlFunctionFilter, SqlFunctionSort } from "@/types/sql-functions";
 
 interface SqlFunctionsContainerProps {
   initialFunctions?: SqlFunction[];
@@ -35,13 +44,56 @@ interface SqlFunctionsContainerProps {
 export default function SqlFunctionsContainer({
   initialFunctions = [],
 }: SqlFunctionsContainerProps) {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [activeTab, setActiveTab] = useState<"list" | "create" | "edit">(
-    "list",
+  const [currentPage, setCurrentPage] = useUrlState(
+    "p",
+    positiveIntegerUrlCodec(1),
   );
-  const [customSchemaSearch, setCustomSchemaSearch] = useState(false);
-  const [nameSearch, setNameSearch] = useState("");
+  const [itemsPerPage, setItemsPerPage] = useUrlState(
+    "ps",
+    positiveIntegerUrlCodec(10),
+  );
+  const [activeTab, setActiveTab] = useUrlState(
+    "tab",
+    enumUrlCodec(["list", "create", "edit"] as const, "list"),
+  );
+  const [customSchemaSearch, setCustomSchemaSearch] = useUrlState(
+    "customSchema",
+    booleanUrlCodec(false),
+  );
+  const [nameSearch, setNameSearch] = useUrlState("q", stringUrlCodec());
+  const [urlFilter, setUrlFilter] = useUrlState(
+    "filter",
+    jsonUrlCodec<SqlFunctionFilter>(
+      { schema: DEFAULT_DATABASE_SCHEMA },
+      (value): value is SqlFunctionFilter =>
+        Boolean(value) && typeof value === "object" && !Array.isArray(value),
+    ),
+  );
+  const [urlSort, setUrlSort] = useUrlState(
+    "sort",
+    jsonUrlCodec<SqlFunctionSort>(
+      { field: "name", direction: "asc" },
+      (value): value is SqlFunctionSort => {
+        if (!value || typeof value !== "object" || Array.isArray(value))
+          return false;
+        const candidate = value as Record<string, unknown>;
+        return (
+          ["name", "schema", "returns", "arguments", "security_type"].includes(
+            String(candidate.field),
+          ) &&
+          (candidate.direction === "asc" || candidate.direction === "desc")
+        );
+      },
+    ),
+  );
+  const [selectedKey, setSelectedKey] = useUrlState(
+    "selected",
+    stringUrlCodec(),
+  );
+  const effectiveFilter: SqlFunctionFilter = {
+    ...urlFilter,
+    name: nameSearch || undefined,
+  };
 
   const {
     functions,
@@ -56,13 +108,52 @@ export default function SqlFunctionsContainer({
     createFunction,
     updateFunction,
     deleteFunction,
-    selectFunction,
-    updateFilter,
-    updateSort,
+    selectFunction: selectFunctionInternal,
+    replaceFilter,
+    replaceSort,
   } = useSqlFunctions({
     initialData: initialFunctions,
-    defaultFilter: { schema: DEFAULT_DATABASE_SCHEMA },
+    defaultFilter: effectiveFilter,
+    defaultSort: urlSort,
   });
+
+  const filterSnapshot = JSON.stringify(effectiveFilter);
+  const sortSnapshot = JSON.stringify(urlSort);
+  useEffect(
+    () => replaceFilter(effectiveFilter),
+    [filterSnapshot, replaceFilter],
+  );
+  useEffect(() => replaceSort(urlSort), [sortSnapshot, replaceSort]);
+  useEffect(() => {
+    const selected =
+      allFunctions.find((func) => getSqlFunctionKey(func) === selectedKey) ??
+      null;
+    selectFunctionInternal(selected);
+  }, [allFunctions, selectedKey, selectFunctionInternal]);
+
+  const selectFunction = (func: SqlFunction | null) => {
+    selectFunctionInternal(func);
+    setSelectedKey(func ? getSqlFunctionKey(func) : "");
+  };
+
+  const updateUrlFilter = (patch: SqlFunctionFilter) => {
+    const next = { ...urlFilter, ...patch };
+    for (const key of Object.keys(next) as Array<keyof SqlFunctionFilter>) {
+      if (next[key] === undefined || next[key] === "") delete next[key];
+    }
+    setUrlFilter(next);
+    replaceFilter(next);
+  };
+
+  const updateUrlSort = (field: SqlFunctionSort["field"]) => {
+    const next: SqlFunctionSort = {
+      field,
+      direction:
+        urlSort.field === field && urlSort.direction === "asc" ? "desc" : "asc",
+    };
+    setUrlSort(next);
+    replaceSort(next);
+  };
 
   const uniqueSchemas = useMemo(() => {
     const schemas = new Set<string>();
@@ -75,7 +166,6 @@ export default function SqlFunctionsContainer({
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setCurrentPage(1);
-    updateFilter({ name: nameSearch });
   };
 
   const selectedFunctionKey = selectedFunction
@@ -125,10 +215,10 @@ export default function SqlFunctionsContainer({
   const handleSchemaChange = (value: string) => {
     if (value === "custom") {
       setCustomSchemaSearch(true);
-      updateFilter({ schema: "" });
+      updateUrlFilter({ schema: "" });
     } else {
       setCustomSchemaSearch(false);
-      updateFilter({ schema: value === "all" ? undefined : value });
+      updateUrlFilter({ schema: value === "all" ? undefined : value });
     }
   };
 
@@ -261,7 +351,7 @@ export default function SqlFunctionsContainer({
                           placeholder="Enter schema..."
                           value={filter.schema || ""}
                           onChange={(e) =>
-                            updateFilter({ schema: e.target.value })
+                            updateUrlFilter({ schema: e.target.value })
                           }
                           className="h-8 pr-7 text-sm border-slate-300 dark:border-slate-700"
                         />
@@ -307,7 +397,7 @@ export default function SqlFunctionsContainer({
                     placeholder="Filter by return type..."
                     value={filter.returnType || ""}
                     onChange={(e) =>
-                      updateFilter({ returnType: e.target.value })
+                      updateUrlFilter({ returnType: e.target.value })
                     }
                     className="h-8 w-44 text-sm border-slate-300 dark:border-slate-700"
                   />
@@ -319,7 +409,7 @@ export default function SqlFunctionsContainer({
                   <Select
                     value={filter.securityType || "any"}
                     onValueChange={(v) =>
-                      updateFilter({
+                      updateUrlFilter({
                         securityType:
                           v === "any"
                             ? undefined
@@ -361,7 +451,7 @@ export default function SqlFunctionsContainer({
                       onViewDetails={(func) => selectFunction(func)}
                       onEditFunction={handleEditFunction}
                       onDeleteFunction={handleDeleteFunction}
-                      onSortChange={updateSort}
+                      onSortChange={updateUrlSort}
                       sortField={sort.field}
                       sortDirection={sort.direction}
                     />
@@ -404,7 +494,7 @@ export default function SqlFunctionsContainer({
                       onViewDetails={(func) => selectFunction(func)}
                       onEditFunction={handleEditFunction}
                       onDeleteFunction={handleDeleteFunction}
-                      onSortChange={updateSort}
+                      onSortChange={updateUrlSort}
                       sortField={sort.field}
                       sortDirection={sort.direction}
                     />
@@ -422,7 +512,7 @@ export default function SqlFunctionsContainer({
                           <PaginationItem>
                             <PaginationPrevious
                               onClick={() =>
-                                setCurrentPage((p) => Math.max(1, p - 1))
+                                setCurrentPage(Math.max(1, currentPage - 1))
                               }
                               className={`cursor-pointer ${currentPage === 1 ? "pointer-events-none opacity-50" : ""}`}
                             />
@@ -479,8 +569,8 @@ export default function SqlFunctionsContainer({
                           <PaginationItem>
                             <PaginationNext
                               onClick={() =>
-                                setCurrentPage((p) =>
-                                  Math.min(totalPages, p + 1),
+                                setCurrentPage(
+                                  Math.min(totalPages, currentPage + 1),
                                 )
                               }
                               className={`cursor-pointer ${currentPage === totalPages ? "pointer-events-none opacity-50" : ""}`}

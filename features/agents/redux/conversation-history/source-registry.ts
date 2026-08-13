@@ -75,6 +75,64 @@ export interface SourceMeta {
   system?: boolean;
 }
 
+// ── Origin classes ─────────────────────────────────────────────────────────
+//
+// `chat.conversation.origin_class` / `chat.user_request.origin_class` — the
+// server-DERIVED trust axis of a request's provenance (who/what actually
+// initiated it). The client can never write this column; it only attests
+// `initiation: "user" | "auto"` on the request body and the server reconciles.
+// Distinct from `source_app`/`source_feature` (WHERE the run came from) —
+// origin_class is WHO pulled the trigger.
+
+export type OriginClass =
+  | "human"
+  | "client_auto"
+  | "api"
+  | "child_agent"
+  | "workflow"
+  | "scheduled"
+  | "system"
+  | "unknown";
+
+export const ORIGIN_CLASSES: OriginClass[] = [
+  "human",
+  "client_auto",
+  "api",
+  "child_agent",
+  "workflow",
+  "scheduled",
+  "system",
+  "unknown",
+];
+
+export const ORIGIN_CLASS_META: Record<OriginClass, SourceMeta> = {
+  human: { label: "You", icon: MousePointer2 },
+  client_auto: { label: "Automatic (page)", icon: Play, system: true },
+  api: { label: "API/agent", icon: TerminalSquare, system: true },
+  child_agent: { label: "Sub-agent", icon: Webhook, system: true },
+  workflow: { label: "Workflow", icon: Server, system: true },
+  scheduled: { label: "Scheduled", icon: CalendarClock, system: true },
+  system: { label: "System", icon: Server, system: true },
+  unknown: { label: "Unknown", icon: Boxes, system: true },
+};
+
+export function isOriginClass(value: string): value is OriginClass {
+  return (ORIGIN_CLASSES as string[]).includes(value);
+}
+
+/** Tolerant meta lookup — unknown/new DB values degrade to a humanized slug. */
+export function originClassMeta(value: string | null | undefined): SourceMeta {
+  const key = sourceKey(value);
+  if (key === EMPTY_SOURCE_KEY) return ORIGIN_CLASS_META.unknown;
+  return isOriginClass(key)
+    ? ORIGIN_CLASS_META[key]
+    : { label: humanizeSourceKey(key), icon: Tag, system: true };
+}
+
+export function originClassLabel(value: string | null | undefined): string {
+  return originClassMeta(value).label;
+}
+
 // ── Apps ──────────────────────────────────────────────────────────────────
 
 export const APP_META: Record<string, SourceMeta> = {
@@ -407,13 +465,20 @@ export function isAutoSource(
 export function describeSource(
   app: string | null | undefined,
   feature: string | null | undefined,
+  originClass?: string | null,
 ): string {
   const appKey = sourceKey(app);
   const featureKey = sourceKey(feature);
   const parts: string[] = [];
   if (appKey !== EMPTY_SOURCE_KEY) parts.push(appLabel(appKey));
   parts.push(featureLabel(featureKey));
-  if (isAutoSource(app, feature)) parts.push("Auto");
+  // Server-derived trust axis, when the caller has it — more precise than
+  // the registry's heuristic "Auto" marker, so it replaces it.
+  if (originClass && sourceKey(originClass) !== EMPTY_SOURCE_KEY) {
+    parts.push(originClassLabel(originClass));
+  } else if (isAutoSource(app, feature)) {
+    parts.push("Auto");
+  }
   return parts.join(" · ");
 }
 

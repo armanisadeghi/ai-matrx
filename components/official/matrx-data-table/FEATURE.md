@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** shared official primitive (`components/official/`)
-**Last updated:** `2026-08-11`
+**Last updated:** `2026-08-12`
 
 ---
 
@@ -28,6 +28,25 @@ tables (AI Models, relationships, …) can cut over to one contract.
   `query={{ mode: "controlled", state, totalItems, onStateChange }}`; the table
   emits page/page-size/search/filter/sort changes while the feature owns the
   direct database query and returns only the current rows.
+- **Controlled-local mode delegates state, not query execution.** Pass
+  `query={{ mode: "controlled-local", state, onStateChange }}` when the caller
+  owns state but the canonical table must still filter, sort, and paginate its
+  complete local dataset. Most local callers use `urlState` instead.
+- **URL state is built in and opt-in.** `urlState={{ id: "accounts" }}` stores
+  table-owned search, match mode, any-of, layered/column filters, sort,
+  pagination, open row, and open window under `table.accounts.*`. The stable id
+  is required, unique per mounted table, and isolated from page/sibling state.
+  Add `selection: true` only when checkbox selection belongs in a link. Text
+  entry pushes once then replaces rapid keystrokes; discrete changes always
+  push. Override with `textHistory` or `history` only for a known interaction.
+- **Remote tables keep URL state beside the query.** Use
+  `useTableUrlState({ tableId: "accounts" })`, pass `state`/`onStateChange` to
+  controlled mode, and fetch from `queryState`. A remote table cannot also set
+  `urlState`; filtering only its loaded page is a defect.
+- **Externally owned controls stay externally owned.** Toolbar facets and any
+  editor hydration triggered by row/window selection use `useUrlState` at the
+  page level. Set `selectedRow: false` or `windowRow: false` when that external
+  owner already controls the same state.
 - **Controlled search feedback is immediate.** Consumers may debounce the query
   state, but must pass the immediate display state back to the table.
 - **Primary search semantics are explicit when enabled.** Set
@@ -46,6 +65,7 @@ tables (AI Models, relationships, …) can cut over to one contract.
 - **Select filters are type-to-search and MULTI-select (OR semantics)** — toggling options builds a `values` set; single-`value` writers stay valid. Whenever a column has blank cells, the options automatically include **"(empty)" / "(not empty)"** sentinels (composable with real values: "A or (empty)"). An explicit `filter: "select"` lists ALL distinct values (auto-inference still caps at 24 before falling back to text). **Text filters have Contains / (empty) / (not empty) modes.** **Sorting always puts empty cells last**, both directions. Active filters show a clear **X**; toolbar has **Clear all**.
 - **Row click → `SidePanelSurface` by default, or `WindowPanel` when `window.openOnRowClick` is set.** The window-first mode turns the trailing action and the window header into explicit “Open in side panel” doors. Desktop side panels use `MatrxDynamicPanelHost`; mobile uses Drawer. Never a blocking `Sheet` / split-pane.
 - **Panel icon → `WindowPanel`** with View / Edit sidebar tabs when an edit body exists (`renderEdit` or `detail.render`). `window.onOpen` hydrates edit state without opening the side panel. `detail.render`, every window renderer, and `rowActions` receive record controls (`openDetail`, `closeDetail`, `openWindow`, `closeWindow`) so one record body can close or switch its canonical presentation without reaching into table state. The table retains the opened row snapshot even when a controlled refetch or sort moves it off the current page.
+- **The TABLE owns the detail scroll — a custom body must never re-own it.** `SidePanelSurface` and `DataRowWindow` hand children a bounded cell, and every custom `detail.render` / `viewContent` / `editContent` is now wrapped in a scrolling container by the primitive. Write detail bodies as plain content (`space-y-3 p-3`); do **not** add an `h-full … overflow-y-auto` root. Custom bodies used to have to know this and mostly didn't, so their content silently cut off at the fold with no scrollbar across ~16 surfaces (fixed at this layer 2026-08-12).
 - **UUID cells** always: short prefix (8), full on hover, always-visible copy. FK columns use `cellKind: "fk"` + `fk.onOpen` → WindowPanel of the target (or `"forbidden"`).
 - **Copy** uses `CopyButtons` + `buildAgentPayload` (row + this view).
 - **Inline edits are deferred** — draft locally, persist only on floating Save pill.
@@ -96,6 +116,7 @@ expose `aria-sort` on the `<th>` automatically.
 
 ```tsx
 <MatrxDataTable
+  urlState={{ id: "agent-registry" }}
   data={rows}
   columns={[
     { accessorKey: "id", header: "ID", cellKind: "uuid" },
@@ -131,6 +152,7 @@ expose `aria-sort` on the `<th>` automatically.
 
 | Feature     | How                                                                               |
 | ----------- | --------------------------------------------------------------------------------- |
+| URL state   | `urlState={{ id }}`; emits only non-default `table.<id>.*` parameters             |
 | Filters     | Per-column + ordered layered rules; searchable selects; clear-X; Clear all        |
 | `anyOf`     | OR-search across named columns                                                    |
 | Copy        | Per-row + toolbar “this view”                                                     |
@@ -143,7 +165,7 @@ expose `aria-sort` on the `<th>` automatically.
 Do not drop these when replacing `AiModelTable`:
 
 - Sticky header + typed column filters (provider, bools, number ranges)
-- `MatrxUuidCell` on `id` (already swapped in AiModelTable)
+- `AiModelRef showId` on `id` — a model UUID is useful only beside its name
 - `provider_id` as `cellKind: "fk"` with WindowPanel / route to provider
 - CopyButtons per row + this-view
 - Bool badges, JSON capability summary
@@ -151,14 +173,20 @@ Do not drop these when replacing `AiModelTable`:
 
 ## Reuse gate
 
-| Source                        | Took                                        | Left behind                             |
-| ----------------------------- | ------------------------------------------- | --------------------------------------- |
-| AiModelTable                  | sticky + filters + UuidCell → MatrxUuidCell | domain coupling, split-pane sidebar     |
-| aidream UuidDisplay / IdField | short + copy + FK open semantics            | `/database/…` routes, GlobalRecordSheet |
-| GenericDataTable              | pagination, empty/loading                   | no sticky / filters / panels            |
+| Source                        | Took                                             | Left behind                             |
+| ----------------------------- | ------------------------------------------------ | --------------------------------------- |
+| AiModelTable                  | sticky + filters + canonical `AiModelRef showId` | domain coupling, split-pane sidebar     |
+| aidream UuidDisplay / IdField | short + copy + FK open semantics                 | `/database/…` routes, GlobalRecordSheet |
+| GenericDataTable              | pagination, empty/loading                        | no sticky / filters / panels            |
 
 ## Change log
 
+- 2026-08-12 — Absorbed URL ownership into `MatrxDataTable` as the opt-in
+  `urlState={{ id }}` contract. Stable `table.<id>.*` namespaces support sibling
+  tables and page parameters; query state, row/window state, and optional
+  checkbox selection survive copied links, refresh, and Back/Forward. Removed
+  the parallel `UrlStateMatrxDataTable` wrapper and rolled the contract across
+  route-level consumers.
 - 2026-08-11 — Added the shared compact layered-filter builder, URL-safe rule
   codec, local evaluator, controlled-query state, whole-word exclusions,
   numeric comparisons/ranges, ordered chips, drag/keyboard reorder, and one
@@ -170,6 +198,8 @@ Do not drop these when replacing `AiModelTable`:
   | `CopyButtons` | agent envelope | — |
 
 ## Change Log
+
+- `2026-08-12` — `AiModelTable` moved from generic UUID rendering to `AiModelRef showId`, preserving audit identity while adding the model's human name.
 
 - `2026-08-09` — **Clipped-content guard.** The table root is `h-full`, which is
   inert unless every ancestor is a flex column; one plain block wrapper left
@@ -189,6 +219,7 @@ Do not drop these when replacing `AiModelTable`:
 - `2026-07-19` — Sticky header uses `bg-muted/90` + backdrop blur so column labels contrast with `bg-card` body rows.
 - `2026-07-19` — Filter overhaul: multi-select (OR `values` set, back-compat with single `value`), automatic (empty)/(not empty) select sentinels, text filter Contains/(empty)/(not empty) modes, explicit-select options uncapped, empties sort last both directions.
 
+- `2026-08-12` — **Detail scrolling moved into the primitive.** Custom `detail.render` bodies (side panel) and `viewContent`/`editContent` (window) are wrapped in a scrolling container; the `DataRowInspector` fallback keeps its own. Kills a platform-wide class where ~16 custom bodies cut off at the fold with no scrollbar. Redundant per-surface wrapper removed from `SlotDetailPanel`. Verified in browser on agent slots (1879px body, single scrollbar, bottom reachable), lint debt, and the CX errors dashboard.
 - `2026-08-11` — Added record controls to detail/row-action renderers and retained the opened row snapshot across controlled refetch/sort, enabling per-record long-running work inside the canonical WindowPanel.
 - `2026-07-11` — WindowPanel View/Edit tabs; `MatrxUuidCell` (short/hover/copy/FK open/forbidden); `cellKind` + auto UUID; `window.onOpen` / `renderEdit`; AiModelTable UuidCell → MatrxUuidCell.
 - `2026-07-11` — Searchable selects; clear-all; `anyOf`; Copy; deferred inline edit.

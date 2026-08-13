@@ -11,6 +11,8 @@ import { createCmsSiteExtraSections } from "@/features/cms/agent-context/cmsSite
 import { useCmsSiteSurfaceScope } from "@/features/cms/hooks/useCmsSiteSurfaceScope";
 import { clientSiteRootUrl } from "@/features/cms/utils/pageUrls";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { slugifyTitle, SLUG_RE } from "@/features/html-pages/utils/promoteConvert";
+import type { AgentWritePolicy } from "@/features/cms/types";
 
 export default function SiteDashboardPage() {
   const { siteId } = useParams() as { siteId: string };
@@ -50,6 +52,70 @@ export default function SiteDashboardPage() {
       ),
   });
 
+  // ── Agent write handlers (`matrx-user/cms-site`, Pages tab) ────────────
+  // `add_page` is mode "entity": it lands through the SAME
+  // `CmsPageService.createPage` the New Page route uses, then refreshes the
+  // layout's page cache so `pages_summary` / `site_structure` tell the truth
+  // on the next read. Created unpublished and out of the nav (the API's
+  // defaults), so nothing the live site serves changes here. Validates and
+  // THROWS on a bad shape — the writeback seam turns a throw into the error
+  // envelope the agent reads. Registered only on this tab, the one mount
+  // that owns `refreshPages`.
+  const getSurfaceWriteHandlers = () => ({
+    add_page: async (value: unknown) => {
+      if (!value || typeof value !== "object" || Array.isArray(value))
+        throw new Error(
+          "add_page expects an object like { title, slug?, meta_description?, excerpt? } — send the object itself, not a JSON string and not a bare title.",
+        );
+      // Persistence is gated by the site's own governance setting — the same
+      // value this surface emits as `agent_write_policy`.
+      const policy: AgentWritePolicy =
+        site.settings?.agent_write_policy ?? "blocked";
+      if (policy === "blocked")
+        throw new Error(
+          'This site\'s agent_write_policy is "blocked", so agents may not create pages on it. A human can change that in the site\'s settings.',
+        );
+
+      const {
+        title,
+        slug,
+        meta_description: metaDescription,
+        excerpt,
+      } = value as Record<string, unknown>;
+      if (typeof title !== "string" || !title.trim())
+        throw new Error(
+          "add_page requires `title` — a non-empty plain text string.",
+        );
+      // An explicit slug must already be routable; an omitted one is derived
+      // from the title through the canonical slugifier, the same way the New
+      // Page form derives it while the user types.
+      let pageSlug: string;
+      if (slug === undefined || slug === null || slug === "") {
+        pageSlug = slugifyTitle(title);
+      } else if (typeof slug !== "string" || !SLUG_RE.test(slug)) {
+        throw new Error(
+          "add_page `slug` must be lowercase letters, digits and single hyphens (e.g. about-our-team) — omit it to derive one from the title.",
+        );
+      } else {
+        pageSlug = slug;
+      }
+      if (metaDescription !== undefined && typeof metaDescription !== "string")
+        throw new Error("add_page `meta_description` must be a string.");
+      if (excerpt !== undefined && typeof excerpt !== "string")
+        throw new Error("add_page `excerpt` must be a string.");
+
+      await CmsPageService.createPage({
+        siteId,
+        slug: pageSlug,
+        title: title.trim(),
+        metaDescription: (metaDescription as string) || undefined,
+        excerpt: (excerpt as string) || undefined,
+        provenance: { source: "surface-write", target: "add_page" },
+      });
+      await refreshPages();
+    },
+  });
+
   const handleDeletePage = async (pageId: string) => {
     try {
       await CmsPageService.deletePage(pageId);
@@ -65,6 +131,7 @@ export default function SiteDashboardPage() {
     <SurfaceRuntimeProvider
       surfaceName={CMS_SITE_CONTEXT_MENU_PROPS.surfaceName}
       getScope={buildSurfaceScope}
+      getWriteHandlers={getSurfaceWriteHandlers}
     >
     <NonEditableContextMenu
       {...CMS_SITE_CONTEXT_MENU_PROPS}

@@ -235,110 +235,111 @@ export function ApplicationsHistoryClient({
         })
       }
     >
-    <div className="flex h-full flex-col gap-3 p-4">
-      <p className="text-xs text-muted-foreground">
-        Merged audit timeline over remote configuration and remote catalogs —{" "}
-        {entries.length} snapshot{entries.length === 1 ? "" : "s"} (newest{" "}
-        {fetchLimit} per source). Open a row to diff it against the previous
-        snapshot of the same record. Restore lives on the Configuration and
-        Catalogs tabs, beside the write path.
-      </p>
+      <div className="flex h-full flex-col gap-3 p-4">
+        <p className="text-xs text-muted-foreground">
+          Merged audit timeline over remote configuration and remote catalogs —{" "}
+          {entries.length} snapshot{entries.length === 1 ? "" : "s"} (newest{" "}
+          {fetchLimit} per source). Open a row to diff it against the previous
+          snapshot of the same record. Restore lives on the Configuration and
+          Catalogs tabs, beside the write path.
+        </p>
 
-      <div className="min-h-0 flex-1">
-        <MatrxDataTable
-          data={entries}
-          columns={columns}
-          getRowId={(row) => row.rowId}
-          isFetching={loadingMore}
-          pageSize={50}
-          emptyState={{
-            icon: <History className="h-5 w-5" />,
-            title: "No history yet",
-            description:
-              "Snapshots are written on every configuration and catalog save.",
-          }}
-          toolbar={{
-            search: true,
-            searchPlaceholder: "Search record, application, who…",
-            actions: (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => void loadMore()}
-                disabled={loadingMore}
-              >
-                Load more
-              </Button>
-            ),
-          }}
-          detail={{
-            // Reading a diff and then having to go hunt for the record is the
-            // dead end; the panel carries the door, into a new tab so the
-            // timeline stays put.
-            headerActions: (row) => (
-              <Button size="sm" variant="outline" asChild>
-                <Link
-                  href={recordHref(row)}
-                  target="_blank"
-                  rel="noopener noreferrer"
+        <div className="min-h-0 flex-1">
+          <MatrxDataTable
+            urlState={{ id: "applications-history" }}
+            data={entries}
+            columns={columns}
+            getRowId={(row) => row.rowId}
+            isFetching={loadingMore}
+            pageSize={50}
+            emptyState={{
+              icon: <History className="h-5 w-5" />,
+              title: "No history yet",
+              description:
+                "Snapshots are written on every configuration and catalog save.",
+            }}
+            toolbar={{
+              search: true,
+              searchPlaceholder: "Search record, application, who…",
+              actions: (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => void loadMore()}
+                  disabled={loadingMore}
                 >
-                  <ExternalLink className="mr-1.5 h-3.5 w-3.5" /> Open record
-                </Link>
-              </Button>
-            ),
-            title: (row) => row.target,
-            description: (row) =>
-              `${row.source === "configuration" ? "Configuration" : "Catalog"} · ${row.op} · ${format(
-                new Date(row.changedAt),
-                "yyyy-MM-dd HH:mm:ss",
-              )} · ${whoLabel(row.changedBy)}`,
-            defaultWidth: 720,
-            render: (row) => (
-              <div className="p-2">
-                <DiffViewer
-                  original={row.previousJson}
-                  modified={row.snapshotJson}
-                  engine="light"
-                  language="json"
-                  view="inline"
-                  originalLabel={
-                    row.previousJson ? "Previous snapshot" : "(did not exist)"
-                  }
-                  modifiedLabel="This snapshot"
-                />
-              </div>
-            ),
-          }}
-          copy={{
-            label: "History entry",
-            listLabel: "Applications history (this view)",
-            location: `${APPLICATIONS_ADMIN_LOCATION}/history`,
-            rowKind: "applications_history_entry",
-            listKind: "applications_history",
-            rowDescription:
-              "One audit snapshot from the merged applications history.",
-            listDescription:
-              "Filtered/sorted applications audit entries currently visible.",
-            humanRow: (row) =>
-              [
-                `${row.source} · ${row.app} · ${row.target}`,
-                `op=${row.op} at=${row.changedAt} by=${whoLabel(row.changedBy)}`,
-                row.snapshotJson,
-              ].join("\n"),
-            rowAttributes: (row) => ({
-              source: row.source,
-              app: row.app,
-              op: row.op,
-              changed_at: row.changedAt,
-            }),
-            listAttributes: (visible, all) => ({
-              visible: visible.length,
-              total: all.length,
-            }),
-          }}
-        />
+                  Load more
+                </Button>
+              ),
+            }}
+            detail={{
+              // Reading a diff and then having to go hunt for the record is the
+              // dead end; the panel carries the door, into a new tab so the
+              // timeline stays put.
+              headerActions: (row) => (
+                <Button size="sm" variant="outline" asChild>
+                  <Link
+                    href={recordHref(row)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <ExternalLink className="mr-1.5 h-3.5 w-3.5" /> Open record
+                  </Link>
+                </Button>
+              ),
+              title: (row) => row.target,
+              description: (row) =>
+                `${row.source === "configuration" ? "Configuration" : "Catalog"} · ${row.op} · ${format(
+                  new Date(row.changedAt),
+                  "yyyy-MM-dd HH:mm:ss",
+                )} · ${whoLabel(row.changedBy)}`,
+              defaultWidth: 720,
+              render: (row) => (
+                <div className="p-2">
+                  <DiffViewer
+                    original={row.previousJson}
+                    modified={row.snapshotJson}
+                    engine="light"
+                    language="json"
+                    view="inline"
+                    originalLabel={
+                      row.previousJson ? "Previous snapshot" : "(did not exist)"
+                    }
+                    modifiedLabel="This snapshot"
+                  />
+                </div>
+              ),
+            }}
+            copy={{
+              label: "History entry",
+              listLabel: "Applications history (this view)",
+              location: `${APPLICATIONS_ADMIN_LOCATION}/history`,
+              rowKind: "applications_history_entry",
+              listKind: "applications_history",
+              rowDescription:
+                "One audit snapshot from the merged applications history.",
+              listDescription:
+                "Filtered/sorted applications audit entries currently visible.",
+              humanRow: (row) =>
+                [
+                  `${row.source} · ${row.app} · ${row.target}`,
+                  `op=${row.op} at=${row.changedAt} by=${whoLabel(row.changedBy)}`,
+                  row.snapshotJson,
+                ].join("\n"),
+              rowAttributes: (row) => ({
+                source: row.source,
+                app: row.app,
+                op: row.op,
+                changed_at: row.changedAt,
+              }),
+              listAttributes: (visible, all) => ({
+                visible: visible.length,
+                total: all.length,
+              }),
+            }}
+          />
+        </div>
       </div>
-    </div>
     </SurfaceRuntimeProvider>
   );
 }

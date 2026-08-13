@@ -25,29 +25,29 @@ function getClient() {
 
 // Fetch all message templates from database.
 //
-// VIEW LAW: `is_public` decides the branch. Callers that pass `is_public`
+// VIEW LAW: `visibility` decides the branch. Callers that pass `visibility`
 // explicitly are declaring a deliberate public-library browse (org-neutral
 // by design) and keep bare RLS for that shared library. The DEFAULT list
-// (no `is_public` passed) is the caller's personal template list and MUST
+// (no `visibility` passed) is the caller's personal template list and MUST
 // be mine-scoped — it must not blend in every org's/public templates just
 // because RLS lets them through.
 export async function fetchMessageTemplates(
   options: MessageTemplateQueryOptions = {},
 ) {
   const supabase = getClient();
-  let query = supabase.from("message_template").select("*");
+  let query = supabase.schema("agent").from("message_template").select("*");
 
   // Apply filters
   if (options.role) {
     query = query.eq("role", options.role);
   }
 
-  if (options.is_public !== undefined) {
-    query = query.eq("is_public", options.is_public);
+  if (options.visibility !== undefined) {
+    query = query.eq("visibility", options.visibility);
   } else {
     // VIEW LAW: mine-scoped default list.
     const userId = requireUserId();
-    query = query.eq("user_id", userId);
+    query = query.eq("created_by", userId);
   }
 
   if (options.search) {
@@ -90,7 +90,7 @@ export async function fetchTemplatesByRole(role: MessageRole) {
 
 // Fetch public templates only
 export async function fetchPublicTemplates() {
-  return fetchMessageTemplates({ is_public: true });
+  return fetchMessageTemplates({ visibility: "public" });
 }
 
 // Fetch templates grouped by role
@@ -119,7 +119,7 @@ export async function getTemplateById(
 ): Promise<MessageTemplateDB | null> {
   const supabase = getClient();
   const { data, error } = await supabase
-    .from("message_template")
+    .schema("agent").from("message_template")
     .select("*")
     .eq("id", id)
     .single();
@@ -142,16 +142,16 @@ export async function createTemplate(
   const organizationId = await ensureOrgId(undefined);
 
   const { data, error } = await supabase
-    .from("message_template")
+    .schema("agent").from("message_template")
     .insert([
       {
         label: input.label,
         content: input.content,
         role: input.role,
         metadata: input.metadata || null,
-        is_public: input.is_public || false,
+        visibility: input.visibility || "internal",
         tags: input.tags || null,
-        user_id: userId,
+        created_by: userId,
         organization_id: organizationId,
       },
     ])
@@ -175,11 +175,11 @@ export async function updateTemplate(
   if (input.content !== undefined) updateData.content = input.content;
   if (input.role !== undefined) updateData.role = input.role;
   if (input.metadata !== undefined) updateData.metadata = input.metadata;
-  if (input.is_public !== undefined) updateData.is_public = input.is_public;
+  if (input.visibility !== undefined) updateData.visibility = input.visibility;
   if (input.tags !== undefined) updateData.tags = input.tags;
 
   const { data, error } = await supabase
-    .from("message_template")
+    .schema("agent").from("message_template")
     .update(updateData)
     .eq("id", input.id)
     .select()
@@ -195,7 +195,7 @@ export async function deleteTemplate(id: string): Promise<void> {
   const supabase = getClient();
 
   const { error } = await supabase
-    .from("message_template")
+    .schema("agent").from("message_template")
     .delete()
     .eq("id", id);
 
@@ -207,7 +207,7 @@ export async function toggleTemplatePublic(
   id: string,
   isPublic: boolean,
 ): Promise<MessageTemplateDB> {
-  return updateTemplate({ id, is_public: isPublic });
+  return updateTemplate({ id, visibility: isPublic ? "public" : "internal" });
 }
 
 // Get all unique tags across templates
@@ -215,7 +215,7 @@ export async function getAllTags(): Promise<string[]> {
   const supabase = getClient();
 
   const { data, error } = await supabase
-    .from("message_template")
+    .schema("agent").from("message_template")
     .select("tags");
 
   if (error) throw new Error(error.message || "Failed to fetch tags");

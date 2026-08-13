@@ -52,8 +52,13 @@ function isOverviewData(v: unknown): v is OverviewData {
     typeof r.totalTables === "number" &&
     typeof r.certifiedTables === "number" &&
     typeof r.notCertifiedTables === "number" &&
+    typeof r.machineryTables === "number" &&
     typeof r.totalFails === "number" &&
     typeof r.totalWarns === "number" &&
+    typeof r.brokenFunctionCount === "number" &&
+    typeof r.brokenFunctionRowCount === "number" &&
+    typeof r.brokenFunctionBySeverity === "object" &&
+    r.brokenFunctionBySeverity !== null &&
     (r.lastRefresh === null || isRefreshLogRow(r.lastRefresh))
   );
 }
@@ -224,6 +229,12 @@ export function CanonicalizationOverview() {
               href="/administration/database/canonicalization/summary"
             />
             <KpiTile
+              icon={ShieldCheck}
+              label="Machinery (outside universe)"
+              value={overview.machineryTables}
+              href="/administration/database/canonicalization/summary"
+            />
+            <KpiTile
               icon={ShieldAlert}
               label="Total FAIL checks"
               value={overview.totalFails}
@@ -237,12 +248,29 @@ export function CanonicalizationOverview() {
               tone="warn"
               href="/administration/database/canonicalization/findings?status=WARN"
             />
+            {/* The actionable number, not the row count. Until 2026-08-13 this
+                tile showed all 101 rows of audit.broken_functions while the
+                refresh log beside it said 29 — the two numbers measured
+                different things and neither was actionable. */}
             <KpiTile
               icon={GitBranch}
-              label="Broken functions"
+              label="Broken functions (real)"
               value={overview.brokenFunctionCount}
               tone={overview.brokenFunctionCount > 0 ? "bad" : "good"}
               href="/administration/database/canonicalization/broken-functions"
+            />
+            <KpiTile
+              icon={ShieldAlert}
+              label="Privilege-risk functions"
+              value={overview.brokenFunctionBySeverity.advisory}
+              tone={
+                overview.brokenFunctionBySeverity.advisory > 0
+                  ? "warn"
+                  : "good"
+              }
+              href={`/administration/database/canonicalization/broken-functions?severity=${encodeURIComponent(
+                JSON.stringify(["advisory"]),
+              )}`}
             />
             <KpiTile
               icon={ShieldQuestion}
@@ -276,6 +304,27 @@ export function CanonicalizationOverview() {
               <span className="font-medium text-foreground">
                 {formatDate(overview.lastRefresh?.run_at)}
               </span>
+            </span>
+            {/* Spelled out so the headline "Broken functions (real)" tile can
+                never look like it contradicts the refresh log again: every
+                number below comes from the same severity column, and
+                audit.refresh_log_recount() derives the log row FROM the table
+                after every phase. */}
+            <span>
+              Function findings:{" "}
+              <span className="font-medium text-foreground">
+                {overview.brokenFunctionRowCount}
+              </span>{" "}
+              rows ={" "}
+              {(
+                Object.entries(overview.brokenFunctionBySeverity) as [
+                  string,
+                  number,
+                ][]
+              )
+                .map(([severity, count]) => `${count} ${severity}`)
+                .join(" · ")}{" "}
+              — the tile above counts distinct functions, not findings
             </span>
             {overview.lastRefresh?.note ? (
               <span className="truncate">

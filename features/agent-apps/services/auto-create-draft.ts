@@ -108,7 +108,6 @@ export async function createGenerationDraft(
     .schema("app")
     .from("definition")
     .insert({
-      user_id: input.userId,
       organization_id: personalOrgId,
       // Canonical RLS std_insert on app.definition requires created_by = auth.uid().
       created_by: input.userId,

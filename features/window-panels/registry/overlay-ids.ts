@@ -60,7 +60,6 @@ export const OVERLAY_IDS = [
   "aiVoiceWindow",
   "announcements",
   "authGate",
-  "brokerState",
   "browserFrameWindow",
   "browserWorkbenchWindow",
   "canvasViewerWindow",

@@ -442,11 +442,16 @@ export function AgentAppSettingsContent({
                 </SelectContent>
               </Select>
             </Row>
+            {/* Visibility is the canonical platform enum. The switch stays a
+                two-state control because that is the real choice for an app —
+                published to the world, or kept inside the owning org. */}
             <Row label="Public">
               <Switch
-                checked={app.is_public}
-                onCheckedChange={(v) => saveField("is_public", v)}
-                disabled={savingField === "is_public"}
+                checked={app.visibility === "public"}
+                onCheckedChange={(v) =>
+                  saveField("visibility", v ? "public" : "internal")
+                }
+                disabled={savingField === "visibility"}
               />
             </Row>
             <Row label="Public URL">

@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-08-09` (canonical tool vocabulary, live schema names, and `matrx-user` executor identity)
+**Last updated:** `2026-08-12` (scratchpad + storage deleted; chat legacy owner cut)
 
 > Universal client-delegated tool layer + ambient context envelope for the
 > Next.js surface. Mirrors the matrx-extend Chrome extension's UI-first
@@ -13,11 +13,11 @@
 ## Purpose
 
 The agent calls a small set of "UI-first" tools (`user`, `update_plan`,
-`request_user_takeover`, `user_todos`, `scratchpad`, `storage`) that
-have no server-side execution — the Next.js client validates the args,
-runs a handler (UI render or Supabase CRUD), and POSTs `tool_results`
-back so the model resumes. These tools come online via the request's
-**surface**: the six frontend handlers have active Bindings to executor
+`request_user_takeover`, `user_todos`) that have no server-side
+execution — the Next.js client validates the args, runs a handler (UI
+render or Supabase CRUD), and POSTs `tool_results` back so the model
+resumes. These tools come online via the request's
+**surface**: the four frontend handlers have active Bindings to executor
 `matrx-user` in `tool.binding`; Surface defaults include them on
 `matrx-user/chat` and are resolved server-side. There are 132
 `ui.ui_surface` rows for client `matrx-user`; only two have their own
@@ -114,8 +114,6 @@ This feature exists because:
 - `service/agent-plan.service.ts` — cx_agent_plan CRUD
 - `service/agent-task.service.ts` — cx_agent_task CRUD
 - `service/user-todo.service.ts` — cx_user_todo CRUD
-- `service/agent-memory.service.ts` — cx_agent_memory KV
-- `service/agent-user-kv.service.ts` — agent_user_kv KV
 
 **Redux slices**
 - `pendingAsks` (`redux/pending-asks.slice.ts`) — pending ask inbox per
@@ -149,23 +147,44 @@ This feature exists because:
 | `cx_agent_plan` | per-conversation | proposed/approved/rejected plans; status flows once and locks on approve |
 | `cx_agent_task` | per-conversation | agent's own tasklist; status: pending/in_progress/done/blocked/skipped |
 | `cx_user_todo` | per-conversation | items the agent assigns BACK to the user; checkbox done/not-done |
-| `cx_agent_memory` | per-conversation | ephemeral KV scratchpad (cleared on conversation delete) |
-| `agent_user_kv` | per-user | persistent KV (survives conversation reset) |
 
-RLS: `auth.uid() = user_id` on all five; `service_role` bypass for
-admin maintenance. All four conversation-scoped tables added to
-`supabase_realtime` publication.
+**There is no KV store here, and none may be added.** `cx_agent_memory` and
+`agent_user_kv` were ported from matrx-extend in the initial 2026-05-19 commit
+and are both DELETED. Permanent memory for a user / project / organization is
+the server-side `memory` tool (`chat.agent_memory`). Per-conversation agent
+memory that survives a context reset does not exist yet and will be built as
+its own tool — do NOT approximate it with a KV table, and do NOT reuse the word
+"scratchpad" for it: that name belongs to the user's own per-conversation
+document (`user_scratchpad`, `workbench.working_documents` kind=`scratch`),
+which the agent may read and must never write.
 
-Optional FKs for future "elevate to project / task" UX:
-- `cx_agent_plan.project_id` → `ctx_projects.id` (NULL, ON DELETE SET NULL)
-- `cx_user_todo.ctx_task_id` → `ctx_tasks.id` (NULL, ON DELETE SET NULL)
+**Ownership is `created_by`** (canonical, stamped by the `_stamp_actor`
+trigger) — never client-set, never `user_id`. Two consequences the code
+depends on:
+
+- **`chat.agent_task` has NO owner column of its own.** It is owned through
+  its parent conversation, so a cross-conversation read declares that scope
+  as an inner join (`ListsHubView`: `conversation!inner(created_by)`), never
+  a bare RLS-filtered list. Its `creator_kind` enum (`agent` | `user`)
+  records who AUTHORED the task — it is not an owner and must never be read
+  as one.
+- **No project FK.** `agent_plan.project_id` is gone: a feature table may not
+  depend on a project FK. Project membership, if it is ever wanted, is a
+  `platform.associations` edge on the conversation.
+
+`cx_user_todo.ctx_task_id` → `ctx_tasks.id` (NULL, ON DELETE SET NULL)
+remains, for the "elevate to task" UX.
+
+All four conversation-scoped tables are in the `supabase_realtime`
+publication; every subscription filters on `conversation_id`.
 
 **Key types**
 
 - `CxAgentPlanRow` / `CxAgentTaskRow` / `CxUserTodoRow` /
   `CxAgentMemoryRow` / `AgentUserKvRow` — `tools/types.ts`. Hand-typed
-  to mirror the migration; the global `database.types.ts` is only
-  regenerated on demand.
+  because `steps`/`value` come back as `Json` from the generator. **The
+  type gate therefore does NOT catch column renames here** — compare
+  against the live table whenever the schema changes.
 
 ---
 
@@ -321,6 +340,32 @@ server-side; the same Realtime subscription updates the panel with no delegation
 
 ## Change Log
 
+- `2026-08-12` — **`scratchpad` and `storage` DELETED (tools, handlers, services,
+  schemas, registry entries, names, and the drift-checker rows).** Neither filled
+  a gap. `storage` was a per-user persistent KV — that is exactly the server-side
+  `memory` tool, rebuilt worse. `scratchpad` was an agent-writable KV squatting on
+  the name of `user_scratchpad`, the user's own document that the agent is
+  explicitly forbidden to write — same word, opposite meaning. Both pointed at
+  tables (`public.cx_agent_memory`, `public.agent_user_kv`) that had already been
+  dropped without a deprecation record, so every call failed: live telemetry showed
+  `scratchpad` 7 calls / 7 errors and `storage` 10 calls / 8 errors, last used
+  2026-08-10. Deleted in matrx-extend in the same pass, plus the `tool.definition`
+  rows, their bindings, and their `tool.surface_defaults` entries; `memory` was
+  added to the two chrome-extension surfaces so nothing was left without a memory
+  tool. The real gap this exposed — per-conversation agent memory that survives a
+  context reset — is deliberately unbuilt and gets its own design.
+- `2026-08-12` — **chat legacy owner cut: `user_id` → `created_by`, `project_id`
+  dropped, `agent_task.created_by` → `creator_kind`.** Every insert stopped
+  passing an owner (the `_stamp_actor` trigger stamps `created_by`);
+  `CreateAgentPlanInput` / `CreateAgentTaskInput` / `CreateUserTodoInput` lost
+  their `user_id` field, and `agent_task` writes now set `creator_kind`
+  (`agent` | `user`) — the enum that was squatting on the canonical
+  `created_by` name. `agent_plan.project_id` reads/writes deleted outright
+  (forbidden project FK). `ListsHubView` filters plans/todos on `created_by`
+  and scopes tasks through `conversation!inner(created_by)`, since
+  `agent_task` has no owner column. The three dead hand-mirrored `*Insert`
+  interfaces in `service/supabase-typed.ts` were deleted rather than
+  repointed. Forward-only: no dual-read, no fallback.
 - `2026-08-09` — Adopted the canonical tool vocabulary and live schema names.
   The frontend Executor is `matrx-user`; its six active Bindings are `user`,
   `update_plan`, `request_user_takeover`, `user_todos`, `scratchpad`, and

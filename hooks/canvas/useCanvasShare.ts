@@ -5,9 +5,11 @@ import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectDisplayName } from "@/lib/redux/slices/userSlice";
+import { createShareLink } from "@/utils/permissions/shareLinks";
 import type {
   CreateShareRequest,
   CreateShareResponse,
+  SharedCanvasItem,
 } from "@/types/canvas-social";
 
 export function useCanvasShare() {
@@ -17,32 +19,11 @@ export function useCanvasShare() {
   const queryClient = useQueryClient();
   const supabase = createClient();
 
-  const generateShareToken = () => {
-    // Cryptographically secure, URL-safe token (UUIDv4 → 122 bits of entropy).
-    // Never use Math.random() for share tokens — its output is predictable and
-    // the token is the only thing gating access to a public/unlisted canvas.
-    return crypto.randomUUID().replace(/-/g, "");
-  };
-
   const shareMutation = useMutation({
     mutationFn: async (request: CreateShareRequest) => {
-      console.log("🚀 Starting share creation...", { request });
-      console.log("📝 Canvas Type:", request.canvas_type);
-      console.log("📦 Canvas Data Type:", typeof request.canvas_data);
-
       const userId = requireUserId();
-      console.log("👤 User:", userId);
 
-      const shareToken = generateShareToken();
-      // Always use production domain for share links
-      const baseUrl =
-        process.env.NEXT_PUBLIC_SITE_URL || "https://www.aimatrx.com";
-      const url = `${baseUrl}/canvas/shared/${shareToken}`;
-
-      console.log("🔗 Generated share URL:", url);
-      console.log("📦 Canvas data:", request.canvas_data);
-
-      // Insert into database
+      // 1) Publish the snapshot — a content write, not the share itself.
       // Map legacy "unlisted" to canonical platform.visibility "link".
       const visibility =
         request.visibility === "unlisted"
@@ -50,7 +31,6 @@ export function useCanvasShare() {
           : request.visibility || "public";
 
       const insertData = {
-        share_token: shareToken,
         title: request.title,
         description: request.description,
         canvas_type: request.canvas_type,
@@ -69,8 +49,6 @@ export function useCanvasShare() {
         organization_id: await ensureOrgId(undefined),
       };
 
-      console.log("💾 Inserting to database:", insertData);
-
       const { data, error } = await supabase
         .schema("canvas").from("shared_canvas_items")
         .insert(insertData)
@@ -78,27 +56,36 @@ export function useCanvasShare() {
         .single();
 
       if (error) {
-        console.error("❌ Database error:", error);
         throw new Error(`Failed to create share: ${error.message}`);
       }
+      const canvas = data as SharedCanvasItem;
 
-      console.log("✅ Share created successfully:", data);
+      // 2) Mint the link through the ONE canonical lane (platform.share_links).
+      // The token is the visitor's authorization; revoke/list live in the
+      // standard ShareModal machinery.
+      const link = await createShareLink({
+        resourceType: "shared_canvas_item",
+        resourceId: canvas.id,
+      });
+      if (!link.success || !link.token) {
+        throw new Error(link.error ?? "Failed to create share link");
+      }
 
+      const baseUrl =
+        process.env.NEXT_PUBLIC_SITE_URL || "https://www.aimatrx.com";
       return {
-        canvas: data,
-        share_url: url,
-        share_token: shareToken,
+        canvas,
+        share_url: `${baseUrl}/canvas/shared/${link.token}`,
+        share_token: link.token,
       } as CreateShareResponse;
     },
     onSuccess: (response) => {
-      console.log("🎉 Share mutation success:", response);
       setShareUrl(response.share_url);
       setError(null);
       queryClient.invalidateQueries({ queryKey: ["user-canvases"] });
       queryClient.invalidateQueries({ queryKey: ["discover-canvases"] });
     },
     onError: (err: Error) => {
-      console.error("💥 Share mutation error:", err);
       setError(err.message || "Failed to create share");
       setShareUrl(null);
     },

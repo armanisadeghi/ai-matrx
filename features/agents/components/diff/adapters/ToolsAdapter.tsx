@@ -7,9 +7,15 @@ import type {
   FieldDiffProps,
   EnrichmentContext,
 } from "@/components/diff/adapters/types";
+import { AiToolRef } from "@/components/official/entity-ref/AiIdentityRef";
 
 function resolveTool(id: string, enrichment?: EnrichmentContext): string {
   return enrichment?.resolveToolId(id) ?? id;
+}
+
+function summarizeTool(id: string, enrichment?: EnrichmentContext): string {
+  const name = enrichment?.resolveToolId(id);
+  return name && name !== id ? name : `Unknown tool (${id})`;
 }
 
 function ToolsDiffRenderer({ node, enrichment }: FieldDiffProps) {
@@ -37,8 +43,13 @@ function ToolsDiffRenderer({ node, enrichment }: FieldDiffProps) {
             key={id}
             className="grid grid-cols-[200px_1fr_1fr] text-xs border-t border-border/30"
           >
-            <div className="px-3 py-1.5 border-r border-border text-muted-foreground pl-8 font-mono truncate">
-              {name}
+            <div className="px-3 py-1.5 border-r border-border text-muted-foreground pl-8 min-w-0">
+              <AiToolRef
+                toolId={id}
+                name={name === id ? undefined : name}
+                showId
+                showIcon={false}
+              />
             </div>
             <div
               className={cn(
@@ -50,11 +61,14 @@ function ToolsDiffRenderer({ node, enrichment }: FieldDiffProps) {
                 status === "unchanged" ? "text-foreground/80" : "",
               )}
             >
-              {inOld ? name : "—"}
-              {inOld && (
-                <span className="text-[0.5625rem] text-muted-foreground/50 font-mono ml-2">
-                  {id.slice(0, 8)}
-                </span>
+              {inOld ? (
+                <AiToolRef
+                  toolId={id}
+                  name={name === id ? undefined : name}
+                  showIcon={false}
+                />
+              ) : (
+                "—"
               )}
             </div>
             <div
@@ -67,11 +81,14 @@ function ToolsDiffRenderer({ node, enrichment }: FieldDiffProps) {
                 status === "unchanged" ? "text-foreground/80" : "",
               )}
             >
-              {inNew ? name : "—"}
-              {inNew && (
-                <span className="text-[0.5625rem] text-muted-foreground/50 font-mono ml-2">
-                  {id.slice(0, 8)}
-                </span>
+              {inNew ? (
+                <AiToolRef
+                  toolId={id}
+                  name={name === id ? undefined : name}
+                  showIcon={false}
+                />
+              ) : (
+                "—"
               )}
             </div>
           </div>
@@ -97,11 +114,11 @@ export const ToolsAdapter: FieldAdapter = {
     const parts: string[] = [];
     if (added.length > 0)
       parts.push(
-        `Added: ${added.map((id) => ctx?.resolveToolId(id) ?? id).join(", ")}`,
+        `Added: ${added.map((id) => summarizeTool(id, ctx)).join(", ")}`,
       );
     if (removed.length > 0)
       parts.push(
-        `Removed: ${removed.map((id) => ctx?.resolveToolId(id) ?? id).join(", ")}`,
+        `Removed: ${removed.map((id) => summarizeTool(id, ctx)).join(", ")}`,
       );
     return parts.join("; ") || "Tools changed";
   },

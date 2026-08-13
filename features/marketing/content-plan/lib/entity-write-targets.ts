@@ -66,17 +66,26 @@ export function parseSourceTypeIdWrite(
 export function parseOpenEntityEditorWrite(
   value: unknown,
   liveEntityIds: readonly string[],
+  linkedPartyIds: readonly string[] = [],
 ): string | null {
   if (value === null || value === "") return null;
   if (typeof value !== "string") {
     throw new Error(
-      `open_entity_editor: expected an entity UUID from entities_detail, or null to open a blank New entity dialog. Received ${typeof value}.`,
+      `open_entity_editor: expected a source/media entity UUID from entities_detail, or null to open a blank New source dialog. Received ${typeof value}.`,
     );
   }
   const id = value.trim();
+  if (linkedPartyIds.includes(id)) {
+    // A person/company is a CRM record, not a plan.entity row — the editor
+    // dialog cannot open it, but the agent named a real thing; say where it
+    // lives instead of pretending it does not exist.
+    throw new Error(
+      `open_entity_editor: "${id}" is a person/company — a CRM record, not a source. It is managed at /crm/${id}; this dialog edits sources and media only.`,
+    );
+  }
   if (!liveEntityIds.includes(id)) {
     throw new Error(
-      `open_entity_editor: "${id}" is not a live entity on this site. Pick an id from entities_detail, or send null to open a blank New entity dialog.`,
+      `open_entity_editor: "${id}" is not a live source on this site. Pick a source/media id from entities_detail, or send null to open a blank New source dialog.`,
     );
   }
   return id;

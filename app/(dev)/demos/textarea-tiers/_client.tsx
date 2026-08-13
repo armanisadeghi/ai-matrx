@@ -477,10 +477,9 @@ export default function TextareaTiersDemo() {
             <span className="text-foreground">EntityTextarea(FullWidth)</span> ·
             <span className="text-foreground"> SocketTaskTextarea</span> ·{" "}
             <span className="text-foreground">TaskFieldTextArea</span> ·{" "}
-            <span className="text-foreground">TextareaField (applet)</span>
             <span className="text-warning ml-2">
               → migrate to ProTextarea + Field; keep schema-binding logic in
-              dedicated wrappers per system (Entity, Socket, Applet)
+              dedicated wrappers per system (Entity, Socket)
             </span>
           </div>
           <div>

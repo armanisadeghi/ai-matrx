@@ -29,6 +29,10 @@ import {
   LiveRunDisplay,
   useLiveRunStatus,
 } from "@/features/agents/components/live-run/LiveRunDisplay";
+import {
+  LiveRunProgress,
+  type LiveRunProgressState,
+} from "@/features/agents/components/live-run/LiveRunProgress";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 
 /**
@@ -82,6 +86,7 @@ export interface LiveRunWindowProps {
    */
   width?: number | string;
   height?: number | string;
+  progress?: LiveRunProgressState | null;
 }
 
 export default function LiveRunWindow({
@@ -93,12 +98,9 @@ export default function LiveRunWindow({
   pending = false,
   width = LIVE_RUN_WIDTH,
   height = LIVE_RUN_HEIGHT,
+  progress = null,
 }: LiveRunWindowProps) {
-  const { statusText } = useLiveRunStatus(
-    conversationId,
-    requestId,
-    pending,
-  );
+  const { statusText } = useLiveRunStatus(conversationId, requestId, pending);
 
   // The phase rides in the frame's OWN title bar. It is not a second row, not
   // a subtitle strip, and not a status bar inside the body — the window
@@ -125,14 +127,18 @@ export default function LiveRunWindow({
           own internal spacing). Anything added between these two lines shows
           up as a band of dead space the user can see. */}
       <div className="h-full min-h-0 overflow-hidden">
-        <LiveRunDisplay
-          conversationId={conversationId}
-          requestId={requestId}
-          pending={pending}
-          variant="bare"
-          className="h-full"
-          bodyClassName="max-h-none h-full overflow-y-auto"
-        />
+        {progress ? (
+          <LiveRunProgress progress={progress} />
+        ) : (
+          <LiveRunDisplay
+            conversationId={conversationId}
+            requestId={requestId}
+            pending={pending}
+            variant="bare"
+            className="h-full"
+            bodyClassName="max-h-none h-full overflow-y-auto"
+          />
+        )}
       </div>
     </WindowPanel>
   );

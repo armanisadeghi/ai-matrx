@@ -18,7 +18,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import dagre from "dagre";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   AlertCircle,
   ArrowDownToLine,
@@ -39,7 +39,13 @@ import {
   Shield,
   Wrench,
 } from "lucide-react";
+import {
+  booleanUrlCodec,
+  stringUrlCodec,
+  useUrlState,
+} from "@/lib/url-state/useUrlState";
 
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -61,6 +67,19 @@ import { cn } from "@/lib/utils";
 import type { Json } from "@/types/database.types";
 import type { AccessPlannerProps } from "./AccessPlanner";
 import {
+  DISPOSITION_COPY,
+  issueText,
+  plannerPageAgentPayload,
+  plannerPageHuman,
+  plannerPanelAgentPayload,
+  plannerPanelHuman,
+  plannerSnapshotAgentPayload,
+  plannerSnapshotData,
+  plannerTableAgentPayload,
+  plannerTableDetailData,
+  type PlannerPanelView,
+} from "./copy";
+import {
   parseAccessPlannerSnapshot,
   plannerTableId,
   type AccessPlannerSnapshot,
@@ -81,51 +100,11 @@ type PlannerNodeData = {
 
 type PlannerFlowNode = Node<PlannerNodeData, "plannerTable">;
 
-const DISPOSITION_COPY: Record<
-  PlannerTable["disposition"],
-  { label: string; description: string }
-> = {
-  entity: {
-    label: "Own access",
-    description: "Can be granted directly and can contain descendants.",
-  },
-  nested_entity: {
-    label: "Nested entity",
-    description: "Inherits from a parent and can still be granted directly.",
-  },
-  component: {
-    label: "Parent-owned",
-    description:
-      "Exists inside its parent and has no independent access opinion.",
-  },
-  infrastructure: {
-    label: "Infrastructure",
-    description: "Intentionally excluded from user-facing access planning.",
-  },
-  unplanned: {
-    label: "Needs a decision",
-    description: "This table has not been placed in the access model.",
-  },
-  derived: {
-    label: "Derived",
-    description:
-      "A view; access follows its underlying query and is audited separately.",
-  },
-};
-
-const ISSUE_COPY: Record<string, string> = {
-  unplanned_table: "No access decision has been recorded.",
-  rls_disabled: "Row-level security is disabled.",
-  no_policies: "No row-level security policies exist.",
-  component_without_parent: "Parent-owned table has no composition parent.",
-  component_directly_shareable:
-    "A parent-owned component is also directly shareable. Choose one model.",
-  component_rls_mismatch: "Component metadata and its RLS template disagree.",
-  entity_rls_mismatch: "Independent entity is using component RLS.",
-  containment_without_visibility:
-    "Nested entities need a visibility column before access can inherit.",
-  sharing_not_enforced_by_rls:
-    "Sharing is registered but direct grants are not enforced by RLS.",
+const MODE_TITLES: Record<AccessMode, string> = {
+  root: "Own access",
+  nested: "Inherit + share directly",
+  component: "Part of parent",
+  infrastructure: "Infrastructure",
 };
 
 function titleCase(value: string) {
@@ -303,14 +282,27 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
   const [snapshot, setSnapshot] = useState(() =>
     parseAccessPlannerSnapshot(initialSnapshot),
   );
-  const [selectedTableName, setSelectedTableName] = useState(() =>
-    initialSelectedTable(snapshot),
+  const [selectedTableName, setSelectedTableName] = useUrlState(
+    "table",
+    stringUrlCodec(initialSelectedTable(snapshot)),
   );
-  const [search, setSearch] = useState("");
-  const [onlyProblems, setOnlyProblems] = useState(false);
-  const [showPlumbing, setShowPlumbing] = useState(false);
-  const [showPhysicalFks, setShowPhysicalFks] = useState(false);
-  const [showAssociations, setShowAssociations] = useState(false);
+  const [search, setSearch] = useUrlState("q", stringUrlCodec());
+  const [onlyProblems, setOnlyProblems] = useUrlState(
+    "problems",
+    booleanUrlCodec(false),
+  );
+  const [showPlumbing, setShowPlumbing] = useUrlState(
+    "plumbing",
+    booleanUrlCodec(false),
+  );
+  const [showPhysicalFks, setShowPhysicalFks] = useUrlState(
+    "fks",
+    booleanUrlCodec(false),
+  );
+  const [showAssociations, setShowAssociations] = useUrlState(
+    "associations",
+    booleanUrlCodec(false),
+  );
   const [saving, setSaving] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -338,6 +330,29 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
       : "";
   });
   const [reason, setReason] = useState("");
+
+  useEffect(() => {
+    if (!selectedTable) return;
+    setMode(modeFor(selectedTable));
+    setToken(
+      selectedTable.token ??
+        `${selectedTable.schema_name}_${selectedTable.table_name}`,
+    );
+    setLabel(selectedTable.label ?? titleCase(selectedTable.table_name));
+    const existingParent = snapshot.access_relationships.find(
+      (relationship) => relationship.child_type === selectedTable.token,
+    );
+    setParentChoice(
+      existingParent
+        ? `${existingParent.parent_type}|${existingParent.fk_column}`
+        : "",
+    );
+    setReason(
+      selectedTable.exclusion_reason === null
+        ? ""
+        : selectedTable.exclusion_reason,
+    );
+  }, [selectedTable, snapshot.access_relationships]);
 
   const selectedId = selectedTable
     ? plannerTableId(snapshot.schema, selectedTable.table_name)
@@ -566,6 +581,9 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
   const hasOwnershipColumns =
     selectedTable?.column_names.includes("organization_id") === true &&
     selectedTable.column_names.includes("created_by");
+  const isDerived =
+    selectedTable?.relation_kind === "view" ||
+    selectedTable?.relation_kind === "materialized_view";
   const selectedParent = parentOptions.find(
     (option) =>
       `${option.target_token}|${option.source_columns[0]}` === parentChoice,
@@ -666,6 +684,129 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
     ((mode === "nested" || mode === "component") && !selectedParent) ||
     (mode === "nested" && !hasVisibility);
 
+  /** The detail panel AS RENDERED, from live state — called inside the copy
+   *  click handler so unsaved form edits are captured, not the saved row. */
+  function buildPanelView(table: PlannerTable): PlannerPanelView {
+    const unsavedChanges: string[] = [];
+    const savedMode = modeFor(table);
+    if (mode !== savedMode)
+      unsavedChanges.push(
+        `mode changed (saved: ${MODE_TITLES[savedMode]}, now: ${MODE_TITLES[mode]})`,
+      );
+    if (table.token !== null && token !== table.token)
+      unsavedChanges.push(
+        `entity token edited (saved: ${table.token}, now: ${token})`,
+      );
+    const savedLabel = table.label ?? titleCase(table.table_name);
+    if (label !== savedLabel)
+      unsavedChanges.push(`label edited (saved: ${savedLabel}, now: ${label})`);
+    const savedRelationship = snapshot.access_relationships.find(
+      (relationship) => relationship.child_type === table.token,
+    );
+    const savedChoice = savedRelationship
+      ? `${savedRelationship.parent_type}|${savedRelationship.fk_column}`
+      : "";
+    if (parentChoice !== savedChoice)
+      unsavedChanges.push("parent relationship changed");
+    if (
+      mode === "infrastructure" &&
+      reason !== (table.exclusion_reason ?? "")
+    )
+      unsavedChanges.push("reason edited");
+
+    const warnings: string[] = [];
+    if (!isDerived) {
+      if (mode === "infrastructure" && table.token)
+        warnings.push(
+          "This is an active entity. Deactivate it in the Entity registry before classifying it as infrastructure.",
+        );
+      if (
+        (mode === "nested" || mode === "component") &&
+        parentOptions.length === 0
+      )
+        warnings.push(
+          "No non-plumbing foreign key points to a registered parent.",
+        );
+      if (mode === "nested" && !hasVisibility)
+        warnings.push(
+          "This table needs a visibility column before it can inherit and remain directly shareable.",
+        );
+      if ((mode === "root" || mode === "nested") && !hasOwnershipColumns)
+        warnings.push(
+          "A table that owns access needs organization_id and created_by columns first.",
+        );
+    }
+
+    const applyBlockedReasons: string[] = [];
+    if (isDerived)
+      applyBlockedReasons.push("derived view — nothing to decide");
+    if (!token.trim()) applyBlockedReasons.push("entity token is empty");
+    if (!label.trim()) applyBlockedReasons.push("label is empty");
+    if (mode === "infrastructure" && !reason.trim())
+      applyBlockedReasons.push("infrastructure classification needs a reason");
+    if (mode === "infrastructure" && Boolean(table.token))
+      applyBlockedReasons.push(
+        "active entity must be deactivated in the Entity registry first",
+      );
+    if ((mode === "root" || mode === "nested") && !hasOwnershipColumns)
+      applyBlockedReasons.push(
+        "missing organization_id + created_by ownership columns",
+      );
+    if ((mode === "nested" || mode === "component") && !selectedParent)
+      applyBlockedReasons.push("no parent relationship chosen");
+    if (mode === "nested" && !hasVisibility)
+      applyBlockedReasons.push("missing visibility column");
+
+    return {
+      schema: snapshot.schema,
+      table,
+      reach,
+      isDerived,
+      form: {
+        mode,
+        modeTitle: MODE_TITLES[mode],
+        token,
+        label,
+        parentRelationship: selectedParent
+          ? `${selectedParent.target_label ?? selectedParent.target_token} via ${selectedParent.source_columns[0]}`
+          : null,
+        reason,
+        unsavedChanges,
+      },
+      warnings,
+      applyBlocked: decisionBlocked,
+      applyBlockedReasons,
+      doors: {
+        entityRegistryToken: table.token,
+        sharingRegistered: table.is_shareable,
+        connectedRuleCount: snapshot.association_rules.filter(
+          (rule) =>
+            rule.source_type === table.token ||
+            rule.target_type === table.token,
+        ).length,
+      },
+      physical: {
+        columnCount: table.columns.length,
+        estimatedRows: table.estimated_rows,
+        rlsEnabled: table.rls_enabled,
+        policyCount: table.policy_count,
+        parentFkCandidates: parentOptions.length,
+        isManyToMany: table.is_many_to_many,
+        columnNames: table.column_names,
+      },
+      schemaContext: {
+        decided: plannedCount,
+        baseTables: baseTables.length,
+        problemTables: snapshot.tables
+          .filter((candidate) => candidate.issue_codes.length > 0)
+          .map((candidate) => ({
+            table: `${candidate.schema_name}.${candidate.table_name}`,
+            issues: candidate.issue_codes.map(issueText),
+          })),
+      },
+    };
+  }
+
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
       <header className="shrink-0 border-b border-border bg-card px-3 py-3 lg:px-4">
@@ -688,6 +829,27 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <CopyButtons
+              size="sm"
+              label={`Schema ${snapshot.schema} access map`}
+              human={() => plannerPageHuman(snapshot)}
+              json={() => plannerSnapshotData(snapshot)}
+              agent={() => plannerPageAgentPayload(snapshot)}
+              agentVariant={{
+                id: "page-view",
+                label: "This page (what I see)",
+                hint: "Dispositions + every open blocker, as rendered",
+                position: "first",
+              }}
+              aiVariants={[
+                {
+                  id: "full-snapshot",
+                  label: "Everything (full snapshot)",
+                  hint: "All tables with RLS state + canonical findings",
+                  build: () => plannerSnapshotAgentPayload(snapshot),
+                },
+              ]}
+            />
             <Select
               value={snapshot.schema}
               onValueChange={(value) => void refresh(value)}
@@ -806,8 +968,8 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
               />
             </div>
           </div>
-          <ScrollArea className="h-[320px] lg:h-[calc(100%-105px)]">
-            <div className="space-y-1 p-2">
+          <ScrollArea className="h-[320px] w-full lg:h-[calc(100%-105px)]">
+            <div className="min-w-0">
               {visibleTables
                 .toSorted(
                   (a, b) =>
@@ -821,31 +983,23 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
                     type="button"
                     onClick={() => chooseTable(table)}
                     className={cn(
-                      "flex min-h-12 w-full items-center gap-2 rounded-md px-2.5 py-2 text-left transition-colors hover:bg-accent",
+                      "grid min-h-11 w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-border/40 px-3 py-2 text-left transition-colors last:border-b-0 hover:bg-accent/70 focus-visible:relative focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
                       selectedTableName === table.table_name &&
-                        "bg-accent ring-1 ring-primary/30",
+                        "bg-accent text-accent-foreground",
                     )}
                   >
-                    <span
-                      className={cn(
-                        "h-2.5 w-2.5 shrink-0 rounded-full border",
-                        dispositionClass(table.disposition),
-                      )}
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-medium">
+                    <span className="min-w-0">
+                      <span className="block whitespace-normal break-words text-sm font-medium leading-tight [overflow-wrap:anywhere]">
                         {table.label ?? titleCase(table.table_name)}
                       </span>
-                      <span className="block truncate font-mono text-[10px] text-muted-foreground">
+                      <span className="mt-0.5 block whitespace-normal break-all font-mono text-[10px] leading-tight text-muted-foreground">
                         {table.table_name}
                       </span>
                     </span>
-                    {table.issue_codes.length > 0 ? (
-                      <Badge variant="destructive">
+                    {table.issue_codes.length > 0 && (
+                      <Badge variant="destructive" className="shrink-0">
                         {table.issue_codes.length}
                       </Badge>
-                    ) : (
-                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
                     )}
                   </button>
                 ))}
@@ -934,15 +1088,45 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
                         {selectedTable.schema_name}.{selectedTable.table_name}
                       </p>
                     </div>
-                    <Badge
-                      variant={
-                        selectedTable.issue_codes.length > 0
-                          ? "destructive"
-                          : "outline"
-                      }
-                    >
-                      {DISPOSITION_COPY[selectedTable.disposition].label}
-                    </Badge>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <CopyButtons
+                        size="icon"
+                        label={`${selectedTable.schema_name}.${selectedTable.table_name}`}
+                        human={() =>
+                          plannerPanelHuman(buildPanelView(selectedTable))
+                        }
+                        json={() =>
+                          plannerTableDetailData(snapshot, selectedTable)
+                        }
+                        agent={() =>
+                          plannerPanelAgentPayload(buildPanelView(selectedTable))
+                        }
+                        agentVariant={{
+                          id: "panel-view",
+                          label: "This panel (what I see)",
+                          hint: "Blockers, reach, LIVE form values, warnings",
+                          position: "first",
+                        }}
+                        aiVariants={[
+                          {
+                            id: "full-detail",
+                            label: "Everything (full table detail)",
+                            hint: "All columns, FKs, access relationships, association rules",
+                            build: () =>
+                              plannerTableAgentPayload(snapshot, selectedTable),
+                          },
+                        ]}
+                      />
+                      <Badge
+                        variant={
+                          selectedTable.issue_codes.length > 0
+                            ? "destructive"
+                            : "outline"
+                        }
+                      >
+                        {DISPOSITION_COPY[selectedTable.disposition].label}
+                      </Badge>
+                    </div>
                   </div>
                   <p className="mt-2 text-xs leading-5 text-muted-foreground">
                     {DISPOSITION_COPY[selectedTable.disposition].description}
@@ -960,7 +1144,7 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
                       <ul className="mt-1 space-y-1">
                         {selectedTable.issue_codes.map((issue) => (
                           <li key={issue}>
-                            • {ISSUE_COPY[issue] ?? titleCase(issue)}
+                            • {issueText(issue)}
                           </li>
                         ))}
                       </ul>
@@ -982,155 +1166,174 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
                   </div>
                 )}
 
-                <section className="space-y-3">
-                  <div>
-                    <h3 className="text-sm font-semibold">Access decision</h3>
-                    <p className="text-xs text-muted-foreground">
-                      Every base table must have exactly one primary role.
-                    </p>
-                  </div>
-                  <div className="grid gap-2">
-                    <ModeCard
-                      mode="root"
-                      active={mode === "root"}
-                      onSelect={setMode}
-                      icon={Shield}
-                      title="Own access"
-                      description="Direct grants; can pass access downward."
-                    />
-                    <ModeCard
-                      mode="nested"
-                      active={mode === "nested"}
-                      onSelect={setMode}
-                      icon={GitBranch}
-                      title="Inherit + share directly"
-                      description="Standalone entity that also inherits from a parent."
-                    />
-                    <ModeCard
-                      mode="component"
-                      active={mode === "component"}
-                      onSelect={setMode}
-                      icon={Boxes}
-                      title="Part of parent"
-                      description="No separate grants; always follows one parent."
-                    />
-                    <ModeCard
-                      mode="infrastructure"
-                      active={mode === "infrastructure"}
-                      onSelect={setMode}
-                      icon={Wrench}
-                      title="Infrastructure"
-                      description="Plumbing, not a user-facing entity."
-                    />
-                  </div>
-                </section>
-
-                {mode === "infrastructure" ? (
-                  <div className="space-y-2">
-                    <Label htmlFor="reason">Why is this not an entity?</Label>
-                    <Textarea
-                      id="reason"
-                      value={reason}
-                      onChange={(event) => setReason(event.target.value)}
-                      placeholder="Example: sweep cursor state; no user-owned identity."
-                    />
-                    {selectedTable.token && (
-                      <p className="text-xs text-destructive">
-                        This is an active entity. Deactivate it in the Entity
-                        registry before classifying it as infrastructure.
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-1.5">
-                        <Label htmlFor="token">Entity token</Label>
-                        <Input
-                          id="token"
-                          value={token}
-                          onChange={(event) => setToken(event.target.value)}
-                          disabled={Boolean(selectedTable.token)}
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label htmlFor="label">Label</Label>
-                        <Input
-                          id="label"
-                          value={label}
-                          onChange={(event) => setLabel(event.target.value)}
-                        />
-                      </div>
-                    </div>
-                    {(mode === "nested" || mode === "component") && (
-                      <div className="space-y-1.5">
-                        <Label>Parent relationship</Label>
-                        <Select
-                          value={parentChoice}
-                          onValueChange={setParentChoice}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Choose a real foreign key…" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {parentOptions.map((option) => (
-                              <SelectItem
-                                key={`${option.conname}:${option.source_columns[0]}`}
-                                value={`${option.target_token}|${option.source_columns[0]}`}
-                              >
-                                {option.target_label ?? option.target_token} via{" "}
-                                {option.source_columns.join(", ")}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {parentOptions.length === 0 && (
-                          <p className="text-xs text-destructive">
-                            No non-plumbing foreign key points to a registered
-                            parent.
-                          </p>
-                        )}
-                        {mode === "nested" && !hasVisibility && (
-                          <p className="text-xs text-destructive">
-                            This table needs a visibility column before it can
-                            inherit and remain directly shareable.
-                          </p>
-                        )}
-                      </div>
-                    )}
-                    {(mode === "root" || mode === "nested") &&
-                      !hasOwnershipColumns && (
-                        <p className="text-xs text-destructive">
-                          A table that owns access needs organization_id and
-                          created_by columns first.
-                        </p>
-                      )}
-                  </div>
-                )}
-
-                {message && (
-                  <Alert
-                    variant={
-                      message.startsWith("Access decision")
-                        ? "default"
-                        : "destructive"
-                    }
-                  >
-                    <AlertDescription>{message}</AlertDescription>
+                {isDerived ? (
+                  <Alert>
+                    <Eye className="h-4 w-4" />
+                    <AlertTitle>Derived view — nothing to decide</AlertTitle>
+                    <AlertDescription>
+                      Access to a view follows the RLS of the tables in its
+                      underlying query. Views are never registered as entities
+                      and never carry ownership columns.
+                    </AlertDescription>
                   </Alert>
+                ) : (
+                  <>
+                    <section className="space-y-3">
+                      <div>
+                        <h3 className="text-sm font-semibold">
+                          Access decision
+                        </h3>
+                        <p className="text-xs text-muted-foreground">
+                          Every base table must have exactly one primary role.
+                        </p>
+                      </div>
+                      <div className="grid gap-2">
+                        <ModeCard
+                          mode="root"
+                          active={mode === "root"}
+                          onSelect={setMode}
+                          icon={Shield}
+                          title="Own access"
+                          description="Direct grants; can pass access downward."
+                        />
+                        <ModeCard
+                          mode="nested"
+                          active={mode === "nested"}
+                          onSelect={setMode}
+                          icon={GitBranch}
+                          title="Inherit + share directly"
+                          description="Standalone entity that also inherits from a parent."
+                        />
+                        <ModeCard
+                          mode="component"
+                          active={mode === "component"}
+                          onSelect={setMode}
+                          icon={Boxes}
+                          title="Part of parent"
+                          description="No separate grants; always follows one parent."
+                        />
+                        <ModeCard
+                          mode="infrastructure"
+                          active={mode === "infrastructure"}
+                          onSelect={setMode}
+                          icon={Wrench}
+                          title="Infrastructure"
+                          description="Plumbing, not a user-facing entity."
+                        />
+                      </div>
+                    </section>
+
+                    {mode === "infrastructure" ? (
+                      <div className="space-y-2">
+                        <Label htmlFor="reason">
+                          Why is this not an entity?
+                        </Label>
+                        <Textarea
+                          id="reason"
+                          value={reason}
+                          onChange={(event) => setReason(event.target.value)}
+                          placeholder="Example: sweep cursor state; no user-owned identity."
+                        />
+                        {selectedTable.token && (
+                          <p className="text-xs text-destructive">
+                            This is an active entity. Deactivate it in the
+                            Entity registry before classifying it as
+                            infrastructure.
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-1.5">
+                            <Label htmlFor="token">Entity token</Label>
+                            <Input
+                              id="token"
+                              value={token}
+                              onChange={(event) => setToken(event.target.value)}
+                              disabled={Boolean(selectedTable.token)}
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label htmlFor="label">Label</Label>
+                            <Input
+                              id="label"
+                              value={label}
+                              onChange={(event) => setLabel(event.target.value)}
+                            />
+                          </div>
+                        </div>
+                        {(mode === "nested" || mode === "component") && (
+                          <div className="space-y-1.5">
+                            <Label>Parent relationship</Label>
+                            <Select
+                              value={parentChoice}
+                              onValueChange={setParentChoice}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Choose a real foreign key…" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {parentOptions.map((option) => (
+                                  <SelectItem
+                                    key={`${option.conname}:${option.source_columns[0]}`}
+                                    value={`${option.target_token}|${option.source_columns[0]}`}
+                                  >
+                                    {option.target_label ?? option.target_token}{" "}
+                                    via {option.source_columns.join(", ")}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {parentOptions.length === 0 && (
+                              <p className="text-xs text-destructive">
+                                No non-plumbing foreign key points to a
+                                registered parent.
+                              </p>
+                            )}
+                            {mode === "nested" && !hasVisibility && (
+                              <p className="text-xs text-destructive">
+                                This table needs a visibility column before it
+                                can inherit and remain directly shareable.
+                              </p>
+                            )}
+                          </div>
+                        )}
+                        {(mode === "root" || mode === "nested") &&
+                          !hasOwnershipColumns && (
+                            <p className="text-xs text-destructive">
+                              A table that owns access needs organization_id and
+                              created_by columns first.
+                            </p>
+                          )}
+                      </div>
+                    )}
+
+                    {message && (
+                      <Alert
+                        variant={
+                          message.startsWith("Access decision")
+                            ? "default"
+                            : "destructive"
+                        }
+                      >
+                        <AlertDescription>{message}</AlertDescription>
+                      </Alert>
+                    )}
+                    <Button
+                      className="w-full"
+                      onClick={() => setConfirmOpen(true)}
+                      disabled={decisionBlocked || saving}
+                    >
+                      {saving ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Check className="mr-2 h-4 w-4" />
+                      )}
+                      Apply access decision
+                    </Button>
+                  </>
                 )}
-                <Button
-                  className="w-full"
-                  onClick={() => setConfirmOpen(true)}
-                  disabled={decisionBlocked || saving}
-                >
-                  {saving ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Check className="mr-2 h-4 w-4" />
-                  )}
-                  Apply access decision
-                </Button>
 
                 <section className="space-y-2 border-t border-border pt-4">
                   <h3 className="text-sm font-semibold">

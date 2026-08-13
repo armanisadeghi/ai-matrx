@@ -15,9 +15,12 @@ import {
   LayoutDashboard,
   Loader2,
   Zap,
-  AlertTriangle
+  AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { ADMIN_SCHEDULING_SURFACE_NAME } from "@/features/surfaces/manifests/admin-scheduling.manifest";
+import { buildAdminSchedulingScope } from "@/features/scheduling/lib/admin-scheduling-scope";
 
 const NAV_ITEMS = [
   {
@@ -78,48 +81,60 @@ export function SchedulingAdminLayoutClient({
     startTransition(() => router.push(href));
   };
 
+  // The shell is the only component mounted on all seven tabs, so it owns the
+  // surface's outer runtime. `active_tab` comes from the pathname here; each
+  // tab publishes its own values into the module store the builder reads. The
+  // Cron tester nests its own provider inside this one and wins there by
+  // depth — see features/scheduling/lib/admin-scheduling-scope.ts.
   return (
-    <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden bg-textured">
-      <div className="border-b border-border px-4 bg-card flex items-center gap-2">
-        <Link
-          href="/administration"
-          className="text-muted-foreground hover:text-foreground transition-colors p-2 -ml-2"
-        >
-          <ArrowLeft className="w-4 h-4" />
-        </Link>
-        <div className="flex items-center gap-1.5 pr-2 border-r border-border h-12">
-          <CalendarClock className="h-4 w-4 text-blue-500" />
-          <span className="font-medium text-sm">Scheduling</span>
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_SCHEDULING_SURFACE_NAME}
+      getScope={() => buildAdminSchedulingScope(pathname)}
+    >
+      <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden bg-textured">
+        <div className="border-b border-border px-4 bg-card flex items-center gap-2">
+          <Link
+            href="/administration"
+            className="text-muted-foreground hover:text-foreground transition-colors p-2 -ml-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </Link>
+          <div className="flex items-center gap-1.5 pr-2 border-r border-border h-12">
+            <CalendarClock className="h-4 w-4 text-blue-500" />
+            <span className="font-medium text-sm">Scheduling</span>
+          </div>
+          <nav className="flex items-center h-12 gap-1 overflow-x-auto">
+            {NAV_ITEMS.map((item) => {
+              const active = isActive(pathname, item.href, item.exact);
+              const navigating = isPending && pendingHref === item.href;
+              return (
+                <button
+                  key={item.href}
+                  type="button"
+                  onClick={() => handleNavigate(item.href)}
+                  disabled={isPending}
+                  className={cn(
+                    "inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap",
+                    active
+                      ? "bg-accent text-accent-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent/50",
+                  )}
+                >
+                  {navigating ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <item.icon className="w-4 h-4" />
+                  )}
+                  {item.label}
+                </button>
+              );
+            })}
+          </nav>
         </div>
-        <nav className="flex items-center h-12 gap-1 overflow-x-auto">
-          {NAV_ITEMS.map((item) => {
-            const active = isActive(pathname, item.href, item.exact);
-            const navigating = isPending && pendingHref === item.href;
-            return (
-              <button
-                key={item.href}
-                type="button"
-                onClick={() => handleNavigate(item.href)}
-                disabled={isPending}
-                className={cn(
-                  "inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap",
-                  active
-                    ? "bg-accent text-accent-foreground"
-                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50",
-                )}
-              >
-                {navigating ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <item.icon className="w-4 h-4" />
-                )}
-                {item.label}
-              </button>
-            );
-          })}
-        </nav>
+        <div className="flex-1 overflow-y-auto overflow-x-hidden">
+          {children}
+        </div>
       </div>
-      <div className="flex-1 overflow-hidden">{children}</div>
-    </div>
+    </SurfaceRuntimeProvider>
   );
 }

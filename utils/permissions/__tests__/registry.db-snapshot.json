@@ -22,17 +22,6 @@
     "is_active": true
   },
   {
-    "resource_type": "analysis_recipes",
-    "table_name": "analysis_recipes",
-    "id_column": "id",
-    "owner_column": "owner_user_id",
-    "is_public_column": null,
-    "display_label": "Analysis Recipe",
-    "url_path_template": "/settings/analysis/recipes/{id}",
-    "rls_uses_has_permission": false,
-    "is_active": true
-  },
-  {
     "resource_type": "app",
     "table_name": "definition",
     "id_column": "id",
@@ -56,7 +45,7 @@
   },
   {
     "resource_type": "batch_provider_batch",
-    "table_name": "auto_ingest_batch",
+    "table_name": "provider_batch",
     "id_column": "id",
     "owner_column": "user_id",
     "is_public_column": null,
@@ -114,8 +103,8 @@
     "table_name": "kind_instance",
     "id_column": "id",
     "owner_column": "created_by",
-    "is_public_column": "visibility",
-    "display_label": "Kind Instance",
+    "is_public_column": null,
+    "display_label": "Saved Result",
     "url_path_template": "/shapes/instances/{id}",
     "rls_uses_has_permission": true,
     "is_active": true
@@ -305,7 +294,7 @@
     "display_label": "Flashcard",
     "url_path_template": "/flashcards/{id}",
     "rls_uses_has_permission": true,
-    "is_active": true
+    "is_active": false
   },
   {
     "resource_type": "folder",
@@ -344,7 +333,7 @@
     "resource_type": "message_template",
     "table_name": "message_template",
     "id_column": "id",
-    "owner_column": "user_id",
+    "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Message Template",
     "url_path_template": "/settings/message-templates/{id}",
@@ -432,7 +421,7 @@
     "resource_type": "quiz_session",
     "table_name": "quiz_sessions",
     "id_column": "id",
-    "owner_column": "user_id",
+    "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Quiz",
     "url_path_template": "/quizzes/{id}",
@@ -534,7 +523,7 @@
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "SEO Collection Run",
-    "url_path_template": "/marketing/seo/collections/{id}",
+    "url_path_template": "/marketing/ai-visibility/runs/{id}",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -547,6 +536,17 @@
     "display_label": "SEO Keyword",
     "url_path_template": "/seo/keywords/{id}",
     "rls_uses_has_permission": false,
+    "is_active": true
+  },
+  {
+    "resource_type": "shared_canvas_item",
+    "table_name": "shared_canvas_items",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Shared Canvas",
+    "url_path_template": "/canvas/shared/{id}",
+    "rls_uses_has_permission": true,
     "is_active": true
   },
   {
@@ -737,21 +737,10 @@
     "is_active": true
   },
   {
-    "resource_type": "wf_definition",
-    "table_name": "wf_definition",
-    "id_column": "id",
-    "owner_column": "user_id",
-    "is_public_column": null,
-    "display_label": "Workflow",
-    "url_path_template": "/workflows/{id}",
-    "rls_uses_has_permission": false,
-    "is_active": false
-  },
-  {
     "resource_type": "wf_node_data_slot",
     "table_name": "node_data_slot",
     "id_column": "id",
-    "owner_column": "user_id",
+    "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Workflow Node Data Slot",
     "url_path_template": "/workflows/{id}",

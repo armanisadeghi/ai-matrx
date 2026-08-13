@@ -9,7 +9,7 @@
  * columns. Run this BEFORE any rename/drop (docs/canonicalization_worklog.md §5b).
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AlertTriangle, Loader2, Search } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -27,6 +27,11 @@ import {
   tableImpactRunToAgentInput,
   tableImpactRunToHuman,
 } from "../utils/aiExport";
+import {
+  booleanUrlCodec,
+  stringUrlCodec,
+  useUrlState,
+} from "@/lib/url-state/useUrlState";
 
 function isTableImpactRow(v: unknown): v is TableImpactRow {
   if (typeof v !== "object" || v === null) return false;
@@ -40,50 +45,49 @@ function isTableImpactRow(v: unknown): v is TableImpactRow {
 
 export function TableImpactPanel() {
   const searchParams = useSearchParams();
-  const [schema, setSchema] = useState(() => searchParams.get("schema") ?? "");
-  const [table, setTable] = useState(() => searchParams.get("table") ?? "");
+  const initialDeepLink = useRef(
+    Boolean(searchParams.get("schema") && searchParams.get("table")),
+  );
+  const [schema, setSchema] = useUrlState("schema", stringUrlCodec());
+  const [table, setTable] = useUrlState("table", stringUrlCodec());
+  const [hasRun, setHasRun] = useUrlState("run", booleanUrlCodec(false));
   const [rows, setRows] = useState<TableImpactRow[]>([]);
   const [loading, setLoading] = useState(false);
-  const [hasRun, setHasRun] = useState(false);
 
-  const runImpact = useCallback(
-    async (override?: { schema: string; table: string }) => {
-      const target = override ?? { schema: schema.trim(), table: table.trim() };
-      if (!target.schema || !target.table) {
-        toast.error("Schema and table are required");
-        return;
-      }
-      setSchema(target.schema);
-      setTable(target.table);
-      setLoading(true);
-      setHasRun(true);
-      try {
-        const res = await fetch("/api/admin/canonicalization/table-impact", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(target),
-        });
-        const data = await readJsonObject(res);
-        if (!res.ok) throw new Error(errorMessageFrom(data, res));
-        const nextRows: unknown[] = Array.isArray(data.rows) ? data.rows : [];
-        setRows(nextRows.filter(isTableImpactRow));
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : String(err));
-        setRows([]);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [schema, table],
-  );
+  const runImpact = useCallback(async () => {
+    const target = { schema: schema.trim(), table: table.trim() };
+    if (!target.schema || !target.table) {
+      toast.error("Schema and table are required");
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/canonicalization/table-impact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(target),
+      });
+      const data = await readJsonObject(res);
+      if (!res.ok) throw new Error(errorMessageFrom(data, res));
+      const nextRows: unknown[] = Array.isArray(data.rows) ? data.rows : [];
+      setRows(nextRows.filter(isTableImpactRow));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+      setRows([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [schema, table]);
 
   useEffect(() => {
-    const s = searchParams.get("schema");
-    const t = searchParams.get("table");
-    if (s && t) void runImpact({ schema: s, table: t });
-    // Only run once on mount for the deep-link case.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (!initialDeepLink.current) return;
+    initialDeepLink.current = false;
+    setHasRun(true);
+  }, [setHasRun]);
+
+  useEffect(() => {
+    if (hasRun && schema.trim() && table.trim()) void runImpact();
+  }, [hasRun, runImpact, schema, table]);
 
   const brokenCount = rows.filter((r) => r.currently_broken).length;
 
@@ -154,10 +158,19 @@ export function TableImpactPanel() {
           onChange={(patch) => {
             if (patch.schema !== undefined) setSchema(patch.schema);
             if (patch.table !== undefined) setTable(patch.table);
+            setHasRun(false);
+            setRows([]);
           }}
           disabled={loading}
         />
-        <Button size="sm" onClick={() => void runImpact()} disabled={loading}>
+        <Button
+          size="sm"
+          onClick={() => {
+            if (hasRun) void runImpact();
+            else setHasRun(true);
+          }}
+          disabled={loading}
+        >
           {loading ? (
             <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
           ) : (

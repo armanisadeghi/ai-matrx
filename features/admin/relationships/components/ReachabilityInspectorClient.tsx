@@ -21,6 +21,7 @@ import { Layers, RefreshCw, Search } from "lucide-react";
 import { toast } from "@/lib/toast";
 
 import { createClient } from "@/utils/supabase/client";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { EntityTypeChip } from "@/components/entity-types/EntityTypeChip";
 import { EntityTypeCombobox } from "@/components/entity-types/EntityTypeCombobox";
 import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
@@ -42,7 +43,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ConveyPill } from "./shared";
+import { RELATIONSHIPS_LOCATION } from "../utils";
 import type { ReachabilityContainer, ReachabilityContent } from "../types";
+import {
+  booleanUrlCodec,
+  enumUrlCodec,
+  stringUrlCodec,
+  useUrlState,
+} from "@/lib/url-state/useUrlState";
 
 export type ReachabilityMode = "contents" | "containers";
 
@@ -61,14 +69,29 @@ export function ReachabilityInspectorClient({
   initialId,
 }: ReachabilityInspectorClientProps = {}) {
   const supabase = useMemo(() => createClient(), []);
-  const [mode, setMode] = useState<ReachabilityMode>(initialMode ?? "contents");
-  const [entityType, setEntityType] = useState<string>(initialType || "thread");
-  const [entityId, setEntityId] = useState(initialId ?? "");
+  const initialDeepLink = useRef(Boolean(initialType && initialId));
+  const [mode, setMode] = useUrlState(
+    "mode",
+    enumUrlCodec<ReachabilityMode>(["contents", "containers"], "contents"),
+  );
+  const [entityType, setEntityType] = useUrlState(
+    "type",
+    stringUrlCodec("thread"),
+  );
+  const [entityId, setEntityId] = useUrlState("id", stringUrlCodec());
+  const [hasRun, setHasRun] = useUrlState("run", booleanUrlCodec(false));
   const [loading, setLoading] = useState(false);
   const [contents, setContents] = useState<ReachabilityContent[] | null>(null);
   const [containers, setContainers] = useState<ReachabilityContainer[] | null>(
     null,
   );
+  /** The lookup that produced the current results — the form fields may have
+   *  been edited since, so copy payloads read this, never the live inputs. */
+  const [lastLookup, setLastLookup] = useState<{
+    mode: ReachabilityMode;
+    entityType: string;
+    entityId: string;
+  } | null>(null);
 
   // Only the LATEST lookup may write results. Two can overlap — the deep-link
   // effect plus a manual "Look up", or a second ?mode=&type=&id= navigation
@@ -107,6 +130,11 @@ export function ReachabilityInspectorClient({
         if (error) throw error;
         if (isStale()) return;
         setContents(data ?? []);
+        setLastLookup({
+          mode: lookupMode,
+          entityType: lookupType,
+          entityId: id,
+        });
       } else {
         const { data, error } = await supabase.rpc(
           "admin_reachability_containers",
@@ -115,6 +143,11 @@ export function ReachabilityInspectorClient({
         if (error) throw error;
         if (isStale()) return;
         setContainers(data ?? []);
+        setLastLookup({
+          mode: lookupMode,
+          entityType: lookupType,
+          entityId: id,
+        });
       }
     } catch (e) {
       if (isStale()) return;
@@ -133,20 +166,16 @@ export function ReachabilityInspectorClient({
   // leave the old answer on screen under the new URL (or run the wrong RPC,
   // since `mode` also comes from the link). Kicked off from a microtask so no
   // setState runs synchronously in the effect body.
-  const lastDeepLink = useRef<string | null>(null);
   useEffect(() => {
-    if (!initialType || !initialId) return;
-    const key = `${initialMode ?? "contents"}|${initialType}|${initialId}`;
-    if (lastDeepLink.current === key) return;
-    lastDeepLink.current = key;
-    // Re-seed the form so the controls match the link that was followed.
-    setMode(initialMode ?? "contents");
-    setEntityType(initialType);
-    setEntityId(initialId);
-    queueMicrotask(() =>
-      void lookupFor(initialMode ?? "contents", initialType, initialId),
-    );
-  }, [initialMode, initialType, initialId]);
+    if (!initialDeepLink.current) return;
+    initialDeepLink.current = false;
+    setHasRun(true);
+  }, [setHasRun]);
+
+  useEffect(() => {
+    if (!hasRun || !entityType || !entityId) return;
+    queueMicrotask(() => void lookupFor(mode, entityType, entityId));
+  }, [entityId, entityType, hasRun, mode]);
 
   const rows = mode === "contents" ? contents : containers;
 
@@ -160,7 +189,15 @@ export function ReachabilityInspectorClient({
         </span>
       </h2>
       <div className="flex flex-wrap items-center gap-2">
-        <Select value={mode} onValueChange={(v) => setMode(v as typeof mode)}>
+        <Select
+          value={mode}
+          onValueChange={(v) => {
+            setMode(v as typeof mode);
+            setHasRun(false);
+            setContents(null);
+            setContainers(null);
+          }}
+        >
           <SelectTrigger className="h-8 w-64">
             <SelectValue />
           </SelectTrigger>
@@ -175,17 +212,34 @@ export function ReachabilityInspectorClient({
         </Select>
         <EntityTypeCombobox
           value={entityType || null}
-          onChange={(t) => setEntityType(t)}
+          onChange={(t) => {
+            setEntityType(t);
+            setHasRun(false);
+            setContents(null);
+            setContainers(null);
+          }}
           placeholder="entity type…"
           className="w-52"
         />
         <Input
           value={entityId}
-          onChange={(e) => setEntityId(e.target.value)}
+          onChange={(e) => {
+            setEntityId(e.target.value);
+            setHasRun(false);
+            setContents(null);
+            setContainers(null);
+          }}
           placeholder="entity UUID"
           className="h-8 w-80 font-mono text-xs"
         />
-        <Button size="sm" disabled={loading} onClick={() => void lookupFor(mode, entityType, entityId)}>
+        <Button
+          size="sm"
+          disabled={loading}
+          onClick={() => {
+            if (hasRun) void lookupFor(mode, entityType, entityId);
+            else setHasRun(true);
+          }}
+        >
           {loading ? (
             <RefreshCw className="mr-1.5 h-3.5 w-3.5 animate-spin" />
           ) : (
@@ -193,6 +247,48 @@ export function ReachabilityInspectorClient({
           )}
           Look up
         </Button>
+        {rows !== null && rows.length > 0 && lastLookup !== null && (
+          <CopyButtons
+            size="sm"
+            label={
+              lastLookup.mode === "contents"
+                ? "Reachable contents"
+                : "Conveying containers"
+            }
+            human={() =>
+              [
+                lastLookup.mode === "contents"
+                  ? `Everything reachable from ${lastLookup.entityType} ${lastLookup.entityId} (${rows.length} rows):`
+                  : `Containers conveying access to ${lastLookup.entityType} ${lastLookup.entityId} (${rows.length} rows):`,
+                ...rows.map((row) => {
+                  const type =
+                    "item_type" in row ? row.item_type : row.container_type;
+                  const id = "item_id" in row ? row.item_id : row.container_id;
+                  return `${type} ${id} — depth=${row.depth} max_level=${row.max_level}`;
+                }),
+              ].join("\n")
+            }
+            json={() => rows}
+            agent={() => ({
+              kind:
+                lastLookup.mode === "contents"
+                  ? "reachability-contents"
+                  : "reachability-containers",
+              location: RELATIONSHIPS_LOCATION,
+              description:
+                lastLookup.mode === "contents"
+                  ? "Reachability inspector result: every record this container conveys access to, with depth and max access level."
+                  : "Reachability inspector result: every container that conveys access to this record, with depth and max access level.",
+              data: rows,
+              attributes: {
+                mode: lastLookup.mode,
+                entity_type: lastLookup.entityType,
+                entity_id: lastLookup.entityId,
+                rows: rows.length,
+              },
+            })}
+          />
+        )}
       </div>
 
       {rows !== null ? (

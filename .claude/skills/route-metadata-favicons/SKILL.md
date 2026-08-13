@@ -93,10 +93,6 @@ All primary routes use 2-letter favicon codes. The pattern:
 | `/ai/recipes` | `Rc` | `#c026d3` | Fuchsia-600 |
 | `/ai/runs` | `Ru` | `#0e7490` | Cyan-700 |
 | `/workflows` | `Wf` | `#6d28d9` | Violet-700 |
-| `/apps` | `Ah` | `#14532d` | Green-900 — Apps hub |
-| `/apps/app-builder` | `Ab` | `#4c1d95` | Purple-950 — App Builder |
-| `/apps/demo` | `Ad` | `#be123c` | Rose-700 — Applet demo |
-| `/apps/builder/hub` | `Bh` | `#1e3a8a` | Indigo-900 — Builder hub |
 | `/demo/*` | `De` | `#ca8a04` | **System override** |
 | `/tests/*` | `Tx` | `#65a30d` | **System override** |
 | `/administration/*` | `Ad` | `#4338ca` | **System override** |

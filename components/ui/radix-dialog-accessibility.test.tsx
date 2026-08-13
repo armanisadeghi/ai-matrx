@@ -28,10 +28,6 @@ import {
 } from "@/components/ui/drawer";
 import { BottomSheet } from "@/components/official/bottom-sheet/BottomSheet";
 
-jest.mock("@/hooks/use-is-mounted", () => ({
-  useIsMounted: () => true,
-}));
-
 jest.mock("@/hooks/use-mobile", () => ({
   useIsMobile: () => false,
 }));
@@ -152,6 +148,7 @@ describe("Radix dialog accessibility semantics", () => {
 
     const dialog = document.querySelector<HTMLElement>('[role="dialog"]');
     expect(dialog?.getAttribute("aria-modal")).toBe("true");
+    expect(dialog?.classList.contains("pb-safe")).toBe(true);
     expect(background.getAttribute("aria-hidden")).toBe("true");
     expect(dialog?.closest('[aria-hidden="true"]')).toBeNull();
   });

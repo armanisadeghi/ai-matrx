@@ -54,14 +54,6 @@ import type {
   StudioSession,
 } from "../types";
 
-type LooseSupabase = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  from: (table: string) => any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  schema: (schema: string) => { from: (table: string) => any };
-};
-const db = supabase as unknown as LooseSupabase;
-
 // ── Helpers ──────────────────────────────────────────────────────────
 
 function secondsToTimecode(sec: number): string {
@@ -83,12 +75,12 @@ function secondsToTimecode(sec: number): string {
 async function findStudioSessionByTranscriptId(
   transcriptId: string,
 ): Promise<StudioSession | null> {
-  const { data, error } = await db
+  const { data, error } = await supabase
     .schema("transcripts")
     .from("studio_sessions")
     .select("*")
     .eq("transcript_id", transcriptId)
-    .eq("is_deleted", false)
+    .is("deleted_at", null)
     .order("updated_at", { ascending: false })
     .limit(1);
   if (error) {
@@ -100,7 +92,7 @@ async function findStudioSessionByTranscriptId(
   // We don't have rowToSession exported from studioService; we shape the
   // partial we need here (id only — caller refetches via getSession when
   // they need the full record).
-  return { id: (data[0] as { id: string }).id } as StudioSession;
+  return { id: data[0].id } as StudioSession;
 }
 
 // ── Promote: transcripts → studio ────────────────────────────────────
@@ -136,12 +128,29 @@ export async function promoteTranscriptToStudio(
     };
   }
 
+  const { data: transcriptScope, error: transcriptScopeError } = await supabase
+    .schema("transcripts")
+    .from("transcripts")
+    .select("organization_id")
+    .eq("id", transcript.id)
+    .single();
+  if (transcriptScopeError || !transcriptScope) {
+    throw new Error(
+      `[studio-bridge] failed to resolve transcript organization: ${transcriptScopeError?.message ?? "no row"}`,
+    );
+  }
+
   // 1. Create the parent studio_sessions row.
-  const { data: sessionRow, error: sessionError } = await db
+  const { data: sessionRow, error: sessionError } = await supabase
     .schema("transcripts")
     .from("studio_sessions")
     .insert({
-      user_id: userId,
+      // Canonical owner column: `studio_sessions` has `created_by`, never
+      // `user_id` — inserting the latter is a PostgREST 42703. Carry the
+      // source transcript's required organization explicitly; the inheritance
+      // trigger remains the database backstop.
+      created_by: userId,
+      organization_id: transcriptScope.organization_id,
       transcript_id: transcript.id,
       title: transcript.title || NEW_SESSION_DEFAULT_TITLE,
       module_id: DEFAULT_MODULE_ID,
@@ -161,7 +170,7 @@ export async function promoteTranscriptToStudio(
       `[studio-bridge] failed to create studio_sessions: ${sessionError?.message ?? "no row"}`,
     );
   }
-  const sessionId = (sessionRow as { id: string }).id;
+  const sessionId = sessionRow.id;
 
   // 2. Migrate segments.
   const segs = transcript.segments ?? [];
@@ -187,7 +196,7 @@ export async function promoteTranscriptToStudio(
         source: "imported",
       };
     });
-    const { error: rawError } = await db
+    const { error: rawError } = await supabase
       .schema("transcripts")
       .from("studio_raw_segments")
       .insert(rows);
@@ -336,7 +345,7 @@ function findCleanedFor(
 async function fetchActiveCleanedSegments(
   sessionId: string,
 ): Promise<{ tStart: number; tEnd: number; text: string }[]> {
-  const { data, error } = await db
+  const { data, error } = await supabase
     .schema("transcripts")
     .from("studio_cleaned_segments")
     .select("t_start, t_end, text")
@@ -348,9 +357,7 @@ async function fetchActiveCleanedSegments(
       `[studio-bridge] failed to fetch cleaned segments: ${error.message}`,
     );
   }
-  return (
-    (data as { t_start: number | string; t_end: number | string; text: string }[]) ?? []
-  ).map((r) => ({
+  return (data ?? []).map((r) => ({
     tStart: typeof r.t_start === "string" ? Number(r.t_start) : r.t_start,
     tEnd: typeof r.t_end === "string" ? Number(r.t_end) : r.t_end,
     text: r.text,

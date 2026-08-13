@@ -283,6 +283,14 @@ export function useEnums({
     }));
   }, []);
 
+  const replaceFilter = useCallback((next: EnumFilter) => {
+    setFilter(next);
+  }, []);
+
+  const replaceSort = useCallback((next: EnumSort) => {
+    setSort(next);
+  }, []);
+
   // Initial fetch
   useEffect(() => {
     if (!initialData) {
@@ -316,5 +324,7 @@ export function useEnums({
     selectEnum,
     updateFilter,
     updateSort,
+    replaceFilter,
+    replaceSort,
   };
 }

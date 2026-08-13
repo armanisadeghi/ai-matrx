@@ -223,9 +223,15 @@ export type Database = {
           comparison_set_id: string
           conversation_id: string
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           display_order: number
           id: string
           metadata: Json
+          organization_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
         }
         Insert: {
           agent_id: string
@@ -234,9 +240,15 @@ export type Database = {
           comparison_set_id: string
           conversation_id: string
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           display_order: number
           id?: string
           metadata?: Json
+          organization_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
         }
         Update: {
           agent_id?: string
@@ -245,9 +257,15 @@ export type Database = {
           comparison_set_id?: string
           conversation_id?: string
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           display_order?: number
           id?: string
           metadata?: Json
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -262,7 +280,7 @@ export type Database = {
       cmp_comparison_sets: {
         Row: {
           created_at: string
-          created_by: string | null
+          created_by: string
           deleted_at: string | null
           id: string
           metadata: Json
@@ -272,13 +290,12 @@ export type Database = {
           task_id: string | null
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           created_at?: string
-          created_by?: string | null
+          created_by: string
           deleted_at?: string | null
           id?: string
           metadata?: Json
@@ -288,13 +305,12 @@ export type Database = {
           task_id?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           created_at?: string
-          created_by?: string | null
+          created_by?: string
           deleted_at?: string | null
           id?: string
           metadata?: Json
@@ -304,7 +320,6 @@ export type Database = {
           task_id?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -316,7 +331,7 @@ export type Database = {
           comparison_set_id: string | null
           conversation_id: string
           created_at: string
-          created_by: string | null
+          created_by: string
           deleted_at: string | null
           id: string
           metadata: Json
@@ -327,7 +342,6 @@ export type Database = {
           request_id: string | null
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
         }
@@ -336,7 +350,7 @@ export type Database = {
           comparison_set_id?: string | null
           conversation_id: string
           created_at?: string
-          created_by?: string | null
+          created_by: string
           deleted_at?: string | null
           id?: string
           metadata?: Json
@@ -347,7 +361,6 @@ export type Database = {
           request_id?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -356,7 +369,7 @@ export type Database = {
           comparison_set_id?: string | null
           conversation_id?: string
           created_at?: string
-          created_by?: string | null
+          created_by?: string
           deleted_at?: string | null
           id?: string
           metadata?: Json
@@ -367,7 +380,6 @@ export type Database = {
           request_id?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -397,10 +409,10 @@ export type Database = {
           is_active: boolean
           is_archived: boolean
           is_favorite: boolean
-          is_public: boolean
           matrx_actions: Json
           mcp_servers: string[]
           messages: Json
+          metadata: Json
           model_id: string | null
           model_tiers: Json | null
           name: string
@@ -420,7 +432,6 @@ export type Database = {
           ui_gates: Json
           updated_at: string
           updated_by: string | null
-          user_id: string | null
           variable_definitions: Json | null
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
@@ -440,10 +451,10 @@ export type Database = {
           is_active?: boolean
           is_archived?: boolean
           is_favorite?: boolean
-          is_public?: boolean
           matrx_actions?: Json
           mcp_servers?: string[]
           messages?: Json
+          metadata?: Json
           model_id?: string | null
           model_tiers?: Json | null
           name: string
@@ -463,7 +474,6 @@ export type Database = {
           ui_gates?: Json
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           variable_definitions?: Json | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
@@ -483,10 +493,10 @@ export type Database = {
           is_active?: boolean
           is_archived?: boolean
           is_favorite?: boolean
-          is_public?: boolean
           matrx_actions?: Json
           mcp_servers?: string[]
           messages?: Json
+          metadata?: Json
           model_id?: string | null
           model_tiers?: Json | null
           name?: string
@@ -506,7 +516,6 @@ export type Database = {
           ui_gates?: Json
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           variable_definitions?: Json | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
@@ -536,16 +545,21 @@ export type Database = {
           change_note: string | null
           changed_at: string
           context_slots: Json | null
+          created_at: string
+          created_by: string | null
           custom_tools: Json | null
+          deleted_at: string | null
           description: string | null
           id: string
           is_active: boolean | null
           matrx_actions: Json
           mcp_servers: string[]
           messages: Json | null
+          metadata: Json
           model_id: string | null
           model_tiers: Json | null
           name: string | null
+          organization_id: string
           output_schema: Json | null
           settings: Json | null
           skill_config: Json
@@ -553,7 +567,10 @@ export type Database = {
           tool_config: Json
           tools: string[] | null
           ui_gates: Json
+          updated_at: string
+          updated_by: string | null
           variable_definitions: Json | null
+          version: number
           version_number: number
         }
         Insert: {
@@ -563,16 +580,21 @@ export type Database = {
           change_note?: string | null
           changed_at?: string
           context_slots?: Json | null
+          created_at?: string
+          created_by?: string | null
           custom_tools?: Json | null
+          deleted_at?: string | null
           description?: string | null
           id?: string
           is_active?: boolean | null
           matrx_actions?: Json
           mcp_servers?: string[]
           messages?: Json | null
+          metadata?: Json
           model_id?: string | null
           model_tiers?: Json | null
           name?: string | null
+          organization_id: string
           output_schema?: Json | null
           settings?: Json | null
           skill_config?: Json
@@ -580,7 +602,10 @@ export type Database = {
           tool_config?: Json
           tools?: string[] | null
           ui_gates?: Json
+          updated_at?: string
+          updated_by?: string | null
           variable_definitions?: Json | null
+          version?: number
           version_number: number
         }
         Update: {
@@ -590,16 +615,21 @@ export type Database = {
           change_note?: string | null
           changed_at?: string
           context_slots?: Json | null
+          created_at?: string
+          created_by?: string | null
           custom_tools?: Json | null
+          deleted_at?: string | null
           description?: string | null
           id?: string
           is_active?: boolean | null
           matrx_actions?: Json
           mcp_servers?: string[]
           messages?: Json | null
+          metadata?: Json
           model_id?: string | null
           model_tiers?: Json | null
           name?: string | null
+          organization_id?: string
           output_schema?: Json | null
           settings?: Json | null
           skill_config?: Json
@@ -607,7 +637,10 @@ export type Database = {
           tool_config?: Json
           tools?: string[] | null
           ui_gates?: Json
+          updated_at?: string
+          updated_by?: string | null
           variable_definitions?: Json | null
+          version?: number
           version_number?: number
         }
         Relationships: [
@@ -633,6 +666,8 @@ export type Database = {
           agent_name: string
           breaking_count: number
           created_at: string
+          created_by: string
+          deleted_at: string | null
           detected_at: string
           dismissed_at: string | null
           dm_message_id: string | null
@@ -641,12 +676,16 @@ export type Database = {
           id: string
           info_count: number
           last_scanned_at: string
+          metadata: Json
+          organization_id: string
           severity: string
           silent_count: number
           status: string
           suppressed_until: string | null
+          updated_at: string
+          updated_by: string | null
           usage_count: number
-          user_id: string
+          version: number
           viewed_at: string | null
           warning_count: number
         }
@@ -655,6 +694,8 @@ export type Database = {
           agent_name: string
           breaking_count?: number
           created_at?: string
+          created_by: string
+          deleted_at?: string | null
           detected_at?: string
           dismissed_at?: string | null
           dm_message_id?: string | null
@@ -663,12 +704,16 @@ export type Database = {
           id?: string
           info_count?: number
           last_scanned_at?: string
+          metadata?: Json
+          organization_id: string
           severity: string
           silent_count?: number
           status?: string
           suppressed_until?: string | null
+          updated_at?: string
+          updated_by?: string | null
           usage_count?: number
-          user_id: string
+          version?: number
           viewed_at?: string | null
           warning_count?: number
         }
@@ -677,6 +722,8 @@ export type Database = {
           agent_name?: string
           breaking_count?: number
           created_at?: string
+          created_by?: string
+          deleted_at?: string | null
           detected_at?: string
           dismissed_at?: string | null
           dm_message_id?: string | null
@@ -685,12 +732,16 @@ export type Database = {
           id?: string
           info_count?: number
           last_scanned_at?: string
+          metadata?: Json
+          organization_id?: string
           severity?: string
           silent_count?: number
           status?: string
           suppressed_until?: string | null
+          updated_at?: string
+          updated_by?: string | null
           usage_count?: number
-          user_id?: string
+          version?: number
           viewed_at?: string | null
           warning_count?: number
         }
@@ -710,6 +761,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      message_template: {
+        Row: {
+          content: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          label: string | null
+          metadata: Json
+          organization_id: string
+          role: Database["public"]["Enums"]["message_role"] | null
+          tags: string[] | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          label?: string | null
+          metadata?: Json
+          organization_id: string
+          role?: Database["public"]["Enums"]["message_role"] | null
+          tags?: string[] | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          label?: string | null
+          metadata?: Json
+          organization_id?: string
+          role?: Database["public"]["Enums"]["message_role"] | null
+          tags?: string[] | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
       }
       review_queue: {
         Row: {
@@ -780,9 +882,9 @@ export type Database = {
           keyboard_shortcut: string | null
           label: string
           llm_overrides: Json | null
+          metadata: Json
           organization_id: string
           pre_execution_message: string | null
-          project_id: string | null
           response_density: string
           scope_mappings: Json | null
           show_definition_message_content: boolean
@@ -791,11 +893,9 @@ export type Database = {
           show_variable_panel: boolean
           sort_order: number
           surface_name: string | null
-          task_id: string | null
           updated_at: string
           updated_by: string | null
           use_latest: boolean
-          user_id: string | null
           value_mappings: Json | null
           variables_panel_style: string
           version: number
@@ -827,9 +927,9 @@ export type Database = {
           keyboard_shortcut?: string | null
           label: string
           llm_overrides?: Json | null
+          metadata?: Json
           organization_id: string
           pre_execution_message?: string | null
-          project_id?: string | null
           response_density?: string
           scope_mappings?: Json | null
           show_definition_message_content?: boolean
@@ -838,11 +938,9 @@ export type Database = {
           show_variable_panel?: boolean
           sort_order?: number
           surface_name?: string | null
-          task_id?: string | null
           updated_at?: string
           updated_by?: string | null
           use_latest?: boolean
-          user_id?: string | null
           value_mappings?: Json | null
           variables_panel_style?: string
           version?: number
@@ -874,9 +972,9 @@ export type Database = {
           keyboard_shortcut?: string | null
           label?: string
           llm_overrides?: Json | null
+          metadata?: Json
           organization_id?: string
           pre_execution_message?: string | null
-          project_id?: string | null
           response_density?: string
           scope_mappings?: Json | null
           show_definition_message_content?: boolean
@@ -885,11 +983,9 @@ export type Database = {
           show_variable_panel?: boolean
           sort_order?: number
           surface_name?: string | null
-          task_id?: string | null
           updated_at?: string
           updated_by?: string | null
           use_latest?: boolean
-          user_id?: string | null
           value_mappings?: Json | null
           variables_panel_style?: string
           version?: number
@@ -1215,25 +1311,22 @@ export type Database = {
           id: string
           is_archived: boolean
           is_featured: boolean
-          is_public: boolean
           mcp_servers: string[]
           messages: Json
+          metadata: Json
           model_id: string | null
           model_tiers: Json | null
           name: string
           organization_id: string
           output_schema: Json | null
-          project_id: string | null
           settings: Json
           source_agent_id: string | null
           tags: string[]
-          task_id: string | null
           tool_config: Json
           tools: string[]
           updated_at: string
           updated_by: string | null
           use_count: number
-          user_id: string | null
           variable_definitions: Json | null
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
@@ -1249,25 +1342,22 @@ export type Database = {
           id?: string
           is_archived?: boolean
           is_featured?: boolean
-          is_public?: boolean
           mcp_servers?: string[]
           messages?: Json
+          metadata?: Json
           model_id?: string | null
           model_tiers?: Json | null
           name: string
           organization_id: string
           output_schema?: Json | null
-          project_id?: string | null
           settings?: Json
           source_agent_id?: string | null
           tags?: string[]
-          task_id?: string | null
           tool_config?: Json
           tools?: string[]
           updated_at?: string
           updated_by?: string | null
           use_count?: number
-          user_id?: string | null
           variable_definitions?: Json | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
@@ -1283,25 +1373,22 @@ export type Database = {
           id?: string
           is_archived?: boolean
           is_featured?: boolean
-          is_public?: boolean
           mcp_servers?: string[]
           messages?: Json
+          metadata?: Json
           model_id?: string | null
           model_tiers?: Json | null
           name?: string
           organization_id?: string
           output_schema?: Json | null
-          project_id?: string | null
           settings?: Json
           source_agent_id?: string | null
           tags?: string[]
-          task_id?: string | null
           tool_config?: Json
           tools?: string[]
           updated_at?: string
           updated_by?: string | null
           use_count?: number
-          user_id?: string | null
           variable_definitions?: Json | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
@@ -1328,46 +1415,70 @@ export type Database = {
           agent_id: string | null
           agent_version_id: string | null
           code_path: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
           first_seen_at: string
           id: string
           last_seen_at: string
           last_synced_at: string
+          metadata: Json
+          organization_id: string
           purpose: string
           ref_kind: string
           source_system: string
           status: string
           synced_by: string | null
+          updated_at: string
+          updated_by: string | null
           usage_key: string
+          version: number
         }
         Insert: {
           agent_id?: string | null
           agent_version_id?: string | null
           code_path?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           first_seen_at?: string
           id?: string
           last_seen_at?: string
           last_synced_at?: string
+          metadata?: Json
+          organization_id: string
           purpose: string
           ref_kind: string
           source_system: string
           status?: string
           synced_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
           usage_key: string
+          version?: number
         }
         Update: {
           agent_id?: string | null
           agent_version_id?: string | null
           code_path?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           first_seen_at?: string
           id?: string
           last_seen_at?: string
           last_synced_at?: string
+          metadata?: Json
+          organization_id?: string
           purpose?: string
           ref_kind?: string
           source_system?: string
           status?: string
           synced_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
           usage_key?: string
+          version?: number
         }
         Relationships: [
           {
@@ -2775,11 +2886,10 @@ export type Database = {
           favicon_url: string | null
           id: string
           is_featured: boolean | null
-          is_public: boolean
           is_verified: boolean | null
           last_execution_at: string | null
           layout_config: Json | null
-          metadata: Json | null
+          metadata: Json
           name: string
           organization_id: string
           pinned_version: number | null
@@ -2809,7 +2919,6 @@ export type Database = {
           updated_at: string
           updated_by: string | null
           use_latest: boolean
-          user_id: string | null
           variable_schema: Json | null
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
@@ -2830,11 +2939,10 @@ export type Database = {
           favicon_url?: string | null
           id?: string
           is_featured?: boolean | null
-          is_public?: boolean
           is_verified?: boolean | null
           last_execution_at?: string | null
           layout_config?: Json | null
-          metadata?: Json | null
+          metadata?: Json
           name: string
           organization_id: string
           pinned_version?: number | null
@@ -2864,7 +2972,6 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           use_latest?: boolean
-          user_id?: string | null
           variable_schema?: Json | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
@@ -2885,11 +2992,10 @@ export type Database = {
           favicon_url?: string | null
           id?: string
           is_featured?: boolean | null
-          is_public?: boolean
           is_verified?: boolean | null
           last_execution_at?: string | null
           layout_config?: Json | null
-          metadata?: Json | null
+          metadata?: Json
           name?: string
           organization_id?: string
           pinned_version?: number | null
@@ -2919,7 +3025,6 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           use_latest?: boolean
-          user_id?: string | null
           variable_schema?: Json | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
@@ -2937,16 +3042,24 @@ export type Database = {
           changed_at: string
           component_code: string | null
           component_language: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
           description: string | null
           id: string
           layout_config: Json | null
+          metadata: Json
           name: string | null
+          organization_id: string
           pinned_version: number | null
           status: string | null
           styling_config: Json | null
           tagline: string | null
           tags: string[] | null
+          updated_at: string
+          updated_by: string | null
           variable_schema: Json | null
+          version: number
           version_number: number
         }
         Insert: {
@@ -2959,16 +3072,24 @@ export type Database = {
           changed_at?: string
           component_code?: string | null
           component_language?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           description?: string | null
           id?: string
           layout_config?: Json | null
+          metadata?: Json
           name?: string | null
+          organization_id: string
           pinned_version?: number | null
           status?: string | null
           styling_config?: Json | null
           tagline?: string | null
           tags?: string[] | null
+          updated_at?: string
+          updated_by?: string | null
           variable_schema?: Json | null
+          version?: number
           version_number: number
         }
         Update: {
@@ -2981,16 +3102,24 @@ export type Database = {
           changed_at?: string
           component_code?: string | null
           component_language?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           description?: string | null
           id?: string
           layout_config?: Json | null
+          metadata?: Json
           name?: string | null
+          organization_id?: string
           pinned_version?: number | null
           status?: string | null
           styling_config?: Json | null
           tagline?: string | null
           tags?: string[] | null
+          updated_at?: string
+          updated_by?: string | null
           variable_schema?: Json | null
+          version?: number
           version_number?: number
         }
         Relationships: [
@@ -3007,6 +3136,8 @@ export type Database = {
         Row: {
           app_id: string
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           error_code: string | null
           error_details: Json | null
           error_message: string | null
@@ -3014,15 +3145,22 @@ export type Database = {
           execution_id: string | null
           expected_variables: Json | null
           id: string
+          metadata: Json
+          organization_id: string
           resolution_notes: string | null
           resolved: boolean | null
           resolved_at: string | null
           resolved_by: string | null
+          updated_at: string
+          updated_by: string | null
           variables_sent: Json | null
+          version: number
         }
         Insert: {
           app_id: string
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           error_code?: string | null
           error_details?: Json | null
           error_message?: string | null
@@ -3030,15 +3168,22 @@ export type Database = {
           execution_id?: string | null
           expected_variables?: Json | null
           id?: string
+          metadata?: Json
+          organization_id: string
           resolution_notes?: string | null
           resolved?: boolean | null
           resolved_at?: string | null
           resolved_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
           variables_sent?: Json | null
+          version?: number
         }
         Update: {
           app_id?: string
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           error_code?: string | null
           error_details?: Json | null
           error_message?: string | null
@@ -3046,11 +3191,16 @@ export type Database = {
           execution_id?: string | null
           expected_variables?: Json | null
           id?: string
+          metadata?: Json
+          organization_id?: string
           resolution_notes?: string | null
           resolved?: boolean | null
           resolved_at?: string | null
           resolved_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
           variables_sent?: Json | null
+          version?: number
         }
         Relationships: [
           {
@@ -3074,6 +3224,8 @@ export type Database = {
           app_id: string
           cost: number | null
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           error_message: string | null
           error_type: string | null
           execution_time_ms: number | null
@@ -3081,20 +3233,25 @@ export type Database = {
           id: string
           ip_address: unknown
           kind: string
-          metadata: Json | null
+          metadata: Json
+          organization_id: string
           referer: string | null
           success: boolean | null
           task_id: string
           tokens_used: number | null
+          updated_at: string
+          updated_by: string | null
           user_agent: string | null
-          user_id: string | null
           variables_provided: Json | null
           variables_used: Json | null
+          version: number
         }
         Insert: {
           app_id: string
           cost?: number | null
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           error_message?: string | null
           error_type?: string | null
           execution_time_ms?: number | null
@@ -3102,20 +3259,25 @@ export type Database = {
           id?: string
           ip_address?: unknown
           kind?: string
-          metadata?: Json | null
+          metadata?: Json
+          organization_id: string
           referer?: string | null
           success?: boolean | null
           task_id: string
           tokens_used?: number | null
+          updated_at?: string
+          updated_by?: string | null
           user_agent?: string | null
-          user_id?: string | null
           variables_provided?: Json | null
           variables_used?: Json | null
+          version?: number
         }
         Update: {
           app_id?: string
           cost?: number | null
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           error_message?: string | null
           error_type?: string | null
           execution_time_ms?: number | null
@@ -3123,15 +3285,18 @@ export type Database = {
           id?: string
           ip_address?: unknown
           kind?: string
-          metadata?: Json | null
+          metadata?: Json
+          organization_id?: string
           referer?: string | null
           success?: boolean | null
           task_id?: string
           tokens_used?: number | null
+          updated_at?: string
+          updated_by?: string | null
           user_agent?: string | null
-          user_id?: string | null
           variables_provided?: Json | null
           variables_used?: Json | null
+          version?: number
         }
         Relationships: [
           {
@@ -3149,6 +3314,8 @@ export type Database = {
           blocked_reason: string | null
           blocked_until: string | null
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           execution_count: number
           fingerprint: string | null
           first_execution_at: string
@@ -3156,8 +3323,11 @@ export type Database = {
           ip_address: unknown
           is_blocked: boolean | null
           last_execution_at: string
+          metadata: Json
+          organization_id: string
           updated_at: string
-          user_id: string | null
+          updated_by: string | null
+          version: number
           window_start_at: string
         }
         Insert: {
@@ -3165,6 +3335,8 @@ export type Database = {
           blocked_reason?: string | null
           blocked_until?: string | null
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           execution_count?: number
           fingerprint?: string | null
           first_execution_at?: string
@@ -3172,8 +3344,11 @@ export type Database = {
           ip_address?: unknown
           is_blocked?: boolean | null
           last_execution_at?: string
+          metadata?: Json
+          organization_id: string
           updated_at?: string
-          user_id?: string | null
+          updated_by?: string | null
+          version?: number
           window_start_at?: string
         }
         Update: {
@@ -3181,6 +3356,8 @@ export type Database = {
           blocked_reason?: string | null
           blocked_until?: string | null
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           execution_count?: number
           fingerprint?: string | null
           first_execution_at?: string
@@ -3188,8 +3365,11 @@ export type Database = {
           ip_address?: unknown
           is_blocked?: boolean | null
           last_execution_at?: string
+          metadata?: Json
+          organization_id?: string
           updated_at?: string
-          user_id?: string | null
+          updated_by?: string | null
+          version?: number
           window_start_at?: string
         }
         Relationships: [
@@ -3511,6 +3691,30 @@ export type Database = {
         }
         Relationships: []
       }
+      function_runtime_probe: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          function_signature: string
+          note: string
+          probe_sql: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          function_signature: string
+          note: string
+          probe_sql: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          function_signature?: string
+          note?: string
+          probe_sql?: string
+        }
+        Relationships: []
+      }
       m2m_candidates: {
         Row: {
           entity_fk_count: number | null
@@ -3623,6 +3827,8 @@ export type Database = {
     Views: {
       summary: {
         Row: {
+          audit_class: string | null
+          audit_class_reason: string | null
           certified: boolean | null
           fails: number | null
           schema_name: string | null
@@ -3636,6 +3842,8 @@ export type Database = {
     Functions: {
       is_m2m_shape: { Args: { p_rel: unknown }; Returns: boolean }
       refresh: { Args: never; Returns: string }
+      refresh_static: { Args: never; Returns: string }
+      run_function_runtime_probes: { Args: never; Returns: number }
       table_impact: {
         Args: { p_schema: string; p_table: string }
         Returns: {
@@ -4557,7 +4765,6 @@ export type Database = {
           state: Json
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
         }
         Insert: {
@@ -4571,7 +4778,6 @@ export type Database = {
           state?: Json
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
         }
         Update: {
@@ -4585,7 +4791,6 @@ export type Database = {
           state?: Json
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
         }
         Relationships: [
@@ -4620,7 +4825,6 @@ export type Database = {
           parent_canvas_id: string | null
           project_id: string | null
           session_id: string | null
-          share_token: string | null
           source_id: string | null
           source_message_id: string | null
           source_system: string | null
@@ -4656,7 +4860,6 @@ export type Database = {
           parent_canvas_id?: string | null
           project_id?: string | null
           session_id?: string | null
-          share_token?: string | null
           source_id?: string | null
           source_message_id?: string | null
           source_system?: string | null
@@ -4692,7 +4895,6 @@ export type Database = {
           parent_canvas_id?: string | null
           project_id?: string | null
           session_id?: string | null
-          share_token?: string | null
           source_id?: string | null
           source_message_id?: string | null
           source_system?: string | null
@@ -4944,7 +5146,6 @@ export type Database = {
           require_attribution: boolean | null
           search_vector: unknown
           share_count: number | null
-          share_token: string
           tags: string[] | null
           thumbnail_url: string | null
           title: string
@@ -4988,7 +5189,6 @@ export type Database = {
           require_attribution?: boolean | null
           search_vector?: unknown
           share_count?: number | null
-          share_token: string
           tags?: string[] | null
           thumbnail_url?: string | null
           title: string
@@ -5032,7 +5232,6 @@ export type Database = {
           require_attribution?: boolean | null
           search_vector?: unknown
           share_count?: number | null
-          share_token?: string
           tags?: string[] | null
           thumbnail_url?: string | null
           title?: string
@@ -5097,8 +5296,8 @@ export type Database = {
           scope_id: string | null
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           access_count?: number | null
@@ -5118,8 +5317,8 @@ export type Database = {
           scope_id?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           access_count?: number | null
@@ -5139,8 +5338,8 @@ export type Database = {
           scope_id?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
@@ -5149,54 +5348,54 @@ export type Database = {
           conversation_id: string
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           domains: string[] | null
           estimated_minutes: number | null
           id: string
+          metadata: Json
           organization_id: string
-          project_id: string | null
           reasoning: string | null
           status: Database["public"]["Enums"]["cx_plan_status"]
           steps: Json
           title: string
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
         }
         Insert: {
           conversation_id: string
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           domains?: string[] | null
           estimated_minutes?: number | null
           id?: string
+          metadata?: Json
           organization_id: string
-          project_id?: string | null
           reasoning?: string | null
           status?: Database["public"]["Enums"]["cx_plan_status"]
           steps?: Json
           title: string
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
         }
         Update: {
           conversation_id?: string
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           domains?: string[] | null
           estimated_minutes?: number | null
           id?: string
+          metadata?: Json
           organization_id?: string
-          project_id?: string | null
           reasoning?: string | null
           status?: Database["public"]["Enums"]["cx_plan_status"]
           steps?: Json
           title?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
         }
         Relationships: [
@@ -5235,7 +5434,6 @@ export type Database = {
           total_cost: number
           updated_at: string
           updated_by: string | null
-          user_id: string | null
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
         }
@@ -5257,7 +5455,6 @@ export type Database = {
           total_cost?: number
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -5279,7 +5476,6 @@ export type Database = {
           total_cost?: number
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -5289,41 +5485,59 @@ export type Database = {
         Row: {
           cost: number | null
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           error: Json | null
           finished_at: string | null
           id: string
+          metadata: Json
+          organization_id: string
           output: Json | null
           run_id: string
           stage_key: string
           started_at: string
           status: string
           updated_at: string
+          updated_by: string | null
+          version: number
         }
         Insert: {
           cost?: number | null
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           error?: Json | null
           finished_at?: string | null
           id?: string
+          metadata?: Json
+          organization_id: string
           output?: Json | null
           run_id: string
           stage_key: string
           started_at?: string
           status?: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
         }
         Update: {
           cost?: number | null
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           error?: Json | null
           finished_at?: string | null
           id?: string
+          metadata?: Json
+          organization_id?: string
           output?: Json | null
           run_id?: string
           stage_key?: string
           started_at?: string
           status?: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -5339,41 +5553,62 @@ export type Database = {
         Row: {
           conversation_id: string
           created_at: string
-          created_by: Database["public"]["Enums"]["cx_agent_task_creator"]
+          created_by: string | null
+          creator_kind:
+            | Database["public"]["Enums"]["cx_agent_task_creator"]
+            | null
+          deleted_at: string | null
           id: string
+          metadata: Json
           note: string | null
+          organization_id: string
           plan_id: string | null
           position: number
           status: Database["public"]["Enums"]["cx_agent_task_status"]
           title: string
           updated_at: string
-          user_id: string
+          updated_by: string | null
+          version: number
         }
         Insert: {
           conversation_id: string
           created_at?: string
-          created_by?: Database["public"]["Enums"]["cx_agent_task_creator"]
+          created_by?: string | null
+          creator_kind?:
+            | Database["public"]["Enums"]["cx_agent_task_creator"]
+            | null
+          deleted_at?: string | null
           id?: string
+          metadata?: Json
           note?: string | null
+          organization_id: string
           plan_id?: string | null
           position?: number
           status?: Database["public"]["Enums"]["cx_agent_task_status"]
           title: string
           updated_at?: string
-          user_id: string
+          updated_by?: string | null
+          version?: number
         }
         Update: {
           conversation_id?: string
           created_at?: string
-          created_by?: Database["public"]["Enums"]["cx_agent_task_creator"]
+          created_by?: string | null
+          creator_kind?:
+            | Database["public"]["Enums"]["cx_agent_task_creator"]
+            | null
+          deleted_at?: string | null
           id?: string
+          metadata?: Json
           note?: string | null
+          organization_id?: string
           plan_id?: string | null
           position?: number
           status?: Database["public"]["Enums"]["cx_agent_task_status"]
           title?: string
           updated_at?: string
-          user_id?: string
+          updated_by?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -5416,7 +5651,6 @@ export type Database = {
           message_id: string | null
           metadata: Json
           organization_id: string
-          project_id: string | null
           source_id: string | null
           source_system: string | null
           status: Database["public"]["Enums"]["artifact_status"]
@@ -5425,7 +5659,7 @@ export type Database = {
           title: string | null
           updated_at: string
           updated_by: string | null
-          user_id: string
+          user_id: string | null
           version: number
         }
         Insert: {
@@ -5444,7 +5678,6 @@ export type Database = {
           message_id?: string | null
           metadata?: Json
           organization_id: string
-          project_id?: string | null
           source_id?: string | null
           source_system?: string | null
           status?: Database["public"]["Enums"]["artifact_status"]
@@ -5453,7 +5686,7 @@ export type Database = {
           title?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id: string
+          user_id?: string | null
           version?: number
         }
         Update: {
@@ -5472,7 +5705,6 @@ export type Database = {
           message_id?: string | null
           metadata?: Json
           organization_id?: string
-          project_id?: string | null
           source_id?: string | null
           source_system?: string | null
           status?: Database["public"]["Enums"]["artifact_status"]
@@ -5481,7 +5713,7 @@ export type Database = {
           title?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
+          user_id?: string | null
           version?: number
         }
         Relationships: [
@@ -5514,9 +5746,13 @@ export type Database = {
           block_index: number
           conversation_id: string
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           id: string
           message_file_id: string
           message_id: string
+          metadata: Json
+          organization_id: string
           reject_reason: string | null
           rejected_at: string | null
           replace_text: string
@@ -5524,16 +5760,21 @@ export type Database = {
           search_text: string
           status: Database["public"]["Enums"]["code_edit_status"]
           updated_at: string
-          user_id: string
+          updated_by: string | null
+          version: number
         }
         Insert: {
           applied_at?: string | null
           block_index: number
           conversation_id: string
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           id?: string
           message_file_id: string
           message_id: string
+          metadata?: Json
+          organization_id: string
           reject_reason?: string | null
           rejected_at?: string | null
           replace_text: string
@@ -5541,16 +5782,21 @@ export type Database = {
           search_text: string
           status: Database["public"]["Enums"]["code_edit_status"]
           updated_at?: string
-          user_id: string
+          updated_by?: string | null
+          version?: number
         }
         Update: {
           applied_at?: string | null
           block_index?: number
           conversation_id?: string
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           id?: string
           message_file_id?: string
           message_id?: string
+          metadata?: Json
+          organization_id?: string
           reject_reason?: string | null
           rejected_at?: string | null
           replace_text?: string
@@ -5558,7 +5804,8 @@ export type Database = {
           search_text?: string
           status?: Database["public"]["Enums"]["code_edit_status"]
           updated_at?: string
-          user_id?: string
+          updated_by?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -5597,6 +5844,8 @@ export type Database = {
           before_content: string
           conversation_id: string
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           edits_applied_count: number
           edits_pending_count: number
           edits_rejected_count: number
@@ -5607,17 +5856,21 @@ export type Database = {
           id: string
           library_file_id: string | null
           message_id: string
+          metadata: Json
           organization_id: string
           reverted_at: string | null
           status: Database["public"]["Enums"]["code_message_file_status"]
           updated_at: string
-          user_id: string
+          updated_by: string | null
+          version: number
         }
         Insert: {
           after_content: string
           before_content: string
           conversation_id: string
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           edits_applied_count?: number
           edits_pending_count?: number
           edits_rejected_count?: number
@@ -5628,17 +5881,21 @@ export type Database = {
           id?: string
           library_file_id?: string | null
           message_id: string
+          metadata?: Json
           organization_id: string
           reverted_at?: string | null
           status?: Database["public"]["Enums"]["code_message_file_status"]
           updated_at?: string
-          user_id: string
+          updated_by?: string | null
+          version?: number
         }
         Update: {
           after_content?: string
           before_content?: string
           conversation_id?: string
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           edits_applied_count?: number
           edits_pending_count?: number
           edits_rejected_count?: number
@@ -5649,11 +5906,13 @@ export type Database = {
           id?: string
           library_file_id?: string | null
           message_id?: string
+          metadata?: Json
           organization_id?: string
           reverted_at?: string | null
           status?: Database["public"]["Enums"]["code_message_file_status"]
           updated_at?: string
-          user_id?: string
+          updated_by?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -5791,6 +6050,7 @@ export type Database = {
           id: string
           ingest_order: number
           kind: string
+          metadata: Json
           occurred_at: string | null
           organization_id: string
           payload: Json
@@ -5816,6 +6076,7 @@ export type Database = {
           id?: string
           ingest_order?: never
           kind: string
+          metadata?: Json
           occurred_at?: string | null
           organization_id: string
           payload: Json
@@ -5841,6 +6102,7 @@ export type Database = {
           id?: string
           ingest_order?: never
           kind?: string
+          metadata?: Json
           occurred_at?: string | null
           organization_id?: string
           payload?: Json
@@ -5893,6 +6155,7 @@ export type Database = {
           message_count: number
           metadata: Json
           organization_id: string
+          origin_class: string
           overrides: Json
           parent_conversation_id: string | null
           sandbox_instance_id: string | null
@@ -5933,6 +6196,7 @@ export type Database = {
           message_count?: number
           metadata?: Json
           organization_id: string
+          origin_class?: string
           overrides?: Json
           parent_conversation_id?: string | null
           sandbox_instance_id?: string | null
@@ -5973,6 +6237,7 @@ export type Database = {
           message_count?: number
           metadata?: Json
           organization_id?: string
+          origin_class?: string
           overrides?: Json
           parent_conversation_id?: string | null
           sandbox_instance_id?: string | null
@@ -6110,6 +6375,7 @@ export type Database = {
         Row: {
           conversation_id: string
           created_at: string
+          created_by: string | null
           deleted_at: string | null
           file_size_bytes: number | null
           file_uri: string | null
@@ -6117,13 +6383,16 @@ export type Database = {
           kind: string
           metadata: Json
           mime_type: string | null
+          organization_id: string
           updated_at: string
+          updated_by: string | null
           url: string
-          user_id: string
+          version: number
         }
         Insert: {
           conversation_id: string
           created_at?: string
+          created_by?: string | null
           deleted_at?: string | null
           file_size_bytes?: number | null
           file_uri?: string | null
@@ -6131,13 +6400,16 @@ export type Database = {
           kind: string
           metadata?: Json
           mime_type?: string | null
+          organization_id: string
           updated_at?: string
+          updated_by?: string | null
           url: string
-          user_id: string
+          version?: number
         }
         Update: {
           conversation_id?: string
           created_at?: string
+          created_by?: string | null
           deleted_at?: string | null
           file_size_bytes?: number | null
           file_uri?: string | null
@@ -6145,9 +6417,11 @@ export type Database = {
           kind?: string
           metadata?: Json
           mime_type?: string | null
+          organization_id?: string
           updated_at?: string
+          updated_by?: string | null
           url?: string
-          user_id?: string
+          version?: number
         }
         Relationships: [
           {
@@ -6299,7 +6573,6 @@ export type Database = {
           suggested_response: string | null
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
         }
         Insert: {
@@ -6332,7 +6605,6 @@ export type Database = {
           suggested_response?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
         }
         Update: {
@@ -6365,7 +6637,6 @@ export type Database = {
           suggested_response?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
         }
         Relationships: [
@@ -6391,6 +6662,8 @@ export type Database = {
           conversation_id: string
           cost: number
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           duration_ms: number | null
           error: string | null
           event_type: string
@@ -6399,19 +6672,23 @@ export type Database = {
           memory_record_id: string | null
           metadata: Json
           model: string | null
+          organization_id: string
           output_tokens: number
           success: boolean
           trigger_reason: string | null
           triggered_at: string
           updated_at: string
-          user_id: string
+          updated_by: string | null
           user_request_id: string | null
+          version: number
         }
         Insert: {
           completed_at?: string | null
           conversation_id: string
           cost?: number
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           duration_ms?: number | null
           error?: string | null
           event_type: string
@@ -6420,19 +6697,23 @@ export type Database = {
           memory_record_id?: string | null
           metadata?: Json
           model?: string | null
+          organization_id: string
           output_tokens?: number
           success?: boolean
           trigger_reason?: string | null
           triggered_at?: string
           updated_at?: string
-          user_id: string
+          updated_by?: string | null
           user_request_id?: string | null
+          version?: number
         }
         Update: {
           completed_at?: string | null
           conversation_id?: string
           cost?: number
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           duration_ms?: number | null
           error?: string | null
           event_type?: string
@@ -6441,13 +6722,15 @@ export type Database = {
           memory_record_id?: string | null
           metadata?: Json
           model?: string | null
+          organization_id?: string
           output_tokens?: number
           success?: boolean
           trigger_reason?: string | null
           triggered_at?: string
           updated_at?: string
-          user_id?: string
+          updated_by?: string | null
           user_request_id?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -6495,6 +6778,8 @@ export type Database = {
           content: Json
           conversation_id: string
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           delivery: string
           enqueued_seq: number
           id: string
@@ -6502,10 +6787,12 @@ export type Database = {
           is_visible_to_user: boolean
           kind: string
           metadata: Json
+          organization_id: string
           source: string
           status: string
           updated_at: string
-          user_id: string
+          updated_by: string | null
+          version: number
         }
         Insert: {
           consumed_at?: string | null
@@ -6514,6 +6801,8 @@ export type Database = {
           content?: Json
           conversation_id: string
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           delivery?: string
           enqueued_seq?: never
           id?: string
@@ -6521,10 +6810,12 @@ export type Database = {
           is_visible_to_user?: boolean
           kind: string
           metadata?: Json
+          organization_id: string
           source?: string
           status?: string
           updated_at?: string
-          user_id: string
+          updated_by?: string | null
+          version?: number
         }
         Update: {
           consumed_at?: string | null
@@ -6533,6 +6824,8 @@ export type Database = {
           content?: Json
           conversation_id?: string
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           delivery?: string
           enqueued_seq?: never
           id?: string
@@ -6540,10 +6833,12 @@ export type Database = {
           is_visible_to_user?: boolean
           kind?: string
           metadata?: Json
+          organization_id?: string
           source?: string
           status?: string
           updated_at?: string
-          user_id?: string
+          updated_by?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -6570,6 +6865,7 @@ export type Database = {
           conversation_id: string
           cost: number | null
           created_at: string
+          created_by: string | null
           deleted_at: string | null
           error: Json | null
           execution_id: string | null
@@ -6579,6 +6875,7 @@ export type Database = {
           input_tokens: number | null
           iteration: number
           metadata: Json
+          organization_id: string
           output_tokens: number | null
           provider: string | null
           raw_usage: Json | null
@@ -6591,7 +6888,9 @@ export type Database = {
           total_tokens: number | null
           trim_summary: Json | null
           updated_at: string
+          updated_by: string | null
           user_request_id: string
+          version: number
         }
         Insert: {
           ai_model_id: string
@@ -6600,6 +6899,7 @@ export type Database = {
           conversation_id: string
           cost?: number | null
           created_at?: string
+          created_by?: string | null
           deleted_at?: string | null
           error?: Json | null
           execution_id?: string | null
@@ -6609,6 +6909,7 @@ export type Database = {
           input_tokens?: number | null
           iteration?: number
           metadata?: Json
+          organization_id: string
           output_tokens?: number | null
           provider?: string | null
           raw_usage?: Json | null
@@ -6621,7 +6922,9 @@ export type Database = {
           total_tokens?: number | null
           trim_summary?: Json | null
           updated_at?: string
+          updated_by?: string | null
           user_request_id: string
+          version?: number
         }
         Update: {
           ai_model_id?: string
@@ -6630,6 +6933,7 @@ export type Database = {
           conversation_id?: string
           cost?: number | null
           created_at?: string
+          created_by?: string | null
           deleted_at?: string | null
           error?: Json | null
           execution_id?: string | null
@@ -6639,6 +6943,7 @@ export type Database = {
           input_tokens?: number | null
           iteration?: number
           metadata?: Json
+          organization_id?: string
           output_tokens?: number | null
           provider?: string | null
           raw_usage?: Json | null
@@ -6651,7 +6956,9 @@ export type Database = {
           total_tokens?: number | null
           trim_summary?: Json | null
           updated_at?: string
+          updated_by?: string | null
           user_request_id?: string
+          version?: number
         }
         Relationships: [
           {
@@ -6688,10 +6995,14 @@ export type Database = {
         Row: {
           conversation_id: string
           created_at: string
+          created_by: string | null
           cx_request_id: string | null
+          deleted_at: string | null
           id: string
           iteration: number
+          metadata: Json
           model: string | null
+          organization_id: string
           provider: string
           request_payload: Json
           response_message_id: string | null
@@ -6699,15 +7010,21 @@ export type Database = {
           trigger_message_id: string | null
           unified_payload: Json | null
           updated_at: string
+          updated_by: string | null
           user_request_id: string | null
+          version: number
         }
         Insert: {
           conversation_id: string
           created_at?: string
+          created_by?: string | null
           cx_request_id?: string | null
+          deleted_at?: string | null
           id?: string
           iteration?: number
+          metadata?: Json
           model?: string | null
+          organization_id: string
           provider: string
           request_payload: Json
           response_message_id?: string | null
@@ -6715,15 +7032,21 @@ export type Database = {
           trigger_message_id?: string | null
           unified_payload?: Json | null
           updated_at?: string
+          updated_by?: string | null
           user_request_id?: string | null
+          version?: number
         }
         Update: {
           conversation_id?: string
           created_at?: string
+          created_by?: string | null
           cx_request_id?: string | null
+          deleted_at?: string | null
           id?: string
           iteration?: number
+          metadata?: Json
           model?: string | null
+          organization_id?: string
           provider?: string
           request_payload?: Json
           response_message_id?: string | null
@@ -6731,7 +7054,9 @@ export type Database = {
           trigger_message_id?: string | null
           unified_payload?: Json | null
           updated_at?: string
+          updated_by?: string | null
           user_request_id?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -6814,7 +7139,6 @@ export type Database = {
           total_tokens: number | null
           updated_at: string
           updated_by: string | null
-          user_id: string
           user_request_id: string | null
           value_ref_key: string | null
           version: number
@@ -6868,7 +7192,6 @@ export type Database = {
           total_tokens?: number | null
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           user_request_id?: string | null
           value_ref_key?: string | null
           version?: number
@@ -6922,7 +7245,6 @@ export type Database = {
           total_tokens?: number | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           user_request_id?: string | null
           value_ref_key?: string | null
           version?: number
@@ -6978,6 +7300,8 @@ export type Database = {
           call_id: string | null
           conversation_id: string
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           duration_ms: number | null
           err_msg: string | null
           err_type: string | null
@@ -6986,19 +7310,23 @@ export type Database = {
           id: string
           kind: string | null
           metadata: Json
+          organization_id: string
           process_pid: number | null
           process_started_at: string | null
           result_preview: string | null
           tool_name: string
           ts: string
           updated_at: string
-          user_id: string | null
+          updated_by: string | null
+          version: number
         }
         Insert: {
           args?: Json | null
           call_id?: string | null
           conversation_id: string
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           duration_ms?: number | null
           err_msg?: string | null
           err_type?: string | null
@@ -7007,19 +7335,23 @@ export type Database = {
           id?: string
           kind?: string | null
           metadata?: Json
+          organization_id: string
           process_pid?: number | null
           process_started_at?: string | null
           result_preview?: string | null
           tool_name: string
           ts?: string
           updated_at?: string
-          user_id?: string | null
+          updated_by?: string | null
+          version?: number
         }
         Update: {
           args?: Json | null
           call_id?: string | null
           conversation_id?: string
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           duration_ms?: number | null
           err_msg?: string | null
           err_type?: string | null
@@ -7028,13 +7360,15 @@ export type Database = {
           id?: string
           kind?: string | null
           metadata?: Json
+          organization_id?: string
           process_pid?: number | null
           process_started_at?: string | null
           result_preview?: string | null
           tool_name?: string
           ts?: string
           updated_at?: string
-          user_id?: string | null
+          updated_by?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -7069,6 +7403,8 @@ export type Database = {
           last_activity_at: string | null
           metadata: Json
           organization_id: string
+          origin_class: string
+          origin_witness: Json
           source_app: string
           source_feature: string
           status: string
@@ -7082,8 +7418,8 @@ export type Database = {
           total_tool_calls: number
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           agent_id?: string | null
@@ -7100,6 +7436,8 @@ export type Database = {
           last_activity_at?: string | null
           metadata?: Json
           organization_id: string
+          origin_class?: string
+          origin_witness?: Json
           source_app?: string
           source_feature?: string
           status?: string
@@ -7113,8 +7451,8 @@ export type Database = {
           total_tool_calls?: number
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           agent_id?: string | null
@@ -7131,6 +7469,8 @@ export type Database = {
           last_activity_at?: string | null
           metadata?: Json
           organization_id?: string
+          origin_class?: string
+          origin_witness?: Json
           source_app?: string
           source_feature?: string
           status?: string
@@ -7144,8 +7484,8 @@ export type Database = {
           total_tool_calls?: number
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
@@ -7156,15 +7496,16 @@ export type Database = {
           created_at: string
           created_by: string | null
           ctx_task_id: string | null
+          deleted_at: string | null
           done: boolean
           done_at: string | null
           due: string | null
           id: string
+          metadata: Json
           organization_id: string
           title: string
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
         }
         Insert: {
@@ -7173,15 +7514,16 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           ctx_task_id?: string | null
+          deleted_at?: string | null
           done?: boolean
           done_at?: string | null
           due?: string | null
           id?: string
+          metadata?: Json
           organization_id: string
           title: string
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
         }
         Update: {
@@ -7190,15 +7532,16 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           ctx_task_id?: string | null
+          deleted_at?: string | null
           done?: boolean
           done_at?: string | null
           due?: string | null
           id?: string
+          metadata?: Json
           organization_id?: string
           title?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
         }
         Relationships: [
@@ -7295,6 +7638,7 @@ export type Database = {
           last_request_status: string | null
           message_count: number | null
           organization_id: string | null
+          origin_class: string | null
           project_id: string | null
           request_count: number | null
           snapshot_count: number | null
@@ -7322,6 +7666,7 @@ export type Database = {
           conversation_count: number | null
           cost_complete: boolean | null
           created_at: string | null
+          created_by: string | null
           error_count: number | null
           finish_reason: string | null
           id: string | null
@@ -7329,6 +7674,7 @@ export type Database = {
           known_cost_subtotal: number | null
           last_activity_at: string | null
           last_request_at: string | null
+          origin_class: string | null
           request_count: number | null
           source_app: string | null
           source_feature: string | null
@@ -7344,7 +7690,6 @@ export type Database = {
           total_tokens: number | null
           total_tool_calls: number | null
           unknown_cost_calls: number | null
-          user_id: string | null
         }
         Relationships: []
       }
@@ -7782,6 +8127,7 @@ export type Database = {
           media_thumbnail_url: string | null
           media_url: string | null
           message_type: string | null
+          metadata: Json
           organization_id: string
           reply_to_id: string | null
           sender_id: string
@@ -7805,6 +8151,7 @@ export type Database = {
           media_thumbnail_url?: string | null
           media_url?: string | null
           message_type?: string | null
+          metadata?: Json
           organization_id: string
           reply_to_id?: string | null
           sender_id: string
@@ -7828,6 +8175,7 @@ export type Database = {
           media_thumbnail_url?: string | null
           media_url?: string | null
           message_type?: string | null
+          metadata?: Json
           organization_id?: string
           reply_to_id?: string | null
           sender_id?: string
@@ -8496,135 +8844,6 @@ export type Database = {
   }
   content_ir: {
     Tables: {
-      _backup_kind_example_20260715: {
-        Row: {
-          captured_at: string | null
-          created_at: string | null
-          created_by: string | null
-          data: Json | null
-          deleted_at: string | null
-          description: string | null
-          id: string | null
-          is_canonical: boolean | null
-          kind_definition_id: string | null
-          kind_version: number | null
-          label: string | null
-          metadata: Json | null
-          organization_id: string | null
-          source: string | null
-          source_ref: Json | null
-          updated_at: string | null
-          updated_by: string | null
-          validated_at: string | null
-          validation_status: string | null
-          version: number | null
-        }
-        Insert: {
-          captured_at?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          data?: Json | null
-          deleted_at?: string | null
-          description?: string | null
-          id?: string | null
-          is_canonical?: boolean | null
-          kind_definition_id?: string | null
-          kind_version?: number | null
-          label?: string | null
-          metadata?: Json | null
-          organization_id?: string | null
-          source?: string | null
-          source_ref?: Json | null
-          updated_at?: string | null
-          updated_by?: string | null
-          validated_at?: string | null
-          validation_status?: string | null
-          version?: number | null
-        }
-        Update: {
-          captured_at?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          data?: Json | null
-          deleted_at?: string | null
-          description?: string | null
-          id?: string | null
-          is_canonical?: boolean | null
-          kind_definition_id?: string | null
-          kind_version?: number | null
-          label?: string | null
-          metadata?: Json | null
-          organization_id?: string | null
-          source?: string | null
-          source_ref?: Json | null
-          updated_at?: string | null
-          updated_by?: string | null
-          validated_at?: string | null
-          validation_status?: string | null
-          version?: number | null
-        }
-        Relationships: []
-      }
-      _backup_kind_surface_20260715: {
-        Row: {
-          created_at: string | null
-          created_by: string | null
-          deleted_at: string | null
-          id: string | null
-          is_active: boolean | null
-          kind_definition_id: string | null
-          metadata: Json | null
-          organization_id: string | null
-          parser_config: Json | null
-          parser_strategy: string | null
-          priority: number | null
-          streaming: boolean | null
-          surface_type: string | null
-          token: string | null
-          updated_at: string | null
-          updated_by: string | null
-          version: number | null
-        }
-        Insert: {
-          created_at?: string | null
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string | null
-          is_active?: boolean | null
-          kind_definition_id?: string | null
-          metadata?: Json | null
-          organization_id?: string | null
-          parser_config?: Json | null
-          parser_strategy?: string | null
-          priority?: number | null
-          streaming?: boolean | null
-          surface_type?: string | null
-          token?: string | null
-          updated_at?: string | null
-          updated_by?: string | null
-          version?: number | null
-        }
-        Update: {
-          created_at?: string | null
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string | null
-          is_active?: boolean | null
-          kind_definition_id?: string | null
-          metadata?: Json | null
-          organization_id?: string | null
-          parser_config?: Json | null
-          parser_strategy?: string | null
-          priority?: number | null
-          streaming?: boolean | null
-          surface_type?: string | null
-          token?: string | null
-          updated_at?: string | null
-          updated_by?: string | null
-          version?: number | null
-        }
-        Relationships: []
-      }
       admission_config: {
         Row: {
           enforce: boolean
@@ -8742,12 +8961,14 @@ export type Database = {
           created_at: string
           created_by: string | null
           data_snapshot: Json | null
+          deleted_at: string | null
           error_message: string
           error_stack: string | null
           error_type: string
           id: string
           kind: string
           kind_definition_id: string
+          metadata: Json
           organization_id: string
           platform: string | null
           resolution_notes: string | null
@@ -8756,7 +8977,9 @@ export type Database = {
           resolved_by: string | null
           role: string | null
           session_id: string | null
+          updated_at: string
           updated_by: string | null
+          version: number
         }
         Insert: {
           browser_info?: string | null
@@ -8767,12 +8990,14 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           data_snapshot?: Json | null
+          deleted_at?: string | null
           error_message: string
           error_stack?: string | null
           error_type: string
           id?: string
           kind: string
           kind_definition_id: string
+          metadata?: Json
           organization_id: string
           platform?: string | null
           resolution_notes?: string | null
@@ -8781,7 +9006,9 @@ export type Database = {
           resolved_by?: string | null
           role?: string | null
           session_id?: string | null
+          updated_at?: string
           updated_by?: string | null
+          version?: number
         }
         Update: {
           browser_info?: string | null
@@ -8792,12 +9019,14 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           data_snapshot?: Json | null
+          deleted_at?: string | null
           error_message?: string
           error_stack?: string | null
           error_type?: string
           id?: string
           kind?: string
           kind_definition_id?: string
+          metadata?: Json
           organization_id?: string
           platform?: string | null
           resolution_notes?: string | null
@@ -8806,7 +9035,9 @@ export type Database = {
           resolved_by?: string | null
           role?: string | null
           session_id?: string | null
+          updated_at?: string
           updated_by?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -10808,6 +11039,84 @@ export type Database = {
           },
         ]
       }
+      merge_candidate: {
+        Row: {
+          confidence: number
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          detected_at: string
+          dismissed_at: string | null
+          dismissed_by: string | null
+          id: string
+          last_detected_at: string
+          metadata: Json
+          organization_id: string
+          signals: Json
+          source_id: string
+          status: string
+          target_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          detected_at?: string
+          dismissed_at?: string | null
+          dismissed_by?: string | null
+          id?: string
+          last_detected_at?: string
+          metadata?: Json
+          organization_id: string
+          signals?: Json
+          source_id: string
+          status?: string
+          target_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          detected_at?: string
+          dismissed_at?: string | null
+          dismissed_by?: string | null
+          id?: string
+          last_detected_at?: string
+          metadata?: Json
+          organization_id?: string
+          signals?: Json
+          source_id?: string
+          status?: string
+          target_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merge_candidate_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "party"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "merge_candidate_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "party"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       party: {
         Row: {
           aka: string[]
@@ -11209,7 +11518,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      name_key: { Args: { p_name: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never
@@ -11312,6 +11621,7 @@ export type Database = {
           kind: string
           latest_run_id: string | null
           max_concurrent: number
+          metadata: Json
           model_overrides: Json | null
           name: string
           organization_id: string
@@ -11344,6 +11654,7 @@ export type Database = {
           kind?: string
           latest_run_id?: string | null
           max_concurrent?: number
+          metadata?: Json
           model_overrides?: Json | null
           name: string
           organization_id: string
@@ -11376,6 +11687,7 @@ export type Database = {
           kind?: string
           latest_run_id?: string | null
           max_concurrent?: number
+          metadata?: Json
           model_overrides?: Json | null
           name?: string
           organization_id?: string
@@ -12421,265 +12733,6 @@ export type Database = {
         }
         Relationships: []
       }
-      flashcard_data: {
-        Row: {
-          audio_explanation: string | null
-          back: string
-          created_at: string | null
-          created_by: string | null
-          detailed_explanation: string | null
-          difficulty: string | null
-          example: string | null
-          front: string
-          id: string
-          is_deleted: boolean | null
-          lesson: string | null
-          organization_id: string | null
-          personal_notes: string | null
-          project_id: string | null
-          public: boolean | null
-          shared_with: string[] | null
-          topic: string | null
-          updated_at: string | null
-          updated_by: string | null
-          user_id: string
-          version: number
-        }
-        Insert: {
-          audio_explanation?: string | null
-          back: string
-          created_at?: string | null
-          created_by?: string | null
-          detailed_explanation?: string | null
-          difficulty?: string | null
-          example?: string | null
-          front: string
-          id?: string
-          is_deleted?: boolean | null
-          lesson?: string | null
-          organization_id?: string | null
-          personal_notes?: string | null
-          project_id?: string | null
-          public?: boolean | null
-          shared_with?: string[] | null
-          topic?: string | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id: string
-          version?: number
-        }
-        Update: {
-          audio_explanation?: string | null
-          back?: string
-          created_at?: string | null
-          created_by?: string | null
-          detailed_explanation?: string | null
-          difficulty?: string | null
-          example?: string | null
-          front?: string
-          id?: string
-          is_deleted?: boolean | null
-          lesson?: string | null
-          organization_id?: string | null
-          personal_notes?: string | null
-          project_id?: string | null
-          public?: boolean | null
-          shared_with?: string[] | null
-          topic?: string | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string
-          version?: number
-        }
-        Relationships: []
-      }
-      flashcard_history: {
-        Row: {
-          correct_count: number | null
-          created_at: string | null
-          created_by: string | null
-          deleted_at: string | null
-          flashcard_id: string | null
-          id: string
-          incorrect_count: number | null
-          metadata: Json
-          organization_id: string
-          review_count: number | null
-          updated_at: string | null
-          updated_by: string | null
-          user_id: string
-          version: number
-        }
-        Insert: {
-          correct_count?: number | null
-          created_at?: string | null
-          created_by?: string | null
-          deleted_at?: string | null
-          flashcard_id?: string | null
-          id?: string
-          incorrect_count?: number | null
-          metadata?: Json
-          organization_id: string
-          review_count?: number | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id: string
-          version?: number
-        }
-        Update: {
-          correct_count?: number | null
-          created_at?: string | null
-          created_by?: string | null
-          deleted_at?: string | null
-          flashcard_id?: string | null
-          id?: string
-          incorrect_count?: number | null
-          metadata?: Json
-          organization_id?: string
-          review_count?: number | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string
-          version?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "flashcard_history_flashcard_id_fkey"
-            columns: ["flashcard_id"]
-            isOneToOne: false
-            referencedRelation: "flashcard_data"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      flashcard_images: {
-        Row: {
-          created_at: string | null
-          file_name: string
-          file_path: string
-          flashcard_id: string | null
-          id: string
-          mime_type: string
-          size: number
-        }
-        Insert: {
-          created_at?: string | null
-          file_name: string
-          file_path: string
-          flashcard_id?: string | null
-          id?: string
-          mime_type: string
-          size: number
-        }
-        Update: {
-          created_at?: string | null
-          file_name?: string
-          file_path?: string
-          flashcard_id?: string | null
-          id?: string
-          mime_type?: string
-          size?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "flashcard_images_flashcard_id_fkey"
-            columns: ["flashcard_id"]
-            isOneToOne: false
-            referencedRelation: "flashcard_data"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      flashcard_set_relations: {
-        Row: {
-          flashcard_id: string
-          order: number | null
-          set_id: string
-        }
-        Insert: {
-          flashcard_id: string
-          order?: number | null
-          set_id: string
-        }
-        Update: {
-          flashcard_id?: string
-          order?: number | null
-          set_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "flashcard_set_relations_flashcard_id_fkey"
-            columns: ["flashcard_id"]
-            isOneToOne: false
-            referencedRelation: "flashcard_data"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "flashcard_set_relations_set_id_fkey"
-            columns: ["set_id"]
-            isOneToOne: false
-            referencedRelation: "flashcard_sets"
-            referencedColumns: ["set_id"]
-          },
-        ]
-      }
-      flashcard_sets: {
-        Row: {
-          audio_overview: string | null
-          created_at: string | null
-          created_by: string | null
-          difficulty: string | null
-          lesson: string | null
-          name: string
-          organization_id: string | null
-          project_id: string | null
-          public: boolean | null
-          set_id: string
-          shared_with: string[] | null
-          topic: string | null
-          updated_at: string | null
-          updated_by: string | null
-          user_id: string
-          version: number
-        }
-        Insert: {
-          audio_overview?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          difficulty?: string | null
-          lesson?: string | null
-          name: string
-          organization_id?: string | null
-          project_id?: string | null
-          public?: boolean | null
-          set_id?: string
-          shared_with?: string[] | null
-          topic?: string | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id: string
-          version?: number
-        }
-        Update: {
-          audio_overview?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          difficulty?: string | null
-          lesson?: string | null
-          name?: string
-          organization_id?: string | null
-          project_id?: string | null
-          public?: boolean | null
-          set_id?: string
-          shared_with?: string[] | null
-          topic?: string | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string
-          version?: number
-        }
-        Relationships: []
-      }
       game_badge: {
         Row: {
           badge_key: string
@@ -12693,7 +12746,6 @@ export type Database = {
           organization_id: string
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
         }
@@ -12709,7 +12761,6 @@ export type Database = {
           organization_id: string
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -12725,7 +12776,6 @@ export type Database = {
           organization_id?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -12755,7 +12805,6 @@ export type Database = {
           source_title: string | null
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
         }
@@ -12782,7 +12831,6 @@ export type Database = {
           source_title?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -12809,7 +12857,6 @@ export type Database = {
           source_title?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -13042,7 +13089,6 @@ export type Database = {
           organization_id: string
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
           week_start: string
@@ -13060,7 +13106,6 @@ export type Database = {
           organization_id: string
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
           week_start: string
@@ -13078,7 +13123,6 @@ export type Database = {
           organization_id?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
           week_start?: string
@@ -13271,19 +13315,16 @@ export type Database = {
           deleted_at: string | null
           id: string
           is_completed: boolean | null
-          is_public: boolean
           metadata: Json
           organization_id: string
-          project_id: string | null
           quiz_content_hash: string | null
           quiz_metadata: Json | null
           state: Json
           title: string | null
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
-          visibility: string
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           category?: string | null
@@ -13293,19 +13334,16 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           is_completed?: boolean | null
-          is_public?: boolean
           metadata?: Json
           organization_id: string
-          project_id?: string | null
           quiz_content_hash?: string | null
           quiz_metadata?: Json | null
           state: Json
           title?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
-          visibility?: string
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           category?: string | null
@@ -13315,19 +13353,16 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           is_completed?: boolean | null
-          is_public?: boolean
           metadata?: Json
           organization_id?: string
-          project_id?: string | null
           quiz_content_hash?: string | null
           quiz_metadata?: Json | null
           state?: Json
           title?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
-          visibility?: string
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
@@ -13361,6 +13396,7 @@ export type Database = {
           updated_at: string
           updated_by: string | null
           version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           created_at?: string
@@ -13391,6 +13427,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           created_at?: string
@@ -13421,6 +13458,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
           {
@@ -14823,6 +14861,7 @@ export type Database = {
           is_user_named: boolean
           label: string
           label_category: string
+          metadata: Json
           normalized_value: Json | null
           owner_id: string
           source_annotation_id: string | null
@@ -14836,6 +14875,7 @@ export type Database = {
           is_user_named?: boolean
           label: string
           label_category?: string
+          metadata?: Json
           normalized_value?: Json | null
           owner_id: string
           source_annotation_id?: string | null
@@ -14849,6 +14889,7 @@ export type Database = {
           is_user_named?: boolean
           label?: string
           label_category?: string
+          metadata?: Json
           normalized_value?: Json | null
           owner_id?: string
           source_annotation_id?: string | null
@@ -14938,6 +14979,7 @@ export type Database = {
           created_by: string | null
           file_id: string
           id: string
+          metadata: Json
           organization_id: string
           size_bytes: number | null
           storage_uri: string
@@ -14950,6 +14992,7 @@ export type Database = {
           created_by?: string | null
           file_id: string
           id?: string
+          metadata?: Json
           organization_id: string
           size_bytes?: number | null
           storage_uri: string
@@ -14962,6 +15005,7 @@ export type Database = {
           created_by?: string | null
           file_id?: string
           id?: string
+          metadata?: Json
           organization_id?: string
           size_bytes?: number | null
           storage_uri?: string
@@ -15184,6 +15228,7 @@ export type Database = {
           created_by: string | null
           file_id: string
           id: string
+          metadata: Json
           notes: string | null
           override_kind: string
           override_value: Json
@@ -15196,6 +15241,7 @@ export type Database = {
           created_by?: string | null
           file_id: string
           id?: string
+          metadata?: Json
           notes?: string | null
           override_kind: string
           override_value: Json
@@ -15208,6 +15254,7 @@ export type Database = {
           created_by?: string | null
           file_id?: string
           id?: string
+          metadata?: Json
           notes?: string | null
           override_kind?: string
           override_value?: Json
@@ -15246,6 +15293,7 @@ export type Database = {
           label: string
           label_category: string
           last_edited_by: string | null
+          metadata: Json
           normalized_value: Json | null
           notes: string | null
           owner_id: string
@@ -15271,6 +15319,7 @@ export type Database = {
           label: string
           label_category?: string
           last_edited_by?: string | null
+          metadata?: Json
           normalized_value?: Json | null
           notes?: string | null
           owner_id: string
@@ -15296,6 +15345,7 @@ export type Database = {
           label?: string
           label_category?: string
           last_edited_by?: string | null
+          metadata?: Json
           normalized_value?: Json | null
           notes?: string | null
           owner_id?: string
@@ -15824,6 +15874,135 @@ export type Database = {
   }
   graveyard: {
     Tables: {
+      _backup_kind_example_20260715: {
+        Row: {
+          captured_at: string | null
+          created_at: string | null
+          created_by: string | null
+          data: Json | null
+          deleted_at: string | null
+          description: string | null
+          id: string | null
+          is_canonical: boolean | null
+          kind_definition_id: string | null
+          kind_version: number | null
+          label: string | null
+          metadata: Json | null
+          organization_id: string | null
+          source: string | null
+          source_ref: Json | null
+          updated_at: string | null
+          updated_by: string | null
+          validated_at: string | null
+          validation_status: string | null
+          version: number | null
+        }
+        Insert: {
+          captured_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          data?: Json | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string | null
+          is_canonical?: boolean | null
+          kind_definition_id?: string | null
+          kind_version?: number | null
+          label?: string | null
+          metadata?: Json | null
+          organization_id?: string | null
+          source?: string | null
+          source_ref?: Json | null
+          updated_at?: string | null
+          updated_by?: string | null
+          validated_at?: string | null
+          validation_status?: string | null
+          version?: number | null
+        }
+        Update: {
+          captured_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          data?: Json | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string | null
+          is_canonical?: boolean | null
+          kind_definition_id?: string | null
+          kind_version?: number | null
+          label?: string | null
+          metadata?: Json | null
+          organization_id?: string | null
+          source?: string | null
+          source_ref?: Json | null
+          updated_at?: string | null
+          updated_by?: string | null
+          validated_at?: string | null
+          validation_status?: string | null
+          version?: number | null
+        }
+        Relationships: []
+      }
+      _backup_kind_surface_20260715: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          deleted_at: string | null
+          id: string | null
+          is_active: boolean | null
+          kind_definition_id: string | null
+          metadata: Json | null
+          organization_id: string | null
+          parser_config: Json | null
+          parser_strategy: string | null
+          priority: number | null
+          streaming: boolean | null
+          surface_type: string | null
+          token: string | null
+          updated_at: string | null
+          updated_by: string | null
+          version: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          kind_definition_id?: string | null
+          metadata?: Json | null
+          organization_id?: string | null
+          parser_config?: Json | null
+          parser_strategy?: string | null
+          priority?: number | null
+          streaming?: boolean | null
+          surface_type?: string | null
+          token?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          version?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          kind_definition_id?: string | null
+          metadata?: Json | null
+          organization_id?: string | null
+          parser_config?: Json | null
+          parser_strategy?: string | null
+          priority?: number | null
+          streaming?: boolean | null
+          surface_type?: string | null
+          token?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          version?: number | null
+        }
+        Relationships: []
+      }
       action: {
         Row: {
           id: string
@@ -16546,6 +16725,87 @@ export type Database = {
           id?: string
           name?: string
           sort_order?: number | null
+        }
+        Relationships: []
+      }
+      applet: {
+        Row: {
+          compiled_recipe_id: string | null
+          created_at: string
+          created_by: string | null
+          creator: string | null
+          cta_text: string | null
+          data_source_config: Json | null
+          deleted_at: string | null
+          description: string | null
+          id: string
+          is_public: boolean | null
+          metadata: Json
+          name: string
+          next_step_config: Json | null
+          organization_id: string
+          result_component_config: Json | null
+          slug: string
+          subcategory_id: string | null
+          theme: string | null
+          type: Database["public"]["Enums"]["app_type"]
+          updated_at: string | null
+          updated_by: string | null
+          user_id: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          compiled_recipe_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          creator?: string | null
+          cta_text?: string | null
+          data_source_config?: Json | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          is_public?: boolean | null
+          metadata?: Json
+          name: string
+          next_step_config?: Json | null
+          organization_id: string
+          result_component_config?: Json | null
+          slug: string
+          subcategory_id?: string | null
+          theme?: string | null
+          type: Database["public"]["Enums"]["app_type"]
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          compiled_recipe_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          creator?: string | null
+          cta_text?: string | null
+          data_source_config?: Json | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          is_public?: boolean | null
+          metadata?: Json
+          name?: string
+          next_step_config?: Json | null
+          organization_id?: string
+          result_component_config?: Json | null
+          slug?: string
+          subcategory_id?: string | null
+          theme?: string | null
+          type?: Database["public"]["Enums"]["app_type"]
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
@@ -18496,6 +18756,266 @@ export type Database = {
         }
         Relationships: []
       }
+      custom_app_configs: {
+        Row: {
+          accent_color: string | null
+          app_data_context: Json | null
+          applet_list: Json | null
+          created_at: string
+          created_by: string | null
+          creator: string | null
+          deleted_at: string | null
+          description: string | null
+          extra_buttons: Json | null
+          id: string
+          image_file_id: string | null
+          image_url: string | null
+          is_public: boolean | null
+          layout_type: string | null
+          main_app_icon: string | null
+          main_app_submit_icon: string | null
+          metadata: Json
+          name: string
+          organization_id: string
+          primary_color: string | null
+          public_read: boolean | null
+          slug: string
+          updated_at: string | null
+          updated_by: string | null
+          user_id: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          accent_color?: string | null
+          app_data_context?: Json | null
+          applet_list?: Json | null
+          created_at?: string
+          created_by?: string | null
+          creator?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          extra_buttons?: Json | null
+          id?: string
+          image_file_id?: string | null
+          image_url?: string | null
+          is_public?: boolean | null
+          layout_type?: string | null
+          main_app_icon?: string | null
+          main_app_submit_icon?: string | null
+          metadata?: Json
+          name: string
+          organization_id: string
+          primary_color?: string | null
+          public_read?: boolean | null
+          slug: string
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          accent_color?: string | null
+          app_data_context?: Json | null
+          applet_list?: Json | null
+          created_at?: string
+          created_by?: string | null
+          creator?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          extra_buttons?: Json | null
+          id?: string
+          image_file_id?: string | null
+          image_url?: string | null
+          is_public?: boolean | null
+          layout_type?: string | null
+          main_app_icon?: string | null
+          main_app_submit_icon?: string | null
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          primary_color?: string | null
+          public_read?: boolean | null
+          slug?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      custom_applet_configs: {
+        Row: {
+          accent_color: string | null
+          app_id: string | null
+          applet_icon: string | null
+          applet_submit_text: string | null
+          broker_map: Json | null
+          compiled_recipe_id: string | null
+          containers: Json | null
+          created_at: string
+          created_by: string | null
+          creator: string | null
+          data_destination_config: Json | null
+          data_source_config: Json | null
+          deleted_at: string | null
+          description: string | null
+          id: string
+          image_file_id: string | null
+          image_url: string | null
+          is_public: boolean | null
+          layout_type: string | null
+          metadata: Json
+          name: string
+          next_step_config: Json | null
+          organization_id: string
+          overview_label: string | null
+          primary_color: string | null
+          public_read: boolean | null
+          result_component_config: Json | null
+          slug: string
+          subcategory_id: string | null
+          updated_at: string | null
+          updated_by: string | null
+          user_id: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          accent_color?: string | null
+          app_id?: string | null
+          applet_icon?: string | null
+          applet_submit_text?: string | null
+          broker_map?: Json | null
+          compiled_recipe_id?: string | null
+          containers?: Json | null
+          created_at?: string
+          created_by?: string | null
+          creator?: string | null
+          data_destination_config?: Json | null
+          data_source_config?: Json | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          image_file_id?: string | null
+          image_url?: string | null
+          is_public?: boolean | null
+          layout_type?: string | null
+          metadata?: Json
+          name: string
+          next_step_config?: Json | null
+          organization_id: string
+          overview_label?: string | null
+          primary_color?: string | null
+          public_read?: boolean | null
+          result_component_config?: Json | null
+          slug: string
+          subcategory_id?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          accent_color?: string | null
+          app_id?: string | null
+          applet_icon?: string | null
+          applet_submit_text?: string | null
+          broker_map?: Json | null
+          compiled_recipe_id?: string | null
+          containers?: Json | null
+          created_at?: string
+          created_by?: string | null
+          creator?: string | null
+          data_destination_config?: Json | null
+          data_source_config?: Json | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          image_file_id?: string | null
+          image_url?: string | null
+          is_public?: boolean | null
+          layout_type?: string | null
+          metadata?: Json
+          name?: string
+          next_step_config?: Json | null
+          organization_id?: string
+          overview_label?: string | null
+          primary_color?: string | null
+          public_read?: boolean | null
+          result_component_config?: Json | null
+          slug?: string
+          subcategory_id?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_applet_configs_app_id_fkey"
+            columns: ["app_id"]
+            isOneToOne: false
+            referencedRelation: "custom_app_configs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dashboard_saved_views: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          id: string
+          metadata: Json
+          name: string
+          organization_id: string
+          table_name: string
+          updated_at: string
+          updated_by: string | null
+          url_params: string
+          user_id: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json
+          name: string
+          organization_id: string
+          table_name: string
+          updated_at?: string
+          updated_by?: string | null
+          url_params?: string
+          user_id: string
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          table_name?: string
+          updated_at?: string
+          updated_by?: string | null
+          url_params?: string
+          user_id?: string
+          version?: number
+        }
+        Relationships: []
+      }
       data_broker: {
         Row: {
           color: Database["public"]["Enums"]["color"] | null
@@ -18719,6 +19239,271 @@ export type Database = {
         }
         Relationships: []
       }
+      education_flashcard_data: {
+        Row: {
+          audio_explanation: string | null
+          back: string
+          created_at: string | null
+          created_by: string | null
+          detailed_explanation: string | null
+          difficulty: string | null
+          example: string | null
+          front: string
+          id: string
+          is_deleted: boolean | null
+          lesson: string | null
+          metadata: Json
+          organization_id: string | null
+          personal_notes: string | null
+          project_id: string | null
+          public: boolean | null
+          shared_with: string[] | null
+          topic: string | null
+          updated_at: string | null
+          updated_by: string | null
+          user_id: string
+          version: number
+        }
+        Insert: {
+          audio_explanation?: string | null
+          back: string
+          created_at?: string | null
+          created_by?: string | null
+          detailed_explanation?: string | null
+          difficulty?: string | null
+          example?: string | null
+          front: string
+          id?: string
+          is_deleted?: boolean | null
+          lesson?: string | null
+          metadata?: Json
+          organization_id?: string | null
+          personal_notes?: string | null
+          project_id?: string | null
+          public?: boolean | null
+          shared_with?: string[] | null
+          topic?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id: string
+          version?: number
+        }
+        Update: {
+          audio_explanation?: string | null
+          back?: string
+          created_at?: string | null
+          created_by?: string | null
+          detailed_explanation?: string | null
+          difficulty?: string | null
+          example?: string | null
+          front?: string
+          id?: string
+          is_deleted?: boolean | null
+          lesson?: string | null
+          metadata?: Json
+          organization_id?: string | null
+          personal_notes?: string | null
+          project_id?: string | null
+          public?: boolean | null
+          shared_with?: string[] | null
+          topic?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      education_flashcard_history: {
+        Row: {
+          correct_count: number | null
+          created_at: string | null
+          created_by: string | null
+          deleted_at: string | null
+          flashcard_id: string | null
+          id: string
+          incorrect_count: number | null
+          metadata: Json
+          organization_id: string
+          review_count: number | null
+          updated_at: string | null
+          updated_by: string | null
+          user_id: string
+          version: number
+        }
+        Insert: {
+          correct_count?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          flashcard_id?: string | null
+          id?: string
+          incorrect_count?: number | null
+          metadata?: Json
+          organization_id: string
+          review_count?: number | null
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id: string
+          version?: number
+        }
+        Update: {
+          correct_count?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          flashcard_id?: string | null
+          id?: string
+          incorrect_count?: number | null
+          metadata?: Json
+          organization_id?: string
+          review_count?: number | null
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flashcard_history_flashcard_id_fkey"
+            columns: ["flashcard_id"]
+            isOneToOne: false
+            referencedRelation: "education_flashcard_data"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      education_flashcard_images: {
+        Row: {
+          created_at: string | null
+          file_name: string
+          file_path: string
+          flashcard_id: string | null
+          id: string
+          mime_type: string
+          size: number
+        }
+        Insert: {
+          created_at?: string | null
+          file_name: string
+          file_path: string
+          flashcard_id?: string | null
+          id?: string
+          mime_type: string
+          size: number
+        }
+        Update: {
+          created_at?: string | null
+          file_name?: string
+          file_path?: string
+          flashcard_id?: string | null
+          id?: string
+          mime_type?: string
+          size?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flashcard_images_flashcard_id_fkey"
+            columns: ["flashcard_id"]
+            isOneToOne: false
+            referencedRelation: "education_flashcard_data"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      education_flashcard_set_relations: {
+        Row: {
+          flashcard_id: string
+          order: number | null
+          set_id: string
+        }
+        Insert: {
+          flashcard_id: string
+          order?: number | null
+          set_id: string
+        }
+        Update: {
+          flashcard_id?: string
+          order?: number | null
+          set_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flashcard_set_relations_flashcard_id_fkey"
+            columns: ["flashcard_id"]
+            isOneToOne: false
+            referencedRelation: "education_flashcard_data"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flashcard_set_relations_set_id_fkey"
+            columns: ["set_id"]
+            isOneToOne: false
+            referencedRelation: "education_flashcard_sets"
+            referencedColumns: ["set_id"]
+          },
+        ]
+      }
+      education_flashcard_sets: {
+        Row: {
+          audio_overview: string | null
+          created_at: string | null
+          created_by: string | null
+          difficulty: string | null
+          lesson: string | null
+          metadata: Json
+          name: string
+          organization_id: string | null
+          project_id: string | null
+          public: boolean | null
+          set_id: string
+          shared_with: string[] | null
+          topic: string | null
+          updated_at: string | null
+          updated_by: string | null
+          user_id: string
+          version: number
+        }
+        Insert: {
+          audio_overview?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          difficulty?: string | null
+          lesson?: string | null
+          metadata?: Json
+          name: string
+          organization_id?: string | null
+          project_id?: string | null
+          public?: boolean | null
+          set_id?: string
+          shared_with?: string[] | null
+          topic?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id: string
+          version?: number
+        }
+        Update: {
+          audio_overview?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          difficulty?: string | null
+          lesson?: string | null
+          metadata?: Json
+          name?: string
+          organization_id?: string | null
+          project_id?: string | null
+          public?: boolean | null
+          set_id?: string
+          shared_with?: string[] | null
+          topic?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+        }
+        Relationships: []
+      }
       endpoint_legacy: {
         Row: {
           additional_cost: boolean | null
@@ -18920,6 +19705,45 @@ export type Database = {
           resource_type?: string
           share_token?: string
           use_count?: number
+        }
+        Relationships: []
+      }
+      full_spectrum_positions: {
+        Row: {
+          additional_details: string | null
+          alternate_titles: string | null
+          created_at: string
+          description: string | null
+          id: string
+          qualifications: string | null
+          red_flags: string | null
+          sizzle_questions: string | null
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          additional_details?: string | null
+          alternate_titles?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          qualifications?: string | null
+          red_flags?: string | null
+          sizzle_questions?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          additional_details?: string | null
+          alternate_titles?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          qualifications?: string | null
+          red_flags?: string | null
+          sizzle_questions?: string | null
+          title?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -19220,6 +20044,72 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["message_role"]
           type?: Database["public"]["Enums"]["message_type"]
+        }
+        Relationships: []
+      }
+      microservice_project: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          is_system: boolean
+          metadata: Json
+          organization_id: string
+          project_code: string
+          project_description: string
+          project_name: string
+          public_read: boolean
+          repo_id: number
+          repo_name: string
+          repo_org_name: string
+          repo_url: string
+          updated_at: string
+          updated_by: string | null
+          user_id: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_system?: boolean
+          metadata?: Json
+          organization_id: string
+          project_code: string
+          project_description: string
+          project_name: string
+          public_read?: boolean
+          repo_id: number
+          repo_name: string
+          repo_org_name: string
+          repo_url: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_system?: boolean
+          metadata?: Json
+          organization_id?: string
+          project_code?: string
+          project_description?: string
+          project_name?: string
+          public_read?: boolean
+          repo_id?: number
+          repo_name?: string
+          repo_org_name?: string
+          repo_url?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
         }
         Relationships: []
       }
@@ -22191,6 +23081,87 @@ export type Database = {
           },
         ]
       }
+      site_metadata: {
+        Row: {
+          contact_email: string | null
+          copyright_holder: string | null
+          created_at: string | null
+          default_author_name: string | null
+          default_author_type: string | null
+          default_language: string | null
+          default_share_image_height: number | null
+          default_share_image_url: string | null
+          default_share_image_width: number | null
+          facebook_page_url: string | null
+          google_analytics_id: string | null
+          google_tag_manager_id: string | null
+          gsc_property_url: string | null
+          id: string
+          is_active: boolean | null
+          logo_height: number | null
+          logo_url: string | null
+          logo_width: number | null
+          organization_type: string | null
+          site_key: string
+          site_name: string
+          site_url: string | null
+          twitter_handle: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          contact_email?: string | null
+          copyright_holder?: string | null
+          created_at?: string | null
+          default_author_name?: string | null
+          default_author_type?: string | null
+          default_language?: string | null
+          default_share_image_height?: number | null
+          default_share_image_url?: string | null
+          default_share_image_width?: number | null
+          facebook_page_url?: string | null
+          google_analytics_id?: string | null
+          google_tag_manager_id?: string | null
+          gsc_property_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          logo_height?: number | null
+          logo_url?: string | null
+          logo_width?: number | null
+          organization_type?: string | null
+          site_key: string
+          site_name: string
+          site_url?: string | null
+          twitter_handle?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          contact_email?: string | null
+          copyright_holder?: string | null
+          created_at?: string | null
+          default_author_name?: string | null
+          default_author_type?: string | null
+          default_language?: string | null
+          default_share_image_height?: number | null
+          default_share_image_url?: string | null
+          default_share_image_width?: number | null
+          facebook_page_url?: string | null
+          google_analytics_id?: string | null
+          google_tag_manager_id?: string | null
+          gsc_property_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          logo_height?: number | null
+          logo_url?: string | null
+          logo_width?: number | null
+          organization_type?: string | null
+          site_key?: string
+          site_name?: string
+          site_url?: string | null
+          twitter_handle?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       site_pages: {
         Row: {
           created_at: string
@@ -22918,6 +23889,45 @@ export type Database = {
         }
         Relationships: []
       }
+      ts_check_runs: {
+        Row: {
+          codebase_path: string
+          duration_ms: number | null
+          error_count: number
+          errors: Json
+          id: string
+          message: string | null
+          ran_at: string
+          ran_by: string | null
+          status: string
+          tsconfig: string
+        }
+        Insert: {
+          codebase_path: string
+          duration_ms?: number | null
+          error_count?: number
+          errors?: Json
+          id?: string
+          message?: string | null
+          ran_at?: string
+          ran_by?: string | null
+          status?: string
+          tsconfig?: string
+        }
+        Update: {
+          codebase_path?: string
+          duration_ms?: number | null
+          error_count?: number
+          errors?: Json
+          id?: string
+          message?: string | null
+          ran_at?: string
+          ran_by?: string | null
+          status?: string
+          tsconfig?: string
+        }
+        Relationships: []
+      }
       workflow: {
         Row: {
           auto_execute: boolean | null
@@ -23560,6 +24570,7 @@ export type Database = {
           event_type: string
           id: string
           loop_run_id: string
+          metadata: Json
           payload: Json
           seq: number
           stage: string | null
@@ -23571,6 +24582,7 @@ export type Database = {
           event_type: string
           id?: string
           loop_run_id: string
+          metadata?: Json
           payload?: Json
           seq?: number
           stage?: string | null
@@ -23582,6 +24594,7 @@ export type Database = {
           event_type?: string
           id?: string
           loop_run_id?: string
+          metadata?: Json
           payload?: Json
           seq?: number
           stage?: string | null
@@ -23703,6 +24716,7 @@ export type Database = {
           escalate_to_pipe: string | null
           id: string
           loop_run_id: string
+          metadata: Json
           outcome: Json | null
           pipe: string | null
           pipe_requested: string
@@ -23725,6 +24739,7 @@ export type Database = {
           escalate_to_pipe?: string | null
           id?: string
           loop_run_id: string
+          metadata?: Json
           outcome?: Json | null
           pipe?: string | null
           pipe_requested: string
@@ -23747,6 +24762,7 @@ export type Database = {
           escalate_to_pipe?: string | null
           id?: string
           loop_run_id?: string
+          metadata?: Json
           outcome?: Json | null
           pipe?: string | null
           pipe_requested?: string
@@ -23897,7 +24913,6 @@ export type Database = {
           subject_selector: Json
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
         }
@@ -23923,7 +24938,6 @@ export type Database = {
           subject_selector?: Json
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -23949,7 +24963,6 @@ export type Database = {
           subject_selector?: Json
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -25897,6 +26910,7 @@ export type Database = {
           is_system: boolean
           logo_file_id: string | null
           logo_url: string | null
+          metadata: Json
           name: string
           settings: Json | null
           slug: string
@@ -25913,6 +26927,7 @@ export type Database = {
           is_system?: boolean
           logo_file_id?: string | null
           logo_url?: string | null
+          metadata?: Json
           name: string
           settings?: Json | null
           slug: string
@@ -25929,6 +26944,7 @@ export type Database = {
           is_system?: boolean
           logo_file_id?: string | null
           logo_url?: string | null
+          metadata?: Json
           name?: string
           settings?: Json | null
           slug?: string
@@ -26036,6 +27052,7 @@ export type Database = {
           error_code: string | null
           error_message: string | null
           id: string
+          metadata: Json
           organization_id: string
           resolved_at: string | null
           resolved_org_id: string | null
@@ -26049,6 +27066,7 @@ export type Database = {
           error_code?: string | null
           error_message?: string | null
           id?: string
+          metadata?: Json
           organization_id: string
           resolved_at?: string | null
           resolved_org_id?: string | null
@@ -26062,6 +27080,7 @@ export type Database = {
           error_code?: string | null
           error_message?: string | null
           id?: string
+          metadata?: Json
           organization_id?: string
           resolved_at?: string | null
           resolved_org_id?: string | null
@@ -27201,6 +28220,7 @@ export type Database = {
           finger_type: Database["legal"]["Enums"]["wc_finger_type"] | null
           id: string
           impairment_number: string | null
+          metadata: Json
           name: string | null
           search_aliases: string[]
         }
@@ -27210,6 +28230,7 @@ export type Database = {
           finger_type?: Database["legal"]["Enums"]["wc_finger_type"] | null
           id?: string
           impairment_number?: string | null
+          metadata?: Json
           name?: string | null
           search_aliases?: string[]
         }
@@ -27219,6 +28240,7 @@ export type Database = {
           finger_type?: Database["legal"]["Enums"]["wc_finger_type"] | null
           id?: string
           impairment_number?: string | null
+          metadata?: Json
           name?: string | null
           search_aliases?: string[]
         }
@@ -27234,6 +28256,7 @@ export type Database = {
           impairment_definition_id: string | null
           industrial: number | null
           le: number | null
+          metadata: Json
           pain: number | null
           rating: number | null
           report_id: string | null
@@ -27252,6 +28275,7 @@ export type Database = {
           impairment_definition_id?: string | null
           industrial?: number | null
           le?: number | null
+          metadata?: Json
           pain?: number | null
           rating?: number | null
           report_id?: string | null
@@ -27270,6 +28294,7 @@ export type Database = {
           impairment_definition_id?: string | null
           industrial?: number | null
           le?: number | null
+          metadata?: Json
           pain?: number | null
           rating?: number | null
           report_id?: string | null
@@ -27309,6 +28334,7 @@ export type Database = {
           id: string
           left_side_total: number | null
           life_pension_weekly: number | null
+          metadata: Json
           pd_adjustment_pct: number | null
           pd_adjustment_reason: string | null
           right_side_total: number | null
@@ -27328,6 +28354,7 @@ export type Database = {
           id?: string
           left_side_total?: number | null
           life_pension_weekly?: number | null
+          metadata?: Json
           pd_adjustment_pct?: number | null
           pd_adjustment_reason?: string | null
           right_side_total?: number | null
@@ -27347,6 +28374,7 @@ export type Database = {
           id?: string
           left_side_total?: number | null
           life_pension_weekly?: number | null
+          metadata?: Json
           pd_adjustment_pct?: number | null
           pd_adjustment_reason?: string | null
           right_side_total?: number | null
@@ -27552,6 +28580,7 @@ export type Database = {
           created_by: string | null
           file_id: string | null
           id: string
+          metadata: Json
           organization_id: string
           parent_file_id: string | null
           reason: string
@@ -27569,6 +28598,7 @@ export type Database = {
           created_by?: string | null
           file_id?: string | null
           id?: string
+          metadata?: Json
           organization_id: string
           parent_file_id?: string | null
           reason: string
@@ -27586,6 +28616,7 @@ export type Database = {
           created_by?: string | null
           file_id?: string | null
           id?: string
+          metadata?: Json
           organization_id?: string
           parent_file_id?: string | null
           reason?: string
@@ -27647,6 +28678,7 @@ export type Database = {
           file_id: string
           id: string
           location: Json
+          metadata: Json
           mode: string
           nonce: string | null
           owner_id: string
@@ -27668,6 +28700,7 @@ export type Database = {
           file_id: string
           id?: string
           location?: Json
+          metadata?: Json
           mode: string
           nonce?: string | null
           owner_id: string
@@ -27689,6 +28722,7 @@ export type Database = {
           file_id?: string
           id?: string
           location?: Json
+          metadata?: Json
           mode?: string
           nonce?: string | null
           owner_id?: string
@@ -27723,16 +28757,22 @@ export type Database = {
           claimed_at: string | null
           claimed_by: string | null
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           error: Json | null
           id: string
           job_id: string
           max_attempts: number
+          metadata: Json
           node_id: string
+          organization_id: string
           page_id: string
           result: Json | null
           route: string
           status: string
           updated_at: string
+          updated_by: string | null
+          version: number
           visible_at: string
         }
         Insert: {
@@ -27740,16 +28780,22 @@ export type Database = {
           claimed_at?: string | null
           claimed_by?: string | null
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           error?: Json | null
           id?: string
           job_id: string
           max_attempts?: number
+          metadata?: Json
           node_id: string
+          organization_id: string
           page_id: string
           result?: Json | null
           route?: string
           status?: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
           visible_at?: string
         }
         Update: {
@@ -27757,16 +28803,22 @@ export type Database = {
           claimed_at?: string | null
           claimed_by?: string | null
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           error?: Json | null
           id?: string
           job_id?: string
           max_attempts?: number
+          metadata?: Json
           node_id?: string
+          organization_id?: string
           page_id?: string
           result?: Json | null
           route?: string
           status?: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
           visible_at?: string
         }
         Relationships: [
@@ -27785,14 +28837,20 @@ export type Database = {
           cms_site_id: string
           cms_site_slug: string
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           error: Json | null
           finished_at: string | null
           id: string
+          metadata: Json
           options: Json
+          organization_id: string
           result: Json | null
           started_at: string | null
           status: string
           updated_at: string
+          updated_by: string | null
+          version: number
           web_site_id: string
         }
         Insert: {
@@ -27800,14 +28858,20 @@ export type Database = {
           cms_site_id: string
           cms_site_slug?: string
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           error?: Json | null
           finished_at?: string | null
           id?: string
+          metadata?: Json
           options?: Json
+          organization_id: string
           result?: Json | null
           started_at?: string | null
           status?: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
           web_site_id: string
         }
         Update: {
@@ -27815,14 +28879,20 @@ export type Database = {
           cms_site_id?: string
           cms_site_slug?: string
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           error?: Json | null
           finished_at?: string | null
           id?: string
+          metadata?: Json
           options?: Json
+          organization_id?: string
           result?: Json | null
           started_at?: string | null
           status?: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
           web_site_id?: string
         }
         Relationships: []
@@ -27979,6 +29049,158 @@ export type Database = {
           {
             foreignKeyName: "node_parent_id_fkey"
             columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "node"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      node_artifact: {
+        Row: {
+          content: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          kind: string
+          metadata: Json
+          node_id: string
+          organization_id: string
+          produced_by: Json
+          site_id: string
+          step: string
+          summary: string | null
+          updated_at: string
+          updated_by: string | null
+          valid_to: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          content: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          kind: string
+          metadata?: Json
+          node_id: string
+          organization_id: string
+          produced_by?: Json
+          site_id: string
+          step: string
+          summary?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          valid_to?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          kind?: string
+          metadata?: Json
+          node_id?: string
+          organization_id?: string
+          produced_by?: Json
+          site_id?: string
+          step?: string
+          summary?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          valid_to?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "node_artifact_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: false
+            referencedRelation: "node"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      node_step: {
+        Row: {
+          artifact_id: string | null
+          attempts: number
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          error: Json | null
+          finished_at: string | null
+          id: string
+          metadata: Json
+          node_id: string
+          organization_id: string
+          site_id: string
+          started_at: string | null
+          status: string
+          step: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          artifact_id?: string | null
+          attempts?: number
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          error?: Json | null
+          finished_at?: string | null
+          id?: string
+          metadata?: Json
+          node_id: string
+          organization_id: string
+          site_id: string
+          started_at?: string | null
+          status?: string
+          step: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          artifact_id?: string | null
+          attempts?: number
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          error?: Json | null
+          finished_at?: string | null
+          id?: string
+          metadata?: Json
+          node_id?: string
+          organization_id?: string
+          site_id?: string
+          started_at?: string | null
+          status?: string
+          step?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "node_step_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "node_artifact"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "node_step_node_id_fkey"
+            columns: ["node_id"]
             isOneToOne: false
             referencedRelation: "node"
             referencedColumns: ["id"]
@@ -28237,6 +29459,7 @@ export type Database = {
           first_seen_at: string | null
           id: string
           is_starred: boolean
+          metadata: Json
           occurrences: number
           organization_id: string | null
           priority: number
@@ -28274,6 +29497,7 @@ export type Database = {
           first_seen_at?: string | null
           id?: string
           is_starred?: boolean
+          metadata?: Json
           occurrences?: number
           organization_id?: string | null
           priority?: number
@@ -28311,6 +29535,7 @@ export type Database = {
           first_seen_at?: string | null
           id?: string
           is_starred?: boolean
+          metadata?: Json
           occurrences?: number
           organization_id?: string | null
           priority?: number
@@ -28586,6 +29811,39 @@ export type Database = {
           },
         ]
       }
+      ddl_guard_log: {
+        Row: {
+          acknowledged_at: string | null
+          command_tag: string | null
+          detail: string
+          id: number
+          object_ref: string | null
+          occurred_at: string
+          rule: string
+          severity: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          command_tag?: string | null
+          detail: string
+          id?: never
+          object_ref?: string | null
+          occurred_at?: string
+          rule: string
+          severity: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          command_tag?: string | null
+          detail?: string
+          id?: never
+          object_ref?: string | null
+          occurred_at?: string
+          rule?: string
+          severity?: string
+        }
+        Relationships: []
+      }
       deprecated_relations: {
         Row: {
           archived_as: string | null
@@ -28687,6 +29945,8 @@ export type Database = {
           agent_writable: boolean
           agent_write_notes: string | null
           allow_preview: boolean
+          audit_class: string
+          audit_class_reason: string | null
           base_tier: number
           category: string | null
           content_role: string | null
@@ -28705,17 +29965,21 @@ export type Database = {
           notes: string | null
           reference_category: string | null
           reference_pickable: boolean
-          rls_variant: string | null
+          rls_variant: string
           schema_name: string
           table_name: string
           table_ref: unknown
           title_column: string | null
           token: string
+          version_store: string
+          version_store_ref: unknown
         }
         Insert: {
           agent_writable?: boolean
           agent_write_notes?: string | null
           allow_preview?: boolean
+          audit_class?: string
+          audit_class_reason?: string | null
           base_tier?: number
           category?: string | null
           content_role?: string | null
@@ -28736,17 +30000,21 @@ export type Database = {
           notes?: string | null
           reference_category?: string | null
           reference_pickable?: boolean
-          rls_variant?: string | null
+          rls_variant?: string
           schema_name: string
           table_name: string
           table_ref?: unknown
           title_column?: string | null
           token: string
+          version_store?: string
+          version_store_ref?: unknown
         }
         Update: {
           agent_writable?: boolean
           agent_write_notes?: string | null
           allow_preview?: boolean
+          audit_class?: string
+          audit_class_reason?: string | null
           base_tier?: number
           category?: string | null
           content_role?: string | null
@@ -28767,12 +30035,14 @@ export type Database = {
           notes?: string | null
           reference_category?: string | null
           reference_pickable?: boolean
-          rls_variant?: string | null
+          rls_variant?: string
           schema_name?: string
           table_name?: string
           table_ref?: unknown
           title_column?: string | null
           token?: string
+          version_store?: string
+          version_store_ref?: unknown
         }
         Relationships: [
           {
@@ -28791,6 +30061,7 @@ export type Database = {
           deleted_at: string | null
           description: string
           id: string
+          metadata: Json
           name: string
           organization_id: string
           principles: Json
@@ -28809,6 +30080,7 @@ export type Database = {
           deleted_at?: string | null
           description?: string
           id?: string
+          metadata?: Json
           name: string
           organization_id: string
           principles?: Json
@@ -28827,6 +30099,7 @@ export type Database = {
           deleted_at?: string | null
           description?: string
           id?: string
+          metadata?: Json
           name?: string
           organization_id?: string
           principles?: Json
@@ -28840,6 +30113,65 @@ export type Database = {
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
+      }
+      flexible_data: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          created_by: string | null
+          data: Json
+          deleted_at: string | null
+          id: string
+          label: string
+          metadata: Json
+          organization_id: string
+          slug: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          data?: Json
+          deleted_at?: string | null
+          id?: string
+          label: string
+          metadata?: Json
+          organization_id: string
+          slug?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          data?: Json
+          deleted_at?: string | null
+          id?: string
+          label?: string
+          metadata?: Json
+          organization_id?: string
+          slug?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flexible_data_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       matrx_action_ledger: {
         Row: {
@@ -29381,7 +30713,6 @@ export type Database = {
           title: string
           updated_at: string
           updated_by: string | null
-          user_id: string | null
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
         }
@@ -29403,7 +30734,6 @@ export type Database = {
           title?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -29425,7 +30755,6 @@ export type Database = {
           title?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -29471,7 +30800,6 @@ export type Database = {
           title: string
           updated_at: string
           updated_by: string | null
-          user_id: string | null
           version: number
           video_url: string | null
           visibility: Database["platform"]["Enums"]["visibility"]
@@ -29500,7 +30828,6 @@ export type Database = {
           title: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           version?: number
           video_url?: string | null
           visibility?: Database["platform"]["Enums"]["visibility"]
@@ -29529,7 +30856,6 @@ export type Database = {
           title?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           version?: number
           video_url?: string | null
           visibility?: Database["platform"]["Enums"]["visibility"]
@@ -29614,10 +30940,14 @@ export type Database = {
         Row: {
           asset_kind: string
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           error: Json | null
           id: string
           is_manual: boolean
+          metadata: Json
           model_alias: string | null
+          organization_id: string
           prompt: string | null
           run_id: string
           slot: number
@@ -29625,15 +30955,21 @@ export type Database = {
           status: string
           superseded_by: string | null
           updated_at: string
+          updated_by: string | null
           url: string | null
+          version: number
         }
         Insert: {
           asset_kind: string
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           error?: Json | null
           id?: string
           is_manual?: boolean
+          metadata?: Json
           model_alias?: string | null
+          organization_id: string
           prompt?: string | null
           run_id: string
           slot: number
@@ -29641,15 +30977,21 @@ export type Database = {
           status?: string
           superseded_by?: string | null
           updated_at?: string
+          updated_by?: string | null
           url?: string | null
+          version?: number
         }
         Update: {
           asset_kind?: string
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           error?: Json | null
           id?: string
           is_manual?: boolean
+          metadata?: Json
           model_alias?: string | null
+          organization_id?: string
           prompt?: string | null
           run_id?: string
           slot?: number
@@ -29657,7 +30999,9 @@ export type Database = {
           status?: string
           superseded_by?: string | null
           updated_at?: string
+          updated_by?: string | null
           url?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -29697,7 +31041,6 @@ export type Database = {
           title: string
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
           video_prompts: string[]
           video_urls: string[]
@@ -29730,7 +31073,6 @@ export type Database = {
           title?: string
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
           video_prompts?: string[]
           video_urls?: string[]
@@ -29763,7 +31105,6 @@ export type Database = {
           title?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
           video_prompts?: string[]
           video_urls?: string[]
@@ -29823,286 +31164,6 @@ export type Database = {
           duration_ms?: number
           filename?: string
           source?: string
-        }
-        Relationships: []
-      }
-      agenda_run: {
-        Row: {
-          claim_expires_at: string | null
-          claim_token: string | null
-          claimed_at: string | null
-          conversation_id: string | null
-          created_at: string
-          due_at: string
-          error_message: string | null
-          finished_at: string | null
-          id: string
-          result_metadata: Json | null
-          result_summary: string | null
-          started_at: string | null
-          status: string
-          surface: string | null
-          task_id: string
-          user_id: string
-        }
-        Insert: {
-          claim_expires_at?: string | null
-          claim_token?: string | null
-          claimed_at?: string | null
-          conversation_id?: string | null
-          created_at?: string
-          due_at: string
-          error_message?: string | null
-          finished_at?: string | null
-          id?: string
-          result_metadata?: Json | null
-          result_summary?: string | null
-          started_at?: string | null
-          status?: string
-          surface?: string | null
-          task_id: string
-          user_id?: string
-        }
-        Update: {
-          claim_expires_at?: string | null
-          claim_token?: string | null
-          claimed_at?: string | null
-          conversation_id?: string | null
-          created_at?: string
-          due_at?: string
-          error_message?: string | null
-          finished_at?: string | null
-          id?: string
-          result_metadata?: Json | null
-          result_summary?: string | null
-          started_at?: string | null
-          status?: string
-          surface?: string | null
-          task_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "agenda_run_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "agenda_task"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      agenda_task: {
-        Row: {
-          agent_id: string | null
-          auth_mode: string
-          created_at: string
-          description: string | null
-          enabled: boolean
-          expires_at: string | null
-          id: string
-          last_run_at: string | null
-          max_concurrent: number
-          max_runtime_seconds: number
-          next_due_at: string | null
-          persistent_conversation_id: string | null
-          prompt: string
-          surfaces: string[]
-          tags: string[]
-          title: string
-          trigger_config: Json
-          trigger_type: string
-          updated_at: string
-          user_id: string
-          variables: Json
-        }
-        Insert: {
-          agent_id?: string | null
-          auth_mode?: string
-          created_at?: string
-          description?: string | null
-          enabled?: boolean
-          expires_at?: string | null
-          id?: string
-          last_run_at?: string | null
-          max_concurrent?: number
-          max_runtime_seconds?: number
-          next_due_at?: string | null
-          persistent_conversation_id?: string | null
-          prompt: string
-          surfaces?: string[]
-          tags?: string[]
-          title: string
-          trigger_config?: Json
-          trigger_type: string
-          updated_at?: string
-          user_id?: string
-          variables?: Json
-        }
-        Update: {
-          agent_id?: string | null
-          auth_mode?: string
-          created_at?: string
-          description?: string | null
-          enabled?: boolean
-          expires_at?: string | null
-          id?: string
-          last_run_at?: string | null
-          max_concurrent?: number
-          max_runtime_seconds?: number
-          next_due_at?: string | null
-          persistent_conversation_id?: string | null
-          prompt?: string
-          surfaces?: string[]
-          tags?: string[]
-          title?: string
-          trigger_config?: Json
-          trigger_type?: string
-          updated_at?: string
-          user_id?: string
-          variables?: Json
-        }
-        Relationships: []
-      }
-      agent_run: {
-        Row: {
-          created_at: string
-          error: Json | null
-          id: string
-          input_fingerprint: string | null
-          kind: string
-          request: Json
-          result: Json | null
-          status: string
-          total_cost: number
-          updated_at: string
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          error?: Json | null
-          id?: string
-          input_fingerprint?: string | null
-          kind: string
-          request?: Json
-          result?: Json | null
-          status?: string
-          total_cost?: number
-          updated_at?: string
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          error?: Json | null
-          id?: string
-          input_fingerprint?: string | null
-          kind?: string
-          request?: Json
-          result?: Json | null
-          status?: string
-          total_cost?: number
-          updated_at?: string
-          user_id?: string | null
-        }
-        Relationships: []
-      }
-      agent_run_stage: {
-        Row: {
-          cost: number | null
-          error: Json | null
-          finished_at: string | null
-          id: string
-          output: Json | null
-          run_id: string
-          stage_key: string
-          started_at: string
-          status: string
-        }
-        Insert: {
-          cost?: number | null
-          error?: Json | null
-          finished_at?: string | null
-          id?: string
-          output?: Json | null
-          run_id: string
-          stage_key: string
-          started_at?: string
-          status?: string
-        }
-        Update: {
-          cost?: number | null
-          error?: Json | null
-          finished_at?: string | null
-          id?: string
-          output?: Json | null
-          run_id?: string
-          stage_key?: string
-          started_at?: string
-          status?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "agent_run_stage_run_id_fkey"
-            columns: ["run_id"]
-            isOneToOne: false
-            referencedRelation: "agent_run"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      analysis_recipes: {
-        Row: {
-          created_at: string
-          default_tiers: Json
-          description: string | null
-          detector_overrides: Json
-          id: string
-          is_active: boolean
-          match_rules: Json
-          name: string
-          owner_account_id: string | null
-          owner_team_id: string | null
-          owner_user_id: string | null
-          pattern_overrides: Json
-          priority: number
-          redaction_mode: string | null
-          substitute_formats: Json
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          default_tiers?: Json
-          description?: string | null
-          detector_overrides?: Json
-          id?: string
-          is_active?: boolean
-          match_rules?: Json
-          name: string
-          owner_account_id?: string | null
-          owner_team_id?: string | null
-          owner_user_id?: string | null
-          pattern_overrides?: Json
-          priority?: number
-          redaction_mode?: string | null
-          substitute_formats?: Json
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          default_tiers?: Json
-          description?: string | null
-          detector_overrides?: Json
-          id?: string
-          is_active?: boolean
-          match_rules?: Json
-          name?: string
-          owner_account_id?: string | null
-          owner_team_id?: string | null
-          owner_user_id?: string | null
-          pattern_overrides?: Json
-          priority?: number
-          redaction_mode?: string | null
-          substitute_formats?: Json
-          updated_at?: string
         }
         Relationships: []
       }
@@ -30589,122 +31650,6 @@ export type Database = {
         }
         Relationships: []
       }
-      applet: {
-        Row: {
-          compiled_recipe_id: string | null
-          created_at: string
-          created_by: string | null
-          creator: string | null
-          cta_text: string | null
-          data_source_config: Json | null
-          deleted_at: string | null
-          description: string | null
-          id: string
-          is_public: boolean | null
-          metadata: Json
-          name: string
-          next_step_config: Json | null
-          organization_id: string
-          result_component_config: Json | null
-          slug: string
-          subcategory_id: string | null
-          theme: string | null
-          type: Database["public"]["Enums"]["app_type"]
-          updated_at: string | null
-          updated_by: string | null
-          user_id: string | null
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          compiled_recipe_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          creator?: string | null
-          cta_text?: string | null
-          data_source_config?: Json | null
-          deleted_at?: string | null
-          description?: string | null
-          id?: string
-          is_public?: boolean | null
-          metadata?: Json
-          name: string
-          next_step_config?: Json | null
-          organization_id: string
-          result_component_config?: Json | null
-          slug: string
-          subcategory_id?: string | null
-          theme?: string | null
-          type: Database["public"]["Enums"]["app_type"]
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          compiled_recipe_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          creator?: string | null
-          cta_text?: string | null
-          data_source_config?: Json | null
-          deleted_at?: string | null
-          description?: string | null
-          id?: string
-          is_public?: boolean | null
-          metadata?: Json
-          name?: string
-          next_step_config?: Json | null
-          organization_id?: string
-          result_component_config?: Json | null
-          slug?: string
-          subcategory_id?: string | null
-          theme?: string | null
-          type?: Database["public"]["Enums"]["app_type"]
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Relationships: []
-      }
-      applet_containers: {
-        Row: {
-          applet_id: string
-          container_id: string
-          created_at: string
-          id: string
-          order: number
-          updated_at: string | null
-        }
-        Insert: {
-          applet_id: string
-          container_id: string
-          created_at?: string
-          id?: string
-          order?: number
-          updated_at?: string | null
-        }
-        Update: {
-          applet_id?: string
-          container_id?: string
-          created_at?: string
-          id?: string
-          order?: number
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "applet_containers_applet_id_fkey"
-            columns: ["applet_id"]
-            isOneToOne: false
-            referencedRelation: "custom_applet_configs"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       catalog_entries: {
         Row: {
           app: string
@@ -30822,359 +31767,6 @@ export type Database = {
         }
         Relationships: []
       }
-      cld_file_permissions: {
-        Row: {
-          expires_at: string | null
-          granted_at: string
-          granted_by: string | null
-          grantee_id: string
-          grantee_type: string
-          id: string
-          permission_level: string
-          resource_id: string
-          resource_type: string
-        }
-        Insert: {
-          expires_at?: string | null
-          granted_at?: string
-          granted_by?: string | null
-          grantee_id: string
-          grantee_type?: string
-          id?: string
-          permission_level: string
-          resource_id: string
-          resource_type: string
-        }
-        Update: {
-          expires_at?: string | null
-          granted_at?: string
-          granted_by?: string | null
-          grantee_id?: string
-          grantee_type?: string
-          id?: string
-          permission_level?: string
-          resource_id?: string
-          resource_type?: string
-        }
-        Relationships: []
-      }
-      cld_file_versions: {
-        Row: {
-          change_summary: string | null
-          checksum: string | null
-          created_at: string
-          created_by: string | null
-          file_id: string
-          file_size: number | null
-          id: string
-          storage_uri: string
-          version_number: number
-        }
-        Insert: {
-          change_summary?: string | null
-          checksum?: string | null
-          created_at?: string
-          created_by?: string | null
-          file_id: string
-          file_size?: number | null
-          id?: string
-          storage_uri: string
-          version_number: number
-        }
-        Update: {
-          change_summary?: string | null
-          checksum?: string | null
-          created_at?: string
-          created_by?: string | null
-          file_id?: string
-          file_size?: number | null
-          id?: string
-          storage_uri?: string
-          version_number?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "cld_file_versions_file_id_fkey"
-            columns: ["file_id"]
-            isOneToOne: false
-            referencedRelation: "cld_files"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      cld_files: {
-        Row: {
-          checksum: string | null
-          created_at: string
-          current_version: number
-          deleted_at: string | null
-          file_name: string
-          file_path: string
-          file_size: number | null
-          id: string
-          metadata: Json
-          mime_type: string | null
-          owner_id: string
-          parent_folder_id: string | null
-          storage_uri: string
-          updated_at: string
-          visibility: string
-        }
-        Insert: {
-          checksum?: string | null
-          created_at?: string
-          current_version?: number
-          deleted_at?: string | null
-          file_name: string
-          file_path: string
-          file_size?: number | null
-          id?: string
-          metadata?: Json
-          mime_type?: string | null
-          owner_id: string
-          parent_folder_id?: string | null
-          storage_uri: string
-          updated_at?: string
-          visibility?: string
-        }
-        Update: {
-          checksum?: string | null
-          created_at?: string
-          current_version?: number
-          deleted_at?: string | null
-          file_name?: string
-          file_path?: string
-          file_size?: number | null
-          id?: string
-          metadata?: Json
-          mime_type?: string | null
-          owner_id?: string
-          parent_folder_id?: string | null
-          storage_uri?: string
-          updated_at?: string
-          visibility?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "cld_files_parent_folder_id_fkey"
-            columns: ["parent_folder_id"]
-            isOneToOne: false
-            referencedRelation: "cld_folders"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      cld_folders: {
-        Row: {
-          created_at: string
-          deleted_at: string | null
-          folder_name: string
-          folder_path: string
-          id: string
-          metadata: Json
-          owner_id: string
-          parent_id: string | null
-          updated_at: string
-          visibility: string
-        }
-        Insert: {
-          created_at?: string
-          deleted_at?: string | null
-          folder_name: string
-          folder_path: string
-          id?: string
-          metadata?: Json
-          owner_id: string
-          parent_id?: string | null
-          updated_at?: string
-          visibility?: string
-        }
-        Update: {
-          created_at?: string
-          deleted_at?: string | null
-          folder_name?: string
-          folder_path?: string
-          id?: string
-          metadata?: Json
-          owner_id?: string
-          parent_id?: string | null
-          updated_at?: string
-          visibility?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "cld_folders_parent_id_fkey"
-            columns: ["parent_id"]
-            isOneToOne: false
-            referencedRelation: "cld_folders"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      cld_share_links: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          expires_at: string | null
-          id: string
-          is_active: boolean
-          max_uses: number | null
-          permission_level: string
-          resource_id: string
-          resource_type: string
-          share_token: string
-          use_count: number
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          expires_at?: string | null
-          id?: string
-          is_active?: boolean
-          max_uses?: number | null
-          permission_level?: string
-          resource_id: string
-          resource_type: string
-          share_token?: string
-          use_count?: number
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          expires_at?: string | null
-          id?: string
-          is_active?: boolean
-          max_uses?: number | null
-          permission_level?: string
-          resource_id?: string
-          resource_type?: string
-          share_token?: string
-          use_count?: number
-        }
-        Relationships: []
-      }
-      cld_uploads_inflight: {
-        Row: {
-          bucket: string
-          created_at: string
-          expires_at: string
-          file_id: string
-          file_name: string
-          file_path: string
-          id: string
-          idempotency_key: string | null
-          key: string
-          metadata: Json
-          mime_type: string | null
-          multipart_upload_id: string
-          owner_id: string
-          parts: Json
-          status: string
-          updated_at: string
-          upload_length: number
-          upload_offset: number
-          visibility: string
-        }
-        Insert: {
-          bucket: string
-          created_at?: string
-          expires_at?: string
-          file_id: string
-          file_name: string
-          file_path: string
-          id?: string
-          idempotency_key?: string | null
-          key: string
-          metadata?: Json
-          mime_type?: string | null
-          multipart_upload_id: string
-          owner_id: string
-          parts?: Json
-          status?: string
-          updated_at?: string
-          upload_length: number
-          upload_offset?: number
-          visibility?: string
-        }
-        Update: {
-          bucket?: string
-          created_at?: string
-          expires_at?: string
-          file_id?: string
-          file_name?: string
-          file_path?: string
-          id?: string
-          idempotency_key?: string | null
-          key?: string
-          metadata?: Json
-          mime_type?: string | null
-          multipart_upload_id?: string
-          owner_id?: string
-          parts?: Json
-          status?: string
-          updated_at?: string
-          upload_length?: number
-          upload_offset?: number
-          visibility?: string
-        }
-        Relationships: []
-      }
-      cld_user_group_members: {
-        Row: {
-          added_at: string
-          added_by: string | null
-          group_id: string
-          id: string
-          role: string
-          user_id: string
-        }
-        Insert: {
-          added_at?: string
-          added_by?: string | null
-          group_id: string
-          id?: string
-          role?: string
-          user_id: string
-        }
-        Update: {
-          added_at?: string
-          added_by?: string | null
-          group_id?: string
-          id?: string
-          role?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "cld_user_group_members_group_id_fkey"
-            columns: ["group_id"]
-            isOneToOne: false
-            referencedRelation: "cld_user_groups"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      cld_user_groups: {
-        Row: {
-          created_at: string
-          id: string
-          name: string
-          owner_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          name: string
-          owner_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          name?: string
-          owner_id?: string
-        }
-        Relationships: []
-      }
       contact_submissions: {
         Row: {
           admin_notes: string | null
@@ -31234,293 +31826,6 @@ export type Database = {
           updated_at?: string | null
           updated_by?: string | null
           user_id?: string | null
-          version?: number
-        }
-        Relationships: []
-      }
-      container_fields: {
-        Row: {
-          container_id: string
-          created_at: string
-          field_id: string
-          id: string
-          order: number
-          updated_at: string | null
-        }
-        Insert: {
-          container_id: string
-          created_at?: string
-          field_id: string
-          id?: string
-          order?: number
-          updated_at?: string | null
-        }
-        Update: {
-          container_id?: string
-          created_at?: string
-          field_id?: string
-          id?: string
-          order?: number
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      custom_app_configs: {
-        Row: {
-          accent_color: string | null
-          app_data_context: Json | null
-          applet_list: Json | null
-          created_at: string
-          created_by: string | null
-          creator: string | null
-          deleted_at: string | null
-          description: string | null
-          extra_buttons: Json | null
-          id: string
-          image_file_id: string | null
-          image_url: string | null
-          is_public: boolean | null
-          layout_type: string | null
-          main_app_icon: string | null
-          main_app_submit_icon: string | null
-          metadata: Json
-          name: string
-          organization_id: string
-          primary_color: string | null
-          public_read: boolean | null
-          slug: string
-          updated_at: string | null
-          updated_by: string | null
-          user_id: string | null
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          accent_color?: string | null
-          app_data_context?: Json | null
-          applet_list?: Json | null
-          created_at?: string
-          created_by?: string | null
-          creator?: string | null
-          deleted_at?: string | null
-          description?: string | null
-          extra_buttons?: Json | null
-          id?: string
-          image_file_id?: string | null
-          image_url?: string | null
-          is_public?: boolean | null
-          layout_type?: string | null
-          main_app_icon?: string | null
-          main_app_submit_icon?: string | null
-          metadata?: Json
-          name: string
-          organization_id: string
-          primary_color?: string | null
-          public_read?: boolean | null
-          slug: string
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          accent_color?: string | null
-          app_data_context?: Json | null
-          applet_list?: Json | null
-          created_at?: string
-          created_by?: string | null
-          creator?: string | null
-          deleted_at?: string | null
-          description?: string | null
-          extra_buttons?: Json | null
-          id?: string
-          image_file_id?: string | null
-          image_url?: string | null
-          is_public?: boolean | null
-          layout_type?: string | null
-          main_app_icon?: string | null
-          main_app_submit_icon?: string | null
-          metadata?: Json
-          name?: string
-          organization_id?: string
-          primary_color?: string | null
-          public_read?: boolean | null
-          slug?: string
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Relationships: []
-      }
-      custom_applet_configs: {
-        Row: {
-          accent_color: string | null
-          app_id: string | null
-          applet_icon: string | null
-          applet_submit_text: string | null
-          broker_map: Json | null
-          compiled_recipe_id: string | null
-          containers: Json | null
-          created_at: string
-          created_by: string | null
-          creator: string | null
-          data_destination_config: Json | null
-          data_source_config: Json | null
-          deleted_at: string | null
-          description: string | null
-          id: string
-          image_file_id: string | null
-          image_url: string | null
-          is_public: boolean | null
-          layout_type: string | null
-          metadata: Json
-          name: string
-          next_step_config: Json | null
-          organization_id: string
-          overview_label: string | null
-          primary_color: string | null
-          public_read: boolean | null
-          result_component_config: Json | null
-          slug: string
-          subcategory_id: string | null
-          updated_at: string | null
-          updated_by: string | null
-          user_id: string | null
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          accent_color?: string | null
-          app_id?: string | null
-          applet_icon?: string | null
-          applet_submit_text?: string | null
-          broker_map?: Json | null
-          compiled_recipe_id?: string | null
-          containers?: Json | null
-          created_at?: string
-          created_by?: string | null
-          creator?: string | null
-          data_destination_config?: Json | null
-          data_source_config?: Json | null
-          deleted_at?: string | null
-          description?: string | null
-          id?: string
-          image_file_id?: string | null
-          image_url?: string | null
-          is_public?: boolean | null
-          layout_type?: string | null
-          metadata?: Json
-          name: string
-          next_step_config?: Json | null
-          organization_id: string
-          overview_label?: string | null
-          primary_color?: string | null
-          public_read?: boolean | null
-          result_component_config?: Json | null
-          slug: string
-          subcategory_id?: string | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          accent_color?: string | null
-          app_id?: string | null
-          applet_icon?: string | null
-          applet_submit_text?: string | null
-          broker_map?: Json | null
-          compiled_recipe_id?: string | null
-          containers?: Json | null
-          created_at?: string
-          created_by?: string | null
-          creator?: string | null
-          data_destination_config?: Json | null
-          data_source_config?: Json | null
-          deleted_at?: string | null
-          description?: string | null
-          id?: string
-          image_file_id?: string | null
-          image_url?: string | null
-          is_public?: boolean | null
-          layout_type?: string | null
-          metadata?: Json
-          name?: string
-          next_step_config?: Json | null
-          organization_id?: string
-          overview_label?: string | null
-          primary_color?: string | null
-          public_read?: boolean | null
-          result_component_config?: Json | null
-          slug?: string
-          subcategory_id?: string | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Relationships: [
-          {
-            foreignKeyName: "custom_applet_configs_app_id_fkey"
-            columns: ["app_id"]
-            isOneToOne: false
-            referencedRelation: "custom_app_configs"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      dashboard_saved_views: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          deleted_at: string | null
-          description: string | null
-          id: string
-          metadata: Json
-          name: string
-          organization_id: string
-          table_name: string
-          updated_at: string
-          updated_by: string | null
-          url_params: string
-          user_id: string
-          version: number
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          description?: string | null
-          id?: string
-          metadata?: Json
-          name: string
-          organization_id: string
-          table_name: string
-          updated_at?: string
-          updated_by?: string | null
-          url_params?: string
-          user_id: string
-          version?: number
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          description?: string | null
-          id?: string
-          metadata?: Json
-          name?: string
-          organization_id?: string
-          table_name?: string
-          updated_at?: string
-          updated_by?: string | null
-          url_params?: string
-          user_id?: string
           version?: number
         }
         Relationships: []
@@ -31742,6 +32047,7 @@ export type Database = {
           email_sent: boolean
           feedback_id: string
           id: string
+          image_file_ids: string[]
           image_urls: string[] | null
           sender_name: string | null
           sender_type: string
@@ -31752,6 +32058,7 @@ export type Database = {
           email_sent?: boolean
           feedback_id: string
           id?: string
+          image_file_ids?: string[]
           image_urls?: string[] | null
           sender_name?: string | null
           sender_type: string
@@ -31762,120 +32069,10 @@ export type Database = {
           email_sent?: boolean
           feedback_id?: string
           id?: string
+          image_file_ids?: string[]
           image_urls?: string[] | null
           sender_name?: string | null
           sender_type?: string
-        }
-        Relationships: []
-      }
-      flexible_data: {
-        Row: {
-          category_id: string | null
-          created_at: string
-          created_by: string | null
-          data: Json
-          deleted_at: string | null
-          id: string
-          label: string
-          metadata: Json
-          organization_id: string
-          slug: string | null
-          updated_at: string
-          updated_by: string | null
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          category_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          data?: Json
-          deleted_at?: string | null
-          id?: string
-          label: string
-          metadata?: Json
-          organization_id: string
-          slug?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          category_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          data?: Json
-          deleted_at?: string | null
-          id?: string
-          label?: string
-          metadata?: Json
-          organization_id?: string
-          slug?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Relationships: []
-      }
-      forbidden_urls: {
-        Row: {
-          created_at: string
-          id: string
-          pattern: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          pattern: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          pattern?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      full_spectrum_positions: {
-        Row: {
-          additional_details: string | null
-          alternate_titles: string | null
-          created_at: string
-          description: string | null
-          id: string
-          qualifications: string | null
-          red_flags: string | null
-          sizzle_questions: string | null
-          title: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          additional_details?: string | null
-          alternate_titles?: string | null
-          created_at?: string
-          description?: string | null
-          id?: string
-          qualifications?: string | null
-          red_flags?: string | null
-          sizzle_questions?: string | null
-          title?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          additional_details?: string | null
-          alternate_titles?: string | null
-          created_at?: string
-          description?: string | null
-          id?: string
-          qualifications?: string | null
-          red_flags?: string | null
-          sizzle_questions?: string | null
-          title?: string | null
-          updated_at?: string | null
         }
         Relationships: []
       }
@@ -32040,63 +32237,6 @@ export type Database = {
         }
         Relationships: []
       }
-      heatmap_saves: {
-        Row: {
-          created_at: string | null
-          created_by: string | null
-          data: Json
-          deleted_at: string | null
-          description: string | null
-          id: string
-          is_public: boolean | null
-          metadata: Json
-          organization_id: string
-          title: string
-          updated_at: string | null
-          updated_by: string | null
-          user_id: string | null
-          version: number
-          view_settings: Json | null
-          visibility: string
-        }
-        Insert: {
-          created_at?: string | null
-          created_by?: string | null
-          data: Json
-          deleted_at?: string | null
-          description?: string | null
-          id?: string
-          is_public?: boolean | null
-          metadata?: Json
-          organization_id: string
-          title?: string
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number
-          view_settings?: Json | null
-          visibility?: string
-        }
-        Update: {
-          created_at?: string | null
-          created_by?: string | null
-          data?: Json
-          deleted_at?: string | null
-          description?: string | null
-          id?: string
-          is_public?: boolean | null
-          metadata?: Json
-          organization_id?: string
-          title?: string
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number
-          view_settings?: Json | null
-          visibility?: string
-        }
-        Relationships: []
-      }
       infra_status: {
         Row: {
           component: string
@@ -32160,132 +32300,6 @@ export type Database = {
           id?: string
           industry_id?: string | null
           organization_id?: string | null
-        }
-        Relationships: []
-      }
-      message_template: {
-        Row: {
-          content: string | null
-          created_at: string
-          created_by: string | null
-          deleted_at: string | null
-          id: string
-          is_public: boolean | null
-          label: string | null
-          metadata: Json | null
-          organization_id: string
-          project_id: string | null
-          role: Database["public"]["Enums"]["message_role"] | null
-          tags: string[] | null
-          updated_at: string | null
-          updated_by: string | null
-          user_id: string | null
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          content?: string | null
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string
-          is_public?: boolean | null
-          label?: string | null
-          metadata?: Json | null
-          organization_id: string
-          project_id?: string | null
-          role?: Database["public"]["Enums"]["message_role"] | null
-          tags?: string[] | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          content?: string | null
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string
-          is_public?: boolean | null
-          label?: string | null
-          metadata?: Json | null
-          organization_id?: string
-          project_id?: string | null
-          role?: Database["public"]["Enums"]["message_role"] | null
-          tags?: string[] | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Relationships: []
-      }
-      microservice_project: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          deleted_at: string | null
-          id: string
-          is_system: boolean
-          metadata: Json
-          organization_id: string
-          project_code: string
-          project_description: string
-          project_name: string
-          public_read: boolean
-          repo_id: number
-          repo_name: string
-          repo_org_name: string
-          repo_url: string
-          updated_at: string
-          updated_by: string | null
-          user_id: string | null
-          version: number
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string
-          is_system?: boolean
-          metadata?: Json
-          organization_id: string
-          project_code: string
-          project_description: string
-          project_name: string
-          public_read?: boolean
-          repo_id: number
-          repo_name: string
-          repo_org_name: string
-          repo_url: string
-          updated_at?: string
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string
-          is_system?: boolean
-          metadata?: Json
-          organization_id?: string
-          project_code?: string
-          project_description?: string
-          project_name?: string
-          public_read?: boolean
-          repo_id?: number
-          repo_name?: string
-          repo_org_name?: string
-          repo_url?: string
-          updated_at?: string
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number
         }
         Relationships: []
       }
@@ -32416,6 +32430,7 @@ export type Database = {
           id: string
           is_retryable: boolean
           issue_class_id: string
+          metadata: Json
           model: string | null
           occurred_at: string
           organization_id: string
@@ -32436,6 +32451,7 @@ export type Database = {
           id?: string
           is_retryable?: boolean
           issue_class_id: string
+          metadata?: Json
           model?: string | null
           occurred_at?: string
           organization_id: string
@@ -32456,6 +32472,7 @@ export type Database = {
           id?: string
           is_retryable?: boolean
           issue_class_id?: string
+          metadata?: Json
           model?: string | null
           occurred_at?: string
           organization_id?: string
@@ -32588,114 +32605,6 @@ export type Database = {
         }
         Relationships: []
       }
-      schema_templates: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          fields: Json
-          id: string
-          template_name: string
-          version: number
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          fields: Json
-          id?: string
-          template_name: string
-          version?: number
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          fields?: Json
-          id?: string
-          template_name?: string
-          version?: number
-        }
-        Relationships: []
-      }
-      site_metadata: {
-        Row: {
-          contact_email: string | null
-          copyright_holder: string | null
-          created_at: string | null
-          default_author_name: string | null
-          default_author_type: string | null
-          default_language: string | null
-          default_share_image_height: number | null
-          default_share_image_url: string | null
-          default_share_image_width: number | null
-          facebook_page_url: string | null
-          google_analytics_id: string | null
-          google_tag_manager_id: string | null
-          gsc_property_url: string | null
-          id: string
-          is_active: boolean | null
-          logo_height: number | null
-          logo_url: string | null
-          logo_width: number | null
-          organization_type: string | null
-          site_key: string
-          site_name: string
-          site_url: string | null
-          twitter_handle: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          contact_email?: string | null
-          copyright_holder?: string | null
-          created_at?: string | null
-          default_author_name?: string | null
-          default_author_type?: string | null
-          default_language?: string | null
-          default_share_image_height?: number | null
-          default_share_image_url?: string | null
-          default_share_image_width?: number | null
-          facebook_page_url?: string | null
-          google_analytics_id?: string | null
-          google_tag_manager_id?: string | null
-          gsc_property_url?: string | null
-          id?: string
-          is_active?: boolean | null
-          logo_height?: number | null
-          logo_url?: string | null
-          logo_width?: number | null
-          organization_type?: string | null
-          site_key: string
-          site_name: string
-          site_url?: string | null
-          twitter_handle?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          contact_email?: string | null
-          copyright_holder?: string | null
-          created_at?: string | null
-          default_author_name?: string | null
-          default_author_type?: string | null
-          default_language?: string | null
-          default_share_image_height?: number | null
-          default_share_image_url?: string | null
-          default_share_image_width?: number | null
-          facebook_page_url?: string | null
-          google_analytics_id?: string | null
-          google_tag_manager_id?: string | null
-          gsc_property_url?: string | null
-          id?: string
-          is_active?: boolean | null
-          logo_height?: number | null
-          logo_url?: string | null
-          logo_width?: number | null
-          organization_type?: string | null
-          site_key?: string
-          site_name?: string
-          site_url?: string | null
-          twitter_handle?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       system_announcements: {
         Row: {
           announcement_type: string
@@ -32746,6 +32655,7 @@ export type Database = {
           error_type: string | null
           id: string
           kind: string
+          metadata: Json
           occurred_at: string
           organization_id: string | null
           payload: Json | null
@@ -32768,6 +32678,7 @@ export type Database = {
           error_type?: string | null
           id?: string
           kind: string
+          metadata?: Json
           occurred_at?: string
           organization_id?: string | null
           payload?: Json | null
@@ -32790,6 +32701,7 @@ export type Database = {
           error_type?: string | null
           id?: string
           kind?: string
+          metadata?: Json
           occurred_at?: string
           organization_id?: string | null
           payload?: Json | null
@@ -32813,6 +32725,7 @@ export type Database = {
           error_text: string
           failed_at: string
           id: string
+          metadata: Json
           op_id: string
           op_type: string
           organization_id: string | null
@@ -32835,6 +32748,7 @@ export type Database = {
           error_text: string
           failed_at?: string
           id?: string
+          metadata?: Json
           op_id: string
           op_type: string
           organization_id?: string | null
@@ -32857,6 +32771,7 @@ export type Database = {
           error_text?: string
           failed_at?: string
           id?: string
+          metadata?: Json
           op_id?: string
           op_type?: string
           organization_id?: string | null
@@ -32870,126 +32785,6 @@ export type Database = {
           traceback?: string | null
           updated_by?: string | null
           user_id?: string | null
-        }
-        Relationships: []
-      }
-      ts_check_runs: {
-        Row: {
-          codebase_path: string
-          duration_ms: number | null
-          error_count: number
-          errors: Json
-          id: string
-          message: string | null
-          ran_at: string
-          ran_by: string | null
-          status: string
-          tsconfig: string
-        }
-        Insert: {
-          codebase_path: string
-          duration_ms?: number | null
-          error_count?: number
-          errors?: Json
-          id?: string
-          message?: string | null
-          ran_at?: string
-          ran_by?: string | null
-          status?: string
-          tsconfig?: string
-        }
-        Update: {
-          codebase_path?: string
-          duration_ms?: number | null
-          error_count?: number
-          errors?: Json
-          id?: string
-          message?: string | null
-          ran_at?: string
-          ran_by?: string | null
-          status?: string
-          tsconfig?: string
-        }
-        Relationships: []
-      }
-      user_memory: {
-        Row: {
-          content: string
-          created_at: string
-          id: string
-          labels: Json | null
-          path: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          content?: string
-          created_at?: string
-          id?: string
-          labels?: Json | null
-          path: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          content?: string
-          created_at?: string
-          id?: string
-          labels?: Json | null
-          path?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      window_sessions: {
-        Row: {
-          created_at: string | null
-          created_by: string | null
-          data: Json
-          deleted_at: string | null
-          id: string
-          label: string | null
-          metadata: Json
-          organization_id: string
-          panel_state: Json
-          updated_at: string | null
-          updated_by: string | null
-          user_id: string
-          version: number
-          window_type: string
-        }
-        Insert: {
-          created_at?: string | null
-          created_by?: string | null
-          data?: Json
-          deleted_at?: string | null
-          id?: string
-          label?: string | null
-          metadata?: Json
-          organization_id: string
-          panel_state?: Json
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id: string
-          version?: number
-          window_type: string
-        }
-        Update: {
-          created_at?: string | null
-          created_by?: string | null
-          data?: Json
-          deleted_at?: string | null
-          id?: string
-          label?: string | null
-          metadata?: Json
-          organization_id?: string
-          panel_state?: Json
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string
-          version?: number
-          window_type?: string
         }
         Relationships: []
       }
@@ -33551,7 +33346,7 @@ export type Database = {
       _d31_impl_admin_reply_user_review: {
         Args: {
           p_feedback_id: string
-          p_image_urls?: string[]
+          p_image_file_ids?: string[]
           p_message: string
           p_sender_name?: string
         }
@@ -33604,6 +33399,7 @@ export type Database = {
           email_sent: boolean
           feedback_id: string
           id: string
+          image_file_ids: string[]
           image_urls: string[] | null
           sender_name: string | null
           sender_type: string
@@ -33626,7 +33422,7 @@ export type Database = {
       _d31_impl_reply_to_user_review: {
         Args: {
           p_feedback_id: string
-          p_image_urls?: string[]
+          p_image_file_ids?: string[]
           p_message: string
           p_sender_name?: string
         }
@@ -33635,7 +33431,7 @@ export type Database = {
       _d31_impl_send_user_review_message: {
         Args: {
           p_feedback_id: string
-          p_image_urls?: string[]
+          p_image_file_ids?: string[]
           p_message: string
           p_sender_name?: string
         }
@@ -34171,7 +33967,7 @@ export type Database = {
       admin_reply_user_review: {
         Args: {
           p_feedback_id: string
-          p_image_urls?: string[]
+          p_image_file_ids?: string[]
           p_message: string
           p_sender_name?: string
         }
@@ -34547,6 +34343,7 @@ export type Database = {
           agent_type: string
           category: string
           created_at: string
+          created_by: string
           description: string
           id: string
           is_active: boolean
@@ -34561,7 +34358,6 @@ export type Database = {
           tags: string[]
           task_id: string
           updated_at: string
-          user_id: string
         }[]
       }
       agx_get_list_full: {
@@ -34571,6 +34367,7 @@ export type Database = {
           agent_type: string
           category: string
           created_at: string
+          created_by: string
           description: string
           id: string
           is_active: boolean
@@ -34585,7 +34382,6 @@ export type Database = {
           tags: string[]
           task_id: string
           updated_at: string
-          user_id: string
         }[]
       }
       agx_get_shared_for_chat: {
@@ -34876,6 +34672,7 @@ export type Database = {
           agent_type: string
           category: string
           created_at: string
+          created_by: string
           description: string
           id: string
           is_active: boolean
@@ -34892,7 +34689,6 @@ export type Database = {
           task_id: string
           total_count: number
           updated_at: string
-          user_id: string
           version: number
           visibility: string
         }[]
@@ -34925,6 +34721,7 @@ export type Database = {
           agent_type: string
           category: string
           created_at: string
+          created_by: string
           description: string
           id: string
           is_active: boolean
@@ -34941,7 +34738,6 @@ export type Database = {
           tags: string[]
           task_id: string
           updated_at: string
-          user_id: string
         }[]
       }
       agx_search_score: {
@@ -35467,11 +35263,6 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      cld_get_effective_permission: {
-        Args: { p_file_id: string; p_user_id: string }
-        Returns: string
-      }
-      cld_get_user_file_tree: { Args: { p_user_id: string }; Returns: Json }
       cleanup_deleted_sandboxes: {
         Args: { retention_days?: number }
         Returns: number
@@ -35767,6 +35558,11 @@ export type Database = {
         }
         Returns: Json
       }
+      crm_detect_merge_candidates: { Args: { p_org: string }; Returns: Json }
+      crm_dismiss_merge_candidate: {
+        Args: { p_id: string }
+        Returns: undefined
+      }
       crm_merge_parties: {
         Args: {
           p_loser: string
@@ -35851,16 +35647,6 @@ export type Database = {
           to: "canvas_items"
           isOneToOne: false
           isSetofReturn: true
-        }
-      }
-      cx_canvas_publish: {
-        Args: { p_canvas_id: string; p_visibility?: string }
-        Returns: Database["canvas"]["Tables"]["shared_canvas_items"]["Row"]
-        SetofOptions: {
-          from: "*"
-          to: "shared_canvas_items"
-          isOneToOne: true
-          isSetofReturn: false
         }
       }
       cx_canvas_save_user_version: {
@@ -36484,10 +36270,6 @@ export type Database = {
         Returns: Json
       }
       fetch_all_with_children: { Args: { p_table_name: string }; Returns: Json }
-      fetch_app_and_applet_config: {
-        Args: { p_id?: string; p_slug?: string }
-        Returns: Json
-      }
       fetch_by_id_display_option: {
         Args: { record_id: string }
         Returns: {
@@ -36662,11 +36444,11 @@ export type Database = {
           best_streak: number
           correct_count: number
           created_at: string
+          created_by: string
           currency_earned: number
           display_name: string
           mastery_gain: number
           score: number
-          user_id: string
         }[]
       }
       generate_canvas_content_hash: {
@@ -36889,10 +36671,6 @@ export type Database = {
           last_message_type: string
           unread_count: number
         }[]
-      }
-      get_custom_app_with_applets: {
-        Args: { p_id?: string; p_slug?: string }
-        Returns: Json
       }
       get_cx_conversation_bundle: {
         Args: {
@@ -37436,6 +37214,7 @@ export type Database = {
           email_sent: boolean
           feedback_id: string
           id: string
+          image_file_ids: string[]
           image_urls: string[] | null
           sender_name: string | null
           sender_type: string
@@ -37897,11 +37676,11 @@ export type Database = {
       league_leaderboard: {
         Args: { p_week_start: string }
         Returns: {
+          created_by: string
           display_name: string
           games_played: number
           is_me: boolean
           mastery_gain: number
-          user_id: string
         }[]
       }
       library_grant_provenance: {
@@ -38662,7 +38441,7 @@ export type Database = {
       reply_to_user_review: {
         Args: {
           p_feedback_id: string
-          p_image_urls?: string[]
+          p_image_file_ids?: string[]
           p_message: string
           p_sender_name?: string
         }
@@ -38819,7 +38598,7 @@ export type Database = {
       send_user_review_message: {
         Args: {
           p_feedback_id: string
-          p_image_urls?: string[]
+          p_image_file_ids?: string[]
           p_message: string
           p_sender_name?: string
         }
@@ -38914,6 +38693,7 @@ export type Database = {
         }
         Returns: Json
       }
+      share_token_keyword_metrics: { Args: { p_token: string }; Returns: Json }
       shareable_owner_column: {
         Args: { p_registry_owner: string; p_schema: string; p_table: string }
         Returns: string
@@ -39119,6 +38899,7 @@ export type Database = {
         Returns: {
           access_level: string
           created_at: string
+          created_by: string
           description: string
           duration_seconds: number
           folder_name: string
@@ -39137,7 +38918,6 @@ export type Database = {
           total_count: number
           transcript_id: string
           updated_at: string
-          user_id: string
           visibility: string
           word_count: number
         }[]
@@ -40281,6 +40061,7 @@ export type Database = {
           id: string
           is_active: boolean
           kind: string
+          metadata: Json
           name: string
           organization_id: string | null
           settings: Json
@@ -40296,6 +40077,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           kind?: string
+          metadata?: Json
           name: string
           organization_id?: string | null
           settings?: Json
@@ -40311,6 +40093,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           kind?: string
+          metadata?: Json
           name?: string
           organization_id?: string | null
           settings?: Json
@@ -41003,7 +40786,6 @@ export type Database = {
           sweep_run_id: string | null
           updated_at: string
           updated_by: string | null
-          user_id: string | null
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
         }
@@ -41024,7 +40806,6 @@ export type Database = {
           sweep_run_id?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -41045,7 +40826,6 @@ export type Database = {
           sweep_run_id?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -42056,6 +41836,7 @@ export type Database = {
           id: string
           instructions: string | null
           keyword_id: string | null
+          metadata: Json
           model_id: string | null
           organization_id: string
           result: string | null
@@ -42078,6 +41859,7 @@ export type Database = {
           id?: string
           instructions?: string | null
           keyword_id?: string | null
+          metadata?: Json
           model_id?: string | null
           organization_id: string
           result?: string | null
@@ -42100,6 +41882,7 @@ export type Database = {
           id?: string
           instructions?: string | null
           keyword_id?: string | null
+          metadata?: Json
           model_id?: string | null
           organization_id?: string
           result?: string | null
@@ -42167,6 +41950,7 @@ export type Database = {
           is_good_scrape: boolean | null
           linked_extraction_id: string | null
           linked_transcript_id: string | null
+          metadata: Json
           modified_at: string | null
           organization_id: string
           original_content: string | null
@@ -42195,6 +41979,7 @@ export type Database = {
           is_good_scrape?: boolean | null
           linked_extraction_id?: string | null
           linked_transcript_id?: string | null
+          metadata?: Json
           modified_at?: string | null
           organization_id: string
           original_content?: string | null
@@ -42223,6 +42008,7 @@ export type Database = {
           is_good_scrape?: boolean | null
           linked_extraction_id?: string | null
           linked_transcript_id?: string | null
+          metadata?: Json
           modified_at?: string | null
           organization_id?: string
           original_content?: string | null
@@ -42272,6 +42058,7 @@ export type Database = {
           entity_type: string
           id: string
           is_system: boolean
+          metadata: Json
           name: string
           organization_id: string | null
           selectors: Json
@@ -42293,6 +42080,7 @@ export type Database = {
           entity_type?: string
           id?: string
           is_system?: boolean
+          metadata?: Json
           name: string
           organization_id?: string | null
           selectors?: Json
@@ -42314,6 +42102,7 @@ export type Database = {
           entity_type?: string
           id?: string
           is_system?: boolean
+          metadata?: Json
           name?: string
           organization_id?: string | null
           selectors?: Json
@@ -42336,6 +42125,7 @@ export type Database = {
           error: string | null
           id: string
           is_current: boolean
+          metadata: Json
           model_id: string | null
           organization_id: string
           source_consolidation_ids: Json | null
@@ -42357,6 +42147,7 @@ export type Database = {
           error?: string | null
           id?: string
           is_current?: boolean
+          metadata?: Json
           model_id?: string | null
           organization_id: string
           source_consolidation_ids?: Json | null
@@ -42378,6 +42169,7 @@ export type Database = {
           error?: string | null
           id?: string
           is_current?: boolean
+          metadata?: Json
           model_id?: string | null
           organization_id?: string
           source_consolidation_ids?: Json | null
@@ -42408,6 +42200,7 @@ export type Database = {
           is_stale: boolean | null
           keyword: string
           last_searched_at: string | null
+          metadata: Json
           organization_id: string
           position: number
           raw_api_response: Json | null
@@ -42427,6 +42220,7 @@ export type Database = {
           is_stale?: boolean | null
           keyword: string
           last_searched_at?: string | null
+          metadata?: Json
           organization_id: string
           position?: number
           raw_api_response?: Json | null
@@ -42446,6 +42240,7 @@ export type Database = {
           is_stale?: boolean | null
           keyword?: string
           last_searched_at?: string | null
+          metadata?: Json
           organization_id?: string
           position?: number
           raw_api_response?: Json | null
@@ -42572,6 +42367,7 @@ export type Database = {
           last_seen_at: string | null
           last_server_attempt_at: string | null
           last_server_failure_reason: string | null
+          metadata: Json
           organization_id: string
           origin: string
           page_age: string | null
@@ -42621,6 +42417,7 @@ export type Database = {
           last_seen_at?: string | null
           last_server_attempt_at?: string | null
           last_server_failure_reason?: string | null
+          metadata?: Json
           organization_id: string
           origin?: string
           page_age?: string | null
@@ -42670,6 +42467,7 @@ export type Database = {
           last_seen_at?: string | null
           last_server_attempt_at?: string | null
           last_server_failure_reason?: string | null
+          metadata?: Json
           organization_id?: string
           origin?: string
           page_age?: string | null
@@ -42724,6 +42522,7 @@ export type Database = {
           is_current: boolean | null
           iteration_mode: string | null
           keyword_id: string | null
+          metadata: Json
           model_id: string | null
           organization_id: string
           previous_synthesis_id: string | null
@@ -42751,6 +42550,7 @@ export type Database = {
           is_current?: boolean | null
           iteration_mode?: string | null
           keyword_id?: string | null
+          metadata?: Json
           model_id?: string | null
           organization_id: string
           previous_synthesis_id?: string | null
@@ -42778,6 +42578,7 @@ export type Database = {
           is_current?: boolean | null
           iteration_mode?: string | null
           keyword_id?: string | null
+          metadata?: Json
           model_id?: string | null
           organization_id?: string
           previous_synthesis_id?: string | null
@@ -42829,6 +42630,7 @@ export type Database = {
           created_by: string | null
           description: string | null
           id: string
+          metadata: Json
           name: string
           organization_id: string
           sort_order: number | null
@@ -42842,6 +42644,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
+          metadata?: Json
           name: string
           organization_id: string
           sort_order?: number | null
@@ -42855,6 +42658,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
+          metadata?: Json
           name?: string
           organization_id?: string
           sort_order?: number | null
@@ -43434,6 +43238,7 @@ export type Database = {
           lease_holder: string | null
           link_id: string | null
           link_kind: string | null
+          metadata: Json
           meters: Json
           parent_execution_id: string | null
           request_id: string
@@ -43456,6 +43261,7 @@ export type Database = {
           lease_holder?: string | null
           link_id?: string | null
           link_kind?: string | null
+          metadata?: Json
           meters?: Json
           parent_execution_id?: string | null
           request_id: string
@@ -43478,6 +43284,7 @@ export type Database = {
           lease_holder?: string | null
           link_id?: string | null
           link_kind?: string | null
+          metadata?: Json
           meters?: Json
           parent_execution_id?: string | null
           request_id?: string
@@ -43517,18 +43324,21 @@ export type Database = {
           created_at: string
           execution_id: string
           id: string
+          metadata: Json
           state: Json
         }
         Insert: {
           created_at?: string
           execution_id: string
           id?: string
+          metadata?: Json
           state: Json
         }
         Update: {
           created_at?: string
           execution_id?: string
           id?: string
+          metadata?: Json
           state?: Json
         }
         Relationships: [
@@ -43592,6 +43402,7 @@ export type Database = {
           execution_id: string
           id: string
           kind: string
+          metadata: Json
           root_execution_id: string | null
           seq: number | null
         }
@@ -43601,6 +43412,7 @@ export type Database = {
           execution_id: string
           id?: string
           kind: string
+          metadata?: Json
           root_execution_id?: string | null
           seq?: number | null
         }
@@ -43610,6 +43422,7 @@ export type Database = {
           execution_id?: string
           id?: string
           kind?: string
+          metadata?: Json
           root_execution_id?: string | null
           seq?: number | null
         }
@@ -43636,6 +43449,7 @@ export type Database = {
           execution_id: string
           id: string
           label: string | null
+          metadata: Json
           payload: Json | null
           quantities: Json
         }
@@ -43644,6 +43458,7 @@ export type Database = {
           execution_id: string
           id?: string
           label?: string | null
+          metadata?: Json
           payload?: Json | null
           quantities?: Json
         }
@@ -43652,6 +43467,7 @@ export type Database = {
           execution_id?: string
           id?: string
           label?: string | null
+          metadata?: Json
           payload?: Json | null
           quantities?: Json
         }
@@ -43672,6 +43488,7 @@ export type Database = {
           created_at: string
           deleted_at: string | null
           id: string
+          metadata: Json
           surface: string
           updated_at: string
           version: number
@@ -43682,6 +43499,7 @@ export type Database = {
           created_at?: string
           deleted_at?: string | null
           id?: string
+          metadata?: Json
           surface: string
           updated_at?: string
           version?: number
@@ -43692,6 +43510,7 @@ export type Database = {
           created_at?: string
           deleted_at?: string | null
           id?: string
+          metadata?: Json
           surface?: string
           updated_at?: string
           version?: number
@@ -43705,6 +43524,7 @@ export type Database = {
           deleted_at: string | null
           id: string
           idempotency_key: string | null
+          metadata: Json
           organization_id: string
           origin_id: string | null
           updated_at: string
@@ -43718,6 +43538,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           idempotency_key?: string | null
+          metadata?: Json
           organization_id: string
           origin_id?: string | null
           updated_at?: string
@@ -43731,6 +43552,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           idempotency_key?: string | null
+          metadata?: Json
           organization_id?: string
           origin_id?: string | null
           updated_at?: string
@@ -43761,6 +43583,7 @@ export type Database = {
           id: string
           lease_expires_at: string | null
           max_attempts: number
+          metadata: Json
           not_before: string | null
           payload: Json | null
           raw_key: string | null
@@ -43781,6 +43604,7 @@ export type Database = {
           id?: string
           lease_expires_at?: string | null
           max_attempts?: number
+          metadata?: Json
           not_before?: string | null
           payload?: Json | null
           raw_key?: string | null
@@ -43801,6 +43625,7 @@ export type Database = {
           id?: string
           lease_expires_at?: string | null
           max_attempts?: number
+          metadata?: Json
           not_before?: string | null
           payload?: Json | null
           raw_key?: string | null
@@ -43855,6 +43680,7 @@ export type Database = {
           id: string
           max_concurrent: number
           max_runtime_seconds: number
+          metadata: Json
           persistent_conversation_id: string | null
           prompt: string
           variables: Json
@@ -43865,6 +43691,7 @@ export type Database = {
           id: string
           max_concurrent?: number
           max_runtime_seconds?: number
+          metadata?: Json
           persistent_conversation_id?: string | null
           prompt: string
           variables?: Json
@@ -43875,6 +43702,7 @@ export type Database = {
           id?: string
           max_concurrent?: number
           max_runtime_seconds?: number
+          metadata?: Json
           persistent_conversation_id?: string | null
           prompt?: string
           variables?: Json
@@ -44516,6 +44344,7 @@ export type Database = {
           endorsement_signal: string | null
           evidence_quality: number | null
           id: string
+          metadata: Json
           normalized_url: string
           ordinal: number
           organization_id: string
@@ -44539,6 +44368,7 @@ export type Database = {
           endorsement_signal?: string | null
           evidence_quality?: number | null
           id?: string
+          metadata?: Json
           normalized_url: string
           ordinal: number
           organization_id: string
@@ -44562,6 +44392,7 @@ export type Database = {
           endorsement_signal?: string | null
           evidence_quality?: number | null
           id?: string
+          metadata?: Json
           normalized_url?: string
           ordinal?: number
           organization_id?: string
@@ -44601,6 +44432,7 @@ export type Database = {
           id: string
           influence_role: string
           influential_unverified: boolean
+          metadata: Json
           organization_id: string
           response_id: string
           significance: number
@@ -44619,6 +44451,7 @@ export type Database = {
           id?: string
           influence_role: string
           influential_unverified?: boolean
+          metadata?: Json
           organization_id: string
           response_id: string
           significance: number
@@ -44637,6 +44470,7 @@ export type Database = {
           id?: string
           influence_role?: string
           influential_unverified?: boolean
+          metadata?: Json
           organization_id?: string
           response_id?: string
           significance?: number
@@ -44672,6 +44506,7 @@ export type Database = {
           error: Json | null
           id: string
           keyword_id: string
+          metadata: Json
           model_name: string | null
           observed_at: string
           organization_id: string
@@ -44703,6 +44538,7 @@ export type Database = {
           error?: Json | null
           id?: string
           keyword_id: string
+          metadata?: Json
           model_name?: string | null
           observed_at: string
           organization_id: string
@@ -44734,6 +44570,7 @@ export type Database = {
           error?: Json | null
           id?: string
           keyword_id?: string
+          metadata?: Json
           model_name?: string | null
           observed_at?: string
           organization_id?: string
@@ -44781,6 +44618,7 @@ export type Database = {
           evidence_text: string
           id: string
           influence: number
+          metadata: Json
           ordinal: number
           organization_id: string
           response_id: string
@@ -44795,6 +44633,7 @@ export type Database = {
           evidence_text: string
           id?: string
           influence: number
+          metadata?: Json
           ordinal: number
           organization_id: string
           response_id: string
@@ -44809,6 +44648,7 @@ export type Database = {
           evidence_text?: string
           id?: string
           influence?: number
+          metadata?: Json
           ordinal?: number
           organization_id?: string
           response_id?: string
@@ -44861,6 +44701,7 @@ export type Database = {
           last_seen_at: string | null
           link_type: string | null
           lost_at: string | null
+          metadata: Json
           next_enrichment_at: string | null
           organization_id: string
           page_id: string | null
@@ -44910,6 +44751,7 @@ export type Database = {
           last_seen_at?: string | null
           link_type?: string | null
           lost_at?: string | null
+          metadata?: Json
           next_enrichment_at?: string | null
           organization_id: string
           page_id?: string | null
@@ -44959,6 +44801,7 @@ export type Database = {
           last_seen_at?: string | null
           link_type?: string | null
           lost_at?: string | null
+          metadata?: Json
           next_enrichment_at?: string | null
           organization_id?: string
           page_id?: string | null
@@ -44998,6 +44841,7 @@ export type Database = {
           id: string
           label: string | null
           last_seen_at: string | null
+          metadata: Json
           organization_id: string
           provider: string
           rank_score: number | null
@@ -45021,6 +44865,7 @@ export type Database = {
           id?: string
           label?: string | null
           last_seen_at?: string | null
+          metadata?: Json
           organization_id: string
           provider: string
           rank_score?: number | null
@@ -45044,6 +44889,7 @@ export type Database = {
           id?: string
           label?: string | null
           last_seen_at?: string | null
+          metadata?: Json
           organization_id?: string
           provider?: string
           rank_score?: number | null
@@ -45094,6 +44940,7 @@ export type Database = {
           last_seen_at: string | null
           link_type: string | null
           lost_at: string | null
+          metadata: Json
           organization_id: string
           page_id: string | null
           provider: string
@@ -45122,6 +44969,7 @@ export type Database = {
           last_seen_at?: string | null
           link_type?: string | null
           lost_at?: string | null
+          metadata?: Json
           organization_id: string
           page_id?: string | null
           provider: string
@@ -45150,6 +44998,7 @@ export type Database = {
           last_seen_at?: string | null
           link_type?: string | null
           lost_at?: string | null
+          metadata?: Json
           organization_id?: string
           page_id?: string | null
           provider?: string
@@ -45206,6 +45055,7 @@ export type Database = {
           extras: Json
           id: string
           lost_backlinks: number | null
+          metadata: Json
           new_backlinks: number | null
           nofollow_backlinks: number | null
           observed_at: string
@@ -45234,6 +45084,7 @@ export type Database = {
           extras?: Json
           id?: string
           lost_backlinks?: number | null
+          metadata?: Json
           new_backlinks?: number | null
           nofollow_backlinks?: number | null
           observed_at: string
@@ -45262,6 +45113,7 @@ export type Database = {
           extras?: Json
           id?: string
           lost_backlinks?: number | null
+          metadata?: Json
           new_backlinks?: number | null
           nofollow_backlinks?: number | null
           observed_at?: string
@@ -45412,6 +45264,7 @@ export type Database = {
           details: Json
           event_type: string
           id: string
+          metadata: Json
           occurred_at: string
           organization_id: string
           site_id: string
@@ -45431,6 +45284,7 @@ export type Database = {
           details?: Json
           event_type: string
           id?: string
+          metadata?: Json
           occurred_at?: string
           organization_id: string
           site_id: string
@@ -45450,6 +45304,7 @@ export type Database = {
           details?: Json
           event_type?: string
           id?: string
+          metadata?: Json
           occurred_at?: string
           organization_id?: string
           site_id?: string
@@ -45913,6 +45768,7 @@ export type Database = {
           idempotency_key: string
           lease_expires_at: string | null
           lease_owner: string | null
+          metadata: Json
           observation_period: string
           operation: string
           organization_id: string
@@ -45949,6 +45805,7 @@ export type Database = {
           idempotency_key: string
           lease_expires_at?: string | null
           lease_owner?: string | null
+          metadata?: Json
           observation_period: string
           operation: string
           organization_id: string
@@ -45985,6 +45842,7 @@ export type Database = {
           idempotency_key?: string
           lease_expires_at?: string | null
           lease_owner?: string | null
+          metadata?: Json
           observation_period?: string
           operation?: string
           organization_id?: string
@@ -46025,17 +45883,18 @@ export type Database = {
           last_observed_at: string | null
           latest_autopsy: Json
           latest_run_id: string | null
+          metadata: Json
           normalized_domain: string
           organic_keywords: number | null
           organization_id: string
           provider_evidence: Json
           relevance_score: number | null
           resolved_assessment: Json
+          serp_visibility: number | null
           site_id: string
           threat_level: string | null
           tracking_status: string
           updated_at: string
-          visibility: number | null
         }
         Insert: {
           analyzed_at?: string | null
@@ -46054,17 +45913,18 @@ export type Database = {
           last_observed_at?: string | null
           latest_autopsy?: Json
           latest_run_id?: string | null
+          metadata?: Json
           normalized_domain: string
           organic_keywords?: number | null
           organization_id: string
           provider_evidence?: Json
           relevance_score?: number | null
           resolved_assessment?: Json
+          serp_visibility?: number | null
           site_id: string
           threat_level?: string | null
           tracking_status?: string
           updated_at?: string
-          visibility?: number | null
         }
         Update: {
           analyzed_at?: string | null
@@ -46083,17 +45943,18 @@ export type Database = {
           last_observed_at?: string | null
           latest_autopsy?: Json
           latest_run_id?: string | null
+          metadata?: Json
           normalized_domain?: string
           organic_keywords?: number | null
           organization_id?: string
           provider_evidence?: Json
           relevance_score?: number | null
           resolved_assessment?: Json
+          serp_visibility?: number | null
           site_id?: string
           threat_level?: string | null
           tracking_status?: string
           updated_at?: string
-          visibility?: number | null
         }
         Relationships: [
           {
@@ -46118,6 +45979,7 @@ export type Database = {
           language_code: string | null
           location_code: number | null
           median_position: number | null
+          metadata: Json
           metrics: Json
           observed_at: string
           organic_keywords: number | null
@@ -46127,7 +45989,7 @@ export type Database = {
           rank_score: number | null
           raw_payload_id: string | null
           run_id: string
-          visibility: number | null
+          serp_visibility: number | null
         }
         Insert: {
           average_position?: number | null
@@ -46141,6 +46003,7 @@ export type Database = {
           language_code?: string | null
           location_code?: number | null
           median_position?: number | null
+          metadata?: Json
           metrics?: Json
           observed_at: string
           organic_keywords?: number | null
@@ -46150,7 +46013,7 @@ export type Database = {
           rank_score?: number | null
           raw_payload_id?: string | null
           run_id: string
-          visibility?: number | null
+          serp_visibility?: number | null
         }
         Update: {
           average_position?: number | null
@@ -46164,6 +46027,7 @@ export type Database = {
           language_code?: string | null
           location_code?: number | null
           median_position?: number | null
+          metadata?: Json
           metrics?: Json
           observed_at?: string
           organic_keywords?: number | null
@@ -46173,7 +46037,7 @@ export type Database = {
           rank_score?: number | null
           raw_payload_id?: string | null
           run_id?: string
-          visibility?: number | null
+          serp_visibility?: number | null
         }
         Relationships: [
           {
@@ -46217,6 +46081,7 @@ export type Database = {
           human_notes: string | null
           id: string
           impact: string
+          metadata: Json
           opportunity_key: string
           opportunity_type: string
           organization_id: string
@@ -46251,6 +46116,7 @@ export type Database = {
           human_notes?: string | null
           id?: string
           impact: string
+          metadata?: Json
           opportunity_key: string
           opportunity_type: string
           organization_id: string
@@ -46285,6 +46151,7 @@ export type Database = {
           human_notes?: string | null
           id?: string
           impact?: string
+          metadata?: Json
           opportunity_key?: string
           opportunity_type?: string
           organization_id?: string
@@ -46330,6 +46197,7 @@ export type Database = {
           dimension: string
           id: string
           is_template: boolean
+          metadata: Json
           name: string
           organization_id: string | null
           row_limit: number
@@ -46350,6 +46218,7 @@ export type Database = {
           dimension?: string
           id?: string
           is_template?: boolean
+          metadata?: Json
           name: string
           organization_id?: string | null
           row_limit?: number
@@ -46370,6 +46239,7 @@ export type Database = {
           dimension?: string
           id?: string
           is_template?: boolean
+          metadata?: Json
           name?: string
           organization_id?: string | null
           row_limit?: number
@@ -46492,6 +46362,7 @@ export type Database = {
           is_template: boolean
           last_applied_at: string | null
           match_kind: string
+          metadata: Json
           name: string
           notes: string | null
           organization_id: string | null
@@ -46511,6 +46382,7 @@ export type Database = {
           is_template?: boolean
           last_applied_at?: string | null
           match_kind?: string
+          metadata?: Json
           name: string
           notes?: string | null
           organization_id?: string | null
@@ -46530,6 +46402,7 @@ export type Database = {
           is_template?: boolean
           last_applied_at?: string | null
           match_kind?: string
+          metadata?: Json
           name?: string
           notes?: string | null
           organization_id?: string | null
@@ -46750,6 +46623,7 @@ export type Database = {
           keyword_id: string
           location_code: number
           low_top_of_page_bid: number | null
+          metadata: Json
           metrics_task_id: string | null
           monthly_searches: Json
           observed_at: string
@@ -46772,6 +46646,7 @@ export type Database = {
           keyword_id: string
           location_code: number
           low_top_of_page_bid?: number | null
+          metadata?: Json
           metrics_task_id?: string | null
           monthly_searches?: Json
           observed_at: string
@@ -46794,6 +46669,7 @@ export type Database = {
           keyword_id?: string
           location_code?: number
           low_top_of_page_bid?: number | null
+          metadata?: Json
           metrics_task_id?: string | null
           monthly_searches?: Json
           observed_at?: string
@@ -46954,6 +46830,7 @@ export type Database = {
           diagnostics: Json
           id: string
           lighthouse: Json
+          metadata: Json
           observed_at: string
           organization_id: string
           page_id: string
@@ -46975,6 +46852,7 @@ export type Database = {
           diagnostics?: Json
           id?: string
           lighthouse?: Json
+          metadata?: Json
           observed_at: string
           organization_id: string
           page_id: string
@@ -46996,6 +46874,7 @@ export type Database = {
           diagnostics?: Json
           id?: string
           lighthouse?: Json
+          metadata?: Json
           observed_at?: string
           organization_id?: string
           page_id?: string
@@ -47081,6 +46960,7 @@ export type Database = {
           external_task_id: string
           id: string
           last_polled_at: string | null
+          metadata: Json
           provider_cost: number | null
           request_count: number
           request_payload: Json
@@ -47098,6 +46978,7 @@ export type Database = {
           external_task_id: string
           id?: string
           last_polled_at?: string | null
+          metadata?: Json
           provider_cost?: number | null
           request_count?: number
           request_payload?: Json
@@ -47115,6 +46996,7 @@ export type Database = {
           external_task_id?: string
           id?: string
           last_polled_at?: string | null
+          metadata?: Json
           provider_cost?: number | null
           request_count?: number
           request_payload?: Json
@@ -47149,6 +47031,7 @@ export type Database = {
           match_rule: string
           matched_domain: string | null
           matched_url: string | null
+          metadata: Json
           observed_at: string
           organic_rank: number | null
           organization_id: string
@@ -47178,6 +47061,7 @@ export type Database = {
           match_rule?: string
           matched_domain?: string | null
           matched_url?: string | null
+          metadata?: Json
           observed_at: string
           organic_rank?: number | null
           organization_id: string
@@ -47207,6 +47091,7 @@ export type Database = {
           match_rule?: string
           matched_domain?: string | null
           matched_url?: string | null
+          metadata?: Json
           observed_at?: string
           organic_rank?: number | null
           organization_id?: string
@@ -47349,6 +47234,7 @@ export type Database = {
           external_task_id: string | null
           fetched_at: string
           id: string
+          metadata: Json
           offload_error: Json | null
           payload: Json | null
           provider_schema_version: string | null
@@ -47363,6 +47249,7 @@ export type Database = {
           external_task_id?: string | null
           fetched_at?: string
           id?: string
+          metadata?: Json
           offload_error?: Json | null
           payload?: Json | null
           provider_schema_version?: string | null
@@ -47377,6 +47264,7 @@ export type Database = {
           external_task_id?: string | null
           fetched_at?: string
           id?: string
+          metadata?: Json
           offload_error?: Json | null
           payload?: Json | null
           provider_schema_version?: string | null
@@ -47408,6 +47296,7 @@ export type Database = {
           human_ruling: Json
           id: string
           last_seen_at: string | null
+          metadata: Json
           normalized_domain: string
           opinion_score: number | null
           opinion_summary: string | null
@@ -47433,6 +47322,7 @@ export type Database = {
           human_ruling?: Json
           id?: string
           last_seen_at?: string | null
+          metadata?: Json
           normalized_domain: string
           opinion_score?: number | null
           opinion_summary?: string | null
@@ -47458,6 +47348,7 @@ export type Database = {
           human_ruling?: Json
           id?: string
           last_seen_at?: string | null
+          metadata?: Json
           normalized_domain?: string
           opinion_score?: number | null
           opinion_summary?: string | null
@@ -47499,6 +47390,7 @@ export type Database = {
           id: string
           inferences: Json
           last_observed_at: string | null
+          metadata: Json
           missing_evidence: Json
           opportunity_score: number
           organization_id: string
@@ -47550,6 +47442,7 @@ export type Database = {
           id?: string
           inferences?: Json
           last_observed_at?: string | null
+          metadata?: Json
           missing_evidence?: Json
           opportunity_score: number
           organization_id: string
@@ -47601,6 +47494,7 @@ export type Database = {
           id?: string
           inferences?: Json
           last_observed_at?: string | null
+          metadata?: Json
           missing_evidence?: Json
           opportunity_score?: number
           organization_id?: string
@@ -47665,6 +47559,7 @@ export type Database = {
           id: string
           impressions: number
           keyword_id: string | null
+          metadata: Json
           organization_id: string
           page_id: string | null
           provider: string
@@ -47689,6 +47584,7 @@ export type Database = {
           id?: string
           impressions?: number
           keyword_id?: string | null
+          metadata?: Json
           organization_id: string
           page_id?: string | null
           provider: string
@@ -47713,6 +47609,7 @@ export type Database = {
           id?: string
           impressions?: number
           keyword_id?: string | null
+          metadata?: Json
           organization_id?: string
           page_id?: string | null
           provider?: string
@@ -47752,6 +47649,7 @@ export type Database = {
           domain: string | null
           extras: Json
           id: string
+          metadata: Json
           organic_rank: number | null
           result_type: string
           snapshot_id: string
@@ -47764,6 +47662,7 @@ export type Database = {
           domain?: string | null
           extras?: Json
           id?: string
+          metadata?: Json
           organic_rank?: number | null
           result_type?: string
           snapshot_id: string
@@ -47776,6 +47675,7 @@ export type Database = {
           domain?: string | null
           extras?: Json
           id?: string
+          metadata?: Json
           organic_rank?: number | null
           result_type?: string
           snapshot_id?: string
@@ -47804,6 +47704,7 @@ export type Database = {
           keyword_id: string
           language: string
           location_id: string | null
+          metadata: Json
           observed_at: string
           organization_id: string
           provider: string
@@ -47824,6 +47725,7 @@ export type Database = {
           keyword_id: string
           language?: string
           location_id?: string | null
+          metadata?: Json
           observed_at: string
           organization_id: string
           provider: string
@@ -47844,6 +47746,7 @@ export type Database = {
           keyword_id?: string
           language?: string
           location_id?: string | null
+          metadata?: Json
           observed_at?: string
           organization_id?: string
           provider?: string
@@ -48141,6 +48044,7 @@ export type Database = {
           key_events: number
           landing_page: string | null
           medium: string | null
+          metadata: Json
           organization_id: string
           page_id: string | null
           property_timezone: string | null
@@ -48171,6 +48075,7 @@ export type Database = {
           key_events?: number
           landing_page?: string | null
           medium?: string | null
+          metadata?: Json
           organization_id: string
           page_id?: string | null
           property_timezone?: string | null
@@ -48201,6 +48106,7 @@ export type Database = {
           key_events?: number
           landing_page?: string | null
           medium?: string | null
+          metadata?: Json
           organization_id?: string
           page_id?: string | null
           property_timezone?: string | null
@@ -49023,6 +48929,7 @@ export type Database = {
           last_seen_at: string | null
           link_type: string | null
           lost_at: string | null
+          metadata: Json
           next_enrichment_at: string | null
           organization_id: string
           page_id: string | null
@@ -49069,6 +48976,7 @@ export type Database = {
           human_notes: string | null
           id: string
           impact: string
+          metadata: Json
           opportunity_key: string
           opportunity_type: string
           organization_id: string
@@ -49116,17 +49024,18 @@ export type Database = {
           last_observed_at: string | null
           latest_autopsy: Json
           latest_run_id: string | null
+          metadata: Json
           normalized_domain: string
           organic_keywords: number | null
           organization_id: string
           provider_evidence: Json
           relevance_score: number | null
           resolved_assessment: Json
+          serp_visibility: number | null
           site_id: string
           threat_level: string | null
           tracking_status: string
           updated_at: string
-          visibility: number | null
         }
         SetofOptions: {
           from: "*"
@@ -49151,6 +49060,7 @@ export type Database = {
           human_ruling: Json
           id: string
           last_seen_at: string | null
+          metadata: Json
           normalized_domain: string
           opinion_score: number | null
           opinion_summary: string | null
@@ -49198,6 +49108,7 @@ export type Database = {
           id: string
           inferences: Json
           last_observed_at: string | null
+          metadata: Json
           missing_evidence: Json
           opportunity_score: number
           organization_id: string
@@ -49498,6 +49409,8 @@ export type Database = {
           name: string
           organization_id: string
           updated_at: string
+          updated_by: string | null
+          version: number
           visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
@@ -49513,6 +49426,8 @@ export type Database = {
           name: string
           organization_id: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
@@ -49528,6 +49443,8 @@ export type Database = {
           name?: string
           organization_id?: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
@@ -49557,6 +49474,7 @@ export type Database = {
           is_active: boolean
           managed_by_server_id: string | null
           max_client_wait_seconds: number | null
+          metadata: Json
           name: string
           organization_id: string
           output_schema: Json | null
@@ -49567,6 +49485,7 @@ export type Database = {
           tier: string | null
           tool_group: string
           updated_at: string
+          updated_by: string | null
           validation_exempt: boolean
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
@@ -49587,6 +49506,7 @@ export type Database = {
           is_active?: boolean
           managed_by_server_id?: string | null
           max_client_wait_seconds?: number | null
+          metadata?: Json
           name: string
           organization_id: string
           output_schema?: Json | null
@@ -49597,6 +49517,7 @@ export type Database = {
           tier?: string | null
           tool_group?: string
           updated_at?: string
+          updated_by?: string | null
           validation_exempt?: boolean
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
@@ -49617,6 +49538,7 @@ export type Database = {
           is_active?: boolean
           managed_by_server_id?: string | null
           max_client_wait_seconds?: number | null
+          metadata?: Json
           name?: string
           organization_id?: string
           output_schema?: Json | null
@@ -49627,6 +49549,7 @@ export type Database = {
           tier?: string | null
           tool_group?: string
           updated_at?: string
+          updated_by?: string | null
           validation_exempt?: boolean
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
@@ -49648,13 +49571,18 @@ export type Database = {
           category: string | null
           change_note: string | null
           changed_at: string
+          created_at: string
+          created_by: string | null
           dedupe_exempt: boolean | null
+          deleted_at: string | null
           description: string | null
           gating: Json | null
           icon: string | null
           id: string
           is_active: boolean | null
+          metadata: Json
           name: string | null
+          organization_id: string
           output_schema: Json | null
           parameters: Json | null
           semver: string | null
@@ -49663,7 +49591,10 @@ export type Database = {
           tier: string | null
           tool_group: string | null
           tool_id: string
+          updated_at: string
+          updated_by: string | null
           validation_exempt: boolean | null
+          version: number
           version_number: number
         }
         Insert: {
@@ -49672,13 +49603,18 @@ export type Database = {
           category?: string | null
           change_note?: string | null
           changed_at?: string
+          created_at?: string
+          created_by?: string | null
           dedupe_exempt?: boolean | null
+          deleted_at?: string | null
           description?: string | null
           gating?: Json | null
           icon?: string | null
           id?: string
           is_active?: boolean | null
+          metadata?: Json
           name?: string | null
+          organization_id: string
           output_schema?: Json | null
           parameters?: Json | null
           semver?: string | null
@@ -49687,7 +49623,10 @@ export type Database = {
           tier?: string | null
           tool_group?: string | null
           tool_id: string
+          updated_at?: string
+          updated_by?: string | null
           validation_exempt?: boolean | null
+          version?: number
           version_number: number
         }
         Update: {
@@ -49696,13 +49635,18 @@ export type Database = {
           category?: string | null
           change_note?: string | null
           changed_at?: string
+          created_at?: string
+          created_by?: string | null
           dedupe_exempt?: boolean | null
+          deleted_at?: string | null
           description?: string | null
           gating?: Json | null
           icon?: string | null
           id?: string
           is_active?: boolean | null
+          metadata?: Json
           name?: string | null
+          organization_id?: string
           output_schema?: Json | null
           parameters?: Json | null
           semver?: string | null
@@ -49711,7 +49655,10 @@ export type Database = {
           tier?: string | null
           tool_group?: string | null
           tool_id?: string
+          updated_at?: string
+          updated_by?: string | null
           validation_exempt?: boolean | null
+          version?: number
           version_number?: number
         }
         Relationships: [
@@ -50097,43 +50044,61 @@ export type Database = {
           admin_comments: string | null
           arguments: Json
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           final_payload: Json | null
           id: string
           is_success: boolean | null
+          metadata: Json
+          organization_id: string
           raw_stream_events: Json
           tested_by: string | null
           tool_id: string | null
           tool_name: string
           updated_at: string
+          updated_by: string | null
           use_for_component: boolean
+          version: number
         }
         Insert: {
           admin_comments?: string | null
           arguments?: Json
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           final_payload?: Json | null
           id?: string
           is_success?: boolean | null
+          metadata?: Json
+          organization_id: string
           raw_stream_events?: Json
           tested_by?: string | null
           tool_id?: string | null
           tool_name: string
           updated_at?: string
+          updated_by?: string | null
           use_for_component?: boolean
+          version?: number
         }
         Update: {
           admin_comments?: string | null
           arguments?: Json
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           final_payload?: Json | null
           id?: string
           is_success?: boolean | null
+          metadata?: Json
+          organization_id?: string
           raw_stream_events?: Json
           tested_by?: string | null
           tool_id?: string | null
           tool_name?: string
           updated_at?: string
+          updated_by?: string | null
           use_for_component?: boolean
+          version?: number
         }
         Relationships: [
           {
@@ -50151,6 +50116,7 @@ export type Database = {
           contract_version: number
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           display_name: string
           header_extras_code: string | null
           header_subtitle_code: string | null
@@ -50159,7 +50125,9 @@ export type Database = {
           is_active: boolean
           keep_expanded_on_stream: boolean
           language: string
+          metadata: Json
           notes: string | null
+          organization_id: string
           overlay_code: string | null
           results_label: string | null
           semver: string
@@ -50167,6 +50135,7 @@ export type Database = {
           tool_id: string | null
           tool_name: string
           updated_at: string
+          updated_by: string | null
           utility_code: string | null
           version: number
         }
@@ -50175,6 +50144,7 @@ export type Database = {
           contract_version?: number
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           display_name: string
           header_extras_code?: string | null
           header_subtitle_code?: string | null
@@ -50183,7 +50153,9 @@ export type Database = {
           is_active?: boolean
           keep_expanded_on_stream?: boolean
           language?: string
+          metadata?: Json
           notes?: string | null
+          organization_id: string
           overlay_code?: string | null
           results_label?: string | null
           semver?: string
@@ -50191,6 +50163,7 @@ export type Database = {
           tool_id?: string | null
           tool_name: string
           updated_at?: string
+          updated_by?: string | null
           utility_code?: string | null
           version?: number
         }
@@ -50199,6 +50172,7 @@ export type Database = {
           contract_version?: number
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           display_name?: string
           header_extras_code?: string | null
           header_subtitle_code?: string | null
@@ -50207,7 +50181,9 @@ export type Database = {
           is_active?: boolean
           keep_expanded_on_stream?: boolean
           language?: string
+          metadata?: Json
           notes?: string | null
+          organization_id?: string
           overlay_code?: string | null
           results_label?: string | null
           semver?: string
@@ -50215,6 +50191,7 @@ export type Database = {
           tool_id?: string | null
           tool_name?: string
           updated_at?: string
+          updated_by?: string | null
           utility_code?: string | null
           version?: number
         }
@@ -50235,10 +50212,14 @@ export type Database = {
           component_type: string
           component_version: string | null
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           error_message: string
           error_stack: string | null
           error_type: string
           id: string
+          metadata: Json
+          organization_id: string
           resolution_notes: string | null
           resolved: boolean
           resolved_at: string | null
@@ -50246,6 +50227,9 @@ export type Database = {
           session_id: string | null
           tool_name: string
           tool_update_snapshot: Json | null
+          updated_at: string
+          updated_by: string | null
+          version: number
         }
         Insert: {
           browser_info?: string | null
@@ -50253,10 +50237,14 @@ export type Database = {
           component_type: string
           component_version?: string | null
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           error_message: string
           error_stack?: string | null
           error_type: string
           id?: string
+          metadata?: Json
+          organization_id: string
           resolution_notes?: string | null
           resolved?: boolean
           resolved_at?: string | null
@@ -50264,6 +50252,9 @@ export type Database = {
           session_id?: string | null
           tool_name: string
           tool_update_snapshot?: Json | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
         }
         Update: {
           browser_info?: string | null
@@ -50271,10 +50262,14 @@ export type Database = {
           component_type?: string
           component_version?: string | null
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           error_message?: string
           error_stack?: string | null
           error_type?: string
           id?: string
+          metadata?: Json
+          organization_id?: string
           resolution_notes?: string | null
           resolved?: boolean
           resolved_at?: string | null
@@ -50282,6 +50277,9 @@ export type Database = {
           session_id?: string | null
           tool_name?: string
           tool_update_snapshot?: Json | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -50299,6 +50297,9 @@ export type Database = {
           change_note: string | null
           changed_at: string
           component_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
           display_name: string | null
           header_extras_code: string | null
           header_subtitle_code: string | null
@@ -50307,13 +50308,18 @@ export type Database = {
           is_active: boolean | null
           keep_expanded_on_stream: boolean | null
           language: string | null
+          metadata: Json
           notes: string | null
+          organization_id: string
           overlay_code: string | null
           results_label: string | null
           semver: string | null
           tool_id: string | null
           tool_name: string | null
+          updated_at: string
+          updated_by: string | null
           utility_code: string | null
+          version: number
           version_number: number
         }
         Insert: {
@@ -50321,6 +50327,9 @@ export type Database = {
           change_note?: string | null
           changed_at?: string
           component_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           display_name?: string | null
           header_extras_code?: string | null
           header_subtitle_code?: string | null
@@ -50329,13 +50338,18 @@ export type Database = {
           is_active?: boolean | null
           keep_expanded_on_stream?: boolean | null
           language?: string | null
+          metadata?: Json
           notes?: string | null
+          organization_id: string
           overlay_code?: string | null
           results_label?: string | null
           semver?: string | null
           tool_id?: string | null
           tool_name?: string | null
+          updated_at?: string
+          updated_by?: string | null
           utility_code?: string | null
+          version?: number
           version_number: number
         }
         Update: {
@@ -50343,6 +50357,9 @@ export type Database = {
           change_note?: string | null
           changed_at?: string
           component_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           display_name?: string | null
           header_extras_code?: string | null
           header_subtitle_code?: string | null
@@ -50351,13 +50368,18 @@ export type Database = {
           is_active?: boolean | null
           keep_expanded_on_stream?: boolean | null
           language?: string | null
+          metadata?: Json
           notes?: string | null
+          organization_id?: string
           overlay_code?: string | null
           results_label?: string | null
           semver?: string | null
           tool_id?: string | null
           tool_name?: string | null
+          updated_at?: string
+          updated_by?: string | null
           utility_code?: string | null
+          version?: number
           version_number?: number
         }
         Relationships: [
@@ -50536,6 +50558,7 @@ export type Database = {
           created_by: string | null
           id: string
           kind: string
+          metadata: Json
           organization_id: string | null
           session_id: string
           title: string
@@ -50549,6 +50572,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           kind?: string
+          metadata?: Json
           organization_id?: string | null
           session_id: string
           title?: string
@@ -50562,6 +50586,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           kind?: string
+          metadata?: Json
           organization_id?: string | null
           session_id?: string
           title?: string
@@ -50694,6 +50719,7 @@ export type Database = {
           created_by: string
           file_id: string
           id: string
+          metadata: Json
           mime_type: string
           organization_id: string | null
           safety_id: string
@@ -50705,6 +50731,7 @@ export type Database = {
           created_by?: string
           file_id: string
           id?: string
+          metadata?: Json
           mime_type?: string
           organization_id?: string | null
           safety_id: string
@@ -50716,6 +50743,7 @@ export type Database = {
           created_by?: string
           file_id?: string
           id?: string
+          metadata?: Json
           mime_type?: string
           organization_id?: string | null
           safety_id?: string
@@ -50732,6 +50760,7 @@ export type Database = {
           detached_at: string | null
           ended_at: string | null
           id: string
+          metadata: Json
           organization_id: string | null
           safety_id: string | null
           segment_index: number
@@ -50752,6 +50781,7 @@ export type Database = {
           detached_at?: string | null
           ended_at?: string | null
           id?: string
+          metadata?: Json
           organization_id?: string | null
           safety_id?: string | null
           segment_index: number
@@ -50772,6 +50802,7 @@ export type Database = {
           detached_at?: string | null
           ended_at?: string | null
           id?: string
+          metadata?: Json
           organization_id?: string | null
           safety_id?: string | null
           segment_index?: number
@@ -50885,6 +50916,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           custom_slots: Json | null
+          metadata: Json
           module_id: string
           module_interval_ms: number | null
           module_shortcut_id: string | null
@@ -50905,6 +50937,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_slots?: Json | null
+          metadata?: Json
           module_id?: string
           module_interval_ms?: number | null
           module_shortcut_id?: string | null
@@ -50925,6 +50958,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_slots?: Json | null
+          metadata?: Json
           module_id?: string
           module_interval_ms?: number | null
           module_shortcut_id?: string | null
@@ -50955,8 +50989,6 @@ export type Database = {
           deleted_at: string | null
           ended_at: string | null
           id: string
-          is_deleted: boolean
-          is_public: boolean
           metadata: Json
           module_id: string
           organization_id: string
@@ -50969,7 +51001,6 @@ export type Database = {
           transcript_id: string | null
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
         }
@@ -50982,8 +51013,6 @@ export type Database = {
           deleted_at?: string | null
           ended_at?: string | null
           id?: string
-          is_deleted?: boolean
-          is_public?: boolean
           metadata?: Json
           module_id?: string
           organization_id: string
@@ -50996,7 +51025,6 @@ export type Database = {
           transcript_id?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -51009,8 +51037,6 @@ export type Database = {
           deleted_at?: string | null
           ended_at?: string | null
           id?: string
-          is_deleted?: boolean
-          is_public?: boolean
           metadata?: Json
           module_id?: string
           organization_id?: string
@@ -51023,7 +51049,6 @@ export type Database = {
           transcript_id?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -51047,9 +51072,7 @@ export type Database = {
           draft_saved_at: string | null
           folder_name: string | null
           id: string
-          is_deleted: boolean | null
           is_draft: boolean | null
-          is_public: boolean
           metadata: Json
           organization_id: string
           project_id: string | null
@@ -51060,7 +51083,6 @@ export type Database = {
           title: string
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
           video_file_path: string | null
           visibility: Database["platform"]["Enums"]["visibility"]
@@ -51074,9 +51096,7 @@ export type Database = {
           draft_saved_at?: string | null
           folder_name?: string | null
           id?: string
-          is_deleted?: boolean | null
           is_draft?: boolean | null
-          is_public?: boolean
           metadata?: Json
           organization_id: string
           project_id?: string | null
@@ -51087,7 +51107,6 @@ export type Database = {
           title?: string
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
           video_file_path?: string | null
           visibility?: Database["platform"]["Enums"]["visibility"]
@@ -51101,9 +51120,7 @@ export type Database = {
           draft_saved_at?: string | null
           folder_name?: string | null
           id?: string
-          is_deleted?: boolean | null
           is_draft?: boolean | null
-          is_public?: boolean
           metadata?: Json
           organization_id?: string
           project_id?: string | null
@@ -51114,7 +51131,6 @@ export type Database = {
           title?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
           video_file_path?: string | null
           visibility?: Database["platform"]["Enums"]["visibility"]
@@ -51175,6 +51191,7 @@ export type Database = {
           intro: string | null
           is_active: boolean
           label: string | null
+          metadata: Json
           name: string
           overlay_id: string | null
           parent_surface_name: string | null
@@ -51196,6 +51213,7 @@ export type Database = {
           intro?: string | null
           is_active?: boolean
           label?: string | null
+          metadata?: Json
           name: string
           overlay_id?: string | null
           parent_surface_name?: string | null
@@ -51217,6 +51235,7 @@ export type Database = {
           intro?: string | null
           is_active?: boolean
           label?: string | null
+          metadata?: Json
           name?: string
           overlay_id?: string | null
           parent_surface_name?: string | null
@@ -51359,6 +51378,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "ui_surface_agent_role_surface_name_fkey"
+            columns: ["surface_name"]
+            isOneToOne: false
+            referencedRelation: "ui_surface"
+            referencedColumns: ["name"]
+          },
+        ]
+      }
+      ui_surface_client_tool: {
+        Row: {
+          created_at: string
+          description: string
+          input_schema: Json
+          label: string
+          mode: string
+          name: string
+          surface_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          input_schema?: Json
+          label?: string
+          mode?: string
+          name: string
+          surface_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          input_schema?: Json
+          label?: string
+          mode?: string
+          name?: string
+          surface_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ui_surface_client_tool_surface_name_fkey"
             columns: ["surface_name"]
             isOneToOne: false
             referencedRelation: "ui_surface"
@@ -52063,8 +52123,8 @@ export type Database = {
           unlocked_at: string | null
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           achievement_data?: Json | null
@@ -52078,8 +52138,8 @@ export type Database = {
           unlocked_at?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           achievement_data?: Json | null
@@ -52093,8 +52153,8 @@ export type Database = {
           unlocked_at?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
@@ -52280,6 +52340,7 @@ export type Database = {
           feedback_type: string
           has_open_issues: boolean
           id: string
+          image_file_ids: string[]
           image_urls: string[] | null
           metadata: Json
           organization_id: string
@@ -52320,6 +52381,7 @@ export type Database = {
           feedback_type: string
           has_open_issues?: boolean
           id?: string
+          image_file_ids?: string[]
           image_urls?: string[] | null
           metadata?: Json
           organization_id: string
@@ -52360,6 +52422,7 @@ export type Database = {
           feedback_type?: string
           has_open_issues?: boolean
           id?: string
+          image_file_ids?: string[]
           image_urls?: string[] | null
           metadata?: Json
           organization_id?: string
@@ -52465,8 +52528,8 @@ export type Database = {
           title: string
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           card_count?: number
@@ -52485,8 +52548,8 @@ export type Database = {
           title?: string
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           card_count?: number
@@ -52505,8 +52568,8 @@ export type Database = {
           title?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
@@ -52668,8 +52731,8 @@ export type Database = {
           organization_id: string
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           content?: string
@@ -52684,8 +52747,8 @@ export type Database = {
           organization_id: string
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           content?: string
@@ -52700,8 +52763,8 @@ export type Database = {
           organization_id?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
@@ -52718,8 +52781,8 @@ export type Database = {
           path: string
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           content?: string
@@ -52733,8 +52796,8 @@ export type Database = {
           path: string
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           content?: string
@@ -52748,8 +52811,8 @@ export type Database = {
           path?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
@@ -54755,7 +54818,7 @@ export type Database = {
           deleted_at: string | null
           id: string
           metadata: Json
-          organization_id: string | null
+          organization_id: string
           page_id: string
           site_id: string
           updated_at: string
@@ -54769,7 +54832,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           metadata?: Json
-          organization_id?: string | null
+          organization_id: string
           page_id: string
           site_id: string
           updated_at?: string
@@ -54783,7 +54846,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           metadata?: Json
-          organization_id?: string | null
+          organization_id?: string
           page_id?: string
           site_id?: string
           updated_at?: string
@@ -56172,6 +56235,60 @@ export type Database = {
   }
   workbench: {
     Tables: {
+      heatmap_saves: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          data: Json
+          deleted_at: string | null
+          description: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          title: string
+          updated_at: string | null
+          updated_by: string | null
+          user_id: string | null
+          version: number
+          view_settings: Json | null
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          data: Json
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          title?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+          view_settings?: Json | null
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          data?: Json
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          title?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+          view_settings?: Json | null
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
       note_folders: {
         Row: {
           created_at: string
@@ -56314,6 +56431,33 @@ export type Database = {
           },
         ]
       }
+      schema_templates: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          fields: Json
+          id: string
+          template_name: string
+          version: number
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          fields: Json
+          id?: string
+          template_name: string
+          version?: number
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          fields?: Json
+          id?: string
+          template_name?: string
+          version?: number
+        }
+        Relationships: []
+      }
       udt_dataset_fields: {
         Row: {
           created_at: string
@@ -56326,6 +56470,7 @@ export type Database = {
           id: string
           is_public: boolean
           is_required: boolean
+          metadata: Json
           organization_id: string | null
           table_id: string
           updated_at: string
@@ -56345,6 +56490,7 @@ export type Database = {
           id?: string
           is_public?: boolean
           is_required?: boolean
+          metadata?: Json
           organization_id?: string | null
           table_id: string
           updated_at?: string
@@ -56364,6 +56510,7 @@ export type Database = {
           id?: string
           is_public?: boolean
           is_required?: boolean
+          metadata?: Json
           organization_id?: string | null
           table_id?: string
           updated_at?: string
@@ -56422,6 +56569,7 @@ export type Database = {
           data: Json
           id: string
           is_public: boolean
+          metadata: Json
           organization_id: string | null
           table_id: string
           updated_at: string
@@ -56435,6 +56583,7 @@ export type Database = {
           data: Json
           id?: string
           is_public?: boolean
+          metadata?: Json
           organization_id?: string | null
           table_id: string
           updated_at?: string
@@ -56448,6 +56597,7 @@ export type Database = {
           data?: Json
           id?: string
           is_public?: boolean
+          metadata?: Json
           organization_id?: string | null
           table_id?: string
           updated_at?: string
@@ -56561,6 +56711,7 @@ export type Database = {
           description: string | null
           id: string
           is_public: boolean
+          metadata: Json
           organization_id: string
           project_id: string | null
           row_ordering_config: Json | null
@@ -56582,6 +56733,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_public?: boolean
+          metadata?: Json
           organization_id: string
           project_id?: string | null
           row_ordering_config?: Json | null
@@ -56603,6 +56755,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_public?: boolean
+          metadata?: Json
           organization_id?: string
           project_id?: string | null
           row_ordering_config?: Json | null
@@ -56742,6 +56895,7 @@ export type Database = {
           is_public: boolean | null
           label: string | null
           list_id: string | null
+          metadata: Json
           organization_id: string | null
           public_read: boolean | null
           updated_at: string | null
@@ -56760,6 +56914,7 @@ export type Database = {
           is_public?: boolean | null
           label?: string | null
           list_id?: string | null
+          metadata?: Json
           organization_id?: string | null
           public_read?: boolean | null
           updated_at?: string | null
@@ -56778,6 +56933,7 @@ export type Database = {
           is_public?: boolean | null
           label?: string | null
           list_id?: string | null
+          metadata?: Json
           organization_id?: string | null
           public_read?: boolean | null
           updated_at?: string | null
@@ -56803,6 +56959,7 @@ export type Database = {
           id: string
           is_public: boolean | null
           list_name: string | null
+          metadata: Json
           organization_id: string | null
           public_read: boolean | null
           updated_at: string | null
@@ -56817,6 +56974,7 @@ export type Database = {
           id?: string
           is_public?: boolean | null
           list_name?: string | null
+          metadata?: Json
           organization_id?: string | null
           public_read?: boolean | null
           updated_at?: string | null
@@ -56831,6 +56989,7 @@ export type Database = {
           id?: string
           is_public?: boolean | null
           list_name?: string | null
+          metadata?: Json
           organization_id?: string | null
           public_read?: boolean | null
           updated_at?: string | null
@@ -57003,41 +57162,59 @@ export type Database = {
         Row: {
           channel_values: Json
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           id: string
           interrupt_payload: Json | null
           metadata: Json
           next_invocations: Json
+          organization_id: string
           parent_checkpoint_id: string | null
           pending_bindings: Json
           run_id: string
           step: number
           thread_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
         }
         Insert: {
           channel_values?: Json
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           id?: string
           interrupt_payload?: Json | null
           metadata?: Json
           next_invocations?: Json
+          organization_id: string
           parent_checkpoint_id?: string | null
           pending_bindings?: Json
           run_id: string
           step: number
           thread_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
         }
         Update: {
           channel_values?: Json
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           id?: string
           interrupt_payload?: Json | null
           metadata?: Json
           next_invocations?: Json
+          organization_id?: string
           parent_checkpoint_id?: string | null
           pending_bindings?: Json
           run_id?: string
           step?: number
           thread_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -57159,18 +57336,25 @@ export type Database = {
           changed_at: string
           changed_by_user_id: string | null
           channels: Json | null
+          created_at: string
+          created_by: string | null
           definition_id: string
+          deleted_at: string | null
           description: string | null
           edges: Json | null
           entry_nodes: Json | null
           id: string
           is_active: boolean | null
-          metadata: Json | null
+          metadata: Json
           name: string | null
           nodes: Json | null
+          organization_id: string
           strict_channels: boolean | null
           tags: string[] | null
+          updated_at: string
+          updated_by: string | null
           variables: Json
+          version: number
           version_number: number
           viewport: Json | null
         }
@@ -57180,18 +57364,25 @@ export type Database = {
           changed_at?: string
           changed_by_user_id?: string | null
           channels?: Json | null
+          created_at?: string
+          created_by?: string | null
           definition_id: string
+          deleted_at?: string | null
           description?: string | null
           edges?: Json | null
           entry_nodes?: Json | null
           id?: string
           is_active?: boolean | null
-          metadata?: Json | null
+          metadata?: Json
           name?: string | null
           nodes?: Json | null
+          organization_id: string
           strict_channels?: boolean | null
           tags?: string[] | null
+          updated_at?: string
+          updated_by?: string | null
           variables?: Json
+          version?: number
           version_number: number
           viewport?: Json | null
         }
@@ -57201,18 +57392,25 @@ export type Database = {
           changed_at?: string
           changed_by_user_id?: string | null
           channels?: Json | null
+          created_at?: string
+          created_by?: string | null
           definition_id?: string
+          deleted_at?: string | null
           description?: string | null
           edges?: Json | null
           entry_nodes?: Json | null
           id?: string
           is_active?: boolean | null
-          metadata?: Json | null
+          metadata?: Json
           name?: string | null
           nodes?: Json | null
+          organization_id?: string
           strict_channels?: boolean | null
           tags?: string[] | null
+          updated_at?: string
+          updated_by?: string | null
           variables?: Json
+          version?: number
           version_number?: number
           viewport?: Json | null
         }
@@ -57265,30 +57463,48 @@ export type Database = {
       idempotency: {
         Row: {
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           expires_at: string
           id: string
           idempotency_key: string
+          metadata: Json
+          organization_id: string
           route_path: string
           run_id: string | null
-          user_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           expires_at?: string
           id?: string
           idempotency_key: string
+          metadata?: Json
+          organization_id: string
           route_path: string
           run_id?: string | null
-          user_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
         }
         Update: {
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           expires_at?: string
           id?: string
           idempotency_key?: string
+          metadata?: Json
+          organization_id?: string
           route_path?: string
           run_id?: string | null
-          user_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -57307,16 +57523,22 @@ export type Database = {
           claimed_at: string | null
           claimed_by: string | null
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           id: string
           inputs: Json
           kind: string
           last_error: Json | null
           max_attempts: number
           max_steps: number
+          metadata: Json
+          organization_id: string
           priority: number
           resume_value: Json | null
           run_id: string
           updated_at: string
+          updated_by: string | null
+          version: number
           visible_at: string
         }
         Insert: {
@@ -57325,16 +57547,22 @@ export type Database = {
           claimed_at?: string | null
           claimed_by?: string | null
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           id?: string
           inputs?: Json
           kind: string
           last_error?: Json | null
           max_attempts?: number
           max_steps?: number
+          metadata?: Json
+          organization_id: string
           priority?: number
           resume_value?: Json | null
           run_id: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
           visible_at?: string
         }
         Update: {
@@ -57343,16 +57571,22 @@ export type Database = {
           claimed_at?: string | null
           claimed_by?: string | null
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           id?: string
           inputs?: Json
           kind?: string
           last_error?: Json | null
           max_attempts?: number
           max_steps?: number
+          metadata?: Json
+          organization_id?: string
           priority?: number
           resume_value?: Json | null
           run_id?: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
           visible_at?: string
         }
         Relationships: [
@@ -57376,41 +57610,62 @@ export type Database = {
         Row: {
           captured_at: string
           captured_by: string | null
+          created_at: string
+          created_by: string | null
           definition_id: string
+          deleted_at: string | null
           emissions: Json
           id: string
+          metadata: Json
           node_id: string
+          organization_id: string
           output_kind: string | null
           slot: string
           source: string
-          user_id: string
+          updated_at: string
+          updated_by: string | null
           value: Json
+          version: number
         }
         Insert: {
           captured_at: string
           captured_by?: string | null
+          created_at?: string
+          created_by?: string | null
           definition_id: string
+          deleted_at?: string | null
           emissions?: Json
           id?: string
+          metadata?: Json
           node_id: string
+          organization_id: string
           output_kind?: string | null
           slot: string
           source: string
-          user_id: string
+          updated_at?: string
+          updated_by?: string | null
           value: Json
+          version?: number
         }
         Update: {
           captured_at?: string
           captured_by?: string | null
+          created_at?: string
+          created_by?: string | null
           definition_id?: string
+          deleted_at?: string | null
           emissions?: Json
           id?: string
+          metadata?: Json
           node_id?: string
+          organization_id?: string
           output_kind?: string | null
           slot?: string
           source?: string
-          user_id?: string
+          updated_at?: string
+          updated_by?: string | null
           value?: Json
+          version?: number
         }
         Relationships: [
           {
@@ -57427,52 +57682,73 @@ export type Database = {
           attempt: number | null
           checkpoint_id: string | null
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           duration_ms: number | null
           error_message: string | null
           error_type: string | null
           event_ts: string
           event_type: string
           id: string
+          metadata: Json
           node_id: string | null
+          organization_id: string
           payload: Json
           run_id: string
           seq: number | null
           spec_type: string | null
           step: number | null
+          updated_at: string
+          updated_by: string | null
+          version: number
         }
         Insert: {
           attempt?: number | null
           checkpoint_id?: string | null
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           duration_ms?: number | null
           error_message?: string | null
           error_type?: string | null
           event_ts?: string
           event_type: string
           id?: string
+          metadata?: Json
           node_id?: string | null
+          organization_id: string
           payload: Json
           run_id: string
           seq?: number | null
           spec_type?: string | null
           step?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
         }
         Update: {
           attempt?: number | null
           checkpoint_id?: string | null
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           duration_ms?: number | null
           error_message?: string | null
           error_type?: string | null
           event_ts?: string
           event_type?: string
           id?: string
+          metadata?: Json
           node_id?: string | null
+          organization_id?: string
           payload?: Json
           run_id?: string
           seq?: number | null
           spec_type?: string | null
           step?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -57496,13 +57772,18 @@ export type Database = {
           attempt: number
           channel_writes: Json
           completed_at: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
           dispatch_id: string
           duration_ms: number
           emissions: Json
           error: Json | null
           id: string
           item_index: number
+          metadata: Json
           node_id: string
+          organization_id: string
           output: Json
           output_kind: string | null
           output_kind_degraded: string | null
@@ -57513,18 +57794,26 @@ export type Database = {
           sends: Json
           source: string
           step: number
+          updated_at: string
+          updated_by: string | null
+          version: number
         }
         Insert: {
           attempt?: number
           channel_writes?: Json
           completed_at?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           dispatch_id?: string
           duration_ms?: number
           emissions?: Json
           error?: Json | null
           id?: string
           item_index?: number
+          metadata?: Json
           node_id: string
+          organization_id: string
           output?: Json
           output_kind?: string | null
           output_kind_degraded?: string | null
@@ -57535,18 +57824,26 @@ export type Database = {
           sends?: Json
           source?: string
           step: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
         }
         Update: {
           attempt?: number
           channel_writes?: Json
           completed_at?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           dispatch_id?: string
           duration_ms?: number
           emissions?: Json
           error?: Json | null
           id?: string
           item_index?: number
+          metadata?: Json
           node_id?: string
+          organization_id?: string
           output?: Json
           output_kind?: string | null
           output_kind_degraded?: string | null
@@ -57557,6 +57854,9 @@ export type Database = {
           sends?: Json
           source?: string
           step?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -57771,12 +58071,18 @@ export type Database = {
           agent_confidence: number | null
           agent_reasoning: string | null
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           id: string
+          metadata: Json
+          organization_id: string
           proposal_action: string
           proposal_payload: Json
           run_id: string | null
           surface: string
-          user_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
           was_applied: boolean
           was_overridden: boolean
           workflow_id: string | null
@@ -57785,12 +58091,18 @@ export type Database = {
           agent_confidence?: number | null
           agent_reasoning?: string | null
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           id?: string
+          metadata?: Json
+          organization_id: string
           proposal_action: string
           proposal_payload?: Json
           run_id?: string | null
           surface: string
-          user_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
           was_applied?: boolean
           was_overridden?: boolean
           workflow_id?: string | null
@@ -57799,12 +58111,18 @@ export type Database = {
           agent_confidence?: number | null
           agent_reasoning?: string | null
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           id?: string
+          metadata?: Json
+          organization_id?: string
           proposal_action?: string
           proposal_payload?: Json
           run_id?: string | null
           surface?: string
-          user_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
           was_applied?: boolean
           was_overridden?: boolean
           workflow_id?: string | null
@@ -58126,43 +58444,64 @@ export type Database = {
       }
       trigger_fire: {
         Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
           error_message: string | null
           error_type: string | null
           fired_at: string
           fired_by_user_id: string | null
           id: string
+          metadata: Json
+          organization_id: string
           request_body_hash: string | null
           run_id: string | null
           source_ip: string | null
           status: string
           trigger_id: string
-          user_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
         }
         Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           error_message?: string | null
           error_type?: string | null
           fired_at?: string
           fired_by_user_id?: string | null
           id?: string
+          metadata?: Json
+          organization_id: string
           request_body_hash?: string | null
           run_id?: string | null
           source_ip?: string | null
           status: string
           trigger_id: string
-          user_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
         }
         Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           error_message?: string | null
           error_type?: string | null
           fired_at?: string
           fired_by_user_id?: string | null
           id?: string
+          metadata?: Json
+          organization_id?: string
           request_body_hash?: string | null
           run_id?: string | null
           source_ip?: string | null
           status?: string
           trigger_id?: string
-          user_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
         }
         Relationships: [
           {

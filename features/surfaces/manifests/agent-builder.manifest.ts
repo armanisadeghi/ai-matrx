@@ -412,17 +412,6 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 530,
   },
   {
-    name: "agent_is_public",
-    label: "Agent is public",
-    description:
-      "True when the agent is published to the public catalog. False for personal or org-only agents.",
-    valueType: "boolean",
-    alwaysAvailable: false,
-    typicalCharCount: 5,
-    group: "agent_governance",
-    sortOrder: 535,
-  },
-  {
     name: "agent_is_archived",
     label: "Agent is archived",
     description:
@@ -604,7 +593,7 @@ const surfaceSpecific: SurfaceValue[] = [
  * tools, custom tools, MCP servers, skill config, Matrx-action policy, context
  * slots, variable definitions, output schema — an agent editing what another
  * agent may REACH is a capability change, not a copy edit. Governance
- * (`is_public`, `is_active`, `is_archived`, access) and every id/lineage field
+ * (`is_active`, `is_archived`, access) and every id/lineage field
  * are human-only for the same reason. Publishing a version is human-only too.
  *
  * Every target is `mode: "draft"` + `applyPolicy: "ask"`: the value is staged
@@ -767,7 +756,6 @@ export function createAgentBuilderScope(values: {
   agent_source_id?: string;
   agent_is_forked?: boolean;
   agent_is_active?: boolean;
-  agent_is_public?: boolean;
   agent_is_archived?: boolean;
   agent_is_favorite?: boolean;
   agent_access_level?: string;

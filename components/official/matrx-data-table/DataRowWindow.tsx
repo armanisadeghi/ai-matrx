@@ -70,16 +70,21 @@ export function DataRowWindow({
 
   const viewBody = viewContent ?? <DataRowInspector row={row} />;
 
+  // Same contract as the side panel: `viewContent` / `editContent` are custom
+  // bodies (usually the table's `detail.render`) that mostly do NOT own their
+  // own scrolling, so `overflow-hidden` here cut them off at the fold. The
+  // container owns the scroll; a body that already scrolls resolves to this
+  // container's height and still shows a single scrollbar.
   const body = children ?? (
     <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
       {hasTabs ? (
         tab === "edit" ? (
-          <div className="min-h-0 flex-1 overflow-hidden">{editContent}</div>
+          <div className="min-h-0 flex-1 overflow-y-auto">{editContent}</div>
         ) : (
-          <div className="min-h-0 flex-1 overflow-hidden">{viewBody}</div>
+          <div className="min-h-0 flex-1 overflow-y-auto">{viewBody}</div>
         )
       ) : (
-        <div className="min-h-0 flex-1 overflow-hidden">{viewBody}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto">{viewBody}</div>
       )}
     </div>
   );

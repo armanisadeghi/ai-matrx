@@ -10,7 +10,6 @@ const AGENT_PROFILE_FIELDS = new Set(["name", "description", "category", "tags"]
 const AGENT_LOCAL_STATE_FIELDS = new Set([
   "isActive",
   "isArchived",
-  "isPublic",
   "isFavorite",
 ]);
 

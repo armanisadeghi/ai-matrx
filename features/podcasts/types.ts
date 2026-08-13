@@ -64,7 +64,7 @@ export type PcEpisode = {
   id: string;
   slug: string;
   show_id: string | null;
-  user_id: string | null;
+  created_by: string | null;
   title: string;
   description: string | null;
   audio_url: string;
@@ -99,7 +99,7 @@ export type PcArticle = {
   id: string;
   show_id: string | null;
   episode_id: string;
-  user_id: string | null;
+  created_by: string | null;
   kind: PcArticleKind;
   slug: string | null;
   title: string;
@@ -156,7 +156,7 @@ export type PcStudioRunStatus = "running" | "completed" | "failed";
 
 export type PcStudioRun = {
   id: string;
-  user_id: string | null;
+  created_by: string | null;
   status: PcStudioRunStatus;
   input_data_type: string | null;
   podcast_type: string | null;
@@ -275,7 +275,7 @@ export function mapPcEpisodeRow(row: PcEpisodeRow): PcEpisode {
     id: row.id,
     slug: row.slug,
     show_id: row.show_id,
-    user_id: row.user_id,
+    created_by: row.created_by,
     title: row.title,
     description: row.description,
     audio_url: row.audio_url,

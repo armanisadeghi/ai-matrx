@@ -31,6 +31,30 @@
  * without an emitter would advertise values the launch path never supplies;
  * when a real surface-scope emitter lands, declare them (with curated groups)
  * in the same change.
+ *
+ * NO `writeTargets`, ASSESSED AND DECLINED 2026-08-12 — do not "finish" this
+ * by adding some. See the Change Log in `features/surfaces/FEATURE.md` and
+ * `features/transcript-studio/FEATURE.md` for the full reasoning. In short:
+ *
+ *  1. The one artifact authored on `/transcripts/scribe/:sessionId` is the
+ *     working document, and `matrx-user/transcript-scribe-live` already
+ *     declares `working_document_content` + `append_working_document` over it
+ *     on this SAME `urlPattern` (2026-08-11). A second path is duplication.
+ *  2. The cleaned-transcript and concepts columns that look like candidates
+ *     are NOT on this route — they render only in `ActiveSessionView`
+ *     (`/transcripts/studio` + the studio window) and are already writable via
+ *     `matrx-user/transcript-studio`'s `cleaned_segment_text` / `concept_item`.
+ *     This route renders `ScribeScreen`, whose transcript viewers are read-only.
+ *  3. A provider here would be UNREACHABLE. All four Scribe tabs stay mounted
+ *     (visibility flips via `hidden`), so `ScribeLiveScreen`'s provider is live
+ *     on every tab, and agent launch adopts ONE surface via `getSurfaceRuntime()`
+ *     — the DEEPEST runtime. A provider on the `ScribeScreen` ancestor would
+ *     never be selected and its targets would be dead code.
+ *
+ * The session title is the only uncovered editable control and is a documented
+ * refusal already (`transcripts-cleanup` owns that column; `useStudioAutoLabel`
+ * derives it). This surface is config-and-roles — dictionary, session defaults,
+ * the `assistant` role — not a page-runtime surface.
  */
 
 import type { SurfaceManifest } from "@/features/surfaces/types";

@@ -60,10 +60,13 @@ DB — the UI just `router.refresh()`es.
 | Exposure Audit | `exposure-audit/page.tsx` (none)                                                                        | `ExposureAuditClient` — super-admin summary + controlled, paginated file/note exposure inventory                                       |
 | Actions        | `actions/page.tsx` (none)                                                                               | `ActionCatalogClient` (`features/action-catalog/` — see its FEATURE.md; moved from the deleted `/administration/action-catalog` route) |
 
-**Cross-tab deep links are consume-once query params:** the Overview drift panel's
-"Open rule" → `/rules?edit=<ruleKey>` and "Register as shareable" →
-`/sharing?register=<token>`; the target client applies the param once then strips it
-with `router.replace` so refresh/back never re-triggers.
+**Every view is URL-addressable.** Table search, every column filter, sort,
+pagination, toolbar facets, selected detail rows, planner selection/search/display
+toggles, explorer selection/window state, reachability inputs/run state, and
+exposure scope/deleted state live in query params. Native history entries are the
+state transitions, so refresh, copied links, and Back/Forward reproduce the exact
+view. Overview deep links (`?edit=<ruleKey>`, `?register=<token>`) normalize into
+the same durable selected-row params instead of wiping unrelated query state.
 
 ## Data model (all via `public.` SECURITY DEFINER RPCs, each re-checks `is_super_admin()`)
 
@@ -234,8 +237,24 @@ used by the per-row **Link policy** side panel).
   stored as an empty `url_path_template`; public links still resolve through
   `/s/[token]`. Share-field choices come from `information_schema.columns`
   through `admin_shareable_registry_defaults` / `admin_list_share_policies`.
-- Drift panel + each problem row use `<CopyButtons>` (same Copy / Copy-for-AI
-  primitive as the registry tables).
+- **Every data surface here carries the `components/agent-copy` pair** (Copy /
+  JSON / Copy-for-AI): registry tables via `MatrxDataTable copy`, drift panel +
+  problem rows, the Overview status header, Reachability lookup results (payload
+  reads the last-RUN lookup, never the live form fields), the explorer
+  `[token]` header (orbit graph), and the Access Planner. Builders live in
+  `access-planner/copy.ts`; never hand-roll a clipboard handler or envelope.
+- **THE WHAT-I-SEE LAW (Arman, 2026-08-12, in anger): the PRIMARY Copy-for-AI
+  payload is the rendered surface converted to data — never a raw dump.** The
+  planner's panel copy is built from LIVE component state inside the click
+  handler (`buildPanelView` in the Impl → `plannerPanelHuman/AgentPayload`):
+  the disposition text, every decision-blocker sentence as rendered, the reach
+  trace, the CURRENT form inputs (mode/token/label/parent/reason) with an
+  `unsaved_changes` diff vs the saved row, visible validation warnings, why
+  Apply is blocked, the doors, and the left panel's blocker list. The full
+  faithful dump (all FKs/rules/column objects) is ONLY the "Everything" menu
+  variant. A payload that dumps 50k chars of adjacent data while missing the
+  red blocker the user is staring at — or that copies saved values after the
+  user edited the form — is the exact defect this law bans.
 - **THE DOOR LAW** (`common-docs/policies/no-dead-ends.md`) — this hub names
   real records constantly, so it never prints a bare id or an unlinked name:
   a record name → `EntityRef`, a raw FK column → `MatrxUuidCell` with the
@@ -281,6 +300,35 @@ used by the per-row **Link policy** side panel).
 
 ## Change log
 
+- **2026-08-12** — Made the complete Relationships hub URL-addressable. The
+  canonical `useUrlState` / `useTableUrlState` primitives now drive registry
+  table query state, facets, selected side-panel rows, Planner selection and
+  graph toggles, Explorer selection/window state, Reachability run targets, and
+  Exposure Audit scope/search/page state. Browser Back/Forward now rehydrates
+  the controls and open record instead of changing only the address bar.
+- **2026-08-12** — Planner Copy-for-AI rebuilt after Arman rejected the first
+  cut: primary payload is now the panel/page AS RENDERED from live state
+  (blockers, reach, unsaved form values, warnings, apply-blocked reasons,
+  schema blocker list); the raw full-detail dump demoted to the "Everything"
+  menu variant. See THE WHAT-I-SEE LAW above.
+- **2026-08-12** — Copy / Copy-for-AI coverage completed across the hub: Access
+  Planner (schema snapshot + selected-table detail, builders in
+  `access-planner/copy.ts`), Overview status header, Reachability results, and
+  the explorer `[token]` orbit header now carry the shared `agent-copy` pair.
+- **2026-08-12** — **The `component_directly_shareable` blocker is RETIRED as a
+  fake error.** A component that is also in the shareable registry is the
+  RATIFIED dual-identity model (access-architecture `SHARING_MODEL.md` §3:
+  "a share point that is also a component keeps BOTH identities" — proven live
+  on `web_page`/`web_property`/`web_screenshot`/`web_snapshot`). The snapshot
+  RPC now dispositions `is_component AND is_shareable` as `nested_entity`
+  ("inherits from a parent and can still be granted directly") and no longer
+  emits the issue (migration `access_planner_shareable_component_ruling.sql`;
+  real drift still caught by `component_without_parent`,
+  `component_rls_mismatch`, `sharing_not_enforced_by_rls`). Also recorded the
+  one genuine web finding the planner caught that certification cannot (cert
+  judges only REGISTERED tables): `web.endpoint_family_sweep_state` marked
+  infrastructure via `meta.audit_exemption` (site_id-keyed machinery, no UUID
+  identity, per access-architecture §2.4a). Web planner: 5 blockers → 0.
 - **2026-08-12** — Corrected screenshot conveyance after the platform-wide
   access-tree audit: `note/file → web_screenshot` keep little-to-big direction
   and now use the screenshot target as a viewer-capped container. A page share
@@ -293,8 +341,9 @@ used by the per-row **Link policy** side panel).
   every relation, distinguishes root/nested/component/infrastructure, focuses its
   XYFlow map on access-bearing edges, keeps meaningful cross-schema entities in the
   picture, hides plumbing by default, traces viewer/editor cascade ceilings, and
-  applies only canonical registry + RLS primitives. Contradictory component/direct-
-  share registrations are now visible blockers instead of silent drift.
+  applies only canonical registry + RLS primitives. (The original
+  component/direct-share "blocker" this entry introduced was retired the same
+  day — see the dual-identity entry above.)
 - **2026-08-12** — Made shareable-resource registration usable without fake
   values: the in-app destination is optional and auto-prefilled from the entity
   registry, advanced database mapping is collapsed, and no-login share fields

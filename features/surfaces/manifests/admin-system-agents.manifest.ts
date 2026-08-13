@@ -244,17 +244,6 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "open_agent",
   },
   {
-    name: "agent_is_public",
-    label: "Is public",
-    description:
-      "Whether the open agent is published for all users. Absent when no agent is open.",
-    valueType: "boolean",
-    alwaysAvailable: false,
-    typicalCharCount: 5,
-    sortOrder: 270,
-    group: "open_agent",
-  },
-  {
     name: "agent_updated_at",
     label: "Last updated",
     description:
@@ -500,7 +489,7 @@ const surfaceSpecific: SurfaceValue[] = [
  *    platform-wide agent BEHAVES or what it may reach, for every user at once.
  *    That is not a copy edit. It stays with a human, in the builder, behind a
  *    reviewable draft.
- *  - PUBLICATION AND TRUST CONTROLS — `agent_is_active`, `agent_is_public`,
+ *  - PUBLICATION AND TRUST CONTROLS — `agent_is_active`,
  *    `agent_is_system`, `agent_is_archived`. An agent must never publish,
  *    unpublish, retire or promote itself or its siblings. This is the
  *    self-dealing boundary, and it is absolute.
@@ -615,7 +604,7 @@ What you may safely do: read, summarise, compare, critique, and PROPOSE changes 
 
 What you may WRITE, on the agent detail page only, is the CATALOG PROSE of the open agent: agent_description, agent_name, agent_category, agent_tags. Describing a system agent well is the case you are genuinely better at — read agent_messages first, then say what the agent actually does. These four save IMMEDIATELY once the admin approves the confirm dialog (each write also snapshots the previous definition as a new version, so nothing is lost). agent_tags replaces the whole set, so read it first and re-send what should stay.
 
-Everything else is human-only and you will be refused if you reach for it: the prompt messages, variables, context slots, tools, custom tools, MCP servers, output schema, skills, model and model tiers — changing what a SYSTEM agent does or may reach affects every user of the platform and is not a copy edit — and is_active / is_public / is_archived, which are publication and trust controls an agent must never operate on itself or its siblings. Propose those in your answer instead of trying to apply them.
+Everything else is human-only and you will be refused if you reach for it: the prompt messages, variables, context slots, tools, custom tools, MCP servers, output schema, skills, model and model tiers — changing what a SYSTEM agent does or may reach affects every user of the platform and is not a copy edit — and is_active / is_archived, which are publication and trust controls an agent must never operate on itself or its siblings. Propose those in your answer instead of trying to apply them.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
@@ -662,7 +651,6 @@ export function createAdminSystemAgentsScope(values: {
   agent_is_system?: boolean;
   agent_is_active?: boolean;
   agent_is_archived?: boolean;
-  agent_is_public?: boolean;
   agent_updated_at?: string;
   agent_summary?: Record<string, unknown>;
   agent_model_id?: string;

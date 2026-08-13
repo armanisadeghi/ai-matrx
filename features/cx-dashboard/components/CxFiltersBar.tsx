@@ -48,9 +48,6 @@ export function CxFiltersBar({
   const updateFilter = useCallback(
     (key: keyof CxFilters, value: string | undefined) => {
       const newFilters = { ...filters, [key]: value, page: undefined };
-      if (value === undefined || value === "" || value === "all_values") {
-        delete (newFilters as any)[key];
-      }
       const params = filtersToSearchParams(newFilters);
       startTransition(() => {
         router.push(`${pathname}?${params.toString()}`);

@@ -35,10 +35,31 @@ Code (both repos): grep `<table>` for `.from('<table>')`, `.schema(...).from('<t
 ## Step 2 — Confirm it's truly dead
 If reads remain: repoint or delete those consumers if quick; otherwise graveyard now (reversible) and **track the remaining cleanup** in `docs/db_rebuild/CHANGEOVER_PROGRESS.md`. Do not block the move on a long repoint — but never graveyard a table with live, load-bearing reads you haven't accounted for.
 
-## Step 3 — Resolve inbound FKs
-A cross-schema FK keeps working after the move, so the move won't *break* — but a dead table shouldn't be referenced. Drop or repoint inbound FK constraints that shouldn't exist. If an inbound FK represents real data you can't yet sever, that table isn't dead — reconsider.
+## Step 3 — Resolve FKs in BOTH directions
 
-## Step 4 — Move it (idempotent, verify no data lost)
+**Inbound** (tables that point AT this one): a cross-schema FK keeps working after the move, so the move won't *break* — but a dead table shouldn't be referenced. Drop or repoint inbound FK constraints that shouldn't exist. If an inbound FK represents real data you can't yet sever, that table isn't dead — reconsider.
+
+🚨 **Outbound** (this table pointing at LIVE tables) — **the step that gets forgotten, and it breaks live pages.** `SET SCHEMA` carries every outbound FK along, so the retired table keeps advertising itself in `pg_constraint` as a child of live tables. Any catalog-walking function then discovers it and queries it **as the signed-in user**, who has no `USAGE` on `graveyard` → `42501 permission denied for schema graveyard`, and the whole call dies. That is exactly how every `/projects/<id>` page broke on 2026-08-13: `get_project_references` walked the FKs into `workspace.projects` and hit two retired flashcard tables. Always finish the move with the idempotent sweep — **it is safe and expected to re-run**:
+```sql
+do $$ declare r record; begin
+  for r in select conname, conrelid::regclass as from_table from pg_constraint
+    where contype='f' and conrelid::regclass::text like 'graveyard.%'
+      and confrelid::regclass::text not like 'graveyard.%'
+  loop execute format('alter table %s drop constraint %I', r.from_table, r.conname); end loop;
+end $$;
+```
+`migrations/drop_graveyard_to_live_fks.sql` is this sweep. It was run ONCE (2026-07-28) and treated as done; every table retired afterwards re-created the problem — 78 such FKs had accumulated by 2026-08-13. It is not a one-time migration, it is a **post-condition of every graveyard move**.
+
+## Step 4 — Deactivate the registration FIRST (enforced, 2026-08-12)
+`platform._enforce_entity_is_table` now ERRORs when an ACTIVE `entity_types` row ends up
+pointing at `graveyard` — the DDL-sync trigger repoints `schema_name` during your `SET SCHEMA`,
+so **moving a still-active registered table into graveyard fails with a check_violation.**
+Deactivate before you move (this is the guard doing its job, not a bug):
+```sql
+update platform.entity_types set is_active=false where token='<token>';   -- or delete the row
+```
+
+## Step 5 — Move it (idempotent, verify no data lost)
 ```sql
 do $$ begin
   if to_regclass('public.<table>') is not null then
@@ -48,16 +69,15 @@ end $$;
 select count(*) from graveyard.<table>;   -- equals the pre-move count
 ```
 
-## Step 5 — De-register
-Remove the platform footprint so nothing resolves to it:
+## Step 6 — De-register the rest
+Remove the remaining platform footprint so nothing resolves to it:
 ```sql
 delete from platform.entity_relationships where child_type='<token>' or parent_type='<token>';
-update platform.entity_types set is_active=false where token='<token>';   -- or delete the row
 delete from platform.shareable_resource_registry where table_name='<table>';
 ```
 Leave satellite rows (`associations`/`comments`/…) keyed by the token in place unless they're now orphaned — sweep separately; they're harmless and reversible.
 
-## Step 6 — Cross-repo cleanup + finalize
+## Step 7 — Cross-repo cleanup + finalize
 `graveyard` IS in the `db-types` schema list, so the table still appears under the `graveyard` schema in FE types — that's fine; the point is to **delete every code usage**. Then run the finalize SOP (db-change/SKILL.md): `pnpm db-types` → remove FE usages → `pnpm sync-types` (fix TS); `python db/generate.py` → remove aidream usages + `package_integration.py` entry → `python db/detect_applied.py` → `python run.py` clean boot. Record the migration in the ledger. Commit + push `main` on both repos.
 
 ## Clean cut — no silent shim (SKILL `db-change` → THE CUT)

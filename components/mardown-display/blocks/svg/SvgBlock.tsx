@@ -118,7 +118,7 @@ export const SvgBlock: React.FC<SvgBlockProps> = ({ content = "", isStreamActive
             <Skeleton className="h-40 w-full" />
           </div>
         ) : (
-          <div className="mx-auto w-full" style={{ aspectRatio: `${aspect}`, maxHeight: "70vh" }}>
+          <div className="mx-auto w-full" style={{ aspectRatio: `${aspect}`, maxHeight: "70dvh" }}>
             <SandboxedHtml html={srcDoc} title={title ?? "SVG illustration"} height="100%" className="rounded-md" />
           </div>
         )}

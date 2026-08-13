@@ -31,14 +31,24 @@ import type {
   UpdateAgentAppAdminInput,
 } from "@/lib/services/agent-apps-admin-service";
 import {
+  fetchAgentAppCategories,
   getAgentAppById,
   updateAgentAppAdmin,
 } from "@/lib/services/agent-apps-admin-service";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  SurfaceRuntimeProvider,
+  type SurfaceWriteHandlers,
+} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_AGENT_APPS_SURFACE_NAME,
   createAdminAgentAppsScope,
 } from "@/features/surfaces/manifests/admin-agent-apps.manifest";
+import {
+  validateAgentAppCategoryWrite,
+  validateAgentAppMetadataWrite,
+} from "@/features/agent-apps/lib/admin-app-write-targets";
+// `app.definition.tags` has ONE contract; the user-facing surface owns it.
+import { validateAppTags } from "@/features/agent-apps/route/agent-app-entity-writes";
 
 // `AgentAppAdminView` is a hand-narrowed subset of the real DB row used by the
 // list/analytics surfaces (no component_code/variable_schema/shell_* fields).
@@ -50,6 +60,21 @@ import {
 function toAgentApp(row: AgentAppAdminView): AgentApp {
   return row as unknown as AgentApp;
 }
+
+/**
+ * `UpdateAgentAppInput` types the optional copy fields as `string`, but the
+ * columns are nullable and `null` is how the metadata write target CLEARS a
+ * tagline or description (an empty string would leave an empty-string row).
+ * The PATCH route passes the body straight to `.update()`, so widen the save
+ * signature instead of casting the null away at each callsite.
+ */
+type AgentAppMetadataSave = Omit<
+  UpdateAgentAppInput,
+  "tagline" | "description"
+> & {
+  tagline?: string | null;
+  description?: string | null;
+};
 
 export default function AdminEditAgentAppPage({
   params,
@@ -66,6 +91,11 @@ export default function AdminEditAgentAppPage({
   const [notFound, setNotFound] = useState(false);
   const [metadataOpen, setMetadataOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"admin" | "code">("admin");
+  // The system category vocabulary (platform.categories, dimension='app').
+  // Published to the surface as `available_app_categories` AND used as the
+  // allow-list the `app_category` write target validates against, so the list
+  // an agent is told about and the list the handler accepts cannot drift.
+  const [categoryNames, setCategoryNames] = useState<string[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -94,6 +124,23 @@ export default function AdminEditAgentAppPage({
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchAgentAppCategories()
+      .then((rows) => {
+        if (!cancelled) setCategoryNames(rows.map((r) => r.name));
+      })
+      .catch(() => {
+        // Non-fatal: the page still edits fine. `available_app_categories`
+        // stays empty and the app_category write target throws a "not loaded"
+        // error rather than accepting an unvalidated value.
+        if (!cancelled) setCategoryNames([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const goToList = () => {
     startTransition(() => {
@@ -175,7 +222,7 @@ export default function AdminEditAgentAppPage({
 
   const handleSaveMetadata = async (
     appId: string,
-    input: UpdateAgentAppInput,
+    input: AgentAppMetadataSave,
   ) => {
     try {
       const res = await fetch(`/api/agent-apps/${appId}`, {
@@ -201,6 +248,38 @@ export default function AdminEditAgentAppPage({
       });
       throw err;
     }
+  };
+
+  /**
+   * Write handlers for `matrx-admin/agent-apps` — registered ONLY here. Six
+   * other components mount this surface and register nothing (see the
+   * manifest's `writeTargets` block for the per-mount reasoning), so
+   * `listAgentWritableTargets()` offers these three targets on the edit shell
+   * and no tool at all on the list, analytics, executions, categories,
+   * dashboard and rate-limit mounts.
+   *
+   * `mode: "entity"` — this page has no draft layer to stage into, so each
+   * handler lands through `handleSaveMetadata`, the exact PATCH the metadata
+   * modal's Save button calls. Validation lives in the pure
+   * `admin-app-write-targets` core and THROWS; the writeback seam turns that
+   * into the error envelope the agent reads. `handleAdminUpdate`
+   * (status / featured / verified / public / rate limits) has no handler by
+   * design — that is governance, not authored copy.
+   */
+  const buildWriteHandlers = (): SurfaceWriteHandlers => {
+    if (!app) return {};
+    return {
+      app_metadata: async (value: unknown) => {
+        await handleSaveMetadata(app.id, validateAgentAppMetadataWrite(value));
+      },
+      app_category: async (value: unknown) => {
+        const category = validateAgentAppCategoryWrite(value, categoryNames);
+        await handleSaveMetadata(app.id, { category });
+      },
+      app_tags: async (value: unknown) => {
+        await handleSaveMetadata(app.id, { tags: validateAppTags(value) });
+      },
+    };
   };
 
   if (loading) {
@@ -256,8 +335,10 @@ export default function AdminEditAgentAppPage({
             creator_email: app.creator_email ?? null,
             tagline: app.tagline ?? null,
             description: app.description ?? null,
+            tags: app.tags ?? [],
             status: app.status,
           },
+          available_app_categories: categoryNames,
           selected_app_analytics: {
             total_executions: app.total_executions ?? null,
             unique_users_count: app.unique_users_count ?? null,
@@ -273,6 +354,7 @@ export default function AdminEditAgentAppPage({
           },
         })
       }
+      getWriteHandlers={buildWriteHandlers}
     >
     <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden bg-textured">
       <div className="flex-shrink-0 px-4 h-12 border-b border-border bg-card flex items-center gap-2">
@@ -361,6 +443,13 @@ export default function AdminEditAgentAppPage({
                     <Field
                       label="Description"
                       value={app.description ?? "—"}
+                      colSpan={2}
+                    />
+                    <Field
+                      label="Tags"
+                      value={
+                        app.tags?.length ? app.tags.join(", ") : "—"
+                      }
                       colSpan={2}
                     />
                   </CardContent>

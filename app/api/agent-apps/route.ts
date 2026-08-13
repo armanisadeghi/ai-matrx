@@ -141,9 +141,9 @@ export async function POST(request: NextRequest) {
       agent_id,
       agent_version_id: agent_version_id ?? null,
       use_latest: use_latest ?? true,
-      user_id: isGlobal ? null : user.id,
       // Canonical RLS std_insert on app.definition requires created_by = auth.uid().
-      // Global apps use the admin client (bypasses RLS), so created_by stays null there.
+      // Global apps use the admin client (bypasses RLS), so created_by stays
+      // null there — that null IS the system-scope marker.
       created_by: isGlobal ? null : user.id,
       organization_id: organizationId,
       project_id: null,
@@ -178,8 +178,8 @@ export async function POST(request: NextRequest) {
       status: "draft",
     };
 
-    // Global apps bypass RLS via the admin client because user_id = null
-    // would fail a typical owner-check INSERT policy.
+    // Global apps bypass RLS via the admin client because created_by = null
+    // would fail the owner-check INSERT policy.
     const writer = isGlobal ? createAdminClient() : supabase;
     const { data, error } = await writer
       .schema("app")

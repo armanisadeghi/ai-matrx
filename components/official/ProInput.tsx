@@ -53,7 +53,7 @@
  *   `className`. The icon layout is fixed. Controls use prebuilt transparent
  *   tap buttons (`MicTapButton`, `CopyTapButton`, `SendTapButton`, etc.)
  *   so they sit flush inside the field without glass borders touching the edge.
- * - For schema-bound inputs (Entity, Settings, Applet), build a thin
+ * - For schema-bound inputs (Entity, Settings), build a thin
  *   wrapper that owns the binding logic and renders ProInput — don't
  *   re-implement voice/copy/submit per system.
  *

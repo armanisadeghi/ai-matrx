@@ -2,7 +2,7 @@
  * Shared React compile core — the generic primitive for turning a string of
  * JSX/TSX source into runnable JS, used by every dynamic-React consumer:
  *   - inline React code blocks in chat/notes (features/dynamic-react/ReactCodeBlock)
- *   - the agent-apps applet runtime (features/agent-apps/utils/compile-slot)
+ *   - the agent-apps slot runtime (features/agent-apps/utils/compile-slot)
  *
  * It owns ONLY the source→source transform (strip imports, Babel JSX/TSX → JS,
  * normalize exports into a `return`) plus the lazy Babel loader. Scope/allowlist

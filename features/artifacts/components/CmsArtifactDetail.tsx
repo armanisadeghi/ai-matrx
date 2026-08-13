@@ -390,7 +390,7 @@ export function CmsArtifactDetail({ artifactId }: CmsArtifactDetailProps) {
         </Card>
 
         {/* Organizational context */}
-        {(artifact.organizationId || artifact.projectId || artifact.taskId) && (
+        {(artifact.organizationId || artifact.taskId) && (
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -402,11 +402,6 @@ export function CmsArtifactDetail({ artifactId }: CmsArtifactDetailProps) {
                 icon={Building2}
                 label="Organization"
                 value={artifact.organizationId}
-              />
-              <MetaRow
-                icon={FolderKanban}
-                label="Project"
-                value={artifact.projectId}
               />
               <MetaRow
                 icon={CheckSquare}

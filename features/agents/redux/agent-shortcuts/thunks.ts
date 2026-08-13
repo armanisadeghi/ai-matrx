@@ -902,7 +902,7 @@ export interface ShortcutApiRow {
   value_mappings: unknown;
   context_mappings: unknown;
   is_active: boolean;
-  user_id: string | null;
+  created_by: string | null;
   organization_id: string | null;
   project_id: string | null;
   task_id: string | null;
@@ -943,7 +943,7 @@ export function shortcutRowToFrontend(row: ShortcutApiRow): AgentShortcut {
     contextMappings: parseScopeMappings(row.context_mappings),
     ...menuItemToConfigFields(row),
     isActive: row.is_active,
-    userId: row.user_id,
+    userId: row.created_by,
     organizationId: row.organization_id,
     projectId: row.project_id,
     taskId: row.task_id,
@@ -1031,11 +1031,10 @@ function shortcutToApiBody(
     out.json_extraction = patch.jsonExtraction as unknown;
 
   if (patch.isActive !== undefined) out.is_active = patch.isActive;
-  if (patch.userId !== undefined) out.user_id = patch.userId;
+  if (patch.userId !== undefined) out.created_by = patch.userId;
   if (patch.organizationId !== undefined)
     out.organization_id = patch.organizationId;
-  if (patch.projectId !== undefined) out.project_id = patch.projectId;
-  if (patch.taskId !== undefined) out.task_id = patch.taskId;
+  // projectId/taskId are association edges now — not writable columns.
   return out;
 }
 

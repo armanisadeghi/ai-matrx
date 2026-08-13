@@ -81,7 +81,8 @@ the safety net, not the main event.
   to that client too, while its remaining consumers are migrated. Every non-2xx /
   network failure; extracts the
   backend's structured `error_type`/`code`/`user_message`/`request_id`
-  instead of flattening `serverDetail`. Before 2026-07-05 only `call-api` was
+  instead of flattening `serverDetail`; a blank backend request id falls back
+  to the client-generated id, never erases it. Before 2026-07-05 only `call-api` was
   wired — RAG, cloud-files, PDF, and other `getJson` surfaces were a blind spot.
 - **React render** — `lib/diagnostics/captureReactError.ts`,
   `captureReactRenderError()`. Boundaries swallow errors (the global listener
@@ -237,7 +238,7 @@ adapter, or tier rule — it holds the full recipe + invariants.
 
 - New error source → add to the `CapturedErrorSource` union, add its label to
   `SOURCE_LABELS` (the `Record` typecheck enforces it), call `captureError({
-  source, ... })` from the chokepoint. Store + UI are source-agnostic.
+source, ... })` from the chokepoint. Store + UI are source-agnostic.
 - New raw field → add to `CapturedError` + `CaptureInput`
   (`errorCaptureStore.ts`), populate in the adapter, render in
   `ErrorInspectorWindow`, include in `buildCapturedErrorPayload`.
@@ -245,6 +246,12 @@ adapter, or tier rule — it holds the full recipe + invariants.
 
 ## Change Log
 
+- 2026-08-12 — **Client deadlines no longer masquerade as cancellation.** The
+  multipart Python client accepts `timeoutMs` through its shared timeout
+  transport, emits `code: request_timeout` at `POST <path>`, and preserves the
+  client request id when the local `BackendApiError` has no server id. Audio
+  chunk callers consume that structured capture directly instead of adding a
+  second generic `console-error` row.
 - 2026-08-11 — **Error exports gained an implementation-ready prompt variant.**
   Both the selected-error and all-errors actions now offer the faithful error
   object alone or the same evidence wrapped in the shared root-cause,
@@ -303,7 +310,7 @@ adapter, or tier rule — it holds the full recipe + invariants.
   means a write path produced a bad shape — find and fix the writer.
 - 2026-07-01 — **Aborted Supabase requests no longer show red.** postgrest-js
   RESOLVES a cancelled request with an error object (message `"AbortError: The
-  operation was aborted."`) instead of throwing, so it took the
+operation was aborted."`) instead of throwing, so it took the
   `supabase-postgrest` resolved-error path where the `request-aborted` rule (keyed
   on `name: "AbortError"`) couldn't reach it — one cancelled RPC (e.g.
   `get_usage_status` on `/files/all`, from `useStorageQuota`'s superseding fetch)
@@ -318,10 +325,10 @@ adapter, or tier rule — it holds the full recipe + invariants.
   (the Copy-for-AI payload still embeds it with instructions).
 - 2026-06-29 — **Minimized preview.** The inspector's minimized window shell now
   shows `ErrorInspectorTrayChip` (a bug icon coloured by the loudest tier + total
-  + per-tier breakdown) instead of an empty card, built on the new reusable
-  `features/window-panels/.../TrayStatusChip` primitive. Live from the module
-  store; isolated re-renders. First consumer of the canonical minimized-preview
-  system (see `features/window-panels/FEATURE.md`).
+  - per-tier breakdown) instead of an empty card, built on the new reusable
+    `features/window-panels/.../TrayStatusChip` primitive. Live from the module
+    store; isolated re-renders. First consumer of the canonical minimized-preview
+    system (see `features/window-panels/FEATURE.md`).
 - 2026-07-06 — **Copy-for-AI stack sanitization.** Agent export strips minified
   Next.js chunk frames (`sanitizeErrorContextForAi.ts`); plain Copy keeps full stacks.
 - 2026-06-29 — **Tiering + remaining arteries.** Tool errors default **yellow**

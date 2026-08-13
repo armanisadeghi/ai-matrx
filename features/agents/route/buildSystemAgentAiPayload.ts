@@ -53,9 +53,7 @@ function buildBasicsBody(input: SystemAgentAiPayloadInput): string {
 
   if (agent.modelId) {
     lines.push(`Model ID: ${agent.modelId}`);
-  }
-  if (modelName) {
-    lines.push(`Model name: ${modelName}`);
+    lines.push(`Model name: ${modelName ?? "Unknown AI model"}`);
   }
 
   const vars = variableDefinitionsForAi(agent.variableDefinitions);

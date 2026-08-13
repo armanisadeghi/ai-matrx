@@ -15,7 +15,6 @@ import type {
   AdminDecision,
   UpdateFeedbackInput,
 } from "@/types/feedback.types";
-import { isDurableMediaUrl } from "@/lib/media/durability";
 import {
   mapFeedbackCommentRows,
   mapFeedbackCommentRow,
@@ -38,7 +37,7 @@ export interface AgentSubmitInput {
   description: string;
   route?: string;
   priority?: FeedbackPriority;
-  image_urls?: string[];
+  image_file_ids?: string[];
 }
 
 export interface AgentListInput {
@@ -116,28 +115,16 @@ async function resolveAgentUserId(
   return { userId: cachedAgentUserId, substituted: true };
 }
 
-export function validateFeedbackScreenshotUrls(urls: string[]): string[] {
-  const normalized = urls.map((raw) => raw.trim()).filter(Boolean);
-  for (const url of normalized) {
-    let parsed: URL;
-    try {
-      parsed = new URL(url);
-    } catch {
-      throw new Error(
-        `Screenshot URL must be a durable public HTTPS URL: ${url}`,
-      );
-    }
-    const ephemeralShare =
-      parsed.hostname === "server.app.matrxserver.com" &&
-      parsed.pathname.startsWith("/share/");
+export function validateFeedbackScreenshotFileIds(ids: string[]): string[] {
+  const normalized = ids.map((raw) => raw.trim()).filter(Boolean);
+  for (const id of normalized) {
     if (
-      parsed.protocol !== "https:" ||
-      !isDurableMediaUrl(url) ||
-      ephemeralShare
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        id,
+      )
     ) {
       throw new Error(
-        "Screenshot URLs must be durable public URLs. Upload/publish the image " +
-          `first and pass its CDN URL; expiring URL rejected: ${url}`,
+        `Feedback screenshot must use a file ID; rejected: ${id}`,
       );
     }
   }
@@ -178,9 +165,9 @@ export async function submitFeedback(
         description: input.description,
         status: "new",
         priority: input.priority ?? "medium",
-        image_urls: input.image_urls
-          ? validateFeedbackScreenshotUrls(input.image_urls)
-          : null,
+        image_file_ids: input.image_file_ids
+          ? validateFeedbackScreenshotFileIds(input.image_file_ids)
+          : [],
       })
       .select()
       .single();
@@ -286,8 +273,10 @@ export async function updateFeedbackItem(
 
     const supabase = createAdminClient();
     const patch: UpdateFeedbackInput = { ...updates };
-    if (Array.isArray(patch.image_urls)) {
-      patch.image_urls = validateFeedbackScreenshotUrls(patch.image_urls);
+    if (Array.isArray(patch.image_file_ids)) {
+      patch.image_file_ids = validateFeedbackScreenshotFileIds(
+        patch.image_file_ids,
+      );
     }
 
     if (

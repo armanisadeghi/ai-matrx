@@ -22,8 +22,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createEducationProgressScope } from "@/features/surfaces/manifests/education-progress.manifest";
 import { learningGainService } from "../learningGainService";
 import type { LearningGainPair, LearningGainReport } from "../types";
+
+const SURFACE_NAME = "matrx-user/education-progress";
 
 export function LearningGainReportView({
   backHref = "/education/progress",
@@ -34,6 +38,22 @@ export function LearningGainReportView({
   const [report, setReport] = useState<LearningGainReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Read at trigger time, never from stale closure state.
+  const buildScope = () =>
+    createEducationProgressScope({
+      view: "learning_gain",
+      gain_loading: loading,
+      gain_error: error ?? undefined,
+      ...(loading || !report
+        ? {}
+        : {
+            gain_pairs: report.pairs,
+            gain_overall_delta: report.overallDelta ?? undefined,
+            gain_overall_normalized: report.overallNormalizedGain ?? undefined,
+            gain_is_seed: report.contractPending || report.isSeed,
+          }),
+    });
 
   useEffect(() => {
     let cancelled = false;
@@ -56,6 +76,7 @@ export function LearningGainReportView({
     report?.overallDelta != null ? Math.round(report.overallDelta * 100) : null;
 
   return (
+    <SurfaceRuntimeProvider surfaceName={SURFACE_NAME} getScope={buildScope}>
     <div className="min-h-full w-full bg-textured print:bg-white">
       <div className="mx-auto max-w-3xl px-4 sm:px-6 py-6 sm:py-8 print:py-0">
         <div className="mb-4 flex items-center justify-between gap-2 print:hidden">
@@ -164,6 +185,7 @@ export function LearningGainReportView({
         )}
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 

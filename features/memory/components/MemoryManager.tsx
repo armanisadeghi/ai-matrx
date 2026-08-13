@@ -72,7 +72,7 @@ export default function MemoryManager() {
           event: "*",
           schema: "users",
           table: "user_memory",
-          filter: `user_id=eq.${userId}`,
+          filter: `created_by=eq.${userId}`,
         },
         () => {
           void refresh();

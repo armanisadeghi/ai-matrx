@@ -240,11 +240,6 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: false,
   },
-  brokerState: {
-    label: "Broker State",
-    instanceMode: "singleton",
-    isWindow: false,
-  },
   browserFrameWindow: {
     label: "Browser Frame Window",
     instanceMode: "singleton",

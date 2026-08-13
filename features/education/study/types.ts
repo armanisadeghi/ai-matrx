@@ -186,7 +186,19 @@ export interface StudyGoalMetadata {
   [key: string]: unknown;
 }
 
-export type GoalStatus = "active" | "achieved" | "archived";
+/**
+ * The goal lifecycle vocabulary as a RUNTIME constant, so validators — the
+ * surface write handlers in `planner/goalWrites.ts` — check against the one
+ * source of truth instead of re-typing the literals. `GoalStatus` is derived
+ * from it, so the type and the runtime list can never drift.
+ *
+ * Deliberately narrower than the DB check constraint, which also permits
+ * 'paused': nothing in the app authors or renders a paused goal, so it is not
+ * part of the vocabulary a user (or an agent) can select.
+ */
+export const GOAL_STATUSES = ["active", "achieved", "archived"] as const;
+
+export type GoalStatus = (typeof GOAL_STATUSES)[number];
 
 export interface NewGoalInput {
   title: string;

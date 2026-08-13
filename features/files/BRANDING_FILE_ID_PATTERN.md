@@ -23,7 +23,7 @@ layer evolves underneath it.
 
 ## The pattern (5 steps)
 
-For any feature that lets a user upload a branding image (logo, avatar, app/applet
+For any feature that lets a user upload a branding image (logo, avatar, app
 image, favicon, cover, …):
 
 1. **Type** — add a `<thing>FileId?: string | null` next to the existing
@@ -62,9 +62,8 @@ import { useFileAsset } from "@/features/files/hooks/useFileAsset";
 - `types.ts` (`logoFileId`), `service.ts` (write `logo_file_id`, read it back),
   `components/GeneralSettings.tsx` + `CreateOrgModal.tsx` (capture + render).
 
-The same pattern is applied to user avatar (`features/user-profile/`),
-app/applet image (`lib/redux/app-builder/`), and prompt-app favicon
-(`features/prompt-apps/`).
+The same pattern is applied to user avatar (`features/user-profile/`) and
+prompt-app favicon (`features/prompt-apps/`).
 
 ## The guardrail
 

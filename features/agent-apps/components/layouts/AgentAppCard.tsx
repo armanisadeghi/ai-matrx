@@ -18,7 +18,7 @@ interface AgentAppCardProps {
 export function AgentAppCard({ app, href, onClick }: AgentAppCardProps) {
   const body = (
     <div className="group h-full flex flex-col gap-2 p-4 bg-card border border-border rounded-lg hover:border-primary/40 hover:shadow-sm transition-all">
-      <div className="flex items-start gap-2">
+      <div className="flex items-start gap-2 pr-14">
         <div className="flex-shrink-0 w-8 h-8 rounded-md bg-primary/10 text-primary inline-flex items-center justify-center">
           <Gem className="w-4 h-4" />
         </div>

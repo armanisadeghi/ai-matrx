@@ -49,6 +49,7 @@ import type {
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
 import { ReferencesBulkCopyButton } from "@/features/matrx-envelope/components/ReferencesBulkCopyButton";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectScopeTypesByOrg } from "@/features/agent-context/redux/scope/scopeTypesSlice";
 import { selectScopesByOrg } from "@/features/agent-context/redux/scope/scopesSlice";
@@ -156,7 +157,14 @@ function OrgCard({
             />
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className="font-semibold text-lg truncate">{org.name}</h3>
+            <h3 className="font-semibold text-lg truncate">
+              <EntityRef
+                token="organization"
+                id={org.id}
+                name={org.name}
+                showIcon={false}
+              />
+            </h3>
             <div className="flex items-center gap-2 flex-wrap mt-0.5">
               <OrganizationAbbreviation
                 abbreviation={org.abbreviation}
@@ -169,9 +177,15 @@ function OrgCard({
                 <RoleIcon className="h-3 w-3" />
                 {meta.label}
               </Badge>
-              <span className="text-xs text-muted-foreground truncate">
+              <EntityRef
+                token="organization"
+                id={org.id}
+                name={org.slug}
+                showIcon={false}
+                className="text-xs text-muted-foreground"
+              >
                 /{org.slug}
-              </span>
+              </EntityRef>
               {orgSuggestions.length > 0 && (
                 <span>
                   <KgSuggestionHint

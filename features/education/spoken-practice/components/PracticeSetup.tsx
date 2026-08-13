@@ -17,11 +17,22 @@ import { useEntitlementGuard } from "@/features/entitlements/components/useEntit
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
 import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
 import type { FcSetRow } from "@/features/flashcards/data/types";
-import { MODE_CONFIG, DIFFICULTY_OPTIONS, DEFAULT_PROMPTS } from "../constants";
+import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  MODE_CONFIG,
+  DIFFICULTY_OPTIONS,
+  DEFAULT_PROMPTS,
+  PROMPT_COUNT_OPTIONS,
+} from "../constants";
 import { buildDeckSource, buildTopicSource } from "../data/grounding";
+import {
+  publishPracticeSetupSnapshot,
+  type PracticeSetupSnapshot,
+} from "../setupSnapshot";
+import { resolvePracticeSetupPatch } from "../setupWrites";
 import type { PracticeConfig, PracticeSource, SpokenPracticeMode } from "../types";
 
-const COUNT_OPTIONS = [3, 4, 5, 6, 8, 10];
+const SURFACE_NAME = "matrx-user/education-practice-oral";
 
 export function PracticeSetup({
   mode,
@@ -59,6 +70,67 @@ export function PracticeSetup({
       alive = false;
     };
   }, [cfg.offersDeckGrounding]);
+
+  // ── Surface: the setup half of `matrx-user/education-practice-oral` ────
+  //
+  // The form state lives here, so this component publishes it into the module
+  // snapshot store the emitter (SpokenPracticeSurface) reads back synchronously,
+  // and registers the `practice_setup` write handler itself. Both are scoped to
+  // this component's life: the snapshot is CLEARED on unmount and the handler
+  // registration is dropped with it, so the runner and the summary neither emit
+  // a form that is gone nor offer an agent a target for one.
+  const surfaceSnapshot = (): PracticeSetupSnapshot => ({
+    mode,
+    focus,
+    difficulty,
+    count,
+    deckId,
+    pasted,
+    offersDeckGrounding: cfg.offersDeckGrounding,
+    decks: decks.map((d) => ({ id: d.id, name: d.name })),
+    busy,
+  });
+
+  useEffect(() => {
+    publishPracticeSetupSnapshot(surfaceSnapshot());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    mode,
+    focus,
+    difficulty,
+    count,
+    deckId,
+    pasted,
+    cfg.offersDeckGrounding,
+    decks,
+    busy,
+  ]);
+
+  useEffect(() => () => publishPracticeSetupSnapshot(null), []);
+
+  /**
+   * The value is validated by the ONE validator in `../setupWrites.ts` — which
+   * reads the same DIFFICULTY_OPTIONS / PROMPT_COUNT_OPTIONS the pickers below
+   * render, so the options the learner sees, the enum the agent is told about,
+   * and this check cannot drift — and is then applied through the SAME setters
+   * the learner's own typing goes through. Never a parallel write path, and
+   * never a direct service call. A bad shape throws, and the writeback seam
+   * turns that into the error envelope the agent reads back.
+   *
+   * Note what this does NOT do: it fills the form and stops. Pressing Start is
+   * the learner's — it spends an agent run, opens the microphone, and meters
+   * their entitlement.
+   */
+  useSurfaceWriteHandlers(SURFACE_NAME, {
+    practice_setup: (value: unknown) => {
+      const patch = resolvePracticeSetupPatch(value, surfaceSnapshot());
+      if (patch.focus !== undefined) setFocus(patch.focus);
+      if (patch.difficulty !== undefined) setDifficulty(patch.difficulty);
+      if (patch.count !== undefined) setCount(patch.count);
+      if (patch.deckId !== undefined) setDeckId(patch.deckId);
+      if (patch.pasted !== undefined) setPasted(patch.pasted);
+    },
+  });
 
   async function handleStart() {
     if (!focus.trim()) {
@@ -183,7 +255,7 @@ export function PracticeSetup({
               onChange={(e) => setCount(Number(e.target.value))}
               className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground"
             >
-              {COUNT_OPTIONS.map((n) => (
+              {PROMPT_COUNT_OPTIONS.map((n) => (
                 <option key={n} value={n}>
                   {n}
                 </option>

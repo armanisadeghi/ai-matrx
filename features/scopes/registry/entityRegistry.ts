@@ -35,6 +35,7 @@ import {
   AppWindow,
   AudioLines,
   BookOpen,
+  BrainCircuit,
   Boxes,
   Building2,
   Contact,
@@ -66,6 +67,7 @@ import {
   Webhook,
   Workflow,
   UsersRound,
+  Wrench,
   Zap,
 } from "lucide-react";
 import {
@@ -204,6 +206,10 @@ export interface EntityOverlay {
 // `structured_list`), so they can never be a valid association edge endpoint.
 const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   // ─── Agents / Apps / Skills (utilities) ───────────────────────────────────
+  ai_model: {
+    Icon: BrainCircuit,
+    labelPlural: "AI Models",
+  },
   agent: {
     Icon: Webhook,
     labelPlural: "Agents",
@@ -235,6 +241,10 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   workflow: {
     Icon: Workflow,
     labelPlural: "Workflows",
+  },
+  tool: {
+    Icon: Wrench,
+    labelPlural: "Tools",
   },
   message_template: {
     Icon: LayoutTemplate,
@@ -337,13 +347,18 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     labelPlural: "Conversations",
     hrefFor: (id) => `/chat/${id}`,
   },
+  research_topic: {
+    Icon: FlaskConical,
+    labelPlural: "Research Topics",
+    hrefFor: (id) => `/research/topics/${id}`,
+  },
   flashcard_set: {
     Icon: Layers,
     labelPlural: "Flashcard Sets",
   },
-  // The row FlashcardPeek actually reads (education.flashcard_data). An
-  // individual card has no standalone route — it is studied through its set.
-  flashcard_data: {
+  // The row FlashcardPeek actually reads (education.fc_set) — the canonical
+  // flashcard-set entity (legacy education.flashcard_data merged 2026-08-12).
+  fc_set: {
     Icon: Layers,
     labelPlural: "Flashcards",
   },
@@ -602,14 +617,17 @@ const TABLE_TO_TOKEN: Record<string, EntityTypeToken> = (() => {
   return m;
 })();
 
-const UNIQUE_TABLE_NAME_TO_TOKEN: Record<string, EntityTypeToken | null> = (() => {
-  const index: Record<string, EntityTypeToken | null> = {};
-  for (const token of Object.keys(ENTITY_TYPE_METADATA) as EntityTypeToken[]) {
-    const table = ENTITY_TYPE_METADATA[token].table;
-    index[table] = table in index ? null : token;
-  }
-  return index;
-})();
+const UNIQUE_TABLE_NAME_TO_TOKEN: Record<string, EntityTypeToken | null> =
+  (() => {
+    const index: Record<string, EntityTypeToken | null> = {};
+    for (const token of Object.keys(
+      ENTITY_TYPE_METADATA,
+    ) as EntityTypeToken[]) {
+      const table = ENTITY_TYPE_METADATA[token].table;
+      index[table] = table in index ? null : token;
+    }
+    return index;
+  })();
 
 /**
  * Resolve an entity descriptor from a live `(schema, table)` pair, or null when
@@ -648,14 +666,16 @@ export function tryGetEntityInfoByUniqueTableName(
  * broader `listableTokens()` set instead.
  */
 export function curatedTokens(): EntityTypeToken[] {
-  return (Object.keys(ENTITY_TYPE_METADATA) as EntityTypeToken[]).filter((t) => {
-    const meta = ENTITY_TYPE_METADATA[t];
-    const o = ENTITY_OVERLAY[t];
-    return (
-      isContentRole(meta.contentRole) &&
-      (meta.titleColumn != null || o?.listCandidates !== undefined)
-    );
-  });
+  return (Object.keys(ENTITY_TYPE_METADATA) as EntityTypeToken[]).filter(
+    (t) => {
+      const meta = ENTITY_TYPE_METADATA[t];
+      const o = ENTITY_OVERLAY[t];
+      return (
+        isContentRole(meta.contentRole) &&
+        (meta.titleColumn != null || o?.listCandidates !== undefined)
+      );
+    },
+  );
 }
 
 export function listableTokens(): EntityTypeToken[] {

@@ -1213,6 +1213,7 @@ const SCALAR_GENERIC_BLOCK_DISPATCH = {
         start={md.start as number | undefined}
         title={md.title as string | undefined}
         poster={md.poster as string | undefined}
+        publishedAt={(md.publishedAt ?? md.published_at) as string | undefined}
       />
     );
   },
@@ -1245,6 +1246,7 @@ const SCALAR_GENERIC_BLOCK_DISPATCH = {
           videoId={videoId}
           start={start}
           title={sourceLabel}
+          publishedAt={(sd.published_at ?? sd.publishedAt) as string | undefined}
         />
       );
     }

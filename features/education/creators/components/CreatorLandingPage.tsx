@@ -227,7 +227,12 @@ export function CreatorLandingPage({ page }: { page: CreatorPublicPage }) {
             <SectionHeading icon={PlayCircle} title="Watch" />
             <div className="grid gap-5 sm:grid-cols-2">
               {videos.map((v) => (
-                <YouTubeEmbed key={v.videoId} videoId={v.videoId} title={v.title} />
+                <YouTubeEmbed
+                  key={v.videoId}
+                  videoId={v.videoId}
+                  title={v.title}
+                  publishedAt={v.publishedAt}
+                />
               ))}
             </div>
           </section>

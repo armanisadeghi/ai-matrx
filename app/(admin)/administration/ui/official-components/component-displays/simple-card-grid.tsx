@@ -5,6 +5,7 @@ import { ComponentDisplayWrapper } from '../component-usage';
 import { CardGrid } from '@/components/official/cards/CardGrid';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Home, User, Settings, Mail, FileText, Bell } from 'lucide-react';
+import { toast } from '@/lib/toast';
 
 interface ComponentDisplayProps {
   component?: ComponentEntry;
@@ -192,7 +193,7 @@ const cards = [
     { 
       icon: <User className="h-12 w-12" />, 
       title: "Add User", 
-      onClick: () => alert('Add user clicked') 
+      onClick: () => toast.info('Add user clicked')
     },
     { 
       icon: <Settings className="h-12 w-12" />, 
@@ -202,7 +203,7 @@ const cards = [
     { 
       icon: <Mail className="h-12 w-12" />, 
       title: "Compose", 
-      onClick: () => alert('Compose clicked') 
+      onClick: () => toast.info('Compose clicked')
     },
   ];
 
@@ -220,7 +221,7 @@ const cards = [
       icon: <User className="h-12 w-12" />, 
       title: "Team", 
       description: "Manage your team members",
-      onClick: () => alert('Team clicked'),
+      onClick: () => toast.info('Team clicked'),
       iconClassName: "text-orange-500",
       titleClassName: "text-orange-600"
     },
@@ -242,7 +243,7 @@ const cards = [
       icon: <FileText className="h-12 w-12" />,
       title: "Reports",
       description: "View analytics and insights",
-      onClick: () => alert('Reports clicked')
+      onClick: () => toast.info('Reports clicked')
     },
     {
       icon: <Bell className="h-12 w-12" />,

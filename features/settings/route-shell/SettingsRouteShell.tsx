@@ -71,7 +71,7 @@ export function SettingsRouteShell({
       </RegisteredPanel>
       <Handle hideWhenCollapsed={["sidebar"]} />
       <Panel id="main" minSize="40%">
-        <div className="h-full overflow-hidden pt-[var(--shell-header-h)] flex flex-col">
+        <div className="flex h-full flex-col overflow-y-auto overflow-x-hidden pt-[var(--shell-header-h)]">
           <div className="flex-1 min-h-0">{children}</div>
           <SaveStatusFooter />
         </div>

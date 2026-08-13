@@ -15,6 +15,7 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 
@@ -140,7 +141,14 @@ export default function AiTasksPage() {
                   {tasks.map((task) => (
                     <TableRow key={task.id}>
                       <TableCell className="font-mono text-xs">
-                        {task.id.slice(0, 8)}...
+                        <EntityRef
+                          token="task"
+                          id={task.id}
+                          name={task.id}
+                          showIcon={false}
+                        >
+                          {task.id.slice(0, 8)}...
+                        </EntityRef>
                       </TableCell>
                       <TableCell className="font-medium">
                         {task.task_name || "-"}

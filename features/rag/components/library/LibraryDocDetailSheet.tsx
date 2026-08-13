@@ -15,7 +15,12 @@
  *     page/chunk bodies from `/rag/library/.../page|chunks` endpoints.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+
+/** Canonical `ui_surface.name` this sheet registers its write handler against —
+ *  the same surface LibraryPage, its parent, mounts. */
+const RAG_LIBRARY_SURFACE = "matrx-user/rag-library";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import {
@@ -161,13 +166,19 @@ export function LibraryDocDetailSheet({
   const [deleting, setDeleting] = useState(false);
   const [reprocessing, setReprocessing] = useState(false);
 
-  const handleRename = async () => {
-    if (!doc || !renameValue.trim() || renameValue === doc.name) {
-      setRenameOpen(false);
-      return;
-    }
-    setRenaming(true);
-    try {
+  /**
+   * THE canonical rename for a processed document.
+   *
+   * Extracted so the Rename dialog below and the `selected_document_name`
+   * surface write target share one write path instead of two that drift. It
+   * THROWS on failure rather than toasting, because its two callers want
+   * opposite things from an error: the dialog shows the user a toast, while
+   * the write seam turns a throw into the error envelope the agent reads and
+   * corrects from. Each caller decides.
+   */
+  const renameDocumentTo = useCallback(
+    async (nextName: string) => {
+      if (!doc) throw new Error("No document is open.");
       const supabase = createClient();
       // Curator-or-owner gated: docproc.processed_documents RLS
       // (processed_documents_owner_all + processed_documents_curator_update)
@@ -175,23 +186,93 @@ export function LibraryDocDetailSheet({
       const { error: updateError } = await supabase
         .schema("docproc")
         .from("processed_documents")
-        .update({ name: renameValue.trim() })
+        .update({ name: nextName })
         .eq("id", doc.id);
       if (updateError) {
         throw new Error(
           "We couldn't rename this document. Only its owner or a curator can change it.",
         );
       }
-      toast.success("Document renamed");
-      setRenameOpen(false);
       reload();
       onMutated?.();
+    },
+    [doc, reload, onMutated],
+  );
+
+  const handleRename = async () => {
+    if (!doc || !renameValue.trim() || renameValue === doc.name) {
+      setRenameOpen(false);
+      return;
+    }
+    setRenaming(true);
+    try {
+      await renameDocumentTo(renameValue.trim());
+      toast.success("Document renamed");
+      setRenameOpen(false);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Rename failed");
     } finally {
       setRenaming(false);
     }
   };
+
+  // ── Surface write handler ───────────────────────────────────────────────
+  //
+  // `selected_document_name` is registered from HERE, not from LibraryPage,
+  // because this component owns the rename's canonical write path. Registering
+  // from a descendant is the documented second seam (useSurfaceWriteHandlers),
+  // and it proxies through a ref, so the handler always runs THIS render's
+  // closure — `doc` is fresh even when the confirm dialog sat open for minutes.
+  //
+  // This sheet is always mounted (it renders a closed <Sheet> when nothing is
+  // selected), so the target is never declared-but-unwired; when no document
+  // is open the handler throws a message that tells the agent how to fix it.
+  useSurfaceWriteHandlers(RAG_LIBRARY_SURFACE, {
+    selected_document_name: async (value: unknown) => {
+      // A string target cannot receive raw JSON: the inline-tool layer parses
+      // a JSON-looking argument before this handler ever sees it, so a quoted
+      // or fenced name arrives as an object/array and the agent's instinct is
+      // to double-encode it — which lands escaped quotes in the document name.
+      // Saying the exact shape here is what stops that loop.
+      if (typeof value !== "string") {
+        throw new Error(
+          `selected_document_name expects the new name as a PLAIN TEXT STRING — not JSON, not a JSON-encoded string, and not wrapped in a code fence. ` +
+            `Received ${Array.isArray(value) ? "an array" : typeof value}. Send the bare name, e.g. Q3 Vendor Agreement — Acme`,
+        );
+      }
+      if (!doc) {
+        throw new Error(
+          "selected_document_name could not be applied: no document is open, so there is nothing to rename. " +
+            "Open one first by writing selected_document_id with the `id` of a row in visible_documents.",
+        );
+      }
+      const next = value.trim();
+      if (next === "") {
+        throw new Error(
+          "selected_document_name cannot be empty — a document with no name is unfindable in the library. Send the new name as plain text.",
+        );
+      }
+      if (/[\r\n]/.test(next)) {
+        throw new Error(
+          "selected_document_name must be a single line — the library table renders it on one row. " +
+            "Received a value containing a line break. Send the name as plain text with no newlines.",
+        );
+      }
+      if (next.length > 200) {
+        throw new Error(
+          `selected_document_name must be 200 characters or fewer — received ${next.length}. Shorten it to a name the user can scan in a table row.`,
+        );
+      }
+      if (next === doc.name) {
+        throw new Error(
+          `selected_document_name is already "${doc.name}" — nothing was changed. Send a different name, or leave it as it is.`,
+        );
+      }
+      // Validated in full above, so this either renames or throws — the
+      // document is never left half-written.
+      await renameDocumentTo(next);
+    },
+  });
 
   const handleDelete = async () => {
     if (!doc) return;

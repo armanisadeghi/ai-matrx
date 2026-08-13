@@ -12,7 +12,8 @@ export const metadata = createRouteMetadata('/privacy-policy', {
 
 const PrivacyPolicyPage = () => {
   return (
-    // PublicLayout's main is overflow-hidden — the page must own its scroll.
+    // PublicLayout provides a safe scroll fallback; this leaf keeps explicit
+    // ownership so its legal-document scrollbar remains the obvious one.
     <div className="h-full overflow-y-auto">
       <div className="container mx-auto max-w-3xl p-6 prose prose-neutral dark:prose-invert">
       <h1>Privacy Policy</h1>

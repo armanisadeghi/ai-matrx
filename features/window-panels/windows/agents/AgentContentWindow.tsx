@@ -413,7 +413,7 @@ const READ_ONLY_AGENT_FIELDS: ReadonlySet<keyof AgentDefinition> = new Set<
   "version",
   "changedAt",
   "changeNote",
-  "userId",
+  "createdBy",
   "organizationId",
   "sourceAgentId",
   "sourceSnapshotAt",

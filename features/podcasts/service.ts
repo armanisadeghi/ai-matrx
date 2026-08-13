@@ -110,7 +110,7 @@ export const podcastService = {
       .schema("podcast").from("pc_episodes")
       .select("*, show:pc_shows(id, slug, title, image_url)")
       .is("deleted_at", null)
-      .eq("user_id", userId)
+      .eq("created_by", userId)
       .order("created_at", { ascending: false });
     if (error) throw error;
     return (data ?? []).map((row) => mapPcEpisodeWithShowRow(row));
@@ -141,9 +141,9 @@ export const podcastService = {
   async createEpisode(
     payload: Omit<
       PcEpisode,
-      "id" | "created_at" | "updated_at" | "user_id" | "chapters"
+      "id" | "created_at" | "updated_at" | "created_by" | "chapters"
     > & {
-      user_id?: string | null;
+      created_by?: string | null;
     },
   ): Promise<PcEpisode> {
     const {
@@ -154,7 +154,7 @@ export const podcastService = {
       .schema("podcast").from("pc_episodes")
       .insert({
         ...payload,
-        user_id: payload.user_id ?? user?.id ?? null,
+        created_by: payload.created_by ?? user?.id ?? null,
         organization_id: await ensureOrgId(undefined),
       })
       .select()

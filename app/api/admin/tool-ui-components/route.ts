@@ -77,8 +77,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Every tool is Matrx System org (verified 2026-08-12); renderer rows inherit
+    // the tool's org, with the system org as the no-tool_id fallback.
+    let organizationId = "39c38960-d30c-4840-b0c1-c9960de95582";
+    if (body.tool_id) {
+      const { data: toolRow } = await supabase
+        .schema("tool")
+        .from("definition")
+        .select("organization_id")
+        .eq("id", body.tool_id)
+        .single();
+      if (toolRow) organizationId = toolRow.organization_id;
+    }
+
     const componentData = {
       tool_id: body.tool_id || null,
+      organization_id: organizationId,
       tool_name: body.tool_name,
       // Author → render must be coherent: default to the SAME surface the
       // runtime fetch reads (`fetchToolRendererRow`). Saving elsewhere means
@@ -103,7 +117,7 @@ export async function POST(request: NextRequest) {
       ],
       language: body.language || "tsx",
       is_active: body.is_active !== undefined ? body.is_active : true,
-      version: body.version || "1.0.0",
+      semver: body.version || "1.0.0",
       notes: body.notes || null,
       contract_version: body.contract_version === 1 ? 1 : 2,
     };

@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import { Button } from "@/components/ui/button";
+import { VideoPublishDate } from "@/features/files/blocks/video/VideoPublishDate";
 import { youTubeEmbedUrl, youTubeWatchUrl } from "@/lib/media/youtube";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { formatYouTubeCount, formatYouTubeDuration } from "./formatters";
@@ -28,13 +29,17 @@ export function YouTubeVideoPreviewContent({
 }) {
   return (
     <>
-      <div className="aspect-video overflow-hidden rounded-t-3xl bg-black">
+      <div className="relative aspect-video overflow-hidden rounded-t-3xl bg-black">
         <iframe
           src={youTubeEmbedUrl(video.video_id)}
           title={video.title}
           className="h-full w-full"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
+        />
+        <VideoPublishDate
+          publishedAt={video.published_at}
+          className="absolute left-2 top-2 z-10 rounded bg-black/75 px-1.5 py-0.5 text-white shadow-sm"
         />
       </div>
       <div className="p-5 sm:p-7">
@@ -139,7 +144,7 @@ export function YouTubeVideoPreviewDialog({
         if (event.currentTarget === event.target) onClose();
       }}
     >
-      <div className="max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-3xl border border-border bg-background text-foreground shadow-2xl dark:border-white/10 dark:bg-[#0d1015] dark:text-zinc-100">
+      <div className="max-h-[92dvh] w-full max-w-5xl overflow-y-auto rounded-3xl border border-border bg-background text-foreground shadow-2xl dark:border-white/10 dark:bg-[#0d1015] dark:text-zinc-100">
         <YouTubeVideoPreviewContent
           video={video}
           action={

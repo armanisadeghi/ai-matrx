@@ -35,6 +35,7 @@ import {
 } from "../recovery";
 import { computePlanStaleness, type PlanStaleness } from "../staleness";
 import { usePlannerAgent } from "../usePlannerAgent";
+import { publishPlannerPlanSnapshot } from "../plannerSnapshot";
 import { PlanAgenda } from "./PlanAgenda";
 import { PlanGenerateForm } from "./PlanGenerateForm";
 import type { PlanDraft, PlanInput, PlanWithDays } from "../types";
@@ -78,7 +79,17 @@ export function StudyPlanView({ seedTitle }: { seedTitle?: string }) {
   const [absence, setAbsence] = useState<AbsenceInfo | null>(null);
   const [stale, setStale] = useState<PlanStaleness | null>(null);
   const [liveSummary, setLiveSummary] = useState<PlanSummary | null>(null);
+  const [lastSessionAt, setLastSessionAt] = useState<string | null>(null);
   const planner = usePlannerAgent();
+
+  // Publish this view's slice for the `matrx-user/education-planner` emitter
+  // (PlannerWorkspace). It reads the store synchronously inside getScope, so
+  // nothing here may fetch on its behalf. Cleared on unmount so the Goals tab
+  // never emits a stale plan as if it were on screen.
+  useEffect(() => {
+    publishPlannerPlanSnapshot({ plan, error, lastSessionAt });
+  });
+  useEffect(() => () => publishPlannerPlanSnapshot(null), []);
 
   const load = async () => {
     setLoading(true);
@@ -90,6 +101,7 @@ export function StudyPlanView({ seedTitle }: { seedTitle?: string }) {
       setAbsence(null);
       setStale(null);
       setLiveSummary(null);
+      setLastSessionAt(null);
       setLoading(false);
       return;
     }
@@ -105,9 +117,9 @@ export function StudyPlanView({ seedTitle }: { seedTitle?: string }) {
         collectPlanSummary(itemType),
         studyService.listSessions({ limit: 1 }),
       ]);
-      const lastAt = sessionsRes.data?.[0]?.created_at
-        ? new Date(sessionsRes.data[0].created_at)
-        : null;
+      const lastAtIso = sessionsRes.data?.[0]?.created_at ?? null;
+      const lastAt = lastAtIso ? new Date(lastAtIso) : null;
+      setLastSessionAt(lastAtIso);
       const now = new Date();
       const abs = detectAbsence(p, lastAt, now);
       setLiveSummary(summary);
@@ -119,6 +131,7 @@ export function StudyPlanView({ seedTitle }: { seedTitle?: string }) {
       setAbsence(null);
       setStale(null);
       setLiveSummary(null);
+      setLastSessionAt(null);
     }
     setLoading(false);
   };

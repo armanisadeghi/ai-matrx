@@ -18,6 +18,10 @@
  */
 
 import { useState } from "react";
+import {
+  isPubliclyVisible,
+  visibilityLabelShort,
+} from "@/lib/visibility/labels";
 import Link from "next/link";
 import {
   AppWindow,
@@ -207,7 +211,8 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
 
   const statusLabel =
     app.status.charAt(0).toUpperCase() + app.status.slice(1);
-  const visibilityLabel = app.is_public ? "Public" : "Personal";
+  const visibilityLabel = visibilityLabelShort(app.visibility);
+  const isPublic = isPubliclyVisible(app.visibility);
 
   return (
     <div
@@ -282,9 +287,9 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
           </LabeledPill>
           <LabeledPill
             label="Visibility"
-            icon={app.is_public ? Globe : Lock}
+            icon={isPublic ? Globe : Lock}
             accent={
-              app.is_public
+              isPublic
                 ? "text-emerald-600 dark:text-emerald-400"
                 : "text-muted-foreground"
             }

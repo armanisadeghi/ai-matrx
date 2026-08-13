@@ -15,19 +15,14 @@
  * gives them the full UI when they want to change something.
  */
 
-import { useEffect } from "react";
 import { Cpu, SlidersHorizontal } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectAgentSettings,
   selectAgentModelId,
 } from "@/features/agents/redux/agent-definition/selectors";
-import {
-  selectModelById,
-  selectModelRegistryLoading,
-} from "@/features/ai-models/redux/modelRegistrySlice";
-import { fetchModelOptions } from "@/features/ai-models/redux/modelRegistrySlice";
 import { AgentSettingsModal } from "@/features/agents/components/settings-management/AgentSettingsModal";
+import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 
 interface Props {
   syntheticAgentId: string;
@@ -46,27 +41,12 @@ const SUMMARY_KEYS: Array<{ key: string; label: string }> = [
 ];
 
 export function TuningSummaryPanel({ syntheticAgentId }: Props) {
-  const dispatch = useAppDispatch();
-
   const modelId = useAppSelector((s) =>
     selectAgentModelId(s, syntheticAgentId),
   ) as string | null | undefined;
   const settings = useAppSelector((s) =>
     selectAgentSettings(s, syntheticAgentId),
   );
-
-  const registryLoading = useAppSelector(selectModelRegistryLoading);
-  const modelRow = useAppSelector((s) =>
-    modelId ? selectModelById(s, modelId) : undefined,
-  );
-
-  useEffect(() => {
-    if (!registryLoading && !modelRow && modelId) {
-      // Cold model — the row isn't loaded yet. The modal will fetch on
-      // open, but we also want the inline name to resolve.
-      dispatch(fetchModelOptions());
-    }
-  }, [registryLoading, modelRow, modelId, dispatch]);
 
   const settingsObj = (settings ?? {}) as Record<string, unknown>;
   const summaryPills = SUMMARY_KEYS.flatMap((s) => {
@@ -98,9 +78,15 @@ export function TuningSummaryPanel({ syntheticAgentId }: Props) {
           <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold shrink-0">
             Model
           </span>
-          <span className="text-[11px] font-medium text-foreground truncate flex-1 min-w-0">
-            {modelRow?.common_name ?? modelRow?.name ?? modelId ?? "(none)"}
-          </span>
+          {modelId ? (
+            <AiModelRef
+              modelId={modelId}
+              showIcon={false}
+              className="min-w-0 flex-1 text-[11px] text-foreground"
+            />
+          ) : (
+            <span className="text-[11px] text-muted-foreground">(none)</span>
+          )}
         </div>
 
         {summaryPills.length > 0 && (
@@ -118,8 +104,7 @@ export function TuningSummaryPanel({ syntheticAgentId }: Props) {
 
         {summaryPills.length === 0 && (
           <div className="text-[10px] text-muted-foreground/70 italic px-1.5">
-            Using agent defaults. Click the sliders icon to tune model
-            settings.
+            Using agent defaults. Click the sliders icon to tune model settings.
           </div>
         )}
       </div>

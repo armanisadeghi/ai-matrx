@@ -19,6 +19,8 @@ export interface FetchConversationToolCallsResult {
   hasMore: boolean;
   /** Oldest `started_at` in this page (cursor for the next older page). */
   oldestStartedAt: string | null;
+  /** Total matching rows for the query bounds (Supabase exact count). */
+  totalCount: number | null;
 }
 
 /**
@@ -32,6 +34,8 @@ export async function fetchConversationToolCallsPage(
     limit?: number;
     /** Exclusive upper bound on `started_at` — load rows older than this. */
     beforeStartedAt?: string | null;
+    /** Inclusive lower bound on `started_at` — bound the page to a window. */
+    sinceStartedAt?: string | null;
   },
 ): Promise<FetchConversationToolCallsResult> {
   const limit = opts?.limit ?? CONVERSATION_TOOL_CALL_PAGE_SIZE;
@@ -39,7 +43,7 @@ export async function fetchConversationToolCallsPage(
   let query = supabase
     .schema("chat")
     .from("tool_call")
-    .select("*")
+    .select("*", { count: "exact" })
     .eq("conversation_id", conversationId)
     .is("deleted_at", null)
     .order("started_at", { ascending: false })
@@ -48,8 +52,11 @@ export async function fetchConversationToolCallsPage(
   if (opts?.beforeStartedAt) {
     query = query.lt("started_at", opts.beforeStartedAt);
   }
+  if (opts?.sinceStartedAt) {
+    query = query.gte("started_at", opts.sinceStartedAt);
+  }
 
-  const { data, error } = await query;
+  const { data, error, count } = await query;
   if (error) {
     console.error("[fetchConversationToolCallsPage] failed", {
       conversationId,
@@ -68,5 +75,6 @@ export async function fetchConversationToolCallsPage(
     records,
     hasMore: rows.length >= limit,
     oldestStartedAt: records.length > 0 ? records[0].startedAt : null,
+    totalCount: count ?? null,
   };
 }

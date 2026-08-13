@@ -1,9 +1,15 @@
 "use client";
 
 /**
- * plan.entity CRUD for one site — the people / sources / media / orgs the
- * plan references (E-E-A-T). Source type comes from the seeded
- * `plan_source_type` category dimension.
+ * The site's E-E-A-T roster, in its two canonical halves:
+ *
+ *  - **People & companies** are `crm.party` rows linked to the site via a
+ *    `party → web_site` `writes_for` association edge. plan.entity no longer
+ *    holds person/org rows (folded 2026-08-12; DB guard rejects new ones) —
+ *    every person here is a real CRM record with a door to `/crm/[partyId]`.
+ *  - **Sources & media** are `plan.entity` rows (citations: studies,
+ *    guidelines, statistics pages). Source type comes from the seeded
+ *    `plan_source_type` category dimension.
  *
  * Also the WRITE end of `matrx-user/content-plan-entities` (see that
  * manifest's `writeTargets`). The editor dialog's draft is held HERE rather
@@ -12,15 +18,21 @@
  * `entity_draft` / `save_entity_draft` handlers. Every handler runs the same
  * mutation the dialog's own buttons run.
  */
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import {
+  Building2,
   Check,
+  ExternalLink,
   Lightbulb,
+  Link2,
   Loader2,
   Pencil,
   Plus,
   Trash2,
+  UserRound,
   Users,
+  X,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -60,16 +72,27 @@ import {
   planKeys,
   useCreatePlanEntity,
   useDeletePlanEntity,
+  useLinkPartyToSite,
   usePlanEntities,
+  useSiteParties,
+  useUnlinkPartyFromSite,
   useUpdatePlanEntity,
 } from "../data/hooks";
 import { createPlanEntity } from "../data/service";
+import { createParty, searchPartiesByName } from "@/features/crm/service";
+import type { PartyRef, PartyRow } from "@/features/crm/types";
+import { PartyCreateForm } from "@/features/crm/components/PartyCreateForm";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { ENTITY_TYPES, type CuratedEntityType } from "../setup/ai";
 import { useSetupAgents } from "../setup/ai";
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import { fetchFreshSite, readSiteResearchTopicId } from "../setup/draft";
 import {
   PLAN_ENTITY_TYPES,
-  type PlanEntityInsert,
   type PlanEntityRow,
   type PlanEntityType,
 } from "../types";
@@ -103,7 +126,8 @@ interface EntityDraft {
  */
 interface EntityProposal {
   label: string;
-  entityType: PlanEntityType;
+  /** Full curated vocabulary — person/org proposals land as crm parties. */
+  entityType: CuratedEntityType;
   description: string;
   reason: string;
   /** Per-entity accept (true) / skip (false). */
@@ -130,10 +154,26 @@ function requireEntityType(raw: unknown, target: string): PlanEntityType {
     throw new Error(
       `${target}: entity_type must be exactly one of ${PLAN_ENTITY_TYPES.join(
         " | ",
-      )}.`,
+      )}. People and organizations are CRM records — add them with add_entities (person | org) or in /crm.`,
     );
   }
   return raw as PlanEntityType;
+}
+
+/** The add_entities vocabulary spans both halves: person/org → crm.party. */
+function requireCuratedEntityType(
+  raw: unknown,
+  target: string,
+): CuratedEntityType {
+  if (
+    typeof raw !== "string" ||
+    !ENTITY_TYPES.includes(raw as CuratedEntityType)
+  ) {
+    throw new Error(
+      `${target}: entity_type must be exactly one of ${ENTITY_TYPES.join(" | ")}.`,
+    );
+  }
+  return raw as CuratedEntityType;
 }
 
 function requireLabel(raw: unknown, target: string): string {
@@ -155,6 +195,12 @@ export function EntityManager({
   const remove = useDeletePlanEntity(siteId);
   const create = useCreatePlanEntity(siteId);
   const update = useUpdatePlanEntity(siteId);
+  const parties = useSiteParties(siteId);
+  const linkParty = useLinkPartyToSite(siteId);
+  const unlinkParty = useUnlinkPartyFromSite(siteId);
+  /** "New person / company" dialog (canonical CRM capture core). */
+  const [creatingParty, setCreatingParty] = useState(false);
+  const [unlinking, setUnlinking] = useState<PartyRow | null>(null);
   const queryClient = useQueryClient();
   const agents = useSetupAgents(siteId);
   // The SAME dimension the editor's CategorySelect renders from, read here so
@@ -179,6 +225,7 @@ export function EntityManager({
   const [addingProposals, setAddingProposals] = useState(false);
 
   const rows = entities.data ?? [];
+  const partyRows = parties.data ?? [];
 
   // The draft the write handlers read. Written through a ref so a
   // `save_entity_draft` arriving in the same agent turn as
@@ -195,7 +242,7 @@ export function EntityManager({
     setDraftState({
       entityId: entity?.id ?? null,
       label: entity?.label ?? "",
-      entityType: (entity?.entity_type as PlanEntityType) ?? "person",
+      entityType: (entity?.entity_type as PlanEntityType) ?? "source",
       sourceTypeId: entity?.source_type_id ?? null,
     });
 
@@ -269,14 +316,19 @@ export function EntityManager({
       const outcome = await agents.curateEntities({
         research_report: report,
         site_domain: fresh.domain ?? fresh.name ?? "",
-        existing_entities: rows
-          .map((entity) => `${entity.entity_type}: ${entity.label}`)
-          .join("\n"),
+        existing_entities: [
+          ...partyRows.map(
+            (party) =>
+              `${party.party_kind === "organization" ? "org" : "person"}: ${party.display_name}`,
+          ),
+          ...rows.map((entity) => `${entity.entity_type}: ${entity.label}`),
+        ].join("\n"),
         guidance: "",
       });
-      const existingLabels = new Set(
-        rows.map((entity) => entity.label.trim().toLowerCase()),
-      );
+      const existingLabels = new Set([
+        ...rows.map((entity) => entity.label.trim().toLowerCase()),
+        ...partyRows.map((party) => party.display_name.trim().toLowerCase()),
+      ]);
       const freshSuggestions = outcome.entities.filter(
         (item) => !existingLabels.has(item.label.trim().toLowerCase()),
       );
@@ -310,6 +362,45 @@ export function EntityManager({
   );
 
   /**
+   * ONE routing rule for everything that creates roster entries — the curator
+   * apply AND the `add_entities` write target: person/org become crm parties
+   * linked to the site; source/media stay plan.entity citations. Curator
+   * provenance rides `attributes.research` on BOTH destinations.
+   */
+  const createProposedEntity = async (item: {
+    label: string;
+    entityType: CuratedEntityType;
+    description: string;
+    reason: string;
+  }): Promise<void> => {
+    const research: Record<string, string> = {};
+    if (item.description.trim()) research.description = item.description.trim();
+    if (item.reason.trim()) research.reason = item.reason.trim();
+    const attributes =
+      Object.keys(research).length > 0 ? { research } : undefined;
+    if (item.entityType === "person" || item.entityType === "org") {
+      const party = await createParty({
+        kind: item.entityType === "org" ? "organization" : "person",
+        displayName: item.label,
+        orgId: organizationId,
+        ...(attributes ? { attributes } : {}),
+      });
+      await linkParty.mutateAsync(party.id);
+    } else {
+      await createPlanEntity({
+        site_id: siteId,
+        organization_id: organizationId,
+        label: item.label,
+        entity_type: item.entityType,
+        ...(attributes ? { attributes } : {}),
+      });
+      await queryClient.invalidateQueries({
+        queryKey: planKeys.entities(siteId),
+      });
+    }
+  };
+
+  /**
    * Create the accepted proposals. Each row carries the curator's
    * `description` and `reason` into the existing `attributes.research` jsonb —
    * the same shape the `add_entities` write target uses, so the justification
@@ -322,15 +413,7 @@ export function EntityManager({
     let created = 0;
     for (const item of pendingProposals) {
       try {
-        await createPlanEntity({
-          site_id: siteId,
-          organization_id: organizationId,
-          label: item.label,
-          entity_type: item.entityType,
-          attributes: {
-            research: { description: item.description, reason: item.reason },
-          },
-        });
+        await createProposedEntity(item);
         outcomes.set(item.label, null);
         created += 1;
       } catch (error) {
@@ -376,20 +459,39 @@ export function EntityManager({
       countsByType[entity.entity_type] =
         (countsByType[entity.entity_type] ?? 0) + 1;
     }
+    for (const party of partyRows) {
+      const key = party.party_kind === "organization" ? "org" : "person";
+      countsByType[key] = (countsByType[key] ?? 0) + 1;
+    }
     return createContentPlanEntitiesScope({
       view: "entities",
+      // Both halves of the roster. person/org entries are crm.party records
+      // (their id is a party id, opened at /crm/[id], never editable through
+      // entity_draft); source/media entries are plan.entity citations.
       entities_detail:
-        entities.data !== undefined
-          ? rows.map((entity) => ({
-              id: entity.id,
-              label: entity.label,
-              entity_type: entity.entity_type,
-              source_type_id: entity.source_type_id,
-              attributes: entity.attributes,
-            }))
+        entities.data !== undefined && parties.data !== undefined
+          ? [
+              ...partyRows.map((party) => ({
+                id: party.id,
+                label: party.display_name,
+                entity_type:
+                  party.party_kind === "organization" ? "org" : "person",
+                source_type_id: null,
+                attributes: party.attributes,
+              })),
+              ...rows.map((entity) => ({
+                id: entity.id,
+                label: entity.label,
+                entity_type: entity.entity_type,
+                source_type_id: entity.source_type_id,
+                attributes: entity.attributes,
+              })),
+            ]
           : undefined,
       entity_counts_by_type:
-        entities.data !== undefined ? countsByType : undefined,
+        entities.data !== undefined && parties.data !== undefined
+          ? countsByType
+          : undefined,
       source_type_options:
         sourceTypes.categories.length > 0
           ? sourceTypes.categories.map((category) => ({
@@ -421,6 +523,7 @@ export function EntityManager({
       const id = parseOpenEntityEditorWrite(
         value,
         rows.map((entity) => entity.id),
+        partyRows.map((party) => party.id),
       );
       openEditor(id ? (rows.find((entity) => entity.id === id) ?? null) : null);
     },
@@ -477,14 +580,15 @@ export function EntityManager({
           "add_entities: expects a non-empty array of { label, entity_type, description?, reason? }.",
         );
       }
-      const existing = new Set(
-        rows.map((entity) => entity.label.trim().toLowerCase()),
-      );
-      const inserts = value.map((entry, index): PlanEntityInsert => {
+      const existing = new Set([
+        ...rows.map((entity) => entity.label.trim().toLowerCase()),
+        ...partyRows.map((party) => party.display_name.trim().toLowerCase()),
+      ]);
+      const inserts = value.map((entry, index) => {
         const where = `add_entities: [${index}]`;
         const record = asRecord(entry, where);
         const label = requireLabel(record.label, where);
-        const entityType = requireEntityType(record.entity_type, where);
+        const entityType = requireCuratedEntityType(record.entity_type, where);
         const key = label.toLowerCase();
         if (existing.has(key)) {
           throw new Error(
@@ -493,58 +597,36 @@ export function EntityManager({
         }
         existing.add(key);
         // Same attributes shape the "Suggest from research" flow writes.
-        const description = record.description;
-        const reason = record.reason;
-        for (const [key2, raw] of [
-          ["description", description],
-          ["reason", reason],
-        ] as const) {
-          if (raw !== undefined && typeof raw !== "string") {
+        for (const key2 of ["description", "reason"] as const) {
+          if (record[key2] !== undefined && typeof record[key2] !== "string") {
             throw new Error(
               `${where}: ${key2} must be a string when provided.`,
             );
           }
         }
-        const research: Record<string, string> = {};
-        if (typeof description === "string" && description.trim()) {
-          research.description = description.trim();
-        }
-        if (typeof reason === "string" && reason.trim()) {
-          research.reason = reason.trim();
-        }
         return {
-          site_id: siteId,
-          organization_id: organizationId,
           label,
-          entity_type: entityType,
-          ...(Object.keys(research).length > 0
-            ? { attributes: { research } }
-            : {}),
+          entityType,
+          description: (record.description as string | undefined) ?? "",
+          reason: (record.reason as string | undefined) ?? "",
         };
       });
-      // The SAME mutation the dialog's Create button runs. Each call returns
-      // the inserted row and throws when the DB rejects it; a partial run is
-      // reported as the partial run it was, never as success.
-      const created: PlanEntityRow[] = [];
+      // The SAME routed create the curator apply runs (person/org → crm.party
+      // + site link; source/media → plan.entity). Each call throws when the
+      // DB rejects it; a partial run is reported as the partial run it was.
+      let createdCount = 0;
       for (const insert of inserts) {
         try {
-          created.push(await create.mutateAsync(insert));
+          await createProposedEntity(insert);
+          createdCount += 1;
         } catch (error) {
           throw new Error(
-            `add_entities: created ${created.length} of ${inserts.length}; "${insert.label}" failed — ${extractErrorMessage(error)}`,
+            `add_entities: created ${createdCount} of ${inserts.length}; "${insert.label}" failed — ${extractErrorMessage(error)}`,
           );
         }
       }
-      const mismatched = created.filter(
-        (row, index) => row.label !== inserts[index].label,
-      );
-      if (mismatched.length > 0) {
-        throw new Error(
-          `add_entities: ${mismatched.length} row(s) came back with a different label than sent — the write did not land as sent.`,
-        );
-      }
       toast.success(
-        `Added ${created.length} entit${created.length === 1 ? "y" : "ies"}.`,
+        `Added ${createdCount} entit${createdCount === 1 ? "y" : "ies"}.`,
       );
     },
   });
@@ -584,15 +666,6 @@ export function EntityManager({
                   <Lightbulb className="mr-1 h-3 w-3" />
                 )}
                 Suggest from research
-              </Button>
-              <Button
-                size="sm"
-                className="h-7 text-xs"
-                onClick={() => {
-                  openEditor(null);
-                }}
-              >
-                <Plus className="mr-1 h-3 w-3" /> New entity
               </Button>
             </div>
           </div>
@@ -735,6 +808,116 @@ export function EntityManager({
             </div>
           ) : null}
 
+          {/* ── People & companies — crm.party records linked to this site.
+              Every row is a door to its CRM record (THE DOOR LAW). */}
+          <div className="mb-1.5 mt-4 flex items-center justify-between">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-foreground">
+              People &amp; companies
+            </h4>
+            <div className="flex items-center gap-1.5">
+              <LinkExistingPartyPopover
+                orgId={organizationId}
+                linkedIds={partyRows.map((party) => party.id)}
+                busy={linkParty.isPending}
+                onLink={(partyId) =>
+                  linkParty.mutate(partyId, {
+                    onSuccess: () => toast.success("Linked to this site."),
+                    onError: (error) =>
+                      toast.error(extractErrorMessage(error)),
+                  })
+                }
+              />
+              <Button
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => setCreatingParty(true)}
+              >
+                <Plus className="mr-1 h-3 w-3" /> New person / company
+              </Button>
+            </div>
+          </div>
+          {parties.isLoading ? (
+            <div className="space-y-2">
+              {Array.from({ length: 2 }, (_, index) => (
+                <div key={index} className="flex items-center gap-3 py-1">
+                  <Skeleton className="h-5 w-16" />
+                  <Skeleton className="h-4 w-1/2" />
+                </div>
+              ))}
+            </div>
+          ) : parties.isError ? (
+            <p className="py-2 text-sm text-destructive">
+              {extractErrorMessage(parties.error)}
+            </p>
+          ) : partyRows.length === 0 ? (
+            <p className="rounded-lg border border-dashed border-border px-3 py-3 text-xs text-muted-foreground">
+              No people or companies linked yet. Authors and reviewers are CRM
+              records — create one here or link an existing contact.
+            </p>
+          ) : (
+            <div className="overflow-hidden rounded-lg border border-border bg-card">
+              {partyRows.map((party) => (
+                <div
+                  key={party.id}
+                  className="group flex items-center gap-3 border-b border-border px-3 py-2 last:border-b-0 hover:bg-accent/50"
+                >
+                  <span className="flex w-16 shrink-0 items-center justify-center gap-1 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                    {party.party_kind === "organization" ? (
+                      <Building2 className="h-3 w-3" />
+                    ) : (
+                      <UserRound className="h-3 w-3" />
+                    )}
+                    {party.party_kind === "organization" ? "org" : "person"}
+                  </span>
+                  <Link
+                    href={`/crm/${party.id}`}
+                    className="min-w-0 flex-1 truncate text-sm font-medium text-foreground hover:underline"
+                  >
+                    {party.display_name}
+                  </Link>
+                  {party.job_title ? (
+                    <span className="hidden max-w-40 truncate text-xs text-muted-foreground sm:inline">
+                      {party.job_title}
+                    </span>
+                  ) : null}
+                  <Link
+                    href={`/crm/${party.id}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={`Open ${party.display_name} in CRM (new tab)`}
+                    className="text-muted-foreground opacity-0 hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </Link>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0 text-muted-foreground opacity-0 hover:text-destructive focus-visible:opacity-100 group-hover:opacity-100"
+                    aria-label={`Unlink ${party.display_name} from this site`}
+                    onClick={() => setUnlinking(party)}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* ── Sources & media — plan.entity citations. */}
+          <div className="mb-1.5 mt-4 flex items-center justify-between">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-foreground">
+              Sources &amp; media
+            </h4>
+            <Button
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => {
+                openEditor(null);
+              }}
+            >
+              <Plus className="mr-1 h-3 w-3" /> New source
+            </Button>
+          </div>
           {entities.isLoading ? (
             <div className="space-y-2">
               {Array.from({ length: 5 }, (_, index) => (
@@ -752,10 +935,10 @@ export function EntityManager({
             <div className="rounded-lg border border-dashed border-border px-6 py-10 text-center">
               <Users className="mx-auto h-8 w-8 text-muted-foreground" />
               <p className="mt-3 text-sm font-medium text-foreground">
-                No entities yet
+                No sources yet
               </p>
               <p className="mx-auto mt-1 max-w-xs text-sm text-muted-foreground">
-                Add the authors, reviewers, and sources this site's content will
+                Add the studies, guidelines, and media this site's content will
                 cite — nodes attach to them from the tree.
               </p>
               <Button
@@ -765,7 +948,7 @@ export function EntityManager({
                   openEditor(null);
                 }}
               >
-                <Plus className="mr-1 h-3 w-3" /> New entity
+                <Plus className="mr-1 h-3 w-3" /> New source
               </Button>
             </div>
           ) : (
@@ -807,6 +990,63 @@ export function EntityManager({
           )}
         </div>
 
+        {/* New person/company — the canonical CRM capture core, then link. */}
+        <Dialog
+          open={creatingParty}
+          onOpenChange={(next) => {
+            if (!next) setCreatingParty(false);
+          }}
+        >
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>New person or company</DialogTitle>
+            </DialogHeader>
+            {creatingParty ? (
+              <PartyCreateForm
+                initialOrgId={organizationId}
+                onCancel={() => setCreatingParty(false)}
+                onCreated={(partyId) => {
+                  setCreatingParty(false);
+                  linkParty.mutate(partyId, {
+                    onSuccess: () =>
+                      toast.success("Created and linked to this site."),
+                    onError: (error) =>
+                      toast.error(
+                        `Created, but linking to the site failed: ${extractErrorMessage(error)} — link it from the People & companies list.`,
+                      ),
+                  });
+                }}
+              />
+            ) : null}
+          </DialogContent>
+        </Dialog>
+        <ConfirmDialog
+          open={unlinking !== null}
+          onOpenChange={(open) => {
+            if (!open) setUnlinking(null);
+          }}
+          title="Unlink from this site?"
+          description={
+            unlinking
+              ? `"${unlinking.display_name}" stays in your CRM — this only removes them from this site's roster.`
+              : undefined
+          }
+          confirmLabel="Unlink"
+          busy={unlinkParty.isPending}
+          onConfirm={() => {
+            if (!unlinking) return;
+            unlinkParty.mutate(unlinking.id, {
+              onSuccess: () => {
+                setUnlinking(null);
+                toast.success("Unlinked from this site.");
+              },
+              onError: (error) => {
+                setUnlinking(null);
+                toast.error(extractErrorMessage(error));
+              },
+            });
+          }}
+        />
         {draft ? (
           <EntityEditorDialog
             draft={draft}
@@ -883,6 +1123,100 @@ export function EntityManager({
 }
 
 /**
+ * Search-and-link an existing CRM contact onto the site roster. Reads through
+ * the canonical crm service; the link is a party → web_site `writes_for` edge.
+ */
+function LinkExistingPartyPopover({
+  orgId,
+  linkedIds,
+  busy,
+  onLink,
+}: {
+  orgId: string;
+  linkedIds: string[];
+  busy: boolean;
+  onLink: (partyId: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [results, setResults] = useState<PartyRef[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const linked = new Set(linkedIds);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    searchPartiesByName({ orgId, search })
+      .then((rows) => {
+        if (!cancelled) {
+          setResults(rows);
+          setError(null);
+        }
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) setError(extractErrorMessage(err));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, orgId, search]);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button size="sm" variant="outline" className="h-7 text-xs">
+          <Link2 className="mr-1 h-3 w-3" /> Link existing
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-72 p-2" align="end">
+        <Input
+          autoFocus
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Search your CRM…"
+          className="mb-2 h-8"
+        />
+        <div className="max-h-56 overflow-y-auto">
+          {error ? (
+            <p className="px-2 py-2 text-xs text-destructive">{error}</p>
+          ) : results === null ? (
+            <p className="px-2 py-2 text-xs text-muted-foreground">
+              Searching…
+            </p>
+          ) : results.filter((row) => !linked.has(row.id)).length === 0 ? (
+            <p className="px-2 py-2 text-xs text-muted-foreground">
+              No unlinked contacts match.
+            </p>
+          ) : (
+            results
+              .filter((row) => !linked.has(row.id))
+              .map((row) => (
+                <button
+                  key={row.id}
+                  type="button"
+                  disabled={busy}
+                  className="flex w-full items-center gap-2 rounded px-2 py-1 text-left text-sm hover:bg-accent"
+                  onClick={() => {
+                    onLink(row.id);
+                    setOpen(false);
+                  }}
+                >
+                  {row.party_kind === "organization" ? (
+                    <Building2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  ) : (
+                    <UserRound className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  )}
+                  <span className="truncate">{row.display_name}</span>
+                </button>
+              ))
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+/**
  * Controlled editor. It owns NO draft state — `EntityManager` holds the
  * staging buffer so the surface's `entity_editor_draft` value and the
  * `entity_draft` / `save_entity_draft` handlers see (and fill) exactly what
@@ -933,7 +1267,7 @@ function EntityEditorDialog({
       >
         <DialogHeader>
           <DialogTitle>
-            {draft.entityId ? "Edit entity" : "New entity"}
+            {draft.entityId ? "Edit source" : "New source"}
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
@@ -943,7 +1277,7 @@ function EntityEditorDialog({
               autoFocus
               value={draft.label}
               onChange={(event) => onPatch({ label: event.target.value })}
-              placeholder="Dr. Jane Smith"
+              placeholder="Mayo Clinic — PRP overview"
               className="h-8"
             />
           </div>

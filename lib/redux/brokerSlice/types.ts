@@ -1,4 +1,4 @@
-/** @deprecated Legacy applet broker system — removed. Types kept for compile-only stubs. */
+/** @deprecated Legacy broker system — removed. Types kept for compile-only stubs. */
 
 export interface BrokerIdentifier {
   source: string;

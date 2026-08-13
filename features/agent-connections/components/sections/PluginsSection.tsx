@@ -37,10 +37,8 @@ import {
   formatSessionTimestamp,
 } from "../../coding-sessions/verdict";
 import { useCodingSessions } from "../../coding-sessions/useCodingSessions";
-import {
-  CODING_SESSION_PAGE_SIZE,
-  type CodingSessionView,
-} from "../../coding-sessions/service";
+import { type CodingSessionView } from "../../coding-sessions/service";
+import { workspaceName } from "@/features/ai-work/lib/codingSessionPresentation";
 
 function workConversationHref(conversationId: string): string {
   return `/work/conversations/${conversationId}`;
@@ -63,8 +61,16 @@ export function PluginsSection({
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(
     null,
   );
-  const { sessions, loading, error, checkedAtMs, refresh } =
-    useCodingSessions();
+  const {
+    sessions,
+    loading,
+    error,
+    checkedAtMs,
+    refresh,
+    hasMore,
+    loadingMore,
+    loadOlder,
+  } = useCodingSessions();
 
   const selectedSession = selectedSessionId
     ? (sessions.find((session) => session.id === selectedSessionId) ?? null)
@@ -91,7 +97,9 @@ export function PluginsSection({
       !query ||
       title.toLowerCase().includes(query) ||
       (meta?.label ?? session.provider).toLowerCase().includes(query) ||
-      session.fidelity.toLowerCase().includes(query);
+      session.fidelity.toLowerCase().includes(query) ||
+      (workspaceName(session.metadata)?.toLowerCase().includes(query) ??
+        false);
     return matchesProvider && matchesQuery;
   });
 
@@ -100,7 +108,6 @@ export function PluginsSection({
     checkedAtMs === 0 ? null : error === null,
     checkedAtMs,
   );
-  const atPageLimit = sessions.length === CODING_SESSION_PAGE_SIZE;
   const initialReadFailed =
     filteredSessions.length === 0 && sessions.length === 0 && error !== null;
 
@@ -255,11 +262,22 @@ export function PluginsSection({
               ))}
             </div>
           )}
-          {atPageLimit ? (
-            <p className="mt-2 text-xs text-muted-foreground">
-              Showing the latest {CODING_SESSION_PAGE_SIZE} sessions. Older
-              sessions are not included in these displayed counts.
-            </p>
+          {hasMore ? (
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={loadOlder}
+                disabled={loadingMore}
+              >
+                {loadingMore ? "Loading older sessions…" : "Load older sessions"}
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                Showing the {sessions.length} most recent sessions; older
+                sessions exist and are not in the displayed counts yet.
+              </p>
+            </div>
           ) : null}
         </section>
       </div>
@@ -387,6 +405,7 @@ function CodingSessionRow({
   const Icon = meta?.icon ?? Code2;
   const title = session.conversation?.title?.trim() || "Untitled conversation";
   const verdict = fidelityVerdict(session.fidelity);
+  const workspace = workspaceName(session.metadata);
   const dispatch = useAppDispatch();
   const sourceApp =
     session.conversation?.source_app ?? meta?.sourceApp ?? session.provider;
@@ -413,6 +432,17 @@ function CodingSessionRow({
         />
         <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
           <span>{meta?.label ?? formatText(session.provider)}</span>
+          {workspace ? (
+            <>
+              <span aria-hidden>·</span>
+              <span
+                className="rounded-full bg-sky-500/10 px-1.5 py-0.5 font-medium text-sky-700 dark:text-sky-300"
+                title={`Workspace: ${workspace}`}
+              >
+                {workspace}
+              </span>
+            </>
+          ) : null}
           <span aria-hidden>·</span>
           <span>{verdict.label}</span>
           <span aria-hidden>·</span>

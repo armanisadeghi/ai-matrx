@@ -40,7 +40,8 @@ import {
   VideoOff,
   VolumeX,
 } from "lucide-react";
-import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
+import { useFileAs } from "@/features/files/handler/hooks/useFileAs";
+import { useFileBlob } from "@/features/files/hooks/useFileBlob";
 import { useOutputSinkRef } from "@/features/audio/useOutputSinkRef";
 import { useMediaElementPlaybackSession } from "@/features/audio/session/useMediaElementPlaybackSession";
 import {
@@ -567,7 +568,25 @@ export function InlineMediaRef({
   className,
 }: InlineMediaRefProps) {
   const source = useMemo(() => toFileSource(ref), [ref]);
-  const resolvedUrl = useFileSrc(source);
+  const sourceFileId =
+    source && source.kind === "file_id" ? source.fileId : null;
+  const needsPixelReadableBlob = Boolean(crossOrigin && sourceFileId);
+
+  // Canvas consumers cannot use an authenticated download URL as <img src>
+  // (the element cannot attach our bearer token), and the CDN deliberately
+  // does not promise CORS headers. Reuse the canonical authenticated byte
+  // cache: it downloads by file ID and exposes a same-origin blob: URL whose
+  // pixels marker.js/canvas may safely read.
+  const { url: pixelReadableUrl, error: pixelReadableError } = useFileBlob(
+    needsPixelReadableBlob ? sourceFileId : null,
+  );
+  // Canvas-capable consumers need a URL whose bytes remain readable after
+  // load. File IDs use the authenticated blob cache above. External URLs
+  // still flow through the universal handler's fetchable transport.
+  const { result: resolvedUrl, error: resolveError } = useFileAs(
+    needsPixelReadableBlob ? null : source,
+    crossOrigin ? { kind: "fetchable_url" } : { kind: "html_src" },
+  );
   // Routes <audio>/<video> to the user's chosen output device (setSinkId) and
   // re-applies on device change. No-op on Safari. Forwards to mediaElementRef.
   const outputSinkRef = useOutputSinkRef(mediaElementRef);
@@ -598,9 +617,6 @@ export function InlineMediaRef({
     onPause: () => setIsMediaPlaying(false),
     onEnded: () => setIsMediaPlaying(false),
   };
-  const sourceFileId =
-    source && source.kind === "file_id" ? source.fileId : null;
-
   // A freshly re-minted URL after the resolved one failed to load. For an
   // owned file, a dead URL is a non-event — we re-mint from file_id rather
   // than surface a broken image.
@@ -611,7 +627,9 @@ export function InlineMediaRef({
     remintAttempts.current = 0;
   }, [sourceFileId]);
 
-  const url = remintedUrl ?? resolvedUrl;
+  const url = remintedUrl ?? pixelReadableUrl ?? resolvedUrl;
+  const mediaResolutionError =
+    pixelReadableError ?? resolveError?.message ?? null;
   const dimensions = resolveDimensions(size);
   const isFill = dimensions === "fill";
   const elementType = inferElementType(ref, as);
@@ -630,7 +648,7 @@ export function InlineMediaRef({
       >,
     ) => {
       // Owned file (file_id source) → re-mint before surfacing an error.
-      if (sourceFileId && remintAttempts.current < 2) {
+      if (sourceFileId && !crossOrigin && remintAttempts.current < 2) {
         remintAttempts.current += 1;
         console.warn(
           "[file-handler] inline media failed to load — re-minting owned " +
@@ -653,7 +671,7 @@ export function InlineMediaRef({
       setHasLoadError(true);
       onError?.(event);
     },
-    [onError, sourceFileId],
+    [crossOrigin, onError, sourceFileId],
   );
 
   const defaultIcon =
@@ -668,6 +686,32 @@ export function InlineMediaRef({
     );
 
   if (!url) {
+    if (mediaResolutionError) {
+      if (errorFallback === null) return null;
+      if (errorFallback === "info") {
+        return (
+          <InformativeErrorFallback
+            url={sourceFileId ? `file:${sourceFileId}` : "unresolved-media"}
+            alt={alt}
+            elementType={elementType}
+            mediaRef={ref}
+            dimensions={dimensions}
+            rounded={rounded}
+            className={className}
+          />
+        );
+      }
+      return (
+        <FallbackVisual
+          kind={errorFallback}
+          dimensions={dimensions}
+          rounded={rounded}
+          border={border}
+          className={className}
+          icon={fallbackIcon ?? defaultIcon}
+        />
+      );
+    }
     if (!fallback) return null;
     return (
       <FallbackVisual

@@ -395,30 +395,30 @@ export function CatalogsClient({
         surfaceName={ADMIN_APPLICATIONS_SURFACE_NAME}
         getScope={getSurfaceScope}
       >
-      <div className="h-full overflow-y-auto p-4">
-        <CatalogEntryEditor
-          key={view.mode === "edit" ? view.entryId : `new-${view.kind}`}
-          // The ROW's own app wins when editing — the save must never be able
-          // to disagree with the record being edited, whatever the URL says.
-          app={row?.app ?? app}
-          row={row}
-          prefill={view.mode === "new" ? view.prefill : null}
-          initialKind={view.kind}
-          onBack={() => setView({ mode: "kind", kind: view.kind })}
-          onSaved={handleSaved}
-          onDeleted={() => {
-            setView({ mode: "kind", kind: view.kind });
-            void refreshRows();
-          }}
-        />
-        <AddFromLinkDialog
-          key={`link-${linkDialogKind ?? "auto"}`}
-          open={linkDialogOpen}
-          onOpenChange={setLinkDialogOpen}
-          defaultKind={linkDialogKind}
-          onPick={handleLinkPick}
-        />
-      </div>
+        <div className="h-full overflow-y-auto p-4">
+          <CatalogEntryEditor
+            key={view.mode === "edit" ? view.entryId : `new-${view.kind}`}
+            // The ROW's own app wins when editing — the save must never be able
+            // to disagree with the record being edited, whatever the URL says.
+            app={row?.app ?? app}
+            row={row}
+            prefill={view.mode === "new" ? view.prefill : null}
+            initialKind={view.kind}
+            onBack={() => setView({ mode: "kind", kind: view.kind })}
+            onSaved={handleSaved}
+            onDeleted={() => {
+              setView({ mode: "kind", kind: view.kind });
+              void refreshRows();
+            }}
+          />
+          <AddFromLinkDialog
+            key={`link-${linkDialogKind ?? "auto"}`}
+            open={linkDialogOpen}
+            onOpenChange={setLinkDialogOpen}
+            defaultKind={linkDialogKind}
+            onPick={handleLinkPick}
+          />
+        </div>
       </SurfaceRuntimeProvider>
     );
   }
@@ -430,29 +430,29 @@ export function CatalogsClient({
         surfaceName={ADMIN_APPLICATIONS_SURFACE_NAME}
         getScope={getSurfaceScope}
       >
-      <div className="flex h-full flex-col gap-3 p-4">
-        <CatalogKindTable
-          app={app}
-          kind={view.kind}
-          entries={kindEntries}
-          onBack={() => setView({ mode: "kinds" })}
-          onOpenEntry={(row) =>
-            setView({ mode: "edit", kind: row.kind, entryId: row.id })
-          }
-          onNewEntry={() =>
-            setView({ mode: "new", kind: view.kind, prefill: null })
-          }
-          onAddFromLink={() => openAddFromLink(view.kind)}
-          onChanged={() => void refreshRows()}
-        />
-        <AddFromLinkDialog
-          key={`link-${linkDialogKind ?? "auto"}`}
-          open={linkDialogOpen}
-          onOpenChange={setLinkDialogOpen}
-          defaultKind={linkDialogKind}
-          onPick={handleLinkPick}
-        />
-      </div>
+        <div className="flex h-full flex-col gap-3 p-4">
+          <CatalogKindTable
+            app={app}
+            kind={view.kind}
+            entries={kindEntries}
+            onBack={() => setView({ mode: "kinds" })}
+            onOpenEntry={(row) =>
+              setView({ mode: "edit", kind: row.kind, entryId: row.id })
+            }
+            onNewEntry={() =>
+              setView({ mode: "new", kind: view.kind, prefill: null })
+            }
+            onAddFromLink={() => openAddFromLink(view.kind)}
+            onChanged={() => void refreshRows()}
+          />
+          <AddFromLinkDialog
+            key={`link-${linkDialogKind ?? "auto"}`}
+            open={linkDialogOpen}
+            onOpenChange={setLinkDialogOpen}
+            defaultKind={linkDialogKind}
+            onPick={handleLinkPick}
+          />
+        </div>
       </SurfaceRuntimeProvider>
     );
   }
@@ -462,107 +462,108 @@ export function CatalogsClient({
       surfaceName={ADMIN_APPLICATIONS_SURFACE_NAME}
       getScope={getSurfaceScope}
     >
-    <div className="flex h-full flex-col gap-3 p-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <LibraryBig className="h-5 w-5 text-muted-foreground" />
-        <div>
-          <h1 className="text-base font-semibold">Catalogs</h1>
-          <p className="text-xs text-muted-foreground">
-            DB-backed catalogs for shipped clients — models, LoRAs, presets,
-            prompts, voices. Active entries are read by every installed copy in
-            the field. New entries start inactive.
-          </p>
+      <div className="flex h-full flex-col gap-3 p-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <LibraryBig className="h-5 w-5 text-muted-foreground" />
+          <div>
+            <h1 className="text-base font-semibold">Catalogs</h1>
+            <p className="text-xs text-muted-foreground">
+              DB-backed catalogs for shipped clients — models, LoRAs, presets,
+              prompts, voices. Active entries are read by every installed copy
+              in the field. New entries start inactive.
+            </p>
+          </div>
         </div>
-      </div>
 
-      <div className="min-h-0 flex-1">
-        <MatrxDataTable
-          data={kindRows}
-          columns={kindColumns}
-          getRowId={(row) => row.slug}
-          pageSize={25}
-          emptyState={{
-            icon: <LibraryBig className="h-5 w-5" />,
-            title: "No catalog kinds",
-            description: "No kinds match your filters.",
-          }}
-          toolbar={{
-            search: true,
-            searchPlaceholder: "Search kind, slug…",
-            leading: (
-              <Select value={app} onValueChange={setApp}>
-                <SelectTrigger
-                  className="w-44 font-mono text-sm"
-                  aria-label="Application"
+        <div className="min-h-0 flex-1">
+          <MatrxDataTable
+            urlState={{ id: "application-catalogs" }}
+            data={kindRows}
+            columns={kindColumns}
+            getRowId={(row) => row.slug}
+            pageSize={25}
+            emptyState={{
+              icon: <LibraryBig className="h-5 w-5" />,
+              title: "No catalog kinds",
+              description: "No kinds match your filters.",
+            }}
+            toolbar={{
+              search: true,
+              searchPlaceholder: "Search kind, slug…",
+              leading: (
+                <Select value={app} onValueChange={setApp}>
+                  <SelectTrigger
+                    className="w-44 font-mono text-sm"
+                    aria-label="Application"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {apps.map((slug) => (
+                      <SelectItem key={slug} value={slug} className="font-mono">
+                        {slug}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ),
+              actions: (
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => openAddFromLink(null)}
                 >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {apps.map((slug) => (
-                    <SelectItem key={slug} value={slug} className="font-mono">
-                      {slug}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ),
-            actions: (
+                  <Link2 className="mr-1.5 h-4 w-4" /> Add from link
+                </Button>
+              ),
+            }}
+            onRowOpen={(row) => setView({ mode: "kind", kind: row.slug })}
+            detail={{ enabled: false }}
+            copy={{
+              label: "Catalog kind",
+              listLabel: "Catalog kinds (this view)",
+              location: `${APPLICATIONS_ADMIN_LOCATION}/catalogs`,
+              rowKind: "catalog_kind",
+              listKind: "catalog_kinds",
+              rowDescription: "One catalog kind with its entry counts.",
+              listDescription: "Catalog kinds currently visible.",
+              humanRow: (row) =>
+                `${row.label} (${row.slug}) — ${row.total} entries, ${row.active} active, ${row.inactive} inactive`,
+              rowAttributes: (row) => ({
+                slug: row.slug,
+                total: row.total,
+                active: row.active,
+              }),
+              listAttributes: (visible, all) => ({
+                app,
+                kinds_visible: visible.length,
+                kinds_total: all.length,
+                entries_total: appRows.length,
+              }),
+            }}
+            rowActions={(row) => (
               <Button
                 type="button"
+                variant="ghost"
                 size="sm"
-                onClick={() => openAddFromLink(null)}
+                onClick={() => {
+                  setView({ mode: "kind", kind: row.slug });
+                }}
               >
-                <Link2 className="mr-1.5 h-4 w-4" /> Add from link
+                <Plus className="mr-1.5 h-3.5 w-3.5" /> Entries
               </Button>
-            ),
-          }}
-          onRowOpen={(row) => setView({ mode: "kind", kind: row.slug })}
-          detail={{ enabled: false }}
-          copy={{
-            label: "Catalog kind",
-            listLabel: "Catalog kinds (this view)",
-            location: `${APPLICATIONS_ADMIN_LOCATION}/catalogs`,
-            rowKind: "catalog_kind",
-            listKind: "catalog_kinds",
-            rowDescription: "One catalog kind with its entry counts.",
-            listDescription: "Catalog kinds currently visible.",
-            humanRow: (row) =>
-              `${row.label} (${row.slug}) — ${row.total} entries, ${row.active} active, ${row.inactive} inactive`,
-            rowAttributes: (row) => ({
-              slug: row.slug,
-              total: row.total,
-              active: row.active,
-            }),
-            listAttributes: (visible, all) => ({
-              app,
-              kinds_visible: visible.length,
-              kinds_total: all.length,
-              entries_total: appRows.length,
-            }),
-          }}
-          rowActions={(row) => (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setView({ mode: "kind", kind: row.slug });
-              }}
-            >
-              <Plus className="mr-1.5 h-3.5 w-3.5" /> Entries
-            </Button>
-          )}
+            )}
+          />
+        </div>
+
+        <AddFromLinkDialog
+          key={`link-${linkDialogKind ?? "auto"}`}
+          open={linkDialogOpen}
+          onOpenChange={setLinkDialogOpen}
+          defaultKind={linkDialogKind}
+          onPick={handleLinkPick}
         />
       </div>
-
-      <AddFromLinkDialog
-        key={`link-${linkDialogKind ?? "auto"}`}
-        open={linkDialogOpen}
-        onOpenChange={setLinkDialogOpen}
-        defaultKind={linkDialogKind}
-        onPick={handleLinkPick}
-      />
-    </div>
     </SurfaceRuntimeProvider>
   );
 }

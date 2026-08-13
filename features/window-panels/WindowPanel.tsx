@@ -1681,7 +1681,7 @@ function WindowHeader({
           </span>
         ) : (
           <div
-            className="pointer-events-auto max-w-full px-16 flex items-center"
+            className="pointer-events-auto flex min-w-0 max-w-full items-center overflow-hidden whitespace-nowrap px-16"
             onPointerDown={(e) => e.stopPropagation()}
           >
             {title}

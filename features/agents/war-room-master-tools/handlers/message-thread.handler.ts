@@ -140,7 +140,11 @@ export const messageThreadHandler: WarRoomMasterToolHandler<
         dispatch(
           setUserInputText({ conversationId: forkId, text: args.message }),
         );
-        await dispatch(executeInstance({ conversationId: forkId })).unwrap();
+        // initiation:"auto" — this send is driven by an agent tool call, not
+        // a person pressing send on this thread.
+        await dispatch(
+          executeInstance({ conversationId: forkId, initiation: "auto" }),
+        ).unwrap();
 
         return {
           ok: true,
@@ -201,7 +205,10 @@ export const messageThreadHandler: WarRoomMasterToolHandler<
 
       notifyAndWatch(dispatch, conversationId, threadLabel);
 
-      await dispatch(executeInstance({ conversationId })).unwrap();
+      // initiation:"auto" — agent-tool-driven send, not a human gesture.
+      await dispatch(
+        executeInstance({ conversationId, initiation: "auto" }),
+      ).unwrap();
 
       return {
         ok: true,

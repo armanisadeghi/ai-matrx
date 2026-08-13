@@ -89,6 +89,11 @@ import { ragDb } from "@/utils/supabase/ragDb";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useLibrary, useLibrarySummary } from "@/features/rag/hooks/useLibrary";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
+import {
+  LIBRARY_STATUS_FILTER_VALUES,
+  STATUS_FILTERS,
+  type LibraryStatusFilter,
+} from "@/features/rag/constants/libraryStatusFilters";
 import { RagHubHeader } from "@/features/rag/components/shell/RagHubHeader";
 import { TapTargetButton, TapTargetButtonSolid } from "@/components/icons/TapTargetButton";
 import type {
@@ -99,14 +104,6 @@ import { StatusBadge } from "./StatusBadge";
 import { LibraryDocDetailSheet } from "./LibraryDocDetailSheet";
 import { QuickSearchDialog } from "./QuickSearchDialog";
 import { cn } from "@/lib/utils";
-
-const STATUS_FILTERS: { value: DocStatus | "all"; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "ready", label: "Ready" },
-  { value: "embedding", label: "Embedding" },
-  { value: "extracted", label: "Extracted" },
-  { value: "pending", label: "Pending / failed" },
-];
 
 /** Poll cadence (ms) while an in-session operation is actively running.
  *  We deliberately do NOT auto-poll just because a doc sits in a non-terminal
@@ -132,7 +129,8 @@ export function LibraryPage() {
 
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<DocStatus | "all">("all");
+  const [statusFilter, setStatusFilter] =
+    useState<LibraryStatusFilter>("all");
   const [selectedDocId, setSelectedDocId] = useState<string | null>(
     initialDocIdRef.current,
   );
@@ -443,10 +441,136 @@ export function LibraryPage() {
     ],
   );
 
+  // ── Surface write handlers ──────────────────────────────────────────────
+  //
+  // Two targets live here: `library_filters` (the search box + status buttons
+  // as ONE object) and `selected_document_id` (open a row). The document's
+  // rename is NOT here — it belongs to LibraryDocDetailSheet, which owns the
+  // canonical write, and registers it from there via useSurfaceWriteHandlers.
+  //
+  // THE STALE-CLOSURE HAZARD, and why only one of these needs a ref:
+  // `applySurfaceWrite` resolves the provider's handlers BEFORE it awaits the
+  // confirm dialog, and that dialog can sit open indefinitely. So anything a
+  // handler reads off this render's closure is a snapshot from before the user
+  // was even asked.
+  //   - The setters (`setSearchInput`, `setStatusFilter`, `setSelectedDocId`)
+  //     are React state setters, which are stable for the component's life —
+  //     safe to close over.
+  //   - `STATUS_FILTERS` is a module constant — also safe.
+  //   - The document list is NOT: rows arrive from a fetch and the table polls
+  //     every few seconds while a job runs, so the id vocabulary genuinely
+  //     changes underneath an open dialog. It is read through a ref, at call
+  //     time, after the user presses Apply.
+  const visibleDocsRef = useRef<LibraryDocSummary[]>(finalDocs);
+  useEffect(() => {
+    visibleDocsRef.current = finalDocs;
+  }, [finalDocs]);
+
+  const buildWriteHandlers = () => ({
+    library_filters: (value: unknown) => {
+      let raw = value;
+      if (typeof raw === "string") {
+        try {
+          raw = JSON.parse(raw);
+        } catch {
+          throw new Error(
+            "library_filters expects an object of filter keys, e.g. " +
+              '{"search_query": "invoice", "status_filter": "pending"} — received a string that is not valid JSON.',
+          );
+        }
+      }
+      if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+        throw new Error(
+          `library_filters expects an object of filter keys — received ${Array.isArray(raw) ? "an array" : typeof raw}.`,
+        );
+      }
+      const input = raw as Record<string, unknown>;
+
+      const validKeys = ["search_query", "status_filter"];
+      const badKeys = Object.keys(input).filter((k) => !validKeys.includes(k));
+      if (badKeys.length > 0) {
+        // Ignoring an unrecognised key would report success for a write that
+        // did nothing — the worst outcome available here.
+        throw new Error(
+          `library_filters received unknown key(s): ${badKeys.join(", ")}. Nothing was changed. ` +
+            `Valid keys are: ${validKeys.join(", ")}. This target only shapes the VIEW — it cannot ` +
+            `rename, re-process, re-embed or delete a document.`,
+        );
+      }
+      if (Object.keys(input).length === 0) {
+        throw new Error(
+          `library_filters needs at least one of: ${validKeys.join(", ")}. An empty object would change nothing.`,
+        );
+      }
+
+      // Validate EVERYTHING before dispatching anything, so a bad status can
+      // never leave a search half-applied.
+      let nextSearch: string | null = null;
+      let nextStatus: LibraryStatusFilter | null = null;
+
+      if ("search_query" in input) {
+        if (typeof input.search_query !== "string") {
+          throw new Error(
+            `library_filters.search_query expects a plain string (pass "" to clear the search) — received ${typeof input.search_query}.`,
+          );
+        }
+        nextSearch = input.search_query;
+      }
+      if ("status_filter" in input) {
+        const candidate = input.status_filter;
+        if (
+          typeof candidate !== "string" ||
+          !(LIBRARY_STATUS_FILTER_VALUES as readonly string[]).includes(
+            candidate,
+          )
+        ) {
+          throw new Error(
+            `library_filters.status_filter must be exactly one of: ${LIBRARY_STATUS_FILTER_VALUES.join(", ")}. ` +
+              `Received ${JSON.stringify(candidate)}, which is not a button this table renders, so no filter was changed. ` +
+              `("chunking" and "unknown" are real document states but have no filter button — use "all" to clear the filter.)`,
+          );
+        }
+        nextStatus = candidate as LibraryStatusFilter;
+      }
+
+      // Dispatch the SAME setters the user's typing and clicking use — the
+      // search box is bound to searchInput, which the existing debounce effect
+      // turns into the debouncedSearch the query actually runs on. There is no
+      // parallel write path.
+      if (nextSearch !== null) setSearchInput(nextSearch);
+      if (nextStatus !== null) setStatusFilter(nextStatus);
+    },
+
+    selected_document_id: (value: unknown) => {
+      if (typeof value !== "string") {
+        throw new Error(
+          `selected_document_id expects a document UUID as a plain string (or "" to close the sheet) — received ${Array.isArray(value) ? "an array" : typeof value}.`,
+        );
+      }
+      const id = value.trim();
+      if (id === "") {
+        setSelectedDocId(null);
+        return;
+      }
+      // Live list, read AFTER the user pressed Apply.
+      const docs = visibleDocsRef.current;
+      const match = docs.find((d) => d.id === id);
+      if (!match) {
+        throw new Error(
+          `selected_document_id "${id}" is not a document currently listed on this page, so nothing was opened. ` +
+            `Open one of the ${docs.length} rows in visible_documents by its \`id\`, or widen the table first with ` +
+            `library_filters (for example {"search_query": "", "status_filter": "all"}) and re-read visible_documents.`,
+        );
+      }
+      setSelectedDocId(match.id);
+    },
+  });
+
   return (
     <SurfaceRuntimeProvider
       surfaceName={RAG_LIBRARY_SURFACE}
       getScope={getScope}
+      getWriteHandlers={buildWriteHandlers}
       isEditable={false}
     >
       <RagHubHeader

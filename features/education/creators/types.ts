@@ -10,6 +10,8 @@ export interface FeaturedYouTube {
   kind: "youtube";
   videoId: string;
   title?: string | null;
+  /** Provider publish timestamp when enrichment supplied one. */
+  publishedAt?: string | null;
 }
 
 /** A featured free tool (public flashcard set, study guide, note, media…). */

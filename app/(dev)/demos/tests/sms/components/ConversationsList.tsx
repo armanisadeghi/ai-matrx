@@ -70,7 +70,9 @@ export default function ConversationsList() {
 
       if (response.ok) {
         const messages = data.data?.messages || data.messages || data.data || [];
-        setMessages(Array.isArray(messages) ? messages : []);
+        // The endpoint pages from newest to oldest so the first page always
+        // contains the latest messages. Display that page in normal chat order.
+        setMessages(Array.isArray(messages) ? messages.toReversed() : []);
       } else {
         setError(data.msg || data.error || 'Failed to fetch messages');
       }
@@ -82,12 +84,16 @@ export default function ConversationsList() {
   };
 
   useEffect(() => {
-    fetchConversations();
+    queueMicrotask(() => {
+      void fetchConversations();
+    });
   }, []);
 
   useEffect(() => {
     if (selectedConversation) {
-      fetchMessages(selectedConversation);
+      queueMicrotask(() => {
+        void fetchMessages(selectedConversation);
+      });
     }
   }, [selectedConversation]);
 

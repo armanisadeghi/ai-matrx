@@ -13,6 +13,7 @@ export const SOURCE_APPS = [
   "aidream-auto-ingest",
   "aidream-batch",
   "aidream-content-processing",
+  "aidream-endpoint-family-sweep",
   "aidream-file-rag-jobs",
   "aidream-hindsight",
   "aidream-notify-listener",
@@ -124,6 +125,7 @@ export const SOURCE_FEATURES = [
   "socket_compat",
   "summarize_content",
   "workflow_copilot",
+  "workflow_decision_fallback",
   "workflow_node_test",
   "workflow_plan_assist",
   "workflow_recovery_advisor",
@@ -154,4 +156,34 @@ export function isSourceFeature(value: string): value is SourceFeature {
     SOURCE_FEATURE_SET.has(value) ||
     SOURCE_FEATURE_REGEXES.some((pattern) => pattern.test(value))
   );
+}
+
+// origin_class — the WITNESSED trust axis of request attribution
+// (source: matrx_connect.context.provenance.ORIGIN_CLASSES). Read-only
+// vocabulary for filtering/faceting/display: clients NEVER stamp an
+// origin_class — it is derived server-side from platform-observed facts.
+export const ORIGIN_CLASSES = [
+  "human",
+  "client_auto",
+  "api",
+  "child_agent",
+  "workflow",
+  "scheduled",
+  "system",
+] as const;
+
+// DB backfill value for pre-provenance history; never written live.
+export const ORIGIN_CLASS_UNKNOWN = "unknown" as const;
+
+export type OriginClass =
+  | (typeof ORIGIN_CLASSES)[number]
+  | typeof ORIGIN_CLASS_UNKNOWN;
+
+const ORIGIN_CLASS_SET: ReadonlySet<string> = new Set([
+  ...ORIGIN_CLASSES,
+  ORIGIN_CLASS_UNKNOWN,
+]);
+
+export function isOriginClass(value: string): value is OriginClass {
+  return ORIGIN_CLASS_SET.has(value);
 }

@@ -79,7 +79,9 @@ export function InvitationsTableClient() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/admin/invitation-requests?status=all&limit=200");
+      const res = await fetch(
+        "/api/admin/invitation-requests?status=all&limit=200",
+      );
       const json = await res.json();
       if (!json.success) throw new Error("Failed to load invitation requests");
       setRows(json.data ?? []);
@@ -131,7 +133,8 @@ export function InvitationsTableClient() {
       {
         id: "user_type",
         header: "Type",
-        accessorFn: (r) => (r.user_type === "other" ? r.user_type_other : r.user_type),
+        accessorFn: (r) =>
+          r.user_type === "other" ? r.user_type_other : r.user_type,
         filter: "select",
         width: 120,
       },
@@ -182,6 +185,7 @@ export function InvitationsTableClient() {
       ) : null}
       <div className="min-h-0 flex-1">
         <MatrxDataTable
+          urlState={{ id: "user-invitations", selectedRow: false }}
           data={rows}
           columns={columns}
           getRowId={(r) => r.id}
@@ -211,7 +215,11 @@ export function InvitationsTableClient() {
             rowKind: "invitation-request",
             listKind: "invitation-requests",
             humanRow: summary,
-            rowAttributes: (r) => ({ id: r.id, status: r.status, email: r.email }),
+            rowAttributes: (r) => ({
+              id: r.id,
+              status: r.status,
+              email: r.email,
+            }),
           }}
           detail={{
             title: (r) => r.full_name,
@@ -219,14 +227,19 @@ export function InvitationsTableClient() {
             defaultWidth: 460,
             render: (r) => (
               <div className="space-y-4 p-4 text-sm">
-                <Badge variant="outline" className={STATUS_CLASS[r.status] ?? ""}>
+                <Badge
+                  variant="outline"
+                  className={STATUS_CLASS[r.status] ?? ""}
+                >
                   {r.status}
                 </Badge>
                 <dl className="grid grid-cols-[110px_1fr] gap-y-1.5 text-xs">
                   <dt className="text-muted-foreground">Company</dt>
                   <dd>{r.company || "—"}</dd>
                   <dt className="text-muted-foreground">Type</dt>
-                  <dd>{r.user_type === "other" ? r.user_type_other : r.user_type}</dd>
+                  <dd>
+                    {r.user_type === "other" ? r.user_type_other : r.user_type}
+                  </dd>
                   <dt className="text-muted-foreground">Phone</dt>
                   <dd>{r.phone || "—"}</dd>
                   <dt className="text-muted-foreground">Submitted</dt>
@@ -247,18 +260,24 @@ export function InvitationsTableClient() {
                   ) : null}
                 </dl>
                 <div>
-                  <p className="mb-1 text-xs font-medium text-muted-foreground">Use case</p>
+                  <p className="mb-1 text-xs font-medium text-muted-foreground">
+                    Use case
+                  </p>
                   <p className="text-sm">{r.use_case || "—"}</p>
                 </div>
                 {r.biggest_obstacle ? (
                   <div>
-                    <p className="mb-1 text-xs font-medium text-muted-foreground">Biggest obstacle</p>
+                    <p className="mb-1 text-xs font-medium text-muted-foreground">
+                      Biggest obstacle
+                    </p>
                     <p className="text-sm">{r.biggest_obstacle}</p>
                   </div>
                 ) : null}
                 {r.current_ai_systems ? (
                   <div>
-                    <p className="mb-1 text-xs font-medium text-muted-foreground">Current AI systems</p>
+                    <p className="mb-1 text-xs font-medium text-muted-foreground">
+                      Current AI systems
+                    </p>
                     <p className="text-sm">{r.current_ai_systems}</p>
                   </div>
                 ) : null}
@@ -285,18 +304,32 @@ export function InvitationsTableClient() {
                         disabled={acting}
                         onClick={() => void act(r, "reject")}
                       >
-                        {acting ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <XCircle className="mr-1 h-3.5 w-3.5" />}
+                        {acting ? (
+                          <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <XCircle className="mr-1 h-3.5 w-3.5" />
+                        )}
                         Reject
                       </Button>
-                      <Button size="sm" disabled={acting} onClick={() => void act(r, "approve")}>
-                        {acting ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <CheckCircle className="mr-1 h-3.5 w-3.5" />}
+                      <Button
+                        size="sm"
+                        disabled={acting}
+                        onClick={() => void act(r, "approve")}
+                      >
+                        {acting ? (
+                          <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <CheckCircle className="mr-1 h-3.5 w-3.5" />
+                        )}
                         Approve & send code
                       </Button>
                     </div>
                   </div>
                 ) : r.notes ? (
                   <div className="border-t border-border pt-3">
-                    <p className="mb-1 text-xs font-medium text-muted-foreground">Admin notes</p>
+                    <p className="mb-1 text-xs font-medium text-muted-foreground">
+                      Admin notes
+                    </p>
                     <p className="text-sm text-muted-foreground">{r.notes}</p>
                   </div>
                 ) : null}

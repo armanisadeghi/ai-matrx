@@ -3,7 +3,7 @@
 // features/podcasts/hooks/useMyPodcasts.ts
 //
 // Loads the signed-in user's podcast library: the episodes they've created
-// (stamped via pc_episodes.user_id) plus the shows available to host new
+// (stamped via pc_episodes.created_by) plus the shows available to host new
 // episodes. Used by the Studio dashboard and the generator's show picker.
 
 import { useCallback, useEffect, useRef, useState } from "react";

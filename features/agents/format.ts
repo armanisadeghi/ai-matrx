@@ -28,7 +28,9 @@ export function agentDefinitionSummary(
   }
   if (agent.description) lines.push(`Description: ${agent.description}`);
   if (agent.category) lines.push(`Category: ${agent.category}`);
-  const modelLabel = opts?.modelLabel ?? agent.modelId;
+  const modelLabel =
+    opts?.modelLabel ??
+    (agent.modelId ? `Unknown AI model (${agent.modelId})` : null);
   if (modelLabel) lines.push(`Model: ${modelLabel}`);
   if (agent.tags?.length) lines.push(`Tags: ${agent.tags.join(", ")}`);
 
@@ -45,7 +47,6 @@ export function agentDefinitionSummary(
   const statusBits = [
     agent.isActive ? "active" : "inactive",
     agent.isArchived ? "archived" : null,
-    agent.isPublic ? "public" : null,
   ].filter(Boolean);
   lines.push("", `Status: ${statusBits.join(", ")}`);
   if (agent.isVersion && agent.changeNote) {
@@ -67,6 +68,7 @@ export interface SystemAgentRosterEntry {
   category: string | null;
   tags: string[] | null;
   model_id: string | null;
+  model_name: string | null;
   is_active: boolean | null;
   is_archived: boolean | null;
   updated_at: string | null;
@@ -74,6 +76,7 @@ export interface SystemAgentRosterEntry {
 
 export function buildSystemAgentRosterEntries(
   agents: AgentDefinitionRecord[],
+  modelNameById?: ReadonlyMap<string, string>,
 ): SystemAgentRosterEntry[] {
   return agents.map((a) => ({
     id: a.id,
@@ -82,6 +85,7 @@ export function buildSystemAgentRosterEntries(
     category: a.category ?? null,
     tags: a.tags ?? null,
     model_id: a.modelId ?? null,
+    model_name: a.modelId ? (modelNameById?.get(a.modelId) ?? null) : null,
     is_active: a.isActive ?? null,
     is_archived: a.isArchived ?? null,
     updated_at: a.updatedAt ?? null,
@@ -96,7 +100,9 @@ export function systemAgentRosterEntrySummary(
   return [
     entry.name,
     entry.category ? `(${entry.category})` : null,
-    entry.model_id ? `model:${entry.model_id}` : null,
+    entry.model_id
+      ? `model:${entry.model_name ?? "Unknown AI model"} (${entry.model_id})`
+      : null,
     entry.is_active === false ? "[inactive]" : null,
     entry.is_archived ? "[archived]" : null,
   ]

@@ -25,12 +25,19 @@ import {
 } from "@/lib/services/scheduling-admin-service";
 import { scheduleHref } from "@/features/scheduling/constants/routes";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { useAdminSchedulingScopeSlice } from "@/features/scheduling/lib/admin-scheduling-scope";
 
 export default function OrphanLeasesPage() {
   const [rows, setRows] = useState<AdminRunRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetching, setFetching] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+
+  // Read-only evidence. Force-failing a run is an operator gesture with
+  // production blast radius, so it is a row button and never a write target.
+  useAdminSchedulingScopeSlice("orphan_leases", () => ({
+    orphan_lease_row_count: rows.length,
+  }));
 
   const load = useCallback(async () => {
     setFetching(true);
@@ -80,7 +87,10 @@ export default function OrphanLeasesPage() {
       if (!ok) return;
       setBusyId(run.id);
       try {
-        await markRunFailedAdmin(run.id, "Marked failed by admin (orphan lease)");
+        await markRunFailedAdmin(
+          run.id,
+          "Marked failed by admin (orphan lease)",
+        );
         toast.success("Run marked failed");
         await load();
       } catch (err) {
@@ -128,17 +138,29 @@ export default function OrphanLeasesPage() {
         id: "claimed_at",
         accessorKey: "claimed_at",
         header: "Claimed",
-        cell: (r) => <span className="text-xs">{humanizeRelative(r.claimed_at)}</span>,
+        cell: (r) => (
+          <span className="text-xs">{humanizeRelative(r.claimed_at)}</span>
+        ),
         width: 120,
       },
       {
         id: "claim_expires_at",
         accessorKey: "claim_expires_at",
         header: "Expired",
-        cell: (r) => <span className="text-xs">{humanizeRelative(r.claim_expires_at)}</span>,
+        cell: (r) => (
+          <span className="text-xs">
+            {humanizeRelative(r.claim_expires_at)}
+          </span>
+        ),
         width: 120,
       },
-      { id: "id", accessorKey: "id", header: "ID", cellKind: "uuid", width: 110 },
+      {
+        id: "id",
+        accessorKey: "id",
+        header: "ID",
+        cellKind: "uuid",
+        width: 110,
+      },
     ];
   }, []);
 
@@ -148,25 +170,34 @@ export default function OrphanLeasesPage() {
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
         <span>
           Runs in <code>claimed</code> or <code>running</code> state whose{" "}
-          <code>claim_expires_at</code> is in the past. The scanner normally re-claims these
-          on the next tick — if a row stays here for more than a few minutes, something's
-          wrong upstream.
+          <code>claim_expires_at</code> is in the past. The scanner normally
+          re-claims these on the next tick — if a row stays here for more than a
+          few minutes, something's wrong upstream.
         </span>
       </p>
       <div className="min-h-0 flex-1">
         <MatrxDataTable
+          urlState={{ id: "scheduling-orphan-leases" }}
           data={rows}
           columns={columns}
           getRowId={(r) => r.id}
           isLoading={loading}
           isFetching={fetching}
           pageSize={50}
-          emptyState={{ title: "No orphan leases", description: "System is healthy." }}
+          emptyState={{
+            title: "No orphan leases",
+            description: "System is healthy.",
+          }}
           toolbar={{
             search: true,
             searchPlaceholder: "Search orphan leases…",
             actions: (
-              <Button size="sm" variant="outline" onClick={() => void load()} disabled={fetching}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => void load()}
+                disabled={fetching}
+              >
                 {fetching ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (

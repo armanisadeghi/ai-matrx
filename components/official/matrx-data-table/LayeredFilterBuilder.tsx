@@ -149,7 +149,7 @@ export function LayeredFilterBuilder({
             ) : null}
           </div>
 
-          <div className="max-h-[min(28rem,65vh)] space-y-1.5 overflow-y-auto p-2.5 scrollbar-thin">
+          <div className="max-h-[min(28rem,65dvh)] space-y-1.5 overflow-y-auto p-2.5 scrollbar-thin">
             {rules.length === 0 ? (
               <div className="rounded-md border border-dashed border-border px-3 py-5 text-center">
                 <p className="text-sm font-medium text-foreground">

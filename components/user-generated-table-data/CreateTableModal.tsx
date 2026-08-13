@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Trash } from "lucide-react";
+import { Plus, Trash, TriangleAlert } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -237,7 +237,8 @@ export default function CreateTableModal({
             )}
             {tableNameWarning && !checkingName && (
               <p className="text-xs text-orange-600 dark:text-orange-400 flex items-center gap-1">
-                <span>⚠️</span> {tableNameWarning}
+                <TriangleAlert className="size-3.5 shrink-0" aria-hidden="true" />
+                {tableNameWarning}
               </p>
             )}
           </div>

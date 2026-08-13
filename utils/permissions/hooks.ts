@@ -106,7 +106,9 @@ export function useResourcePermissions(
       setPermissions(data);
     } catch (err) {
       console.error("Error fetching resource permissions:", err);
-      setError(extractErrorMessage(err) || "Failed to fetch resource permissions");
+      setError(
+        extractErrorMessage(err) || "Failed to fetch resource permissions",
+      );
     } finally {
       setLoading(false);
     }
@@ -275,8 +277,13 @@ export function useSharing(
 
   const refreshVisibility = useCallback(async () => {
     if (!resourceType || !resourceId || !enabled) return;
-    const v = await getResourceVisibility(resourceType, resourceId);
-    setVisibility(v);
+    try {
+      const v = await getResourceVisibility(resourceType, resourceId);
+      setVisibility(v);
+    } catch (err) {
+      console.error("Error fetching resource visibility:", err);
+      setError(extractErrorMessage(err));
+    }
   }, [resourceType, resourceId, enabled]);
 
   const refresh = useCallback(async () => {
@@ -311,7 +318,8 @@ export function useSharing(
         await refresh();
         return result;
       } catch (err) {
-        const errorMessage = extractErrorMessage(err) || "Failed to share with user";
+        const errorMessage =
+          extractErrorMessage(err) || "Failed to share with user";
         setError(errorMessage);
         return { success: false, error: errorMessage };
       } finally {
@@ -342,7 +350,8 @@ export function useSharing(
         await refresh();
         return result;
       } catch (err) {
-        const errorMessage = extractErrorMessage(err) || "Failed to share with organization";
+        const errorMessage =
+          extractErrorMessage(err) || "Failed to share with organization";
         setError(errorMessage);
         return { success: false, error: errorMessage };
       } finally {
@@ -372,7 +381,8 @@ export function useSharing(
         await refresh();
         return result;
       } catch (err) {
-        const errorMessage = extractErrorMessage(err) || "Failed to make public";
+        const errorMessage =
+          extractErrorMessage(err) || "Failed to make public";
         setError(errorMessage);
         return { success: false, error: errorMessage };
       } finally {
@@ -403,7 +413,8 @@ export function useSharing(
         await refresh();
         return result;
       } catch (err) {
-        const errorMessage = extractErrorMessage(err) || "Failed to revoke access";
+        const errorMessage =
+          extractErrorMessage(err) || "Failed to revoke access";
         setError(errorMessage);
         return { success: false, error: errorMessage };
       } finally {
@@ -430,7 +441,8 @@ export function useSharing(
         await refresh();
         return result;
       } catch (err) {
-        const errorMessage = extractErrorMessage(err) || "Failed to revoke org access";
+        const errorMessage =
+          extractErrorMessage(err) || "Failed to revoke org access";
         setError(errorMessage);
         return { success: false, error: errorMessage };
       } finally {
@@ -461,7 +473,8 @@ export function useSharing(
         await refresh();
         return result;
       } catch (err) {
-        const errorMessage = extractErrorMessage(err) || "Failed to update permission";
+        const errorMessage =
+          extractErrorMessage(err) || "Failed to update permission";
         setError(errorMessage);
         return { success: false, error: errorMessage };
       } finally {
@@ -550,13 +563,18 @@ export function useSharingStatus(
     isPublic: false,
   });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     if (!resourceType || !resourceId || !enabled) return;
     setLoading(true);
+    setError(null);
     try {
       const v = await getResourceVisibility(resourceType, resourceId);
       setVisibility(v);
+    } catch (err) {
+      console.error("Error fetching sharing status:", err);
+      setError(extractErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -569,6 +587,7 @@ export function useSharingStatus(
   return {
     isPublic: visibility.isPublic,
     loading,
+    error,
     refresh,
   };
 }

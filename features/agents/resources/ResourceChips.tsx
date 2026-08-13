@@ -13,6 +13,7 @@ import { X, StickyNote, CheckSquare, Table2, Globe, File, FolderKanban, FileText
 import { Youtube } from "@/components/icons/brand-icons";
 import { motion } from "motion/react";
 import { Resource } from "./types";
+import { VideoPublishDate } from "@/features/files/blocks/video/VideoPublishDate";
 
 interface ResourceChipsProps {
     resources: Resource[];
@@ -144,6 +145,12 @@ export function ResourceChips({ resources, onRemove, onPreview }: ResourceChipsP
                         <span className="text-gray-900 dark:text-gray-100 select-none">
                             {truncateLabel(display.label)}
                         </span>
+                        {resource.type === "youtube" && (
+                            <VideoPublishDate
+                                publishedAt={resource.data.publishedAt}
+                                className="ml-1 text-[9px] text-gray-600 dark:text-gray-400"
+                            />
+                        )}
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();

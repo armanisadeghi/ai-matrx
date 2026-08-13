@@ -7,6 +7,10 @@
  * metadata, `memory_*` stream events, or a fetched cost summary), and a
  * detail pane (`ObservationalMemoryCore`) for the selected conversation's
  * memory state, counters, and cost.
+ *
+ * Emitter: `ObservationalMemoryWindowInner` mounts `<SurfaceRuntimeProvider>`
+ * around the detail pane, reading the same `observationalMemory` Redux
+ * selectors the sidebar rows and detail pane already use.
  */
 
 import type {
@@ -16,6 +20,9 @@ import type {
   SurfaceValueGroup,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+
+export const OBSERVATIONAL_MEMORY_SURFACE_NAME =
+  "matrx-user/observational-memory";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -100,10 +107,9 @@ const surfaceSpecific: SurfaceValue[] = [
 ];
 
 export const observationalMemoryManifest: SurfaceManifest = {
-  surfaceName: "matrx-user/observational-memory",
-  readiness: "stub",
-  readinessNote:
-    "Values authored from a code audit of ObservationalMemoryWindow; no runtime emitter yet — nothing emits this scope.",
+  surfaceName: OBSERVATIONAL_MEMORY_SURFACE_NAME,
+  readiness: "partial",
+  readinessNote: "emitter wired, browser verification pending",
   overlayId: "observationalMemoryWindow",
   label: "Memory Inspector",
   intro: `<surface_intro>

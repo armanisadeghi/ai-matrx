@@ -159,11 +159,9 @@ surface means importing them too, never reimplementing the RPC call.
 - **The sweep.** `pnpm check:access-errors` (advisory, in the release gates)
   measures it. **543 → 353** as the conversion waves landed: education, files,
   rag, `features/marketing` and every `app/(core)` route are at ZERO. The
-  biggest single bucket left is `lib` (59, of which ~45 are
-  `lib/redux/app-builder/**`, the gated applets subsystem — developer-facing
-  thunk errors with interpolated ids, NOT user-facing access copy; triage
-  before converting, and consider excluding the subsystem outright if it stays
-  gated). Then `features/agents` (34) and a long tail of 6–16 per feature.
+  `lib` bucket lost its ~45 `lib/redux/app-builder/**` findings when the applet
+  feature was deleted (2026-08-13). The leaders now are `features/agents` (34)
+  and a long tail of 6–16 per feature.
   **A line the regexes genuinely cannot judge** — a keyword absent from page
   text, an HTTP 404 our crawler observed on someone else's site — takes
   `// access-errors: ok — <reason>`; the reason is required, and the summary
@@ -201,6 +199,15 @@ surface means importing them too, never reimplementing the RPC call.
   (`<p>This doesn&apos;t exist…</p>`) is invisible to it — that is why the
   research-topic 404 went unreported for so long. The escaped-apostrophe blind
   spot is fixed; the bare-JSX one is not.
+- **A SWALLOWED error is the sweep's second blind spot — a converted throw
+  means nothing if no render site reads it.** Proven 2026-08-12: `getBrand`
+  threw the canonical `RecordUnavailableError` (token `web_brand`), and
+  `useMarketingSiteSurfaceBase` did `brand.data ?? null` with `brand.error`
+  never read — the sweep counted marketing as ZERO while a denied brand on
+  every site route rendered nothing at all. The fix pattern is a gate at the
+  layout (`MarketingSiteLayoutClient` now gates brand like site). A future
+  sweep pass worth building: for every `useQuery` whose queryFn can throw
+  `recordUnavailable`, assert some consumer reads `.isError`/`.error`.
 
 ## Change Log
 

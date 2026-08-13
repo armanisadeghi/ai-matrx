@@ -48,7 +48,7 @@ export function mapTranscriptRow(row: TranscriptRow): Transcript {
   const tags = row.tags ?? [];
   return {
     id: row.id,
-    user_id: row.user_id,
+    created_by: row.created_by ?? "",
     title: row.title,
     description: row.description ?? "",
     segments,
@@ -58,7 +58,6 @@ export function mapTranscriptRow(row: TranscriptRow): Transcript {
     source_type: (row.source_type ?? "other") as Transcript["source_type"],
     tags,
     folder_name: row.folder_name ?? "Transcripts",
-    is_deleted: row.is_deleted ?? false,
     is_draft: row.is_draft ?? false,
     draft_saved_at: row.draft_saved_at ?? undefined,
     created_at: row.created_at ?? "",
@@ -78,8 +77,8 @@ export async function fetchTranscripts(
     .schema("transcripts")
     .from("transcripts")
     .select("*")
-    .eq("is_deleted", false);
-  query = applyListScope(query, scope, { userId, ownerColumn: "user_id" });
+    .is("deleted_at", null);
+  query = applyListScope(query, scope, { userId, ownerColumn: "created_by" });
   const { data, error } = await query.order("updated_at", { ascending: false });
 
   if (error) {
@@ -104,8 +103,8 @@ export async function fetchTranscriptsPaginated(
     .schema("transcripts")
     .from("transcripts")
     .select("*")
-    .eq("is_deleted", false);
-  query = applyListScope(query, scope, { userId, ownerColumn: "user_id" });
+    .is("deleted_at", null);
+  query = applyListScope(query, scope, { userId, ownerColumn: "created_by" });
   const { data, error } = await query
     .order("updated_at", { ascending: false })
     .range(offset, offset + limit - 1);
@@ -129,7 +128,7 @@ export async function fetchTranscriptById(
     .from("transcripts")
     .select("*")
     .eq("id", id)
-    .eq("is_deleted", false)
+    .is("deleted_at", null)
     .single();
 
   if (error) {
@@ -197,7 +196,7 @@ export async function createTranscript(
     .schema("transcripts")
     .from("transcripts")
     .insert({
-      user_id: userId,
+      created_by: userId,
       title: input.title || "New Transcript",
       description: input.description || "",
       segments: input.segments,
@@ -286,7 +285,7 @@ export async function deleteTranscript(id: string): Promise<void> {
   const { error } = await supabase
     .schema("transcripts")
     .from("transcripts")
-    .update({ is_deleted: true })
+    .update({ deleted_at: new Date().toISOString() })
     .eq("id", id);
 
   if (error) {
@@ -326,7 +325,7 @@ export async function saveDraftTranscript(
     .schema("transcripts")
     .from("transcripts")
     .insert({
-      user_id: userId,
+      created_by: userId,
       title: input.title || "New Recording",
       description: input.description || "",
       segments: input.segments,
@@ -414,9 +413,9 @@ export async function getDraftTranscripts(
     .schema("transcripts")
     .from("transcripts")
     .select("*")
-    .eq("is_deleted", false)
+    .is("deleted_at", null)
     .eq("is_draft", true)
-    .eq("user_id", userId) // VIEW LAW: mine-scoped — drafts are always the caller's own
+    .eq("created_by", userId) // VIEW LAW: mine-scoped — drafts are always the caller's own
     .order("draft_saved_at", { ascending: false })
     .range(offset, offset + limit - 1);
 
@@ -449,7 +448,7 @@ export async function copyTranscript(id: string): Promise<Transcript> {
     .schema("transcripts")
     .from("transcripts")
     .insert({
-      user_id: userId,
+      created_by: userId,
       title: `${original.title} (Copy)`,
       description: original.description,
       segments: original.segments,
@@ -482,8 +481,8 @@ export async function searchTranscripts(query: string): Promise<Transcript[]> {
     .schema("transcripts")
     .from("transcripts")
     .select("*")
-    .eq("is_deleted", false)
-    .eq("user_id", userId) // VIEW LAW: mine-scoped
+    .is("deleted_at", null)
+    .eq("created_by", userId) // VIEW LAW: mine-scoped
     .or(buildSearchOr(query, ["title", "description"]))
     .order("updated_at", { ascending: false });
 
@@ -506,8 +505,8 @@ export async function getTranscriptsByFolder(
     .schema("transcripts")
     .from("transcripts")
     .select("*")
-    .eq("is_deleted", false)
-    .eq("user_id", userId) // VIEW LAW: mine-scoped
+    .is("deleted_at", null)
+    .eq("created_by", userId) // VIEW LAW: mine-scoped
     .eq("folder_name", folderName)
     .order("updated_at", { ascending: false });
 
@@ -528,8 +527,8 @@ export async function getTranscriptsByTag(tag: string): Promise<Transcript[]> {
     .schema("transcripts")
     .from("transcripts")
     .select("*")
-    .eq("is_deleted", false)
-    .eq("user_id", userId) // VIEW LAW: mine-scoped
+    .is("deleted_at", null)
+    .eq("created_by", userId) // VIEW LAW: mine-scoped
     .contains("tags", [tag])
     .order("updated_at", { ascending: false });
 

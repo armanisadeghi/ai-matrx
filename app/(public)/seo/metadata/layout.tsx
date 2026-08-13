@@ -1,10 +1,15 @@
 import type { ReactNode } from "react";
 
-export default function MetadataToolLayout({ children }: { children: ReactNode }) {
-  // The public layout gives us:  h-dvh flex flex-col  →  main = flex-1 min-h-0 overflow-hidden
-  // We fill that space and let the page's own overflow-y-auto handle scrolling.
+export default function MetadataToolLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  // The public layout gives us a bounded, scroll-safe main. This wrapper passes
+  // that height through while retaining the same safe vertical fallback for
+  // every metadata tool page.
   return (
-    <div className="h-full flex flex-col overflow-hidden">
+    <div className="flex h-full flex-col overflow-y-auto overflow-x-hidden">
       {children}
     </div>
   );

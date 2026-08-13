@@ -4,10 +4,11 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   CheckCircle2,
-  CircleAlert,
   CircleDot,
+  Download,
   ExternalLink,
   Loader2,
+  Play,
   RefreshCw,
   ServerCog,
 } from "lucide-react";
@@ -18,9 +19,23 @@ import {
   CODING_SESSION_PROVIDERS,
   CODING_SESSION_PROVIDER_META,
 } from "@/features/agent-connections/coding-sessions/catalog";
+import type { CodingSessionView } from "@/features/agent-connections/coding-sessions/service";
 import { useCodingSessions } from "@/features/agent-connections/coding-sessions/useCodingSessions";
 import { formatSessionTimestamp } from "@/features/agent-connections/coding-sessions/verdict";
-import { accountFingerprint } from "@/features/ai-work/lib/codingSessionPresentation";
+import {
+  NO_ACCOUNT_IDENTITY,
+  providerAccountIdentity,
+  workspaceName,
+} from "@/features/ai-work/lib/codingSessionPresentation";
+
+/**
+ * Matrx Local ships the explicit Claude local-history importer (v1.4.22+,
+ * sidebar → "Claude History"). Its aimatrx:// scheme only handles OAuth
+ * callbacks today, so the honest door is the desktop download page plus the
+ * exact in-app route name — not a pretend deep link.
+ */
+const MATRX_LOCAL_DOWNLOAD_URL =
+  "https://github.com/armanisadeghi/matrx-local/releases/latest";
 
 type ManagedCapability = {
   state: "loading" | "ready" | "error";
@@ -62,8 +77,95 @@ async function readManagedCapability(): Promise<ManagedCapability> {
   }
 }
 
+interface AccountGroup {
+  key: string;
+  display: string;
+  isLabel: boolean;
+  sessionCount: number;
+  lastSeenAt: string | null;
+}
+
+/** Groups delivered sessions by their opaque provider-account identity. */
+function groupSessionsByAccount(sessions: CodingSessionView[]): AccountGroup[] {
+  const groups = new Map<string, AccountGroup>();
+  for (const session of sessions) {
+    const identity = providerAccountIdentity(session.metadata);
+    const key = identity.fingerprint ?? identity.label ?? NO_ACCOUNT_IDENTITY;
+    const existing = groups.get(key);
+    if (existing) {
+      existing.sessionCount += 1;
+      if (
+        session.last_seen_at &&
+        (!existing.lastSeenAt || session.last_seen_at > existing.lastSeenAt)
+      ) {
+        existing.lastSeenAt = session.last_seen_at;
+      }
+      // A later session may carry the display label an earlier one lacked.
+      if (!existing.isLabel && identity.label) {
+        existing.display = identity.label;
+        existing.isLabel = true;
+      }
+    } else {
+      groups.set(key, {
+        key,
+        display: identity.display,
+        isLabel: identity.label !== null,
+        sessionCount: 1,
+        lastSeenAt: session.last_seen_at,
+      });
+    }
+  }
+  return [...groups.values()].sort((a, b) =>
+    (b.lastSeenAt ?? "").localeCompare(a.lastSeenAt ?? ""),
+  );
+}
+
+interface WorkspaceGroup {
+  name: string;
+  sessionCount: number;
+  lastSeenAt: string | null;
+}
+
+/** Groups delivered sessions by the bridge-stamped workspace/project name. */
+function groupSessionsByWorkspace(
+  sessions: CodingSessionView[],
+): WorkspaceGroup[] {
+  const groups = new Map<string, WorkspaceGroup>();
+  for (const session of sessions) {
+    const name = workspaceName(session.metadata);
+    if (!name) continue;
+    const existing = groups.get(name);
+    if (existing) {
+      existing.sessionCount += 1;
+      if (
+        session.last_seen_at &&
+        (!existing.lastSeenAt || session.last_seen_at > existing.lastSeenAt)
+      ) {
+        existing.lastSeenAt = session.last_seen_at;
+      }
+    } else {
+      groups.set(name, {
+        name,
+        sessionCount: 1,
+        lastSeenAt: session.last_seen_at,
+      });
+    }
+  }
+  return [...groups.values()].sort((a, b) =>
+    (b.lastSeenAt ?? "").localeCompare(a.lastSeenAt ?? ""),
+  );
+}
+
 export function AiWorkConnections() {
-  const { sessions, loading, error, refresh } = useCodingSessions();
+  const {
+    sessions,
+    loading,
+    error,
+    refresh,
+    hasMore,
+    loadingMore,
+    loadOlder,
+  } = useCodingSessions();
   const [capability, setCapability] =
     useState<ManagedCapability>(INITIAL_CAPABILITY);
 
@@ -146,9 +248,8 @@ export function AiWorkConnections() {
                 (session) => session.provider === provider,
               );
               const latest = providerSessions[0] ?? null;
-              const fingerprint = latest
-                ? accountFingerprint(latest.metadata)
-                : null;
+              const accounts = groupSessionsByAccount(providerSessions);
+              const workspaces = groupSessionsByWorkspace(providerSessions);
               return (
                 <article
                   key={provider}
@@ -178,9 +279,6 @@ export function AiWorkConnections() {
                     </a>
                   </div>
                   <dl className="mt-3 grid gap-2 text-xs sm:grid-cols-2">
-                    <ConnectionFact label="Account identity">
-                      {fingerprint ?? "No fingerprint reported"}
-                    </ConnectionFact>
                     <ConnectionFact label="Authorization grant">
                       Not exposed by the session binding
                     </ConnectionFact>
@@ -194,11 +292,88 @@ export function AiWorkConnections() {
                         ? `${providerSessions.length} recent binding${providerSessions.length === 1 ? "" : "s"}; ${formatSessionTimestamp(latest.last_seen_at)}`
                         : "No session delivered"}
                     </ConnectionFact>
+                    <ConnectionFact
+                      label={
+                        accounts.length > 1
+                          ? `Accounts (${accounts.length})`
+                          : "Account identity"
+                      }
+                    >
+                      {accounts.length === 0 ? (
+                        NO_ACCOUNT_IDENTITY
+                      ) : (
+                        <ul className="space-y-1">
+                          {accounts.map((account) => (
+                            <li
+                              key={account.key}
+                              className="flex flex-wrap items-baseline gap-x-1.5"
+                            >
+                              <span className="break-all font-medium">
+                                {account.display}
+                              </span>
+                              {accounts.length > 1 || account.sessionCount > 1 ? (
+                                <span className="text-muted-foreground">
+                                  {account.sessionCount} session
+                                  {account.sessionCount === 1 ? "" : "s"}
+                                  {account.lastSeenAt
+                                    ? ` · ${formatSessionTimestamp(account.lastSeenAt)}`
+                                    : ""}
+                                </span>
+                              ) : null}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </ConnectionFact>
+                    {workspaces.length > 0 ? (
+                      <ConnectionFact
+                        label={`Workspaces (${workspaces.length})`}
+                      >
+                        <ul className="space-y-1">
+                          {workspaces.map((workspace) => (
+                            <li
+                              key={workspace.name}
+                              className="flex flex-wrap items-baseline gap-x-1.5"
+                            >
+                              <span className="break-all font-medium">
+                                {workspace.name}
+                              </span>
+                              <span className="text-muted-foreground">
+                                {workspace.sessionCount} session
+                                {workspace.sessionCount === 1 ? "" : "s"}
+                                {workspace.lastSeenAt
+                                  ? ` · ${formatSessionTimestamp(workspace.lastSeenAt)}`
+                                  : ""}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </ConnectionFact>
+                    ) : null}
                   </dl>
                 </article>
               );
             })}
           </div>
+          {hasMore ? (
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={loadOlder}
+                disabled={loadingMore}
+              >
+                {loadingMore
+                  ? "Loading older sessions…"
+                  : "Load older sessions"}
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                Detection and account facts above cover the {sessions.length}{" "}
+                most recent delivered sessions; older sessions exist.
+              </p>
+            </div>
+          ) : null}
         </section>
 
         <section className="grid gap-3 lg:grid-cols-2">
@@ -207,19 +382,42 @@ export function AiWorkConnections() {
               <ServerCog className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
               <div className="min-w-0 flex-1">
                 <h2 className="text-sm font-semibold text-foreground">
-                  Managed Claude runtime
+                  Start a Claude Code session
                 </h2>
                 {capability.state === "loading" ? (
                   <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     Checking the live backend capability…
                   </p>
+                ) : capability.available ? (
+                  <>
+                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                      The backend reports a managed Claude runtime. Native
+                      resume: {capability.nativeResume ? "available" : "unavailable"};
+                      native fork: {capability.nativeFork ? "available" : "unavailable"}.
+                      Launching from this page is still in certification — the
+                      start/stream/resume path must pass an end-to-end
+                      certification run before this button goes live.
+                    </p>
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="mt-2 gap-1.5"
+                      disabled
+                      title="Managed launch is certification-pending"
+                    >
+                      <Play className="h-3.5 w-3.5" />
+                      Start session — certification pending
+                    </Button>
+                  </>
                 ) : (
                   <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                    {capability.available
-                      ? `Available. Native resume: ${capability.nativeResume ? "available" : "unavailable"}; native fork: ${capability.nativeFork ? "available" : "unavailable"}.`
-                      : capability.reason ||
-                        "The backend reports no managed Claude runtime here."}
+                    Starting a managed Claude Code session from AI Matrx is not
+                    available:{" "}
+                    {capability.reason ||
+                      "the backend reports no managed Claude runtime here."}{" "}
+                    No launch button is shown until the live capability call
+                    says otherwise.
                   </p>
                 )}
               </div>
@@ -236,17 +434,41 @@ export function AiWorkConnections() {
 
           <article className="rounded-xl border border-border bg-card p-4">
             <div className="flex items-start gap-3">
-              <CircleAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
-              <div>
+              <Download className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+              <div className="min-w-0 flex-1">
                 <h2 className="text-sm font-semibold text-foreground">
-                  Historical Claude sync
+                  Historical Claude Code sync
                 </h2>
                 <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                  Not available from this web client. AI Matrx will expose a
-                  preview, explicit selection, import receipt, pending outbox,
-                  and last-sync state only after the real Matrx Local
-                  preview/import/status capability is connected. No browser
-                  filesystem access or pretend sync action is offered.
+                  Available in the Matrx Local desktop app (v1.4.22+): open{" "}
+                  <span className="font-medium text-foreground">
+                    Claude History
+                  </span>{" "}
+                  in its sidebar to preview local Claude Code sessions and
+                  import the ones you choose, with an exact
+                  accepted/duplicate report. This web page never reads local
+                  provider files, so the import itself runs in the desktop
+                  app.
+                </p>
+                <Button
+                  asChild
+                  size="sm"
+                  variant="outline"
+                  className="mt-2 gap-1.5"
+                >
+                  <a
+                    href={MATRX_LOCAL_DOWNLOAD_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Get Matrx Local
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                </Button>
+                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                  ChatGPT and Claude.ai web-chat history remain unavailable —
+                  no supported live seam exists, and no pretend sync action is
+                  offered.
                 </p>
               </div>
             </div>

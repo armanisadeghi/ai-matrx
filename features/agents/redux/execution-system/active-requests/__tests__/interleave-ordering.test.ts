@@ -27,7 +27,8 @@ type AnyState = Parameters<ReturnType<typeof selectUnifiedSlots>>[0];
 function makeStore() {
   return configureStore({
     reducer: { activeRequests: activeRequestsReducer },
-    middleware: (gDM) => gDM({ serializableCheck: false, immutableCheck: false }),
+    middleware: (gDM) =>
+      gDM({ serializableCheck: false, immutableCheck: false }),
   });
 }
 
@@ -64,7 +65,9 @@ function textRun(
   dispatch: (a: unknown) => unknown,
   text: string,
 ) {
-  dispatch(markTextStreamStart({ requestId: REQ, timestamp: 1 }) as unknown as never);
+  dispatch(
+    markTextStreamStart({ requestId: REQ, timestamp: 1 }) as unknown as never,
+  );
   dispatch(appendChunk({ requestId: REQ, content: text }) as unknown as never);
   acc.ingest(text, dispatch);
 }
@@ -138,8 +141,15 @@ test("server render_block -> tool -> text keeps the block BEFORE the tool", () =
       },
     }) as unknown as never,
   );
-  const block2 = { ...block, blockId: "srv_block_1", blockIndex: 1, content: "After the tool." };
-  dispatch(upsertRenderBlock({ requestId: REQ, block: block2 }) as unknown as never);
+  const block2 = {
+    ...block,
+    blockId: "srv_block_1",
+    blockIndex: 1,
+    content: "After the tool.",
+  };
+  dispatch(
+    upsertRenderBlock({ requestId: REQ, block: block2 }) as unknown as never,
+  );
   dispatch(
     appendTimeline({
       requestId: REQ,
@@ -149,13 +159,59 @@ test("server render_block -> tool -> text keeps the block BEFORE the tool", () =
 
   const slots = selectUnifiedSlots(REQ)(store.getState() as AnyState);
   const kinds = slots.map((s) =>
-    s.kind === "tool" ? `tool:${s.callId}` : `${s.kind}:${(s as { blockId?: string }).blockId ?? ""}`,
+    s.kind === "tool"
+      ? `tool:${s.callId}`
+      : `${s.kind}:${(s as { blockId?: string }).blockId ?? ""}`,
   );
 
   expect(kinds).toEqual([
     "render_block:srv_block_0",
     "tool:call_1",
     "render_block:srv_block_1",
+  ]);
+});
+
+test("typed data.content_ir emits its promoted render block at the event slot", () => {
+  const store = makeStore();
+  const dispatch = (a: unknown) => store.dispatch(a as never);
+  dispatch(createRequest({ requestId: REQ, conversationId: CONV }));
+
+  const block = {
+    blockId: "progress_content_ir_1",
+    blockIndex: 0,
+    type: "structured_info",
+    status: "complete" as const,
+    content: '{"__kind":"structured_info","title":"Querying Gemini"}',
+    data: { content: "**Querying Gemini**\n\nThe provider call is live." },
+    metadata: undefined,
+  };
+  dispatch(upsertRenderBlock({ requestId: REQ, block }) as unknown as never);
+  dispatch(
+    appendTimeline({
+      requestId: REQ,
+      entry: {
+        kind: "data",
+        seq: 0,
+        timestamp: 1,
+        blockId: block.blockId,
+        data: {
+          type: "unknown",
+          kind: "seo.ai_visibility_provider_started",
+          content_ir: {
+            __kind: "structured_info",
+            title: "Querying Gemini",
+          },
+        },
+      },
+    }) as unknown as never,
+  );
+
+  expect(selectUnifiedSlots(REQ)(store.getState() as AnyState)).toEqual([
+    expect.objectContaining({
+      kind: "render_block",
+      blockId: "progress_content_ir_1",
+      blockType: "structured_info",
+    }),
   ]);
 });
 
@@ -173,7 +229,9 @@ test("PERSIST: server render_block -> tool -> block keeps tool_call in position"
     data: null,
     metadata: undefined,
   };
-  dispatch(upsertRenderBlock({ requestId: REQ, block: block0 }) as unknown as never);
+  dispatch(
+    upsertRenderBlock({ requestId: REQ, block: block0 }) as unknown as never,
+  );
   dispatch(
     appendTimeline({
       requestId: REQ,
@@ -196,13 +254,24 @@ test("PERSIST: server render_block -> tool -> block keeps tool_call in position"
         kind: "tool_event",
         seq: 0,
         timestamp: 2,
-        data: { event: "tool_started", call_id: "call_1", tool_name: "web_search" },
+        data: {
+          event: "tool_started",
+          call_id: "call_1",
+          tool_name: "web_search",
+        },
       },
     }) as unknown as never,
   );
 
-  const block1 = { ...block0, blockId: "srv_block_1", blockIndex: 1, content: "Answer part two." };
-  dispatch(upsertRenderBlock({ requestId: REQ, block: block1 }) as unknown as never);
+  const block1 = {
+    ...block0,
+    blockId: "srv_block_1",
+    blockIndex: 1,
+    content: "Answer part two.",
+  };
+  dispatch(
+    upsertRenderBlock({ requestId: REQ, block: block1 }) as unknown as never,
+  );
   dispatch(
     appendTimeline({
       requestId: REQ,
@@ -210,10 +279,15 @@ test("PERSIST: server render_block -> tool -> block keeps tool_call in position"
     }) as unknown as never,
   );
 
-  const request = (store.getState() as { activeRequests: { byRequestId: Record<string, ActiveRequest> } })
-    .activeRequests.byRequestId[REQ];
+  const request = (
+    store.getState() as {
+      activeRequests: { byRequestId: Record<string, ActiveRequest> };
+    }
+  ).activeRequests.byRequestId[REQ];
   const parts = assembleMessageParts(request);
-  const shape = parts.map((p) => (p.type === "tool_call" ? "tool_call" : p.type));
+  const shape = parts.map((p) =>
+    p.type === "tool_call" ? "tool_call" : p.type,
+  );
 
   // tool_call MUST sit between the two text parts — not shoved after both.
   expect(shape).toEqual(["text", "tool_call", "text"]);
@@ -236,7 +310,9 @@ test("text + fenced json -> tool -> text keeps tool AFTER the json block", () =>
   acc.finalize(dispatch);
 
   const slots = selectUnifiedSlots(REQ)(store.getState() as AnyState);
-  const kinds = slots.map((s) => (s.kind === "tool" ? `tool:${s.callId}` : s.kind));
+  const kinds = slots.map((s) =>
+    s.kind === "tool" ? `tool:${s.callId}` : s.kind,
+  );
 
   // The tool MUST come after the pre-tool text/json and before the post-tool text.
   const toolIdx = kinds.indexOf("tool:call_1");
@@ -254,9 +330,13 @@ test("minified bare json run -> tool -> text keeps strict order", () => {
 
   // Single-line minified JSON with NO trailing newline (structured-output shape),
   // streamed in fragments — the content-ir "nascent json" path.
-  dispatch(markTextStreamStart({ requestId: REQ, timestamp: 1 }) as unknown as never);
+  dispatch(
+    markTextStreamStart({ requestId: REQ, timestamp: 1 }) as unknown as never,
+  );
   for (const frag of ['{"__kind"', ':"quiz",', '"q":[]', "}"]) {
-    dispatch(appendChunk({ requestId: REQ, content: frag }) as unknown as never);
+    dispatch(
+      appendChunk({ requestId: REQ, content: frag }) as unknown as never,
+    );
     acc.ingest(frag, dispatch);
   }
   toolEvent(store, acc, dispatch, "call_1", "web_search");
@@ -265,7 +345,9 @@ test("minified bare json run -> tool -> text keeps strict order", () => {
   acc.finalize(dispatch);
 
   const slots = selectUnifiedSlots(REQ)(store.getState() as AnyState);
-  const kinds = slots.map((s) => (s.kind === "tool" ? `tool:${s.callId}` : s.kind));
+  const kinds = slots.map((s) =>
+    s.kind === "tool" ? `tool:${s.callId}` : s.kind,
+  );
 
   const toolIdx = kinds.indexOf("tool:call_1");
   expect(toolIdx).toBeGreaterThan(-1);

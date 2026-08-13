@@ -147,6 +147,17 @@ export const GenericRenderer: React.FC<ToolRendererProps> = ({
     );
   }
 
+  // ─── Completed but nothing captured → say so, never a fake spinner ──────
+  // Mirrored provider calls (Claude Code hooks) record name/status/timing but
+  // no arguments or output; an infinite "Working…" on a finished call lies.
+  if (isComplete && entry.result == null) {
+    return (
+      <div className="text-xs text-muted-foreground">
+        Completed. No output was captured for this call.
+      </div>
+    );
+  }
+
   // ─── Running / not-yet-terminal / no result → honest progress ───────────
   if (!isComplete || entry.result == null) {
     const source =

@@ -25,8 +25,6 @@ read is a first-pass guess — **verify before dismissing the two starred rows.*
 
 | Table | Likely content | Note |
 |---|---|---|
-| `public.applet_containers` | applet layout/config | low-sensitivity app structure |
-| `public.container_fields` | applet field defs | low-sensitivity app structure |
 | `public.schema_templates` | schema templates | low-sensitivity app structure |
 | `public.site_metadata` | site/SEO metadata | low-sensitivity |
 | `public.full_spectrum_positions` | app data | verify |

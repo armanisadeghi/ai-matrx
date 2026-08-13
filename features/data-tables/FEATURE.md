@@ -465,6 +465,23 @@ Decide before agent-heavy workloads land.
 
 ## Change log
 
+- 2026-08-12 — claude: **A THIRD agent was dispatched to make this surface
+  agent-writable; again no code changed, and the narrow write posture was
+  re-examined and UPHELD.** Recorded because the reasoning is the kind a future
+  maintainer will want when they wonder why `cell_value` writes exactly one
+  cell. Before discovering the collision, this task had built and fully
+  live-verified a competing four-target design — a per-cell target, a
+  merge-semantics whole-row target, a bulk one-column-many-rows target, and a
+  row-append target, each routed through `upsertCell` / `bulkWrite` with
+  pre-flight row-and-column existence checks. It works; it was still discarded,
+  because `writeTargets` in `features/surfaces/manifests/data-tables.manifest.ts`
+  argues in writing that bulk cell writes are the wrong shape here (a user
+  cannot review an N-row diff inside one confirm dialog, so an agent changing
+  ten cells should raise ten dialogs — "slower on purpose"). Shipping the bulk
+  targets would have overturned a documented decision rather than filling a gap.
+  If bulk table writes are ever wanted, that is a deliberate product call about
+  reviewability — not a missing feature to be added by the next passing agent.
+
 - 2026-08-12 — claude: **The `/data/[id]` agent-write path was independently
   re-verified by a second agent; no code changed.** A later chip landed on this
   surface after the entry below had already shipped it, so per the surfaces

@@ -8,13 +8,21 @@
 //
 // React Compiler is on: no manual memo.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CalendarClock, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
+import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { publishPlanSetupDraft } from "../plannerSnapshot";
 import type { PlanInput, Weekday } from "../types";
+
+const SURFACE_NAME = "matrx-user/education-planner";
+
+/** Slider bounds — the same range a human can pick, enforced for agents too. */
+const MIN_DAILY_MINUTES = 10;
+const MAX_DAILY_MINUTES = 180;
 
 const WEEKDAYS: { value: Weekday; label: string }[] = [
   { value: 0, label: "Sun" },
@@ -59,16 +67,154 @@ export function PlanGenerateForm({
 
   const valid = title.trim().length > 0 && examDate.length === 10;
 
+  const capValue = cap.trim() ? Number(cap.trim()) : null;
+  const dailyItemCap =
+    capValue !== null && Number.isFinite(capValue) && capValue > 0
+      ? capValue
+      : null;
+
+  // Read twin for the `plan_setup` write target: publish this form's live
+  // values so the surface can emit `plan_setup_draft`, and clear on unmount so
+  // a closed form never reads as open. (The emitter samples the store
+  // synchronously — see ../plannerSnapshot.ts.)
+  useEffect(() => {
+    publishPlanSetupDraft({
+      title,
+      examDate,
+      dailyMinutes,
+      restDays,
+      dailyItemCap,
+    });
+  });
+  useEffect(() => () => publishPlanSetupDraft(null), []);
+
+  // Write half: an agent stages the setup the learner just described in words.
+  // Registered from HERE, not the workspace, because this component owns the
+  // state — so the target is offered only while the form is genuinely on
+  // screen, and never resolves into a form nobody can see. Only useState
+  // setters are closed over (stable by contract); nothing fetched is read from
+  // this closure, which could be resolved long before the confirm is answered.
+  useSurfaceWriteHandlers(SURFACE_NAME, {
+    plan_setup: (value: unknown) => {
+      const allowed = [
+        "title",
+        "exam_date",
+        "daily_minutes",
+        "rest_days",
+        "daily_item_cap",
+      ];
+      if (value === null || typeof value !== "object" || Array.isArray(value))
+        throw new Error(
+          `plan_setup expects an object with keys ${allowed.join(", ")}; received ${
+            Array.isArray(value) ? "an array" : JSON.stringify(value)
+          }.`,
+        );
+      const record = value as Record<string, unknown>;
+      const unknownKeys = Object.keys(record).filter(
+        (k) => !allowed.includes(k),
+      );
+      if (unknownKeys.length > 0)
+        throw new Error(
+          `plan_setup does not accept ${unknownKeys.join(", ")}. Allowed keys: ${allowed.join(", ")}.`,
+        );
+      if (Object.keys(record).length === 0)
+        throw new Error(
+          `plan_setup needs at least one of ${allowed.join(", ")}.`,
+        );
+
+      // Validate EVERYTHING before touching a single setter, so a partly-bad
+      // object stages nothing at all.
+      let nextTitle: string | undefined;
+      if ("title" in record) {
+        if (typeof record.title !== "string" || !record.title.trim())
+          throw new Error(
+            "plan_setup.title must be a non-empty plain text string — what the learner is studying for, not JSON and not a JSON-encoded string, no code fence.",
+          );
+        nextTitle = record.title.trim();
+      }
+
+      let nextExamDate: string | undefined;
+      if ("exam_date" in record) {
+        if (
+          typeof record.exam_date !== "string" ||
+          !/^\d{4}-\d{2}-\d{2}$/.test(record.exam_date)
+        )
+          throw new Error(
+            `plan_setup.exam_date must be a calendar date formatted YYYY-MM-DD (e.g. "2026-09-14"); received ${JSON.stringify(record.exam_date)}.`,
+          );
+        if (Number.isNaN(new Date(`${record.exam_date}T00:00:00Z`).getTime()))
+          throw new Error(
+            `plan_setup.exam_date "${record.exam_date}" is not a real calendar date.`,
+          );
+        if (record.exam_date < todayIso())
+          throw new Error(
+            `plan_setup.exam_date must be today (${todayIso()}) or later — a plan cannot be built toward a date that has passed.`,
+          );
+        nextExamDate = record.exam_date;
+      }
+
+      let nextMinutes: number | undefined;
+      if ("daily_minutes" in record) {
+        const minutes = record.daily_minutes;
+        if (
+          typeof minutes !== "number" ||
+          !Number.isInteger(minutes) ||
+          minutes < MIN_DAILY_MINUTES ||
+          minutes > MAX_DAILY_MINUTES
+        )
+          throw new Error(
+            `plan_setup.daily_minutes must be a whole number between ${MIN_DAILY_MINUTES} and ${MAX_DAILY_MINUTES}; received ${JSON.stringify(minutes)}.`,
+          );
+        nextMinutes = minutes;
+      }
+
+      let nextRestDays: Weekday[] | undefined;
+      if ("rest_days" in record) {
+        const days = record.rest_days;
+        if (
+          !Array.isArray(days) ||
+          days.some(
+            (d) => typeof d !== "number" || !Number.isInteger(d) || d < 0 || d > 6,
+          )
+        )
+          throw new Error(
+            `plan_setup.rest_days must be an array of whole weekday numbers, 0 (Sunday) through 6 (Saturday) — e.g. [0, 6] for weekends; received ${JSON.stringify(days)}.`,
+          );
+        nextRestDays = [...new Set(days as Weekday[])].sort();
+      }
+
+      let nextCap: string | undefined;
+      if ("daily_item_cap" in record) {
+        const rawCap = record.daily_item_cap;
+        if (rawCap === null) nextCap = "";
+        else if (
+          typeof rawCap !== "number" ||
+          !Number.isInteger(rawCap) ||
+          rawCap <= 0
+        )
+          throw new Error(
+            `plan_setup.daily_item_cap must be a whole number greater than 0, or null for no cap; received ${JSON.stringify(rawCap)}.`,
+          );
+        else nextCap = String(rawCap);
+      }
+
+      if (nextTitle !== undefined) setTitle(nextTitle);
+      if (nextExamDate !== undefined) setExamDate(nextExamDate);
+      if (nextMinutes !== undefined) setDailyMinutes(nextMinutes);
+      if (nextRestDays !== undefined) setRestDays(nextRestDays);
+      if (nextCap !== undefined) setCap(nextCap);
+    },
+  });
+
   const submit = () => {
     if (!valid) return;
-    const capNum = cap.trim() ? Number(cap.trim()) : null;
     onGenerate({
       title: title.trim(),
       startDate: todayIso(),
       examDate,
       dailyMinutes,
       restDays,
-      dailyItemCap: capNum && capNum > 0 ? capNum : null,
+      dailyItemCap,
       goalId: initialGoalId,
       itemType: "fc_card",
     });

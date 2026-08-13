@@ -12,15 +12,10 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
+import { CONCEPT_KINDS } from "../../types";
 import type { ConceptItem, ConceptKind } from "../../types";
 
-const KIND_OPTIONS: ConceptKind[] = [
-  "theme",
-  "key_idea",
-  "entity",
-  "question",
-  "other",
-];
+const KIND_OPTIONS: readonly ConceptKind[] = CONCEPT_KINDS;
 
 interface ConceptPatch {
   kind?: ConceptKind;

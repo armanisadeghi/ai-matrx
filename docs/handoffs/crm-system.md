@@ -221,12 +221,15 @@ A newcomer will otherwise be tempted to undo these. Don't.
 
 - **Zero changes since the feature landed** (`features/crm` has exactly one commit ever —
   `ed868172`, 2026-07-29, the full feature riding in a messages-titled commit) and near-zero usage:
-  4 parties, 1 interaction, 0 campaigns. Nothing server-side consumes the CRM ORM — no router,
-  no service, no agent tool, in either repo.
-- **The fold debt is compounding:** `plan.entity` 6 → 49 rows, `public.contact_submissions`
-  4 → 21, `web.brand` 22 → 25 since this doc was written.
-- **The duplicates persist as parallel CRUD surfaces** — content-plan's `EntityManager.tsx` is
-  full person/org CRUD beside `/crm`. (Universal-picker hygiene is already correct: only `party`
+  4 parties, 1 interaction, 0 campaigns. ~~Nothing server-side consumes the CRM ORM~~
+  **Server consumption started 2026-08-12:** the party resolver (`aidream/services/crm/`),
+  the `party` `agent_data` resource, and the `resolve_contact` operation (see Wave 1).
+- **The fold debt is compounding:** `public.contact_submissions`
+  4 → 21, `web.brand` 22 → 25 since this doc was written. ~~`plan.entity`~~
+  **person/org fold DONE 2026-08-13** (see Wave 2).
+- ~~content-plan's `EntityManager.tsx` person/org CRUD beside `/crm`~~ **FIXED 2026-08-13**:
+  people/companies there are now crm parties (create via `PartyCreateForm`, doors to `/crm/[id]`);
+  only source/media citations remain plan.entity CRUD. (Universal-picker hygiene is already correct: only `party`
   and `crm_campaign` are curated tokens; the duplicate tables have `contentRole: null`.)
 - **`party.expert_status` has no producer and no reader anywhere.** The research pipeline extracts
   the exact promotion signals (`NotableQuote.speaker`, `has_author_credentials`, `expert_opinion`
@@ -240,9 +243,9 @@ A newcomer will otherwise be tempted to undo these. Don't.
   webhook logs, org-scoped) keys on raw phone strings — no party link, and `sms_consent`
   duplicates the DNC/suppression that `crm.contact_medium` owns. One suppression check must win
   before CRM SMS campaigns ship.
-- **The raw `database` agent tool can already write `crm.party` ungoverned** (`crm` is not in its
-  schema denylist) — a duplicate factory until the resolver + proper `agent_data` registration
-  exist.
+- ~~The raw `database` agent tool can already write `crm.party` ungoverned~~ **CLOSED 2026-08-12** —
+  `crm` writes are refused by `WRITE_GOVERNED_SCHEMAS` (aidream v0.2.57); reads still work. Wave 1
+  lifts the entry once the resolver + `agent_data` registration exist.
 - The full platform-wide gap map (every fold/link/leave with efforts) lives in the cross-repo SoR
   — do not re-derive it.
 
@@ -276,35 +279,68 @@ named parameters. Parallel agent sessions sweep the working tree — re-verify y
 
 Waves are independently shippable; full rationale + per-item efforts in the SoR.
 
-**Wave 0 — defect closure (~1 day).**
-Guard the raw `database` tool against ungoverned `crm` writes (aidream) · rename the
-`matrx_legal...docket.Party` class collision before CRM server code lands · decide
-`expert_status` (wire, don't drop — its producers arrive in Wave 3).
+**Wave 0 — defect closure.** Both aidream items **DONE 2026-08-12** (shipped v0.2.57):
+raw-`database`-tool guard (`WRITE_GOVERNED_SCHEMAS = {"crm"}` in
+`matrx_ai/tools/implementations/database.py` — every write path funnels through
+`_resolve_write_target` and refuses `crm` with a governed-path message; reads and
+schema discovery deliberately untouched, unlike `_NON_APP_SCHEMAS`. Wave 1 landed and
+**deliberately KEPT the guard** — a raw INSERT still skips the resolver, and the other
+crm tables (interaction, campaign…) have no governed server path yet. Guard:
+`packages/matrx-ai/tests/test_write_governed_schemas.py`; doc:
+`aidream/services/agent_data/FEATURE.md`) · `matrx_legal...docket.Party` →
+**`DocketParty`** (all consumers + `__all__` updated, package tests green).
+**Still open:** decide `expert_status` (wire, don't drop — its producers arrive in Wave 3).
 
-**Wave 1 — the keystone + the agent premise (~1 week).**
-Build the **party resolver** in aidream (find-or-create: `name_key` canonicalization, natural keys
-= lowercase email / E.164 phone / domain / external ids, `source` stamping, merge-lineage aware) —
-everything downstream consumes it · register `party` in `agent_data` (flip `agent_writable`, seed a
-`ResourceSpec` with readonly `canonical_id`/`source_party_id`/`locked_fields`/`claimed_*`/
-`do_not_contact`; security-review gated) · FE agent tools (`party_search`/`party_create`/
-`party_link`) · context-menu "Save selection as contact" · `features/crm/agent-context/` builder.
+**Wave 1 — the keystone + the agent premise. SERVER HALF DONE 2026-08-12 (aidream).**
+~~Party resolver~~ **DONE** — `aidream/services/crm/` (`resolve_party`: `name_key`
+canonicalization + backfill, natural keys = lowercase email / E.164 phone / domain /
+external platform ids, `source` stamping, merge-lineage aware — never resolves to a
+merge loser; conservative best-effort enrichment on match; contract in its
+`FEATURE.md`; proven live incl. the enrichment-vs-merge-loser domain-unique collision
+the test caught) · ~~register `party` in `agent_data`~~ **DONE** — seed `ResourceSpec`
+(alias `contact`, owner `created_by`, readonly `canonical_id`/`source_party_id`/
+`locked_fields`/`claimed_*`/`do_not_contact*`/`expert_status`/mirror columns/
+`name_key`), `agent_writable` flag flipped live, plus a new **`resolve_contact`
+data_action** — the governed agent create path (`source='agent'`, RLS via
+`acting_as_user`). **Remaining (FE, this repo):** agent tools (`party_search`/
+`party_create`/`party_link` — check whether server `resolve_contact` + the `data`
+resource already cover them before building) · context-menu "Save selection as
+contact" · `features/crm/agent-context/` builder.
 
 **Wave 2 — adoption + cheap folds (~2 weeks).**
-CSV import (upsert media against the real unique index
-`(organization_id, channel, coalesce(platform_slug,''), value_key) WHERE deleted_at IS NULL`
-from line one — a bare 3-column `ON CONFLICT` errors; reuse
-`normalizeMediumValue`; dry-run preview; this also first-exercises the O(n) reachability-refresh
-warning) · `plan.entity` fold (cheapest now, most expensive later) · `invitation_requests` +
+~~CSV import~~ **DONE 2026-08-13** (`/crm/import`: paste/file → auto-map →
+dry-run preview → commit; engine `features/crm/import/`; dedup via bulk medium/
+name/domain lookups in `service.ts`. Found D181 en route: component
+`INSERT…RETURNING` 42501s platform-wide — chip fired for the `iam.apply_rls`
+generator fix; CRM service inserts bare as a hedge) · ~~`plan.entity` fold~~
+**DONE 2026-08-13** (person/org rows → `crm.party`, source-stamped, edges
+repointed onto `plan_node→party` / `party→web_site` `writes_for`; `plan.entity`
+kept as the source/media citation store per the ratified split, DB guard
+`plan._entity_kind_guard`; migration `plan_entity_person_org_fold.sql`) ·
+`invitation_requests` +
 `contact_submissions` + `user_form_profile` folds (each needs `scripts/dead-relations.json` +
 `platform.deprecated_relations` BEFORE repointing) · YouTube channel → party (the original forcing
 function; `channel_id` is a stable key, no fuzzy matching).
 
 **Wave 3 — a working outreach tool (~2–3 weeks).**
-Smart views (saved dynamic filters + bulk actions — the list IS the work queue) · campaign builder
-+ call-queue UI (= power-dial a smart view; the claim lock exists) · dedup automation (auto-merge
-on `is_identity_key` collisions; suggestion-gated weak-signal candidates with
-`CHECK (source_id < target_id)`; merge review UI over the existing RPCs) · research → experts
-(writes `expert_status` at last; one `topic.experts` entry in
+Smart views (saved dynamic filters + bulk actions — the list IS the work queue) ·
+~~campaign builder + call-queue UI~~ **DONE 2026-08-13** (`/crm/campaigns` console + campaign
+workspace + claim-locked power dialer at `/crm/campaigns/[id]/dial`; enrollment from `/crm` row
+selection and from filters over the shared `applyPartyListPredicates`; DNC/suppression enforced
+before any dial (party DNC / point opt-out / medium `is_contactable`), "Do not call" scrubs the
+medium org-wide; dispositions log `crm.interaction` first then advance the member behind a
+claim-guarded update; data layer live-DB verified 15/15 incl. the claim race. Data
+`features/crm/campaigns/`, UI `features/crm/components/campaigns/`. Known gaps: `tel:` handoff
+only — real telephony is Wave 4; no unsuppress affordance; enrollment from a *saved* view awaits
+smart views) ·
+~~dedup automation + merge review UI~~ **DONE 2026-08-13** (`crm_03_dedup.sql`:
+`name_key` writer + backfill, `crm.merge_candidate` ordered-pair suggestions with durable
+dismissal, `crm_detect_merge_candidates` — auto-merge ONLY on both-sides `is_identity_key`
+collisions — + `crm_dismiss_merge_candidate`; `/crm/duplicates` review queue with side-by-side
+what-moves verdicts and exact unmerge; `/crm` Duplicates badge + assist chips; record-page
+`MergeStatusCard`. NOTE: nothing sets `is_identity_key=true` yet — that is the Wave 1 resolver's
+job, so today every collision surfaces as a suggestion rather than auto-merging) ·
+research → experts (writes `expert_status` at last; one `topic.experts` entry in
 `features/research/resources/catalog.ts` lights up the whole picker/budget/bundle machinery).
 
 **Wave 4 — the competitive tier (decision-gated, see §5).**

@@ -496,10 +496,13 @@ export function useBundlesWriteHandlers(): () => SurfaceWriteHandlers {
         const draft = value as Record<string, unknown>;
         const keys = Object.keys(draft);
         if (keys.length === 0)
-          throw new Error("new_bundle_draft needs at least one field to stage.");
+          throw new Error(
+            "new_bundle_draft needs at least one field to stage.",
+          );
 
         const unknownKeys = keys.filter(
-          (key) => !(NEW_BUNDLE_DRAFT_FIELDS as readonly string[]).includes(key),
+          (key) =>
+            !(NEW_BUNDLE_DRAFT_FIELDS as readonly string[]).includes(key),
         );
         if (unknownKeys.length > 0)
           throw new Error(
@@ -566,7 +569,8 @@ export function useBundlesWriteHandlers(): () => SurfaceWriteHandlers {
 
         // ── 3. Stage, through the dialog's own setters.
         if (nextName !== undefined) editor.setName(nextName);
-        if (nextDescription !== undefined) editor.setDescription(nextDescription);
+        if (nextDescription !== undefined)
+          editor.setDescription(nextDescription);
       },
 
       /**

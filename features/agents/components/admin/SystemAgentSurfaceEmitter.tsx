@@ -64,7 +64,6 @@ export function SystemAgentSurfaceEmitter({
       agent_is_system: agent.agentType === "builtin",
       agent_is_active: agent.isActive ?? undefined,
       agent_is_archived: agent.isArchived ?? undefined,
-      agent_is_public: agent.isPublic ?? undefined,
       agent_updated_at: agent.updatedAt || undefined,
       agent_summary: {
         id: agent.id,
@@ -75,7 +74,6 @@ export function SystemAgentSurfaceEmitter({
         agent_type: agent.agentType ?? null,
         is_active: agent.isActive ?? null,
         is_archived: agent.isArchived ?? null,
-        is_public: agent.isPublic ?? null,
         updated_at: agent.updatedAt ?? null,
       },
       agent_model_id: agent.modelId || undefined,

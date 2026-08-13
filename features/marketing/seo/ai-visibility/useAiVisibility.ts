@@ -20,7 +20,7 @@ import {
 } from "@/features/overlays/openers/liveRunWindow";
 import { isJsonObject, type JsonObject } from "@/types/json";
 
-import { listAiVisibilityEvidence } from "./data";
+import { aiVisibilityEvidenceKey, listAiVisibilityEvidence } from "./data";
 import type {
   AiVisibilityAnalyzeBody,
   AiVisibilityEngine,
@@ -113,6 +113,12 @@ function readProviderResult(value: unknown): AiVisibilityProviderResult | null {
     answer_text: stringValue(value.answer_text) ?? "",
     target_mentioned: booleanValue(value.target_mentioned),
     target_cited: booleanValue(value.target_cited),
+    target_recommendation_rank:
+      typeof value.target_recommendation_rank === "number"
+        ? value.target_recommendation_rank
+        : null,
+    target_recommendation_subject:
+      stringValue(value.target_recommendation_subject) ?? null,
     citation_count: numberValue(value.citation_count),
     analysis: isJsonObject(value.analysis) ? value.analysis : undefined,
     error: stringValue(value.error) ?? null,
@@ -147,10 +153,18 @@ function readAiVisibilityResult(value: unknown): AiVisibilityResult | null {
   return {
     result_kind: "ai_visibility.analyze",
     site_id: siteId,
+    brand_name: stringValue(value.brand_name) ?? "Brand",
+    website_url: stringValue(value.website_url) ?? "",
+    brand_aliases: Array.isArray(value.brand_aliases)
+      ? value.brand_aliases.filter(
+          (alias): alias is string => typeof alias === "string",
+        )
+      : [],
     query,
     engines,
     providers,
     summary: isJsonObject(value.summary) ? value.summary : undefined,
+    share_path: stringValue(value.share_path) ?? null,
   };
 }
 
@@ -185,7 +199,7 @@ export function useAiVisibility(siteId: string, organizationId: string) {
   const dispatch = useAppDispatch();
   const openLiveRunWindow = useOpenLiveRunWindow();
   const queryClient = useQueryClient();
-  const evidenceKey = ["marketing", "ai-visibility", siteId] as const;
+  const evidenceKey = aiVisibilityEvidenceKey(siteId);
   const evidence = useQuery({
     queryKey: evidenceKey,
     queryFn: ({ signal }) => listAiVisibilityEvidence(siteId, signal),
@@ -195,9 +209,57 @@ export function useAiVisibility(siteId: string, organizationId: string) {
     status: "idle",
     answers: {},
   });
+  const [evidenceRefreshError, setEvidenceRefreshError] = useState<
+    string | null
+  >(null);
   const adoptedRequestId = useRef<string | null>(null);
+  /** The in-flight stream's abort controller — the SAME object the fetch and
+   * the adopter watchdog share. Aborted on unmount and before a new run so an
+   * orphaned stream never keeps draining into a reaped row (events on a
+   * missing row are silently dropped — the disappearing-run class; see
+   * features/agents/docs/LIVE_RUN_RETENTION.md seam #3). */
+  const streamAbortRef = useRef<AbortController | null>(null);
+  /** Set on unmount so the busy-rejoin poll loop (5s timer → recursive
+   * `consume`) can never restart a fetch after teardown. */
+  const cancelledRef = useRef(false);
   const liveWindow = useRef<LiveRunWindowHandle | null>(null);
+  const evidenceRefresh = useRef<Promise<void> | null>(null);
   const windowInstanceId = `ai-visibility:${siteId}`;
+
+  useEffect(
+    () => () => {
+      // Stop the client fetch FIRST (the server-side run is durable and keeps
+      // going; the stored run id lets a remount rejoin it), then reap the row.
+      cancelledRef.current = true;
+      streamAbortRef.current?.abort();
+      streamAbortRef.current = null;
+      if (adoptedRequestId.current) {
+        dispatch(removeRequest(adoptedRequestId.current));
+        adoptedRequestId.current = null;
+      }
+    },
+    [dispatch],
+  );
+
+  const refreshEvidence = (): Promise<void> => {
+    if (evidenceRefresh.current) return evidenceRefresh.current;
+    const refresh = listAiVisibilityEvidence(siteId).then((latest) => {
+      queryClient.setQueryData(evidenceKey, latest);
+      setEvidenceRefreshError(null);
+    });
+    evidenceRefresh.current = refresh.finally(() => {
+      evidenceRefresh.current = null;
+    });
+    return evidenceRefresh.current;
+  };
+
+  const refreshEvidenceInBackground = (): void => {
+    void refreshEvidence().catch(() => {
+      setEvidenceRefreshError(
+        "New evidence was saved, but this page could not refresh it yet.",
+      );
+    });
+  };
 
   const openProgressWindow = (
     label: string,
@@ -225,12 +287,18 @@ export function useAiVisibility(siteId: string, organizationId: string) {
     let serverBusy = false;
     let observedRunId: string | null =
       request.kind === "rejoin" ? request.runId : null;
+    if (cancelledRef.current) return;
+    // Abort the previous run's stream BEFORE reaping its row — otherwise the
+    // orphaned fetch keeps draining into a missing row and the response body
+    // leaks for the run's lifetime.
+    streamAbortRef.current?.abort();
     if (adoptedRequestId.current) {
       dispatch(removeRequest(adoptedRequestId.current));
       adoptedRequestId.current = null;
       liveWindow.current?.update({ requestId: null, pending: true });
     }
     const streamAbort = new AbortController();
+    streamAbortRef.current = streamAbort;
     const consumeStream = dispatch(
       adoptForeignStream({
         abortController: streamAbort,
@@ -295,6 +363,11 @@ export function useAiVisibility(siteId: string, organizationId: string) {
             }
           }
           const engine = engineValue(data.engine);
+          const stage = STAGES[kind];
+          if (stage) {
+            const provider = engine ? `${engine.replaceAll("_", " ")}: ` : "";
+            liveWindow.current?.update({ label: `${provider}${stage}` });
+          }
           if (engine && kind === "seo.ai_visibility_answer_received") {
             const answer: AiVisibilityLiveAnswer = {
               engine,
@@ -309,6 +382,10 @@ export function useAiVisibility(siteId: string, organizationId: string) {
               ...current,
               answers: { ...current.answers, [engine]: answer },
             }));
+            // The response and citations are already durable when this event
+            // fires. Refresh the shared cache immediately so Sources and
+            // History do not wait for the whole multi-provider run.
+            refreshEvidenceInBackground();
           }
           if (engine && kind === "seo.ai_visibility_analysis_completed") {
             setRun((current) => {
@@ -329,6 +406,10 @@ export function useAiVisibility(siteId: string, organizationId: string) {
                 },
               };
             });
+            // Claims/signals were committed before this event. Replace the
+            // query cache with a fresh durable read instead of merely marking
+            // it stale and hoping React Query schedules a later refetch.
+            refreshEvidenceInBackground();
           }
           if (engine && kind.endsWith("_failed")) {
             setRun((current) => ({
@@ -392,6 +473,9 @@ export function useAiVisibility(siteId: string, organizationId: string) {
             signal: streamAbort.signal,
           }),
     );
+    // Cancelled by teardown or a newer run — settle silently. The run keeps
+    // executing server-side and the stored run id keeps rejoin possible.
+    if (streamAbort.signal.aborted || cancelledRef.current) return;
     if (response.error) {
       storeRun(null);
       const explanation = describeBackendFailure(
@@ -447,7 +531,20 @@ export function useAiVisibility(siteId: string, organizationId: string) {
       return;
     }
     storeRun(null);
-    await queryClient.invalidateQueries({ queryKey: evidenceKey });
+    try {
+      await refreshEvidence();
+    } catch {
+      setEvidenceRefreshError(
+        "The completed analysis was saved, but this page could not refresh its evidence.",
+      );
+      setRun((current) => ({
+        ...current,
+        status: "error",
+        stage: "Analysis saved; results could not refresh",
+        error:
+          "The analysis was saved, but this page could not refresh its evidence. Use Retry below to load the completed claims and sources.",
+      }));
+    }
   };
 
   const analyze = async (body: AiVisibilityAnalyzeBody) => {
@@ -488,5 +585,12 @@ export function useAiVisibility(siteId: string, organizationId: string) {
     openProgressWindow(run.stage ?? "AI visibility analysis", run.requestId);
   };
 
-  return { evidence, run, analyze, watchProgress };
+  return {
+    evidence,
+    evidenceRefreshError,
+    retryEvidence: refreshEvidence,
+    run,
+    analyze,
+    watchProgress,
+  };
 }

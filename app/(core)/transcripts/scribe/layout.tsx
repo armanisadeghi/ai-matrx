@@ -52,7 +52,7 @@ export default async function ScribeLayout({
           and this column lives in its `main` grid track, so 100dvh double-counts
           the viewport and overflows whatever the track actually is. */}
       <div className="flex h-full w-full justify-center bg-muted/20">
-        <div className="h-full w-full max-w-2xl overflow-hidden md:border-x md:border-border">
+        <div className="h-full w-full max-w-2xl overflow-y-auto overflow-x-hidden md:border-x md:border-border">
           <Suspense fallback={null}>{children}</Suspense>
         </div>
       </div>

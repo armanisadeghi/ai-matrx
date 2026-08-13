@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useMemo } from "react";
+import { TriangleAlert } from "lucide-react";
 import ProcessorExtractor from "./ProcessorExtractor";
 import { useDebounce } from "@/hooks/usehooks";
 
@@ -101,7 +102,10 @@ const ParseExtractorOptions = ({ content, processors, configKey }: ParseExtracto
                         >
                             {result.label}
                             {result.error && (
-                                <span className="ml-1 text-xs">⚠️</span>
+                                <>
+                                    <TriangleAlert className="ml-1 inline size-3" aria-hidden="true" />
+                                    <span className="sr-only">Processing error</span>
+                                </>
                             )}
                         </button>
                     ))}

@@ -44,7 +44,7 @@ export const flashcardPersistenceService = {
           .schema("users").from("user_flashcard_sets")
           .select("*")
           .is("deleted_at", null)
-          .eq("user_id", userId)
+          .eq("created_by", userId)
           .eq("message_id", input.message_id)
           .single();
 
@@ -57,7 +57,7 @@ export const flashcardPersistenceService = {
       const { data, error } = await supabase
         .schema("users").from("user_flashcard_sets")
         .insert({
-          user_id: userId,
+          created_by: userId,
           organization_id: await ensureOrgId(undefined),
           conversation_id: input.conversation_id ?? null,
           message_id: input.message_id ?? null,
@@ -89,7 +89,7 @@ export const flashcardPersistenceService = {
         .schema("users").from("user_flashcard_sets")
         .select("*")
         .is("deleted_at", null)
-        .eq("user_id", userId);
+        .eq("created_by", userId);
 
       if (filters?.conversation_id) {
         query = query.eq("conversation_id", filters.conversation_id);
@@ -123,7 +123,7 @@ export const flashcardPersistenceService = {
         .select("*")
         .is("deleted_at", null)
         .eq("id", setId)
-        .eq("user_id", userId)
+        .eq("created_by", userId)
         .single();
 
       return { data, error };
@@ -144,7 +144,7 @@ export const flashcardPersistenceService = {
         .schema("users").from("user_flashcard_sets")
         .select("*")
         .is("deleted_at", null)
-        .eq("user_id", userId)
+        .eq("created_by", userId)
         .eq("message_id", messageId)
         .single();
 
@@ -167,7 +167,7 @@ export const flashcardPersistenceService = {
         .schema("users").from("user_flashcard_sets")
         .update(updates)
         .eq("id", setId)
-        .eq("user_id", userId)
+        .eq("created_by", userId)
         .select()
         .single();
 
@@ -187,7 +187,7 @@ export const flashcardPersistenceService = {
         .schema("users").from("user_flashcard_sets")
         .delete()
         .eq("id", setId)
-        .eq("user_id", userId);
+        .eq("created_by", userId);
 
       return { error };
     } catch (error) {
@@ -227,7 +227,7 @@ export const flashcardPersistenceService = {
           .schema("users").from("user_flashcard_sets")
           .update({ last_studied_at: new Date().toISOString() })
           .eq("id", input.set_id)
-          .eq("user_id", userId);
+          .eq("created_by", userId);
       }
 
       return { data, error };

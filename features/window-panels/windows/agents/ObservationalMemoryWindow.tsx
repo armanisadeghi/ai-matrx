@@ -45,6 +45,11 @@ import {
 import { selectInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import type { RootState } from "@/lib/redux/store";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  OBSERVATIONAL_MEMORY_SURFACE_NAME,
+  createObservationalMemoryScope,
+} from "@/features/surfaces/manifests/observational-memory.manifest";
 
 // =============================================================================
 // Sidebar
@@ -401,6 +406,16 @@ function ObservationalMemoryWindowInner({
   const selectedDegraded = useAppSelector(
     selectMemoryDegraded(selectedConversationId),
   );
+  const selectedEnabled = useAppSelector(
+    selectIsMemoryEnabledForConversation(selectedConversationId),
+  );
+  const selectedCounters = useAppSelector(
+    selectMemoryCounters(selectedConversationId),
+  );
+  const conversationIds = useMemo(
+    () => Object.keys(byConversationId),
+    [byConversationId],
+  );
 
   const titleSuffix = `${selectedMetadata?.model ? ` · ${selectedMetadata.model}` : ""}${selectedDegraded ? " · degraded" : ""}`;
 
@@ -457,14 +472,41 @@ function ObservationalMemoryWindowInner({
       sidebarMinSize={180}
       defaultSidebarOpen
     >
-      {selectedConversationId ? (
-        <ObservationalMemoryCore
-          conversationId={selectedConversationId}
-          layout="split"
-        />
-      ) : (
-        <EmptyPane />
-      )}
+      {/* Nested overlay emitter — while this window is open, its scope
+          out-depths the page's provider (deepest wins). */}
+      <SurfaceRuntimeProvider
+        surfaceName={OBSERVATIONAL_MEMORY_SURFACE_NAME}
+        getScope={() =>
+          createObservationalMemoryScope({
+            selected_conversation_id: selectedConversationId ?? undefined,
+            conversation_ids: conversationIds,
+            memory_enabled: selectedConversationId
+              ? selectedEnabled
+              : undefined,
+            memory_degraded: selectedConversationId
+              ? selectedDegraded
+              : undefined,
+            memory_counters: selectedConversationId
+              ? ((selectedCounters as Record<string, unknown> | null) ??
+                undefined)
+              : undefined,
+            memory_metadata: selectedConversationId
+              ? ((selectedMetadata as Record<string, unknown> | null) ??
+                undefined)
+              : undefined,
+          })
+        }
+        isEditable={false}
+      >
+        {selectedConversationId ? (
+          <ObservationalMemoryCore
+            conversationId={selectedConversationId}
+            layout="split"
+          />
+        ) : (
+          <EmptyPane />
+        )}
+      </SurfaceRuntimeProvider>
     </WindowPanel>
   );
 }

@@ -10,6 +10,50 @@
  * FILE DOCTRINE: the image is identified by its durable `cld_files` UUID
  * (`image_file_id`) when it exists; url-sourced annotations have none until
  * the annotated copy is saved. Never emit signed URLs.
+ *
+ * WRITE DOCTRINE — why this surface has NO `writeTargets` (assessed
+ * 2026-08-12 against the installed markerjs2 typings; read this before
+ * scoping another pass at it, and note it CORRECTS the stated reason):
+ *
+ * The obvious candidate is CALLOUT TEXT — the words in an arrow or text
+ * marker are authored prose an agent drafts well. The reason recorded so far
+ * (the inline comment in `AnnotateModeShell.handleBlurFaces`, and one of the
+ * FEATURE.md rule-outs) is that marker.js 2 exposes no programmatic API.
+ * **That claim is false**, and a future scout who opens the typings will find
+ * it false and reasonably conclude the rule-out was wrong. `MarkerArea` ships
+ * `createNewMarker(markerType)` and `restoreState(state: MarkerAreaState)`.
+ * The surface is still NOT writable, for three reasons that survive the
+ * correction:
+ *
+ *  1. **The text is inseparable from pixel geometry.** A text marker
+ *     serializes as `TextMarkerState extends RectangularBoxMarkerBaseState`:
+ *     `text` travels with `left` / `top` / `width` / `height` / `rotation`.
+ *     There is no way to write a callout's words without also choosing where
+ *     on the screenshot it points — and the agent cannot see those pixels.
+ *     This is the spatial class `analysis-studio` ruled out. A perfectly
+ *     worded callout anchored to the wrong widget is worse than no callout,
+ *     and it is wrong in a way the confirm dialog cannot show the user.
+ *  2. **`restoreState` is whole-set replace, not patch.** It swaps the entire
+ *     marker array, so any agent write clobbers whatever the user has already
+ *     drawn. There is no merge seam to build an additive target on.
+ *  3. **There is no read twin, and no React state to hold one.** The shell
+ *     keeps the `MarkerArea` in a ref and holds ZERO annotation state in
+ *     React (`saving` and `aiBusy` are status the page owns); no declared
+ *     value carries the marker set. The evidence loop cannot be closed here
+ *     without a `surface-authoring` pass first.
+ *
+ * The AI assists are not targets either: "Suggest annotations" and "Redact
+ * PII" are `toast.info(… ships next wave)` stubs, and "Detect faces" is gated
+ * behind `IMAGE_STUDIO_BACKEND_CAPABILITIES.faceDetection`, which is `false`
+ * — the same hardcoded capability gate that rules out `image-edit`'s prompt.
+ * Tellingly, even the shipped face path reports only a COUNT and asks the
+ * user to draw the boxes, for exactly reason (1).
+ *
+ * Everything else is refused by settled doctrine: `image_file_id` /
+ * `image_file_name` are file identity, `presentation` is a prop describing
+ * the mount, `save_folder` is a save destination (the line `podcast-studio`
+ * and `image-generate` both drew), and `is_saving` / `ai_assist_running` are
+ * status. Saving itself stays the human press.
  */
 
 import type {

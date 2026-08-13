@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, useTransition } from "react";
+import { isPubliclyVisible, visibilityLabelShort } from "@/lib/visibility/labels";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -85,7 +86,7 @@ function agentAppAdminSummary(a: AgentAppAdminView): string {
   return [
     `${a.name} (/${a.slug})`,
     `[${a.status}]`,
-    a.is_public ? "public" : "private",
+    visibilityLabelShort(a.visibility).toLowerCase(),
     a.category ? `category:${a.category}` : null,
     `runs:${a.total_executions ?? 0}`,
   ]
@@ -412,17 +413,23 @@ export default function AdminSystemAppsListPage() {
                           </TableCell>
                           <TableCell className="text-center">
                             <Switch
-                              checked={a.is_public}
+                              checked={isPubliclyVisible(a.visibility)}
                               disabled={isBusy}
                               onCheckedChange={(checked) =>
                                 patchRow(
                                   a.id,
-                                  { is_public: checked },
+                                  {
+                                    visibility: checked
+                                      ? "public"
+                                      : "internal",
+                                  },
                                   "Visibility",
                                 )
                               }
                               aria-label={
-                                a.is_public ? "Make private" : "Make public"
+                                isPubliclyVisible(a.visibility)
+                                  ? "Make internal"
+                                  : "Make public"
                               }
                             />
                           </TableCell>

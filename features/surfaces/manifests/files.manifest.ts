@@ -93,6 +93,7 @@
  */
 
 import type {
+  SurfaceClientTool,
   SurfaceManifest,
   SurfaceScopePayload,
   SurfaceValue,
@@ -737,6 +738,113 @@ const writeTargets: SurfaceWriteTarget[] = [
   },
 ];
 
+/**
+ * CLIENT TOOLS — page ACTIONS offered to bound agents.
+ *
+ * THE FINDING THAT SHAPES THIS LIST: on this surface the write half already IS
+ * the action half. Seven of the nine `writeTargets` above are `mode: "ui"` —
+ * `search_query`, `chip_filter`, `kind_filter`, `list_sort`, `view_mode`
+ * (all `auto`, applied with no dialog) and `active_folder_id` /
+ * `active_file_id` (`ask`). "Navigate to a folder", "set the kind filter",
+ * "switch the view mode" and "open a file so the user can see it" are
+ * therefore ALREADY DONE, through `apply_surface_write`, by handlers that
+ * drive PageShell's own activation callbacks. Declaring client tools for them
+ * would be a second name reaching the same dispatch — a parallel path, which
+ * the campaign forbids — and for the two navigation targets it would be
+ * actively WRONG: the client-tool dispatcher is run-immediately with NO ask
+ * dialog, so a `files_navigate_to_folder` tool would silently strip the human
+ * gate this manifest argues for (activation moves the user, fires
+ * `loadFolderContents` and rewrites the URL). Anything needing that gate must
+ * route through `applySurfaceWrite` — which, for a target that already exists,
+ * is just calling the existing write target.
+ *
+ * So the bar here is narrow and specific: a client tool earns its place ONLY
+ * where the effect is an IMPERATIVE ONE-SHOT with no settable value behind it
+ * — something the "set value X to Y" shape structurally cannot express. Two
+ * qualify.
+ *
+ *  1. `files_reveal_row` — THE "help the user SEE what I am talking about"
+ *     action, and the one the write tier genuinely cannot reach.
+ *     `active_file_id` opens the PREVIEW PANE and nothing more:
+ *     `handleSelectFile` dispatches `setActiveFileId` alone, so a file deep in
+ *     a paginated listing can be "active" while its row is never scrolled to
+ *     and — past the infinite-window cap — never even mounted. Revealing is a
+ *     different mechanism: `setFocusedId` → FileTable/FileGrid's
+ *     `ensureIndexVisible` grows the window → FileTableRow/FileGridCell's
+ *     `scrollIntoView` fires. There is no "focused row" value to write (the
+ *     read value `focused_row_id` has no target and gets none — focus is an
+ *     event, not a setting), and it works for FOLDER rows too, which
+ *     `active_file_id` cannot touch at all.
+ *  2. `files_clear_column_filters` — fills a gap the write tier refused ON
+ *     PURPOSE. Exclusion #4 above declines a `column_filters` target because
+ *     the per-column vocabulary is not exposed as an enumerable list, and the
+ *     vocabulary rule forbids a target you cannot spell out. That objection is
+ *     about SETTING; it does not apply to CLEARING, which takes no vocabulary
+ *     and no arguments at all. "Why can't I see my PDFs?" → the agent reads
+ *     `column_filters`, sees the stale type filter, and clears it with the
+ *     same `clearColumnFilters` the "Clear all" pill dispatches.
+ *
+ * REFUSED, beyond the duplicates above: anything that creates, moves, renames,
+ * deletes, uploads or downloads a file — the write campaign's line holds with
+ * full force, and a navigation tier must not become a file-management tier.
+ * Checkbox selection stays out for the reason exclusion #1 gives (it arms
+ * `BulkActionsBar`); `files_reveal_row` is the deliberate non-arming
+ * alternative — it highlights and scrolls WITHOUT selecting, so pointing at a
+ * row can never pre-build a bulk mistake. Nothing here spends money or compute.
+ * FILE DOCTRINE holds: rows are addressed by durable `cld_files` /
+ * `cld_folders` UUIDs, never a URL.
+ *
+ * BOTH ARE ui-MODE AND NEED NO GATE: each is client-only, instantly visible,
+ * costs no server request, and is undone by one control already on screen (any
+ * row click; the column-header dropdowns). That is the same `auto` bar the
+ * write targets use — which is why run-immediately is correct for these two
+ * and would not have been for navigation.
+ *
+ * PER-MOUNT SPLIT (deliberate, and why `hasHandler` matters). Handlers are
+ * registered from `FileTable` / `FileGrid`
+ * (`useFilesSurfaceClientTools.ts`), NOT from PageShell's provider, because
+ * those two components own the exact `buildRows` output — the rows actually
+ * rendered after section, search, chip, kind and column filters. Refusing a
+ * row that is not in that set is what stops the tool from returning ok while
+ * the page does not move. They are mutually exclusive (`viewMode === "grid"`),
+ * so exactly one registers at a time. Consequence: on the mobile `MobileStack`
+ * and in `PickerShell` — neither of which renders them — these tools are
+ * declared but unwired, and `listLiveSurfaceClientTools()` correctly does not
+ * offer them.
+ */
+const clientTools: SurfaceClientTool[] = [
+  {
+    name: "files_reveal_row",
+    label: "Reveal row",
+    description:
+      "Scrolls a file or folder row into view in the list and highlights it, so the user can SEE the row you are talking about. Use this whenever you name a specific file or folder — point at it instead of describing where it is. Takes `row_id`: a UUID from visible_files[].id or visible_folders[].id. This is a pure pointing action: it does NOT open the preview pane (use the active_file_id write target for that), does NOT tick the row's checkbox, and does NOT change the folder, the search, or any filter. Refused, with the reason returned to you, when the row is not among the rows currently rendered — because it is in another folder, another section, or filtered out by the search box, the filter chip, the kind filter or a column filter. When that happens, clear or change the filter first (files_clear_column_filters, or the search_query / chip_filter / kind_filter write targets) or navigate with the active_folder_id write target, then reveal.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        row_id: {
+          type: "string",
+          description:
+            "UUID of the file or folder row to reveal. Must be an id taken from visible_files or visible_folders, and must be a row the list is currently rendering.",
+        },
+      },
+      required: ["row_id"],
+    },
+    mode: "ui",
+  },
+  {
+    name: "files_clear_column_filters",
+    label: "Clear column filters",
+    description:
+      'Clears every per-column header filter at once — name, type, extension, mime, path, owner, size, modified, access and RAG status — exactly as the "Clear all" pill above the table does. Takes no arguments. Use it when the user cannot find files they expect and `column_filters` shows a filter is narrowing the list. This clears ONLY the column filters: the search box, the filter chip and the kind filter are separate controls with their own write targets (search_query, chip_filter, kind_filter) and are left untouched. Refused when no column filter is currently active, so a call that would do nothing tells you so rather than reporting success.',
+    inputSchema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+    mode: "ui",
+  },
+];
+
 export const filesManifest: SurfaceManifest = {
   surfaceName: "matrx-user/files",
   readiness: "partial",
@@ -774,6 +882,7 @@ preview pane.
     surfaceSpecific,
   ),
   writeTargets,
+  clientTools,
 };
 
 export interface FilesFileSummary {

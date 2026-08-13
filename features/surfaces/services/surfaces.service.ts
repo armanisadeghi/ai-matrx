@@ -309,10 +309,20 @@ export async function bulkDeleteSurfaces(names: string[]): Promise<void> {
 }
 
 /**
- * Renames a surface in place. Backed by ON UPDATE CASCADE on the FK
- * targets (tool.ui, ui.ui_surface_value, tool.surface_defaults,
- * and self-FK parent_surface_name), so any references follow automatically.
- * Single UPDATE statement.
+ * Renames a surface in place. Single UPDATE statement — every dependent row
+ * follows via ON UPDATE CASCADE at the DB level; nothing is hand-updated here.
+ *
+ * All nine FKs onto ui.ui_surface(name) cascade on update: tool.ui,
+ * tool.surface_defaults, agent.shortcut, ui.ui_surface_value,
+ * ui.ui_surface_agent_role, ui.ui_surface_config, ui.ui_surface_write_target,
+ * ui.ui_surface_client_tool, and the parent_surface_name self-FK.
+ *
+ * ui_surface_write_target was the lone holdout until 2026-08-13 — its FK was
+ * ON DELETE CASCADE only, so ON UPDATE defaulted to NO ACTION and Postgres
+ * REJECTED this UPDATE with SQLSTATE 23503 for any surface that had write
+ * targets (108 of 185 surfaces). Adding a new child table WITHOUT
+ * ON UPDATE CASCADE breaks rename again the same way; there is no code-side
+ * fallback to catch it.
  */
 export async function renameSurface(
   oldName: string,
@@ -350,13 +360,22 @@ export interface SurfaceUsage {
     display_name: string;
     is_active: boolean;
   }[];
+  /**
+   * Synced manifest mirror rows for this surface (counts only). Written by
+   * manifest-sync.service.ts and never edited from this page, but they DO
+   * follow a rename via ON UPDATE CASCADE — omitting them made the rename
+   * confirmation under-report its blast radius.
+   */
+  writeTargetCount: number;
+  clientToolCount: number;
 }
 
 export async function getSurfaceUsage(
   surfaceName: string,
 ): Promise<SurfaceUsage> {
   const c = sb();
-  const [defaultsRes, agentsRes, uiRes] = await Promise.all([
+  const [defaultsRes, agentsRes, uiRes, writeTargetRes, clientToolRes] =
+    await Promise.all([
     c
       .schema("tool")
       .from("surface_defaults")
@@ -376,10 +395,24 @@ export async function getSurfaceUsage(
       .select("id, tool_name, display_name, is_active")
       .eq("surface_name", surfaceName)
       .order("tool_name", { ascending: true }),
+    // VIEW LAW: container-scoped by surfaceName (admin-config lookup, platform-wide)
+    c
+      .schema("ui")
+      .from("ui_surface_write_target")
+      .select("*", { count: "exact", head: true })
+      .eq("surface_name", surfaceName),
+    // VIEW LAW: container-scoped by surfaceName (admin-config lookup, platform-wide)
+    c
+      .schema("ui")
+      .from("ui_surface_client_tool")
+      .select("*", { count: "exact", head: true })
+      .eq("surface_name", surfaceName),
   ]);
   if (defaultsRes.error) throw defaultsRes.error;
   if (agentsRes.error) throw agentsRes.error;
   if (uiRes.error) throw uiRes.error;
+  if (writeTargetRes.error) throw writeTargetRes.error;
+  if (clientToolRes.error) throw clientToolRes.error;
 
   // Resolve direct + bundle-included tool names.
   const includedTools: SurfaceUsage["tools"] = [];
@@ -455,6 +488,8 @@ export async function getSurfaceUsage(
       a.name.localeCompare(b.name),
     ),
     uiComponents: uiRes.data ?? [],
+    writeTargetCount: writeTargetRes.count ?? 0,
+    clientToolCount: clientToolRes.count ?? 0,
   };
 }
 

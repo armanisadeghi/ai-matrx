@@ -1,25 +1,26 @@
 #!/usr/bin/env bash
-# matrx-preview-ports.sh — enforce a single Claude Code preview dev-server on this machine.
+# matrx-preview-ports.sh — enforce one managed preview server on this machine.
 #
-# Why this exists: Claude Code's Browser preview (preview_start) launches a full
-# Next.js dev-server tree (next-server + ~10 workers) from .claude/launch.json. Each
-# agent session that calls preview_start spawns its OWN tree, and nothing reaps them
-# when the session ends. They accumulate across sessions and eat all the RAM.
+# Why this exists: Claude's named preview_start and raw shell launches each create
+# an untracked Next.js tree. Codex does not expose preview_start at all. Both agents
+# instead use the provider-neutral `pnpm preview:start`, which registers one
+# machine-wide lease. A checkout may reuse only its own server; other worktrees
+# must wait, because a browser pointed at their server would certify the wrong diff.
 #
-# Fingerprint: every Claude-spawned preview server runs with env NEXT_DISTDIR=.next-preview*
-# (see ai-matrx/.claude/launch.json). The user's own `pnpm dev` uses .next — so this
-# signature targets ONLY agent preview servers and never a human-run dev server.
+# Fingerprint: the shared launcher sets NEXT_DISTDIR=.next-preview, which appears
+# in the Next worker argv. The user's own `pnpm dev` uses .next, so this signature
+# targets only managed agent preview servers and never a human-run dev server.
 #
 # Subcommands:
 #   list  -> prints "PID PORT DISTDIR" for every running preview server (one per line)
-#   guard -> PreToolUse gate for preview_start: deny a 2nd preview, tell the agent to reuse
-#   reap  -> SessionEnd cleanup: kill preview servers, but only when no other Claude session is live
+#   guard -> redirect named preview_start to the provider-neutral managed command
+#   reap  -> legacy cleanup command; no longer installed as a SessionEnd hook
 #
 # All output is deliberately quiet on the happy path.
 
 set -uo pipefail
 
-# Emit "PID PORT next-preview" for each listening Claude preview dev-server.
+# Emit "PID PORT next-preview" for each listening managed preview dev-server.
 #
 # IMPORTANT: env is NOT readable here. macOS restricts `ps -E`/`ps -e` to the
 # caller's own processes (SIP hardening), so the old NEXT_DISTDIR env fingerprint
@@ -45,9 +46,11 @@ list_preview_servers() {
         port="${addr##*:}"
         pgid=$(ps -o pgid= -p "$pid" 2>/dev/null | tr -d ' ')
         if printf '%s\n' "$preview_pgids" | grep -qx "$pgid"; then
-          echo "$pid $port next-preview"
+          echo "$pgid $pid $port next-preview"
         fi
-      done | sort -u
+      done |
+    sort -k1,1n -k3,3n |
+    awk '!seen[$1]++ { print $2, $3, $4 }'
 }
 
 # Emit "PID PORT DISTDIR" for EVERY Next.js dev server on this machine, no matter who
@@ -76,12 +79,14 @@ list_any_dev_servers() {
         if printf '%s\n' "$dev_pgids" | grep -qx "$pgid"; then
           # Label it so the deny message can tell the agent whose server it is.
           if ps -Ao pgid=,command= 2>/dev/null | awk -v g="$pgid" '$1==g' | grep -q '\.next-preview'; then
-            echo "$pid $port agent-preview"
+            echo "$pgid $pid $port agent-preview"
           else
-            echo "$pid $port human-or-other"
+            echo "$pgid $pid $port human-or-other"
           fi
         fi
-      done | sort -u
+      done |
+    sort -k1,1n -k3,3n |
+    awk '!seen[$1]++ { print $2, $3, $4 }'
 }
 
 # Kill a preview server and its whole process tree (workers + pnpm/next wrappers).
@@ -116,13 +121,13 @@ case "${1:-}" in
       exit 0
     fi
 
-    # Deny on ANY running dev server, not just an agent one: Arman's own `pnpm dev` or a
-    # Codex-launched server occupies the same RAM budget, and two trees crash this box.
+    # Named preview_start is Claude-only and produces an untracked process. Keep
+    # browser launch separate from server launch for both providers.
     running=$(list_any_dev_servers)
     if [ -n "$running" ]; then
       port=$(printf '%s' "$running" | head -1 | awk '{print $2}')
       owner=$(printf '%s' "$running" | head -1 | awk '{print $3}')
-      reason="A Next.js dev server is already running on this machine (port ${port}, ${owner}). This box has 16GB and a second dev server is a reliable hard crash — the cap is ONE, machine-wide, shared by you, Arman, and Codex. Do NOT start a second — reuse the running one: navigate the Browser pane to http://localhost:${port} . If it is genuinely stale/wrong, stop it first with preview_stop (or kill its PID), then start yours."
+      reason="A Next.js dev server is already running on this machine (port ${port}, ${owner}). Do NOT start a second or certify a different worktree against it. Wait for its explicit release; if it is genuinely stale, stop it deliberately from its owning checkout, then run pnpm preview:start."
       /usr/bin/python3 - "$reason" <<'PY'
 import json, sys
 print(json.dumps({
@@ -135,7 +140,17 @@ print(json.dumps({
 PY
       exit 0
     fi
-    # No preview running -> allow this one through.
+    reason="Named preview_start is a Claude-only, untracked server launcher and is not the shared Matrx path. Run pnpm preview:start instead, then open http://localhost:3001 in the in-app browser."
+    /usr/bin/python3 - "$reason" <<'PY'
+import json, sys
+print(json.dumps({
+    "hookSpecificOutput": {
+        "hookEventName": "PreToolUse",
+        "permissionDecision": "deny",
+        "permissionDecisionReason": sys.argv[1],
+    }
+}))
+PY
     exit 0
     ;;
 
@@ -147,7 +162,7 @@ PY
     cmd=$(printf '%s' "$input" | /usr/bin/python3 -c 'import sys,json;print((json.load(sys.stdin).get("tool_input") or {}).get("command",""))' 2>/dev/null)
 
     # Only care about commands that BOOT a Next dev server.
-    if ! printf '%s' "$cmd" | grep -qE '(pnpm|npm|yarn|bun)( run)? dev\b|next dev\b'; then
+    if ! printf '%s' "$cmd" | grep -qE '(^|[[:space:];&|])(pnpm|npm|yarn|bun)( run)? dev([[:space:]]|$)|(^|[[:space:];&|])next dev([[:space:]]|$)'; then
       exit 0
     fi
     # `--help`, greps and echoes about dev servers are not launches.
@@ -159,7 +174,7 @@ PY
     if [ -n "$running" ]; then
       port=$(printf '%s' "$running" | head -1 | awk '{print $2}')
       owner=$(printf '%s' "$running" | head -1 | awk '{print $3}')
-      reason="A Next.js dev server is ALREADY running on this machine (port ${port}, ${owner}). This box has 16GB and a second dev server is a reliable hard crash — the cap is ONE, machine-wide, shared by you, Arman, and Codex. Do NOT launch another: point the Browser pane at http://localhost:${port} instead. Only if that server is genuinely stale, stop it first (preview_stop, or kill its PID) and then start yours."
+      reason="A Next.js dev server is ALREADY running on this machine (port ${port}, ${owner}). This box has 16GB and a second dev server is a reliable hard crash — the cap is ONE, machine-wide. Do NOT launch another or certify a different worktree against it. Wait for explicit release. Only if it is genuinely stale, stop it from its owning checkout and then run pnpm preview:start."
       /usr/bin/python3 - "$reason" <<'PY'
 import json, sys
 print(json.dumps({
@@ -172,15 +187,15 @@ print(json.dumps({
 PY
       exit 0
     fi
-    # Nothing running, but a raw `pnpm dev` is still the wrong door: it is unmanaged and
-    # nothing reaps it at SessionEnd. Steer to the managed preview instead of denying.
+    # Nothing is running, but a raw launch is still unmanaged. Codex PreToolUse
+    # does not support permissionDecision=ask, so block and name the safe command.
     /usr/bin/python3 - <<'PY'
 import json
 print(json.dumps({
     "hookSpecificOutput": {
         "hookEventName": "PreToolUse",
-        "permissionDecision": "ask",
-        "permissionDecisionReason": "No dev server is running, so this is safe RAM-wise — but a shell-launched `pnpm dev` is unmanaged: the single-server guard cannot see it reliably and SessionEnd will not reap it, so it leaks until the box runs out of memory. Prefer the managed path: mcp__Claude_Browser__preview_start with name \"next-dev\" (port 3001, .next-preview). Approve only if you specifically need a raw shell dev server.",
+        "permissionDecision": "deny",
+        "permissionDecisionReason": "Raw pnpm/npm/yarn/bun/next dev launches are untracked. Run pnpm preview:start instead; it starts or reuses the one managed server on port 3001.",
     }
 }))
 PY

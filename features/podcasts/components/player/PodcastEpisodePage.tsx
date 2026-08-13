@@ -6,7 +6,7 @@ import { Music, Share2, Link as LinkIcon, ListChecks, BookOpen, ChevronRight } f
 import type { PcArticle, PcEpisodeWithShow } from '../../types';
 import { PodcastAudioPlayer } from './PodcastAudioPlayer';
 import { EpisodeShowNotes } from './EpisodeShowNotes';
-import { useShare } from '../../hooks/useShare';
+import { useShare } from "@/features/sharing/hooks/useShare";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import { ComingSoonBadge } from '@/components/coming-soon/ComingSoonBadge';
 

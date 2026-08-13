@@ -47,7 +47,10 @@ import { useAdminEmails } from "@/features/admin/shared/useAdminEmails";
 import { formatBytes } from "@/features/admin/shared/UrlProbeField";
 import { probeArtifactUrl } from "@/features/admin/applications/catalogs/resolver";
 import type { ArtifactProbeResult } from "@/features/admin/applications/catalogs/resolver";
-import { upsertArgsFromRow, upsertCatalogEntry } from "@/features/admin/applications/catalogs/rpc";
+import {
+  upsertArgsFromRow,
+  upsertCatalogEntry,
+} from "@/features/admin/applications/catalogs/rpc";
 import {
   kindDef,
   kindLabel,
@@ -74,9 +77,7 @@ interface PendingToggle {
 }
 
 type ActivationProbe =
-  | { status: "none" }
-  | { status: "probing" }
-  | ArtifactProbeResult;
+  { status: "none" } | { status: "probing" } | ArtifactProbeResult;
 
 export function CatalogKindTable({
   app,
@@ -94,7 +95,9 @@ export function CatalogKindTable({
   const adminEmails = useAdminEmails();
   const def = kindDef(kind);
 
-  const [pendingToggle, setPendingToggle] = useState<PendingToggle | null>(null);
+  const [pendingToggle, setPendingToggle] = useState<PendingToggle | null>(
+    null,
+  );
   const [toggling, setToggling] = useState(false);
   // Keyed by target URL — a result only counts for the URL it probed, so no
   // synchronous reset is needed when the dialog target changes.
@@ -357,7 +360,10 @@ export function CatalogKindTable({
                 {adminEmails[row.updated_by]}
               </span>
             ) : (
-              <MatrxUuidCell value={row.updated_by} label="Updated by user id" />
+              <MatrxUuidCell
+                value={row.updated_by}
+                label="Updated by user id"
+              />
             )
           ) : (
             <span className="text-xs text-muted-foreground">—</span>
@@ -396,6 +402,7 @@ export function CatalogKindTable({
 
       <div className="min-h-0 flex-1">
         <MatrxDataTable
+          urlState={{ id: "application-catalog-entries" }}
           data={entries}
           columns={columns}
           getRowId={(row) => row.id}
@@ -481,9 +488,10 @@ export function CatalogKindTable({
               {activationPayloadCheck?.status === "invalid" ? (
                 <p className="flex items-start gap-1 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 font-medium text-destructive">
                   <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                  Payload fails the {kindLabel(pendingToggle.row.kind)} schema:{" "}
-                  {activationPayloadCheck.issues.join("; ")} — open the entry
-                  and fix it before activating.
+                  Payload fails the {kindLabel(
+                    pendingToggle.row.kind,
+                  )} schema: {activationPayloadCheck.issues.join("; ")} — open
+                  the entry and fix it before activating.
                 </p>
               ) : null}
               {pendingToggle.row.artifact_url ? (
@@ -504,8 +512,8 @@ export function CatalogKindTable({
                     <p className="flex items-center gap-1 font-medium text-destructive">
                       <AlertTriangle className="h-3.5 w-3.5" /> ARTIFACT
                       UNREACHABLE — {probe.detail}. Activating anyway ships a
-                      broken download to every client. Override only if you
-                      know the URL works outside the browser.
+                      broken download to every client. Override only if you know
+                      the URL works outside the browser.
                     </p>
                   ) : null}
                   {probe.status === "cors" ? (

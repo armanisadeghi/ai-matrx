@@ -41,7 +41,7 @@ import {
 } from "lucide-react";
 import type { AiModel, AiProvider } from "../types";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 import { aiModelSummary, AI_MODELS_LOCATION } from "../format";
 import {
   DEFAULT_AI_MODEL_FILTERS,
@@ -51,9 +51,7 @@ import {
 } from "../hooks/useTabUrlState";
 import AiModelFilterBar from "./AiModelFilterBar";
 import { cn } from "@/lib/utils";
-import {
-  MOBILE_TABLE_FROZEN_SECOND,
-} from "@/components/official/mobile-table/mobileTable";
+import { MOBILE_TABLE_FROZEN_SECOND } from "@/components/official/mobile-table/mobileTable";
 
 // ─── Provider Colors ──────────────────────────────────────────────────────────
 
@@ -139,10 +137,6 @@ function JsonSummaryBadge({ data, label }: { data: unknown; label?: string }) {
   return <span className="text-xs font-mono">{String(data)}</span>;
 }
 
-function UuidCell({ value }: { value: string }) {
-  return <MatrxUuidCell value={value} label="Model ID" />;
-}
-
 // ─── Column definitions ───────────────────────────────────────────────────────
 
 const SORT_FIELDS = [
@@ -177,7 +171,14 @@ const COLUMNS: ColDef[] = [
     header: "ID",
     width: "w-[120px] min-w-[120px]",
     sortable: true,
-    render: (item) => <UuidCell value={item.id} />,
+    render: (item) => (
+      <AiModelRef
+        modelId={item.id}
+        name={item.common_name || item.name}
+        showId
+        showIcon={false}
+      />
+    ),
   },
   {
     key: "common_name",
@@ -988,7 +989,12 @@ export default function AiModelTable({
 
       {/* Scrollable table — single scroll container, thead is sticky within it */}
       <div className="flex-1 overflow-auto min-h-0">
-        <table className={cn("caption-bottom text-xs border-collapse", MOBILE_TABLE_FROZEN_SECOND)}>
+        <table
+          className={cn(
+            "caption-bottom text-xs border-collapse",
+            MOBILE_TABLE_FROZEN_SECOND,
+          )}
+        >
           <thead className="sticky top-0 z-10 bg-card border-b border-border">
             <tr className="h-8">
               {COLUMNS.map((col) => (

@@ -9,7 +9,10 @@ import { ShieldCheck, ShieldOff } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/client";
-import { CAPABILITY_REGISTRY, type Capability } from "@/features/entitlements/registry";
+import {
+  CAPABILITY_REGISTRY,
+  type Capability,
+} from "@/features/entitlements/registry";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { USERS_ADMIN_LOCATION } from "../constants";
@@ -36,8 +39,14 @@ export function EntitlementsTableClient() {
     try {
       const supabase = createClient();
       const [capRes, limRes, useRes] = await Promise.all([
-        supabase.schema("billing").from("capability").select("capability, enforced, period, min_tier"),
-        supabase.schema("billing").from("capability_limit").select("capability, tier, period, limit_value"),
+        supabase
+          .schema("billing")
+          .from("capability")
+          .select("capability, enforced, period, min_tier"),
+        supabase
+          .schema("billing")
+          .from("capability_limit")
+          .select("capability, tier, period, limit_value"),
         supabase.schema("billing").rpc("usage_admin_summary"),
       ]);
       if (capRes.error) throw capRes.error;
@@ -47,7 +56,7 @@ export function EntitlementsTableClient() {
         period: string;
         limit_value: number | null;
       }>;
-      const usage = (useRes.error ? [] : useRes.data ?? []) as Array<{
+      const usage = (useRes.error ? [] : (useRes.data ?? [])) as Array<{
         capability: string;
         total_quantity: number;
         event_count: number;
@@ -60,22 +69,26 @@ export function EntitlementsTableClient() {
           .map((l) => `${l.limit_value}/${l.period.replace("rolling_", "")}`)
           .join(" · ") || "—";
       setRows(
-        ((capRes.data ?? []) as Array<{ capability: string; enforced: boolean; period: string | null }>).map(
-          (c) => {
-            const u = usage.find((x) => x.capability === c.capability);
-            const def = CAPABILITY_REGISTRY[c.capability as Capability];
-            return {
-              capability: c.capability,
-              label: def?.label ?? c.capability,
-              enforced: c.enforced,
-              period: c.period ?? "gate",
-              free_limits: freeLimits(c.capability),
-              used_30d: u?.total_quantity ?? 0,
-              events: u?.event_count ?? 0,
-              users: u?.active_users ?? 0,
-            };
-          },
-        ),
+        (
+          (capRes.data ?? []) as Array<{
+            capability: string;
+            enforced: boolean;
+            period: string | null;
+          }>
+        ).map((c) => {
+          const u = usage.find((x) => x.capability === c.capability);
+          const def = CAPABILITY_REGISTRY[c.capability as Capability];
+          return {
+            capability: c.capability,
+            label: def?.label ?? c.capability,
+            enforced: c.enforced,
+            period: c.period ?? "gate",
+            free_limits: freeLimits(c.capability),
+            used_30d: u?.total_quantity ?? 0,
+            events: u?.event_count ?? 0,
+            users: u?.active_users ?? 0,
+          };
+        }),
       );
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load entitlements");
@@ -97,7 +110,9 @@ export function EntitlementsTableClient() {
         cell: (r) => (
           <div>
             <div className="font-medium text-foreground">{r.label}</div>
-            <div className="font-mono text-[11px] text-muted-foreground">{r.capability}</div>
+            <div className="font-mono text-[11px] text-muted-foreground">
+              {r.capability}
+            </div>
           </div>
         ),
         width: 240,
@@ -113,18 +128,31 @@ export function EntitlementsTableClient() {
               <ShieldCheck className="h-3 w-3" /> on
             </Badge>
           ) : (
-            <Badge variant="secondary" className="gap-1 text-[11px] text-muted-foreground">
+            <Badge
+              variant="secondary"
+              className="gap-1 text-[11px] text-muted-foreground"
+            >
               <ShieldOff className="h-3 w-3" /> permissive
             </Badge>
           ),
         width: 120,
       },
-      { id: "period", accessorKey: "period", header: "Period", filter: "select", width: 120 },
+      {
+        id: "period",
+        accessorKey: "period",
+        header: "Period",
+        filter: "select",
+        width: 120,
+      },
       {
         id: "free_limits",
         accessorKey: "free_limits",
         header: "Free limits",
-        cell: (r) => <span className="font-mono text-[11px] text-muted-foreground">{r.free_limits}</span>,
+        cell: (r) => (
+          <span className="font-mono text-[11px] text-muted-foreground">
+            {r.free_limits}
+          </span>
+        ),
         width: 140,
       },
       {
@@ -149,7 +177,9 @@ export function EntitlementsTableClient() {
         header: "Events",
         filter: "number",
         align: "right",
-        cell: (r) => <span className="tabular-nums text-muted-foreground">{r.events}</span>,
+        cell: (r) => (
+          <span className="tabular-nums text-muted-foreground">{r.events}</span>
+        ),
         width: 90,
       },
       {
@@ -158,7 +188,9 @@ export function EntitlementsTableClient() {
         header: "Users",
         filter: "number",
         align: "right",
-        cell: (r) => <span className="tabular-nums text-muted-foreground">{r.users}</span>,
+        cell: (r) => (
+          <span className="tabular-nums text-muted-foreground">{r.users}</span>
+        ),
         width: 80,
       },
     ];
@@ -173,6 +205,7 @@ export function EntitlementsTableClient() {
       ) : null}
       <div className="min-h-0 flex-1">
         <MatrxDataTable
+          urlState={{ id: "user-entitlements" }}
           data={rows}
           columns={columns}
           getRowId={(r) => r.capability}
@@ -196,7 +229,10 @@ export function EntitlementsTableClient() {
             listKind: "capabilities",
             humanRow: (r) =>
               `${r.label} (${r.capability}) enforced=${r.enforced} period=${r.period} free=${r.free_limits} used30d=${r.used_30d} users=${r.users}`,
-            rowAttributes: (r) => ({ capability: r.capability, enforced: r.enforced }),
+            rowAttributes: (r) => ({
+              capability: r.capability,
+              enforced: r.enforced,
+            }),
           }}
         />
       </div>

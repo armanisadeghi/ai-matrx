@@ -10,7 +10,6 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
-import { associationsService } from "@/features/scopes/service/associationsService";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { Database } from "@/types/database.types";
@@ -547,11 +546,11 @@ export const canvasArtifactService = {
       }
       if (existing) return { id: existing.id };
 
-      // Scope columns: chat rows inherit org/task from the conversation and
-      // project from its canonical association edge; non-chat rows fall back
-      // to the active/personal org.
+      // Scope columns: chat rows inherit org/task from the conversation;
+      // non-chat rows fall back to the active/personal org. A feature table
+      // may not depend on a project FK — project membership, when it exists,
+      // is a `platform.associations` edge on the conversation.
       let organizationId: string | null = null;
-      let projectId: string | null = null;
       let taskId: string | null = null;
       if (isChat) {
         // A chat row needs its conversation for scope columns; some
@@ -575,19 +574,6 @@ export const canvasArtifactService = {
         }
         organizationId = conversation.organization_id;
         taskId = conversation.task_id;
-        const projectResult = await associationsService.listForSources(
-          "conversation",
-          [input.conversationId],
-          "project",
-        );
-        if (!projectResult.ok) {
-          console.error(
-            "[canvasArtifactService.upsertDiscoveryIndex] project association lookup error:",
-            projectResult.error,
-          );
-        } else {
-          projectId = projectResult.data.edges[0]?.targetId ?? null;
-        }
       } else {
         organizationId = await ensureOrgId(undefined);
       }
@@ -600,12 +586,10 @@ export const canvasArtifactService = {
         source_system: input.source.system,
         source_id: input.source.id,
         artifact_index: input.artifactIndex,
-        user_id: userId,
         artifact_type: artifactType,
         status: "published" as const,
         title: input.title ?? null,
         organization_id: organizationId,
-        project_id: projectId,
         task_id: taskId,
         external_system: normalizedExternalSystem,
         external_id: null,
@@ -621,8 +605,10 @@ export const canvasArtifactService = {
         .schema("chat")
         .from("artifact")
         .upsert(insertRow, {
+          // Infers `uq_cx_artifact_source_natural_key_cb` — the canonical
+          // dedup key, on `created_by` (stamped by `_stamp_actor`).
           onConflict:
-            "user_id,source_system,source_id,artifact_index,artifact_type,external_system",
+            "created_by,source_system,source_id,artifact_index,artifact_type,external_system",
           ignoreDuplicates: true,
         })
         .select("id")
@@ -642,7 +628,7 @@ export const canvasArtifactService = {
         .schema("chat")
         .from("artifact")
         .select("id, canvas_item_id")
-        .eq("user_id", userId)
+        .eq("created_by", userId)
         .eq("source_system", input.source.system)
         .eq("source_id", input.source.id)
         .eq("artifact_index", input.artifactIndex)

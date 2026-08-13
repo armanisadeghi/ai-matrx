@@ -40,6 +40,7 @@ import {
   isSecretLookingColumn,
 } from "./SharePolicyColumnEditor";
 import type { SharePolicyRow, ShareableRegistryRow } from "../types";
+import { stringUrlCodec, useUrlState } from "@/lib/url-state/useUrlState";
 
 function label(token: string): string {
   return tryGetEntityInfo(token)?.label ?? token;
@@ -112,7 +113,12 @@ export function ShareableRegistryPanel({
   const supabase = useMemo(() => createClient(), []);
   const sectionRef = useRef<HTMLDivElement>(null);
   const [editor, setEditor] = useState<ShareableEditorState | null>(null);
-  const [sidePanelId, setSidePanelId] = useState<string | null>(null);
+  const [sidePanelParam, setSidePanelParam] = useUrlState(
+    "row",
+    stringUrlCodec(),
+  );
+  const sidePanelId = sidePanelParam || null;
+  const setSidePanelId = (id: string | null) => setSidePanelParam(id ?? "");
   const [saving, setSaving] = useState(false);
   const [resolving, setResolving] = useState(false);
   /** The link-policy side panel — one resource type's link switch + columns. */
@@ -129,6 +135,17 @@ export function ShareableRegistryPanel({
     () => new Set(registry.map((r) => r.resource_type)),
     [registry],
   );
+
+  useEffect(() => {
+    if (!sidePanelId) return;
+    const row = registry.find(
+      (candidate) => candidate.resource_type === sidePanelId,
+    );
+    if (!row) return;
+    setEditor(
+      rowToEditor(row, policyByType.get(row.resource_type)?.all_columns ?? []),
+    );
+  }, [policyByType, registry, sidePanelId]);
 
   async function openForToken(token: string) {
     const existing = registry.find((r) => r.resource_type === token);
@@ -512,6 +529,7 @@ export function ShareableRegistryPanel({
       </div>
       <div className="min-h-[16rem]">
         <MatrxDataTable
+          urlState={{ id: "shareable-resources", selectedRow: false }}
           data={registry}
           columns={columns}
           getRowId={(r) => r.resource_type}

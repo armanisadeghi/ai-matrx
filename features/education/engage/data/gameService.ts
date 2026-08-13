@@ -62,7 +62,7 @@ export interface JoinableRoom {
 
 /** A finalized scoreboard row (from the game_room_players RPC). */
 export interface RoomPlayerResult {
-  user_id: string;
+  created_by: string;
   display_name: string | null;
   score: number;
   correct_count: number;
@@ -75,7 +75,7 @@ export interface RoomPlayerResult {
 
 /** A league leaderboard entry (from the league_leaderboard RPC). */
 export interface LeagueEntry {
-  user_id: string;
+  created_by: string;
   display_name: string | null;
   mastery_gain: number;
   games_played: number;
@@ -184,7 +184,7 @@ export const gameService = {
         organization_id: orgId,
         room_id: outcome.roomId,
         session_id: outcome.sessionId,
-        user_id: userId,
+        created_by: userId,
         display_name: displayName,
         mode: outcome.mode,
         score: outcome.score,
@@ -259,7 +259,7 @@ export const gameService = {
 
   /**
    * Award badges idempotently. Inserts only keys not already earned. The unique
-   * `(user_id, badge_key)` index is PARTIAL (`WHERE deleted_at IS NULL`), so it
+   * `(created_by, badge_key)` index is PARTIAL (`WHERE deleted_at IS NULL`), so it
    * cannot be an `ON CONFLICT` target (PostgREST/`.upsert` can't attach the
    * predicate) — we filter out already-earned keys ourselves, then insert the
    * remainder. A concurrent double-award still hits the partial unique index and
@@ -278,7 +278,7 @@ export const gameService = {
       const { data: existing, error: exErr } = await EDU()
         .from("game_badge")
         .select("badge_key")
-        .eq("user_id", userId)
+        .eq("created_by", userId)
         .in("badge_key", keys)
         .is("deleted_at", null);
       if (exErr) return fail("awardBadges", exErr);
@@ -289,7 +289,7 @@ export const gameService = {
       if (newKeys.length === 0) return { data: [], error: null };
       const rows = newKeys.map((key) => ({
         organization_id: orgId,
-        user_id: userId,
+        created_by: userId,
         badge_key: key,
         context: context as never,
       })) as never;
@@ -347,7 +347,7 @@ export const gameService = {
 
   /**
    * Opt in (or out) of the current week's league — the caller's own row (RLS-
-   * owned). The unique `(user_id, week_start)` index is PARTIAL
+   * owned). The unique `(created_by, week_start)` index is PARTIAL
    * (`WHERE deleted_at IS NULL`), so `.upsert({ onConflict })` cannot target it
    * (PostgREST can't attach the predicate → "no unique or exclusion constraint
    * matching"). We do the conflict resolution ourselves: update the live row if
@@ -369,7 +369,7 @@ export const gameService = {
       const { data: existing, error: exErr } = await EDU()
         .from("league_membership")
         .select("id")
-        .eq("user_id", uid)
+        .eq("created_by", uid)
         .eq("week_start", weekStart)
         .is("deleted_at", null)
         .maybeSingle();
@@ -388,7 +388,7 @@ export const gameService = {
 
       const payload = {
         organization_id: orgId,
-        user_id: uid,
+        created_by: uid,
         week_start: weekStart,
         display_name: displayName,
         opted_in: optedIn,

@@ -28,6 +28,66 @@
  *   - `features/scopes/components/management/ScopesHub.tsx`            (view "hub")
  *   - `features/scopes/components/management/TemplatesGalleryPanel.tsx` (view "templates")
  *   - `features/scopes/components/management/ScopesSettingsPanel.tsx`   (view "settings")
+ *
+ * ---------------------------------------------------------------------------
+ * WRITE TARGETS: evaluated 2026-08-11 and DELIBERATELY NOT DECLARED.
+ * RE-EVALUATED 2026-08-12 by a second, independently-scouted assignment; the
+ * judgment was re-derived from the live components and STANDS unchanged.
+ * Do not re-assign this surface for `surface-write-targets` — the judgment
+ * below is the result, not an omission.
+ *
+ * THE SURFACE HAS NO EDITABLE STATE. Swept in full, all three mounts:
+ *   - `ScopesHub.tsx` — cells are truncated read-only `summarizeContextCell`
+ *     text with a `title` tooltip; rows `router.push` to the org-scoped detail
+ *     route. The ONLY stateful control on the page is the `query` filter input.
+ *   - `TemplatesGalleryPanel.tsx` (185 lines) and `ScopesSettingsPanel.tsx`
+ *     (164 lines) — one `refresh()` button each. Zero `<input>`, `<textarea>`,
+ *     `<select>`, Save, `useState` or `dispatch` between them.
+ *
+ * The 2026-08-12 scouting brief was factually wrong on its two central claims,
+ * and both corrections point the same way:
+ *   1. It named `features/scope-system/components/ContextItemsHub.tsx:210` as a
+ *      mount of THIS surface. It is not — it mounts `matrx-user/context-items`,
+ *      which ALREADY ships five write targets (`context_item_copy`,
+ *      `context_item_category`, `context_item_tags`, `context_item_status_note`,
+ *      `add_context_items`) via `ContextItemsWriteTargets.tsx`. The context-ITEM
+ *      editor half of the brief (`EditContextItemSheet` →
+ *      `ContextItemSettingsForm`) is shipped work on that surface, not missing
+ *      work on this one.
+ *   2. It named `scopesService.setContextValue` (`scopesService.ts:991`) as the
+ *      canonical write for a scope's context VALUE. That function is never
+ *      called from any of this surface's three mounts. Its only production
+ *      callers are `kgSuggestionsService.ts:372` and the `setContextValueWindow`
+ *      overlay. The route that actually edits a scope's cells —
+ *      `/organizations/[orgId]/scopes/[typeId]/[scopeId]` — mounts NO
+ *      `SurfaceRuntimeProvider` at all.
+ *
+ * So a `set_context_value` target here would be the transcripts `tags`/`folder`
+ * anti-pattern in its most dangerous form: a write the user cannot see staged
+ * or correct in place, landing in the one part of an agent's context users
+ * author BY HAND (see `features/scopes/FEATURE.md`), displayed on the hub only
+ * as a truncated summary cell among every org and scope type the user owns. A
+ * wrong value would be near-invisible here and would silently reframe every
+ * downstream invocation. If that write is ever wanted, the correct move is to
+ * mount a surface on the org-scoped detail route where the editor actually
+ * lives — not to bolt a blind write onto this hub.
+ *
+ * Candidates considered and rejected individually:
+ *   - `search_query` (the hub filter) — the single field that comes closest,
+ *     and still sub-threshold: it is cosmetic (the emitted summaries are
+ *     explicitly the FULL set, not the filtered one, so an agent gains nothing
+ *     it does not already have) and it is one target, under the ~2 the skill
+ *     sets as the floor for earning the work.
+ *   - The heavy-hitter inbox (`HeavyHitterSuggestionsInbox`, rendered on the
+ *     hub) — accept DOES write via `create_scope` + `setContextValue`, but the
+ *     human accept/reject IS the review gate on machine-generated proposals.
+ *     Handing that gate to an agent means one machine rubber-stamping another's
+ *     guesses into hand-authored context. Also hidden entirely when the
+ *     detector finds nothing, and its rows are not declared on this manifest.
+ *   - The `active_context` group — permanently ineligible, not merely rejected.
+ *     Global active context is written ONLY by Surface A pickers; a write
+ *     target that moved the user's active context is the #1 bug this module
+ *     exists to kill.
  */
 
 import type {
@@ -405,7 +465,7 @@ export const scopesManifest: SurfaceManifest = {
   surfaceName: SCOPES_SURFACE_NAME,
   readiness: "partial",
   readinessNote:
-    "Manifest + emitters wired on /scopes, /scopes/templates and /scopes/settings; not yet live-verified with a bound agent, and the embedded knowledge-graph suggestions inbox (HeavyHitterSuggestionsInbox on the hub) loads data that is not declared here.",
+    "Manifest + emitters wired on /scopes, /scopes/templates and /scopes/settings; not yet live-verified with a bound agent, and the embedded knowledge-graph suggestions inbox (HeavyHitterSuggestionsInbox on the hub) loads data that is not declared here. Read-only by decision, not by omission: write targets were evaluated 2026-08-11 and again 2026-08-12 and DELIBERATELY NOT DECLARED — all three mounts are read-only (one filter input and two refresh buttons between them) and the route that edits scope cells mounts no surface. See the WRITE TARGETS block in this file's docblock before re-assigning.",
   label: "Scopes",
   urlPattern: "/scopes",
   intro: `<surface_intro>

@@ -88,6 +88,11 @@ export function captureStreamEvent(
         code: d.code,
         message: d.system_message || "Agent stream warning",
         userMessage: d.user_message ?? undefined,
+        // First-class, NOT only inside `details` — the tier rules match on
+        // these, and a stringified blob is unreachable to them. `details`
+        // stays for the human reading the inspector row.
+        recoverable: d.recoverable ?? undefined,
+        level: d.level ?? undefined,
         details: str({ level: d.level, recoverable: d.recoverable }),
         ...base,
         raw: d,

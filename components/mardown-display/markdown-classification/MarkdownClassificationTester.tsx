@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { markdownSamples, getAllMarkdownSampleIds } from "./sample-data/markdown-samples";
 import { getCoordinatorSelectOptions, getCoordinatorConfig, getSampleDataIds, getDefaultViewId } from "./markdown-coordinator";
-import { PROCESSOR_REGISTRY } from "./processors/processor-registry";
+import { PROCESSOR_REGISTRY, hasProcessor } from "./processors/processor-registry";
 import { getConfigSelectOptions } from "./processors/json-config-system/config-registry";
 import MarkdownInput from "./MarkdownInput";
 import MarkdownProcessingTabs from "./MarkdownProcessingTabs";
@@ -251,6 +251,17 @@ const MarkdownClassificationTester = ({
                         "append_markdown_content expects non-empty markdown to add.",
                     );
                 setMarkdown((prev) => (prev.trim() ? `${prev}\n\n${value}` : value));
+            },
+            // Enum checked against the LIVE registry, never re-typed literals,
+            // and applied through the same `handleProcessorChange` the
+            // Processor select's `onValueChange` calls.
+            pipeline_processor: (value: unknown) => {
+                assertNotProcessing("pipeline_processor");
+                if (typeof value !== "string" || !hasProcessor(value))
+                    throw new Error(
+                        `pipeline_processor expects one registered processor id: ${PROCESSOR_REGISTRY.map((p) => p.id).join(", ")}.`,
+                    );
+                handleProcessorChange(value);
             },
         };
     }, [isLoading]);

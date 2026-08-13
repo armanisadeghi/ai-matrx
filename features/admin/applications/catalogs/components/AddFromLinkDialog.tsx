@@ -331,7 +331,7 @@ export function AddFromLinkDialog({
                   The resolver found no downloadable files at this link.
                 </p>
               ) : (
-                <div className="max-h-[38vh] space-y-1 overflow-y-auto rounded-md border border-border p-1">
+                <div className="max-h-[38dvh] space-y-1 overflow-y-auto rounded-md border border-border p-1">
                   {result.files.map((file) => {
                     const selected = file.download_url === selectedFileUrl;
                     return (

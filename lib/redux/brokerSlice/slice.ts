@@ -1,4 +1,4 @@
-/** @deprecated Legacy applet broker slice — no-op reducer for compile compatibility. */
+/** @deprecated Legacy broker slice — no-op reducer for compile compatibility. */
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { BrokerMapEntry } from "./types";

@@ -1,6 +1,6 @@
 {
   "name": "app-matrx",
-  "version": "0.4.488",
+  "version": "0.4.569",
   "private": true,
   "scripts": {
     "dev": "bash scripts/dev-cleanup.sh reap && NODE_OPTIONS='--max-old-space-size=3072 --dns-result-order=ipv4first' next dev",
@@ -84,6 +84,8 @@
     "check:dead-ends": "tsx scripts/dead-ends/check-dead-ends.ts",
     "check:dead-ends:write": "tsx scripts/dead-ends/check-dead-ends.ts --write",
     "check:dead-ends:strict": "tsx scripts/dead-ends/check-dead-ends.ts --strict",
+    "check:copy-everywhere": "node .claude/skills/agent-copy/scripts/detect-copy-adoption.mjs",
+    "test:copy-everywhere": "node --test .claude/skills/agent-copy/scripts/detect-copy-adoption.test.mjs",
     "check:lint-debt": "tsx scripts/lint-debt/check-lint-debt.ts",
     "check:lint-debt:write": "tsx scripts/lint-debt/check-lint-debt.ts --write",
     "check:lint-debt:strict": "tsx scripts/lint-debt/check-lint-debt.ts --strict",
@@ -169,6 +171,9 @@
     "dev:reap:dry": "bash scripts/dev-cleanup.sh reap --dry-run",
     "dev:stop": "bash scripts/dev-cleanup.sh ports",
     "dev:nuke": "bash scripts/dev-cleanup.sh all",
+    "preview:start": "bash scripts/agent-dev-server.sh start",
+    "preview:stop": "bash scripts/agent-dev-server.sh stop",
+    "preview:status": "bash scripts/agent-dev-server.sh status",
     "fix:tsconfig": "tsx scripts/check-tsconfig-hygiene.ts --fix",
     "lab:graph": "tsx scripts/build-lab/graph-report.ts",
     "lab:run": "bash scripts/build-lab/run.sh"

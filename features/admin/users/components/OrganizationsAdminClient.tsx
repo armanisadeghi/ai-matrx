@@ -64,8 +64,9 @@ export function OrganizationsAdminClient() {
   const focusedUserId = searchParams.get("user");
   const requestedOrganizationId = searchParams.get("org");
 
-  const [directory, setDirectory] =
-    useState<AdminOrganizationDirectory | null>(null);
+  const [directory, setDirectory] = useState<AdminOrganizationDirectory | null>(
+    null,
+  );
   const [users, setUsers] = useState<AdminUserRow[]>([]);
   const [selectedOrganizationId, setSelectedOrganizationId] = useState<
     string | null
@@ -102,9 +103,7 @@ export function OrganizationsAdminClient() {
           throw new Error(usersJson.error ?? "Failed to load users");
         }
         if (!cancelled) {
-          setDirectory(
-            directoryJson.directory as AdminOrganizationDirectory,
-          );
+          setDirectory(directoryJson.directory as AdminOrganizationDirectory);
           setUsers(usersJson.users as AdminUserRow[]);
         }
       } catch (loadError) {
@@ -152,8 +151,7 @@ export function OrganizationsAdminClient() {
     (organization) => organization.id === effectiveSelectedOrganizationId,
   );
   const selectedMemberships = (directory?.memberships ?? []).filter(
-    (membership) =>
-      membership.organization_id === selectedOrganization?.id,
+    (membership) => membership.organization_id === selectedOrganization?.id,
   );
   const members: MemberDisplayRow[] = selectedMemberships.map((membership) => {
     const user = userById.get(membership.user_id);
@@ -242,7 +240,11 @@ export function OrganizationsAdminClient() {
   }
 
   async function changeRole(member: MemberDisplayRow, nextRole: string) {
-    if (!selectedOrganization || !isOrgRole(nextRole) || nextRole === member.role)
+    if (
+      !selectedOrganization ||
+      !isOrgRole(nextRole) ||
+      nextRole === member.role
+    )
       return;
     const approved = await confirm({
       title: `Change role to ${getRoleLabel(nextRole)}?`,
@@ -477,7 +479,8 @@ export function OrganizationsAdminClient() {
                 <Building2 className="h-4 w-4 text-primary" /> Organizations
               </div>
               <p className="text-xs text-muted-foreground">
-                {visibleOrganizations.length} visible of {directory?.organizations.length ?? 0}
+                {visibleOrganizations.length} visible of{" "}
+                {directory?.organizations.length ?? 0}
               </p>
             </div>
             <Button
@@ -496,6 +499,7 @@ export function OrganizationsAdminClient() {
           </div>
           <div className="min-h-0 flex-1 p-2">
             <MatrxDataTable
+              urlState={{ id: "organizations", selectedRow: false }}
               data={visibleOrganizations}
               columns={organizationColumns}
               getRowId={(organization) => organization.id}
@@ -572,6 +576,7 @@ export function OrganizationsAdminClient() {
           </div>
           <div className="min-h-0 flex-1 p-2">
             <MatrxDataTable
+              urlState={{ id: "organization-members" }}
               data={members}
               columns={memberColumns}
               getRowId={(member) => member.id}

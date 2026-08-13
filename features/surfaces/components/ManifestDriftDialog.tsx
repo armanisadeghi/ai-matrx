@@ -32,6 +32,7 @@ import {
   listSurfaceValues,
   remediateBrokenMapping,
 } from "@/features/surfaces/services/surfaces.service";
+import { countDriftIssues } from "@/features/surfaces/utils/drift-report-count";
 import type {
   SurfaceDriftReport,
   SurfaceValue,
@@ -65,26 +66,11 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
     void load();
   }, []);
 
-  // EVERY category the report computes must be counted here. `surfaceLabelDrifts`
-  // and `valueGroupsDrifts` (THE NAMING LAW's DB check, service step 10) were
-  // computed, returned, and counted by nothing — so a workspace whose ONLY drift
-  // was a renamed label or a reordered value group got the green
-  // "Everything is in sync" check while the drift sat in the report object.
-  // Reporting a healthy state for a problem you already detected is worse than
-  // not checking at all: it actively tells the operator to stop looking.
-  const totalIssues = report
-    ? report.manifestsMissingInDb.length +
-      report.dbValuesNotInManifest.length +
-      report.diffs.length +
-      report.roleManifestsMissingInDb.length +
-      report.dbRolesNotInManifest.length +
-      report.roleDiffs.length +
-      report.unknownNamespaces.length +
-      report.brokenAgentMappings.length +
-      report.urlPatternDrifts.length +
-      report.surfaceLabelDrifts.length +
-      report.valueGroupsDrifts.length
-    : 0;
+  // EVERY category the report computes must be counted here — see
+  // `countDriftIssues` for why this is one shared, exhaustive-by-construction
+  // helper rather than a hand-maintained sum that goes stale each time the
+  // report grows a category.
+  const totalIssues = countDriftIssues(report);
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -211,6 +197,100 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                     key={`rdiff-${d.surfaceName}-${d.roleName}`}
                     surfaceName={d.surfaceName}
                     name={d.roleName}
+                    diff={d.diff}
+                    showDiff
+                  />
+                ))}
+              </Section>
+
+              <Section
+                title="Manifest write targets missing from DB"
+                count={report.writeTargetManifestsMissingInDb.length}
+                tone="amber"
+                description="Write targets declared in code but not yet upserted to ui_surface_write_target. Server-side agents can't see them until they land. Sync to apply."
+              >
+                {report.writeTargetManifestsMissingInDb.map((d) => (
+                  <DriftRow
+                    key={`wtm-${d.surfaceName}-${d.targetName}`}
+                    surfaceName={d.surfaceName}
+                    name={d.targetName}
+                  />
+                ))}
+              </Section>
+
+              <Section
+                title="DB write targets without a code manifest"
+                count={report.dbWriteTargetsNotInManifest.length}
+                tone="rose"
+                description='Stale write-target rows — a removed target, or a sync from a branch whose manifest never merged. READ THIS LIST BEFORE ACTING: "Delete stale rows" is a GLOBAL sweep and will delete rows belonging to work that is still in flight.'
+              >
+                {report.dbWriteTargetsNotInManifest.map((d) => (
+                  <DriftRow
+                    key={`wtd-${d.surfaceName}-${d.targetName}`}
+                    surfaceName={d.surfaceName}
+                    name={d.targetName}
+                  />
+                ))}
+              </Section>
+
+              <Section
+                title="Write target field-level diffs"
+                count={report.writeTargetDiffs.length}
+                tone="orange"
+                description="Same target on both sides but fields differ — including apply_policy, the field that decides whether an agent may write without a human. Sync to make DB match code."
+              >
+                {report.writeTargetDiffs.map((d) => (
+                  <DriftRow
+                    key={`wtdiff-${d.surfaceName}-${d.targetName}`}
+                    surfaceName={d.surfaceName}
+                    name={d.targetName}
+                    diff={d.diff}
+                    showDiff
+                  />
+                ))}
+              </Section>
+
+              <Section
+                title="Manifest client tools missing from DB"
+                count={report.clientToolManifestsMissingInDb.length}
+                tone="amber"
+                description="Client tools declared in code but not present in ui_surface_client_tool."
+              >
+                {report.clientToolManifestsMissingInDb.map((d) => (
+                  <DriftRow
+                    key={`ctm-${d.surfaceName}-${d.toolName}`}
+                    surfaceName={d.surfaceName}
+                    name={d.toolName}
+                  />
+                ))}
+              </Section>
+
+              <Section
+                title="DB client tools without a code manifest"
+                count={report.dbClientToolsNotInManifest.length}
+                tone="rose"
+                description="Stale client-tool rows — a removed tool, or a sync from a branch whose manifest never merged. Same warning as write targets: read the list before any global sweep."
+              >
+                {report.dbClientToolsNotInManifest.map((d) => (
+                  <DriftRow
+                    key={`ctd-${d.surfaceName}-${d.toolName}`}
+                    surfaceName={d.surfaceName}
+                    name={d.toolName}
+                  />
+                ))}
+              </Section>
+
+              <Section
+                title="Client tool field-level diffs"
+                count={report.clientToolDiffs.length}
+                tone="orange"
+                description="Same tool on both sides but fields differ. input_schema is compared as canonical JSON, so jsonb key order is never the cause."
+              >
+                {report.clientToolDiffs.map((d) => (
+                  <DriftRow
+                    key={`ctdiff-${d.surfaceName}-${d.toolName}`}
+                    surfaceName={d.surfaceName}
+                    name={d.toolName}
                     diff={d.diff}
                     showDiff
                   />

@@ -16,13 +16,11 @@ import type {
 
 export interface CreateAgentPlanInput {
   conversation_id: string;
-  user_id: string;
   title: string;
   steps: string[];
   reasoning?: string | null;
   domains?: string[] | null;
   estimated_minutes?: number | null;
-  project_id?: string | null;
 }
 
 export async function getCurrentPlan(
@@ -67,15 +65,14 @@ export async function createPlan(
   const { data, error } = await db
     .schema("chat").from("agent_plan")
     .insert({
+      // `created_by` is stamped by the `_stamp_actor` trigger — never client-set.
       organization_id: await ensureOrgId(undefined),
       conversation_id: input.conversation_id,
-      user_id: input.user_id,
       title: input.title,
       steps: input.steps,
       reasoning: input.reasoning ?? null,
       domains: input.domains ?? null,
       estimated_minutes: input.estimated_minutes ?? null,
-      project_id: input.project_id ?? null,
       status: "proposed",
     })
     .select("*")

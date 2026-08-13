@@ -330,7 +330,7 @@ export function ContextDocsMenu({ conversationId }: ContextDocsMenuProps) {
         className="w-[min(360px,calc(100vw-1rem))] p-0 border-border"
         container={dialogContainer ?? undefined}
       >
-        <div className="max-h-[min(70vh,560px)] overflow-y-auto overscroll-contain">
+        <div className="max-h-[min(70dvh,560px)] overflow-y-auto overscroll-contain">
           <ContextDocsMenuBody conversationId={conversationId} />
         </div>
       </PopoverContent>

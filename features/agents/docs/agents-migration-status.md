@@ -18,8 +18,8 @@
 | **Tools** | `tools` uuid[] NOT NULL default {}, `custom_tools` jsonb NOT NULL default [] |
 | **Context** | `context_slots` jsonb NOT NULL default [] |
 | **Organization** | `category` text, `tags` text[] NOT NULL default {} |
-| **Status** | `is_active` bool, `is_public` bool, `is_archived` bool, `is_favorite` bool |
-| **Ownership** | `user_id` uuid, `organization_id` FK, `workspace_id` FK, `project_id` FK, `task_id` FK |
+| **Status** | `is_active` bool, `is_archived` bool, `is_favorite` bool (`is_public` DROPPED 2026-08-12 — viewer-level access via `iam.has_access_for` replaces it) |
+| **Ownership** | `created_by` uuid (`user_id` DROPPED 2026-08-12), `organization_id` FK, `task_id` FK |
 | **Lineage** | `source_agent_id` uuid FK→agents (self-ref), `source_snapshot_at` timestamptz |
 | **Versioning** | `version` int, `created_at`, `updated_at` |
 
@@ -73,9 +73,9 @@ Full-row snapshot: `id` PK, `agent_id` FK→agents CASCADE, `version_number`, sn
 ### On `agents`
 | Policy | Cmd | Rule |
 |---|---|---|
-| `agents_public_read` | SELECT | `is_public = true` (anon + authenticated) |
+| `agents_public_read` | SELECT | RETIRED — canonical `iam` policies own reads (`is_public` dropped 2026-08-12) |
 | `agents_select` | SELECT | `check_resource_access('agents', ...)` |
-| `agents_insert` | INSERT | `user_id = auth.uid()` |
+| `agents_insert` | INSERT | `created_by = auth.uid()` (canonical std_* policies) |
 | `agents_update` | UPDATE | `check_resource_access('agents', ..., 'editor')` |
 | `agents_delete` | DELETE | Owner OR `check_resource_access('agents', ..., 'admin')` |
 
@@ -99,13 +99,13 @@ Full-row snapshot: `id` PK, `agent_id` FK→agents CASCADE, `version_number`, sn
 
 **Agent list page fetch.** SECURITY INVOKER — RLS filters automatically, user sees only what they're allowed to. Returns lightweight rows ordered by `updated_at DESC`. All filtering (active, archived, category, tags, agent_type) is done client-side or via PostgREST query params.
 
-**Returns:** `id`, `name`, `description`, `category`, `tags`, `agent_type`, `model_id`, `is_active`, `is_public`, `is_archived`, `is_favorite`, `source_agent_id`, `user_id`, `organization_id`, `created_at`, `updated_at`
+**Returns:** `id`, `name`, `description`, `category`, `tags`, `agent_type`, `model_id`, `is_active`, `is_archived`, `is_favorite`, `source_agent_id`, `created_by`, `organization_id`, `created_at`, `updated_at`
 
 ---
 
 ### `duplicate_agent(agent_id uuid)` → `uuid`
 
-**Duplicate an agent.** SECURITY DEFINER — verifies read access explicitly via `check_resource_access` (user may be duplicating a shared agent they don't own). Creates a copy with: name suffixed with `(Copy)`, `user_id` = current user, `agent_type` = `'user'` always, `source_agent_id` = original id, `source_snapshot_at` = now(), hierarchy cleared (user organizes later), `is_public/is_archived/is_favorite` reset to false. All other fields copied verbatim (tools, custom_tools, settings, messages, variable_definitions, context_slots, model_id, model_tiers, output_schema).
+**Duplicate an agent.** SECURITY DEFINER — verifies read access explicitly via `check_resource_access` (user may be duplicating a shared agent they don't own). Creates a copy with: name suffixed with `(Copy)`, `created_by` = current user (stamped by `_stamp_actor`), `agent_type` = `'user'` always, `source_agent_id` = original id, `source_snapshot_at` = now(), hierarchy cleared (user organizes later), `is_archived/is_favorite` reset to false. Access gate: viewer-level `iam.has_access_for` (2026-08-12). All other fields copied verbatim (tools, custom_tools, settings, messages, variable_definitions, context_slots, model_id, model_tiers, output_schema).
 
 **Params:** `agent_id uuid`
 **Returns:** new agent `uuid`

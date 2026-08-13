@@ -6,7 +6,7 @@
 // HTML pages, flashcard decks, org charts, diagrams, etc.
 //
 // State structure uses secondary indexes (byMessageId, byConversationId,
-// byProjectId) to enable O(1) lookups without scanning the full artifact map.
+// byTaskId) to enable O(1) lookups without scanning the full artifact map.
 // Thunks maintain these indexes whenever artifacts are upserted or removed.
 //
 // byId + id-list index pattern.
@@ -30,7 +30,6 @@ export interface ArtifactsState {
   // Secondary indexes for O(1) lookups (arrays of artifact IDs)
   byMessageId: Record<string, string[]>; // messageId → artifactId[]
   byConversationId: Record<string, string[]>; // conversationId → artifactId[]
-  byProjectId: Record<string, string[]>; // projectId → artifactId[]
   byTaskId: Record<string, string[]>; // taskId → artifactId[]
 
   // Ordered ID list for list views (sorted by updatedAt desc)
@@ -48,7 +47,6 @@ const initialState: ArtifactsState = {
   artifacts: {},
   byMessageId: {},
   byConversationId: {},
-  byProjectId: {},
   byTaskId: {},
   allIds: [],
   fetchStatus: "idle",
@@ -113,9 +111,6 @@ const artifactsSlice = createSlice({
             artifact.id,
           );
         }
-        if (existing.projectId !== artifact.projectId) {
-          removeFromIndex(state.byProjectId, existing.projectId, artifact.id);
-        }
         if (existing.taskId !== artifact.taskId) {
           removeFromIndex(state.byTaskId, existing.taskId, artifact.id);
         }
@@ -127,7 +122,6 @@ const artifactsSlice = createSlice({
       // Add to secondary indexes
       addToIndex(state.byMessageId, artifact.messageId, artifact.id);
       addToIndex(state.byConversationId, artifact.conversationId, artifact.id);
-      addToIndex(state.byProjectId, artifact.projectId, artifact.id);
       addToIndex(state.byTaskId, artifact.taskId, artifact.id);
 
       // Maintain ordered list (insert or move to front for recency)
@@ -154,7 +148,6 @@ const artifactsSlice = createSlice({
             existing.conversationId,
             artifact.id,
           );
-          removeFromIndex(state.byProjectId, existing.projectId, artifact.id);
           removeFromIndex(state.byTaskId, existing.taskId, artifact.id);
         }
 
@@ -165,7 +158,6 @@ const artifactsSlice = createSlice({
           artifact.conversationId,
           artifact.id,
         );
-        addToIndex(state.byProjectId, artifact.projectId, artifact.id);
         addToIndex(state.byTaskId, artifact.taskId, artifact.id);
       }
 
@@ -186,7 +178,6 @@ const artifactsSlice = createSlice({
 
       removeFromIndex(state.byMessageId, existing.messageId, id);
       removeFromIndex(state.byConversationId, existing.conversationId, id);
-      removeFromIndex(state.byProjectId, existing.projectId, id);
       removeFromIndex(state.byTaskId, existing.taskId, id);
 
       delete state.artifacts[id];
@@ -253,10 +244,6 @@ export const selectArtifactsByMessageIdIndex = (
 export const selectArtifactsByConversationIdIndex = (
   state: WithArtifacts,
 ): Record<string, string[]> => state.artifacts.byConversationId;
-
-export const selectArtifactsByProjectIdIndex = (
-  state: WithArtifacts,
-): Record<string, string[]> => state.artifacts.byProjectId;
 
 export const selectArtifactsByTaskIdIndex = (
   state: WithArtifacts,

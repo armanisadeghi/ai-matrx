@@ -1,4 +1,4 @@
-import {LucideIcon} from "lucide-react";
+import {Check, LucideIcon} from "lucide-react";
 import React from "react";
 import {CardBody, CardContainer, CardItem} from "@/components/ui/3d-card";
 
@@ -32,8 +32,9 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ Icon, title, description, fea
                 <CardItem translateZ="80" className="mt-4">
                     <ul className="space-y-2">
                         {features.map((feature, index) => (
-                            <li key={index} className="flex items-center">
-                                <span className="text-primary mr-2">✓</span> {feature}
+                            <li key={index} className="flex items-center gap-2">
+                                <Check className="size-4 shrink-0 text-primary" aria-hidden="true" />
+                                {feature}
                             </li>
                         ))}
                     </ul>

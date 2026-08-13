@@ -27,8 +27,10 @@ import type {
   PlanEntityInsert,
   PlanEntityRow,
   PlanEntityUpdate,
+  PlanNodeArtifactRow,
   PlanNodeInsert,
   PlanNodeRow,
+  PlanNodeStepRow,
   PlanNodeUpdate,
   PlanProfileRow,
 } from "../types";
@@ -167,6 +169,61 @@ export async function softDeletePlanNode(id: string): Promise<void> {
     .is("deleted_at", null)
     .select("id");
   assertMutated(response.data, response.error, "delete this plan node");
+}
+
+// ─── Pipeline records (Website Factory P4 — plan.node_step / node_artifact) ──
+// Server-written (aidream services/content_plan/artifacts.py is the ONE write
+// path); the client READS both direct under RLS and writes neither.
+
+/** Every step-state row of a site — the researched/written/built axis for
+ * tree/table badges and the NodePanel rail. Sites are ≤ a few hundred nodes ×
+ * ≤ 7 steps; one paged read. */
+export async function listNodeSteps(
+  siteId: string,
+  signal?: AbortSignal,
+): Promise<PlanNodeStepRow[]> {
+  const rows: PlanNodeStepRow[] = [];
+  const abortSignal = signal ?? new AbortController().signal;
+  const db = await planDb();
+  for (let page = 0; page < 10; page += 1) {
+    const from = page * 1000;
+    const response = await db
+      .from("node_step")
+      .select("*")
+      .eq("site_id", siteId)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: true })
+      .order("id", { ascending: true })
+      .range(from, from + 999)
+      .abortSignal(abortSignal);
+    const batch = assertData(response.data, response.error);
+    rows.push(...batch);
+    if (batch.length < 1000) break;
+    if (page === 9) {
+      throw new Error(
+        "This plan has more than 10,000 step rows — refusing a silently truncated read.",
+      );
+    }
+  }
+  return rows;
+}
+
+/** One node's artifacts, every revision, newest first (current rows have
+ * `valid_to IS NULL` — supersession is the history). */
+export async function listNodeArtifacts(
+  nodeId: string,
+  signal?: AbortSignal,
+): Promise<PlanNodeArtifactRow[]> {
+  const response = await (await planDb())
+    .from("node_artifact")
+    .select("*")
+    .eq("node_id", nodeId)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: true })
+    .limit(200)
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertData(response.data, response.error);
 }
 
 // ─── Cross-site plan overview (the /marketing/content-plan list page) ────

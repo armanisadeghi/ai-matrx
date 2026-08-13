@@ -78,6 +78,9 @@ enrich comments, and open a result on YouTube. Topic selection lives at
 
 ## Changelog
 
+- **2026-08-13** — Added the compact publish date to modal/direct previews;
+  result cards keep their existing richer date treatment. Missing or invalid
+  provider dates now consistently say `No Date`.
 - **2026-07-28** — Added permanent per-user search history, exact zero-quota
   result replay, deep links, and paginated desktop/mobile history navigation.
 - **2026-07-28** — Promoted video length into the card metrics, added explicit

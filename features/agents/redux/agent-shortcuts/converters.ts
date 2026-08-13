@@ -267,10 +267,12 @@ export function dbRowToAgentShortcut(row: ShortcutRow): AgentShortcut {
 
     isActive: row.is_active,
 
-    userId: row.user_id,
+    userId: row.created_by,
     organizationId: row.organization_id,
-    projectId: row.project_id,
-    taskId: row.task_id,
+    // project/task scoping lives in platform.associations; table rows no longer
+    // carry it — the RPC read paths (which project the edges) fill these fields.
+    projectId: null,
+    taskId: null,
 
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -317,13 +319,13 @@ export function shortcutToExecutionConfig(
 // ---------------------------------------------------------------------------
 
 export function agentShortcutToInsert(shortcut: AgentShortcut): ShortcutInsert {
-  // MATRX-EXCEPTION: built as a loose object because AgentShortcut.organizationId
-  // is `string | null` while the generated ShortcutInsert.organization_id is
-  // required (`string`) — the DB column has no default and RLS/insert always
-  // runs in an org context in practice, but the TS types don't encode that.
-  // A direct ShortcutInsert-typed object literal would reject a nullable
-  // organizationId even though callers only ever insert with one present.
-  const insert: Record<string, unknown> = {
+  if (!shortcut.organizationId) {
+    throw new Error(
+      "[agent-shortcuts] cannot insert a shortcut without an organization",
+    );
+  }
+
+  const insert: ShortcutInsert = {
     category_id: shortcut.categoryId,
     label: shortcut.label,
     description: shortcut.description,
@@ -365,13 +367,13 @@ export function agentShortcutToInsert(shortcut: AgentShortcut): ShortcutInsert {
 
     is_active: shortcut.isActive,
 
-    user_id: shortcut.userId,
+    created_by: shortcut.userId,
     organization_id: shortcut.organizationId,
-    project_id: shortcut.projectId,
-    task_id: shortcut.taskId,
+    // project/task scoping is written as platform.associations edges via the
+    // agx_create_shortcut RPC — never as table columns (they no longer exist).
   };
 
-  return insert as unknown as ShortcutInsert;
+  return insert;
 }
 
 // ---------------------------------------------------------------------------
@@ -381,13 +383,7 @@ export function agentShortcutToInsert(shortcut: AgentShortcut): ShortcutInsert {
 export function agentShortcutToUpdate(
   partial: Partial<AgentShortcut>,
 ): ShortcutUpdate {
-  // MATRX-EXCEPTION: built as a loose object — several AgentShortcut fields
-  // (organizationId, userId, projectId, taskId, scopeMappings, etc.) are
-  // `string | null` while the generated ShortcutUpdate's matching columns
-  // are non-nullable `string` (Postgres columns with no default but that
-  // also aren't part of the update-nullable set). See agentShortcutToInsert
-  // above for the same mismatch on insert.
-  const update: Record<string, unknown> = {};
+  const update: ShortcutUpdate = {};
 
   if (partial.categoryId !== undefined) update.category_id = partial.categoryId;
   if (partial.label !== undefined) update.label = partial.label;
@@ -476,11 +472,16 @@ export function agentShortcutToUpdate(
 
   if (partial.isActive !== undefined) update.is_active = partial.isActive;
 
-  if (partial.userId !== undefined) update.user_id = partial.userId;
-  if (partial.organizationId !== undefined)
+  if (partial.userId !== undefined) update.created_by = partial.userId;
+  if (partial.organizationId !== undefined) {
+    if (partial.organizationId === null) {
+      throw new Error(
+        "[agent-shortcuts] cannot clear a shortcut's organization",
+      );
+    }
     update.organization_id = partial.organizationId;
-  if (partial.projectId !== undefined) update.project_id = partial.projectId;
-  if (partial.taskId !== undefined) update.task_id = partial.taskId;
+  }
+  // projectId/taskId updates are association-edge operations, not column writes.
 
-  return update as unknown as ShortcutUpdate;
+  return update;
 }

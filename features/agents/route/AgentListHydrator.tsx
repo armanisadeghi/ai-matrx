@@ -26,7 +26,7 @@ export function AgentListHydrator({ seeds }: { seeds: AgentListRow[] }) {
           isActive: row.is_active,
           isArchived: row.is_archived,
           isFavorite: row.is_favorite,
-          userId: row.user_id,
+          createdBy: row.created_by,
           organizationId: row.organization_id,
           taskId: row.task_id ?? null,
           sourceAgentId: row.source_agent_id,

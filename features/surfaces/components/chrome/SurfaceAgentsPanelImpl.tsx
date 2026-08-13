@@ -20,6 +20,7 @@ import { toast } from "@/lib/toast";
 import { surfaceFromPathname } from "@/features/surfaces/utils/route-to-surface";
 import { useSurfaceRuntime } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { getRelatedSurfaces } from "@/features/surfaces/runtime/fetchRelatedSurfaces";
+import { getManifest } from "@/features/surfaces/manifests/registry";
 import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 import { SurfaceBoundAgentsList } from "@/features/surfaces/components/bind/SurfaceBoundAgentsList";
 import { Badge } from "@/components/ui/badge";
@@ -48,11 +49,25 @@ export default function SurfaceAgentsPanelImpl({
   const openSurfaceContextAdmin = useOpenSurfaceContextInspector();
 
   const routeSurface = surfaceFromPathname(pathname);
-  // Prefer the page's registered runtime surface when it matches the route
-  // (or when the route has no mapping yet).
+  // An OVERLAY surface (a manifest declaring `overlayId`) registers a runtime
+  // ONLY while its window/drawer is actually open, and it renders literally on
+  // top of the route. So when one is the deepest live runtime it IS what the
+  // user is looking at, even on a route that has its own mapping.
+  //
+  // Without this case an overlay surface could never become primary on a
+  // mapped route, and several already-adopted ones are only reachable there.
+  // `matrx-user/quick-note-save` is the worked example: the Quick Save Note
+  // window opens ONLY from a chat message's Save as > Note, so it is always
+  // over `/chat/[id]` — the panel resolved `matrx-user/chat`, listed and RAN
+  // the chat's agents against the chat's scope, and the window's declared
+  // values and `note_draft` write target were unreachable by construction.
+  const runtimeIsOverlay =
+    !!runtime?.surfaceName && !!getManifest(runtime.surfaceName)?.overlayId;
+  // Otherwise prefer the page's registered runtime surface when it matches the
+  // route (or when the route has no mapping yet).
   const primaryName =
     runtime?.surfaceName &&
-    (!routeSurface || runtime.surfaceName === routeSurface)
+    (runtimeIsOverlay || !routeSurface || runtime.surfaceName === routeSurface)
       ? runtime.surfaceName
       : (routeSurface ?? runtime?.surfaceName ?? null);
 

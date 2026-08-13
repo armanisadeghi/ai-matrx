@@ -107,7 +107,7 @@ export function SetVersionHistoryDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <ScrollArea className="max-h-[55vh]">
+          <ScrollArea className="max-h-[55dvh]">
             <div className="px-4 py-3">
               {loading ? (
                 <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">

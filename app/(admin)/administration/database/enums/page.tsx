@@ -1,24 +1,24 @@
-import React from 'react';
-import { getDatabaseEnums } from '@/actions/admin/enum-functions';
-import EnumsContainer from './components/EnumsContainer';
-import { DatabaseEnum } from '@/types/enum-types';
-
+import React from "react";
+import { Suspense } from "react";
+import { getDatabaseEnums } from "@/actions/admin/enum-functions";
+import EnumsContainer from "./components/EnumsContainer";
+import { DatabaseEnum } from "@/types/enum-types";
 
 export const metadata = {
-  title: 'Database Enums',
-  description: 'Manage database enum types',
+  title: "Database Enums",
+  description: "Manage database enum types",
 };
 
 export default async function EnumsPage() {
   // Fetch enums on the server side
   let enumsData: DatabaseEnum[] = [];
-  let errorMessage = '';
-  
+  let errorMessage = "";
+
   try {
     enumsData = await getDatabaseEnums();
   } catch (error) {
-    console.error('Error fetching database enums:', error);
-    errorMessage = 'Failed to load database enums. Please try again later.';
+    console.error("Error fetching database enums:", error);
+    errorMessage = "Failed to load database enums. Please try again later.";
   }
 
   return (
@@ -29,9 +29,17 @@ export default async function EnumsPage() {
             {errorMessage}
           </div>
         ) : (
-          <EnumsContainer initialEnums={enumsData} />
+          <Suspense
+            fallback={
+              <div className="p-4 text-sm text-muted-foreground">
+                Loading database enums…
+              </div>
+            }
+          >
+            <EnumsContainer initialEnums={enumsData} />
+          </Suspense>
         )}
       </div>
     </div>
   );
-} 
+}

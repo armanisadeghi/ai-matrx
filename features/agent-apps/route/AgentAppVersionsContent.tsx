@@ -88,7 +88,7 @@ export function AgentAppVersionsContent({
                 <div key={v.id} className="group/x relative flex items-stretch">
                   <Link
                     href={`/agent-apps/${appId}/v/${v.version_number}`}
-                    className="flex items-start gap-3 p-3 pr-16 flex-1 min-w-0 hover:bg-muted/50 transition-colors"
+                    className="flex items-start gap-3 p-3 pr-28 flex-1 min-w-0 hover:bg-muted/50 transition-colors"
                   >
                     <div className="flex-shrink-0 w-12 text-sm font-mono font-semibold text-foreground tabular-nums pt-0.5">
                       v{v.version_number}

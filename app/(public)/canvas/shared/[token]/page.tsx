@@ -6,6 +6,7 @@ import {
   getCanvasBlockMeta,
   buildCanvasDescription,
 } from "@/features/canvas/canvas-block-meta";
+import { resolveSharedCanvas } from "@/features/canvas/shared/resolveSharedCanvas";
 import { SharedCanvasViewClient } from "./SharedCanvasViewClient";
 
 interface PageProps {
@@ -20,14 +21,7 @@ export async function generateMetadata({
   const { token } = await params;
   const supabase = await createClient();
 
-  const { data: canvas } = await supabase
-    .schema("canvas").from("shared_canvas_items")
-    .select(
-      "title, description, thumbnail_url, canvas_type, creator_username, creator_display_name, tags",
-    )
-    .is("deleted_at", null)
-    .eq("share_token", token)
-    .single();
+  const canvas = await resolveSharedCanvas(token, supabase);
 
   if (!canvas) {
     return {

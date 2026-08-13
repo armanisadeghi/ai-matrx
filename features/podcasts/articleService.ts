@@ -60,7 +60,7 @@ export const articleService = {
         Pick<
           PcArticle,
           | "show_id"
-          | "user_id"
+          | "created_by"
           | "slug"
           | "title"
           | "content_markdown"
@@ -78,7 +78,7 @@ export const articleService = {
       .upsert(
         {
           ...payload,
-          user_id: payload.user_id ?? user?.id ?? null,
+          created_by: payload.created_by ?? user?.id ?? null,
           organization_id: await ensureOrgId(undefined),
         },
         { onConflict: "episode_id,kind" },

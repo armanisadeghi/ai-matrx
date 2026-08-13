@@ -8,7 +8,7 @@
 
 1. **One token ↔ one table.** Every entity is registered in `platform.entity_types` with a stable `token`. Reference entities by **token**, never by `schema.table`. Tables and schemas can move; the token never changes.
 2. **Every entity table carries the base contract** (§1). No exceptions.
-3. **Relationships are rows in `platform.associations`** (§7). *A new `x_y` junction table is a bug.*
+3. **Relationships are rows in `platform.associations`** (§7). _A new `x_y` junction table is a bug._
 4. **Growing vocabularies are FKs into a registry** (`platform.categories` via `category_id`), never enums or `CHECK` arrays. Fixed, code-level vocab may be an enum.
 5. **Access is RLS applied by `iam.apply_rls`, keyed on the token** (§4). Never hand-write policies.
 6. **Nothing is "done" until `iam.canonical_certify_ok(schema, table, token)` is `true`** (§8). No partial passes.
@@ -21,21 +21,22 @@
 
 Every entity table has these columns, in this order at the **front** of the table (custom fields go between `id` and `organization_id`):
 
-| column | type | null | notes |
-|---|---|---|---|
-| `id` | uuid | NOT NULL | PK, `DEFAULT gen_random_uuid()` |
-| *…custom fields…* | | | placed right after `id` for sensible default views |
-| `organization_id` | uuid | **NOT NULL** | FK → `iam.organizations(id)` |
-| `created_by` | uuid | null | FK → `auth.users(id)` |
-| `updated_by` | uuid | null | FK → `auth.users(id)` |
-| `created_at` | timestamptz | NOT NULL | `DEFAULT now()` |
-| `updated_at` | timestamptz | NOT NULL | `DEFAULT now()` |
-| `deleted_at` | timestamptz | null | soft-delete marker; NULL = live (present when `has_soft_delete`) |
-| `version` | integer | NOT NULL | `DEFAULT 1` |
-| `metadata` | jsonb | NOT NULL | `DEFAULT '{}'` |
-| `visibility` | `platform.visibility` | NOT NULL | enum; the access driver (present on entity/system variants) |
+| column            | type                  | null         | notes                                                            |
+| ----------------- | --------------------- | ------------ | ---------------------------------------------------------------- |
+| `id`              | uuid                  | NOT NULL     | PK, `DEFAULT gen_random_uuid()`                                  |
+| _…custom fields…_ |                       |              | placed right after `id` for sensible default views               |
+| `organization_id` | uuid                  | **NOT NULL** | FK → `iam.organizations(id)`                                     |
+| `created_by`      | uuid                  | null         | FK → `auth.users(id)`                                            |
+| `updated_by`      | uuid                  | null         | FK → `auth.users(id)`                                            |
+| `created_at`      | timestamptz           | NOT NULL     | `DEFAULT now()`                                                  |
+| `updated_at`      | timestamptz           | NOT NULL     | `DEFAULT now()`                                                  |
+| `deleted_at`      | timestamptz           | null         | soft-delete marker; NULL = live (present when `has_soft_delete`) |
+| `version`         | integer               | NOT NULL     | `DEFAULT 1`                                                      |
+| `metadata`        | jsonb                 | NOT NULL     | `DEFAULT '{}'`                                                   |
+| `visibility`      | `platform.visibility` | NOT NULL     | enum; the access driver (present on entity/system variants)      |
 
 **Trigger trio** (attached by the provisioner; identified by function name):
+
 - `_stamp_actor` — `platform._stamp_actor()` BEFORE INSERT/UPDATE — stamps `created_by`/`updated_by`.
 - `_stamp_org_default` — `public._stamp_org_default()` BEFORE INSERT — defaults `organization_id` (optional).
 - `_touch_row` — `platform._touch_row()` BEFORE INSERT/UPDATE — sets `updated_at`, and on UPDATE bumps `version := OLD.version + 1`.
@@ -94,7 +95,7 @@ Applied by `iam.apply_rls(schema, table, token, variant)`; enforced by `iam.has_
 
 - **Owner short-circuit:** `created_by = auth.uid()` returns true for any level.
 - **Policies** (canonical set): `svc_all` (service_role), `std_select`/`std_insert`/`std_update`/`std_delete` (authenticated, owner + `has_access`), `pub_read` (anon, `visibility='public'` + `deleted_at IS NULL`) when a visibility column exists.
-- **Authenticated policies gate on AUTHORIZATION only — never `deleted_at`.** `deleted_at IS NULL` lives ONLY on the anon `pub_read` policy (the public web must never see deleted content). It must NOT appear in any authenticated `std_select`/`std_update` USING or WITH CHECK: Postgres re-checks the SELECT policy against the *post-UPDATE* row, so a `deleted_at`-gated `std_select` makes a direct soft-delete `UPDATE` fail `42501` ("new row violates row-level security policy") and makes restore a silent 0-row no-op. Soft-delete visibility is the app's job (`.is('deleted_at', null)` in queries), not RLS's. Enforced platform-wide by `iam_apply_rls_v2_soft_delete_select_fix.sql` (2026-07-04) — the generator emits it only on `pub_read`.
+- **Authenticated policies gate on AUTHORIZATION only — never `deleted_at`.** `deleted_at IS NULL` lives ONLY on the anon `pub_read` policy (the public web must never see deleted content). It must NOT appear in any authenticated `std_select`/`std_update` USING or WITH CHECK: Postgres re-checks the SELECT policy against the _post-UPDATE_ row, so a `deleted_at`-gated `std_select` makes a direct soft-delete `UPDATE` fail `42501` ("new row violates row-level security policy") and makes restore a silent 0-row no-op. Soft-delete visibility is the app's job (`.is('deleted_at', null)` in queries), not RLS's. Enforced platform-wide by `iam_apply_rls_v2_soft_delete_select_fix.sql` (2026-07-04) — the generator emits it only on `pub_read`.
 - **Variants:** `entity` (standard), `component` (access defers to a composition parent in `platform.entity_relationships`), `ledger` (read-only select via org access), `system` (adds public-visibility read).
 - **`has_access` returns `false` when `auth.uid()` is NULL.** All the generic RPCs below enforce `has_access`, so calling them from a trusted server context requires a JWT/`app.user_id`, or use `service_role`.
 
@@ -106,15 +107,15 @@ Applied by `iam.apply_rls(schema, table, token, variant)`; enforced by `iam.has_
 
 **Canonical RPCs (in `public`, generic over any versioned token, access-checked):**
 
-| RPC | returns | purpose |
-|---|---|---|
-| `version_list(token, id, limit=50, offset=0)` | `(version, operation, actor_id, occurred_at, is_current)` | timeline |
-| `version_snapshot(token, id, version)` | jsonb | full row at a version |
-| `version_current(token, id)` | jsonb | live row |
-| `version_diff(token, id, from, to)` | jsonb `{changed:{field:{from,to}}, total_changes}` | diff two versions |
-| `version_diff_current(token, id, from)` | jsonb | diff a version vs live |
-| `version_restore(token, id, version)` | int (new version) | **promote/copy an old version into live** — content columns only; bumps version; captures a new snapshot; non-destructive |
-| `version_prune(token, id, keep=20)` | int | drop old snapshots (keeps v1 + newest N) |
+| RPC                                           | returns                                                   | purpose                                                                                                                   |
+| --------------------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `version_list(token, id, limit=50, offset=0)` | `(version, operation, actor_id, occurred_at, is_current)` | timeline                                                                                                                  |
+| `version_snapshot(token, id, version)`        | jsonb                                                     | full row at a version                                                                                                     |
+| `version_current(token, id)`                  | jsonb                                                     | live row                                                                                                                  |
+| `version_diff(token, id, from, to)`           | jsonb `{changed:{field:{from,to}}, total_changes}`        | diff two versions                                                                                                         |
+| `version_diff_current(token, id, from)`       | jsonb                                                     | diff a version vs live                                                                                                    |
+| `version_restore(token, id, version)`         | int (new version)                                         | **promote/copy an old version into live** — content columns only; bumps version; captures a new snapshot; non-destructive |
+| `version_prune(token, id, keep=20)`           | int                                                       | drop old snapshots (keeps v1 + newest N)                                                                                  |
 
 Diffs exclude noise (`version`, `updated_at`, `updated_by`). Restore never touches identity/ownership/lineage (`id`, `organization_id`, `created_by`, `created_at`, `version`, `updated_*`, `deleted_at`) or generated columns.
 
@@ -129,6 +130,7 @@ React: `supabase.rpc('version_list', { p_token: 'fc_card', p_id })`, `supabase.r
 `deleted_at IS NULL` = live. **RLS does NOT hide soft-deleted rows from authenticated readers** — that would break direct soft-delete/restore `UPDATE`s (§4). The app filters them in its own queries (`.is('deleted_at', null)` — the FE does this at 100+ read sites); only anon `pub_read` hides them from the public web.
 
 Two equivalent paths — both work:
+
 - **Direct RLS-authorized write** (canonical FE path per CLAUDE.md, React → Supabase directly): `.update({ deleted_at: new Date().toISOString() })` / `.update({ deleted_at: null })` to restore. Now works because authenticated policies no longer gate `deleted_at` (§4).
 - **Generic SECURITY-DEFINER RPCs** (for consumers without direct table access; bypass RLS): `public.entity_soft_delete(token, id)` → boolean, requires **admin** (owner qualifies), sets `deleted_at=now()`; `public.entity_undelete(token, id)` → boolean, requires **editor**, clears `deleted_at`.
 
@@ -146,11 +148,11 @@ Both RPCs are generic over any token with `deleted_at`; versioned tables record 
 
 **Canonical RPCs (in `public`, access-checked):**
 
-| RPC | returns | notes |
-|---|---|---|
-| `assoc_link(source_type, source_id, target_type, target_id, role=null, label=null, position=null, metadata='{}')` | uuid (edge id) | idempotent (upserts label/position/metadata). Requires editor on source + viewer on target. `organization_id` derived from source. |
-| `assoc_unlink(source_type, source_id, target_type, target_id, role=null)` | int (rows removed) | editor on source |
-| `assoc_list(type, id, direction='out', role=null)` | `(assoc_id, direction, role, label, edge_position, other_type, other_id, metadata, created_at)` | `out`=its targets, `in`=its members, `both`. viewer on entity. |
+| RPC                                                                                                               | returns                                                                                         | notes                                                                                                                              |
+| ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `assoc_link(source_type, source_id, target_type, target_id, role=null, label=null, position=null, metadata='{}')` | uuid (edge id)                                                                                  | idempotent (upserts label/position/metadata). Requires editor on source + viewer on target. `organization_id` derived from source. |
+| `assoc_unlink(source_type, source_id, target_type, target_id, role=null)`                                         | int (rows removed)                                                                              | editor on source                                                                                                                   |
+| `assoc_list(type, id, direction='out', role=null)`                                                                | `(assoc_id, direction, role, label, edge_position, other_type, other_id, metadata, created_at)` | `out`=its targets, `in`=its members, `both`. viewer on entity.                                                                     |
 
 React: `supabase.rpc('assoc_link', { p_source_type:'fc_card', p_source_id, p_target_type:'fc_set', p_target_id, p_role:'member' })`, `supabase.rpc('assoc_list', { p_type:'fc_set', p_id, p_direction:'in' })`.
 
@@ -158,7 +160,7 @@ React: `supabase.rpc('assoc_link', { p_source_type:'fc_card', p_source_id, p_tar
 
 ## 8. Conformance toolkit
 
-**The gate (single source of truth) — `iam.verify_canonical(schema, table, token [, variant])`** returns `(check_name, status, detail)`. It checks the *entire* contract: registration; all base columns with type + nullability; FK targets (`organization_id`→`iam.organizations`, `created_by`/`updated_by`→`auth.users`); `deleted_at` vs `has_soft_delete`; the trigger trio vs `is_versioned`; `visibility` is the `platform.visibility` enum NOT NULL (required when listed/shareable; skipped for components); legacy kills; RLS enabled + canonical policy set + owner short-circuit + `has_access(token)` + `pub_read`; sharing-token match; component composition.
+**The gate (single source of truth) — `iam.verify_canonical(schema, table, token [, variant])`** returns `(check_name, status, detail)`. It checks the _entire_ contract: registration; all base columns with type + nullability; FK targets (`organization_id`→`iam.organizations`, `created_by`/`updated_by`→`auth.users`); `deleted_at` vs `has_soft_delete`; the trigger trio vs `is_versioned`; `visibility` is the `platform.visibility` enum NOT NULL (required when listed/shareable; skipped for components); legacy kills; RLS enabled + canonical policy set + owner short-circuit + `has_access(token)` + `pub_read`; sharing-token match; component composition.
 
 - Severity: **FAIL** = structural contract violations (block everything). **WARN** = advisory/transitional (legacy owner col, `is_public`/`is_deleted`, missing visibility on an unlisted entity). **SKIP** = N/A.
 - `iam.verify_canonical_ok(...)` → boolean (no FAIL).
@@ -167,17 +169,28 @@ React: `supabase.rpc('assoc_link', { p_source_type:'fc_card', p_source_id, p_tar
 
 **The audit store — `SELECT audit.refresh();` rebuilds every snapshot** (drives the gate over all registered live tables + runs `plpgsql_check` over every plpgsql function). Exclusions read from `meta.excluded_schema`.
 
-| object | what it gives |
-|---|---|
-| `audit.summary` (view) | per table `fails` / `warns` / `certified`. `WHERE NOT certified ORDER BY fails DESC` = the hit list |
-| `audit.canonical_findings` | every FAIL/WARN with `check_name` + `detail` |
-| `audit.broken_functions` | `plpgsql_check` errors: `level` / `sqlstate` / `message` (catches dangling column/table refs after renames) |
-| `audit.function_deps` | precise function → object dependency map |
+| object                              | what it gives                                                                                                                                                  |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `audit.summary` (view)              | per table `fails` / `warns` / `certified`. `WHERE NOT certified ORDER BY fails DESC` = the hit list                                                            |
+| `audit.canonical_findings`          | every FAIL/WARN with `check_name` + `detail`                                                                                                                   |
+| `audit.broken_functions`            | `plpgsql_check` errors: `level` / `sqlstate` / `message` (catches dangling column/table refs after renames)                                                    |
+| `audit.function_deps`               | precise function → object dependency map                                                                                                                       |
 | `audit.table_impact(schema, table)` | **preflight**: every function touching a table · `dependency` (precise\|text) · `currently_broken` · exact `referenced_columns[]` — run before any rename/drop |
-| `audit.m2m_candidates` | tables with ≥2 FKs to non-org/user targets (junction-collapse candidates) |
-| `audit.unregistered_candidates` | live tables not in `entity_types` (`base_col_score` ≥4 ≈ real entity) |
-| `audit.stale_registry` | tokens whose table no longer exists |
-| `audit.refresh_log` | run history + counts |
+| `audit.m2m_candidates`              | tables with ≥2 FKs to non-org/user targets (junction-collapse candidates)                                                                                      |
+| `audit.unregistered_candidates`     | live tables not in `entity_types` (`base_col_score` ≥4 ≈ real entity)                                                                                          |
+| `audit.stale_registry`              | tokens whose table no longer exists                                                                                                                            |
+| `audit.refresh_log`                 | run history + counts                                                                                                                                           |
+
+### Admin console URL contract
+
+Every canonicalization report view is URL-addressable. Global search, all column
+filters, sort key/direction, candidate subview, broken-function keyword tags,
+table-impact inputs/run state, verify inputs/variant/run state, and both verify
+result-table views are query parameters with typed validation and omitted
+defaults. User changes create browser history entries; refresh, copied links,
+Back, and Forward therefore reconstruct the same working view. The shared
+implementation is `lib/url-state/useUrlState.ts` plus the audit-table integration
+in `features/administration/canonicalization/components/AdminAuditTable.tsx`.
 
 ---
 
@@ -186,14 +199,16 @@ React: `supabase.rpc('assoc_link', { p_source_type:'fc_card', p_source_id, p_tar
 **New table** → §3 (`create_entity_table`). Done.
 
 **Canonicalize an existing table (the flip loop) — touch once, never return:**
+
 1. `SELECT * FROM iam.verify_canonical(s,t,tok);` → the full fix list.
-2. `SELECT * FROM audit.table_impact(s,t);` → every dependent function + the exact columns each touches → the blast radius, *before* editing.
+2. `SELECT * FROM audit.table_impact(s,t);` → every dependent function + the exact columns each touches → the blast radius, _before_ editing.
 3. **One migration:** canonicalize the table (columns/FKs/triggers; RLS via `iam.apply_rls`) **and repoint every function from step 2** in the same migration.
 4. `SELECT audit.refresh();`
 5. `SELECT iam.canonical_certify_ok(s,t,tok);` must be `true`. If not, `SELECT * FROM iam.canonical_certify(s,t,tok);` and fix.
-6. *Only then* touch application/client code. Log the change in `platform.deprecated_relations`.
+6. _Only then_ touch application/client code. Log the change in `platform.deprecated_relations`.
 
 **Collapse an M2M junction into associations:**
+
 1. Ensure both endpoint tokens are registered + active.
 2. `INSERT INTO platform.associations` (set source/target tokens+ids, `organization_id` from source, `role`/`position`/`label`/`metadata`, plus `metadata.legacy_table` + `legacy_id`).
 3. Verify `count(new edges) == count(*) junction`.
@@ -218,9 +233,9 @@ React: `supabase.rpc('assoc_link', { p_source_type:'fc_card', p_source_id, p_tar
 
 ## 11. Gotchas (learned the hard way)
 
-- **Column renames do NOT propagate into function bodies.** Table/schema moves carry FKs/RLS/triggers by OID, but function *bodies* reference names as text and silently break. Always run `audit.table_impact` before a rename; `plpgsql_check` (via `audit.broken_functions`) catches the fallout. SQL-language functions are *not* covered by `plpgsql_check` — check them manually.
+- **Column renames do NOT propagate into function bodies.** Table/schema moves carry FKs/RLS/triggers by OID, but function _bodies_ reference names as text and silently break. Always run `audit.table_impact` before a rename; `plpgsql_check` (via `audit.broken_functions`) catches the fallout. SQL-language functions are _not_ covered by `plpgsql_check` — check them manually.
 - **`pg_get_functiondef` throws on aggregate functions.** Filter `prokind='f'` when scanning function bodies.
-- **A data-modifying function is not visible to sibling subqueries in the same statement.** After `assoc_link`/`version_restore`, read back in a *separate* statement.
+- **A data-modifying function is not visible to sibling subqueries in the same statement.** After `assoc_link`/`version_restore`, read back in a _separate_ statement.
 - **`position` is a keyword** — alias it in `RETURNS TABLE` column lists (we use `edge_position`).
 - **`has_access` needs `auth.uid()`.** From a server/service context, provide a JWT / `app.user_id`, or use `service_role`.
 - **The gate is the truth, not intuition.** A table that "looks" canonical but isn't certified (`iam.canonical_certify_ok`) is not done. As of 2026-07-03: 199 registered live tables, only **9 fully certified** — the rest are the canonicalization backlog (query `audit.summary WHERE NOT certified ORDER BY fails DESC`).

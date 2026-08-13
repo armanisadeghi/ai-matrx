@@ -22,6 +22,7 @@ import { useResearchStream } from "../../hooks/useResearchStream";
 import { ResearchFilterBar, type FilterDef } from "../shared/ResearchFilterBar";
 import { StoppedEarlyNote } from "../shared/StoppedEarlyNote";
 import { SynthesisVersionHistory } from "./SynthesisVersionHistory";
+import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 import { deriveReadiness } from "../../readiness";
 import type { FilterOption } from "@/components/hierarchy-filter/HierarchyFilterPill";
 import type { ResearchSynthesis, ResearchDataEvent } from "../../types";
@@ -136,9 +137,18 @@ function SynthesisCard({
             {synthesis.created_at
               ? new Date(synthesis.created_at).toLocaleDateString()
               : "Unknown date"}{" "}
-            · v
-            {synthesis.version}
-            {synthesis.model_id && ` · ${synthesis.model_id}`}
+            · v{synthesis.version}
+            {synthesis.model_id ? (
+              <span className="ml-1 inline-flex align-middle">
+                ·
+                <AiModelRef
+                  modelId={synthesis.model_id}
+                  showIcon={false}
+                  disableNavigation
+                  className="ml-1"
+                />
+              </span>
+            ) : null}
           </p>
         </div>
         {expanded ? (

@@ -114,7 +114,12 @@ export function OrgShortcutsLayoutClient({
   return (
     <OrgShortcutsProvider value={ctxValue}>
       <RouteHeader
-        left={<ChevronLeftTapButton href={`/organizations/${navOrgId}`} ariaLabel="Back" />}
+        left={
+          <ChevronLeftTapButton
+            href={`/organizations/${navOrgId}`}
+            ariaLabel="Back"
+          />
+        }
         center={<RouteModeNav items={navItems} />}
         right={
           <Badge
@@ -130,7 +135,9 @@ export function OrgShortcutsLayoutClient({
           </Badge>
         }
       />
-      <div className="h-full overflow-hidden bg-textured">{children}</div>
+      <div className="h-full overflow-y-auto overflow-x-hidden bg-textured">
+        {children}
+      </div>
     </OrgShortcutsProvider>
   );
 }

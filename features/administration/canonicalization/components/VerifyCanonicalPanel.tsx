@@ -15,7 +15,7 @@
  * while this page stays mounted.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
@@ -25,6 +25,12 @@ import {
   XCircle,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import {
+  booleanUrlCodec,
+  enumUrlCodec,
+  stringUrlCodec,
+  useUrlState,
+} from "@/lib/url-state/useUrlState";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -190,13 +196,23 @@ const blockingColumns: AuditColumnDef<CanonicalCertifyRow>[] = [
 
 export function VerifyCanonicalPanel() {
   const searchParams = useSearchParams();
-  const [schema, setSchema] = useState(searchParams.get("schema") ?? "");
-  const [table, setTable] = useState(searchParams.get("table") ?? "");
-  const [token, setToken] = useState(searchParams.get("token") ?? "");
-  const [variant, setVariant] = useState<string>("auto");
+  const initialDeepLink = useRef(
+    Boolean(
+      searchParams.get("schema") &&
+      searchParams.get("table") &&
+      searchParams.get("token"),
+    ),
+  );
+  const [schema, setSchema] = useUrlState("schema", stringUrlCodec());
+  const [table, setTable] = useUrlState("table", stringUrlCodec());
+  const [token, setToken] = useUrlState("token", stringUrlCodec());
+  const [variant, setVariant] = useUrlState(
+    "variant",
+    enumUrlCodec<string>(["auto", ...RLS_VARIANTS], "auto"),
+  );
+  const [hasRun, setHasRun] = useUrlState("run", booleanUrlCodec(false));
   const [autofilling, setAutofilling] = useState(false);
   const [running, setRunning] = useState(false);
-  const [hasRun, setHasRun] = useState(false);
   const [result, setResult] = useState<VerifyResult | null>(null);
   // Registered token for the current schema.table (from audit.summary). The gate
   // is keyed on the TOKEN, not the table name — and many tokens are singular
@@ -219,6 +235,8 @@ export function VerifyCanonicalPanel() {
       if (!res.ok) throw new Error(errorMessageFrom(data, res));
       if (typeof data.token === "string" && data.token) {
         setToken(data.token);
+        setHasRun(false);
+        setResult(null);
         toast.success(`Token: ${data.token}`);
       } else {
         toast.warning("No registered token found for that schema.table");
@@ -238,7 +256,6 @@ export function VerifyCanonicalPanel() {
         return;
       }
       setRunning(true);
-      setHasRun(true);
       try {
         const res = await fetch("/api/admin/canonicalization/verify", {
           method: "POST",
@@ -266,24 +283,16 @@ export function VerifyCanonicalPanel() {
   );
 
   useEffect(() => {
-    const s = searchParams.get("schema");
-    const t = searchParams.get("table");
-    const tok = searchParams.get("token");
-    if (s && t && tok) {
-      setSchema(s);
-      setTable(t);
-      setToken(tok);
-      void runVerify({ schema: s, table: t, token: tok });
+    if (!initialDeepLink.current) return;
+    initialDeepLink.current = false;
+    setHasRun(true);
+  }, [setHasRun]);
+
+  useEffect(() => {
+    if (hasRun && schema && table && token) {
+      void runVerify({ schema, table, token });
     }
-    // Re-run only when the deep-link params themselves actually change
-    // (e.g. clicking a different Summary row while this page stays
-    // mounted) — not on every keystroke of a manual edit below.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    searchParams.get("schema"),
-    searchParams.get("table"),
-    searchParams.get("token"),
-  ]);
+  }, [hasRun, runVerify, schema, table, token, variant]);
 
   const registeredToken = useMemo(
     () => lookupToken(schema, table),
@@ -296,8 +305,8 @@ export function VerifyCanonicalPanel() {
   const applyRegisteredToken = useCallback(() => {
     if (!registeredToken) return;
     setToken(registeredToken);
-    void runVerify({ schema, table, token: registeredToken });
-  }, [registeredToken, schema, table, runVerify]);
+    setHasRun(true);
+  }, [registeredToken, setHasRun, setToken]);
 
   const failCount = useMemo(
     () =>
@@ -338,12 +347,21 @@ export function VerifyCanonicalPanel() {
             if (patch.schema !== undefined) setSchema(patch.schema);
             if (patch.table !== undefined) setTable(patch.table);
             if (patch.token !== undefined) setToken(patch.token);
+            setHasRun(false);
+            setResult(null);
           }}
           onAutofillToken={() => void autofillToken()}
           autofilling={autofilling}
           disabled={running}
         />
-        <Select value={variant} onValueChange={setVariant}>
+        <Select
+          value={variant}
+          onValueChange={(value) => {
+            setVariant(value);
+            setHasRun(false);
+            setResult(null);
+          }}
+        >
           <SelectTrigger className="h-8 w-32 text-xs">
             <SelectValue />
           </SelectTrigger>
@@ -359,7 +377,10 @@ export function VerifyCanonicalPanel() {
         <Button
           size="sm"
           className="h-8"
-          onClick={() => void runVerify()}
+          onClick={() => {
+            if (hasRun) void runVerify();
+            else setHasRun(true);
+          }}
           disabled={running}
         >
           {running ? (
@@ -402,9 +423,9 @@ export function VerifyCanonicalPanel() {
             </code>
             . The registered token is{" "}
             <code className="font-mono font-semibold">{registeredToken}</code>.
-            Any <code>entity_registered</code> / <code>policy_uses_has_access</code>{" "}
-            / <code>sharing_token</code> FAILs below are caused by the wrong
-            token, not a conformance gap.
+            Any <code>entity_registered</code> /{" "}
+            <code>policy_uses_has_access</code> / <code>sharing_token</code>{" "}
+            FAILs below are caused by the wrong token, not a conformance gap.
           </span>
           <Button
             size="sm"
@@ -434,6 +455,7 @@ export function VerifyCanonicalPanel() {
                 defaultSort={{ key: "status", dir: "asc" }}
                 emptyMessage="No checks returned."
                 copyForAi={VERIFY_CHECKLIST_TABLE_COPY}
+                urlStateKey="checks"
                 toolbarExtra={
                   <Badge
                     variant="outline"
@@ -452,6 +474,7 @@ export function VerifyCanonicalPanel() {
                 csvFilename="canonicalization-verify-blocking.csv"
                 emptyMessage="Empty — perfect. Nothing is blocking certification."
                 copyForAi={VERIFY_BLOCKING_TABLE_COPY}
+                urlStateKey="blocking"
                 toolbarExtra={
                   <Badge
                     variant="outline"

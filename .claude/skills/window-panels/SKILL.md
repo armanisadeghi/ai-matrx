@@ -1,6 +1,6 @@
 ---
 name: window-panels
-description: Use for tasks scoped to the WindowPanel COMPONENT primitive itself — drag, resize, minimize/maximize, the tray dock (WindowTray / WindowTraySync), the runtime Window Manager registry (`windowManagerSlice`), URL persistence of window state, and the `window_sessions` DB hydration. Triggers on `features/window-panels/WindowPanel.tsx`, `WindowTray*.tsx`, `WindowPersistenceManager.tsx`, `lib/redux/slices/windowManagerSlice.ts`, or any task adding a `<WindowPanel>` directly on a page outside the overlay system. For OPENING / ADDING / RENDERING / DEBUGGING dialogs, sheets, modals, or windows-as-overlays — use the `overlay-system` skill instead. The two systems were merged in April 2026 (causing a class of silent-render bugs) and split back apart in May 2026; keep them separate.
+description: Use for tasks scoped to the WindowPanel COMPONENT primitive itself — drag, resize, minimize/maximize, the tray dock (WindowTray / WindowTraySync), the runtime Window Manager registry (`windowManagerSlice`), URL persistence of window state, and the local-first workspace persistence (IndexedDB/localStorage via `features/window-panels/persistence/`). Triggers on `features/window-panels/WindowPanel.tsx`, `WindowTray*.tsx`, `WindowPersistenceManager.tsx`, `lib/redux/slices/windowManagerSlice.ts`, or any task adding a `<WindowPanel>` directly on a page outside the overlay system. For OPENING / ADDING / RENDERING / DEBUGGING dialogs, sheets, modals, or windows-as-overlays — use the `overlay-system` skill instead. The two systems were merged in April 2026 (causing a class of silent-render bugs) and split back apart in May 2026; keep them separate.
 ---
 
 # Window Panels — the WindowPanel component + Window Manager
@@ -140,17 +140,19 @@ Runtime registry of mounted windows — geometry, z-index, tray slots, popout st
 
 ---
 
-## Persistence (`window_sessions` + URL)
+## Persistence (local-first workspace cache + URL)
 
-**Save triggers — only two.** Nothing else writes to the DB (moving, resizing, sidebar toggle, tab switch do NOT save):
+> **The `window_sessions` Supabase table is GONE** (dropped 2026-08-12, public-schema triage — it had 0 rows and no code consumer). Persistence is a local-first, tab-scoped workspace cache: IndexedDB + localStorage via `features/window-panels/persistence/localWindowSessionStore.ts`, account-isolated, default-deny per audited registry entry (see FEATURE.md 2026-07-20 entry). Nothing window-related is stored server-side.
+
+**Save triggers — only two.** Nothing else writes to the store (moving, resizing, sidebar toggle, tab switch do NOT save):
 1. **Explicit** — user clicks "Save window state" in the green dropdown.
 2. **Piggyback** — child code calls `onCollectData` as part of its own save.
 
-**`onCollectData`** returns a plain JSON-serializable object — wrap it in `useCallback` with all deps (it's called synchronously at save time). `WindowPanel` merges it under the chrome state (`windowState`, `rect`, `sidebarOpen`, `zIndex`) and writes to `window_sessions` (Supabase, RLS per user).
+**`onCollectData`** returns a plain JSON-serializable object — wrap it in `useCallback` with all deps (it's called synchronously at save time). `WindowPanel` merges it under the chrome state (`windowState`, `rect`, `sidebarOpen`, `zIndex`) and writes to the local workspace store (IndexedDB, per-account).
 
 - **On close** — `WindowPanel` deletes the row, so it doesn't reopen next load.
-- **On page load** — `WindowPersistenceManager` fetches rows, clamps each rect into the current viewport (`utils/rectClamp.ts`, 48 px min visible strip), and dispatches `openOverlay` + `restoreWindowState` **before** `WindowPanel` mounts.
-- **Ephemeral windows** (`ephemeral: true` in the metadata entry) skip DB persistence — the "Save window state" button is hidden, close skips the delete. Use for debug panels, one-shot tool dialogs, and callback-group windows whose caller-side state can't survive reload.
+- **On page load** — `WindowPersistenceManager` reads the local workspace, clamps each rect into the current viewport (`utils/rectClamp.ts`, 48 px min visible strip), and dispatches `openOverlay` + `restoreWindowState` **before** `WindowPanel` mounts.
+- **Ephemeral windows** (`ephemeral: true` in the metadata entry) skip persistence — the "Save window state" button is hidden, close skips the delete. Use for debug panels, one-shot tool dialogs, and callback-group windows whose caller-side state can't survive reload.
 - **Autosave-on-blur** (`autosave: true` / implied by `heavySnapshot: true` in metadata) saves on tab-hide + unmount with a 500 ms debounce; `onHeavySnapshot` awaits an async buffer serializer before the write.
 
 **URL deep-linking (`?panels=…`).** A window with `urlSync.key` in its metadata auto-activates `useUrlSync` — no prop wiring needed (explicit `urlSyncKey` / `urlSyncId` props still override). Instance id falls back to `overlayId` for singletons, reading like `?panels=notes:notesWindow`. Every metadata `urlSync.key` needs a hydrator in `url-sync/initUrlHydration.ts` (dev assertion logs missing ones).
@@ -191,7 +193,7 @@ Decision tree: has a sidebar → `"drawer"`; content-dominant → `"fullscreen"`
 | `features/window-panels/WindowPanel.tsx` | The primitive: slots, drag/resize/min/max, persistence binding, URL sync, mobile routing, popout. |
 | `features/window-panels/hooks/useWindowPanel.ts` | Pointer-driven move/resize + Redux window registration. |
 | `features/window-panels/WindowTray.tsx` / `WindowTraySync.tsx` | Minimized-window dock + debounced viewport sync. Mount one of each. |
-| `features/window-panels/WindowPersistenceManager.tsx` | `window_sessions` hydration; rect clamping; idle GC. |
+| `features/window-panels/WindowPersistenceManager.tsx` | local workspace hydration context; rect clamping; idle GC. |
 | `features/window-panels/registry/windowRegistryMetadata.ts` | Side-effect-free metadata lookup (`getStaticEntryByOverlayId`) — NOT a renderer. |
 | `features/window-panels/utils/lazy-bundle-guard.ts` | `assertLazyLoaded` bundle-leak guard. |
 | `features/window-panels/popout/**` | Pop-out lifecycle (`usePopoutWindow`, `usePopoutControl`, portal, feature detection). |

@@ -55,11 +55,7 @@ function isActive(pathname: string, href: string, exact?: boolean) {
 }
 
 type ApplicationsTab =
-  | "overview"
-  | "configuration"
-  | "catalogs"
-  | "installations"
-  | "history";
+  "overview" | "configuration" | "catalogs" | "installations" | "history";
 
 /** Derives the active tab from the pathname — route-tabbed, so reliable. */
 function tabFromPathname(pathname: string): ApplicationsTab {
@@ -143,7 +139,9 @@ export function ApplicationsAdminLayoutClient({
             })}
           </nav>
         </div>
-        <div className="flex-1 overflow-hidden">{children}</div>
+        <div className="flex-1 overflow-y-auto overflow-x-hidden">
+          {children}
+        </div>
       </div>
     </SurfaceRuntimeProvider>
   );

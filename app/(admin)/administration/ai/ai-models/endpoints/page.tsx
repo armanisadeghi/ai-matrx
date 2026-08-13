@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import EndpointsApisContainer from "@/features/ai-models/components/endpoints/EndpointsApisContainer";
 
 export default function AiEndpointsPage() {
@@ -7,7 +8,10 @@ export default function AiEndpointsPage() {
       <Suspense
         fallback={
           <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
-            Loading…
+            <SuspenseLoader
+              centered={false}
+              message="Loading model endpoints…"
+            />
           </div>
         }
       >

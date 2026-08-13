@@ -12,7 +12,7 @@ import type { QuizSession } from "@/types/quiz-session";
 // quiz_sessions is in `education` schema; local type until `education` is in PGRST_DB_SCHEMAS and types regenerated.
 type QuizSessionRow = Record<string, unknown> & {
   id: string;
-  user_id: string | null;
+  created_by: string | null;
   title: string | null;
   category: string | null;
   state: import("@/types/database.types").Json;
@@ -233,7 +233,7 @@ export function mapQuizSessionRow(row: QuizSessionRow): QuizSession | null {
   const quiz_metadata = parseQuizMetadataJson(row.quiz_metadata);
   if (row.quiz_metadata !== null && quiz_metadata === null) return null;
   if (
-    row.user_id === null ||
+    row.created_by === null ||
     row.created_at === null ||
     row.updated_at === null
   ) {
@@ -242,7 +242,7 @@ export function mapQuizSessionRow(row: QuizSessionRow): QuizSession | null {
 
   return {
     id: row.id,
-    user_id: row.user_id,
+    created_by: row.created_by,
     title: row.title,
     category: row.category,
     state,

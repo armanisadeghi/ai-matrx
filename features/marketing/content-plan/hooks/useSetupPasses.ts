@@ -136,6 +136,10 @@ export function useSetupPasses(siteId: string | null) {
       });
       let streamFailure: string | null = null;
 
+      // Abort any prior stream BEFORE reaping its row — an orphaned fetch
+      // draining into a missing row is the disappearing-run class (see
+      // features/agents/docs/LIVE_RUN_RETENTION.md seam #3).
+      abortRef.current?.abort();
       if (adoptedRequestIdRef.current) {
         dispatch(removeRequest(adoptedRequestIdRef.current));
         adoptedRequestIdRef.current = null;
@@ -227,6 +231,7 @@ export function useSetupPasses(siteId: string | null) {
   );
 
   const dismiss = useCallback(() => {
+    abortRef.current?.abort();
     if (adoptedRequestIdRef.current) {
       dispatch(removeRequest(adoptedRequestIdRef.current));
       adoptedRequestIdRef.current = null;

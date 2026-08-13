@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
-import { Save, Loader2, Trash2, ExternalLink } from "lucide-react";
+import { Save, Loader2, Trash2, ExternalLink, Check } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { normalizeDomainInput } from "@/features/cms/utils/pageUrls";
 import { SiteAdvancedSettings } from "@/features/cms/components/settings/SiteAdvancedSettings";
@@ -159,10 +159,11 @@ export default function SiteSettingsPage() {
   });
 
   /**
-   * Agent write targets owned by THIS component — `site_global_css` only,
-   * because the Global CSS textarea's buffer lives here. The theme,
-   * navigation, and footer targets are registered by the sections that own
-   * their own drafts (`SiteAdvancedSettings`, via `useSurfaceWriteHandlers`);
+   * Agent write targets owned by THIS component — `site_global_css` and
+   * `site_name`, because the Global CSS textarea's buffer and the Site Name
+   * input's buffer both live here. The theme, navigation, and footer targets
+   * are registered by the sections that own their own drafts
+   * (`SiteAdvancedSettings`, via `useSurfaceWriteHandlers`);
    * `applySurfaceWrite` merges both sources.
    *
    * The value lands in the SAME `globalCss` state the user's typing drives, so
@@ -171,6 +172,14 @@ export default function SiteSettingsPage() {
    * honest under `agent_write_policy`.
    */
   const buildWriteHandlers = (): SurfaceWriteHandlers => ({
+    site_name: (value) => {
+      if (typeof value !== "string" || !value.trim()) {
+        throw new Error(
+          "site_name expects a non-empty plain text string, NOT JSON and NOT JSON-encoded — send the name itself (e.g. Northwind Coffee), not a quoted, braced, or escaped version of it.",
+        );
+      }
+      setName(value.trim());
+    },
     site_global_css: (value) => {
       if (!value || typeof value !== "object" || Array.isArray(value)) {
         throw new Error(
@@ -214,8 +223,8 @@ export default function SiteSettingsPage() {
         <div className="flex items-center justify-end">
           <div className="flex items-center gap-2">
             {saved && (
-              <span className="text-xs text-emerald-600 dark:text-emerald-400">
-                ✓ Saved
+              <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+                <Check className="size-3" aria-hidden="true" /> Saved
               </span>
             )}
             {error && <span className="text-xs text-destructive">{error}</span>}

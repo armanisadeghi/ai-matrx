@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * FlashcardPeek — quick read-only preview of a flashcard_data row.
+ * FlashcardPeek — quick read-only preview of an education.fc_set row.
  *
  * Same pattern as FilePeek: fetch the row by id, fill <PeekDialog> + <PeekField>.
  */
@@ -14,6 +14,7 @@ import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
 
 interface FlashcardRow {
+  name: string | null;
   topic: string | null;
   created_at: string | null;
 }
@@ -28,8 +29,8 @@ export default function FlashcardPeek({ id, open, onClose }: PeekProps) {
       setLoading(true);
       const { data } = await supabase
         .schema("education")
-        .from("flashcard_data")
-        .select("topic, created_at")
+        .from("fc_set")
+        .select("name, topic, created_at")
         .eq("id", id)
         .maybeSingle();
       if (!cancelled) {
@@ -46,13 +47,16 @@ export default function FlashcardPeek({ id, open, onClose }: PeekProps) {
     <PeekDialog
       open={open}
       onClose={onClose}
-      title={row?.topic || "Flashcards"}
+      title={row?.name || row?.topic || "Flashcard set"}
       icon={<Layers className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />}
-      href={peekHref("flashcard_data", id)}
+      href={peekHref("fc_set", id)}
       loading={loading}
     >
       {row ? (
         <>
+          <PeekField label="Name">
+            {row.name ?? <span className="text-muted-foreground">—</span>}
+          </PeekField>
           <PeekField label="Topic">
             {row.topic ?? <span className="text-muted-foreground">—</span>}
           </PeekField>
@@ -61,7 +65,7 @@ export default function FlashcardPeek({ id, open, onClose }: PeekProps) {
           </PeekField>
         </>
       ) : (
-        <p className="text-sm text-muted-foreground">Flashcard set not found.</p>
+        <p className="text-sm text-muted-foreground">Flashcard not found.</p>
       )}
     </PeekDialog>
   );

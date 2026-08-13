@@ -35,6 +35,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { VideoPublishDate } from "@/features/files/blocks/video/VideoPublishDate";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import { MediaEmptyState } from "@/features/marketing/components/media/SnapshotMediaGallery";
@@ -55,6 +56,8 @@ import type { SiteVideoAsset } from "@/features/marketing/lib/snapshot-video";
 import type { SiteMediaStandards } from "@/features/marketing/data/media-library";
 import { isJsonRecord, type BrandAsset } from "@/features/marketing/types";
 import type { Json } from "@/types/database.types";
+import { videoPublishDateFromMetadata } from "@/lib/media/video-date";
+import { useYouTubeVideoIdentityIndex } from "@/features/research/hooks/useResearchState";
 
 const PROVIDER_LABELS: Record<SiteVideoAsset["provider"], string> = {
   youtube: "YouTube",
@@ -105,6 +108,17 @@ export function SiteVideosView({
     () => (assetsQuery.data ?? []).filter((asset) => asset.kind === "video"),
     [assetsQuery.data],
   );
+  const youtubeVideoIds = [
+    ...(videosQuery.data ?? []).flatMap((video) =>
+      video.provider === "youtube" && video.videoId ? [video.videoId] : [],
+    ),
+    ...libraryVideos.flatMap((asset) => {
+      const id = asset.source_url ? youtubeId(asset.source_url) : null;
+      return id ? [id] : [];
+    }),
+  ];
+  const { identityForId: youtubeIdentityForId } =
+    useYouTubeVideoIdentityIndex(youtubeVideoIds);
 
   /** Crawled videos already promoted (matched on source_url). */
   const librarySourceUrls = useMemo(
@@ -306,6 +320,13 @@ export function SiteVideosView({
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {libraryVideos.map((asset) => {
               const poster = libraryPosterUrl(asset);
+              const libraryVideoId = asset.source_url
+                ? youtubeId(asset.source_url)
+                : null;
+              const publishedAt =
+                (libraryVideoId
+                  ? youtubeIdentityForId(libraryVideoId)?.published_at
+                  : null) ?? videoPublishDateFromMetadata(asset.data);
               const busy = metadataBusy === asset.id;
               // Locals (not `asset.x` inline) — the React Compiler lint taints
               // the whole base object when a member expression feeds a `ref` prop.
@@ -316,7 +337,7 @@ export function SiteVideosView({
                   key={asset.id}
                   className="flex flex-col overflow-hidden rounded-lg border border-border bg-card"
                 >
-                  <div className="aspect-video bg-muted/40">
+                  <div className="relative aspect-video bg-muted/40">
                     {fileId ? (
                       <InlineMediaRef
                         ref={fileId}
@@ -339,6 +360,10 @@ export function SiteVideosView({
                         <FileVideo className="h-6 w-6" />
                       </div>
                     )}
+                    <VideoPublishDate
+                      publishedAt={publishedAt}
+                      className="pointer-events-none absolute bottom-1.5 left-1.5 rounded bg-black/75 px-1 py-0.5 text-white shadow-sm"
+                    />
                   </div>
                   <div className="flex items-center gap-1.5 p-1.5">
                     <div className="min-w-0 flex-1">
@@ -400,6 +425,10 @@ export function SiteVideosView({
               const inLibrary = librarySourceUrls.has(video.url);
               const busy = metadataBusy === video.key;
               const adding = addingKey === video.key;
+              const publishedAt =
+                (video.videoId
+                  ? youtubeIdentityForId(video.videoId)?.published_at
+                  : null) ?? video.publishedAt;
               return (
                 <div
                   key={video.key}
@@ -429,6 +458,10 @@ export function SiteVideosView({
                     >
                       {PROVIDER_LABELS[video.provider]}
                     </Badge>
+                    <VideoPublishDate
+                      publishedAt={publishedAt}
+                      className="pointer-events-none absolute bottom-1.5 left-1.5 rounded bg-black/75 px-1 py-0.5 text-white shadow-sm"
+                    />
                   </div>
                   <div className="space-y-1 p-1.5">
                     <a

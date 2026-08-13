@@ -115,7 +115,7 @@ export const DiffBlock: React.FC<DiffBlockProps> = ({ content = "", isStreamActi
           </div>
         )}
       </div>
-      <div className="max-h-[60vh] overflow-auto">
+      <div className="max-h-[60dvh] overflow-auto">
         {isStreamActive ? (
           <div className="p-3">
             <Skeleton className="h-40 w-full" />

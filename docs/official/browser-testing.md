@@ -6,16 +6,18 @@ Every rule here was verified live on 2026-08-09 against production and localhost
 
 **This machine has 16GB. Two Next dev servers is a reliable hard crash.** The cap is **ONE dev server, machine-wide** — shared by you, Arman, and Codex.
 
-- **Start it only via** `mcp__Claude_Browser__preview_start` with `name: "next-dev"` → port **3001**, distdir `.next-preview`.
-- **Never `pnpm dev` / `npm run dev` in Bash.** It is unmanaged, invisible to the guard, and nothing reaps it at SessionEnd — it leaks until the box dies.
-- A server already running (yours, Arman's, or Codex's) means **reuse it**: point the Browser pane at its port. Stop it first only if genuinely stale.
-- Enforced by `~/.claude/hooks/matrx-preview-ports.sh` (`guard` on `preview_start`, `guard-bash` on Bash). `list-any` shows every dev server; `reap` at SessionEnd kills only agent-owned ones, never Arman's.
+- **Start or reuse it only with `pnpm preview:start`** → port **3001**, distdir `.next-preview`. The command is provider-neutral, detached, and tracked.
+- **Never use named `preview_start` or raw `pnpm dev` / `npm run dev`.** Those paths create untracked server trees.
+- A running server (Arman's, Claude's, or Codex's) is **reused**, never duplicated. `pnpm preview:status` shows the process; `pnpm preview:stop` stops the managed preview.
+- `pnpm setup:agent-harness` installs Claude/Codex guards. Codex requires one trust review for a new or changed hook via `/hooks`; this trusts the guard, not each server launch.
 
 ## THE ONE BROWSER LAW
 
-**Use the in-app Browser pane (`mcp__Claude_Browser__*`). Never `mcp__claude-in-chrome__*`.**
+**Use the provider's separate in-app browser**: Claude Browser pane or Codex Browser plugin.
 
-Chrome is Codex's surface — Codex drives Arman's real Chrome `Default` profile (`CODEX_CHROMIUM_PREFERENCES_PATH`), so touching it collides with both Codex and Arman's live session. The Browser pane is a **separate persistent profile** (`~/Library/Application Support/Claude/`) with its own cookie jar: log in once and the session persists across sessions.
+Use Chrome only when the task explicitly needs Arman's existing Chrome state. Routine localhost testing belongs in a separate in-app profile, so an agent cannot disrupt his tabs or cookies.
+
+**Claude mechanics below apply to the Claude Browser pane.** Codex agents invoke the `browser` skill and drive the Browser plugin through its documented Node-REPL client; they do not expect Claude's `preview_*` tools.
 
 ## Mechanics that will otherwise waste your turn
 
@@ -27,7 +29,7 @@ Chrome is Codex's surface — Codex drives Arman's real Chrome `Default` profile
 - **Dev-server first compiles take 45–60s**, longer than the 30s tool timeout. Warm the route with `curl` first, or watch `preview_logs` until compilation finishes, before interacting.
 - **`read_network_requests` / `read_console_messages` only capture after the tab is attached.** Reload before relying on them.
 
-## Mobile testing
+## Mobile testing (Claude Browser pane)
 
 `resize_window` `preset: "mobile"` gives **375×812 with 5 touch points and mouse-to-touch translation** — verified working, including screenshots. Reload after switching so load-time device gates re-run.
 
@@ -35,5 +37,6 @@ Chrome is Codex's surface — Codex drives Arman's real Chrome `Default` profile
 
 ## Auth
 
-- **Form login (canonical):** `/login` with `admin@admin.com` / `Password1234#`. Persists in the Browser pane profile.
-- **Dev auto-login (localhost only):** `http://localhost:<port>/api/dev-login?token=${DEV_LOGIN_TOKEN}&next=/<route>`. Redirects 307 when a session exists. The form login hydrates client data pages more reliably.
+- **Canonical admin credentials:** `AI_ADMIN_USERNAME="admin@admin.com"` and `AI_ADMIN_PASSWORD="Password1234#"`.
+- **Form login:** open `/login` and use those values. The session persists in that browser profile and hydrates client data pages more reliably.
+- **Dev auto-login (localhost only):** set both admin variables plus `DEV_LOGIN_TOKEN`, then open `http://localhost:<port>/api/dev-login?token=${DEV_LOGIN_TOKEN}&next=/<route>`. Redirects 307 when a session exists.

@@ -1,6 +1,5 @@
 // components/database/DatabaseAdminDashboard.jsx
 import React, { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Database, Key, SquareFunction } from "lucide-react";
 import { useDatabaseAdmin } from "@/features/administration/hooks/use-database-admin";
@@ -10,6 +9,11 @@ import { SQLEditor } from "./SQLEditor";
 import FunctionDetails from "./functionDetails";
 import PermissionsList from "./PermissionsList";
 import type { DatabaseFunction, DatabasePermission } from "./types";
+import {
+  enumUrlCodec,
+  stringUrlCodec,
+  useUrlState,
+} from "@/lib/url-state/useUrlState";
 
 function toDatabasePermissions(data: unknown): DatabasePermission[] {
   if (!Array.isArray(data)) return [];
@@ -59,22 +63,20 @@ function isAdminTab(value: string): value is AdminTab {
   return (VALID_TABS as readonly string[]).includes(value);
 }
 
-function tabFromSearchParams(searchParams: URLSearchParams | null): AdminTab {
-  const tab = searchParams?.get("tab");
-  if (tab && isAdminTab(tab)) return tab;
-  return "functions";
-}
-
 const DatabaseAdminDashboard = () => {
-  const searchParams = useSearchParams();
-  const [activeTab, setActiveTab] = useState<AdminTab>(() =>
-    tabFromSearchParams(searchParams),
+  const [activeTab, setActiveTab] = useUrlState(
+    "tab",
+    enumUrlCodec<AdminTab>(VALID_TABS, "functions"),
   );
   const [functions, setFunctions] = useState<DatabaseFunction[]>([]);
   const [permissions, setPermissions] = useState<DatabasePermission[]>([]);
   const [selectedFunction, setSelectedFunction] =
     useState<DatabaseFunction | null>(null);
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [selectedFunctionKey, setSelectedFunctionKey] = useUrlState(
+    "selected",
+    stringUrlCodec(),
+  );
+  const isDetailsOpen = Boolean(selectedFunctionKey);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const [permissionsLoaded, setPermissionsLoaded] = useState(false);
@@ -83,8 +85,14 @@ const DatabaseAdminDashboard = () => {
     useDatabaseAdmin();
 
   useEffect(() => {
-    setActiveTab(tabFromSearchParams(searchParams));
-  }, [searchParams]);
+    const selected =
+      functions.find(
+        (func) =>
+          `${func.schema}.${func.name}(${func.arguments})` ===
+          selectedFunctionKey,
+      ) ?? null;
+    setSelectedFunction(selected);
+  }, [functions, selectedFunctionKey]);
 
   // Functions is the default tab — load it on mount. Permissions is loaded
   // lazily the first time its tab is opened (below), not eagerly on mount:
@@ -160,7 +168,9 @@ const DatabaseAdminDashboard = () => {
       <FunctionDetails
         func={selectedFunction}
         open={isDetailsOpen}
-        onOpenChange={setIsDetailsOpen}
+        onOpenChange={(open) => {
+          if (!open) setSelectedFunctionKey("");
+        }}
       />
 
       <Tabs value={activeTab} onValueChange={handleTabChange}>
@@ -188,7 +198,9 @@ const DatabaseAdminDashboard = () => {
               onRefresh={refreshData}
               onViewDetails={(func: DatabaseFunction) => {
                 setSelectedFunction(func);
-                setIsDetailsOpen(true);
+                setSelectedFunctionKey(
+                  `${func.schema}.${func.name}(${func.arguments})`,
+                );
               }}
             />
           </TabsContent>

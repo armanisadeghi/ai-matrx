@@ -5,7 +5,6 @@ import Link from 'next/link';
 import {useRouter, usePathname, useSearchParams } from 'next/navigation';
 import {motion} from 'motion/react';
 import {ChevronLeft, Home, Settings, Boxes, TestTube2} from 'lucide-react';
-import {IconApps} from "@tabler/icons-react";
 import {Button} from '@/components/ui/button';
 import MatrxBreadcrumb from "@/components/matrx/navigation/breadcumbs/MatrxBreadcrumb";
 import {
@@ -117,7 +116,6 @@ export default function ModuleHeaderWithProvider(
         {path: '/admin', icon: Settings, label: 'Admin'},
         {path: '/tests', icon: TestTube2, label: 'Tests'},
         {path: '/demo', icon: Boxes, label: 'Demo'},
-        {path: '/applets', icon: IconApps, label: 'Applets'},
     ];
 
     return (

@@ -42,7 +42,7 @@ export async function findExistingQuizByHash(
       .from("quiz_sessions")
       .select("*")
       .is("deleted_at", null)
-      .eq("user_id", user.id)
+      .eq("created_by", user.id)
       .eq("quiz_content_hash", contentHash)
       .eq("is_completed", false)
       .order("created_at", { ascending: false })
@@ -100,7 +100,7 @@ export async function createQuizSession(
       .from("quiz_sessions")
       .insert({
         organization_id: await ensureOrgIdServer(supabase, undefined),
-        user_id: user.id,
+        created_by: user.id,
         title: title || null,
         category: category || null,
         state,
@@ -166,7 +166,7 @@ export async function updateQuizSession(
       .from("quiz_sessions")
       .update(updateData)
       .eq("id", id)
-      .eq("user_id", user.id)
+      .eq("created_by", user.id)
       .select()
       .single();
 
@@ -214,7 +214,7 @@ export async function getQuizSession(
       .select("*")
       .is("deleted_at", null)
       .eq("id", id)
-      .eq("user_id", user.id)
+      .eq("created_by", user.id)
       .single();
 
     if (error) {
@@ -259,7 +259,7 @@ export async function getUserQuizSessions(options?: {
       .from("quiz_sessions")
       .select("*")
       .is("deleted_at", null)
-      .eq("user_id", user.id)
+      .eq("created_by", user.id)
       .order("created_at", { ascending: false });
 
     if (options?.completedOnly) {
@@ -322,7 +322,7 @@ export async function deleteQuizSession(
       .from("quiz_sessions")
       .delete()
       .eq("id", id)
-      .eq("user_id", user.id);
+      .eq("created_by", user.id);
 
     if (error) {
       console.error("Error deleting quiz session:", error);
@@ -360,7 +360,7 @@ export async function updateQuizTitle(
       .from("quiz_sessions")
       .update({ title })
       .eq("id", id)
-      .eq("user_id", user.id);
+      .eq("created_by", user.id);
 
     if (error) {
       console.error("Error updating quiz title:", error);

@@ -11,28 +11,19 @@ import * as SelectPrimitive from "@radix-ui/react-select";
 import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/styles/themes/utils";
-import { useIsMounted } from "@/hooks/use-is-mounted";
 import { useNestedPortalContainer } from "@/hooks/use-nested-portal-container";
 
 /**
- * Hydration-safe Select wrapper.
- * Radix UI generates dynamic IDs for aria-controls that can differ between
- * SSR and client, causing hydration mismatches. This wrapper defers rendering
- * until after hydration to prevent these errors.
+ * THE ROOT RENDERS UNCONDITIONALLY — no mount gate. This wrapper used to defer
+ * rendering until after hydration ("Radix generates dynamic aria-controls ids
+ * that differ between SSR and client"), and that justification was false:
+ * Radix ids come from React's SSR-stable `useId` (verified against
+ * @radix-ui/react-select 2.3.1 / react-id 1.1.2). The gate was actively
+ * harmful — it deleted the ALWAYS-VISIBLE select trigger (a form control)
+ * from SSR and the first client paint. See
+ * components/ui/context-menu/context-menu.tsx (the precedent fix, D144).
  */
-const Select = React.forwardRef<
-  React.ComponentRef<typeof SelectPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Root>
->(({ children, ...props }, ref) => {
-  const isMounted = useIsMounted();
-
-  if (!isMounted) {
-    return null;
-  }
-
-  return <SelectPrimitive.Root {...props}>{children}</SelectPrimitive.Root>;
-});
-Select.displayName = "Select";
+const Select = SelectPrimitive.Root;
 
 const SelectGroup = SelectPrimitive.Group;
 

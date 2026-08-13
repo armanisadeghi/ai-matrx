@@ -209,9 +209,8 @@ function TasksSection({ conversationId }: { conversationId: string }) {
     await addTasks([
       {
         conversation_id: conversationId,
-        user_id: userId,
         title: draft,
-        created_by: "user",
+        creator_kind: "user",
       },
     ]);
     setDraft("");
@@ -343,7 +342,6 @@ function TodosSection({ conversationId }: { conversationId: string }) {
     if (!draft.trim() || !userId) return;
     await addUserTodo({
       conversation_id: conversationId,
-      user_id: userId,
       title: draft,
     });
     setDraft("");

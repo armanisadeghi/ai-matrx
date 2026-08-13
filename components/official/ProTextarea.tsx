@@ -68,7 +68,7 @@
  *   when `floatingLabel` is set.
  * - Don't try to override the icon positions or recording-state styles via
  *   `className`. The icon layout is fixed.
- * - For schema-bound textareas (Entity, Settings, Applet), build a thin
+ * - For schema-bound textareas (Entity, Settings), build a thin
  *   wrapper that owns the binding logic and renders ProTextarea — don't
  *   re-implement voice/copy/submit per system.
  *

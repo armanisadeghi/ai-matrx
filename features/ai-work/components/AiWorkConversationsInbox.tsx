@@ -29,8 +29,9 @@ import {
 import { formatText } from "@/utils/text/text-case-converter";
 import { isProviderSourceApp } from "@/features/ai-work/lib/providerSource";
 import {
-  accountFingerprint,
+  providerAccountIdentity,
   recordedCapabilityLabels,
+  workspaceName,
 } from "@/features/ai-work/lib/codingSessionPresentation";
 import { ConversationOrganizationPanel } from "./ConversationOrganizationPanel";
 
@@ -235,15 +236,34 @@ function ConversationInspector({
 function BindingFacts({ binding }: { binding: CodingSessionBinding }) {
   const meta = providerMeta(binding.provider);
   const verdict = fidelityVerdict(binding.fidelity);
-  const fingerprint = accountFingerprint(binding.metadata);
+  const identity = providerAccountIdentity(binding.metadata);
+  const workspace = workspaceName(binding.metadata);
   const capabilities = recordedCapabilityLabels(binding.capabilities);
 
   return (
     <article className="rounded-lg border border-border bg-background p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-sm font-medium text-foreground">
-          {meta?.label ?? formatText(binding.provider)}
-        </h3>
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <h3 className="text-sm font-medium text-foreground">
+            {meta?.label ?? formatText(binding.provider)}
+          </h3>
+          {workspace ? (
+            <span
+              className="max-w-48 truncate rounded-full bg-sky-500/10 px-2 py-0.5 text-[11px] font-medium text-sky-700 dark:text-sky-300"
+              title={`Workspace: ${workspace}`}
+            >
+              {workspace}
+            </span>
+          ) : null}
+          {identity.reported ? (
+            <span
+              className="max-w-56 truncate rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary"
+              title={identity.display}
+            >
+              {identity.display}
+            </span>
+          ) : null}
+        </div>
         <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground">
           {verdict.label}
         </span>
@@ -252,9 +272,10 @@ function BindingFacts({ binding }: { binding: CodingSessionBinding }) {
         {verdict.detail}
       </p>
       <dl className="mt-3 grid gap-2 text-xs sm:grid-cols-2">
-        <Fact label="Provider account">
-          {fingerprint ?? "Not reported by this binding"}
+        <Fact label="Workspace">
+          {workspace ?? "Not reported by this binding"}
         </Fact>
+        <Fact label="Provider account">{identity.display}</Fact>
         <Fact label="Session delivery">
           {formatSessionTimestamp(binding.last_seen_at)}
         </Fact>

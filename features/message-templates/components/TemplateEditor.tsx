@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import { isPubliclyVisible } from "@/lib/visibility/labels";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -140,7 +141,9 @@ export function TemplateEditor({ template, mode }: TemplateEditorProps) {
   const [label, setLabel] = useState(template?.label ?? "");
   const [content, setContent] = useState(template?.content ?? "");
   const [role, setRole] = useState<MessageRole>(template?.role ?? "user");
-  const [isPublic, setIsPublic] = useState(template?.is_public ?? false);
+  const [isPublic, setIsPublic] = useState(
+    isPubliclyVisible(template?.visibility),
+  );
   const [tagsInput, setTagsInput] = useState((template?.tags ?? []).join(", "));
 
   const canSave = label.trim().length > 0 && content.trim().length > 0;
@@ -179,7 +182,7 @@ export function TemplateEditor({ template, mode }: TemplateEditorProps) {
           label: label.trim(),
           content: content.trim(),
           role,
-          is_public: isPublic,
+          visibility: isPublic ? "public" : "internal",
           tags,
         };
         await createTemplate(input);
@@ -190,7 +193,7 @@ export function TemplateEditor({ template, mode }: TemplateEditorProps) {
           label: label.trim(),
           content: content.trim(),
           role,
-          is_public: isPublic,
+          visibility: isPublic ? "public" : "internal",
           tags,
         };
         await updateTemplate(input);

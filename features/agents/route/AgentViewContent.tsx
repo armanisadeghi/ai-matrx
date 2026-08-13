@@ -59,6 +59,10 @@ import type { AgentDefinitionMessage } from "@/features/agents/types/agent-messa
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import type { ContentSource } from "@/features/rich-document/types";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
+import {
+  AiModelRef,
+  AiToolRef,
+} from "@/components/official/entity-ref/AiIdentityRef";
 import MarkdownStream from "@/components/MarkdownStream";
 import { AccessSummaryPanel } from "@/features/sharing/components/AccessSummaryPanel";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
@@ -404,7 +408,8 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
                   agent.agentType === "builtin"
                     ? "AI Matrx Admin — System Agents · Agent view"
                     : "AI Matrx — Agent view",
-                description: "Full agent definition, matching the live builder state.",
+                description:
+                  "Full agent definition, matching the live builder state.",
                 data: definition ?? {},
                 summary: agentDefinitionSummary(definition ?? agent, {
                   liveAgentId,
@@ -487,9 +492,14 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
                   agent.agentType === "builtin"
                     ? "AI Matrx Admin — System Agents · Agent view (raw JSON)"
                     : "AI Matrx — Agent view (raw JSON)",
-                description: "Full agent definition, matching the live builder state.",
+                description:
+                  "Full agent definition, matching the live builder state.",
                 data: definition ?? {},
-                attributes: { id: liveAgentId, version, agentType: agent.agentType },
+                attributes: {
+                  id: liveAgentId,
+                  version,
+                  agentType: agent.agentType,
+                },
               })}
             />
           </div>
@@ -556,14 +566,6 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
                     <span className="font-medium text-foreground">
                       {categoryLabel ?? category}
                     </span>
-                    {!agent.isVersion && agent.isPublic && (
-                      <Badge
-                        variant="outline"
-                        className="gap-1 text-emerald-600 dark:text-emerald-400 border-emerald-500/40"
-                      >
-                        <Globe className="w-3 h-3" /> Public
-                      </Badge>
-                    )}
                   </div>
                 )}
               </div>
@@ -572,24 +574,14 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
               <div className="flex flex-wrap items-center gap-1.5 pt-1">
                 {modelId && (
                   <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted/50 border border-border/60 text-xs">
-                    <Webhook className="w-3 h-3 shrink-0 text-muted-foreground" />
                     <span className="text-muted-foreground">Model:</span>
-                    <span className="font-medium text-foreground">
-                      {modelLabel ?? modelId}
-                    </span>
+                    <AiModelRef
+                      modelId={modelId}
+                      name={modelLabel}
+                      className="text-foreground"
+                    />
                   </span>
                 )}
-                {!categoryLabel &&
-                  !category &&
-                  !agent.isVersion &&
-                  agent.isPublic && (
-                    <Badge
-                      variant="outline"
-                      className="gap-1 text-emerald-600 dark:text-emerald-400 border-emerald-500/40"
-                    >
-                      <Globe className="w-3 h-3" /> Public
-                    </Badge>
-                  )}
                 {agent.isArchived && (
                   <Badge
                     variant="outline"
@@ -730,7 +722,10 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
                       location: "AI Matrx — Agent view",
                       description: "Variable definitions for this agent.",
                       data: variables,
-                      attributes: { agentId: liveAgentId, count: variableCount },
+                      attributes: {
+                        agentId: liveAgentId,
+                        count: variableCount,
+                      },
                     })}
                   />
                 </CardHeader>
@@ -789,7 +784,11 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
                     human={() =>
                       contextSlots
                         .map((slot) =>
-                          [slot.key, slot.type, slot.label ?? slot.description ?? null]
+                          [
+                            slot.key,
+                            slot.type,
+                            slot.label ?? slot.description ?? null,
+                          ]
                             .filter(Boolean)
                             .join(" — "),
                         )
@@ -855,13 +854,12 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
                 <CardContent>
                   <div className="flex flex-wrap gap-2">
                     {tools?.map((t) => (
-                      <Badge
+                      <AiToolRef
                         key={t}
-                        variant="secondary"
-                        className="font-mono text-xs"
-                      >
-                        {t}
-                      </Badge>
+                        toolId={t}
+                        showIcon={false}
+                        className="rounded-md bg-secondary px-2 py-1 text-xs text-secondary-foreground"
+                      />
                     ))}
                     {customTools?.map((t) => (
                       <Badge

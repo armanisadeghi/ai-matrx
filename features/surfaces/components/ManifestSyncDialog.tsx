@@ -15,6 +15,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { toast } from "@/lib/toast";
 import { syncManifests } from "@/features/surfaces/services/surfaces.service";
+import { countDriftIssues } from "@/features/surfaces/utils/drift-report-count";
 
 type SyncResult = Awaited<ReturnType<typeof syncManifests>>;
 
@@ -43,12 +44,14 @@ export function ManifestSyncDialog({ onClose, onSynced }: Props) {
         res.roleDeleted.length +
         res.writeTargetUpserted.length +
         res.writeTargetDeleted.length +
+        res.clientToolUpserted.length +
+        res.clientToolDeleted.length +
         res.urlPatternsUpdated.length;
       if (changeCount === 0) {
         toast.success("Already in sync — no changes applied.");
       } else {
         toast.success(
-          `Sync applied: ${res.upserted.length + res.roleUpserted.length + res.writeTargetUpserted.length} upserted, ${res.deleted.length + res.roleDeleted.length + res.writeTargetDeleted.length} deleted`,
+          `Sync applied: ${res.upserted.length + res.roleUpserted.length + res.writeTargetUpserted.length + res.clientToolUpserted.length} upserted, ${res.deleted.length + res.roleDeleted.length + res.writeTargetDeleted.length + res.clientToolDeleted.length} deleted`,
         );
       }
     } catch (e) {
@@ -150,6 +153,18 @@ export function ManifestSyncDialog({ onClose, onSynced }: Props) {
               <span className="tabular-nums font-mono">
                 {result.writeTargetDeleted.length}
               </span>
+              <span className="text-muted-foreground">
+                Client tools upserted:
+              </span>
+              <span className="tabular-nums font-mono">
+                {result.clientToolUpserted.length}
+              </span>
+              <span className="text-muted-foreground">
+                Client tools deleted:
+              </span>
+              <span className="tabular-nums font-mono">
+                {result.clientToolDeleted.length}
+              </span>
               <span className="text-muted-foreground">Agent prefs swept:</span>
               <span className="tabular-nums font-mono">
                 {result.sweptPrefCount}
@@ -163,16 +178,12 @@ export function ManifestSyncDialog({ onClose, onSynced }: Props) {
                 {result.urlPatternsUpdated.length}
               </span>
               <span className="text-muted-foreground">Remaining drift:</span>
+              {/* Counted by the ONE shared helper. This line used to sum a
+                  hand-picked subset — no label, value-group, write-target or
+                  client-tool drift — so it reported a smaller number than the
+                  drift report the operator had just been looking at. */}
               <span className="tabular-nums font-mono">
-                {result.driftAfter.manifestsMissingInDb.length +
-                  result.driftAfter.dbValuesNotInManifest.length +
-                  result.driftAfter.diffs.length +
-                  result.driftAfter.roleManifestsMissingInDb.length +
-                  result.driftAfter.dbRolesNotInManifest.length +
-                  result.driftAfter.roleDiffs.length +
-                  result.driftAfter.unknownNamespaces.length +
-                  result.driftAfter.brokenAgentMappings.length +
-                  result.driftAfter.urlPatternDrifts.length}
+                {countDriftIssues(result.driftAfter)}
               </span>
             </div>
             {result.skippedMissingSurface.length > 0 && (

@@ -105,11 +105,25 @@ export async function POST(request: NextRequest) {
 
     const adminClient = createAdminClient();
 
+    // tool.test_sample carries NOT NULL organization_id; every tool is Matrx
+    // System org (verified 2026-08-12), inherited from the tool when known.
+    let organizationId = "39c38960-d30c-4840-b0c1-c9960de95582";
+    if (body.tool_id) {
+      const { data: toolRow } = await adminClient
+        .schema("tool")
+        .from("definition")
+        .select("organization_id")
+        .eq("id", body.tool_id)
+        .single();
+      if (toolRow) organizationId = toolRow.organization_id;
+    }
+
     const { data, error } = await adminClient
       .schema("tool").from("test_sample")
       .insert({
         tool_name: body.tool_name,
         tool_id: body.tool_id ?? null,
+        organization_id: organizationId,
         tested_by: user.id,
         arguments: body.arguments,
         raw_stream_events: body.raw_stream_events,

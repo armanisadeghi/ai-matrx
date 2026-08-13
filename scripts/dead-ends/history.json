@@ -142,5 +142,59 @@
     "medium": 69,
     "low": 0,
     "filesWithFindings": 83
+  },
+  {
+    "generatedAt": "2026-08-12T19:25:44.274Z",
+    "commit": "24a25f61878d6e60310eb4a907df3928afc7eaf6",
+    "findings": 126,
+    "high": 77,
+    "medium": 49,
+    "low": 0,
+    "filesWithFindings": 74
+  },
+  {
+    "generatedAt": "2026-08-13T00:51:16.773Z",
+    "commit": "2bbf803937b121618bd1379bf94751d931870aad",
+    "findings": 118,
+    "high": 71,
+    "medium": 47,
+    "low": 0,
+    "filesWithFindings": 70
+  },
+  {
+    "generatedAt": "2026-08-13T01:16:55.612Z",
+    "commit": "8e99fec9d6467b47b3e659f9f5a539860a41fff3",
+    "findings": 121,
+    "high": 75,
+    "medium": 46,
+    "low": 0,
+    "filesWithFindings": 73
+  },
+  {
+    "generatedAt": "2026-08-13T04:24:04.736Z",
+    "commit": "5de73f800607ca2a7584c5e3def9fd4e28e148b1",
+    "findings": 108,
+    "high": 77,
+    "medium": 31,
+    "low": 0,
+    "filesWithFindings": 67
+  },
+  {
+    "generatedAt": "2026-08-13T06:05:22.162Z",
+    "commit": "64c99e7088c4e81d8f4682b2672835157e192266",
+    "findings": 102,
+    "high": 71,
+    "medium": 31,
+    "low": 0,
+    "filesWithFindings": 63
+  },
+  {
+    "generatedAt": "2026-08-13T06:08:04.671Z",
+    "commit": "893fd01b5bbce53fd13c432496f365dac8ef8476",
+    "findings": 102,
+    "high": 71,
+    "medium": 31,
+    "low": 0,
+    "filesWithFindings": 63
   }
 ]

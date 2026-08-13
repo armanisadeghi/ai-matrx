@@ -14,6 +14,11 @@ import React, { useState, useEffect } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { SharedCanvasView } from "@/features/canvas/shared/SharedCanvasView";
 import { Search } from "lucide-react";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  CANVAS_VIEWER_SURFACE_NAME,
+  createCanvasViewerScope,
+} from "@/features/surfaces/manifests/canvas-viewer.manifest";
 
 export interface CanvasViewerWindowProps {
   isOpen: boolean;
@@ -96,24 +101,37 @@ export function CanvasViewerWindow({
         />
       }
     >
-      <div className="flex-1 min-h-0 relative bg-background">
-        {activeToken ? (
-          <SharedCanvasView shareToken={activeToken} className="h-full min-h-0" />
-        ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
-            <div className="w-12 h-12 rounded-full border border-border bg-muted flex items-center justify-center mb-3">
-              <Search className="w-5 h-5 text-muted-foreground" />
+      {/* Nested overlay emitter — while this window is open, its scope
+          out-depths the page's provider (deepest wins). */}
+      <SurfaceRuntimeProvider
+        surfaceName={CANVAS_VIEWER_SURFACE_NAME}
+        getScope={() =>
+          createCanvasViewerScope({
+            share_token: activeToken ?? undefined,
+            token_input: tokenInput || undefined,
+          })
+        }
+        isEditable={false}
+      >
+        <div className="flex-1 min-h-0 relative bg-background">
+          {activeToken ? (
+            <SharedCanvasView shareToken={activeToken} className="h-full min-h-0" />
+          ) : (
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
+              <div className="w-12 h-12 rounded-full border border-border bg-muted flex items-center justify-center mb-3">
+                <Search className="w-5 h-5 text-muted-foreground" />
+              </div>
+              <h3 className="text-sm font-medium text-foreground">
+                No Canvas Selected
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1 max-w-[250px]">
+                Enter a generated canvas code or shared link below to view it in
+                this window.
+              </p>
             </div>
-            <h3 className="text-sm font-medium text-foreground">
-              No Canvas Selected
-            </h3>
-            <p className="text-xs text-muted-foreground mt-1 max-w-[250px]">
-              Enter a generated canvas code or shared link below to view it in
-              this window.
-            </p>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      </SurfaceRuntimeProvider>
     </WindowPanel>
   );
 }

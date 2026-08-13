@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Share2, Loader2, Copy, Check } from 'lucide-react';
+import { Share2, Loader2, Copy, Check, Globe2, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -76,7 +76,7 @@ export default function SaveHeatmapModal({
 
       // Insert heatmap save
       const { data: savedHeatmap, error: insertError } = await supabase
-        .from('heatmap_saves')
+        .schema('workbench').from('heatmap_saves')
         .insert({
           user_id: user?.id || null,
           organization_id: organizationId,
@@ -88,7 +88,7 @@ export default function SaveHeatmapModal({
             scalingMethod: viewSettings.colorScaleOptions.scalingMethod,
             colorScheme: viewSettings.colorScaleOptions.colorScheme,
           },
-          is_public: isPublic,
+          visibility: isPublic ? "public" : "personal",
         })
         .select('id')
         .single();
@@ -253,13 +253,17 @@ export default function SaveHeatmapModal({
 
               <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-md">
                 {isPublic ? (
-                  <p>
-                    ✓ This link is <strong>public</strong>. Anyone with the link can view your
+                  <p className="flex items-start gap-2">
+                    <Globe2 className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                    <span>This link is <strong>public</strong>. Anyone with the link can view your
                     heatmap.
+                    </span>
                   </p>
                 ) : (
-                  <p>
-                    🔒 This link is <strong>private</strong>. Only you can view it when logged in.
+                  <p className="flex items-start gap-2">
+                    <Lock className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                    <span>This link is <strong>private</strong>. Only you can view it when logged in.
+                    </span>
                   </p>
                 )}
               </div>
@@ -276,4 +280,3 @@ export default function SaveHeatmapModal({
     </Dialog>
   );
 }
-

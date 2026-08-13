@@ -29,13 +29,6 @@ import adminDebugReducer from "./preferences/adminDebugSlice";
 import creatorDebugReducer from "./preferences/creatorDebugSlice";
 import themeReducer from "@/styles/themes/themeSlice";
 
-import { componentDefinitionsSlice } from "./app-runner/slices/componentDefinitionsSlice";
-import { appBuilderSlice } from "./app-builder/slices/appBuilderSlice";
-import { appletBuilderSlice } from "./app-builder/slices/appletBuilderSlice";
-import { containerBuilderSlice } from "./app-builder/slices/containerBuilderSlice";
-import { fieldBuilderSlice } from "./app-builder/slices/fieldBuilderSlice";
-import customAppRuntimeSlice from "./app-runner/slices/customAppRuntimeSlice";
-import customAppletRuntimeSlice from "./app-runner/slices/customAppletRuntimeSlice";
 
 import overlaySlice from "./slices/overlaySlice";
 import overlayDataReducer from "./slices/overlayDataSlice";
@@ -252,16 +245,6 @@ export const slimReducerMap = {
   ...moduleReducers,
   layout: layoutReducer,
   flashcardChat: flashcardChatReducer,
-
-  // ==== OLD APPLET SYSTEM (DEPRECATED) ====
-  componentDefinitions: componentDefinitionsSlice.reducer,
-  appBuilder: appBuilderSlice.reducer,
-  appletBuilder: appletBuilderSlice.reducer,
-  containerBuilder: containerBuilderSlice.reducer,
-  fieldBuilder: fieldBuilderSlice.reducer,
-  customAppRuntime: customAppRuntimeSlice,
-  customAppletRuntime: customAppletRuntimeSlice,
-
 
   messaging: messagingReducer,
 

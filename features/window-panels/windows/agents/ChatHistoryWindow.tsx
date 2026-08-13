@@ -18,7 +18,7 @@
  * `features/prompts/components/results-display/QuickChatHistorySheet.tsx`.
  */
 
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { Flame, History } from "lucide-react";
 
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
@@ -35,6 +35,17 @@ import { AgentConversationColumn } from "@/features/agents/components/shared/Age
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
 import { ConversationHistorySidebar } from "@/features/agents/components/conversation-history/ConversationHistorySidebar";
+import { makeSelectConversationHistoryScope } from "@/features/agents/redux/conversation-history/selectors";
+import {
+  extractFlatText,
+  selectLatestAssistantMessageId,
+  selectMessageById,
+} from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  AI_RESULTS_SURFACE_NAME,
+  createAiResultsScope,
+} from "@/features/surfaces/manifests/ai-results.manifest";
 
 const SURFACE_KEY = "ai-results-window";
 const WORKSPACE_INPUT_SURFACE_KEY = "ai-results-workspace";
@@ -156,6 +167,7 @@ function useChatHistoryBrowser(opts: {
 
   return {
     selectedId,
+    selectedAgentId,
     initialGroupBy: opts.initialGroupBy,
     handleSelect,
     getConversationHref,
@@ -301,6 +313,36 @@ function ChatHistoryWindowInner({
 
   const titleSuffix = b.selectedAgentName ? ` — ${b.selectedAgentName}` : "";
 
+  // Surface emitter — reads the same scoped conversation-history state the
+  // sidebar renders from, plus the selected conversation's last assistant
+  // turn (for `last_run_text`). Nested provider: while this window is open
+  // its scope out-depths the page's.
+  const scopeState = useAppSelector(
+    makeSelectConversationHistoryScope(HISTORY_SCOPE),
+  );
+  const selectedItem = useMemo(
+    () =>
+      b.selectedId
+        ? (scopeState.items.find(
+            (item) => item.conversationId === b.selectedId,
+          ) ?? null)
+        : null,
+    [scopeState.items, b.selectedId],
+  );
+  const lastAssistantMessageId = useAppSelector((state: RootState) =>
+    b.selectedId
+      ? selectLatestAssistantMessageId(b.selectedId)(state)
+      : undefined,
+  );
+  const lastAssistantRecord = useAppSelector((state: RootState) =>
+    b.selectedId && lastAssistantMessageId
+      ? selectMessageById(b.selectedId, lastAssistantMessageId)(state)
+      : undefined,
+  );
+  const lastRunText = lastAssistantRecord
+    ? extractFlatText(lastAssistantRecord)
+    : "";
+
   return (
     <WindowPanel
       id="ai-results-window"
@@ -317,7 +359,31 @@ function ChatHistoryWindowInner({
       defaultSidebarOpen
       sidebar={<ChatHistoryListSidebarBound b={b} />}
     >
-      <ChatHistoryMain selectedId={b.selectedId} />
+      {/* Nested overlay emitter — while this window is open, its scope
+          out-depths the page's provider (deepest wins). */}
+      <SurfaceRuntimeProvider
+        surfaceName={AI_RESULTS_SURFACE_NAME}
+        getScope={() =>
+          createAiResultsScope({
+            selected_conversation_id: b.selectedId ?? undefined,
+            selected_conversation_title: selectedItem?.title ?? undefined,
+            selected_conversation_agent_id:
+              selectedItem?.agentId ?? b.selectedAgentId ?? undefined,
+            selected_conversation_agent_name:
+              b.selectedAgentName ?? undefined,
+            selected_conversation_message_count:
+              selectedItem?.messageCount,
+            selected_run_status: selectedItem?.status,
+            last_run_text: lastRunText || undefined,
+            agent_filter: scopeState.agentIds,
+            grouping_mode: scopeState.grouping,
+            search_query: scopeState.searchTerm,
+          })
+        }
+        isEditable={false}
+      >
+        <ChatHistoryMain selectedId={b.selectedId} />
+      </SurfaceRuntimeProvider>
     </WindowPanel>
   );
 }

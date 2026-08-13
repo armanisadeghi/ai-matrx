@@ -106,10 +106,25 @@ describe("buildSiteVideoAssets", () => {
         }),
       ]),
     ]);
-    expect(assets.map((asset) => asset.provider)).toEqual([
-      "youtube",
-      "embed",
-    ]);
+    expect(assets.map((asset) => asset.provider)).toEqual(["youtube", "embed"]);
     expect(assets[1].pages).toHaveLength(2);
+  });
+
+  it("keeps provider publish dates without inventing one when absent", () => {
+    const assets = buildSiteVideoAssets([
+      row("p1", "/dated", [
+        resource({
+          url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+          attributes: { uploadDate: "2024-03-02" },
+        }),
+        resource({ url: "https://vimeo.com/123456789" }),
+      ]),
+    ]);
+    expect(
+      assets.find((asset) => asset.provider === "youtube")?.publishedAt,
+    ).toBe("2024-03-02");
+    expect(
+      assets.find((asset) => asset.provider === "vimeo")?.publishedAt,
+    ).toBeNull();
   });
 });

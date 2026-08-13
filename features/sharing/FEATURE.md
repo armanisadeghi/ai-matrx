@@ -2,7 +2,7 @@
 
 **Status:** `stable`
 **Tier:** `1` — foundation for every collaborative surface
-**Last updated:** `2026-07-19`
+**Last updated:** `2026-08-12`
 
 > Single source of truth for the sharing and permissions system. For hands-on usage patterns (copy-paste snippets for wiring sharing into a new feature), see [`README.md`](./README.md). This doc covers the architecture, invariants, and agent-relevant internals.
 
@@ -18,7 +18,7 @@ One RLS-backed permissions system that makes any resource type shareable with us
 
 **Components** (`features/sharing/components/`)
 
-- `ShareButton.tsx` — self-contained button that opens `ShareModal`; shows Private/Shared/Public status
+- `ShareButton.tsx` — self-contained button that opens `ShareModal`; shows public status only when requested
 - `ShareModal.tsx` — three-tab dialog (Users / Organizations / Public), the only UI surface owners need
 - `ShareLinkPanel.tsx` — "Anyone with the link" no-login token links (mint / copy / revoke / view-count), rendered in the Public tab
 - `DuplicateToEditButton.tsx` — canonical **"Make a copy & use it"** for a view-only sharee / public / anon viewer; forks the resource into the caller's account (signed-out → sign-up → finish). Shared by `/s/[token]`, `/p/e`, and in-app view surfaces
@@ -28,6 +28,12 @@ One RLS-backed permissions system that makes any resource type shareable with us
 - `tabs/ShareWithUserTab.tsx` — user search + invite form
 - `tabs/ShareWithOrgTab.tsx` — org picker (constrained to caller's orgs)
 - `tabs/PublicAccessTab.tsx` — toggle + link copy for `is_public = true`
+
+**Native sharing** (`features/sharing/hooks/useShare.tsx`)
+
+- `useShare()` opens the platform share sheet, falls back to clipboard, then an
+  accessible manual-copy dialog. It is the reusable hook for public acquisition
+  surfaces; the podcast import is a compatibility re-export.
 
 **Hooks** (`utils/permissions/hooks.ts`)
 
@@ -95,6 +101,10 @@ Reads:
 - `is_resource_owner(p_resource_type, p_resource_id)` — universal ownership check
 - `check_resource_access(...)` — single RLS engine; evaluates owner, assignee, direct grant, project / workspace / org hierarchy in one query
 - `has_permission(resource_type, resource_id, level)` — the function every RLS policy calls
+- `get_share_capabilities(resource_type)` — verifies the physical public-state
+  column and returns its storage kind (`enum` / `boolean`) plus link-sharing
+  support. A null state means public visibility is unsupported; clients never
+  infer a `visibility` column from registry nullability.
 
 ### RLS enforcement
 
@@ -143,8 +153,12 @@ Aliases live in the registry's `resource_type` column. Canonical table names liv
 ### 2. Making a resource public (or private)
 
 1. Owner toggles in `PublicAccessTab`.
-2. `makePublic()` / `makePrivate()` call `make_resource_public` / `make_resource_private` RPCs — both update `is_public` on the **resource row**, never the permissions table.
-3. `useSharingStatus` re-reads `is_public` from the resource row on next mount (no cache busting needed).
+2. `get_share_capabilities()` returns the verified state column and storage
+   kind. No column means the toggle is unavailable; enum state writes the exact
+   `visibility` / `card_visibility` column, while a legacy boolean uses the
+   `make_resource_public` / `make_resource_private` RPCs.
+3. `useSharingStatus` re-reads that same capability-reported column. A failed
+   capability or row read is an explicit error, never laundered into “Private.”
 
 ### 3. Permission check at read time
 
@@ -224,7 +238,76 @@ The product layer over the plumbing: shared content works like Google Docs/Quizl
 
 ---
 
+## The share-lens registry (`features/sharing/lenses/`)
+
+**A share = a GRANT (level: what the recipient may do) + a LENS (how it renders for them).**
+Lenses never touch access. `lenses/registry.tsx` maps entity token → renderer for the recipient
+landing (`/s/[token]`); any token without an entry gets `GenericRenderer` — the guaranteed
+default-path floor. `lenses/metadata.ts` is the server-safe half (per-token social/meta for
+`generateMetadata` AND per-token OG-image payloads for `opengraph-image.tsx` — the OG route
+owns only the card JSX: the report card for `seo_collection_run`, the branded generic card for
+everyone else). `lenses/default-renderers.tsx`
+holds the lightweight bodies (markdown/code/flashcard/folder/AI-visibility/generic);
+the FILE lens lives in `lenses/file-lens.tsx` (see below).
+
+### 🚨 A SHARE PAGE NEVER SENDS ITS RECIPIENT TO `/sign-up` OR `/login`
+
+**Arman's ruling, 2026-08-13.** Everything basic on this platform is free up front — keyword
+research, page audits, AI visibility checks, chat. A recipient impressed by a shared report is
+the exact prospect the whole sharing system exists to win, and a login wall at that moment
+throws them away. It also misreads the product: gating belongs on ADVANCED capability, never on
+the thing the share just demonstrated.
+
+**Every "Create your own" CTA resolves through `lenses/source-surface.ts`
+(`resolveShareSourceSurface`)** — per share type, the real feature that produced the artifact.
+**One href serves both audiences**, because module routes already carry the marketing/workspace
+duality (`.claude/skills/module-landing-pages`): signed in → the workspace; signed out → that
+feature's marketing landing. Never an error, never a bounce. Preference order: a free PUBLIC
+tool the visitor can use right now (`seo_collection_run` → `/seo/ai-visibility`) → the feature's
+module route (`content_ir_kind_instance` keyword research → `/marketing/keyword-research`) →
+`/features`, the directory of every module landing, as the floor. Both public lanes consume the
+same resolver (`/s/[token]` shell + report CTAs, `/p/e/[type]/[id]` header + footer); a lane
+growing its own copy of this decision is the defect.
+
+Auth routes remain correct in exactly one place: `DuplicateToEditButton`, where the visitor is
+asking to OWN a copy and therefore needs an account.
+
+**Full-bleed lenses.** A lens whose body is a viewer (not a document) registers in
+`FULL_BLEED_LENSES` (`lenses/registry.tsx`); the shell (`SharedResourceView`) then renders it
+with definite height and no padded max-width column — the lens owns the whole landing body and
+its own scroll. First member: `file`.
+
+**The file lens is a product surface (`lenses/file-lens.tsx`, 2026-08-13).** A shared file's
+recipient is a prospect (VISION.md: a share IS a referral), so the landing does two jobs:
+(1) VIEW — PDFs render through THE canonical `PdfDocumentRenderer`
+(`features/pdf/components/viewer/`, behind a `React.lazy` in-gate boundary + a post-hydration
+mount gate, since pdfjs cannot SSR) streaming directly from aidream's token-validated
+`/share/{token}` byte URL (`shareUrls(token).public` — durable, never a signed URL); images/
+video/audio render full-stage; every previewable type gets a true Fullscreen toggle
+(Fullscreen API on the stage) + "New tab" + Download; (2) CAPABILITY — a per-type capability
+section below the fold (PDF: extract/ask/analyze/redact; image/AV/generic variants) where every
+card is a `signUpHref("/s/{token}")` conversion CTA. Nothing widens what the token authorizes —
+anonymous visitors get CTAs, not tools. `lenses/metadata.ts` carries the matching `file` meta
+entry (type-aware social title/description).
+**POLYMORPHIC tokens dispatch INSIDE their lens, never by adding token entries.**
+`content_ir_kind_instance` carries many kinds (keyword research, flashcard sets, briefs,
+decks…) and its public projection deliberately omits the kind — so
+`lenses/kind-instance.tsx` dispatches on the DATA SHAPE with `GenericRenderer` as the
+fallback (the `PublicCanvasRenderer` pattern), and `lenses/metadata.ts` dispatches the same
+way for meta + OG. Never assume a kind instance is one kind.
+
+**Adding a share rendering = one registry entry (+ optional metadata entry). Adding a per-type
+`switch` on any share surface is banned** — `SharedResourceView.tsx` is a pure shell
+(conversion chrome + lens dispatch) and must stay that way. Presentation-lens exemplar:
+`seo_collection_run` → `AiVisibilityReport` (one component serving owner tool, anonymous tool,
+and token landing, `acquisition` flag for conversion chrome). Charter + plan:
+`common-docs/systems/sharing-experience/VISION.md` and
+`common-docs/projects/sharing-experience/PLAN.md`.
+
 ## Invariants & gotchas
+
+- 🚨 **A share surface may never claim access it cannot deliver — and the Public tab must ALWAYS answer "where is the link?"** Three mechanisms produce anonymous reach and they are NOT interchangeable: a **share link** (`platform.share_links` → `/s/[token]`, gated by the registry's `is_link_shareable`), the **indexable public page** (`/p/e/[type]/[id]`, gated by the public-lane list), and **`visibility='public'`** (a DATA state — the `pub_read` RLS policy — which by itself gives an anonymous person NO address to open). Shipped defect (2026-08-13, `web_brand`): `ShareLinkPanel` returned `null` whenever `is_link_shareable` was false, the five web share points had it false with empty `public_columns`, and the tab still told the owner "Anyone with the link can access this" — a promise with no link anywhere on screen, for a type with no public page either. The fixes are permanent rules: **`ShareLinkPanel` never renders null for an owner** (no link lane ⇒ it says so), **the public-lane list lives in `utils/permissions/publicLane.ts`** so the UI and the `/p/e/` loader read ONE list and the tab can surface the real public URL (with copy) exactly when one exists, and the toggle's copy states the true consequence for that type.
+- **Never render an entity token in user-facing copy.** "Anyone with the link can access this web_brand" shipped to a real screen. Use the registry `displayLabel` (`getShareableResource(type)?.displayLabel`) — the token is an internal identifier, and the vocabulary guard (`pnpm check:visibility-vocab`) does not catch this class.
 
 - **NEVER claim privacy from a `visibility` column alone — and never say "Only you".** `visibility` is ONE of the six ways `iam.has_access_for_base` grants access (owner · visibility+org · direct grant · membership · education assignment · **reachability through a container**). A `personal` file attached to an org-internal scope is readable by that whole org. Any surface that reads `row.visibility` and renders a privacy claim is lying: it cannot see grants, memberships, or containers. Lists may describe the **setting** ("Personal", "Organization"); only `public.entity_access_summary` may describe **who can see it**.
 - **The honest answer is `public.entity_access_summary(p_type, p_id)` — one entity at a time.** Returns every reason an entity is reachable: owner, visibility, org, direct grants, memberships, and each reachability container (with its name, level, org and member count). Client: `features/sharing/service/accessSummary.ts` → `useAccessSummary` → `<AccessSummaryPanel entityType entityId />`. Generic across entity tokens — do NOT write a per-feature copy. It walks reachability and resolves container titles, so it is **too expensive for a list**; lists stay on cheap bulk signals. Requires `viewer`; grantee identities are returned only to `admin` callers, and container names are filtered to containers the caller can already see. Mounted (2026-08-08) on: file Info tab, agent detail (`AgentViewContent`), agent Share tab (`AgentSharePanel`), note info (`NoteInfoPanel`), data-store detail (`DataStoresPage`). Any entity token with a `platform.entity_types.title_column` works — mount, don't fork.
@@ -236,7 +319,11 @@ The product layer over the plumbing: shared content works like Google Docs/Quizl
 - **Ownership has THREE states, not two: resolving / owner / not-owner — plus "couldn't determine".** `useIsOwner` returns `{ isOwner, loading, error }`; gating on `!isOwner` alone renders the non-owner UI during the async check and after any failure. `resolveResourceOwnership()` is the underlying resolver and returns `{ isOwner, error }` — `isOwner: false` with a non-null `error` means **unknown**, never a denial, and must never be shown to the user as one.
 - **A share surface that can't act must say why.** Empty space where controls belong reads as a broken dialog. Non-owner gets "Only the owner can change sharing"; unresolvable ownership gets a loud error with the underlying message; an unregistered resource type or missing id refuses to render controls at all and logs.
 - **RLS is the security boundary.** `useIsOwner` / `useCanEdit` / etc. are UX only. A bypassed client check must not be a privilege escalation.
-- **`is_public` lives on the resource row, not `permissions`.** Read via `getResourceVisibility()` / `useSharingStatus()`. Writing `is_public = true` rows into the permissions table is legacy and must not be done in new code.
+- **Public state lives on the resource row, not `permissions`.**
+  `get_share_capabilities()` names the verified enum or boolean column;
+  `getResourceVisibility()` / `useSharingStatus()` consume that answer. A null
+  `is_public_column` does **not** prove `visibility` exists. Writing
+  `is_public = true` rows into the permissions table is legacy.
 - **Never write directly to the `permissions` table from the client.** Every mutation must go through a `SECURITY DEFINER` RPC. Direct writes bypass ownership validation.
 - **`useSharingStatus()` is intentionally lightweight.** It does NOT call `get_resource_permissions` — safe to mount on every grid card. Full permission details are only loaded when `ShareModal` opens.
 - **Permission changes are immediate; no cache invalidation needed.** RLS evaluates per-query. There is no Redux cache of permissions to invalidate. The only client state is the modal's in-memory list, refreshed by `useSharing.refresh()`.
@@ -261,6 +348,8 @@ The product layer over the plumbing: shared content works like Google Docs/Quizl
   - `features/organizations/` — target source for org-level shares
   - Reference integration: `features/prompts/` — list page, shared cards, edit-page banner, save-warning modal
   - Cross-repo system-of-record for the full access model (ownership, `iam.permissions`, `iam.memberships`, `platform.associations` conveyance, admin level): [`common-docs/systems/access-architecture/FEATURE.md`](/Users/armanisadeghi/code/common-docs/systems/access-architecture/FEATURE.md)
+  - Cross-repo system-of-record for the sharing-hierarchy MODEL (share at any level, everything contained conveys level-matched): /Users/armanisadeghi/code/common-docs/systems/access-architecture/SHARING_MODEL.md — read it before touching sharing/access in ANY repo.
+  - Cross-repo VISION for the sharing EXPERIENCE (default path, presentation shares, collaboration shares): /Users/armanisadeghi/code/common-docs/systems/sharing-experience/VISION.md
 
 ---
 
@@ -275,6 +364,73 @@ Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) 
 
 ## Change log
 
+- 2026-08-13 — **No share page sends its recipient to an auth wall** (Arman ruling, above). New
+  `lenses/source-surface.ts` resolves the per-share-type destination; consumed by the `/s/[token]`
+  shell CTA, the keyword-research report CTA, the AI-visibility report CTA (now `/seo/ai-visibility`
+  — the free public tool an anonymous recipient can run immediately), and both `/p/e/` CTAs. Four
+  `/sign-up` dead ends removed; `DuplicateToEditButton` deliberately keeps its auth route.
+- 2026-08-13 — **The shared-file landing became a real product surface** (Arman's critique: a
+  cramped iframe in a max-w-3xl column offering nothing but Download). New `lenses/file-lens.tsx`
+  replaces `FileRenderer`: full-bleed layout (new registry `FULL_BLEED_LENSES` +
+  `shareLensIsFullBleed`, honored by `SharedResourceView`), PDFs through the canonical
+  `PdfDocumentRenderer` (real paging/zoom/rotate/fit, progressive Range loading, `React.lazy` +
+  post-hydration mount so pdfjs never SSRs), Fullscreen/New-tab/Download affordances,
+  full-stage image/video/audio, honest no-preview card, and a per-type "what AI Matrx can do
+  with this file" capability section whose cards are `signUpHref` conversion CTAs. `file` meta
+  entry added to `lenses/metadata.ts`. Bytes stay on the token-validated durable
+  `shareUrls(token)` endpoints — no signed URLs, no widening of anonymous access. Verified
+  signed-out in the browser (PDF/image/txt · light/dark · mobile 390px).
+- 2026-08-13 — **The Public tab always answers the link question.** `ShareLinkPanel` no longer
+  vanishes for owners when a type has no no-login lane (explicit state instead of `null`); the
+  public-lane allowlist moved out of the `/p/e/` server loader into
+  `utils/permissions/publicLane.ts` (`PUBLIC_LANE_TYPES` / `hasPublicPage` / `publicResourceUrl`)
+  so the tab surfaces the real public URL with a copy control exactly when one exists and states
+  the true consequence when one does not; user-facing copy uses the registry `displayLabel`
+  instead of the raw token ("this web_brand"). Registry data: the five remaining web share
+  points (`web_brand`, `web_site`, `web_property`, `web_snapshot`, `web_screenshot`) are now
+  `is_link_shareable` with display-safe `public_columns` projections. Verified live end-to-end:
+  brand → Public tab → Create link → the `/s/<token>` page resolves anonymously.
+
+- 2026-08-13 — **Pilot 1 of the sharing experience: keyword research shares as a presentation
+  report.** `content_ir_kind_instance` flipped link-shareable (`public_columns =
+  id,title,data,created_at`; label "Kind Instance" → "Saved Result" — jargon in a
+  non-technical user's share dialog), and its `urlPathTemplate` route
+  `/shapes/instances/[id]` now DISPATCHES on the instance's kind (report for keyword
+  research, previous studio redirect for every other kind, `<AccessGate>` when RLS hides
+  the row) instead of dead-ending a grantee in the shape studio. New lens
+  `lenses/kind-instance.tsx` (shape-dispatched, `GenericRenderer` fallback) + metadata/OG
+  entries (title "Keyword research: <phrase>", description with real counts). ONE
+  component — `KeywordResearchReport` — now serves owner, grantee, and anonymous token,
+  which is the level-vs-lens proof this pilot existed to produce. Anonymous metrics ride a
+  bounded token-scoped RPC (`public.share_token_keyword_metrics`) rather than a blanket
+  anon grant on the paid keyword plane. Migration
+  `mtx_share_keyword_research_lens.sql` (applied + ledgered); TS mirror + snapshot in sync.
+- 2026-08-13 — Claude: **`seo_collection_run` share path lands on a real route.** The registry's
+  `urlPathTemplate` pointed at `/marketing/seo/collections/{id}` — a route that never existed, so
+  every signed-in grantee 404'd from "Open in AI Matrx". Now `/marketing/ai-visibility/runs/{id}`:
+  a standalone resolver route (single RLS read of `seo.collection_run`, AccessGate fallback,
+  ShareButton, renders `AiVisibilityReport` via the client `CollectionRunView`) that needs no
+  brand/site access. DB registry updated live (migration
+  `sharing_registry_seo_collection_run_real_route.sql` applied + ledgered), TS mirror + snapshot in
+  sync. Also: canonical ShareButton added to the NESTED snapshot detail (`SnapshotDetail` header,
+  `web_snapshot`) and the capture observations dialog (`CaptureObservationsDialog` header,
+  `web_screenshot`) — the surfaces users actually navigate, whose standalone twins already had it.
+- 2026-08-12 — **Canvas fork converged.** The bespoke `canvas.shared_canvas_items.share_token` lane (the last parallel share-link system after files, §7-G3's disease) now runs entirely on `platform.share_links`: `shared_canvas_item` registered link-shareable (public_columns projection), 24 existing tokens migrated verbatim, both canvas `share_token` columns dropped, canvas lenses (`canvas_item`, `shared_canvas_item`) added to the lens registry. Details: `features/artifacts/FEATURE.md` change log + `common-docs/projects/sharing-experience/canvas-share-convergence.md`.
+- 2026-08-13 — **THE SHARE-LENS REGISTRY lands** (`features/sharing/lenses/`): `SharedResourceView`'s
+  per-type `renderBody` switch and the page's hard-coded AI-visibility metadata sniff are
+  replaced by `resolveShareLens` / `resolveShareLensMeta` (token-keyed, generic floor
+  fallback). `SharedResourceView` is now a pure landing shell. Verified live on an AI
+  visibility report link and a PDF file link. Primitive #1 of
+  `common-docs/projects/sharing-experience/PLAN.md`.
+
+- 2026-08-12 — **Public-state capability is explicit.** Rendering
+  `ShareButton` for link-only `seo_collection_run` exposed the generic
+  `isPublicColumn=null ⇒ select visibility` guess; Postgres correctly rejected
+  the nonexistent column and the client then hid the error as “Private.”
+  `get_share_capabilities` now returns the verified physical state column and
+  kind; reads/writes use that answer, unsupported types perform no row query,
+  `card_visibility` works, capability failures stay visible, and buttons with
+  `showStatus=false` issue no eager status request.
 - 2026-08-12 — **Complete downward access trees.** Direct grants now remain valid on explicitly shareable components; `iam.accessible_entity_ids` unions the child with every composition parent once per statement; FK structure and association conveyance compose because reachability resolves full container access. A shared node includes all descendants, never parents or siblings. Marketing is the first complete inventory: brand → sites/properties → pages → snapshots/screenshots → every registered artifact, with stored files and screenshot-attached notes proven end to end. Every new granular share point also has a canonical ID-only destination that works without parent access.
 
 - `2026-08-08` — **Access truth consumed beyond files + the vocabulary gets a guard.** `<AccessSummaryPanel>` mounted on four more surfaces: agent detail (`features/agents/route/AgentViewContent.tsx`, deleting two false "Private" badges), agent Share tab (`AgentSharePanel`), note info (`NoteInfoPanel`, "Private" chip demoted to a public-only chip), data-store detail (`DataStoresPage`, replacing a raw org-uuid chip). New advisory gate `pnpm check:visibility-vocab` (`scripts/check-visibility-vocab.ts` + allowlist) blocks retired visibility spellings, `internal`-omitting unions, and bare "Only you" claims; 23-finding baseline allowlisted with justifications tied to D105/D106b. `features/image-studio/api/python.ts#EditOutput.visibility` fixed to the canonical union.
@@ -300,6 +456,11 @@ Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) 
   - Public renderer (`/s/[token]`) extended: markdown (note/content_template), code, flashcard, and a content-aware generic that renders `content` for any allowlisted type.
 - `2026-07-26` — Removed `utils/permissions/index.ts` barrel; import from `@/utils/permissions/<module>` directly.
 - `2026-07-26` — Removed `features/sharing/index.ts` barrel; all consumers import directly from `@/features/sharing/components/*` or `@/utils/permissions/*`.
+- `2026-08-12` — Enabled safe link sharing for `seo_collection_run` with the
+  allowlist `id, operation, status, result, created_at, completed_at`; AI
+  Visibility runs receive the bespoke `/s/[token]` report renderer and social
+  card. Extracted the podcast-native share behavior into
+  `features/sharing/hooks/useShare.tsx` for every public surface.
 - `2026-07-07` — **No-login share links + DM-on-share + full registry reconciliation.** Three connected additions:
   1. **Canonical no-login link sharing** (`migrations/share_links_canonical_system.sql`). New `platform.share_links` (token, resource_type, resource_id, permission_level, expires_at, max_uses, use_count, is_active, created_by). The token IS the authorization: anon-callable `resolve_share_token(p_token)` (SECURITY DEFINER, granted to `anon`) validates the token, resolves the registry row, and returns the resource JSON — deliberately bypassing `iam.has_access` (which refuses anon). It does NOT touch the resource's `visibility` (that would leak to logged-in org members via `has_access`); it strips `embedding`/`search_tsv`/`search_vector`. Owner RPCs: `create_share_link` / `list_share_links` / `revoke_share_link`. RLS: owner-only direct table access; anon reaches it ONLY through the RPC. FE: `utils/permissions/shareLinks.ts` + `ShareLinkPanel` (in the Public tab) + public route `app/(public)/s/[token]/` (server resolve → `SharedResourceView` dispatcher: note renderer via `BasicMarkdownContent`, generic `EntityCard`-style fallback for any type, + a "Create your own" acquisition CTA). Verified live: anon resolves a note token and reads content, embedding stripped.
   2. **In-app DM on share.** `shareWithUser` now also fires a fire-and-forget DM (lazy `sendDirectActionMessage`) carrying a `resource_shared` `action_data` kind → `ResourceSharedCard` (message-action registry) renders a clickable `EntityCard` ("X shared a Note with you", opens the resource). Replaces the deleted note "accept a shared link" flow (grants are immediate via RLS; the DM is the notification). `ShareWithUserOptions.resourceName` threads the title through `useSharing`.

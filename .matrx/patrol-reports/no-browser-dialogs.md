@@ -1,88 +1,53 @@
 # P7 — No browser dialogs
 
-- Run date: 2026-08-09
-- Run kind: first run; required full-repository pass
+- Run date: 2026-08-13
+- Run kind: scheduled full-repository pass
 - Registry scope: full repository every run
-- Prior-month loop health: no prior P7 reports or automation memory existed
+- Execution: isolated Codex worktree at `origin/main` (`b4b5464f2`, release `v0.4.561`)
 
 ## Scope scanned
 
-- Full repository scan with the registry expressions `window\.(confirm|alert|prompt)\s*\(` and bare `confirm(`/`alert(`/`prompt(` forms.
-- Executable-code triage across `app/`, `components/`, `features/`, and `lib/` with ESLint scope resolution (`no-restricted-globals`, `no-alert`, `no-restricted-properties`).
-- Open P7 ledger sighting independently verified; its two-file count was stale.
-- Generated output, dependencies, and build output were excluded; no generated file was touched.
+- Ran the P7 call-pattern grep across all repository TypeScript and JavaScript sources, excluding dependency, build, coverage, and distribution trees.
+- Ran repo-wide ESLint scope resolution for `no-alert`, `no-restricted-globals`, and `no-restricted-properties` so canonical imported `confirm({...})` calls, local functions, comments/prose, and security fixtures were not misclassified.
+- Reverified the open P7 ledger item and both formerly manual files directly.
+- Full-pass result: **0 executable browser-dialog calls in 0 files**.
 
-## Detection and triage baseline
+## Approval routes
 
-- Raw explicit `window.*` scan: 3 textual matches in 3 files; all are documentation/comments describing approved replacements, so 0 executable findings.
-- Raw bare-form scan: 314 textual matches in 237 files; 243 matches in 187 TypeScript/JavaScript files.
-- Scope-aware executable findings before mutation: 48 calls in 34 files — 31 `alert`, 16 `confirm`, 1 `prompt`.
-- Scope-aware executable findings after Batch 1: 44 calls in 32 files — 27 `alert`, 16 `confirm`, 1 `prompt`.
-- False positives triaged: the approved imported `confirm({...})` host primitive; locally declared `confirm` callbacks/functions; prose, comments, and API/domain uses of “prompt”; fixtures such as safe-HTML and `javascript:alert(1)` strings.
+### Auto-fixed now
 
-## Findings and outcomes
+- **0 findings; 0 fixes.** No Tier M batch was created.
 
-- Total findings: 34 files (48 executable calls).
-- Fixed: 2 files (4 executable `alert` calls) in one Tier M batch.
-- Remaining: 32 files (44 calls).
-- Tier M backlog: 27 `alert` calls in 18 files, eligible for later small `toast` batches after independent certification.
-- Tier R backlog: 16 synchronous `confirm` calls in 14 files; converting them changes control-flow/interaction semantics and needs surface-specific review.
-- Tier R backlog: 1 `prompt` call in 1 file; replacing it with `TextInputDialog` requires state and secure-token UX judgment.
+### Manual approval requested
 
-## Tier M Batch 1 — code-editor HTML page errors
+- **0 findings.** No approval remains pending.
 
-- `features/code-editor/components/code-block/MultiFileCodeEditor.tsx`
-- `features/code-editor/multi-file-core/useCodeEdiorBasics.ts`
-- Transformation: four blocking `alert(...)` error messages became `toast.error(...)` through the existing captured `@/lib/toast` primitive. Guards, text, return behavior, and `finally` cleanup are unchanged.
-- Main-agent checks: `pnpm type-check` PASS; `pnpm check:migrations` PASS; changed-file P7 warnings removed. Five changed-file ESLint errors are pre-existing and unrelated (confirmed independently against `HEAD`).
-- Certifier verdict: **CERTIFIED** — second adversarial agent passed type-check, doctrine, tsconfig, and UI-primitives gates; found no P7 false positives in the batch; checked 1440×900 and 390×844 in light and dark with no runtime/overflow regression. A pre-existing collapsed-panel defect in `/demos/tests/markdown-tests/tui-tests` prevented safely triggering the final action but is unrelated to the toast-only diff.
+### Backlog retained
 
-## Remaining executable baseline
+- **0 findings.** No item lacks evidence or a safe decision.
 
-### Tier M alert candidates
+## Prior open items resolved before this run
 
-- `app/(admin)/administration/ui/official-components/component-displays/floating-sheet.tsx:329`
-- `app/(admin)/administration/ui/official-components/component-displays/placeholder.tsx:46`
-- `app/(admin)/administration/ui/official-components/component-displays/simple-card-grid.tsx:195,205,223,245`
-- `app/(admin)/administration/ui/official-components/component-displays/simple-card.tsx:127`
-- `app/(dev)/demos/general/resizable-demo/resizable-builder/page.dev.tsx:344,347`
-- `app/(dev)/demos/settings-primitives/page.dev.tsx:342,350,357`
-- `app/(dev)/demos/tests/_maps/components/SearchControl.tsx:84,88`
-- `app/(dev)/demos/tests/google-apis/search-console/components/DataTable.tsx:146`
-- `app/(dev)/demos/tests/slack/with-brokers/components/BrokerForm.tsx:150`
-- `components/mardown-display/blocks/common/ContentBlockWrapper.tsx:138`
-- `components/mardown-display/blocks/math/MathProblemBlock.tsx:61`
-- `components/mardown-display/blocks/quiz/QuizSessionList.tsx:52`
-- `components/mardown-display/chat-markdown/tui/TuiEditorContent.tsx:345`
-- `components/mardown-display/markdown-classification/custom-views/view-components/LsiKeywordView.tsx:520`
-- `components/mardown-display/markdown-classification/custom-views/view-components/ModernCandidateProfileView.tsx:207`
-- `components/mardown-display/markdown-classification/custom-views/view-components/ModernKeywordAnalyzerView.tsx:440`
-- `components/mardown-display/markdown-classification/custom-views/view-components/ModernOneColumnProfile.tsx:250`
-- `features/html-pages/components/HtmlPreviewModal.tsx:385,390,437`
+- `features/administration/hindsight/components/EnrollmentDetailPanel.tsx` now uses the canonical imperative `confirm({...})` host for its destructive archive action.
+- `app/(dev)/demos/tests/slack/page.dev.tsx` now uses `TextInputDialog` for manual token entry.
+- Both replacements landed before this patrol in `460ff2dcc`, whose repository-wide single-rule scan reported zero P7 violations. That commit is an ancestor of release `v0.4.561`; the patrol applied no product-code mutation.
 
-### Tier R confirm candidates
+## Verification and certification
 
-- `app/(admin)/administration/compute/sandbox-infra/page.tsx:360`
-- `app/(transitional)/_apps/app-builder/applets/[id]/edit/components/EditTabLayout.tsx:50,81`
-- `app/(transitional)/_apps/app-builder/apps/[id]/edit/components/AppletsEditTab.tsx:39`
-- `app/(transitional)/_apps/app-builder/apps/[id]/edit/components/EditTabLayout.tsx:44,74`
-- `app/(transitional)/_apps/app-builder/apps/[id]/edit/components/LegacyEditorTab.tsx:28`
-- `app/(transitional)/_apps/app-builder/containers/[id]/ContainerDetailLayoutClient.tsx:47`
-- `app/(transitional)/_apps/app-builder/fields/[id]/FieldDetailLayoutClient.tsx:45`
-- `app/(transitional)/_apps/builder/unified-concept/field-builder/FieldComponentsList.tsx:39`
-- `components/admin/query-history/query-history-overlay.tsx:300`
-- `components/mardown-display/blocks/quiz/QuizSessionList.tsx:44`
-- `components/user-generated-table-data/RowOrderingModal.tsx:238`
-- `features/applet/builder/modules/field-builder/FieldComponentsList.tsx:92`
-- `features/applet/builder/modules/field-builder/PrimaryFieldBuilder.tsx:122`
-- `features/canvas/core/SavedCanvasItems.tsx:322`
+- Immutable pre-edit baseline: clean git worktree; `pnpm type-check` pass; `pnpm check:doctrine` pass with 11 advisory reuse notices; `pnpm check:tsconfig` pass with two inert `.next*` include notes; `pnpm check:ui-primitives` pass with 19 unchanged advisory findings; scope-aware P7 ESLint detector 0.
+- Post-report verification: `pnpm type-check` pass; doctrine remained the same 11 advisory reuse notices; tsconfig remained the same two inert `.next*` include notes; UI-primitives remained the same 19 advisory findings; scope-aware P7 ESLint detector remained 0.
+- Finalization gates: `pnpm check:migrations` silent; `pnpm sync-types` completed with `Type-check passed.` The live generators exposed unrelated drift in `types/database.types.ts`, `types/python-generated/api-types.ts`, and `types/python-generated/openapi.json`; P7's generated-file hard rule required discarding those tool-produced diffs, so no generated file is part of this patrol.
+- Adversarial certifier verdict: **NOT APPLICABLE — no Tier M fix batch**.
+- Browser proof: not required because this run changed no product code, shared primitive, interaction, layout, responsive behavior, theme behavior, or chunk boundary.
 
-### Tier R prompt candidate
+## New baseline
 
-- `app/(dev)/demos/tests/slack/page.dev.tsx:54`
+- Executable P7 findings: **0 calls / 0 files**.
+- Approved exceptions: **0**.
+- Open ledger sightings: **0**.
 
-## Cadence health and candidates
+## Loop health
 
-- This is the first P7 run, so there is no preceding month of clean runs and no cadence-lengthening proposal.
-- No repeated rejected batches exist; mutation remains active.
+- Available reports from the preceding month include finding-bearing and recovery runs on 2026-08-09 and 2026-08-12, so the all-clean threshold is not met and no longer cadence is proposed.
+- The earlier infrastructure-blocked preview attempt does not count as a batch rejection; the recovered alert batch was certified and shipped.
 - No recurring unregistered class was observed, so no Candidate-bench nomination was added.

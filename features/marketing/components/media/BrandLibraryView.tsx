@@ -44,6 +44,9 @@ import { secureImageUrl } from "@/features/marketing/lib/website-url";
 import { youTubeThumbnail, youtubeId } from "@/lib/media/youtube";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { VideoPublishDate } from "@/features/files/blocks/video/VideoPublishDate";
+import { videoPublishDateFromMetadata } from "@/lib/media/video-date";
+import { useYouTubeVideoIdentityIndex } from "@/features/research/hooks/useResearchState";
 import {
   BRAND_ASSET_KIND_LABELS,
   isJsonRecord,
@@ -100,6 +103,7 @@ const SOURCE_LABELS: Record<string, string> = {
 
 function AssetTile({
   asset,
+  publishedAt,
   onEdit,
   onEditImage,
   onDelete,
@@ -107,6 +111,7 @@ function AssetTile({
   busy,
 }: {
   asset: BrandAsset;
+  publishedAt?: string | null;
   onEdit: (asset: BrandAsset) => void;
   /** Opens the image-editing suite — only offered when the asset has a file_id. */
   onEditImage: (asset: BrandAsset) => void;
@@ -130,7 +135,7 @@ function AssetTile({
   return (
     <div className="group relative flex flex-col overflow-hidden rounded-lg border border-border bg-card">
       {videoFileId ? (
-        <div className="aspect-[4/3] bg-muted/40">
+        <div className="relative aspect-[4/3] bg-muted/40">
           <InlineMediaRef
             ref={videoFileId}
             as="video"
@@ -139,10 +144,14 @@ function AssetTile({
             alt={videoTitle}
             preload="metadata"
           />
+          <VideoPublishDate
+            publishedAt={publishedAt}
+            className="pointer-events-none absolute bottom-1.5 left-1.5 rounded bg-black/75 px-1 py-0.5 text-white shadow-sm"
+          />
         </div>
       ) : asset.kind === "video" ? (
         videoPoster ? (
-          <div className="aspect-[4/3] bg-muted/40">
+          <div className="relative aspect-[4/3] bg-muted/40">
             {/* Third-party provider poster — external asset, no file_id. */}
             <img
               src={videoPoster}
@@ -150,10 +159,18 @@ function AssetTile({
               className="h-full w-full object-cover"
               loading="lazy"
             />
+            <VideoPublishDate
+              publishedAt={publishedAt}
+              className="pointer-events-none absolute bottom-1.5 left-1.5 rounded bg-black/75 px-1 py-0.5 text-white shadow-sm"
+            />
           </div>
         ) : (
-          <div className="flex aspect-[4/3] items-center justify-center bg-muted/40 text-muted-foreground">
+          <div className="relative flex aspect-[4/3] items-center justify-center bg-muted/40 text-muted-foreground">
             <FileVideo className="h-5 w-5" />
+            <VideoPublishDate
+              publishedAt={publishedAt}
+              className="absolute bottom-1.5 left-1.5"
+            />
           </div>
         )
       ) : asset.file_id ? (
@@ -205,7 +222,9 @@ function AssetTile({
             className="truncate text-[11px] font-medium text-foreground"
             title={asset.title ?? undefined}
           >
-            {asset.title || BRAND_ASSET_KIND_LABELS[asset.kind as BrandAssetKind] || asset.kind}
+            {asset.title ||
+              BRAND_ASSET_KIND_LABELS[asset.kind as BrandAssetKind] ||
+              asset.kind}
           </p>
           <p className="truncate text-[9px] text-muted-foreground">
             {SOURCE_LABELS[asset.source] ?? asset.source}
@@ -280,6 +299,15 @@ export function BrandLibraryView({
   const [creating, setCreating] = useState(false);
 
   const assets = useMemo(() => assetsQuery.data ?? [], [assetsQuery.data]);
+  const youtubeVideoIds = assets.flatMap((asset) => {
+    const id =
+      asset.kind === "video" && asset.source_url
+        ? youtubeId(asset.source_url)
+        : null;
+    return id ? [id] : [];
+  });
+  const { identityForId: youtubeIdentityForId } =
+    useYouTubeVideoIdentityIndex(youtubeVideoIds);
 
   const groups = useMemo(() => {
     const byKind = new Map<string, BrandAsset[]>();
@@ -422,17 +450,28 @@ export function BrandLibraryView({
               </span>
             </div>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-              {kindAssets.map((asset) => (
-                <AssetTile
-                  key={asset.id}
-                  asset={asset}
-                  onEdit={setEditing}
-                  onEditImage={setEditingImage}
-                  onDelete={(item) => void onDelete(item)}
-                  onTogglePrimary={(item) => void onTogglePrimary(item)}
-                  busy={updateAsset.isPending || deleteAsset.isPending}
-                />
-              ))}
+              {kindAssets.map((asset) => {
+                const videoId =
+                  asset.kind === "video" && asset.source_url
+                    ? youtubeId(asset.source_url)
+                    : null;
+                const publishedAt =
+                  (videoId
+                    ? youtubeIdentityForId(videoId)?.published_at
+                    : null) ?? videoPublishDateFromMetadata(asset.data);
+                return (
+                  <AssetTile
+                    key={asset.id}
+                    asset={asset}
+                    publishedAt={publishedAt}
+                    onEdit={setEditing}
+                    onEditImage={setEditingImage}
+                    onDelete={(item) => void onDelete(item)}
+                    onTogglePrimary={(item) => void onTogglePrimary(item)}
+                    busy={updateAsset.isPending || deleteAsset.isPending}
+                  />
+                );
+              })}
             </div>
           </section>
         ))

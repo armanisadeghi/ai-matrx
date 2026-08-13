@@ -47,7 +47,7 @@ const supabase = createClient(url, key);
 async function main() {
   // 1. Read the source rows (service key bypasses RLS).
   const { data: rows, error } = await supabase
-    .from("flexible_data")
+    .schema("platform").from("flexible_data")
     .select("id,label,slug,data,category_id,organization_id,visibility")
     .in("category_id", [BLOCK_SCHEMAS_CATEGORY_ID, SAMPLE_BLOCK_DATA_CATEGORY_ID])
     .is("deleted_at", null);

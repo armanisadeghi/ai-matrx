@@ -50,6 +50,11 @@ export function PublicHeader() {
         </Link>
 
         <div className="flex items-center gap-2">
+          <div
+            id="public-header-actions"
+            className="flex min-w-0 items-center"
+          />
+
           <Link href="/canvas/discover" className="hidden md:block">
             <Button
               variant="ghost"

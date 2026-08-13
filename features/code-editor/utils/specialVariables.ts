@@ -31,7 +31,9 @@ export const SPECIAL_VARIABLE_NAMES = {
  * Check if a variable name is special (auto-managed)
  */
 export function isSpecialVariable(variableName: string): boolean {
-  return Object.values(SPECIAL_VARIABLE_NAMES).includes(variableName as any);
+  return Object.values(SPECIAL_VARIABLE_NAMES).some(
+    (name) => name === variableName,
+  );
 }
 
 /**
@@ -147,4 +149,3 @@ export function logSpecialVariablesUsage(
     });
   }
 }
-

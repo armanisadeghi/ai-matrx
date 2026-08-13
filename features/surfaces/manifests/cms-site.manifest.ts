@@ -553,7 +553,17 @@ const surfaceSpecific: SurfaceValue[] = [
 
 /**
  * What agents may WRITE into the site workspace — the write half of the 360
- * loop. FOUR targets, all on the Settings tab, all `mode: "draft"`, all `ask`.
+ * loop. SIX targets, all `ask`. Five are on the Settings tab and `mode:
+ * "draft"` (`site_global_css`, `site_theme_config`, `site_navigation`,
+ * `site_footer_config`, `site_name`); one — `add_page` — is on the Pages tab
+ * and `mode: "entity"`, the single target here that actually writes.
+ *
+ * TAB-SCOPED BY CONSTRUCTION. Each tab mounts its own nested provider and
+ * registers only the handlers for the state IT owns, and the writeback seam
+ * never advertises a target with no live handler (`listAgentWritableTargets`),
+ * so the Settings targets are offered only on Settings and `add_page` only on
+ * Pages. That is the design, not a gap: a target is offered exactly where a
+ * canonical write path for it is mounted.
  *
  * WHY DRAFT IS THE WHOLE STORY HERE. Every target lands in the SAME `useState`
  * the user's own typing drives — `globalCss` on
@@ -589,6 +599,19 @@ const surfaceSpecific: SurfaceValue[] = [
  *    links). Authored copy assembled from the same page inventory. Declared as
  *    ONE object because the section saves one object; five micro-targets would
  *    make five dialogs for one edit.
+ *  - `site_name` — the site's display label, staged into the General card next
+ *    to the Save Changes button. Naming is authorship, and it is the one
+ *    identity-adjacent field on this row that moves nothing: unlike slug and
+ *    domain, renaming a site changes no URL and breaks no link.
+ *  - `add_page` (Pages tab, `entity`) — the decomposition action. "Add an
+ *    About page" is a request an agent can complete honestly because the page
+ *    it creates is an UNPUBLISHED, empty stub: it lands in the Pages list for
+ *    the human to open and fill in, changes nothing the live site serves, and
+ *    is deleted with the row's own delete control. It runs through the same
+ *    `CmsPageService.createPage` the New Page route uses and then
+ *    `refreshPages()`, so `pages_summary` / `site_structure` re-read true.
+ *    Being a real write, it is the one target `agent_write_policy: "blocked"`
+ *    refuses.
  *
  * Deliberately NOT declared:
  *  - `site_meta_defaults` — the honest miss, and the reason is a UI gap, not a
@@ -683,6 +706,31 @@ const writeTargets: SurfaceWriteTarget[] = [
     group: "site_presentation",
     sortOrder: 430,
   },
+  // ── Added 2026-08-12 (second adopter pass) ────────────────────────────
+  {
+    name: "site_name",
+    label: "Site name",
+    description:
+      "Stage a new display name for this website into the Site Name box on the Settings tab — the name shown across the CMS, in the site switcher, and used as the site's default title. Value is a plain text string, NOT JSON and NOT JSON-encoded: send the name itself (`Northwind Coffee`), never a quoted, braced, or backslash-escaped version of it, and never an object wrapping it. Staging only: it lands in the same General card as the Save Changes button, so the saved `site_name` does not change until the human clicks Save — and that Save writes the live row, since the site has no draft twin. This target shares the General card with the global CSS editor, so those two stage and save together; the theme, navigation, and footer cards each save separately (see the one-card-at-a-time note above).",
+    valueType: "string",
+    updatesValue: "site_name",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "site_identity",
+    sortOrder: 440,
+  },
+  {
+    name: "add_page",
+    label: "Add page",
+    description:
+      "Create ONE new page on this site, immediately, through the CMS's canonical page-create path — the ONLY target on this surface that writes rather than stages, and the only one offered on the Pages tab instead of Settings. The page is created UNPUBLISHED, out of the nav, and empty of content: a stub the user then opens in the page editor and fills in, so nothing the live site serves changes. Value is an OBJECT (send the object itself, not a JSON string): `{ title: string (required, plain text), slug?: string (lowercase letters, digits and single hyphens only — derived from the title when omitted), meta_description?: string, excerpt?: string }`. One page per call; call it again for a second page, and read `pages_summary` first so you do not duplicate a route that already exists. The new page appears in the Pages list as soon as it lands. REFUSED when the site's `agent_write_policy` is \"blocked\" — unlike the staging targets this one really does write, so the gate applies; read that value before offering to create anything.",
+    valueType: "object",
+    updatesValue: "pages_summary",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "site_content",
+    sortOrder: 450,
+  },
 ];
 
 export const cmsSiteManifest: SurfaceManifest = {
@@ -698,7 +746,7 @@ The CMS is draft/publish twinned: every content column has a *_draft partner. pa
 agent_write_policy is binding and you must check it before promising any change: "blocked" means no writes at all, "draft_only" means you may save drafts but a human must publish, "full" means you may publish directly.
 Collections values are present only while the user is on the Collections tab; settings_draft only on Settings. Their absence means "not loaded here", not "none exist".
 The inherited owned_sites_summary is the user's other websites — useful for cross-site comparison, but every write you make belongs to site_id unless the user says otherwise.
-You can also WRITE here, through apply_surface_write, but only on the Settings tab (current_mode "settings"): the four targets stage the site's global CSS, theme tokens, navigation menu, and footer layout into the editors the user is looking at, and the user is asked before each one lands. Staging is not saving — the human still clicks that section's Save — so this path is available even under a "blocked" or "draft_only" agent_write_policy. Read the matching value first: theme tokens, navigation, and footer lists REPLACE what is in the editor, so anything you leave out is gone. The site row has no draft twin, so the human's Save publishes site-wide at once. If you stage more than one target, TELL THE USER to save one card at a time and come back to you: saving any card reloads the site and re-seeds the other cards from the saved row, which discards whatever is still staged there — so offer to re-stage the rest after each save rather than letting their work vanish. The site's domain, slug, active flag, and deletion are never writable — those are identity and human gates.
+You can also WRITE here, through apply_surface_write, and which targets you are offered depends on the tab. On the Settings tab (current_mode "settings") five targets stage the site's global CSS, theme tokens, navigation menu, footer layout, and site name into the editors the user is looking at, and the user is asked before each one lands. Staging is not saving — the human still clicks that section's Save — so that path is available even under a "blocked" or "draft_only" agent_write_policy. On the Pages tab, add_page is the one target that genuinely writes: it creates an unpublished, empty page stub through the CMS's own create path for the user to fill in, and it IS refused under a "blocked" policy — check agent_write_policy before offering it, and read pages_summary first so you do not duplicate an existing route. Read the matching value first: theme tokens, navigation, and footer lists REPLACE what is in the editor, so anything you leave out is gone. The site row has no draft twin, so the human's Save publishes site-wide at once. If you stage more than one target, TELL THE USER to save one card at a time and come back to you: saving any card reloads the site and re-seeds the other cards from the saved row, which discards whatever is still staged there — so offer to re-stage the rest after each save rather than letting their work vanish. The site's domain, slug, active flag, and deletion are never writable — those are identity and human gates.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(

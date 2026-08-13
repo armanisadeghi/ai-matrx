@@ -346,112 +346,115 @@ export function InstallationsClient({
         })
       }
     >
-    <div className="flex h-full flex-col gap-3 p-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <SummaryStat label="Total installations" value={summary.total} />
-          <SummaryStat label="Active last 7 days" value={summary.recent} />
-          <SummaryStat
-            label="Below min version"
-            value={summary.below}
-            tone={summary.below > 0 ? "danger" : undefined}
+      <div className="flex h-full flex-col gap-3 p-4">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <SummaryStat label="Total installations" value={summary.total} />
+            <SummaryStat label="Active last 7 days" value={summary.recent} />
+            <SummaryStat
+              label="Below min version"
+              value={summary.below}
+              tone={summary.below > 0 ? "danger" : undefined}
+            />
+            <SummaryStat label="Version not reported" value={summary.unknown} />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Minimum supported version for{" "}
+            <code className="font-mono">{app}</code>:{" "}
+            <code className="font-mono">
+              {minSupportedVersion ?? "not set"}
+            </code>
+          </p>
+        </div>
+
+        {summary.below > 0 ? (
+          <div className="flex items-start gap-2 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>
+              <strong>{summary.below}</strong> installed{" "}
+              {summary.below === 1 ? "instance is" : "instances are"} running
+              below the published minimum supported version (
+              <code className="font-mono">{minSupportedVersion}</code>). Filter
+              the “Below minimum” column to see them.
+            </span>
+          </div>
+        ) : null}
+
+        <div className="min-h-0 flex-1">
+          <MatrxDataTable
+            urlState={{ id: "application-installations" }}
+            data={rows}
+            columns={columns}
+            getRowId={(row) => row.id}
+            isFetching={refreshing}
+            pageSize={50}
+            emptyState={{
+              icon: <HardDrive className="h-5 w-5" />,
+              title: "No installations",
+              description:
+                "No installed instances have checked in yet, or none match your filters.",
+            }}
+            toolbar={{
+              search: true,
+              searchPlaceholder: "Search instance, user, platform…",
+              actions: (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => void refresh()}
+                  disabled={refreshing}
+                >
+                  Refresh
+                </Button>
+              ),
+            }}
+            detail={{
+              title: (row) => row.instance_name || row.instance_id,
+              description: (row) => row.user_email,
+            }}
+            copy={{
+              label: "Installation",
+              listLabel: "Installations (this view)",
+              location: `${APPLICATIONS_ADMIN_LOCATION}/installations`,
+              rowKind: "app_instance",
+              listKind: "app_instances",
+              rowDescription: "One installed client instance from the fleet.",
+              listDescription:
+                "Filtered/sorted installed instances currently visible.",
+              humanRow: (row) =>
+                [
+                  `${row.instance_name || "(unnamed)"} — ${row.user_email}`,
+                  `version=${row.app_version ?? "not reported"} standing=${standingOf(row)}`,
+                  `platform=${row.platform || "?"} os=${row.os_version || "?"} arch=${row.architecture || "?"}`,
+                  `cpu=${row.cpu_model || "?"} cores=${row.cpu_cores ?? "?"} ram_gb=${row.ram_total_gb ?? "?"}`,
+                  `active=${row.is_active} tunnel=${row.tunnel_active} last_seen=${row.last_seen ?? "never"}`,
+                ].join("\n"),
+              rowAttributes: (row) => ({
+                instance_id: row.instance_id,
+                app_version: row.app_version,
+                standing: standingOf(row),
+                platform: row.platform,
+              }),
+              listAttributes: (visible, all) => ({
+                visible: visible.length,
+                total: all.length,
+                below_min_version: summary.below,
+                min_supported_app_version: minSupportedVersion,
+              }),
+            }}
+            rowActions={(row) => (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Cpu className="h-3.5 w-3.5" />
+                <span className="max-w-40 truncate" title={row.cpu_model ?? ""}>
+                  {row.cpu_model || "—"}
+                </span>
+                <MemoryStick className="ml-1 h-3.5 w-3.5" />
+                <span className="font-mono">{row.ram_total_gb ?? "—"}</span>
+              </div>
+            )}
           />
-          <SummaryStat label="Version not reported" value={summary.unknown} />
         </div>
-        <p className="text-xs text-muted-foreground">
-          Minimum supported version for{" "}
-          <code className="font-mono">{app}</code>:{" "}
-          <code className="font-mono">{minSupportedVersion ?? "not set"}</code>
-        </p>
       </div>
-
-      {summary.below > 0 ? (
-        <div className="flex items-start gap-2 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
-          <span>
-            <strong>{summary.below}</strong> installed{" "}
-            {summary.below === 1 ? "instance is" : "instances are"} running
-            below the published minimum supported version (
-            <code className="font-mono">{minSupportedVersion}</code>). Filter
-            the “Below minimum” column to see them.
-          </span>
-        </div>
-      ) : null}
-
-      <div className="min-h-0 flex-1">
-        <MatrxDataTable
-          data={rows}
-          columns={columns}
-          getRowId={(row) => row.id}
-          isFetching={refreshing}
-          pageSize={50}
-          emptyState={{
-            icon: <HardDrive className="h-5 w-5" />,
-            title: "No installations",
-            description:
-              "No installed instances have checked in yet, or none match your filters.",
-          }}
-          toolbar={{
-            search: true,
-            searchPlaceholder: "Search instance, user, platform…",
-            actions: (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => void refresh()}
-                disabled={refreshing}
-              >
-                Refresh
-              </Button>
-            ),
-          }}
-          detail={{
-            title: (row) => row.instance_name || row.instance_id,
-            description: (row) => row.user_email,
-          }}
-          copy={{
-            label: "Installation",
-            listLabel: "Installations (this view)",
-            location: `${APPLICATIONS_ADMIN_LOCATION}/installations`,
-            rowKind: "app_instance",
-            listKind: "app_instances",
-            rowDescription: "One installed client instance from the fleet.",
-            listDescription:
-              "Filtered/sorted installed instances currently visible.",
-            humanRow: (row) =>
-              [
-                `${row.instance_name || "(unnamed)"} — ${row.user_email}`,
-                `version=${row.app_version ?? "not reported"} standing=${standingOf(row)}`,
-                `platform=${row.platform || "?"} os=${row.os_version || "?"} arch=${row.architecture || "?"}`,
-                `cpu=${row.cpu_model || "?"} cores=${row.cpu_cores ?? "?"} ram_gb=${row.ram_total_gb ?? "?"}`,
-                `active=${row.is_active} tunnel=${row.tunnel_active} last_seen=${row.last_seen ?? "never"}`,
-              ].join("\n"),
-            rowAttributes: (row) => ({
-              instance_id: row.instance_id,
-              app_version: row.app_version,
-              standing: standingOf(row),
-              platform: row.platform,
-            }),
-            listAttributes: (visible, all) => ({
-              visible: visible.length,
-              total: all.length,
-              below_min_version: summary.below,
-              min_supported_app_version: minSupportedVersion,
-            }),
-          }}
-          rowActions={(row) => (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Cpu className="h-3.5 w-3.5" />
-              <span className="max-w-40 truncate" title={row.cpu_model ?? ""}>
-                {row.cpu_model || "—"}
-              </span>
-              <MemoryStick className="ml-1 h-3.5 w-3.5" />
-              <span className="font-mono">{row.ram_total_gb ?? "—"}</span>
-            </div>
-          )}
-        />
-      </div>
-    </div>
     </SurfaceRuntimeProvider>
   );
 }

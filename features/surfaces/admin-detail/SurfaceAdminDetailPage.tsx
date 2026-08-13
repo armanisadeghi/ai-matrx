@@ -270,15 +270,24 @@ export function SurfaceAdminDetailPage({
       );
       return;
     }
-    const refsTotal =
-      (usage?.tools.length ?? 0) +
-      (usage?.agents.length ?? 0) +
-      (usage?.uiComponents.length ?? 0);
+    // Counts the synced manifest mirrors too — they follow the rename via
+    // ON UPDATE CASCADE just like the rest, and omitting them used to report
+    // "no dependent rows" for surfaces carrying dozens of write targets.
+    const renameParts = [
+      { n: usage?.tools.length ?? 0, label: "tools" },
+      { n: usage?.agents.length ?? 0, label: "agents" },
+      { n: usage?.uiComponents.length ?? 0, label: "UI components" },
+      { n: usage?.writeTargetCount ?? 0, label: "write targets" },
+      { n: usage?.clientToolCount ?? 0, label: "client tools" },
+    ].filter((p) => p.n > 0);
+    const refsTotal = renameParts.reduce((sum, p) => sum + p.n, 0);
     const ok = await confirm({
       title: `Rename to "${target}"?`,
       description:
         refsTotal > 0
-          ? `${refsTotal} dependent row${refsTotal === 1 ? "" : "s"} will follow via ON UPDATE CASCADE (tools / agents / UI components). The change is atomic — a single UPDATE statement.`
+          ? `${refsTotal} dependent row${refsTotal === 1 ? "" : "s"} will follow via ON UPDATE CASCADE (${renameParts
+              .map((p) => `${p.n} ${p.label}`)
+              .join(", ")}). The change is atomic — a single UPDATE statement.`
           : "No dependent rows exist; this is a straight rename.",
       confirmLabel: "Rename",
       variant: "destructive",

@@ -13,6 +13,41 @@
  * `alwaysAvailable: false` — what lands in scope depends on WHERE the user
  * clicked. `content` (baseline) is the clicked block's or message's text and is
  * the primary bindable value for read-only "act on this" agents.
+ *
+ * EMITTER — WIRED, but NOT through `createAssistantMessageScope`, and not
+ * through `SurfaceRuntimeProvider`. Read this before "fixing" the readiness
+ * stamp: grepping for the scope builder's call sites returns ZERO here, and
+ * that is a FALSE NEGATIVE, not an unmounted surface. The live path is the v3
+ * context menu:
+ *
+ *   AgentConversationDisplay.tsx
+ *     → <NonEditableContextMenu surfaceName="matrx-user/assistant-message"
+ *                               resolveContextOnOpen={resolveMenuContext} />
+ *     → ContextMenuV3 merges the resolved per-target context into contextData
+ *     → context-menu-v3/utils/build-application-scope.ts spreads contextData
+ *       into the ApplicationScope (plus selection / text_before / text_after,
+ *       which the menu captures itself)
+ *     → launchAgentExecution({ runtime: { surfaceName, applicationScope } })
+ *
+ * `resolveMarkdownContext` therefore emits the DECLARED snake_case names
+ * directly (conversation_id, message_id, block_type, block_id, tool_name,
+ * language, diagram_source, artifact_type, artifact_id) alongside the
+ * camelCase keys the menu's own action handlers read — see the comment at the
+ * top of that file. `conversation_id` is written unconditionally, which is
+ * what earns the one `alwaysAvailable: true`. `readiness: "verified"` is
+ * correct as stamped (audited 2026-08-13).
+ *
+ * The `createAssistantMessageScope` helper below is consequently the TYPE
+ * CONTRACT for this surface rather than a live call site: the menu builds the
+ * scope from DOM-resolved context, so it does not route through the builder.
+ * Keep the two in sync by hand — if you add a value here, add it to
+ * `resolveMarkdownContext` (and to the tags `SafeBlockRenderer` emits) or it
+ * will never appear at runtime.
+ *
+ * GENERAL LESSON for surface mount audits: `grep create<X>Scope` only finds
+ * `SurfaceRuntimeProvider`-style emitters. Context-menu surfaces emit via
+ * `surfaceName=` + `resolveContextOnOpen`. Grep the SURFACE NAME string
+ * instead — it catches both.
  */
 
 import type {

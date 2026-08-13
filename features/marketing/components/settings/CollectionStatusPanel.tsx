@@ -239,6 +239,7 @@ export function CollectionStatusPanel({
           </div>
         ) : null}
         <MatrxDataTable
+          urlState={{ id: "collection-status" }}
           data={rows}
           columns={columns}
           getRowId={(row) => row.key}
@@ -357,10 +358,15 @@ function ProviderDetail({ row }: { row: CollectionStatusRow }) {
       <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
         {(
           [
-            ["Last run", row.lastRunAt ? formatCompactDate(row.lastRunAt) : "never"],
+            [
+              "Last run",
+              row.lastRunAt ? formatCompactDate(row.lastRunAt) : "never",
+            ],
             [
               "Last success",
-              row.lastSuccessAt ? formatCompactDate(row.lastSuccessAt) : "never",
+              row.lastSuccessAt
+                ? formatCompactDate(row.lastSuccessAt)
+                : "never",
             ],
             [
               "Collected",
@@ -370,9 +376,9 @@ function ProviderDetail({ row }: { row: CollectionStatusRow }) {
             ],
             ["Refreshes", `${row.scheduleLabel} — ${row.scheduleDetail}`],
             ...(row.trackedTargets !== null
-              ? ([
-                  ["Keywords tracked", String(row.trackedTargets)],
-                ] as Array<[string, string]>)
+              ? ([["Keywords tracked", String(row.trackedTargets)]] as Array<
+                  [string, string]
+                >)
               : []),
           ] as Array<[string, string]>
         ).map(([label, value]) => (

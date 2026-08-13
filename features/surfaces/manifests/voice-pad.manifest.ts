@@ -6,6 +6,21 @@
  * completed dictations accumulate as entries; the combined text can be
  * edited as a draft and sent onward via the content action bar. State
  * lives in `voicePadSlice` keyed by (overlayId, instanceId).
+ *
+ * NO WRITE TARGETS, and that is a RULING rather than a gap (2026-08-12) — do
+ * not re-scout it. The mount owns exactly ONE genuinely authored field,
+ * `draft_text`: the combined transcript the user edits, which an agent could
+ * plausibly clean up. Nothing else qualifies. `live_transcript` is
+ * transcription OUTPUT. `transcript_entries` are a timestamped LOG of what the
+ * user actually SAID — appending to them fabricates provenance rather than
+ * drafting content, the same record-vs-draft line `matrx-user/chat` draws
+ * around its message history. Clear-all and remove-entry are destructive, and
+ * the font-size control is a mechanical toggle. There is no pad title and no
+ * per-entry edit, and `VoicePad.tsx` is this surface's ONLY
+ * `SurfaceRuntimeProvider`, so no sibling mount adds a second field. One YES
+ * field is below the `surface-write-targets` skill's ~2 floor, and a composite
+ * cannot rescue it — a composite aggregates fields that are individually YES.
+ * A saved-note title or per-entry editing would reopen this.
  */
 
 import type {
@@ -191,7 +206,7 @@ export const voicePadManifest: SurfaceManifest = {
   surfaceName: "matrx-user/voice-pad",
   readiness: "verified",
   readinessNote:
-    "Emitter wired 2026-08-09 (nested SurfaceRuntimeProvider inside VoicePad — entries/draft/live transcript from voicePadSlice + local state at Run time); read + write both confirmed in a live agent run 2026-08-10. NOTE for anyone verifying this surface: the header Agents panel prefers the ROUTE surface over a deeper floating runtime, so on a mapped route the popover offers that route's agents and the run carries ITS scope, even though the pad's write targets are still injected (they come off the live runtime stack). Open the pad from a route with no surface mapping — /reports works — to exercise this surface end to end.",
+    "Emitter wired 2026-08-09 (nested SurfaceRuntimeProvider inside VoicePad — entries/draft/live transcript from voicePadSlice + local state at Run time); read + write both confirmed in a live agent run 2026-08-10, and RE-VERIFIED 2026-08-12 on a MAPPED route. The old note here said the header Agents panel prefers the ROUTE surface over a deeper floating runtime, so the pad had to be opened from an unmapped route (/reports) to be exercised. That is NO LONGER TRUE and the workaround is obsolete: `SurfaceAgentsPanelImpl` now treats a manifest with an `overlayId` as primary when it is the deepest live runtime, so the popover names Voice Pad, lists ITS agents and runs against ITS scope on any route — re-confirmed on /dashboard, where reverting that one line puts `matrx-user/dashboard` back in the popover. Reads work here too: a fresh Run reads `content` exactly. The one real gotcha is TIMING, not routing — `getScope` is called ONCE when the user hits Run, so page state changed after that (including by the agent's own applied write) is NOT visible to the rest of that conversation and the agent will report `content` as empty. Start a new run to re-read.",
   overlayId: "voicePad",
   label: "Voice Pad",
   intro: `<surface_intro>

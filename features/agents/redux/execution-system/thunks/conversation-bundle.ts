@@ -355,7 +355,7 @@ export function userRequestRowToRecord(
     // row — `cx_user_request` no longer carries `conversation_id`. Fall back to
     // any legacy value on the row if present.
     conversationId: conversationId ?? row.conversation_id ?? "",
-    userId: row.user_id,
+    userId: row.created_by ?? "",
     agentId: row.agent_id,
     agentVersionId: row.agent_version_id,
     status: row.status,
@@ -414,7 +414,7 @@ export function toolCallRowToRecord(row: CxToolCallRow): CxToolCallRecord {
     conversationId: row.conversation_id,
     userRequestId: row.user_request_id,
     messageId: row.message_id,
-    userId: row.user_id,
+    userId: row.created_by ?? "",
     callId: row.call_id,
     toolName: row.tool_name,
     toolNameAsCalled: row.tool_name_as_called ?? null,

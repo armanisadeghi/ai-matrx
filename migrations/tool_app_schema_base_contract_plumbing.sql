@@ -1,0 +1,8 @@
+-- Applied via Supabase MCP 2026-08-12 (tool_app_schema_base_contract_plumbing). Fork 2 Wave A on
+-- tool+app: additive base-contract completion on 12 tables (org backfilled from composition parent,
+-- else Matrx System org — all tools ARE system-org; created_by from user_id/parent; timestamps from
+-- snapshot changed_at; trio triggers; deleted_at + has_soft_delete on 9 children). No cuts.
+-- Full SQL in the applied migration (supabase_migrations.schema_migrations); this file is the record.
+-- See also: tool_app_custom_version_stores (version_store='custom' for tool+app) and
+-- tool_definition_bundle_system_variant_rls (cfg_* -> canonical system-variant policies;
+-- live-verified: authenticated user sees 412/412 tools, 63/64 bundles, membrane = live parents).

@@ -206,7 +206,7 @@ export function ScoreSubmissionDialog({
                                     {scoreResult.is_high_score && (
                                         <div className="flex items-center gap-2 p-2 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300">
                                             <Award className="w-4 h-4" />
-                                            <span className="text-sm font-medium">New High Score! 🏆</span>
+                                            <span className="text-sm font-medium">New High Score!</span>
                                         </div>
                                     )}
                                     {scoreResult.is_personal_best && (
@@ -268,4 +268,3 @@ export function ScoreSubmissionDialog({
         </Dialog>
     );
 }
-

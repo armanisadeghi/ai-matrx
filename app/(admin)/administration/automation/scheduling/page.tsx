@@ -21,10 +21,27 @@ import {
   fetchHealthSummary,
   type SchedulingHealthSummary,
 } from "@/lib/services/scheduling-admin-service";
+import {
+  definedOnly,
+  useAdminSchedulingScopeSlice,
+} from "@/features/scheduling/lib/admin-scheduling-scope";
 
 export default function SchedulingAdminOverview() {
   const [health, setHealth] = useState<SchedulingHealthSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Absent until the summary resolves — the manifest promises exactly that.
+  useAdminSchedulingScopeSlice("overview", () =>
+    definedOnly({
+      task_total_count: health?.taskCount,
+      task_enabled_count: health?.enabledCount,
+      task_due_next_hour_count: health?.upcomingNextHour,
+      runs_last_24h_count: health?.runsLast24h,
+      failures_last_24h_count: health?.failuresLast24h,
+      orphan_lease_summary_count: health?.orphanLeases,
+      overview_load_error: error ?? undefined,
+    }),
+  );
 
   useEffect(() => {
     fetchHealthSummary()

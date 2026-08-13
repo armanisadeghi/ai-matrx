@@ -8,8 +8,10 @@ export interface MessageTemplateDB {
     content: string | null;
     role: MessageRole | null;
     metadata: Record<string, any> | null;
-    is_public: boolean;
-    user_id: string | null;
+    /** Canonical platform visibility enum — replaced the legacy `is_public`
+     *  boolean when agent.message_template was certified (2026-08-13). */
+    visibility: string;
+    created_by: string | null;
     created_at: string;
     updated_at: string | null;
     tags: string[] | null;
@@ -21,7 +23,7 @@ export interface CreateMessageTemplateInput {
     content: string;
     role: MessageRole;
     metadata?: Record<string, any>;
-    is_public?: boolean;
+    visibility?: string;
     tags?: string[];
 }
 
@@ -32,7 +34,7 @@ export interface UpdateMessageTemplateInput extends Partial<CreateMessageTemplat
 // Query options
 export interface MessageTemplateQueryOptions {
     role?: MessageRole;
-    is_public?: boolean;
+    visibility?: string;
     search?: string;
     tags?: string[];
     limit?: number;

@@ -15,10 +15,9 @@ const SHORTCUT_UPDATE_FIELDS = [
   "agent_version_id",
   "use_latest",
   "is_active",
-  "user_id",
+  "created_by",
   "organization_id",
-  "project_id",
-  "task_id",
+  // project/task scoping is platform.associations edges, not columns
   // AgentExecutionConfig bundle
   "display_mode",
   "show_variable_panel",

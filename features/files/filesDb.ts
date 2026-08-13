@@ -50,4 +50,4 @@ export const FILES_TABLE_COLUMNS =
  * Version bytes download via the server (`/files/{id}/versions/{n}/download`).
  */
 export const FILE_VERSIONS_TABLE_COLUMNS =
-  "id, file_id, version_number, size_bytes, checksum, created_by, created_at, change_summary, organization_id";
+  "id, file_id, version_number, size_bytes, checksum, created_by, created_at, change_summary, organization_id, metadata";

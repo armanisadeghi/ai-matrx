@@ -41,7 +41,7 @@ export async function createComparisonSet(
     .schema("agent").from("cmp_comparison_sets")
     .insert({
       name: input.name,
-      user_id: input.userId,
+      created_by: input.userId,
       organization_id: await ensureOrgId(input.organizationId),
       project_id: input.projectId ?? null,
       task_id: input.taskId ?? null,
@@ -73,7 +73,7 @@ export async function listComparisonSets(
     .schema("agent").from("cmp_comparison_sets")
     .select("*")
     .is("deleted_at", null)
-    .eq("user_id", userId)
+    .eq("created_by", userId)
     .order("created_at", { ascending: false })
     .limit(limit);
 
@@ -135,8 +135,17 @@ export async function replaceEntries(
 
   if (entries.length === 0) return [];
 
+  // organization_id is NOT NULL on entries — inherit it from the owning set.
+  const { data: setRow, error: setErr } = await client
+    .schema("agent").from("cmp_comparison_sets")
+    .select("organization_id")
+    .eq("id", setId)
+    .single();
+  if (setErr) throw setErr;
+
   const rows = entries.map((e) => ({
     comparison_set_id: setId,
+    organization_id: setRow.organization_id,
     conversation_id: e.conversationId,
     display_order: e.displayOrder,
     agent_id: e.agentId,

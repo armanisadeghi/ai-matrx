@@ -17,7 +17,13 @@
  */
 
 import { useEffect, useState } from "react";
-import { Loader2, MessageSquarePlus, Play, AlertTriangle } from "lucide-react";
+import {
+  Check,
+  Loader2,
+  MessageSquarePlus,
+  Play,
+  AlertTriangle,
+} from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -122,7 +128,11 @@ export function SubmitAllPreflightDialog({
                   )}
                   title={r.hasMessage ? "Has input" : "Empty"}
                 >
-                  {r.hasMessage ? "✓" : "!"}
+                  {r.hasMessage ? (
+                    <Check className="size-3" aria-hidden="true" />
+                  ) : (
+                    "!"
+                  )}
                 </span>
                 <span className="flex-1 truncate font-medium text-foreground">
                   {r.agentName}

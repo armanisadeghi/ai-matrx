@@ -82,7 +82,7 @@ function CrumbOptions({ crumb }: { crumb: Crumb }) {
             {crumb.optionsLabel}
           </DropdownMenuLabel>
         )}
-        <div className="max-h-[60vh] overflow-y-auto">
+        <div className="max-h-[60dvh] overflow-y-auto">
           {crumb.options.map((opt) => (
             <DropdownMenuItem
               key={opt.href}

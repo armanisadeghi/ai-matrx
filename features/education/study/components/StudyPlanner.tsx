@@ -12,11 +12,21 @@
 // Targeting rides in `study_goal.metadata` (itemType/topic) rather than new
 // columns — see `StudyGoalMetadata` in ../types. Progress-per-goal reuses
 // `item_mastery` + the flashcards topic join the same way StudyTrends does,
-// dynamically imported so this stays mode-agnostic infrastructure.
+// dynamically imported so this stays mode-agnostic infrastructure — that
+// derivation now lives in `../planner/goalStats.ts`, shared with the
+// `matrx-user/education-planner` surface scope builder.
+//
+// The goal LIST is owned by PlannerWorkspace (the surface emitter), so the
+// planner can emit study_goals from either tab; this component owns the editor
+// dialog and calls back to reload. Writes go through `../planner/goalWrites.ts`
+// — the ONE canonical path, shared with the surface's agent write handlers, so
+// a click and an agent apply take the same road. Those helpers THROW; the UI
+// catches and toasts, the agent handler lets the throw reach the writeback
+// seam.
 //
 // React Compiler is on: no manual memo.
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -54,91 +64,13 @@ import {
 } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
 import { studyService } from "../service/studyService";
-import { displayMasteryPct } from "../utils/masteryFsrs";
-import type {
-  StudyGoalRow,
-  ItemMasteryRow,
-  GoalStatus,
-  NewGoalInput,
-} from "../types";
-
-const MS_PER_DAY = 86_400_000;
-
-interface GoalStat {
-  matched: number;
-  avgMasteryPct: number | null;
-  struggling: number;
-}
-
-function daysUntil(targetDate: string | null): number | null {
-  if (!targetDate) return null;
-  const target = new Date(targetDate).getTime();
-  return Math.ceil((target - Date.now()) / MS_PER_DAY);
-}
-
-function dueLabel(
-  targetDate: string | null,
-): { text: string; overdue: boolean } | null {
-  const days = daysUntil(targetDate);
-  if (days === null) return null;
-  if (days < 0) return { text: `${Math.abs(days)}d overdue`, overdue: true };
-  if (days === 0) return { text: "Due today", overdue: false };
-  return { text: `${days}d left`, overdue: false };
-}
-
-/** V1 heuristic: earlier target dates and higher struggle counts rank first. */
-function priorityScore(goal: StudyGoalRow, stat: GoalStat | undefined): number {
-  const days = daysUntil(goal.target_date);
-  const urgency = days === null ? 0 : Math.max(0, 60 - days);
-  return urgency + (stat?.struggling ?? 0) * 5;
-}
-
-async function resolveGoalStats(
-  goals: StudyGoalRow[],
-  mastery: ItemMasteryRow[],
-): Promise<Record<string, GoalStat>> {
-  const now = new Date();
-  const withTopic = goals.filter((g) => {
-    const meta = g.metadata as { itemType?: string; topic?: string } | null;
-    return meta?.itemType === "fc_card" && meta.topic;
-  });
-  let topicsById: Record<string, string | null> = {};
-  if (withTopic.length > 0 && mastery.length > 0) {
-    const { fcService } = await import("@/features/flashcards/data/fcService");
-    const res = await fcService.getTopicsForCardIds(
-      mastery.map((m) => m.item_id),
-    );
-    topicsById = res.data ?? {};
-  }
-
-  const stats: Record<string, GoalStat> = {};
-  for (const goal of goals) {
-    const meta = goal.metadata as { itemType?: string; topic?: string } | null;
-    const relevant =
-      meta?.itemType && meta.topic
-        ? mastery.filter((m) => topicsById[m.item_id]?.trim() === meta.topic)
-        : meta?.itemType
-          ? mastery
-          : [];
-    if (relevant.length === 0) {
-      stats[goal.id] = { matched: 0, avgMasteryPct: null, struggling: 0 };
-      continue;
-    }
-    let sum = 0;
-    let struggling = 0;
-    for (const m of relevant) {
-      const pct = displayMasteryPct(m, now) ?? 0;
-      sum += pct;
-      if (m.struggle_flag || pct < 0.4) struggling += 1;
-    }
-    stats[goal.id] = {
-      matched: relevant.length,
-      avgMasteryPct: Math.round((sum / relevant.length) * 100),
-      struggling,
-    };
-  }
-  return stats;
-}
+import { dueLabel, rankGoals, type GoalStat } from "../planner/goalStats";
+import {
+  createStudyGoal,
+  setStudyGoalStatus,
+  updateStudyGoal,
+} from "../planner/goalWrites";
+import type { StudyGoalRow, GoalStatus } from "../types";
 
 interface GoalFormState {
   title: string;
@@ -151,18 +83,27 @@ const EMPTY_FORM: GoalFormState = { title: "", targetDate: "", topic: "" };
 export function StudyPlanner({
   backHref,
   embedded = false,
+  goals,
+  stats,
+  error,
+  onReload,
 }: {
   backHref?: string;
   /** When embedded in the PlannerWorkspace, drop the standalone page chrome
    *  (bg-textured wrapper, back button, outer padding) — the host supplies it. */
   embedded?: boolean;
+  /** The loaded goals, or null while still loading. Owned by the host so the
+   *  planner surface can emit them from either tab. */
+  goals: StudyGoalRow[] | null;
+  /** Derived per-goal progress, keyed by goal id. */
+  stats: Record<string, GoalStat>;
+  /** The host's load error, when the goal list failed to load. */
+  error: string | null;
+  /** Re-read the goal list after this component writes one. */
+  onReload: () => void | Promise<void>;
 }) {
   const router = useRouter();
   const isMobile = useIsMobile();
-
-  const [goals, setGoals] = useState<StudyGoalRow[] | null>(null);
-  const [stats, setStats] = useState<Record<string, GoalStat>>({});
-  const [error, setError] = useState<string | null>(null);
 
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<StudyGoalRow | null>(null);
@@ -170,26 +111,6 @@ export function StudyPlanner({
   const [saving, setSaving] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<StudyGoalRow | null>(null);
   const [deleting, setDeleting] = useState(false);
-
-  const load = async () => {
-    setError(null);
-    const [goalsRes, masteryRes] = await Promise.all([
-      studyService.listGoals({ status: "active" }),
-      studyService.listMastery("fc_card"),
-    ]);
-    if (goalsRes.error) {
-      setError(goalsRes.error);
-      setGoals(null);
-      return;
-    }
-    const nextGoals = goalsRes.data ?? [];
-    setGoals(nextGoals);
-    setStats(await resolveGoalStats(nextGoals, masteryRes.data ?? []));
-  };
-
-  useEffect(() => {
-    void load();
-  }, []);
 
   const openCreate = () => {
     setEditingGoal(null);
@@ -208,58 +129,47 @@ export function StudyPlanner({
     setEditorOpen(true);
   };
 
+  // The canonical goal writes live in ../planner/goalWrites.ts and THROW; the
+  // human path catches and toasts here, while the surface's agent handlers let
+  // the same throw reach the writeback seam as an error envelope.
   const handleSave = async () => {
     const title = form.title.trim();
     if (!title) return;
     setSaving(true);
-    const targetDate = form.targetDate
-      ? new Date(form.targetDate).toISOString()
-      : null;
-    const topic = form.topic.trim();
-    if (editingGoal) {
-      const res = await studyService.updateGoal(editingGoal.id, {
-        title,
-        target_date: targetDate,
-        metadata: topic
-          ? { itemType: "fc_card", topic }
-          : { itemType: "fc_card" },
-      });
-      setSaving(false);
-      if (res.error) {
-        toast.error(res.error);
-        return;
+    const authored = {
+      title,
+      targetDate: form.targetDate || null,
+      topic: form.topic.trim(),
+    };
+    try {
+      if (editingGoal) {
+        await updateStudyGoal(editingGoal.id, authored);
+        toast.success("Goal updated");
+      } else {
+        await createStudyGoal(authored);
+        toast.success("Goal created");
       }
-      toast.success("Goal updated");
-    } else {
-      const input: NewGoalInput = {
-        title,
-        targetDate,
-        metadata: topic
-          ? { itemType: "fc_card", topic }
-          : { itemType: "fc_card" },
-      };
-      const res = await studyService.createGoal(input);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Saving the goal failed.");
+      return;
+    } finally {
       setSaving(false);
-      if (res.error) {
-        toast.error(res.error);
-        return;
-      }
-      toast.success("Goal created");
     }
     setEditorOpen(false);
-    void load();
+    void onReload();
   };
 
   const handleSetStatus = async (goal: StudyGoalRow, status: GoalStatus) => {
-    const res = await studyService.updateGoal(goal.id, { status });
-    if (res.error) {
-      toast.error(res.error);
+    try {
+      await setStudyGoalStatus(goal.id, status);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Updating the goal failed.");
       return;
     }
     toast.success(
       status === "achieved" ? "Goal marked achieved" : "Goal archived",
     );
-    void load();
+    void onReload();
   };
 
   const handleDelete = async () => {
@@ -273,14 +183,10 @@ export function StudyPlanner({
     }
     toast.success("Goal deleted");
     setPendingDelete(null);
-    void load();
+    void onReload();
   };
 
-  const ranked = (goals ?? [])
-    .slice()
-    .sort(
-      (a, b) => priorityScore(b, stats[b.id]) - priorityScore(a, stats[a.id]),
-    );
+  const ranked = rankGoals(goals ?? [], stats);
 
   const formBody = (
     <div className="flex flex-col gap-3 px-1">

@@ -100,9 +100,19 @@ import { dashboardManifest } from "./dashboard.manifest";
 import { educationManifest } from "./education.manifest";
 import { educationTutorManifest } from "./education-tutor.manifest";
 import { educationFlashcardsManifest } from "./education-flashcards.manifest";
+import { educationFlashcardEditorManifest } from "./education-flashcard-editor.manifest";
 import { educationFastfireManifest } from "./education-fastfire.manifest";
 import { educationAssessmentManifest } from "./education-assessment.manifest";
 import { educationGradeWorkManifest } from "./education-grade-work.manifest";
+import { educationPlannerManifest } from "./education-planner.manifest";
+import { educationMindMapsManifest } from "./education-mind-maps.manifest";
+import { educationMemoryManifest } from "./education-memory.manifest";
+import { educationPracticeOralManifest } from "./education-practice-oral.manifest";
+import { educationLearnAuthoringManifest } from "./education-learn-authoring.manifest";
+import { educationAudioStudyManifest } from "./education-audio-study.manifest";
+import { educationGameManifest } from "./education-game.manifest";
+import { educationLearnManifest } from "./education-learn.manifest";
+import { educationProgressManifest } from "./education-progress.manifest";
 import { settingsManifest } from "./settings.manifest";
 import { agentAppsManifest } from "./agent-apps.manifest";
 import { agentConnectionsManifest } from "./agent-connections.manifest";
@@ -169,6 +179,9 @@ import { shapesManifest } from "./shapes.manifest";
 import { crmManifest } from "./crm.manifest";
 import { crmManagerManifest } from "./crm-manager.manifest";
 import { crmCreatePartyManifest } from "./crm-create-party.manifest";
+import { adminKnowledgeManifest } from "./admin-knowledge.manifest";
+import { adminKindRegistryManifest } from "./admin-kind-registry.manifest";
+import { adminSkillsManifest } from "./admin-skills.manifest";
 
 /**
  * Manifests exactly as authored. Do NOT consume directly — generic baselines
@@ -257,9 +270,19 @@ const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   educationManifest,
   educationTutorManifest,
   educationFlashcardsManifest,
+  educationFlashcardEditorManifest,
   educationFastfireManifest,
   educationAssessmentManifest,
   educationGradeWorkManifest,
+  educationPlannerManifest,
+  educationMindMapsManifest,
+  educationMemoryManifest,
+  educationPracticeOralManifest,
+  educationLearnAuthoringManifest,
+  educationAudioStudyManifest,
+  educationGameManifest,
+  educationLearnManifest,
+  educationProgressManifest,
   settingsManifest,
   agentAppsManifest,
   agentConnectionsManifest,
@@ -328,6 +351,9 @@ const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   crmManifest,
   crmManagerManifest,
   crmCreatePartyManifest,
+  adminKnowledgeManifest,
+  adminKindRegistryManifest,
+  adminSkillsManifest,
 ];
 
 // ---------------------------------------------------------------------------

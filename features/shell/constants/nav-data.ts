@@ -1477,14 +1477,6 @@ export const adminNavItems: ShellNavItem[] = [
     color: "red",
   },
   {
-    label: "App Builder Hub",
-    href: "/apps/builder/hub",
-    iconName: "FolderOpen",
-    section: "admin",
-    category: "Applets",
-    color: "indigo",
-  },
-  {
     label: "Sandbox Admin",
     href: "/administration/compute/sandbox",
     iconName: "Container",

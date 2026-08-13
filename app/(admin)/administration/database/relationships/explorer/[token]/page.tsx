@@ -7,6 +7,7 @@
 // can never shadow the hub's static tab routes.
 
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
 import { createClient } from "@/utils/supabase/server";
 import {
@@ -51,7 +52,15 @@ export default async function EntityRelationshipExplorerPage({
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-textured">
-      <EntityExplorerHeader token={token} rules={rules ?? []} />
+      <Suspense
+        fallback={
+          <div className="p-4 text-sm text-muted-foreground">
+            Loading entity explorer…
+          </div>
+        }
+      >
+        <EntityExplorerHeader token={token} rules={rules ?? []} />
+      </Suspense>
       <div className="min-h-0 flex-1 overflow-y-auto">
         <EntityRelationshipOrbitPageBody token={token} rules={rules ?? []} />
       </div>

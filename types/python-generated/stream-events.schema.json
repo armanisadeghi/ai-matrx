@@ -8868,6 +8868,20 @@
         "title": "Wrote",
         "type": "boolean"
       },
+      "is_published": {
+        "default": false,
+        "title": "Is Published",
+        "type": "boolean"
+      },
+      "write_target": {
+        "default": "live",
+        "enum": [
+          "live",
+          "draft"
+        ],
+        "title": "Write Target",
+        "type": "string"
+      },
       "global_css": {
         "default": "",
         "title": "Global Css",
@@ -8889,6 +8903,59 @@
       "page_id"
     ],
     "title": "PlanCmsFillPreviewData",
+    "type": "object"
+  },
+  "PlanSetupAgentResultData": {
+    "additionalProperties": false,
+    "description": "Terminal event of the three whole-plan content-plan Setup passes\n(keyword strategy, entity attachment, plan review).\n\nThe COMPLETE proposal is already persisted on\n`web.site.settings.content_plan.*` and on the run's `chat.agent_run` row\nwhen this fires — the client re-reads the site rather than treating this\npayload as the only copy. This event carries just enough to say what\nhappened and where to find it.",
+    "properties": {
+      "type": {
+        "const": "plan_setup_agent_result",
+        "default": "plan_setup_agent_result",
+        "title": "Type",
+        "type": "string"
+      },
+      "site_id": {
+        "title": "Site Id",
+        "type": "string"
+      },
+      "kind": {
+        "title": "Kind",
+        "type": "string"
+      },
+      "run_id": {
+        "title": "Run Id",
+        "type": "string"
+      },
+      "item_count": {
+        "default": 0,
+        "title": "Item Count",
+        "type": "integer"
+      },
+      "summary": {
+        "default": "",
+        "title": "Summary",
+        "type": "string"
+      },
+      "model_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Model Id"
+      }
+    },
+    "required": [
+      "site_id",
+      "kind",
+      "run_id"
+    ],
+    "title": "PlanSetupAgentResultData",
     "type": "object"
   },
   "ToolStartedData": {

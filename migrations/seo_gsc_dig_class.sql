@@ -303,3 +303,10 @@ ON CONFLICT (id) DO UPDATE SET
   traffic_class = EXCLUDED.traffic_class,
   deleted_at = NULL,
   updated_at = now();
+
+-- 2026-08-12 (applied live via Supabase MCP, not by re-running this file):
+-- ALTER FUNCTION seo.gsc_perf_dig(uuid, text, date, date, date, date, jsonb,
+--   jsonb, text, text, integer, text) SET plan_cache_mode = force_custom_plan;
+-- Fixes the ~120s cold stall — the cached generic plan from the first call
+-- was pathological for later parameter shapes; a custom plan per call is
+-- negligible against the function's aggregate scans.

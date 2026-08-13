@@ -12,14 +12,27 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createEducationGameScope } from "@/features/surfaces/manifests/education-game.manifest";
 import { gameService } from "../../data/gameService";
 import { ENGAGE_ROUTES } from "../../constants";
+
+const SURFACE_NAME = "matrx-user/education-game";
 
 export function JoinRoomImpl() {
   const router = useRouter();
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [joining, startJoin] = useTransition();
+
+  // Read at trigger time, never from stale closure state.
+  const buildScope = () =>
+    createEducationGameScope({
+      view: "join",
+      join_code: code,
+      join_error: error ?? undefined,
+      join_joining: joining,
+    });
 
   const join = (): void => {
     const trimmed = code.trim().toUpperCase();
@@ -39,6 +52,7 @@ export function JoinRoomImpl() {
   };
 
   return (
+    <SurfaceRuntimeProvider surfaceName={SURFACE_NAME} getScope={buildScope}>
     <div className="mx-auto flex h-full w-full max-w-md flex-col items-center justify-center gap-5 p-4">
       <div className="flex items-center gap-2 self-start">
         <Button
@@ -85,5 +99,6 @@ export function JoinRoomImpl() {
         </Button>
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

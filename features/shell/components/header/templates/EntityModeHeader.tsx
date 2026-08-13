@@ -179,7 +179,7 @@ export function EntityModeHeader({
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-56">
-                  <div className="max-h-[60vh] overflow-y-auto">
+                  <div className="max-h-[60dvh] overflow-y-auto">
                     {entityOptions.map((opt) => (
                       <DropdownMenuItem
                         key={opt.href}

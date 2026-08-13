@@ -23,6 +23,11 @@ import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { PaperPlaneIcon } from "@radix-ui/react-icons";
 import { Button } from "@/components/ui/ButtonMine";
 import type { OverlayId } from "@/features/window-panels/registry/overlay-ids";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  AGENT_GATE_SURFACE_NAME,
+  createAgentGateScope,
+} from "@/features/surfaces/manifests/agent-gate.manifest";
 
 // ─── WindowPanel body — used by AgentGateWindow ───────────────────────────────
 
@@ -150,21 +155,37 @@ export function AgentGateBody({
       overlayId="agentGateWindow"
       onCollectData={() => ({ conversationId })}
     >
-      <div
-        className="flex flex-col flex-1 min-h-0 justify-end"
-        onKeyDown={cancelCountdown}
-        onPointerDown={cancelCountdown}
+      {/* Nested overlay emitter — while this window is open, its scope
+          out-depths the page's provider (deepest wins). */}
+      <SurfaceRuntimeProvider
+        surfaceName={AGENT_GATE_SURFACE_NAME}
+        getScope={() =>
+          createAgentGateScope({
+            conversation_id: conversationId,
+            agent_name: agentName ?? undefined,
+            pre_execution_message: preExecutionMessage ?? undefined,
+            bypass_gate_seconds:
+              bypassGateSeconds > 0 ? bypassGateSeconds : undefined,
+          })
+        }
+        isEditable={false}
       >
-        <SmartAgentInput
-          conversationId={conversationId}
-          singleRowTextarea={false}
-          compact={true}
-          showSendButton={false}
-          showVariableIcon={false}
-          showSubmitOnEnterToggle={false}
-          disableSend
-        />
-      </div>
+        <div
+          className="flex flex-col flex-1 min-h-0 justify-end"
+          onKeyDown={cancelCountdown}
+          onPointerDown={cancelCountdown}
+        >
+          <SmartAgentInput
+            conversationId={conversationId}
+            singleRowTextarea={false}
+            compact={true}
+            showSendButton={false}
+            showVariableIcon={false}
+            showSubmitOnEnterToggle={false}
+            disableSend
+          />
+        </div>
+      </SurfaceRuntimeProvider>
     </WindowPanel>
   );
 }

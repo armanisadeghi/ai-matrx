@@ -1,0 +1,4 @@
+interface:
+  display_name: "No Emojis in UI"
+  short_description: "Replace UI emoji with safe Lucide icons"
+  default_prompt: "Use $no-emojis-in-ui to detect and safely replace user-visible emoji in this UI."

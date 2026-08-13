@@ -10,9 +10,15 @@ import Link from "next/link";
 import { ArrowLeft, Compass } from "lucide-react";
 
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { EntityTypeChip } from "@/components/entity-types/EntityTypeChip";
 import { Button } from "@/components/ui/button";
 import { EntityExplorerEntry } from "./EntityExplorerEntry";
+import {
+  buildOrbitGraph,
+  RELATIONSHIPS_LOCATION,
+  ruleSentence,
+} from "../utils";
 import type { RelationshipRule } from "../types";
 
 interface Props {
@@ -42,6 +48,35 @@ export function EntityExplorerHeader({ token, rules }: Props) {
       <span className="text-xs text-muted-foreground">
         {info?.schema}.{info?.table}
       </span>
+      <CopyButtons
+        size="icon"
+        label={`${token} relationships`}
+        human={() => {
+          const orbit = buildOrbitGraph(token, rules);
+          const touching = [...orbit.sources, ...orbit.targets];
+          return [
+            `Entity relationships for ${token} (${info?.schema}.${info?.table}) — ${orbit.sources.length} sources, ${orbit.targets.length} targets`,
+            ...touching.map((neighbor) => ruleSentence(neighbor.rule)),
+          ].join("\n");
+        }}
+        json={() => buildOrbitGraph(token, rules)}
+        agent={() => ({
+          kind: "entity-relationship-orbit",
+          location: RELATIONSHIPS_LOCATION,
+          description:
+            "Every registered association rule touching this entity type — sources (things that target it) and targets (things it targets), with container side and conveyance.",
+          data: buildOrbitGraph(token, rules),
+          attributes: {
+            token,
+            schema: info?.schema,
+            table: info?.table,
+            rules: rules.filter(
+              (rule) =>
+                rule.source_type === token || rule.target_type === token,
+            ).length,
+          },
+        })}
+      />
       <div className="ml-auto">
         <EntityExplorerEntry rules={rules} value={token} />
       </div>

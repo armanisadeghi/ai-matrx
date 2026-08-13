@@ -426,7 +426,8 @@ function ValuePreview({ value, opts }: { value: string; opts: TruncateOpts }) {
     <div className="w-full font-mono text-[10px] bg-muted/40 rounded border border-border px-2 py-1.5 leading-relaxed break-all">
       <span className="text-primary">{leadText}</span>
       <span className="text-destructive/80 bg-destructive/10 px-0.5 rounded mx-0.5 text-[9px] font-sans not-italic">
-        ✂ {removedCount.toLocaleString()} chars removed
+        <Scissors className="mr-0.5 inline size-3" aria-hidden="true" />
+        {removedCount.toLocaleString()} chars removed
       </span>
       <span className="text-primary/60">{tailText}</span>
     </div>

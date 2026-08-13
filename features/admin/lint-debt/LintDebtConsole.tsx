@@ -43,7 +43,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
-import { commitHref, pathHref, sourceHref } from "@/features/admin/reporting/source-links";
+import {
+  commitHref,
+  pathHref,
+  sourceHref,
+} from "@/features/admin/reporting/source-links";
 import {
   CLASS_DOCTRINE,
   CLASS_TITLES,
@@ -115,7 +119,11 @@ interface LintDebtConsoleProps {
   problems: string[];
 }
 
-export function LintDebtConsole({ report, history, problems }: LintDebtConsoleProps) {
+export function LintDebtConsole({
+  report,
+  history,
+  problems,
+}: LintDebtConsoleProps) {
   const [bucket, setBucket] = useState<BucketFilter>({ kind: "none" });
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
@@ -139,7 +147,10 @@ export function LintDebtConsole({ report, history, problems }: LintDebtConsolePr
     try {
       await navigator.clipboard.writeText(text);
       setCopiedKey(key);
-      window.setTimeout(() => setCopiedKey((k) => (k === key ? null : k)), 1500);
+      window.setTimeout(
+        () => setCopiedKey((k) => (k === key ? null : k)),
+        1500,
+      );
       toast.success(`${label} copied`);
     } catch {
       // Never swallow: the operator needs to know the click did nothing.
@@ -228,7 +239,10 @@ export function LintDebtConsole({ report, history, problems }: LintDebtConsolePr
       header: "What ESLint says",
       width: 420,
       cell: (f) => (
-        <span className="block w-full truncate text-xs text-muted-foreground" title={f.message}>
+        <span
+          className="block w-full truncate text-xs text-muted-foreground"
+          title={f.message}
+        >
           {f.message}
         </span>
       ),
@@ -293,7 +307,11 @@ export function LintDebtConsole({ report, history, problems }: LintDebtConsolePr
               void copy(key, fixPromptForFinding(f), "Repair brief");
             }}
           >
-            {copiedKey === key ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+            {copiedKey === key ? (
+              <Check className="h-3 w-3" />
+            ) : (
+              <Copy className="h-3 w-3" />
+            )}
           </Button>
         );
       },
@@ -313,7 +331,10 @@ export function LintDebtConsole({ report, history, problems }: LintDebtConsolePr
     (p) => p.generatedAt === report.generatedAt && p.commit === report.commit,
   );
   const previous = currentInHistory > 0 ? history[currentInHistory - 1] : null;
-  const delta = currentInHistory >= 0 && previous ? report.totals.errors - previous.errors : null;
+  const delta =
+    currentInHistory >= 0 && previous
+      ? report.totals.errors - previous.errors
+      : null;
   const historyDrift =
     history.length > 0 && currentInHistory < 0
       ? `history.json does not contain this report's scan (${report.generatedAt}` +
@@ -321,7 +342,8 @@ export function LintDebtConsole({ report, history, problems }: LintDebtConsolePr
         `ends at a different scan than the totals above`
       : null;
 
-  const realTotal = report.totals.byClass.bug + report.totals.byClass.correctness;
+  const realTotal =
+    report.totals.byClass.bug + report.totals.byClass.correctness;
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 p-4">
@@ -331,7 +353,9 @@ export function LintDebtConsole({ report, history, problems }: LintDebtConsolePr
         delta={delta}
         problems={problems}
         historyDrift={historyDrift}
-        onCopyRefresh={() => void copy("refresh", REFRESH_COMMAND, "Refresh command")}
+        onCopyRefresh={() =>
+          void copy("refresh", REFRESH_COMMAND, "Refresh command")
+        }
       />
 
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
@@ -412,7 +436,9 @@ export function LintDebtConsole({ report, history, problems }: LintDebtConsolePr
         <div className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-1.5 text-xs">
           <span className="text-muted-foreground">Filtered to</span>
           <code className="font-mono">
-            {bucket.kind === "class" ? CLASS_TITLES[bucket.value] : bucket.value}
+            {bucket.kind === "class"
+              ? CLASS_TITLES[bucket.value]
+              : bucket.value}
           </code>
           <Badge variant="secondary">{findings.length}</Badge>
           <Button
@@ -428,6 +454,7 @@ export function LintDebtConsole({ report, history, problems }: LintDebtConsolePr
 
       <div className="min-h-0 flex-1">
         <MatrxDataTable
+          urlState={{ id: "lint-debt" }}
           data={findings}
           columns={columns}
           getRowId={(f) => `${f.file}:${f.line}:${f.column}:${f.rule}`}
@@ -474,7 +501,11 @@ export function LintDebtConsole({ report, history, problems }: LintDebtConsolePr
               <FindingDetail
                 finding={f}
                 onCopyFix={() =>
-                  void copy(`detail:${f.file}:${f.line}`, fixPromptForFinding(f), "Repair brief")
+                  void copy(
+                    `detail:${f.file}:${f.line}`,
+                    fixPromptForFinding(f),
+                    "Repair brief",
+                  )
                 }
               />
             ),
@@ -485,7 +516,10 @@ export function LintDebtConsole({ report, history, problems }: LintDebtConsolePr
   );
 }
 
-function filterFindings(findings: LintDebtFinding[], bucket: BucketFilter): LintDebtFinding[] {
+function filterFindings(
+  findings: LintDebtFinding[],
+  bucket: BucketFilter,
+): LintDebtFinding[] {
   switch (bucket.kind) {
     case "file":
       return findings.filter((f) => f.file === bucket.value);
@@ -524,8 +558,9 @@ function Header({
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <h1 className="text-lg font-semibold text-foreground">ESLint debt</h1>
         <p className="text-xs text-muted-foreground">
-          Every error-severity finding from the repo&apos;s real ESLint config, classified by
-          whether it is a bug or a style note. Advisory — this never blocks a build or a commit.
+          Every error-severity finding from the repo&apos;s real ESLint config,
+          classified by whether it is a bug or a style note. Advisory — this
+          never blocks a build or a commit.
         </p>
       </div>
 
@@ -585,7 +620,10 @@ function Header({
         <Alert
           tone="warn"
           text={`This snapshot is ${scanAgeDays} days old — the line numbers below have almost certainly drifted.`}
-          action={{ label: `Copy \`${REFRESH_COMMAND}\``, onClick: onCopyRefresh }}
+          action={{
+            label: `Copy \`${REFRESH_COMMAND}\``,
+            onClick: onCopyRefresh,
+          }}
         />
       )}
       {historyDrift && <Alert tone="warn" text={historyDrift} />}
@@ -616,7 +654,12 @@ function Alert({
       <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
       <span className="min-w-0">{text}</span>
       {action && (
-        <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={action.onClick}>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-6 px-2 text-xs"
+          onClick={action.onClick}
+        >
           {action.label}
         </Button>
       )}
@@ -661,7 +704,11 @@ function ClassCard({
         </span>
       </div>
       <p className="mt-0.5 text-xs text-muted-foreground">
-        <span className={realTotal > 0 ? "font-medium text-red-600 dark:text-red-400" : ""}>
+        <span
+          className={
+            realTotal > 0 ? "font-medium text-red-600 dark:text-red-400" : ""
+          }
+        >
           {realTotal.toLocaleString()}
         </span>{" "}
         are real bugs or correctness hazards — the rest is style and doctrine.
@@ -680,8 +727,12 @@ function ClassCard({
                   active === klass ? "bg-accent" : ""
                 }`}
               >
-                <span className={`truncate ${classTone(klass)}`}>{CLASS_TITLES[klass]}</span>
-                <span className="ml-2 shrink-0 tabular-nums text-muted-foreground">{count}</span>
+                <span className={`truncate ${classTone(klass)}`}>
+                  {CLASS_TITLES[klass]}
+                </span>
+                <span className="ml-2 shrink-0 tabular-nums text-muted-foreground">
+                  {count}
+                </span>
               </button>
               {count > 0 && (
                 <Button
@@ -719,11 +770,17 @@ function BucketCard({
   return (
     <div className="rounded-lg border border-border bg-card p-3">
       <div className="flex items-baseline justify-between">
-        <span className="text-xs font-medium text-muted-foreground">{title}</span>
-        <span className="text-[10px] text-muted-foreground">ranked by real bugs</span>
+        <span className="text-xs font-medium text-muted-foreground">
+          {title}
+        </span>
+        <span className="text-[10px] text-muted-foreground">
+          ranked by real bugs
+        </span>
       </div>
       <div className="mt-1 flex flex-col gap-0.5">
-        {buckets.length === 0 && <span className="text-xs text-muted-foreground">None.</span>}
+        {buckets.length === 0 && (
+          <span className="text-xs text-muted-foreground">None.</span>
+        )}
         {buckets.map((b) => (
           <div key={b.key} className="flex items-center gap-1">
             <button
@@ -734,11 +791,16 @@ function BucketCard({
                 active === b.key ? "bg-accent" : ""
               }`}
             >
-              <span className="min-w-0 truncate font-mono text-foreground">{b.key}</span>
+              <span className="min-w-0 truncate font-mono text-foreground">
+                {b.key}
+              </span>
               <span className="ml-2 shrink-0 tabular-nums text-muted-foreground">
                 {b.count}
                 {b.real > 0 && (
-                  <span className="text-red-600 dark:text-red-400"> · {b.real}</span>
+                  <span className="text-red-600 dark:text-red-400">
+                    {" "}
+                    · {b.real}
+                  </span>
                 )}
               </span>
             </button>
@@ -795,10 +857,14 @@ function RuleLegend({
             title={`${CLASS_TITLES[b.klass]} — ${CLASS_DOCTRINE[b.klass]}`}
             className="flex items-center gap-1.5"
           >
-            <span className={`font-mono ${isReal(b.klass) ? classTone(b.klass) : "text-muted-foreground"}`}>
+            <span
+              className={`font-mono ${isReal(b.klass) ? classTone(b.klass) : "text-muted-foreground"}`}
+            >
               {b.rule}
             </span>
-            <span className="tabular-nums text-muted-foreground">{b.count}</span>
+            <span className="tabular-nums text-muted-foreground">
+              {b.count}
+            </span>
           </button>
           <Button
             size="sm"
@@ -829,10 +895,15 @@ function FindingDetail({
   return (
     <div className="flex flex-col gap-3 p-3 text-sm">
       <div>
-        <Badge variant={klass === "bug" ? "destructive" : "secondary"} className="text-[10px] uppercase">
+        <Badge
+          variant={klass === "bug" ? "destructive" : "secondary"}
+          className="text-[10px] uppercase"
+        >
           {CLASS_TITLES[klass]}
         </Badge>
-        <p className="mt-1.5 text-xs text-muted-foreground">{CLASS_DOCTRINE[klass]}</p>
+        <p className="mt-1.5 text-xs text-muted-foreground">
+          {CLASS_DOCTRINE[klass]}
+        </p>
       </div>
 
       <div className="rounded-md border border-border bg-muted/40 p-2">
@@ -876,7 +947,12 @@ function FindingDetail({
         )}
       </dl>
 
-      <Button size="sm" variant="outline" className="w-full" onClick={onCopyFix}>
+      <Button
+        size="sm"
+        variant="outline"
+        className="w-full"
+        onClick={onCopyFix}
+      >
         <Copy className="mr-1.5 h-3 w-3" />
         Copy repair brief
       </Button>

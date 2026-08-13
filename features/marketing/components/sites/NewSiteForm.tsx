@@ -113,11 +113,11 @@ export function NewSiteForm() {
     }
 
     if (purpose === "planned") {
-      toast.success("Site added — plan it before it exists.");
+      toast.success("Site ready — plan it before it exists.");
       router.push(marketingRoutes.contentPlanSite(site.id, "setup"));
       return;
     }
-    toast.success("Site added");
+    toast.success("Site ready");
     router.push(`${marketingRoutes.site(site.brand_id, site.id)}?capture=homepage`);
   };
 

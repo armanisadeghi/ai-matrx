@@ -1,16 +1,27 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
 import { AdminAuditTable, type AuditColumnDef } from "./AdminAuditTable";
 import { BrokenFunctionKeywordFilterBar } from "./BrokenFunctionKeywordFilterBar";
+import {
+  BrokenFunctionSeverityFilterBar,
+  DEFAULT_SEVERITY_FILTER,
+  SEVERITY_HINTS,
+} from "./BrokenFunctionSeverityFilterBar";
 import { CanonicalizationToolbar } from "./CanonicalizationToolbar";
-import { GateStatusBadge } from "./StatusBadge";
+import { GateStatusBadge, SeverityBadge } from "./StatusBadge";
 import { useAuditDataset } from "../hooks/useAuditDataset";
 import { useCanonicalizationDatasetToolbar } from "../hooks/useCanonicalizationDatasetToolbar";
-import { isBrokenFunctionRow, type BrokenFunctionRow } from "../types";
+import {
+  BROKEN_FUNCTION_SEVERITIES,
+  isBrokenFunctionRow,
+  isBrokenFunctionSeverity,
+  type BrokenFunctionRow,
+  type BrokenFunctionSeverity,
+} from "../types";
 import { BROKEN_FUNCTIONS_TABLE_COPY } from "../utils/aiExport";
 import {
   EMPTY_KEYWORD_TAG_FILTER,
@@ -18,6 +29,11 @@ import {
   keywordTagFilterActive,
 } from "../utils/brokenFunctionKeywordFilter";
 import type { ColumnFilter } from "@/features/administration/kg-inspector/utils/tableFilters";
+import {
+  booleanUrlCodec,
+  jsonUrlCodec,
+  useUrlState,
+} from "@/lib/url-state/useUrlState";
 
 export function BrokenFunctionsPage() {
   const searchParams = useSearchParams();
@@ -25,8 +41,61 @@ export function BrokenFunctionsPage() {
     "broken-functions",
     isBrokenFunctionRow,
   );
-  const [keywordFilter, setKeywordFilter] = useState(EMPTY_KEYWORD_TAG_FILTER);
+  const [keywordFilter, setKeywordFilter] = useUrlState(
+    "keywords",
+    jsonUrlCodec(
+      EMPTY_KEYWORD_TAG_FILTER,
+      (value): value is typeof EMPTY_KEYWORD_TAG_FILTER => {
+        if (!value || typeof value !== "object" || Array.isArray(value))
+          return false;
+        const candidate = value as Record<string, unknown>;
+        return (
+          Array.isArray(candidate.include) &&
+          candidate.include.every((item) => typeof item === "string") &&
+          Array.isArray(candidate.exclude) &&
+          candidate.exclude.every((item) => typeof item === "string")
+        );
+      },
+    ),
+  );
+  // Severity gate, applied BEFORE the keyword filters. Defaults to `real` so the
+  // page opens on the rows a human can act on (3 signatures out of 94 rows as of
+  // 2026-08-13); every other class is one chip-click away with its count shown.
+  const [severityFilter, setSeverityFilter] = useUrlState(
+    "severity",
+    jsonUrlCodec(
+      DEFAULT_SEVERITY_FILTER,
+      (value): value is BrokenFunctionSeverity[] =>
+        Array.isArray(value) && value.every(isBrokenFunctionSeverity),
+    ),
+  );
+  const [includeUnclassified, setIncludeUnclassified] = useUrlState(
+    "unclassified",
+    booleanUrlCodec(false),
+  );
   const toolbar = useCanonicalizationDatasetToolbar(reload);
+
+  const severityCounts = useMemo(() => {
+    const counts = Object.fromEntries(
+      BROKEN_FUNCTION_SEVERITIES.map((s) => [s, 0]),
+    ) as Record<BrokenFunctionSeverity, number>;
+    let unclassified = 0;
+    for (const row of rows) {
+      if (row.severity && row.severity in counts) counts[row.severity] += 1;
+      else unclassified += 1;
+    }
+    return { counts, unclassified };
+  }, [rows]);
+
+  const severityFilteredRows = useMemo(
+    () =>
+      rows.filter((row) =>
+        row.severity
+          ? severityFilter.includes(row.severity)
+          : includeUnclassified,
+      ),
+    [rows, severityFilter, includeUnclassified],
+  );
 
   const fnParam = searchParams.get("fn");
   const initialColumnFilters = useMemo<
@@ -37,8 +106,8 @@ export function BrokenFunctionsPage() {
   );
 
   const keywordFilteredRows = useMemo(
-    () => filterBrokenFunctionsByKeywords(rows, keywordFilter),
-    [rows, keywordFilter],
+    () => filterBrokenFunctionsByKeywords(severityFilteredRows, keywordFilter),
+    [severityFilteredRows, keywordFilter],
   );
 
   const columns: AuditColumnDef<BrokenFunctionRow>[] = useMemo(
@@ -75,6 +144,26 @@ export function BrokenFunctionsPage() {
         getValue: (r) => r.lineno,
         width: "80px",
         align: "right",
+      },
+      {
+        key: "severity",
+        label: "Severity",
+        type: "enum",
+        getValue: (r) => r.severity ?? "unclassified",
+        width: "120px",
+        render: (r) => (
+          <span title={r.severity ? SEVERITY_HINTS[r.severity] : undefined}>
+            <SeverityBadge severity={r.severity} />
+          </span>
+        ),
+      },
+      {
+        key: "suppression_reason",
+        label: "Why not real",
+        type: "enum",
+        getValue: (r) => r.suppression_reason,
+        width: "200px",
+        monospace: true,
       },
       {
         key: "level",
@@ -133,10 +222,18 @@ export function BrokenFunctionsPage() {
         refreshingAudit={toolbar.refreshingAudit}
         lastRefreshedAt={toolbar.lastRefreshedAt}
       />
+      <BrokenFunctionSeverityFilterBar
+        value={severityFilter}
+        onChange={setSeverityFilter}
+        counts={severityCounts.counts}
+        unclassifiedCount={severityCounts.unclassified}
+        includeUnclassified={includeUnclassified}
+        onToggleUnclassified={setIncludeUnclassified}
+      />
       <BrokenFunctionKeywordFilterBar
         value={keywordFilter}
         onChange={setKeywordFilter}
-        totalCount={rows.length}
+        totalCount={severityFilteredRows.length}
         filteredCount={keywordFilteredRows.length}
         onClear={() => setKeywordFilter(EMPTY_KEYWORD_TAG_FILTER)}
       />
@@ -150,8 +247,10 @@ export function BrokenFunctionsPage() {
           initialColumnFilters={initialColumnFilters}
           emptyMessage={
             keywordTagFilterActive(keywordFilter)
-              ? "No broken functions match these keyword filters."
-              : "No broken functions found."
+              ? "No functions match these keyword filters."
+              : severityFilter.length === 1 && severityFilter[0] === "real"
+                ? "No genuine runtime breakage. Widen the severity chips above to see style warnings and checker artifacts."
+                : "No functions match the selected severities."
           }
           copyForAi={BROKEN_FUNCTIONS_TABLE_COPY}
         />

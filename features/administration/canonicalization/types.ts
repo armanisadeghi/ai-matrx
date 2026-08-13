@@ -13,6 +13,14 @@ export interface AuditSummaryRow {
   fails: number;
   warns: number;
   certified: boolean;
+  /**
+   * Certification-universe membership (entity_types.audit_class, 2026-08-12):
+   * 'entity' = scored by the gate; 'machinery' = shared platform machinery
+   * permanently outside the certification universe (never certified, never
+   * failing — the written reason lives in audit_class_reason).
+   */
+  audit_class: "entity" | "machinery";
+  audit_class_reason: string | null;
 }
 
 export interface CanonicalFindingRow {
@@ -26,6 +34,33 @@ export interface CanonicalFindingRow {
   detail: string | null;
 }
 
+/**
+ * Severity of a `audit.broken_functions` row, assigned in the DB by
+ * `audit.classify_broken_function()` — THE single definition. Never re-derive it
+ * from `level`/`sqlstate` here: level='error' covers both genuine breakage and
+ * the checker artifacts, and warnings reuse error sqlstates.
+ *
+ *  real       — genuine runtime breakage. This is what the page defaults to.
+ *  advisory   — invoker-rights function that walks the catalog with no
+ *               privilege filter (the get_project_references class). A shape,
+ *               not a proven failure.
+ *  style      — plpgsql_check warnings (unused variable, IMMUTABLE-vs-STABLE,
+ *               "target type is different type than source type").
+ *  suppressed — explained by a checker limitation; `suppression_reason` says
+ *               which. Kept visible, never counted as breakage.
+ *  unchecked  — trigger function attached to no table; nothing to check against.
+ */
+export const BROKEN_FUNCTION_SEVERITIES = [
+  "real",
+  "advisory",
+  "style",
+  "suppressed",
+  "unchecked",
+] as const;
+
+export type BrokenFunctionSeverity =
+  (typeof BROKEN_FUNCTION_SEVERITIES)[number];
+
 export interface BrokenFunctionRow {
   schema_name: string | null;
   function_name: string | null;
@@ -35,6 +70,9 @@ export interface BrokenFunctionRow {
   sqlstate: string | null;
   message: string | null;
   context: string | null;
+  /** Null only for rows written before the severity column existed. */
+  severity: BrokenFunctionSeverity | null;
+  suppression_reason: string | null;
 }
 
 export interface FunctionDepRow {
@@ -78,7 +116,20 @@ export interface RefreshLogRow {
   m2m: number | null;
   unregistered: number | null;
   stale: number | null;
+  /**
+   * DISTINCT function signatures with severity='real' — the actionable number.
+   * Recomputed FROM audit.broken_functions by audit.refresh_log_recount() after
+   * every phase (including the runtime probes, which used to run after this row
+   * was written), so it can no longer disagree with the table it describes.
+   */
   broken_fn: number | null;
+  broken_fn_rows: number | null;
+  broken_fn_real: number | null;
+  broken_fn_advisory: number | null;
+  broken_fn_style: number | null;
+  broken_fn_suppressed: number | null;
+  broken_fn_unchecked: number | null;
+  runtime_fail: number | null;
   note: string | null;
 }
 
@@ -128,10 +179,28 @@ export type CanonicalizationDataset = (typeof CANONICALIZATION_DATASETS)[number]
 export interface CanonicalizationOverview {
   totalTables: number;
   certifiedTables: number;
+  /** Uncertified tables IN the certification universe (excludes machinery). */
   notCertifiedTables: number;
+  /** Registered rows marked audit_class='machinery' — outside the certification universe. */
+  machineryTables: number;
   totalFails: number;
   totalWarns: number;
+  /**
+   * DISTINCT functions with at least one severity='real' finding — genuine
+   * runtime breakage, and the only broken-function number a human should act on.
+   *
+   * Defined identically to `RefreshLogRow.broken_fn` on purpose. Two traps this
+   * closes, both live on 2026-08-13: it is NOT the row count of
+   * audit.broken_functions (which mixes in style warnings, checker artifacts and
+   * unattached triggers — 94 rows vs 3 real functions), and it is NOT the count
+   * of real FINDINGS (4, because one function can fail two ways). Printing
+   * either beside the refresh log is what made the dashboard untrustworthy.
+   */
   brokenFunctionCount: number;
+  /** FINDINGS (rows) per severity, so the headline is auditable in place. */
+  brokenFunctionBySeverity: Record<BrokenFunctionSeverity, number>;
+  /** Every finding row in audit.broken_functions, all severities. */
+  brokenFunctionRowCount: number;
   m2mCandidateCount: number;
   unregisteredCandidateCount: number;
   staleRegistryCount: number;
@@ -167,7 +236,9 @@ export function isAuditSummaryRow(v: unknown): v is AuditSummaryRow {
     typeof v.token === "string" &&
     typeof v.fails === "number" &&
     typeof v.warns === "number" &&
-    typeof v.certified === "boolean"
+    typeof v.certified === "boolean" &&
+    (v.audit_class === "entity" || v.audit_class === "machinery") &&
+    isStrOrNull(v.audit_class_reason)
   );
 }
 
@@ -184,6 +255,15 @@ export function isCanonicalFindingRow(v: unknown): v is CanonicalFindingRow {
   );
 }
 
+export function isBrokenFunctionSeverity(
+  v: unknown,
+): v is BrokenFunctionSeverity {
+  return (
+    typeof v === "string" &&
+    (BROKEN_FUNCTION_SEVERITIES as readonly string[]).includes(v)
+  );
+}
+
 export function isBrokenFunctionRow(v: unknown): v is BrokenFunctionRow {
   return (
     isRec(v) &&
@@ -194,7 +274,9 @@ export function isBrokenFunctionRow(v: unknown): v is BrokenFunctionRow {
     isStrOrNull(v.level) &&
     isStrOrNull(v.sqlstate) &&
     isStrOrNull(v.message) &&
-    isStrOrNull(v.context)
+    isStrOrNull(v.context) &&
+    (v.severity === null || isBrokenFunctionSeverity(v.severity)) &&
+    isStrOrNull(v.suppression_reason)
   );
 }
 

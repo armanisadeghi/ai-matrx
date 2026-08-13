@@ -589,7 +589,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationWarmResponse"
+                }
               }
             }
           },
@@ -630,7 +632,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationWarmResponse"
+                }
               }
             }
           },
@@ -12215,9 +12219,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Analyze Pages Batch Route Seo Pages Analyze Batch Post"
+                  "$ref": "#/components/schemas/BatchSubmitSummary"
                 }
               }
             }
@@ -12615,6 +12617,91 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/endpoint-families/apply": {
+      "post": {
+        "tags": [
+          "SEO Endpoint Families"
+        ],
+        "summary": "Apply Family",
+        "description": "Accept one endpoint-family assist: these URLs are machine addresses, not\npages. Writes the site rule; the whole family leaves page counts and the\naudit immediately, and so does anything found under it later.",
+        "operationId": "apply_family_seo_endpoint_families_apply_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplyEndpointFamilyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplyEndpointFamilyResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/endpoint-families/{rule_id}/undo": {
+      "post": {
+        "tags": [
+          "SEO Endpoint Families"
+        ],
+        "summary": "Undo Family",
+        "description": "Undo a reclassification — the family is counted as pages again.",
+        "operationId": "undo_family_seo_endpoint_families__rule_id__undo_post",
+        "parameters": [
+          {
+            "name": "rule_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Rule Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplyEndpointFamilyResult"
+                }
               }
             }
           },
@@ -13628,6 +13715,50 @@
         }
       }
     },
+    "/content-plan/sites/{site_id}/templates": {
+      "get": {
+        "tags": [
+          "Content Plan",
+          "Content Plan"
+        ],
+        "summary": "Templates Route",
+        "description": "The site's PAGE TEMPLATE library — what a realized page will look like.\n\nBuiltins plus anything the site's org shadows, each reporting its source.\nAdding one is a `plan.profile.template_map.templates` jsonb edit; this route\nis how a human sees the result without a deploy.",
+        "operationId": "templates_route_content_plan_sites__site_id__templates_get",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemplateLibraryResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/content-plan/sites/{site_id}/cms-starter-kit": {
       "post": {
         "tags": [
@@ -14072,6 +14203,46 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/RobotsCheckBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/public/ai-visibility": {
+      "post": {
+        "tags": [
+          "SEO Public Tools"
+        ],
+        "summary": "Public Ai Visibility",
+        "description": "Create a live, shareable AI Visibility prospect report.",
+        "operationId": "public_ai_visibility_seo_public_ai_visibility_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicAiVisibilityBody"
               }
             }
           },
@@ -17997,6 +18168,24 @@
             "description": "Filter to a single source_feature"
           },
           {
+            "name": "origin_class",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter to a single origin_class (matrx_connect ORIGIN_CLASSES + 'unknown' for pre-provenance rows)",
+              "title": "Origin Class"
+            },
+            "description": "Filter to a single origin_class (matrx_connect ORIGIN_CLASSES + 'unknown' for pre-provenance rows)"
+          },
+          {
             "name": "user_id",
             "in": "query",
             "required": false,
@@ -18068,66 +18257,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/JsonRpcResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/dev/login-as": {
-      "post": {
-        "tags": [
-          "Dev Login"
-        ],
-        "summary": "Dev Login As",
-        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
-        "operationId": "dev_login_as_dev_login_as_post",
-        "parameters": [
-          {
-            "name": "X-Dev-Login-Secret",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Dev-Login-Secret"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DevLoginRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DevLoginResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -20908,6 +21037,151 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/research/topics/{topic_id}/refresh": {
+      "post": {
+        "tags": [
+          "Research"
+        ],
+        "summary": "Refresh Topic Now",
+        "description": "Durably queue a pipeline pass and dispatch it immediately.\n\nThe difference from `POST /topics/{id}/run` is ownership of the run's\nlifetime: `/run` streams the pass on the caller's connection, so a browser\nthat navigates away is holding the only handle to it. This enqueues the pass\non `rs_topic.next_refresh_at` FIRST and returns at once — closing the tab\ncannot lose it, and a process death before dispatch is recovered by the\n`research_refresh_dispatch` system task. The pass itself is the identical\n`run_pipeline` service call.",
+        "operationId": "refresh_topic_now_research_topics__topic_id__refresh_post",
+        "parameters": [
+          {
+            "name": "topic_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Topic Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshNowRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResearchRefreshState"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Research"
+        ],
+        "summary": "Get Topic Refresh State",
+        "description": "Is a pass running, when is the next one, and what did the last one do.",
+        "operationId": "get_topic_refresh_state_research_topics__topic_id__refresh_get",
+        "parameters": [
+          {
+            "name": "topic_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Topic Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResearchRefreshState"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/research/topics/{topic_id}/refresh-schedule": {
+      "put": {
+        "tags": [
+          "Research"
+        ],
+        "summary": "Set Topic Refresh Schedule",
+        "description": "Turn unattended refresh on (hours between passes) or off (`0`/`null`).",
+        "operationId": "set_topic_refresh_schedule_research_topics__topic_id__refresh_schedule_put",
+        "parameters": [
+          {
+            "name": "topic_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Topic Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshScheduleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResearchRefreshState"
+                }
               }
             }
           },
@@ -42623,192 +42897,6 @@
         }
       }
     },
-    "/admin/saved-views": {
-      "get": {
-        "tags": [
-          "Admin",
-          "Admin Saved Views"
-        ],
-        "summary": "List Saved Views",
-        "operationId": "list_saved_views_admin_saved_views_get",
-        "parameters": [
-          {
-            "name": "table_name",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Table Name"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "additionalProperties": true
-                  },
-                  "title": "Response List Saved Views Admin Saved Views Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Admin",
-          "Admin Saved Views"
-        ],
-        "summary": "Create Saved View",
-        "operationId": "create_saved_view_admin_saved_views_post",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SavedViewCreate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Create Saved View Admin Saved Views Post"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/admin/saved-views/{view_id}": {
-      "patch": {
-        "tags": [
-          "Admin",
-          "Admin Saved Views"
-        ],
-        "summary": "Update Saved View",
-        "operationId": "update_saved_view_admin_saved_views__view_id__patch",
-        "parameters": [
-          {
-            "name": "view_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "View Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SavedViewUpdate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Update Saved View Admin Saved Views  View Id  Patch"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Admin",
-          "Admin Saved Views"
-        ],
-        "summary": "Delete Saved View",
-        "operationId": "delete_saved_view_admin_saved_views__view_id__delete",
-        "parameters": [
-          {
-            "name": "view_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "View Id"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/admin/app-logs/query": {
       "get": {
         "tags": [
@@ -45659,155 +45747,6 @@
         }
       }
     },
-    "/analysis-recipes": {
-      "get": {
-        "tags": [
-          "Analysis Preferences"
-        ],
-        "summary": "List Recipes",
-        "operationId": "list_recipes_analysis_recipes_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/AnalysisRecipeRecord"
-                  },
-                  "type": "array",
-                  "title": "Response List Recipes Analysis Recipes Get"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Analysis Preferences"
-        ],
-        "summary": "Create Recipe",
-        "operationId": "create_recipe_analysis_recipes_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AnalysisRecipeBody"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CreateRecipeResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/analysis-recipes/{recipe_id}": {
-      "put": {
-        "tags": [
-          "Analysis Preferences"
-        ],
-        "summary": "Update Recipe",
-        "operationId": "update_recipe_analysis_recipes__recipe_id__put",
-        "parameters": [
-          {
-            "name": "recipe_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Recipe Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AnalysisRecipeBody"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PreferencesWriteResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Analysis Preferences"
-        ],
-        "summary": "Delete Recipe",
-        "operationId": "delete_recipe_analysis_recipes__recipe_id__delete",
-        "parameters": [
-          {
-            "name": "recipe_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Recipe Id"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/annotations/label-catalog": {
       "get": {
         "tags": [
@@ -47966,15 +47905,15 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Limit",
             "default": 10
           },
           "multi_query": {
             "type": "integer",
-            "maximum": 5.0,
-            "minimum": 1.0,
+            "maximum": 5,
+            "minimum": 1,
             "title": "Multi Query",
             "default": 1
           },
@@ -48248,32 +48187,32 @@
           },
           "max_attempts": {
             "type": "integer",
-            "maximum": 20.0,
-            "minimum": 1.0,
+            "maximum": 20,
+            "minimum": 1,
             "title": "Max Attempts",
             "description": "Maximum execution attempts allowed for each item.",
             "default": 3
           },
           "lease_seconds": {
             "type": "integer",
-            "maximum": 86400.0,
-            "minimum": 30.0,
+            "maximum": 86400,
+            "minimum": 30,
             "title": "Lease Seconds",
             "description": "Seconds an item claim remains valid without renewal.",
             "default": 900
           },
           "max_concurrency": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Max Concurrency",
             "description": "Maximum assignment items executed concurrently by this run.",
             "default": 5
           },
           "retry_delay_seconds": {
             "type": "integer",
-            "maximum": 86400.0,
-            "minimum": 0.0,
+            "maximum": 86400,
+            "minimum": 0,
             "title": "Retry Delay Seconds",
             "description": "Delay before a retryable item becomes claimable again.",
             "default": 0
@@ -48419,6 +48358,22 @@
             ],
             "title": "Source Feature",
             "description": "Stable feature slug within the source application."
+          },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "user",
+                  "auto"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
           },
           "store": {
             "type": "boolean",
@@ -48743,11 +48698,6 @@
             },
             "type": "array",
             "title": "Tags"
-          },
-          "is_public": {
-            "type": "boolean",
-            "title": "Is Public",
-            "default": false
           },
           "is_active": {
             "type": "boolean",
@@ -49083,6 +49033,22 @@
             ],
             "title": "Source Feature",
             "description": "Stable feature slug within the source application."
+          },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "user",
+                  "auto"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
           },
           "store": {
             "type": "boolean",
@@ -49767,16 +49733,16 @@
           },
           "max_iterations": {
             "type": "integer",
-            "maximum": 500.0,
-            "minimum": 1.0,
+            "maximum": 500,
+            "minimum": 1,
             "title": "Max Iterations",
             "description": "Maximum agent reasoning/tool-loop iterations.",
             "default": 100
           },
           "max_retries_per_iteration": {
             "type": "integer",
-            "maximum": 10.0,
-            "minimum": 0.0,
+            "maximum": 10,
+            "minimum": 0,
             "title": "Max Retries Per Iteration",
             "description": "Maximum provider retries allowed within one agent iteration.",
             "default": 2
@@ -49827,11 +49793,6 @@
             "type": "string",
             "title": "Agent Type",
             "default": ""
-          },
-          "is_public": {
-            "type": "boolean",
-            "title": "Is Public",
-            "default": false
           },
           "version": {
             "type": "integer",
@@ -49892,15 +49853,15 @@
           },
           "max_runtime_seconds": {
             "type": "integer",
-            "maximum": 86400.0,
-            "minimum": 1.0,
+            "maximum": 86400,
+            "minimum": 1,
             "title": "Max Runtime Seconds",
             "default": 600
           },
           "max_concurrent": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Max Concurrent",
             "default": 1
           }
@@ -50443,8 +50404,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Limit",
             "default": 10
           },
@@ -50475,8 +50436,8 @@
           },
           "multi_query": {
             "type": "integer",
-            "maximum": 5.0,
-            "minimum": 1.0,
+            "maximum": 5,
+            "minimum": 1,
             "title": "Multi Query",
             "default": 1
           },
@@ -51225,6 +51186,28 @@
             "title": "Target Cited",
             "default": false
           },
+          "target_recommendation_rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Recommendation Rank"
+          },
+          "target_recommendation_subject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Recommendation Subject"
+          },
           "citation_count": {
             "type": "integer",
             "title": "Citation Count",
@@ -51267,6 +51250,21 @@
             "type": "string",
             "title": "Site Id"
           },
+          "brand_name": {
+            "type": "string",
+            "title": "Brand Name"
+          },
+          "website_url": {
+            "type": "string",
+            "title": "Website Url"
+          },
+          "brand_aliases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Brand Aliases"
+          },
           "query": {
             "type": "string",
             "title": "Query"
@@ -51286,18 +51284,121 @@
             "title": "Providers"
           },
           "summary": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Summary"
+            "$ref": "#/components/schemas/AiVisibilitySummary"
+          },
+          "share_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Share Path"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
           "site_id",
+          "brand_name",
+          "website_url",
           "query"
         ],
         "title": "AiVisibilityResult"
+      },
+      "AiVisibilitySummary": {
+        "properties": {
+          "providers_completed": {
+            "type": "integer",
+            "title": "Providers Completed",
+            "default": 0
+          },
+          "providers_failed": {
+            "type": "integer",
+            "title": "Providers Failed",
+            "default": 0
+          },
+          "target_mentions": {
+            "type": "integer",
+            "title": "Target Mentions",
+            "default": 0
+          },
+          "target_citations": {
+            "type": "integer",
+            "title": "Target Citations",
+            "default": 0
+          },
+          "top_cited_domains": {
+            "items": {
+              "prefixItems": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ],
+              "type": "array",
+              "maxItems": 2,
+              "minItems": 2
+            },
+            "type": "array",
+            "title": "Top Cited Domains"
+          },
+          "top_decision_signals": {
+            "items": {
+              "prefixItems": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ],
+              "type": "array",
+              "maxItems": 2,
+              "minItems": 2
+            },
+            "type": "array",
+            "title": "Top Decision Signals"
+          },
+          "cross_provider_recommendations": {
+            "items": {
+              "prefixItems": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ],
+              "type": "array",
+              "maxItems": 2,
+              "minItems": 2
+            },
+            "type": "array",
+            "title": "Cross Provider Recommendations"
+          },
+          "influential_unverified_claims": {
+            "items": {
+              "$ref": "#/components/schemas/InfluentialUnverifiedClaim"
+            },
+            "type": "array",
+            "title": "Influential Unverified Claims"
+          },
+          "citation_eligibility_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Citation Eligibility Actions"
+          }
+        },
+        "type": "object",
+        "title": "AiVisibilitySummary",
+        "description": "The cross-provider verdict for one query."
       },
       "AidreamCollectionCreateRequest": {
         "properties": {
@@ -51495,239 +51596,6 @@
         ],
         "title": "AnalysisPreferencesPutResponse"
       },
-      "AnalysisRecipeBody": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "match_rules": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Match Rules",
-            "default": {}
-          },
-          "detector_overrides": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Detector Overrides",
-            "default": {}
-          },
-          "pattern_overrides": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Pattern Overrides",
-            "default": {}
-          },
-          "default_tiers": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Default Tiers",
-            "default": {}
-          },
-          "redaction_mode": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Redaction Mode"
-          },
-          "substitute_formats": {
-            "additionalProperties": {
-              "type": "string"
-            },
-            "type": "object",
-            "title": "Substitute Formats",
-            "default": {}
-          },
-          "priority": {
-            "type": "integer",
-            "title": "Priority",
-            "default": 100
-          },
-          "is_active": {
-            "type": "boolean",
-            "title": "Is Active",
-            "default": true
-          }
-        },
-        "type": "object",
-        "required": [
-          "name"
-        ],
-        "title": "AnalysisRecipeBody"
-      },
-      "AnalysisRecipeRecord": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "owner_user_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Owner User Id"
-          },
-          "name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "match_rules": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/JsonValue"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "detector_overrides": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/JsonValue"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "pattern_overrides": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/JsonValue"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "default_tiers": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/JsonValue"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "redaction_mode": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Redaction Mode"
-          },
-          "substitute_formats": {
-            "anyOf": [
-              {
-                "additionalProperties": {
-                  "type": "string"
-                },
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Substitute Formats"
-          },
-          "priority": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Priority"
-          },
-          "is_active": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is Active"
-          },
-          "created_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Created At"
-          },
-          "updated_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Updated At"
-          }
-        },
-        "additionalProperties": true,
-        "type": "object",
-        "required": [
-          "id"
-        ],
-        "title": "AnalysisRecipeRecord"
-      },
       "AnalyticsSyncBody": {
         "properties": {
           "organization_id": {
@@ -51768,8 +51636,8 @@
           },
           "window_days": {
             "type": "integer",
-            "maximum": 90.0,
-            "minimum": 1.0,
+            "maximum": 90,
+            "minimum": 1,
             "title": "Window Days",
             "default": 28
           },
@@ -52005,7 +51873,7 @@
         "properties": {
           "page_number": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Page Number"
           },
           "bbox": {
@@ -52383,7 +52251,7 @@
         "properties": {
           "input_tokens": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Input Tokens"
           }
         },
@@ -52744,6 +52612,123 @@
           "text"
         ],
         "title": "AppendDocumentRequest"
+      },
+      "ApplyEndpointFamilyRequest": {
+        "properties": {
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "path_prefix": {
+            "type": "string",
+            "title": "Path Prefix"
+          },
+          "query_param": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Query Param"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "detector": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detector"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "dedupe_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dedupe Key"
+          }
+        },
+        "type": "object",
+        "required": [
+          "site_id",
+          "path_prefix",
+          "reason"
+        ],
+        "title": "ApplyEndpointFamilyRequest",
+        "description": "The assist action's `body`, echoed back by the client on accept."
+      },
+      "ApplyEndpointFamilyResult": {
+        "properties": {
+          "rule_id": {
+            "type": "string",
+            "title": "Rule Id"
+          },
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "path_prefix": {
+            "type": "string",
+            "title": "Path Prefix"
+          },
+          "query_param": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Query Param"
+          },
+          "pages_reclassified": {
+            "type": "integer",
+            "title": "Pages Reclassified",
+            "default": 0
+          },
+          "already_active": {
+            "type": "boolean",
+            "title": "Already Active",
+            "default": false
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "rule_id",
+          "site_id",
+          "path_prefix"
+        ],
+        "title": "ApplyEndpointFamilyResult"
       },
       "ApplyTagsRequest": {
         "properties": {
@@ -53347,7 +53332,7 @@
           },
           "max_inline_bytes": {
             "type": "integer",
-            "minimum": 1024.0,
+            "minimum": 1024,
             "title": "Max Inline Bytes",
             "description": "Renders below this size return as base64 data_url; larger renders return a 5-minute ephemeral signed_url.",
             "default": 262144
@@ -53968,37 +53953,37 @@
           },
           "total_items": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Total Items",
             "description": "Total materialized items in the session."
           },
           "pending_items": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Pending Items",
             "description": "Items still waiting to be claimed."
           },
           "running_items": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Running Items",
             "description": "Items currently leased or executing."
           },
           "completed_items": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Completed Items",
             "description": "Items that completed successfully."
           },
           "failed_items": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Failed Items",
             "description": "Items that reached terminal failure."
           },
           "cancelled_items": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Cancelled Items",
             "description": "Items cancelled without execution completion."
           },
@@ -54058,8 +54043,8 @@
         "properties": {
           "signed_ttl": {
             "type": "integer",
-            "maximum": 604800.0,
-            "minimum": 60.0,
+            "maximum": 604800,
+            "minimum": 60,
             "title": "Signed Ttl",
             "default": 3600
           }
@@ -54777,7 +54762,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 1.0
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -54797,7 +54782,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 1.0
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -54851,8 +54836,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Limit",
             "default": 25
           },
@@ -55052,8 +55037,8 @@
           },
           "detail_limit": {
             "type": "integer",
-            "maximum": 1000.0,
-            "minimum": 1.0,
+            "maximum": 1000,
+            "minimum": 1,
             "title": "Detail Limit",
             "default": 1000
           },
@@ -55086,8 +55071,8 @@
           },
           "enrichment_limit": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Enrichment Limit",
             "default": 25
           }
@@ -55243,6 +55228,47 @@
           "results"
         ],
         "title": "BatchScrapeResponse"
+      },
+      "BatchSubmitSummary": {
+        "properties": {
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "requested": {
+            "type": "integer",
+            "title": "Requested"
+          },
+          "enqueued": {
+            "type": "integer",
+            "title": "Enqueued"
+          },
+          "skipped_unchanged": {
+            "type": "integer",
+            "title": "Skipped Unchanged",
+            "default": 0
+          },
+          "skipped_no_content": {
+            "type": "integer",
+            "title": "Skipped No Content",
+            "default": 0
+          },
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Errors"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "site_id",
+          "requested",
+          "enqueued"
+        ],
+        "title": "BatchSubmitSummary"
       },
       "BboxInput": {
         "properties": {
@@ -55602,22 +55628,22 @@
           },
           "window_days": {
             "type": "integer",
-            "maximum": 90.0,
-            "minimum": 1.0,
+            "maximum": 90,
+            "minimum": 1,
             "title": "Window Days",
             "default": 28
           },
           "max_query_fanout": {
             "type": "integer",
-            "maximum": 200.0,
-            "minimum": 1.0,
+            "maximum": 200,
+            "minimum": 1,
             "title": "Max Query Fanout",
             "default": 50
           },
           "max_calls": {
             "type": "integer",
-            "maximum": 500.0,
-            "minimum": 1.0,
+            "maximum": 500,
+            "minimum": 1,
             "title": "Max Calls",
             "default": 100
           },
@@ -55742,8 +55768,8 @@
           },
           "level": {
             "type": "integer",
-            "maximum": 5.0,
-            "minimum": 1.0,
+            "maximum": 5,
+            "minimum": 1,
             "title": "Level",
             "default": 3
           },
@@ -55760,7 +55786,7 @@
           },
           "max_inline_bytes": {
             "type": "integer",
-            "minimum": 1024.0,
+            "minimum": 1024,
             "title": "Max Inline Bytes",
             "default": 262144
           }
@@ -55785,7 +55811,7 @@
           },
           "max_inline_bytes": {
             "type": "integer",
-            "minimum": 1024.0,
+            "minimum": 1024,
             "title": "Max Inline Bytes",
             "default": 262144
           }
@@ -55992,8 +56018,8 @@
           },
           "signed_url_ttl": {
             "type": "integer",
-            "maximum": 604800.0,
-            "minimum": 60.0,
+            "maximum": 604800,
+            "minimum": 60,
             "title": "Signed Url Ttl",
             "default": 3600
           },
@@ -56284,6 +56310,56 @@
         ],
         "title": "Body_upload_vision_master_media_upload_post"
       },
+      "BridgeAccountIdentity": {
+        "properties": {
+          "provider_account_key": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Provider Account Key"
+          },
+          "provider_account_key_version": {
+            "type": "integer",
+            "enum": [
+              1,
+              2
+            ],
+            "title": "Provider Account Key Version",
+            "default": 2
+          },
+          "provider_account_fingerprint": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-f]{12}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Account Fingerprint"
+          },
+          "provider_account_label": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Account Label"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "provider_account_key"
+        ],
+        "title": "BridgeAccountIdentity",
+        "description": "Opaque, display-safe provider-account provenance. Never authorization.\n\n``provider_account_key`` version 2 is the canonical contract: a deterministic\nSHA-256 of a fixed public platform namespace plus the provider's stable\naccount fields, so the same provider account produces the same key on every\nmachine. Version 1 (absent field) is the retired per-installation HMAC;\nv1 keys are never comparable across machines or against v2 keys.\n``provider_account_fingerprint`` is the first 12 hex chars of the key.\n``provider_account_label`` is a short display-safe label (masked email or an\norg-id prefix) — never a raw email, credential, or token."
+      },
       "BridgeAction": {
         "type": "string",
         "enum": [
@@ -56474,7 +56550,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -57137,6 +57213,132 @@
         ],
         "title": "BridgeResponse"
       },
+      "BridgeSourceMetadata": {
+        "properties": {
+          "source_kind": {
+            "type": "string",
+            "const": "claude_local_jsonl",
+            "title": "Source Kind"
+          },
+          "provider_native_session_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Provider Native Session Id"
+          },
+          "provider_account_key": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Account Key"
+          },
+          "provider_account_key_version": {
+            "type": "integer",
+            "enum": [
+              1,
+              2
+            ],
+            "title": "Provider Account Key Version",
+            "default": 1
+          },
+          "provider_account_fingerprint": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-f]{12}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Account Fingerprint"
+          },
+          "provider_account_label": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Account Label"
+          },
+          "importer_version": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Importer Version"
+          },
+          "client_version": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Version"
+          },
+          "transcript_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Transcript Sha256"
+          },
+          "transcript_bytes": {
+            "type": "integer",
+            "maximum": 268435456,
+            "minimum": 0,
+            "title": "Transcript Bytes"
+          },
+          "transcript_entry_count": {
+            "type": "integer",
+            "maximum": 1000000,
+            "minimum": 0,
+            "title": "Transcript Entry Count"
+          },
+          "transcript_mtime_ns": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Transcript Mtime Ns"
+          },
+          "source_complete": {
+            "type": "boolean",
+            "title": "Source Complete"
+          },
+          "corrupt_line_count": {
+            "type": "integer",
+            "maximum": 1000000,
+            "minimum": 0,
+            "title": "Corrupt Line Count",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source_kind",
+          "provider_native_session_id",
+          "importer_version",
+          "transcript_sha256",
+          "transcript_bytes",
+          "transcript_entry_count",
+          "transcript_mtime_ns",
+          "source_complete"
+        ],
+        "title": "BridgeSourceMetadata",
+        "description": "Bounded, non-authoritative provenance for an explicit local import."
+      },
       "BriefRunHistoryResult": {
         "properties": {
           "node_id": {
@@ -57331,8 +57533,8 @@
           },
           "timeout_ms": {
             "type": "integer",
-            "maximum": 30000.0,
-            "minimum": 1000.0,
+            "maximum": 30000,
+            "minimum": 1000,
             "title": "Timeout Ms",
             "default": 25000
           },
@@ -57418,8 +57620,8 @@
           },
           "timeout_ms": {
             "type": "integer",
-            "maximum": 30000.0,
-            "minimum": 1000.0,
+            "maximum": 30000,
+            "minimum": 1000,
             "title": "Timeout Ms",
             "default": 25000
           },
@@ -58924,6 +59126,66 @@
         ],
         "title": "CancelRunResponse"
       },
+      "CapturedLink": {
+        "properties": {
+          "target_url": {
+            "type": "string",
+            "title": "Target Url"
+          },
+          "anchor_text": {
+            "type": "string",
+            "title": "Anchor Text",
+            "default": ""
+          },
+          "text_source": {
+            "type": "string",
+            "enum": [
+              "anchor",
+              "image_alt",
+              ""
+            ],
+            "title": "Text Source",
+            "default": ""
+          },
+          "rel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rel"
+          },
+          "nofollow": {
+            "type": "boolean",
+            "title": "Nofollow",
+            "default": false
+          },
+          "link_type": {
+            "type": "string",
+            "enum": [
+              "internal",
+              "subdomain",
+              "external"
+            ],
+            "title": "Link Type",
+            "default": "external"
+          },
+          "region": {
+            "type": "string",
+            "title": "Region",
+            "default": "body"
+          }
+        },
+        "type": "object",
+        "required": [
+          "target_url"
+        ],
+        "title": "CapturedLink",
+        "description": "One anchor on the captured page pointing at the requested target.\n\nKey names match ``LinkExtractor.extract_anchors`` / ``seo_audit.LinkItem``\n/ the ``crawl_links`` rows, so every consumer reads one vocabulary."
+      },
       "CartesianPlan": {
         "properties": {
           "strategy": {
@@ -58954,8 +59216,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 100000.0,
-                "minimum": 1.0
+                "maximum": 100000,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -60688,6 +60950,22 @@
             "title": "Source Feature",
             "description": "Stable feature slug within the source application."
           },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "user",
+                  "auto"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
+          },
           "target_instance_id": {
             "anyOf": [
               {
@@ -62089,6 +62367,21 @@
             "type": "boolean",
             "title": "Native Fork"
           },
+          "bash_available": {
+            "type": "boolean",
+            "title": "Bash Available"
+          },
+          "bash_unavailable_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bash Unavailable Reason"
+          },
           "reason": {
             "anyOf": [
               {
@@ -62106,7 +62399,8 @@
         "required": [
           "available",
           "native_resume",
-          "native_fork"
+          "native_fork",
+          "bash_available"
         ],
         "title": "ClaudeManagedCapabilitiesResponse"
       },
@@ -62174,8 +62468,8 @@
           },
           "max_turns": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Max Turns",
             "default": 20
           },
@@ -62183,8 +62477,8 @@
             "anyOf": [
               {
                 "type": "number",
-                "maximum": 1000.0,
-                "exclusiveMinimum": 0.0
+                "maximum": 1000,
+                "exclusiveMinimum": 0
               },
               {
                 "type": "null"
@@ -62704,6 +62998,28 @@
               }
             ],
             "title": "Error Code"
+          },
+          "template": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template"
+          },
+          "template_matched_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template Matched By"
           }
         },
         "additionalProperties": false,
@@ -64366,6 +64682,26 @@
             "maxItems": 1000,
             "title": "Entries"
           },
+          "source_metadata": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BridgeSourceMetadata"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "account_identity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BridgeAccountIdentity"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "writer_runtime_id": {
             "anyOf": [
               {
@@ -64381,8 +64717,8 @@
           },
           "writer_lease_seconds": {
             "type": "integer",
-            "maximum": 3600.0,
-            "minimum": 30.0,
+            "maximum": 3600,
+            "minimum": 30,
             "title": "Writer Lease Seconds",
             "default": 300
           },
@@ -64390,7 +64726,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -64400,8 +64736,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 1000.0,
-            "minimum": 1.0,
+            "maximum": 1000,
+            "minimum": 1,
             "title": "Limit",
             "default": 250
           },
@@ -65170,8 +65506,8 @@
           },
           "relevance_score": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Relevance Score"
           },
           "threat_level": {
@@ -65279,15 +65615,15 @@
           },
           "max_competitors": {
             "type": "integer",
-            "maximum": 15.0,
-            "minimum": 1.0,
+            "maximum": 15,
+            "minimum": 1,
             "title": "Max Competitors",
             "default": 5
           },
           "pages_per_competitor": {
             "type": "integer",
-            "maximum": 10.0,
-            "minimum": 1.0,
+            "maximum": 10,
+            "minimum": 1,
             "title": "Pages Per Competitor",
             "default": 3
           },
@@ -65399,8 +65735,8 @@
           },
           "already_have_percentage": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Already Have Percentage"
           },
           "upgrade_page_ids": {
@@ -65544,8 +65880,8 @@
           },
           "variant_count": {
             "type": "integer",
-            "maximum": 8.0,
-            "minimum": 2.0,
+            "maximum": 8,
+            "minimum": 2,
             "title": "Variant Count",
             "default": 5
           }
@@ -66465,6 +66801,22 @@
             "title": "Source Feature",
             "description": "Stable feature slug within the source application."
           },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "user",
+                  "auto"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
+          },
           "store": {
             "type": "boolean",
             "title": "Store",
@@ -66968,6 +67320,22 @@
             "title": "Source Feature",
             "description": "Stable feature slug within the source application."
           },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "user",
+                  "auto"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
+          },
           "store": {
             "type": "boolean",
             "title": "Store",
@@ -67395,6 +67763,29 @@
         "title": "ConversationRecord",
         "description": "Conversation row as returned by ``CxConversation.to_dict()``.\n\nORM ``to_dict`` projections evolve with the schema (status / metadata /\nflags), so ``extra=\"allow\"`` keeps the wire shape backward-compatible.\n``user_id`` mirrors ``created_by`` for clients not yet on the cutover."
       },
+      "ConversationWarmResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "cached",
+              "already_cached"
+            ],
+            "title": "Status"
+          },
+          "conversation_id": {
+            "type": "string",
+            "title": "Conversation Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "conversation_id"
+        ],
+        "title": "ConversationWarmResponse",
+        "description": "Whether the warm call populated the cache or found it already hot."
+      },
       "CoordinatedRowsPlan": {
         "properties": {
           "strategy": {
@@ -67422,7 +67813,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 1.0
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -67573,7 +67964,7 @@
           "estimated_cost_usd": {
             "type": "number",
             "title": "Estimated Cost Usd",
-            "default": 0.0
+            "default": 0
           }
         },
         "type": "object",
@@ -67845,19 +68236,6 @@
         ],
         "title": "CreatePlanRequest"
       },
-      "CreateRecipeResponse": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id"
-        ],
-        "title": "CreateRecipeResponse"
-      },
       "CreateShareLinkRequest": {
         "properties": {
           "permission_level": {
@@ -67991,8 +68369,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Max Steps",
             "default": 1000
           },
@@ -68081,10 +68459,16 @@
             ],
             "title": "Category"
           },
-          "is_public": {
-            "type": "boolean",
-            "title": "Is Public",
-            "default": false
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "personal",
+              "internal",
+              "link",
+              "public"
+            ],
+            "title": "Visibility",
+            "default": "internal"
           }
         },
         "type": "object",
@@ -68821,6 +69205,14 @@
             },
             "type": "array",
             "title": "Source Feature Patterns"
+          },
+          "origin_classes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Origin Classes",
+            "description": "matrx_connect ORIGIN_CLASSES + 'unknown' (DB backfill for pre-provenance rows). Valid filter values for origin_class."
           }
         },
         "additionalProperties": false,
@@ -68879,6 +69271,14 @@
             "type": "array",
             "title": "Source Feature",
             "description": "Distinct (source_feature, count). Drives the searchable feature filter."
+          },
+          "origin_class": {
+            "items": {
+              "$ref": "#/components/schemas/CxExplorerFacetEntry"
+            },
+            "type": "array",
+            "title": "Origin Class",
+            "description": "Distinct (origin_class, count) — the witnessed trust axis (matrx_connect ORIGIN_CLASSES + 'unknown' for pre-provenance rows). Drives the origin filter."
           }
         },
         "additionalProperties": false,
@@ -68887,7 +69287,8 @@
           "totals",
           "status",
           "source_app",
-          "source_feature"
+          "source_feature",
+          "origin_class"
         ],
         "title": "CxExplorerFacets"
       },
@@ -70128,8 +70529,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 1000.0,
-            "minimum": 1.0,
+            "maximum": 1000,
+            "minimum": 1,
             "title": "Limit",
             "default": 50
           }
@@ -71318,15 +71719,15 @@
           },
           "min_pages_ratio": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Min Pages Ratio",
             "default": 0.3333333333333333
           },
           "min_confidence": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Min Confidence",
             "default": 0.5
           }
@@ -71394,61 +71795,6 @@
         },
         "type": "object",
         "title": "DetectorRunInfo"
-      },
-      "DevLoginRequest": {
-        "properties": {
-          "user_id": {
-            "type": "string",
-            "title": "User Id",
-            "description": "UUID of an existing row in auth.users."
-          },
-          "ttl_seconds": {
-            "type": "integer",
-            "maximum": 86400.0,
-            "minimum": 60.0,
-            "title": "Ttl Seconds",
-            "description": "JWT expiry. Default 2h, min 60s, max 24h.",
-            "default": 7200
-          }
-        },
-        "type": "object",
-        "required": [
-          "user_id"
-        ],
-        "title": "DevLoginRequest"
-      },
-      "DevLoginResponse": {
-        "properties": {
-          "access_token": {
-            "type": "string",
-            "title": "Access Token"
-          },
-          "user_id": {
-            "type": "string",
-            "title": "User Id"
-          },
-          "expires_at": {
-            "type": "integer",
-            "title": "Expires At"
-          },
-          "issued_at": {
-            "type": "integer",
-            "title": "Issued At"
-          },
-          "jti": {
-            "type": "string",
-            "title": "Jti"
-          }
-        },
-        "type": "object",
-        "required": [
-          "access_token",
-          "user_id",
-          "expires_at",
-          "issued_at",
-          "jti"
-        ],
-        "title": "DevLoginResponse"
       },
       "DiagSpawnDetachedResponse": {
         "properties": {
@@ -71587,15 +71933,15 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Limit",
             "default": 20
           },
           "multi_query": {
             "type": "integer",
-            "maximum": 5.0,
-            "minimum": 1.0,
+            "maximum": 5,
+            "minimum": 1,
             "title": "Multi Query",
             "default": 1
           },
@@ -72257,7 +72603,7 @@
           "cost_usd": {
             "type": "number",
             "title": "Cost Usd",
-            "default": 0.0
+            "default": 0
           },
           "status": {
             "type": "string",
@@ -72422,8 +72768,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 20000.0,
-            "minimum": 1.0,
+            "maximum": 20000,
+            "minimum": 1,
             "title": "Limit",
             "default": 2000
           }
@@ -73247,8 +73593,8 @@
         "properties": {
           "limit": {
             "type": "integer",
-            "maximum": 500.0,
-            "minimum": 1.0,
+            "maximum": 500,
+            "minimum": 1,
             "title": "Limit",
             "default": 50
           }
@@ -73721,8 +74067,8 @@
           },
           "count": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Count",
             "default": 1
           }
@@ -74107,15 +74453,15 @@
           },
           "review_every_n": {
             "type": "integer",
-            "maximum": 500.0,
-            "minimum": 1.0,
+            "maximum": 500,
+            "minimum": 1,
             "title": "Review Every N",
             "default": 10
           },
           "max_examples_per_review": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Max Examples Per Review",
             "default": 25
           },
@@ -74137,8 +74483,8 @@
           },
           "backfill_days": {
             "type": "integer",
-            "maximum": 365.0,
-            "minimum": 0.0,
+            "maximum": 365,
+            "minimum": 0,
             "title": "Backfill Days",
             "default": 14
           }
@@ -74162,17 +74508,17 @@
           "review_cost": {
             "type": "number",
             "title": "Review Cost",
-            "default": 0.0
+            "default": 0
           },
           "replay_cost": {
             "type": "number",
             "title": "Replay Cost",
-            "default": 0.0
+            "default": 0
           },
           "total_cost": {
             "type": "number",
             "title": "Total Cost",
-            "default": 0.0
+            "default": 0
           }
         },
         "additionalProperties": false,
@@ -74357,17 +74703,17 @@
           "review_cost": {
             "type": "number",
             "title": "Review Cost",
-            "default": 0.0
+            "default": 0
           },
           "replay_cost": {
             "type": "number",
             "title": "Replay Cost",
-            "default": 0.0
+            "default": 0
           },
           "total_cost": {
             "type": "number",
             "title": "Total Cost",
-            "default": 0.0
+            "default": 0
           },
           "review_count": {
             "type": "integer",
@@ -74448,8 +74794,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 500.0,
-                "minimum": 1.0
+                "maximum": 500,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -74461,8 +74807,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 100.0,
-                "minimum": 1.0
+                "maximum": 100,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -75549,8 +75895,8 @@
           },
           "multi_query": {
             "type": "integer",
-            "maximum": 5.0,
-            "minimum": 1.0,
+            "maximum": 5,
+            "minimum": 1,
             "title": "Multi Query",
             "default": 3
           },
@@ -76327,7 +76673,7 @@
         "properties": {
           "page_number": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Page Number"
           },
           "bbox": {
@@ -78534,7 +78880,7 @@
           },
           "attempt_count": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Attempt Count",
             "default": 0
           },
@@ -78572,7 +78918,7 @@
           },
           "chunk_count": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Chunk Count",
             "default": 0
           },
@@ -79247,8 +79593,8 @@
           },
           "max_hits_per_page": {
             "type": "integer",
-            "maximum": 50.0,
-            "minimum": 1.0,
+            "maximum": 50,
+            "minimum": 1,
             "title": "Max Hits Per Page",
             "default": 5
           }
@@ -79722,15 +80068,15 @@
         "properties": {
           "x": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "X",
             "description": "0=left, 1=right"
           },
           "y": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Y",
             "description": "0=top, 1=bottom"
           }
@@ -79980,6 +80326,22 @@
             ],
             "title": "Source Feature",
             "description": "Stable feature slug within the source application."
+          },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "user",
+                  "auto"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
           },
           "store": {
             "type": "boolean",
@@ -80404,8 +80766,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Max Steps",
             "default": 1000
           }
@@ -80654,8 +81016,8 @@
           },
           "count": {
             "type": "integer",
-            "maximum": 4.0,
-            "minimum": 1.0,
+            "maximum": 4,
+            "minimum": 1,
             "title": "Count",
             "description": "Number of images to generate.",
             "default": 1
@@ -80718,8 +81080,8 @@
           },
           "max_nodes": {
             "type": "integer",
-            "maximum": 150.0,
-            "minimum": 10.0,
+            "maximum": 150,
+            "minimum": 10,
             "title": "Max Nodes",
             "default": 40
           },
@@ -81397,8 +81759,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 90.0,
-                "minimum": 1.0
+                "maximum": 90,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -81558,17 +81920,17 @@
           "review_cost": {
             "type": "number",
             "title": "Review Cost",
-            "default": 0.0
+            "default": 0
           },
           "replay_cost": {
             "type": "number",
             "title": "Replay Cost",
-            "default": 0.0
+            "default": 0
           },
           "total_cost": {
             "type": "number",
             "title": "Total Cost",
-            "default": 0.0
+            "default": 0
           },
           "review_count": {
             "type": "integer",
@@ -81859,8 +82221,8 @@
           },
           "quality": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Quality",
             "description": "Encoder quality from 1 to 100 for lossy output formats.",
             "default": 90
@@ -82520,8 +82882,8 @@
           },
           "count": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Count",
             "description": "Number of random assignments to materialize."
           },
@@ -82586,6 +82948,30 @@
           "errors"
         ],
         "title": "IndexRepositoryResponse"
+      },
+      "InfluentialUnverifiedClaim": {
+        "properties": {
+          "engine": {
+            "type": "string",
+            "title": "Engine"
+          },
+          "subject": {
+            "type": "string",
+            "title": "Subject",
+            "default": ""
+          },
+          "claim": {
+            "type": "string",
+            "title": "Claim",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "engine"
+        ],
+        "title": "InfluentialUnverifiedClaim",
+        "description": "A decision-driving claim an assistant repeated without verifying it."
       },
       "IngestReport": {
         "properties": {
@@ -82706,8 +83092,8 @@
           },
           "chunk_words": {
             "type": "integer",
-            "maximum": 8000.0,
-            "minimum": 500.0,
+            "maximum": 8000,
+            "minimum": 500,
             "title": "Chunk Words",
             "description": "Words per extraction chunk.",
             "default": 2500
@@ -84606,8 +84992,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 200.0,
-            "minimum": 1.0,
+            "maximum": 200,
+            "minimum": 1,
             "title": "Limit",
             "default": 200
           }
@@ -86685,8 +87071,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 200.0,
-            "minimum": 1.0,
+            "maximum": 200,
+            "minimum": 1,
             "title": "Limit",
             "default": 20
           },
@@ -87912,8 +88298,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 50.0,
-            "minimum": 1.0,
+            "maximum": 50,
+            "minimum": 1,
             "title": "Limit",
             "default": 10
           }
@@ -88627,6 +89013,40 @@
         ],
         "title": "LogPattern"
       },
+      "ManifestClientToolEntry": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "default": ""
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "input_schema": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Input Schema"
+          },
+          "mode": {
+            "type": "string",
+            "title": "Mode",
+            "default": "ui"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "ManifestClientToolEntry",
+        "description": "One declared CLIENT TOOL (``ui.ui_surface_client_tool``).\n\nThe ACTION tier, beside ``write_targets``' data tier: a page-side function\nan agent bound to this surface may CALL. This is the DECLARED set — surface\nauthors diff it against their local ``clientTools`` registrations to catch\ndrift, exactly as they already do for ``write_targets``.\n\nDECLARED IS NOT LIVE. A tool only runs when the page is mounted AND has\nregistered a handler, so this list is a superset of what is callable in any\ngiven run. The agent-facing feed reconciles it per-request (see\n``conversation_context/surface_context.py``); nothing may treat a row here\nas proof the tool is currently invokable.\n\n``label`` is present because this is a machine/author-facing contract, not\nan agent feed — THE NAMING LAW (labels never enter agent feeds) governs the\ncontext block, not this endpoint.\n\nTool names are GLOBAL per conversation, never per-surface: a colliding name\nis silently SKIPPED at injection, which is why matrx-frontend's\n``check:surface-drift`` enforces cross-surface uniqueness."
+      },
       "ManifestFact": {
         "properties": {
           "label": {
@@ -88950,7 +89370,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -88961,8 +89381,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Max Steps",
             "default": 1000
           }
@@ -89527,7 +89947,7 @@
           "cost": {
             "type": "number",
             "title": "Cost",
-            "default": 0.0
+            "default": 0
           },
           "input_tokens": {
             "type": "integer",
@@ -90055,29 +90475,29 @@
         "properties": {
           "chunk_count": {
             "type": "integer",
-            "maximum": 10000.0,
-            "minimum": 1.0,
+            "maximum": 10000,
+            "minimum": 1,
             "title": "Chunk Count",
             "default": 10
           },
           "chunk_delay_ms": {
             "type": "integer",
-            "maximum": 60000.0,
-            "minimum": 0.0,
+            "maximum": 60000,
+            "minimum": 0,
             "title": "Chunk Delay Ms",
             "default": 200
           },
           "heartbeat_interval_ms": {
             "type": "integer",
-            "maximum": 60000.0,
-            "minimum": 1000.0,
+            "maximum": 60000,
+            "minimum": 1000,
             "title": "Heartbeat Interval Ms",
             "default": 10000
           },
           "max_lifetime_ms": {
             "type": "integer",
-            "maximum": 600000.0,
-            "minimum": 1000.0,
+            "maximum": 600000,
+            "minimum": 1000,
             "title": "Max Lifetime Ms",
             "default": 120000
           },
@@ -92716,8 +93136,8 @@
           },
           "priority": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Priority"
           },
           "impact": {
@@ -92740,8 +93160,8 @@
           },
           "confidence": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Confidence"
           },
           "evidence": {
@@ -93498,16 +93918,16 @@
           },
           "fill_opacity": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Fill Opacity",
             "default": 0.18
           },
           "stroke_width": {
             "type": "number",
-            "exclusiveMinimum": 0.0,
+            "exclusiveMinimum": 0,
             "title": "Stroke Width",
-            "default": 2.0
+            "default": 2
           },
           "label": {
             "anyOf": [
@@ -93522,9 +93942,9 @@
           },
           "font_size": {
             "type": "number",
-            "exclusiveMinimum": 0.0,
+            "exclusiveMinimum": 0,
             "title": "Font Size",
-            "default": 10.0
+            "default": 10
           }
         },
         "type": "object",
@@ -94014,8 +94434,7 @@
           },
           "links_to_target": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/CapturedLink"
             },
             "type": "array",
             "title": "Links To Target"
@@ -95088,7 +95507,7 @@
           },
           "use_ocr_threshold": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Use Ocr Threshold",
             "default": 100
           }
@@ -95193,12 +95612,12 @@
         "properties": {
           "output_page": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Output Page"
           },
           "source_page": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Source Page"
           }
         },
@@ -95213,12 +95632,12 @@
         "properties": {
           "start": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Start"
           },
           "end": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "End"
           }
         },
@@ -95261,8 +95680,8 @@
           },
           "signed_ttl": {
             "type": "integer",
-            "maximum": 604800.0,
-            "minimum": 60.0,
+            "maximum": 604800,
+            "minimum": 60,
             "title": "Signed Ttl",
             "default": 3600
           }
@@ -95294,14 +95713,14 @@
           },
           "source_page_count": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Source Page Count"
           },
           "source_size_bytes": {
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -95311,7 +95730,7 @@
           },
           "source_bytes_fetched": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Source Bytes Fetched",
             "default": 0
           },
@@ -96697,7 +97116,7 @@
           "total_cost": {
             "type": "number",
             "title": "Total Cost",
-            "default": 0.0
+            "default": 0
           },
           "request": {
             "additionalProperties": {
@@ -96813,7 +97232,7 @@
           "total_cost": {
             "type": "number",
             "title": "Total Cost",
-            "default": 0.0
+            "default": 0
           },
           "error": {
             "type": "string",
@@ -97418,6 +97837,22 @@
             "title": "Source Feature",
             "description": "Stable feature slug within the source application."
           },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "user",
+                  "auto"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
+          },
           "store": {
             "type": "boolean",
             "title": "Store",
@@ -97497,8 +97932,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 20.0,
-                "minimum": 1.0
+                "maximum": 20,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -97590,7 +98025,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -97603,7 +98038,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -97836,6 +98271,22 @@
             "title": "Source Feature",
             "description": "Stable feature slug within the source application."
           },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "user",
+                  "auto"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
+          },
           "store": {
             "type": "boolean",
             "title": "Store",
@@ -97943,7 +98394,7 @@
             "type": "number",
             "title": "Total Cost Usd",
             "description": "What this run has cost in total.",
-            "default": 0.0
+            "default": 0
           },
           "progress": {
             "$ref": "#/components/schemas/RunProgress",
@@ -98065,7 +98516,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -98357,8 +98808,8 @@
           },
           "n": {
             "type": "integer",
-            "maximum": 50.0,
-            "minimum": 1.0,
+            "maximum": 50,
+            "minimum": 1,
             "title": "N",
             "default": 5
           }
@@ -98437,12 +98888,12 @@
           },
           "width": {
             "type": "integer",
-            "exclusiveMinimum": 0.0,
+            "exclusiveMinimum": 0,
             "title": "Width"
           },
           "height": {
             "type": "integer",
-            "exclusiveMinimum": 0.0,
+            "exclusiveMinimum": 0,
             "title": "Height"
           },
           "format": {
@@ -98458,8 +98909,8 @@
           },
           "quality": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Quality",
             "description": "Ignored for png",
             "default": 85
@@ -98690,7 +99141,7 @@
           "heartbeat_interval_s": {
             "type": "number",
             "title": "Heartbeat Interval S",
-            "default": 15.0
+            "default": 15
           },
           "debug": {
             "type": "boolean",
@@ -98975,6 +99426,22 @@
             ],
             "title": "Source Feature",
             "description": "Stable feature slug within the source application."
+          },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "user",
+                  "auto"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
           },
           "store": {
             "type": "boolean",
@@ -99641,6 +100108,105 @@
         ],
         "title": "ProviderTaskEvidenceOut"
       },
+      "PublicAiVisibilityBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "brand_name": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 2,
+            "title": "Brand Name"
+          },
+          "website_url": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 4,
+            "title": "Website Url"
+          },
+          "aliases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Aliases"
+          },
+          "query": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 2,
+            "title": "Query"
+          },
+          "country_iso": {
+            "type": "string",
+            "maxLength": 2,
+            "minLength": 2,
+            "title": "Country Iso",
+            "default": "US"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "force_refresh": {
+            "type": "boolean",
+            "title": "Force Refresh",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "brand_name",
+          "website_url",
+          "query"
+        ],
+        "title": "PublicAiVisibilityBody",
+        "description": "A prospect identity and the exact buyer question to test."
+      },
       "PublicWorkflowRecord": {
         "properties": {
           "id": {
@@ -99740,8 +100306,8 @@
           },
           "confidence": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Confidence"
           },
           "evidence_refs": {
@@ -100027,8 +100593,8 @@
         "properties": {
           "overall_confidence": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Overall Confidence"
           },
           "accepted_cases": {
@@ -100154,8 +100720,8 @@
           },
           "anchor_size": {
             "type": "integer",
-            "maximum": 1000.0,
-            "minimum": 10.0,
+            "maximum": 1000,
+            "minimum": 10,
             "title": "Anchor Size",
             "default": 100
           },
@@ -100507,8 +101073,8 @@
           },
           "cadence_days": {
             "type": "integer",
-            "maximum": 90.0,
-            "minimum": 1.0,
+            "maximum": 90,
+            "minimum": 1,
             "title": "Cadence Days",
             "default": 7
           },
@@ -100704,8 +101270,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 90.0,
-                "minimum": 1.0
+                "maximum": 90,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -101278,8 +101844,8 @@
           },
           "confidence": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Confidence"
           },
           "run_id": {
@@ -101619,15 +102185,15 @@
           },
           "min_pages_ratio": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Min Pages Ratio",
             "default": 0.3333333333333333
           },
           "min_confidence": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Min Confidence",
             "default": 0.5
           },
@@ -101647,7 +102213,7 @@
         "properties": {
           "page_number": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Page Number"
           },
           "x0": {
@@ -101710,7 +102276,7 @@
           },
           "page_number": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Page Number"
           },
           "bbox": {
@@ -101824,6 +102390,108 @@
         ],
         "title": "RefreshNodeTypesResponse"
       },
+      "RefreshNowRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "mode": {
+            "type": "string",
+            "title": "Mode",
+            "default": "catch_up"
+          }
+        },
+        "type": "object",
+        "title": "RefreshNowRequest",
+        "description": "`catch_up` finishes what is unfinished; `refresh` re-opens discovery for\nkeywords whose search has aged out first."
+      },
+      "RefreshScheduleRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "interval_hours": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interval Hours"
+          }
+        },
+        "type": "object",
+        "title": "RefreshScheduleRequest",
+        "description": "`interval_hours=None` (or 0) turns unattended refresh off."
+      },
       "RegenerateAssetRequest": {
         "properties": {
           "asset_kind": {
@@ -101900,7 +102568,7 @@
         "properties": {
           "page_number": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Page Number"
           },
           "bbox": {
@@ -102461,8 +103129,8 @@
           },
           "dpi": {
             "type": "integer",
-            "maximum": 300.0,
-            "minimum": 8.0,
+            "maximum": 300,
+            "minimum": 8,
             "title": "Dpi",
             "default": 150
           },
@@ -102480,8 +103148,8 @@
           },
           "jpeg_quality": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Jpeg Quality",
             "default": 85
           },
@@ -102551,14 +103219,14 @@
           },
           "page": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Page",
             "default": 1
           },
           "dpi": {
             "type": "integer",
-            "maximum": 600.0,
-            "minimum": 8.0,
+            "maximum": 600,
+            "minimum": 8,
             "title": "Dpi",
             "default": 150
           },
@@ -102576,8 +103244,8 @@
           },
           "jpeg_quality": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Jpeg Quality",
             "default": 85
           },
@@ -102629,8 +103297,8 @@
           },
           "dpi": {
             "type": "integer",
-            "maximum": 400.0,
-            "minimum": 36.0,
+            "maximum": 400,
+            "minimum": 36,
             "title": "Dpi",
             "default": 144
           },
@@ -102740,14 +103408,14 @@
           },
           "page": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Page",
             "default": 1
           },
           "max_side": {
             "type": "integer",
-            "maximum": 2048.0,
-            "minimum": 16.0,
+            "maximum": 2048,
+            "minimum": 16,
             "title": "Max Side",
             "default": 256
           },
@@ -102764,8 +103432,8 @@
           },
           "jpeg_quality": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Jpeg Quality",
             "default": 80
           }
@@ -103060,8 +103728,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 2000.0,
-            "minimum": 1.0,
+            "maximum": 2000,
+            "minimum": 1,
             "title": "Limit",
             "default": 100
           },
@@ -103656,32 +104324,32 @@
           },
           "priority": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Priority"
           },
           "confidence": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Confidence"
           },
           "evidence_quality": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Evidence Quality"
           },
           "risk_score": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Risk Score"
           },
           "opportunity_score": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Opportunity Score"
           },
           "recommended_action": {
@@ -103937,14 +104605,264 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Max Steps",
             "default": 1000
           }
         },
         "type": "object",
         "title": "RerunFromRequest"
+      },
+      "ResearchRefreshState": {
+        "properties": {
+          "topic_id": {
+            "type": "string",
+            "title": "Topic Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "is_running": {
+            "type": "boolean",
+            "title": "Is Running"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "refresh_interval_hours": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refresh Interval Hours"
+          },
+          "next_refresh_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Refresh At"
+          },
+          "last_refresh_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Refresh At"
+          },
+          "last_refresh_outcome": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Refresh Outcome"
+          },
+          "last_refresh_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Refresh Error"
+          },
+          "last_refresh_trigger": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Refresh Trigger"
+          },
+          "consecutive_refresh_failures": {
+            "type": "integer",
+            "title": "Consecutive Refresh Failures",
+            "default": 0
+          },
+          "is_claimed": {
+            "type": "boolean",
+            "title": "Is Claimed",
+            "default": false
+          },
+          "keywords_total": {
+            "type": "integer",
+            "title": "Keywords Total",
+            "default": 0
+          },
+          "keywords_never_searched": {
+            "type": "integer",
+            "title": "Keywords Never Searched",
+            "default": 0
+          },
+          "latest_document_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Document Version"
+          },
+          "latest_document_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Document At"
+          },
+          "bounds": {
+            "$ref": "#/components/schemas/ResearchRunBounds"
+          },
+          "execution": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Execution",
+            "description": "Latest runtime-spine execution for this topic (id/status/timestamps)."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "topic_id",
+          "name",
+          "status",
+          "is_running",
+          "bounds"
+        ],
+        "title": "ResearchRefreshState",
+        "description": "Everything a caller needs to answer \"is this topic running, and did the\nlast unattended attempt work?\" without reading four tables itself."
+      },
+      "ResearchRunBounds": {
+        "properties": {
+          "keywords_processed": {
+            "type": "integer",
+            "title": "Keywords Processed",
+            "description": "At most `max_keywords` keywords take part."
+          },
+          "searches": {
+            "type": "integer",
+            "title": "Searches",
+            "description": "One discovery pass per processed keyword, at most."
+          },
+          "pages_scraped": {
+            "type": "integer",
+            "title": "Pages Scraped",
+            "description": "max_keywords x scrapes_per_keyword."
+          },
+          "videos_captured": {
+            "type": "integer",
+            "title": "Videos Captured",
+            "description": "max_keywords x videos_per_keyword."
+          },
+          "analysis_llm_calls": {
+            "type": "integer",
+            "title": "Analysis Llm Calls",
+            "description": "max_keywords x analyses_per_keyword."
+          },
+          "synthesis_llm_calls": {
+            "type": "integer",
+            "title": "Synthesis Llm Calls",
+            "description": "max_keyword_syntheses + max_topic_syntheses."
+          },
+          "document_llm_calls": {
+            "type": "integer",
+            "title": "Document Llm Calls",
+            "description": "max_documents."
+          },
+          "tag_llm_calls": {
+            "type": "integer",
+            "title": "Tag Llm Calls",
+            "description": "max_tag_consolidations + max_auto_tag_calls."
+          },
+          "total_llm_calls": {
+            "type": "integer",
+            "title": "Total Llm Calls",
+            "description": "Sum of every LLM-calling phase above."
+          },
+          "within_automated_limits": {
+            "type": "boolean",
+            "title": "Within Automated Limits"
+          },
+          "limit_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "keywords_processed",
+          "searches",
+          "pages_scraped",
+          "videos_captured",
+          "analysis_llm_calls",
+          "synthesis_llm_calls",
+          "document_llm_calls",
+          "tag_llm_calls",
+          "total_llm_calls",
+          "within_automated_limits"
+        ],
+        "title": "ResearchRunBounds",
+        "description": "The worst case one pipeline pass on this topic can cost, derived from the\ntopic's own quota ladder — every phase of the pipeline is count-capped, so\nthese are hard ceilings, not guesses."
       },
       "ResearchTopicSummary": {
         "properties": {
@@ -104170,8 +105088,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 20000.0,
-            "minimum": 1.0,
+            "maximum": 20000,
+            "minimum": 1,
             "title": "Limit",
             "default": 2000
           }
@@ -104500,8 +105418,8 @@
           },
           "max_chars": {
             "type": "integer",
-            "maximum": 10000.0,
-            "minimum": 1.0,
+            "maximum": 10000,
+            "minimum": 1,
             "title": "Max Chars",
             "default": 5000
           }
@@ -104850,6 +105768,22 @@
             "title": "Source Feature",
             "description": "Stable feature slug within the source application."
           },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "user",
+                  "auto"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
+          },
           "store": {
             "type": "boolean",
             "title": "Store",
@@ -105041,8 +105975,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Max Steps",
             "default": 1000
           },
@@ -105161,7 +106095,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -105172,8 +106106,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Max Steps",
             "default": 1000
           }
@@ -105477,7 +106411,7 @@
           "cost_usd": {
             "type": "number",
             "title": "Cost Usd",
-            "default": 0.0
+            "default": 0
           }
         },
         "type": "object",
@@ -106095,7 +107029,7 @@
           "total_cost_usd": {
             "type": "number",
             "title": "Total Cost Usd",
-            "default": 0.0
+            "default": 0
           },
           "total_input_tokens": {
             "type": "integer",
@@ -106339,8 +107273,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 50.0,
-                "minimum": 1.0
+                "maximum": 50,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -106352,8 +107286,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 20.0,
-                "minimum": 1.0
+                "maximum": 20,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -107137,8 +108071,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Max Steps",
             "default": 1000
           },
@@ -107146,8 +108080,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 256.0,
-                "minimum": 1.0
+                "maximum": 256,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -107196,7 +108130,7 @@
           "lease_seconds": {
             "type": "number",
             "title": "Lease Seconds",
-            "default": 1800.0
+            "default": 1800
           }
         },
         "type": "object",
@@ -107271,7 +108205,7 @@
           "lease_seconds": {
             "type": "number",
             "title": "Lease Seconds",
-            "default": 1800.0
+            "default": 1800
           },
           "idempotency_key": {
             "anyOf": [
@@ -107723,79 +108657,6 @@
         ],
         "title": "SaveDraftRequest",
         "description": "Draft save body. Inherits the canonical ``expected_version``\ncompare-and-swap field (a lost race is a global 409 version_conflict);\n``expected_updated_at`` is the older timestamp guard, kept for callers\nthat only hold ``updated_at``. Omit both for last-write-wins."
-      },
-      "SavedViewCreate": {
-        "properties": {
-          "table_name": {
-            "type": "string",
-            "title": "Table Name"
-          },
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "url_params": {
-            "type": "string",
-            "title": "Url Params"
-          }
-        },
-        "type": "object",
-        "required": [
-          "table_name",
-          "name",
-          "url_params"
-        ],
-        "title": "SavedViewCreate"
-      },
-      "SavedViewUpdate": {
-        "properties": {
-          "name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "url_params": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Url Params"
-          }
-        },
-        "type": "object",
-        "title": "SavedViewUpdate"
       },
       "ScanQuad": {
         "properties": {
@@ -108315,8 +109176,8 @@
           },
           "anchor_size": {
             "type": "integer",
-            "maximum": 1000.0,
-            "minimum": 10.0,
+            "maximum": 1000,
+            "minimum": 10,
             "title": "Anchor Size",
             "default": 100
           },
@@ -108331,8 +109192,8 @@
           },
           "max_page_read": {
             "type": "integer",
-            "maximum": 20.0,
-            "minimum": 1.0,
+            "maximum": 20,
+            "minimum": 1,
             "title": "Max Page Read",
             "default": 10
           },
@@ -108412,8 +109273,8 @@
           },
           "anchor_size": {
             "type": "integer",
-            "maximum": 1000.0,
-            "minimum": 10.0,
+            "maximum": 1000,
+            "minimum": 10,
             "title": "Anchor Size",
             "default": 100
           },
@@ -108431,8 +109292,8 @@
           },
           "total_results_per_keyword": {
             "type": "integer",
-            "maximum": 30.0,
-            "minimum": 10.0,
+            "maximum": 30,
+            "minimum": 10,
             "title": "Total Results Per Keyword",
             "default": 10
           },
@@ -108521,8 +109382,8 @@
           },
           "total_results_per_keyword": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Total Results Per Keyword",
             "default": 5
           },
@@ -109867,8 +110728,8 @@
           },
           "event_spacing_ms": {
             "type": "integer",
-            "maximum": 5000.0,
-            "minimum": 0.0,
+            "maximum": 5000,
+            "minimum": 0,
             "title": "Event Spacing Ms",
             "description": "Milliseconds to wait between simulated events.",
             "default": 250
@@ -111344,7 +112205,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -111355,8 +112216,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Max Steps",
             "default": 1000
           }
@@ -112202,7 +113063,7 @@
         "properties": {
           "page_number": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Page Number"
           },
           "bbox": {
@@ -112210,10 +113071,10 @@
           },
           "expand_pad_pt": {
             "type": "number",
-            "maximum": 20.0,
-            "minimum": 0.0,
+            "maximum": 20,
+            "minimum": 0,
             "title": "Expand Pad Pt",
-            "default": 1.0
+            "default": 1
           }
         },
         "type": "object",
@@ -113699,7 +114560,7 @@
           "confidence": {
             "type": "number",
             "title": "Confidence",
-            "default": 0.0
+            "default": 0
           },
           "reason": {
             "type": "string",
@@ -113869,15 +114730,15 @@
           },
           "min_pages_ratio": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Min Pages Ratio",
             "default": 0.3333333333333333
           },
           "min_confidence": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Min Confidence",
             "default": 0.5
           }
@@ -114617,6 +115478,14 @@
             },
             "type": "array",
             "title": "Write Targets",
+            "default": []
+          },
+          "client_tools": {
+            "items": {
+              "$ref": "#/components/schemas/ManifestClientToolEntry"
+            },
+            "type": "array",
+            "title": "Client Tools",
             "default": []
           },
           "intro": {
@@ -116378,6 +117247,72 @@
         ],
         "title": "TemplateCreate"
       },
+      "TemplateLibraryResult": {
+        "properties": {
+          "web_site_id": {
+            "type": "string",
+            "title": "Web Site Id"
+          },
+          "templates": {
+            "items": {
+              "$ref": "#/components/schemas/TemplateOut"
+            },
+            "type": "array",
+            "title": "Templates"
+          },
+          "problems": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Problems"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "web_site_id"
+        ],
+        "title": "TemplateLibraryResult",
+        "description": "The site's whole page-template library."
+      },
+      "TemplateOut": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/TemplateSectionOut"
+            },
+            "type": "array",
+            "title": "Sections"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "description",
+          "source"
+        ],
+        "title": "TemplateOut",
+        "description": "Wire projection of one template, with the key that selects it."
+      },
       "TemplateRecord": {
         "properties": {
           "id": {
@@ -116451,6 +117386,41 @@
           "name"
         ],
         "title": "TemplateRecord"
+      },
+      "TemplateSectionOut": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "heading": {
+            "type": "string",
+            "title": "Heading"
+          },
+          "heading_level": {
+            "type": "integer",
+            "title": "Heading Level"
+          },
+          "guidance": {
+            "type": "string",
+            "title": "Guidance"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "kind",
+          "heading",
+          "heading_level",
+          "guidance"
+        ],
+        "title": "TemplateSectionOut",
+        "description": "Wire projection of one section (discovery reads / the API)."
       },
       "TestNodeRequest": {
         "properties": {
@@ -116823,6 +117793,22 @@
             ],
             "title": "Source Feature",
             "description": "Stable feature slug within the source application."
+          },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "user",
+                  "auto"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
           },
           "store": {
             "type": "boolean",
@@ -117972,8 +118958,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 200.0,
-            "minimum": 1.0,
+            "maximum": 200,
+            "minimum": 1,
             "title": "Limit",
             "default": 50
           }
@@ -118041,7 +119027,7 @@
           "total_estimated_cost_usd": {
             "type": "number",
             "title": "Total Estimated Cost Usd",
-            "default": 0.0
+            "default": 0
           },
           "page_analyses": {
             "$ref": "#/components/schemas/CostBreakdownItem"
@@ -120333,17 +121319,6 @@
             ],
             "title": "Tags"
           },
-          "is_public": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is Public"
-          },
           "is_active": {
             "anyOf": [
               {
@@ -122472,8 +123447,8 @@
           },
           "next_n": {
             "type": "integer",
-            "maximum": 50.0,
-            "minimum": 1.0,
+            "maximum": 50,
+            "minimum": 1,
             "title": "Next N",
             "default": 5
           }
@@ -125064,15 +126039,15 @@
           },
           "max_urls": {
             "type": "integer",
-            "maximum": 20000.0,
-            "minimum": 1.0,
+            "maximum": 20000,
+            "minimum": 1,
             "title": "Max Urls",
             "default": 2000
           },
           "concurrency": {
             "type": "integer",
-            "maximum": 32.0,
-            "minimum": 1.0,
+            "maximum": 32,
+            "minimum": 1,
             "title": "Concurrency",
             "default": 8
           }
@@ -125115,18 +126090,18 @@
           "x": {
             "type": "number",
             "title": "X",
-            "default": 0.0
+            "default": 0
           },
           "y": {
             "type": "number",
             "title": "Y",
-            "default": 0.0
+            "default": 0
           },
           "zoom": {
             "type": "number",
-            "exclusiveMinimum": 0.0,
+            "exclusiveMinimum": 0,
             "title": "Zoom",
-            "default": 1.0
+            "default": 1
           }
         },
         "type": "object",
@@ -125527,38 +126502,23 @@
             "description": "Optional associated task selected by the caller."
           },
           "visibility": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "personal",
-                  "internal",
-                  "link",
-                  "public"
-                ]
-              },
-              {
-                "type": "null"
-              }
+            "type": "string",
+            "enum": [
+              "personal",
+              "internal",
+              "link",
+              "public"
             ],
             "title": "Visibility"
-          },
-          "is_public": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is Public"
           }
         },
         "additionalProperties": false,
         "type": "object",
+        "required": [
+          "visibility"
+        ],
         "title": "VisibilityRequest",
-        "description": "Set a workflow's canonical ``visibility``. ``visibility`` is the\nplatform enum (personal | internal | link | public); ``is_public`` is the\nlegacy boolean wire shape (true → public, false → personal), still\naccepted so older clients keep working. Exactly one must be provided;\n``visibility`` wins when both are."
+        "description": "Set a workflow's canonical ``visibility`` — the platform enum\n(personal | internal | link | public). There is no boolean alias: a\ntwo-state flag cannot express the four canonical states, and the\n``is_public`` wire shape was retired with the column it named."
       },
       "VisibilityResponse": {
         "properties": {
@@ -125569,10 +126529,6 @@
           "visibility": {
             "type": "string",
             "title": "Visibility"
-          },
-          "is_public": {
-            "type": "boolean",
-            "title": "Is Public"
           },
           "public_url": {
             "anyOf": [
@@ -125589,10 +126545,10 @@
         "type": "object",
         "required": [
           "definition_id",
-          "visibility",
-          "is_public"
+          "visibility"
         ],
-        "title": "VisibilityResponse"
+        "title": "VisibilityResponse",
+        "description": "The canonical visibility that now applies. ``public_url`` is set only\nfor ``public`` — there is no boolean twin of the enum on the wire."
       },
       "VisionMediaUploadResponse": {
         "properties": {
@@ -126938,12 +127894,12 @@
           "total_cost_usd": {
             "type": "number",
             "title": "Total Cost Usd",
-            "default": 0.0
+            "default": 0
           },
           "avg_run_cost_usd": {
             "type": "number",
             "title": "Avg Run Cost Usd",
-            "default": 0.0
+            "default": 0
           },
           "runs_per_day": {
             "items": {
@@ -127096,8 +128052,8 @@
           },
           "max_results": {
             "type": "integer",
-            "maximum": 50.0,
-            "minimum": 1.0,
+            "maximum": 50,
+            "minimum": 1,
             "title": "Max Results",
             "default": 25
           },
@@ -127156,8 +128112,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 50.0,
-                "minimum": 1.0
+                "maximum": 50,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -127169,8 +128125,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 1440.0,
-                "minimum": 1.0
+                "maximum": 1440,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -128043,8 +128999,8 @@
           },
           "max_hits": {
             "type": "integer",
-            "maximum": 2000.0,
-            "minimum": 1.0,
+            "maximum": 2000,
+            "minimum": 1,
             "title": "Max Hits",
             "default": 200
           },
@@ -128190,8 +129146,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Limit",
             "default": 20
           },
@@ -128255,8 +129211,8 @@
           },
           "multi_query": {
             "type": "integer",
-            "maximum": 5.0,
-            "minimum": 1.0,
+            "maximum": 5,
+            "minimum": 1,
             "title": "Multi Query",
             "description": "If >1, the query is rewritten into N paraphrases via gpt-4o-mini and each one contributes a separate vector ranking that gets fused via RRF. Boosts recall on awkward phrasings.",
             "default": 1

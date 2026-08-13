@@ -44,18 +44,44 @@ lib/redux/slices/
 
 Arman's ruling, 2026-08-11. Two halves, both absolute:
 
-**1. Never a top-of-page block.** Inserting a live-run block above the page's content shifts everything down the instant a run starts and puts the model's output above the thing the user is editing. **Banned on every page, no size threshold.** The canonical surface is the floating [`windows/agents/LiveRunWindow.tsx`](windows/agents/LiveRunWindow.tsx) — opened via `useOpenLiveRunWindow()` / `<LiveRunWindowController>` ([`features/overlays/openers/liveRunWindow.tsx`](../overlays/openers/liveRunWindow.tsx)). Its body is [`LiveRunDisplay`](../agents/components/live-run/LiveRunDisplay.tsx), a thin binding to the canonical pipeline, so a run emitting a registered content-IR kind renders as that kind's COMPONENT token-by-token, for free.
+**1. Never a top-of-page block.** Inserting a live-run block above the page's content shifts everything down the instant a run starts and puts the model's output above the thing the user is editing. **Banned on every page, no size threshold.** The canonical surface is the floating [`windows/agents/LiveRunWindow.tsx`](windows/agents/LiveRunWindow.tsx) — opened via `useOpenLiveRunWindow()` / `<LiveRunWindowController>` ([`features/overlays/openers/liveRunWindow.tsx`](../overlays/openers/liveRunWindow.tsx)). Token output renders through [`LiveRunDisplay`](../agents/components/live-run/LiveRunDisplay.tsx). Non-token pipelines pass `progress` and render [`LiveRunProgress`](../agents/components/live-run/LiveRunProgress.tsx): stable rows update in place; event narration is banned.
 
-**THE ONE EXCEPTION — inline `LiveRunDisplay`, and it is earned, not assumed.** A surface may render the window's *internals* inline only when ALL of these hold: the UI around it is purpose-built, more beautiful, and more specialized than the generic window; and it **guarantees zero page shift** — in practice, the content sits at the BOTTOM and the page only grows downward. This requires designing an entire interface around the kind. **Very few surfaces will ever qualify, and a coding agent's default output is nowhere near the bar.** When in doubt, float it.
+**THE ONE EXCEPTION — inline `LiveRunDisplay`, and it is earned, not assumed.** A surface may render the window's _internals_ inline only when ALL of these hold: the UI around it is purpose-built, more beautiful, and more specialized than the generic window; and it **guarantees zero page shift** — in practice, the content sits at the BOTTOM and the page only grows downward. This requires designing an entire interface around the kind. **Very few surfaces will ever qualify, and a coding agent's default output is nowhere near the bar.** When in doubt, float it.
 
 **2. Sizing is derived, never eyeballed.** Kind components are visually tuned against the `/chat` reading column, so the window matches it: **~720px of usable width** (760 outer − 38 chrome) and **80vh** tall. A narrower box reflows tables and makes a kind look broken in the window while looking right in chat. Both constants live at the top of `LiveRunWindow.tsx` with the arithmetic. Per-kind `width`/`height` overrides exist and are legitimate — a three-line kind should not open at 80vh, a wide table may need more than the chat column — but **only after watching that kind render and seeing the default be wrong.** Never hardcode a smaller default to make one screenshot fit.
 
 **A run that dies on refresh is the same defect as a spinner.** If the work is server-side, the surface reattaches on load; the durable record is whatever the run's own feature persisted — never this window (it is `ephemeral: true`).
 
+**A surviving viewer retains its request.** EVERY canonical viewer — `StreamAwareChatMarkdown` (the seam under every `MarkdownStream`) and `LiveRunDisplay` — registers a viewer id in `activeRequests` via `useRetainRequestForViewer`; `removeRequest` and `destroyInstance` defer deletion until the final viewer releases it, and `createRequest` never resets an existing row. A route/query remount may clean up its run owner, but it can never blank a still-open surface. **Before touching any reap, adoption, or live-run render path, read [`features/agents/docs/LIVE_RUN_RETENTION.md`](../agents/docs/LIVE_RUN_RETENTION.md)** — the disappearing-run class doctrine; guard test `request-viewer-retention.test.ts`.
+
 ---
 
 ## Change Log
 
+- 2026-08-12 — **Retention widened to every MarkdownStream viewer + doctrine doc.** Retention moved into `StreamAwareChatMarkdown` via `useRetainRequestForViewer` (adopted-stream surfaces like the keyword Research tab were unprotected); `createRequest` made non-destructive for existing rows. Canonical doctrine: `features/agents/docs/LIVE_RUN_RETENTION.md`.
+- 2026-08-12 — **Live-run viewers retain canonical request state.** Authority,
+  Keyword Research, and every other floating run survive host/query remounts
+  without going blank: owner cleanup defers while `LiveRunDisplay` is mounted,
+  and its final release completes the cleanup.
+- 2026-08-12 — **Non-token work updates stable live rows.** `LiveRunWindow`
+  accepts validated `LiveRunProgressState`; `LiveRunProgress` replaces append-only
+  status narration with in-place waiting/running/completed/failed rows and active
+  indicators. AI Visibility is the first consumer.
+- 2026-08-12 — **`MarkdownEditorWindow`'s body gains a third agent write
+  target, and a crash in it is now documented.** `matrx-user/markdown-editor`
+  adds `pipeline_processor` (ask-policy `ui`) beside the two content drafts
+  already shipped, wired on `MarkdownClassificationTester`'s existing provider
+  and live-verified through this window. **Found while verifying and NOT
+  fixed:** choosing View → "Key Points" from the window's default state
+  (dynamic coordinator → `combined-processor`) throws in `KeyPointsDisplay`
+  (`Cannot read properties of undefined (reading 'title')`) and
+  `OverlayErrorBoundary` swaps the whole window for its fallback. A plain user
+  click reproduces it with no agent involved, and the coordinator's
+  `availableViews` does not gate it — which is why no view write target was
+  declared. The custom views need to guard their input. Also worth knowing for
+  any window whose surface owns no route: the Agents popover prefers the
+  ROUTE-derived surface over the mounted runtime, so this window's targets are
+  only offered on routes that map to no surface.
 - 2026-08-11 — **`useFloatingLiveRun` is the migration off an inline live-run
   block, and a floating run window NEVER auto-closes.** The three page-shifting
   surfaces (`/marketing/keyword-research`, a site's `authority` and

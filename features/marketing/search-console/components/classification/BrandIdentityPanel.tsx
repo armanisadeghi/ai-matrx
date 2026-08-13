@@ -222,6 +222,7 @@ export function BrandIdentityPanel({
 
       <div className="overflow-hidden rounded-md border border-border p-2">
         <MatrxDataTable
+          urlState={{ id: "brand-identity" }}
           data={rows}
           columns={columns}
           getRowId={(row) => `${row.alias_source}:${row.alias}`}

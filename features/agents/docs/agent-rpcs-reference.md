@@ -356,7 +356,6 @@ create table public.agents (
   category text null,
   tags text[] not null default '{}'::text[],
   is_active boolean not null default true,
-  is_public boolean not null default false,
   is_archived boolean not null default false,
   is_favorite boolean not null default false,
   user_id uuid null,

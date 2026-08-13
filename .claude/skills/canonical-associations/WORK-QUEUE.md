@@ -40,7 +40,6 @@ The prioritized, file-anchored backlog for the canonicalization campaign. One su
 | 2 | ✅ dispatched | `get_task_associations` | `features/tasks/services/taskService.ts` (215); `features/tasks/redux/taskAssociationsSlice.ts` (109) | Replace read with `assoc_for_entity` + hydration. **(writes already on `associationsService`.)** |
 | 2 | ✅ dispatched | `get_tasks_for_entity` | `features/tasks/redux/taskAssociationsSlice.ts` (134) | Replace with `assoc_for_targets`/`assoc_for_sources`. |
 | 9 | ☐ | `get_project_references` / `_detailed` | `features/projects/service.ts` (820, 837–838) | Replace with assoc-graph introspection where it's relationship data. |
-| 11 | ☐ | `fetch_with_fk` / `fetch_with_ifk` / `fetch_all_fk_ifk` / `fetch_custom_rels` | `lib/redux/api.ts` (7,21,35,49) | **EVALUATE** — legacy app-builder generic joins; audit/retire. |
 
 ## C. Reference hardening (Recipe C / guards)
 

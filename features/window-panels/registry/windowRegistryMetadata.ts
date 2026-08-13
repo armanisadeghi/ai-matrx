@@ -1705,14 +1705,6 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     ephemeral: true,
   },
   {
-    slug: "broker-state-fullscreen",
-    overlayId: "brokerState",
-    kind: "widget",
-    label: "Broker State",
-    defaultData: {},
-    ephemeral: true,
-  },
-  {
     slug: "announcements",
     overlayId: "announcements",
     kind: "widget",

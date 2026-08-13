@@ -67,7 +67,11 @@ import {
   selectRequest,
   deriveAnswerText,
 } from "../active-requests/active-requests.selectors";
-import { setInstanceStatus } from "../conversations/conversations.slice";
+import {
+  setInstanceStatus,
+  setInstanceInitiation,
+  patchConversation,
+} from "../conversations/conversations.slice";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import type { OverlayId } from "@/features/window-panels/registry/overlay-ids";
 import {
@@ -343,6 +347,7 @@ export const launchAgentExecution = createAsyncThunk<
     surfaceKey,
     organizationId,
     contextAnchor,
+    initiation,
   } = options;
 
   // ── Slot-first identity — resolve BOTH halves of the binding ──────────────
@@ -967,6 +972,34 @@ export const launchAgentExecution = createAsyncThunk<
   // there as the source of truth so a shortcut that sets showPreExecutionGate
   // doesn't get ignored just because the caller didn't re-specify it.
   // =========================================================================
+
+  // ── Provenance attestation ────────────────────────────────────────────────
+  // Stamp the launch's `initiation` onto the conversation record so every send
+  // this conversation makes carries it (assembleRequest reads it). Default
+  // "user": launchAgentExecution is the interactive launch path; programmatic
+  // schedulers / auto-triggers must declare `initiation: "auto"` themselves.
+  dispatch(
+    setInstanceInitiation({ conversationId, initiation: initiation ?? "user" }),
+  );
+
+  // ── Surface attribution ───────────────────────────────────────────────────
+  // Stamp the surface this run LAUNCHED from onto the conversation record, so
+  // `buildToolInjection` can send it as `client.surface` instead of guessing
+  // from the route on every turn.
+  //
+  // Only an OVERLAY surface actually changes value here: its window renders on
+  // top of a mapped route, so `detectActiveSurface()` reports the ROUTE
+  // (`matrx-user/chat` under the Quick Save Note window) and the launch's own
+  // surface had no way to win. For a normal route surface the two agree, so
+  // this stamps the same name the route guess would have produced.
+  //
+  // Deliberately NOT stamped when the launch resolved no surface: a plain chat
+  // send keeps the route-derived behavior untouched, which is what keeps
+  // `matrx-user/chat`'s `surface_defaults.always_include_tools` attached to
+  // chat runs.
+  if (surfaceName) {
+    dispatch(patchConversation({ conversationId, surfaceName }));
+  }
 
   const seededUiState = (getState() as RootState).instanceUIState
     .byConversationId[conversationId];

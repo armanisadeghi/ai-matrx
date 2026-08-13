@@ -235,6 +235,7 @@ export function WarRoomThreadsTable({ isLoading }: { isLoading: boolean }) {
 
   return (
     <MatrxDataTable<ThreadTableRow>
+      urlState={{ id: "war-room-threads" }}
       data={rows}
       columns={columns}
       getRowId={(row) => row.id}

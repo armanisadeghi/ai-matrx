@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import AiModelTable from "./AiModelTable";
 import AiModelTabBar from "./AiModelTabBar";
 import AiModelDetailPanel from "./AiModelDetailPanel";
@@ -23,8 +24,13 @@ import {
   ADMIN_AI_MODELS_SURFACE_NAME,
   createAdminAiModelsScope,
 } from "@/features/surfaces/manifests/admin-ai-models.manifest";
+import { AI_MODEL_DEEP_LINK_PARAM, AI_MODEL_NEW_VALUE } from "../doors";
 
 export default function AiModelsContainer() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const deepLinkedModelId = searchParams.get(AI_MODEL_DEEP_LINK_PARAM);
   const [models, setModels] = useState<AiModel[]>([]);
   const [providers, setProviders] = useState<AiProvider[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -64,8 +70,50 @@ export default function AiModelsContainer() {
   }, []);
 
   useEffect(() => {
-    loadData();
+    const timer = setTimeout(() => void loadData(), 0);
+    return () => clearTimeout(timer);
   }, [loadData]);
+
+  const replaceModelDeepLink = useCallback(
+    (modelId: string | null) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (modelId) params.set(AI_MODEL_DEEP_LINK_PARAM, modelId);
+      else params.delete(AI_MODEL_DEEP_LINK_PARAM);
+      const query = params.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, {
+        scroll: false,
+      });
+    },
+    [pathname, router, searchParams],
+  );
+
+  // The URL is the durable selection source for links, Back/Forward, and
+  // references opened from audit/version surfaces.
+  useEffect(() => {
+    if (isLoading) return;
+    const timer = setTimeout(() => {
+      if (!deepLinkedModelId) {
+        setPanelOpen(false);
+        setSelectedModel(null);
+        setIsNewModel(false);
+        return;
+      }
+      if (deepLinkedModelId === AI_MODEL_NEW_VALUE) {
+        setSelectedModel(null);
+        setIsNewModel(true);
+        setPanelOpen(true);
+        return;
+      }
+      const linkedModel = models.find(
+        (model) => model.id === deepLinkedModelId,
+      );
+      if (!linkedModel) return;
+      setSelectedModel(linkedModel);
+      setIsNewModel(false);
+      setPanelOpen(true);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [deepLinkedModelId, isLoading, models]);
 
   // Count badges: how many models match each tab's filters
   const tabCounts = useMemo(() => {
@@ -85,15 +133,18 @@ export default function AiModelsContainer() {
     setSelectedModel(model);
     setIsNewModel(false);
     setPanelOpen(true);
+    replaceModelDeepLink(model.id);
   };
 
   const openNew = () => {
+    replaceModelDeepLink(AI_MODEL_NEW_VALUE);
     setSelectedModel(null);
     setIsNewModel(true);
     setPanelOpen(true);
   };
 
   const closePanel = () => {
+    replaceModelDeepLink(null);
     setPanelOpen(false);
     setSelectedModel(null);
     setIsNewModel(false);
@@ -111,6 +162,7 @@ export default function AiModelsContainer() {
     });
     setSelectedModel(saved);
     setIsNewModel(false);
+    replaceModelDeepLink(saved.id);
   };
 
   const handleDeleted = (id: string) => {
@@ -230,159 +282,161 @@ export default function AiModelsContainer() {
       getScope={getSurfaceScope}
       isEditable={false}
     >
-    <div className="flex flex-col h-full min-h-0">
-      {/* Tab bar + audit button */}
-      <div className="flex items-center shrink-0 bg-card">
-        <div className="flex-1 min-w-0">
-          <AiModelTabBar
-            tabs={tabStates}
-            activeTabId={activeTabId}
-            counts={tabCounts}
-            onSelectTab={setActiveTab}
-            onCloseTab={closeTab}
-            onRenameTab={renameTab}
-            onAddTab={() => openTab()}
-          />
-        </div>
-        <div className="shrink-0 px-2 border-l flex items-center gap-1">
-          <Button
-            variant={referenceOpen ? "secondary" : "ghost"}
-            size="sm"
-            className="h-7 px-2 text-xs gap-1.5"
-            onClick={() => setReferenceOpen((v) => !v)}
-            title="Open floating provider reference panel"
-          >
-            <BookOpen className="h-3.5 w-3.5" />
-            Provider Ref
-          </Button>
-          {deprecatedCount > 0 && (
+      <div className="flex flex-col h-full min-h-0">
+        {/* Tab bar + audit button */}
+        <div className="flex items-center shrink-0 bg-card">
+          <div className="flex-1 min-w-0">
+            <AiModelTabBar
+              tabs={tabStates}
+              activeTabId={activeTabId}
+              counts={tabCounts}
+              onSelectTab={setActiveTab}
+              onCloseTab={closeTab}
+              onRenameTab={renameTab}
+              onAddTab={() => openTab()}
+            />
+          </div>
+          <div className="shrink-0 px-2 border-l flex items-center gap-1">
             <Button
-              variant={auditOpen ? "secondary" : "ghost"}
+              variant={referenceOpen ? "secondary" : "ghost"}
               size="sm"
               className="h-7 px-2 text-xs gap-1.5"
-              onClick={() => setAuditOpen((v) => !v)}
-              title="View and fix deprecated model references"
+              onClick={() => setReferenceOpen((v) => !v)}
+              title="Open floating provider reference panel"
             >
-              <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
-              Deprecated Audit
-              <Badge
-                variant="outline"
-                className="h-4 px-1 text-[10px] bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-300"
-              >
-                {deprecatedCount}
-              </Badge>
+              <BookOpen className="h-3.5 w-3.5" />
+              Provider Ref
             </Button>
-          )}
-        </div>
-      </div>
-
-      {/* Deprecated audit panel (full-width, replaces table when open) */}
-      {auditOpen ? (
-        <div className="flex-1 min-h-0 overflow-hidden">
-          <DeprecatedModelsAudit
-            allModels={models}
-            onClose={() => setAuditOpen(false)}
-            onModelsChanged={loadData}
-          />
-        </div>
-      ) : (
-        /* Main content: table + optional detail panel (drag to resize) */
-        <div className="flex flex-1 min-h-0 overflow-hidden relative">
-          {!panelOpen ? (
-            <div className="w-full min-w-0 flex flex-col overflow-hidden">
-              <AiModelTable
-                models={models}
-                providers={providers}
-                isLoading={isLoading}
-                selectedId={selectedModel?.id ?? null}
-                tabState={activeTab}
-                onUpdateTabState={(patch) => updateTabState(activeTabId, patch)}
-                onSelect={openModel}
-                onEdit={openModel}
-                onDelete={(model) => handleDeleted(model.id)}
-                onDuplicate={handleDuplicate}
-                onCreate={openNew}
-                onRefresh={loadData}
-              />
-            </div>
-          ) : (
-            <ResizablePanelGroup orientation="horizontal">
-              {!panelMaximized && (
-                <>
-                  {/* v4: bare numbers are PIXELS — sizes must be "%" strings. */}
-                  <ResizablePanel
-                    defaultSize="50%"
-                    minSize="25%"
-                    style={{ overflow: "hidden", height: "100%" }}
-                  >
-                    <div className="h-full min-w-0 flex flex-col overflow-hidden">
-                      <AiModelTable
-                        models={models}
-                        providers={providers}
-                        isLoading={isLoading}
-                        selectedId={selectedModel?.id ?? null}
-                        tabState={activeTab}
-                        onUpdateTabState={(patch) =>
-                          updateTabState(activeTabId, patch)
-                        }
-                        onSelect={openModel}
-                        onEdit={openModel}
-                        onDelete={(model) => handleDeleted(model.id)}
-                        onDuplicate={handleDuplicate}
-                        onCreate={openNew}
-                        onRefresh={loadData}
-                      />
-                    </div>
-                  </ResizablePanel>
-                  <ResizableHandle />
-                </>
-              )}
-              <ResizablePanel
-                defaultSize="50%"
-                minSize="30%"
-                style={{ overflow: "hidden", height: "100%" }}
+            {deprecatedCount > 0 && (
+              <Button
+                variant={auditOpen ? "secondary" : "ghost"}
+                size="sm"
+                className="h-7 px-2 text-xs gap-1.5"
+                onClick={() => setAuditOpen((v) => !v)}
+                title="View and fix deprecated model references"
               >
-                <div className="h-full border-l-2 border-l-primary/20 flex flex-col overflow-hidden relative">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0 absolute top-2 right-10 z-10"
-                    onClick={() => setPanelMaximized((v) => !v)}
-                    title={
-                      panelMaximized
-                        ? "Restore split view"
-                        : "Maximize detail panel"
-                    }
-                  >
-                    {panelMaximized ? (
-                      <Minimize2 className="h-3.5 w-3.5" />
-                    ) : (
-                      <Maximize2 className="h-3.5 w-3.5" />
-                    )}
-                  </Button>
-                  <AiModelDetailPanel
-                    model={selectedModel}
-                    isNew={isNewModel}
-                    providers={providers}
-                    allModels={models}
-                    onClose={closePanel}
-                    onSaved={handleSaved}
-                    onDeleted={handleDeleted}
-                  />
-                </div>
-              </ResizablePanel>
-            </ResizablePanelGroup>
-          )}
+                <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                Deprecated Audit
+                <Badge
+                  variant="outline"
+                  className="h-4 px-1 text-[10px] bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-300"
+                >
+                  {deprecatedCount}
+                </Badge>
+              </Button>
+            )}
+          </div>
         </div>
-      )}
 
-      {referenceOpen && providers.length > 0 && (
-        <ProviderReferenceModal
-          providers={providers}
-          onClose={() => setReferenceOpen(false)}
-        />
-      )}
-    </div>
+        {/* Deprecated audit panel (full-width, replaces table when open) */}
+        {auditOpen ? (
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <DeprecatedModelsAudit
+              allModels={models}
+              onClose={() => setAuditOpen(false)}
+              onModelsChanged={loadData}
+            />
+          </div>
+        ) : (
+          /* Main content: table + optional detail panel (drag to resize) */
+          <div className="flex flex-1 min-h-0 overflow-hidden relative">
+            {!panelOpen ? (
+              <div className="w-full min-w-0 flex flex-col overflow-hidden">
+                <AiModelTable
+                  models={models}
+                  providers={providers}
+                  isLoading={isLoading}
+                  selectedId={selectedModel?.id ?? null}
+                  tabState={activeTab}
+                  onUpdateTabState={(patch) =>
+                    updateTabState(activeTabId, patch)
+                  }
+                  onSelect={openModel}
+                  onEdit={openModel}
+                  onDelete={(model) => handleDeleted(model.id)}
+                  onDuplicate={handleDuplicate}
+                  onCreate={openNew}
+                  onRefresh={loadData}
+                />
+              </div>
+            ) : (
+              <ResizablePanelGroup orientation="horizontal">
+                {!panelMaximized && (
+                  <>
+                    {/* v4: bare numbers are PIXELS — sizes must be "%" strings. */}
+                    <ResizablePanel
+                      defaultSize="50%"
+                      minSize="25%"
+                      style={{ overflow: "hidden", height: "100%" }}
+                    >
+                      <div className="h-full min-w-0 flex flex-col overflow-hidden">
+                        <AiModelTable
+                          models={models}
+                          providers={providers}
+                          isLoading={isLoading}
+                          selectedId={selectedModel?.id ?? null}
+                          tabState={activeTab}
+                          onUpdateTabState={(patch) =>
+                            updateTabState(activeTabId, patch)
+                          }
+                          onSelect={openModel}
+                          onEdit={openModel}
+                          onDelete={(model) => handleDeleted(model.id)}
+                          onDuplicate={handleDuplicate}
+                          onCreate={openNew}
+                          onRefresh={loadData}
+                        />
+                      </div>
+                    </ResizablePanel>
+                    <ResizableHandle />
+                  </>
+                )}
+                <ResizablePanel
+                  defaultSize="50%"
+                  minSize="30%"
+                  style={{ overflow: "hidden", height: "100%" }}
+                >
+                  <div className="h-full border-l-2 border-l-primary/20 flex flex-col overflow-hidden relative">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 absolute top-2 right-10 z-10"
+                      onClick={() => setPanelMaximized((v) => !v)}
+                      title={
+                        panelMaximized
+                          ? "Restore split view"
+                          : "Maximize detail panel"
+                      }
+                    >
+                      {panelMaximized ? (
+                        <Minimize2 className="h-3.5 w-3.5" />
+                      ) : (
+                        <Maximize2 className="h-3.5 w-3.5" />
+                      )}
+                    </Button>
+                    <AiModelDetailPanel
+                      model={selectedModel}
+                      isNew={isNewModel}
+                      providers={providers}
+                      allModels={models}
+                      onClose={closePanel}
+                      onSaved={handleSaved}
+                      onDeleted={handleDeleted}
+                    />
+                  </div>
+                </ResizablePanel>
+              </ResizablePanelGroup>
+            )}
+          </div>
+        )}
+
+        {referenceOpen && providers.length > 0 && (
+          <ProviderReferenceModal
+            providers={providers}
+            onClose={() => setReferenceOpen(false)}
+          />
+        )}
+      </div>
     </SurfaceRuntimeProvider>
   );
 }

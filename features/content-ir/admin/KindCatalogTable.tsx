@@ -47,7 +47,9 @@ function CountDoor({
   title: string;
 }) {
   if (!href) {
-    return <span className="text-[10px] text-muted-foreground">{children}</span>;
+    return (
+      <span className="text-[10px] text-muted-foreground">{children}</span>
+    );
   }
   return (
     <Link
@@ -116,7 +118,9 @@ export default function KindCatalogTable({ rows }: { rows: KindBoardRow[] }) {
   }, [rows, activeFacet, issueFacet]);
 
   const familyOptions = useMemo(() => {
-    const families = [...new Set(rows.map((r) => r.family).filter(Boolean))] as string[];
+    const families = [
+      ...new Set(rows.map((r) => r.family).filter(Boolean)),
+    ] as string[];
     families.sort();
     return families.map((f) => ({ value: f, label: f }));
   }, [rows]);
@@ -311,6 +315,7 @@ export default function KindCatalogTable({ rows }: { rows: KindBoardRow[] }) {
 
   return (
     <MatrxDataTable<KindBoardRow>
+      urlState={{ id: "content-kinds" }}
       data={filteredRows}
       columns={columns}
       getRowId={(row) => row.kind}

@@ -28,7 +28,7 @@ This is what `addEmbeddedShortcut` was always meant to be. It's also what [`feat
 
 ### Flavor B — **Parent-app-with-children-apps** (Phase 10, applets capture)
 
-A different shape entirely: a container `agent_app` row that owns an ordered list of *other* `agent_app` rows as children, with one shared `conversationId` flowing across siblings as the user navigates between them. Designed in [`features/agents/migration/phases/phase-10-applets-capture.md`](../agents/migration/phases/phase-10-applets-capture.md) as the agent-native replacement for legacy `features/applet/`'s `CustomAppConfig` → `CustomAppletConfig` topology. Linkage table `agent_app_children`. Decision recorded in [`DECISIONS.md` 2026-04-21](../agents/migration/DECISIONS.md).
+A different shape entirely: a container `agent_app` row that owns an ordered list of *other* `agent_app` rows as children, with one shared `conversationId` flowing across siblings as the user navigates between them. Designed in [`features/agents/migration/phases/phase-10-applets-capture.md`](../agents/migration/phases/phase-10-applets-capture.md) as the agent-native replacement for legacy `features/applet/`'s `CustomAppConfig` → `CustomAppletConfig` topology (that feature was **DELETED 2026-08-13** — the design reference stands, the code does not). Linkage table `agent_app_children`. Decision recorded in [`DECISIONS.md` 2026-04-21](../agents/migration/DECISIONS.md).
 
 Different table, different runtime contract, different UI.
 

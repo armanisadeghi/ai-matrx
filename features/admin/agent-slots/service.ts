@@ -13,15 +13,16 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { invalidateClientSlotCache } from "@/features/agents/slots/service";
+import {
+  versionSnapshotRowToAgentDefinition,
+  type AgentVersionSnapshot,
+} from "@/features/agents/redux/agent-definition/converters";
+import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 import type { Database } from "@/types/database.types";
 import { isJsonObject, type JsonObject } from "@/types/json";
 import { callApi } from "@/lib/api/call-api";
 import type { AppDispatch } from "@/lib/redux/store";
 import type { components } from "@/types/python-generated/api-types";
-import type {
-  AdminOrganizationRow,
-  AdminUserRow,
-} from "@/features/admin/users/types";
 
 /** Slot/exemplar rows are platform rows owned by the system org. */
 const SYSTEM_ORGANIZATION_ID = "39c38960-d30c-4840-b0c1-c9960de95582";
@@ -186,6 +187,30 @@ export async function fetchAgentVersions(
     versionNumber: row.version_number,
     name: row.name,
   }));
+}
+
+/**
+ * Full saved-version snapshot as an `AgentDefinition` — for the drawer's
+ * inline "what changed between the pinned version and latest" comparison.
+ * Same RPC + converter the version-history pages use; returns null when the
+ * requested version number has no saved snapshot.
+ */
+export async function fetchVersionSnapshotDefinition(
+  agentId: string,
+  versionNumber: number,
+): Promise<AgentDefinition | null> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("agx_get_version_snapshot", {
+    p_agent_id: agentId,
+    p_version_number: versionNumber,
+  });
+  if (error) throw error;
+  const raw = Array.isArray(data) ? data[0] : data;
+  if (!raw) return null;
+  return versionSnapshotRowToAgentDefinition(
+    agentId,
+    raw as unknown as AgentVersionSnapshot,
+  );
 }
 
 // ── Out-of-scope pinned-agent identity (admin lookup) ────────────────────────
@@ -359,7 +384,6 @@ export type SlotTestBatchRequest =
 export type SlotTestBatchResponse =
   components["schemas"]["SlotTestBatchResponse"];
 export type SlotTestResponse = components["schemas"]["SlotTestResult"];
-export type SlotTestPrincipal = components["schemas"]["SlotTestPrincipal"];
 
 /** Run the owner bench in one server batch. `callApi` supplies auth, selected
  * backend, diagnostics, and the generated request contract. */
@@ -567,63 +591,6 @@ export async function promoteSlotTestResult(
     );
   }
   return data;
-}
-
-export interface SlotBenchPrincipalDirectory {
-  users: AdminUserRow[];
-  organizations: AdminOrganizationRow[];
-}
-
-/** Reuse the admin's canonical account/org directories; these Next-only
- * secret-token reads are the intentional exception to direct Supabase data. */
-export async function fetchSlotBenchPrincipalDirectory(): Promise<SlotBenchPrincipalDirectory> {
-  const [usersResponse, organizationsResponse] = await Promise.all([
-    fetch("/api/admin/users", { cache: "no-store" }),
-    fetch("/api/admin/users/organizations", { cache: "no-store" }),
-  ]);
-  const usersPayload: unknown = await usersResponse.json();
-  const organizationsPayload: unknown = await organizationsResponse.json();
-  if (!usersResponse.ok) throw new Error("Failed to load the user directory.");
-  if (!organizationsResponse.ok) {
-    throw new Error("Failed to load the organization directory.");
-  }
-  if (
-    !isJsonObject(usersPayload) ||
-    !Array.isArray(usersPayload.users) ||
-    !isJsonObject(organizationsPayload) ||
-    !isJsonObject(organizationsPayload.directory) ||
-    !Array.isArray(organizationsPayload.directory.organizations)
-  ) {
-    throw new Error("The principal directory returned an invalid response.");
-  }
-  const users: AdminUserRow[] = [];
-  for (const user of usersPayload.users) {
-    if (isAdminUserRow(user)) users.push(user);
-  }
-  const organizations: AdminOrganizationRow[] = [];
-  for (const organization of organizationsPayload.directory.organizations) {
-    if (isAdminOrganizationRow(organization)) {
-      organizations.push(organization);
-    }
-  }
-  return { users, organizations };
-}
-
-function isAdminUserRow(value: unknown): value is AdminUserRow {
-  return (
-    isJsonObject(value) &&
-    typeof value.id === "string" &&
-    (typeof value.email === "string" || value.email === null) &&
-    Array.isArray(value.organizations)
-  );
-}
-
-function isAdminOrganizationRow(value: unknown): value is AdminOrganizationRow {
-  return (
-    isJsonObject(value) &&
-    typeof value.id === "string" &&
-    typeof value.name === "string"
-  );
 }
 
 /** Resolve the slot's default agent even when the pin stores only a version. */

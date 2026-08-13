@@ -25,9 +25,16 @@ export type CanvasType =
   | "image"
   | "other";
 
+/**
+ * A published canvas snapshot (`canvas.shared_canvas_items`).
+ *
+ * Sharing runs through the canonical `platform.share_links` lane (2026-08-12
+ * convergence) — this row no longer carries a `share_token`. Fields marked
+ * optional exist on the table but are NOT in the shareable registry's
+ * `public_columns` projection, so a token-resolved canvas omits them.
+ */
 export interface SharedCanvasItem {
   id: string;
-  share_token: string;
 
   // Content
   title: string;
@@ -36,15 +43,18 @@ export interface SharedCanvasItem {
   canvas_data: any; // Canvas-specific data
   thumbnail_url: string | null;
 
-  // Creator
-  created_by: string | null;
+  // Creator (created_by is projection-excluded)
+  created_by?: string | null;
   creator_username: string | null;
   creator_display_name: string | null;
 
-  // Versioning
-  original_id: string | null;
-  forked_from: string | null;
-  version_number: number;
+  // Tenancy (needed for anonymous view tracking)
+  organization_id?: string | null;
+
+  // Versioning (row-only except fork_count)
+  original_id?: string | null;
+  forked_from?: string | null;
+  version_number?: number;
   fork_count: number;
 
   // Social Stats
@@ -55,10 +65,10 @@ export interface SharedCanvasItem {
   play_count: number;
   completion_rate: number | null;
 
-  // Gamification
+  // Gamification (high_score_user is projection-excluded)
   has_scoring: boolean;
   high_score: number | null;
-  high_score_user: string | null;
+  high_score_user?: string | null;
   average_score: number | null;
   total_attempts: number;
 
@@ -72,12 +82,12 @@ export interface SharedCanvasItem {
   tags: string[];
   categories: string[];
 
-  // Metadata
+  // Metadata (last_played_at / trending_score are projection-excluded)
   created_at: string;
   updated_at: string;
   published_at: string | null;
-  last_played_at: string | null;
-  trending_score: number;
+  last_played_at?: string | null;
+  trending_score?: number;
 }
 
 export interface CanvasLike {
@@ -235,6 +245,7 @@ export interface CreateShareRequest {
 export interface CreateShareResponse {
   canvas: SharedCanvasItem;
   share_url: string;
+  /** Canonical `platform.share_links` token minted via `create_share_link`. */
   share_token: string;
 }
 

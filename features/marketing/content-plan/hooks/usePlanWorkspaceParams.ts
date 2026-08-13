@@ -22,7 +22,12 @@ export type PlanView =
   | "setup"
   | "ai-runs";
 
-const VIEWS: readonly PlanView[] = [
+/**
+ * THE view vocabulary. Exported so runtime validators — the surface
+ * client-tool handlers in ContentPlanWorkbench — check an agent-supplied view
+ * against this list instead of re-typing the literals.
+ */
+export const PLAN_VIEWS: readonly PlanView[] = [
   "tree",
   "table",
   "map",
@@ -38,7 +43,7 @@ export function usePlanWorkspaceParams() {
 
   const siteId = params.siteId ?? null;
   const viewParam = searchParams.get("view");
-  const view: PlanView = VIEWS.includes(viewParam as PlanView)
+  const view: PlanView = PLAN_VIEWS.includes(viewParam as PlanView)
     ? (viewParam as PlanView)
     : "tree";
 

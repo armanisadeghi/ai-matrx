@@ -9,6 +9,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Archive,
   ArrowDownRight,
@@ -37,6 +38,9 @@ import {
   restoreKeywords,
 } from "../data/queries";
 import KeywordResearchLauncher from "./KeywordResearchLauncher";
+import { useSavedKeywordResearch } from "../useSavedKeywordResearch";
+import { keywordResearchPhrases } from "../data/artifact";
+import SavedResearchLibrary from "./SavedResearchLibrary";
 import { parseLibrarySearchWrite } from "../keyword-research-write";
 import {
   KEYWORD_CLUSTER_WRITE_MODES,
@@ -237,6 +241,10 @@ function KeywordDetail({
 }
 
 export default function KeywordResearchWorkbench() {
+  // `?keyword=` pre-fills the launcher — the return door from a saved report
+  // ("Open workbench"). Read once; the launcher owns the input from then on.
+  const searchParams = useSearchParams();
+  const initialKeyword = searchParams.get("keyword") ?? undefined;
   const {
     clusterPhrases,
     clusterPrimaryKeyword,
@@ -276,6 +284,45 @@ export default function KeywordResearchWorkbench() {
     clusterPhrasesRef.current = clusterPhrases;
     clusterPrimaryKeywordRef.current = clusterPrimaryKeyword;
   }, [clusterPhrases, clusterPrimaryKeyword]);
+  /**
+   * DEEP LINK (`?keyword=`) — never show a page full of unrelated keywords.
+   * Arriving from a shared report with a phrase in hand, the explorer below
+   * would otherwise still list the org's whole library, which reads as "here
+   * is the research" when it is nothing of the sort. So:
+   *   • saved research exists → scope the explorer to exactly that cluster;
+   *   • it does not → filter the library to the phrase and say plainly that
+   *     research has not been run for it (the pre-filled Research button
+   *     above is the action). A run is paid, so we never fire it for them.
+   * One shot: the moment the user touches the cluster or the search box, this
+   * stops interfering.
+   */
+  const deepLinkSaved = useSavedKeywordResearch(initialKeyword ?? "");
+  const deepLinkAppliedRef = useRef(false);
+  useEffect(() => {
+    if (!initialKeyword || deepLinkAppliedRef.current) return;
+    if (deepLinkSaved.isLoading) return;
+    deepLinkAppliedRef.current = true;
+    const artifact = deepLinkSaved.data?.artifact;
+    if (artifact) {
+      // setCluster normalizes the phrases itself.
+      setCluster(artifact.primary_keyword, keywordResearchPhrases(artifact));
+    } else {
+      setSearch(initialKeyword);
+    }
+  }, [
+    initialKeyword,
+    deepLinkSaved.isLoading,
+    deepLinkSaved.data,
+    setCluster,
+    setSearch,
+  ]);
+  const deepLinkNeedsResearch =
+    Boolean(initialKeyword) &&
+    !deepLinkSaved.isLoading &&
+    !deepLinkSaved.data &&
+    !clusterPhrases &&
+    run.status === "idle";
+
   // Provenance: keyword ids with at least one live ai_research edge —
   // research-discovered vs hand-added. Null until the batched read lands.
   const [researchIds, setResearchIds] = useState<ReadonlySet<string> | null>(
@@ -633,6 +680,13 @@ export default function KeywordResearchWorkbench() {
           <KeywordResearchLauncher
             run={run}
             runResearch={runResearch}
+            // The org's saved artifacts — each one a report permalink and a
+            // share point (the workbench's page-level share affordance). It
+            // rides the launcher's own row; a row of its own was pure waste.
+            actions={<SavedResearchLibrary />}
+            // Deep link from a report ("Open workbench") pre-fills the input;
+            // it never auto-runs — a run spends a paid provider request.
+            initialKeyword={initialKeyword}
             // This page mounts the surface, so the launcher services its
             // `research_input_keyword` target here (the window mount does not).
             writeTargetSurfaceName="matrx-user/keyword-research"
@@ -644,6 +698,18 @@ export default function KeywordResearchWorkbench() {
               stagedKeywordRef.current = keyword;
             }}
           />
+          {deepLinkNeedsResearch ? (
+            <p className="mt-2 text-xs text-muted-foreground">
+              No saved research for{" "}
+              <span className="font-medium text-foreground">
+                “{initialKeyword}”
+              </span>{" "}
+              yet — the list below is filtered to matching library keywords, not
+              its research. Press{" "}
+              <span className="font-medium text-foreground">Research</span> to
+              map its parents, children, and related terms.
+            </p>
+          ) : null}
         </div>
 
         <div className="min-h-0 flex-1 overflow-auto p-3">
@@ -651,6 +717,7 @@ export default function KeywordResearchWorkbench() {
             <p className="px-4 py-6 text-sm text-destructive">{loadError}</p>
           ) : (
             <MatrxDataTable
+              urlState={{ id: "keyword-research", selection: true }}
               data={sorted}
               columns={columns}
               getRowId={(row) => row.id}

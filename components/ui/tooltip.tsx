@@ -4,30 +4,21 @@ import * as React from "react";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 
 import { cn } from "@/styles/themes/utils";
-import { useIsMounted } from "@/hooks/use-is-mounted";
 import { useNestedPortalContainer } from "@/hooks/use-nested-portal-container";
 
 const TooltipProvider = TooltipPrimitive.Provider;
 
 /**
- * Hydration-safe Tooltip wrapper.
- * Radix UI generates dynamic IDs for aria-controls that can differ between
- * SSR and client, causing hydration mismatches. This wrapper defers rendering
- * until after hydration to prevent these errors.
+ * THE ROOT RENDERS UNCONDITIONALLY — no mount gate. This wrapper used to defer
+ * rendering until after hydration ("Radix generates dynamic aria-controls ids
+ * that differ between SSR and client"), and that justification was false:
+ * Radix ids come from React's SSR-stable `useId` (verified against
+ * @radix-ui/react-tooltip 1.2.10 / react-id 1.1.2). The gate was actively
+ * harmful — the Trigger wraps ALWAYS-VISIBLE content, so `return null` deleted
+ * the wrapped subtree from SSR and the first client paint. See
+ * components/ui/context-menu/context-menu.tsx (the precedent fix, D144).
  */
-const Tooltip = React.forwardRef<
-  React.ComponentRef<typeof TooltipPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Root>
->(({ children, ...props }, ref) => {
-  const isMounted = useIsMounted();
-
-  if (!isMounted) {
-    return null;
-  }
-
-  return <TooltipPrimitive.Root {...props}>{children}</TooltipPrimitive.Root>;
-});
-Tooltip.displayName = "Tooltip";
+const Tooltip = TooltipPrimitive.Root;
 
 const TooltipTrigger = TooltipPrimitive.Trigger;
 

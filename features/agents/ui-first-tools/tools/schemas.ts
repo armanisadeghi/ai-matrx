@@ -13,8 +13,6 @@
  *   - requestTakeoverArgsSchema  — reason + expected_action? + instructions?
  *   (tasks is server-executed in aidream — no client args schema here)
  *   - userTodosArgsSchema        — six actions on cx_user_todo
- *   - scratchpadArgsSchema       — get | set | list | delete on cx_agent_memory (ephemeral)
- *   - storageArgsSchema          — get | set | list on agent_user_kv
  *
  * Plus the response envelopes the dispatcher emits back to the server.
  */
@@ -265,32 +263,6 @@ export const userTodosArgsSchema = z.object({
 });
 
 export type UserTodosArgs = z.infer<typeof userTodosArgsSchema>;
-
-// ─────────────────────────────────────────────────────────────────────────────
-// scratchpad / storage — KV stores
-//   scratchpad = ephemeral, single-session (cx_agent_memory). Distinct from the
-//   persistent semantic `memory` tool (server-side) — never the same thing.
-//   storage   = persistent per-user KV (agent_user_kv).
-// ─────────────────────────────────────────────────────────────────────────────
-
-export const scratchpadArgsSchema = z.object({
-  action: z.enum(["get", "set", "list", "delete"]),
-  key: z.string().min(1).max(120).optional(),
-  // DB declares `value` as a string (tool.definition: scratchpad.value.type='string') and
-  // the model is told to stringify objects before passing — so the contract is a
-  // plain string, matching matrx-extend's `ScratchpadArgs.value` (z.string()).
-  value: z.string().optional(),
-});
-export type ScratchpadArgs = z.infer<typeof scratchpadArgsSchema>;
-
-export const storageArgsSchema = z.object({
-  action: z.enum(["get", "set", "list", "delete"]),
-  key: z.string().min(1).max(120).optional(),
-  // `storage.value` is intentionally untyped in tool.definition ({} — any JSON-serializable
-  // value), unlike scratchpad above; keep z.unknown() to match the DB exactly.
-  value: z.unknown().optional(),
-});
-export type StorageArgs = z.infer<typeof storageArgsSchema>;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Response envelopes

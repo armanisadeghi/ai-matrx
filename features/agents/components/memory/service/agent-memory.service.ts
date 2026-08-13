@@ -1,7 +1,7 @@
 /**
  * chat.agent_memory — service layer for the user-facing Memory manager.
  *
- * Live schema: id, user_id, organization_id, scope, scope_id, memory_type,
+ * Live schema: id, organization_id, scope, scope_id, memory_type,
  * key, content, importance, metadata, access_count, last_accessed_at,
  * expires_at, version, created_at, created_by, updated_at, updated_by,
  * deleted_at. `organization_id` / `created_by` / `updated_by` / `updated_at`
@@ -65,7 +65,7 @@ export async function createAgentMemory(
         : `${baseKey}_${Math.random().toString(36).slice(2, 6)}`;
     const { data, error } = await memoryTable()
       .insert({
-        user_id: userId,
+        created_by: userId,
         organization_id: organizationId,
         scope: input.scope,
         memory_type: DEFAULT_MEMORY_TYPE,

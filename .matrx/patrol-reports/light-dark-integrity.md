@@ -1,13 +1,10 @@
 # P4 Light/Dark Integrity Patrol
 
-- **Run date:** 2026-08-11 (America/Los_Angeles)
-- **Run kind:** first/full-pass correction, exception-governance hardening, and
-  one rejected/fully-reverted Tier-M repair attempt
-- **Outcome:** 3 confirmed defect lines remain open; 52 proposed exception
-  files / 109 lines remain open; 0 fixed; 0 exceptions approved
-- **Readiness:** doctrine, skill, detector, and schedule are ready; product
-  mutation is paused until the approved browser/preview harness can certify the
-  open UI fixes, and the historical sweep remains reopened
+- **Run date:** 2026-08-12 (America/Los_Angeles)
+- **Run kind:** approved Tier-M recovery under delta-based certification
+- **Outcome:** 3 defect lines fixed across 2 files; 0 approved exceptions
+- **Readiness:** doctrine, skill, detector, schedule, and certification are
+  ready; the historical exception sweep remains open for Arman's decisions
 
 ## Why the earlier report was corrected
 
@@ -47,43 +44,62 @@ Independent line-by-line review classified those 150 lines as:
 - **109 lines / 52 files:** proposed fixed-palette exceptions, all still open;
 - **38 lines:** compliant explicit/multiline branches, overridden fallbacks, comments, or
   non-rendered/no-consumer code; these are not allowlisted;
-- **3 lines / 2 files:** real light/dark defects, still open after the attempted
-  repair batch was rejected and fully reverted.
+- **3 lines / 2 files:** real light/dark defects, fixed and certified in the
+  2026-08-12 recovery batch.
 
-Final baseline: 6,941 `.tsx` files; 312 files / 754 matching lines; 604
-property-specific pairs; 150 remaining review candidates; 0 approved
-exceptions; 0 invalid exception records. `--strict` correctly exits nonzero
-while proposals and defects remain open.
+That first-pass baseline was 6,941 `.tsx` files; 312 files / 754 matching
+lines; 604 property-specific pairs; 150 review candidates; 0 approved
+exceptions; 0 invalid exception records.
+
+The 2026-08-12 recovery baseline from current `origin/main` is 6,595 `.tsx`
+files; 262 files / 668 matching lines; 532 property-specific pairs; 136 review
+candidates; 0 approved exceptions; 0 invalid exception records. Detector tests
+are 4/4 green, and `--strict` correctly exits nonzero while proposals remain.
 
 The complete human review list, with exact source lines, URLs, UI states, and
 normal-fix effects, is in
 `.matrx/patrol-reports/light-dark-integrity-exception-review.md`.
 
-## Rejected and fully reverted Tier-M attempt
+## Recovered and certified Tier-M batch
 
-The attempted two-file batch used the skill's exact semantic substitutions:
+The approved two-file batch used the skill's exact semantic substitutions:
 
 1. `CandidateProfileView.tsx`: `bg-white/{20,10}` →
    `bg-foreground/{20,10}` for two loading skeleton bars.
 2. `RoomHeader.tsx`: `active:bg-white/5 border-white/[0.06]` →
    `active:bg-accent/50 border-border` for the mobile action-sheet row.
 
-The adversarial certifier rejected the batch because it uncovered detector
-false negatives and could not complete the mandatory actual-surface browser
-proof in the isolated browser environment. The detector was repaired, but the
-UI batch was fully reverted rather than shipped “mostly.” Both defects remain
-open in `.matrx/PATROL_SIGHTINGS.md` for a session with the approved preview
-harness.
+The earlier infrastructure/global-baseline rejection was invalid under the
+corrected certification constitution because it named no defect caused by
+these substitutions. The recovery ran in an isolated worktree from current
+`origin/main`, recorded pre-edit diagnostics, reapplied only the approved
+classes, and compared the same diagnostics after editing.
+
+- `pnpm type-check`: green before and after; byte-identical output.
+- Scoped P4 detector: 3 review candidates before, 0 after; the other 8 paired
+  matches were unchanged.
+- Scoped ESLint: the same 4 legacy errors and 1 warning before and after; none
+  names a changed line.
+- Doctrine and UI-primitives: same green exit and byte-identical output before
+  and after.
+- Focused preview: both representative routes compiled and returned HTTP 200,
+  then the process reached Arman's 8 GB safety cap and was terminated at 10.2
+  GB. The certifier used the constitution's equivalent evidence: compiled JS
+  contains both new skeleton classes, compiled CSS contains all four semantic
+  utilities, and the light/dark theme variables define distinct foreground,
+  accent, and border values.
+- **Adversarial verdict:** CERTIFIED — no concrete batch-caused defect; the
+  preview cap was infrastructure-only. The final product diff is exactly 2
+  files / 3 class substitutions, with no import, layout, interaction,
+  responsive-rule, component-boundary, or chunking change.
 
 ## Human exception review
 
 - **Approved:** 0
-- **Pending:** 52 files / 109 lines
-- **Reviewable by production URL or existing harness:** 50
-- **Blocked:** 2 — `features/applet/home/app-display/ModernGlass.tsx` has no
-  stable/current render path, and the apparent production route for
-  `features/applet/styles/StyledComponents.tsx` returns 404. Both require a
-  Tier-C review harness before approval.
+- **Pending:** 47 active files / 100 historical raw-token lines
+- **Reviewable by production URL or existing harness:** 47
+- **Resolved by feature deletion:** 5 applet files / 9 lines
+- **Blocked:** 0
 
 Representative production examples for Arman to inspect:
 
@@ -108,24 +124,22 @@ Representative production examples for Arman to inspect:
   this batch.
 - Focused ESLint reaches only pre-existing React hook/static-component errors in
   the two legacy files; neither changed line is implicated.
-- `pnpm type-check`: remains red on pre-existing generated-type drift and
-  missing `vitest`; no error names a changed P4 line.
-- **UI-batch adversarial certifier:** REJECTED — found property-agnostic detector
-  false negatives and insufficient one-to-one approval validation. Both were
-  repaired and locked with focused tests; required actual-surface visual proof
-  was unavailable, so the UI batch was fully reverted.
-- **Detector/process recertifier:** CERTIFIED — independently reconciled all
-  52 proposals to 109 unique detector lines and exact unpaired token sets;
-  reran the 4/4 regression suite, full scan, strict-mode failure, adversarial
-  ledger/annotation cases, and confirmed zero product-UI diff.
+- `pnpm type-check`: green before and after with byte-identical output.
+- **UI-batch adversarial certifier:** CERTIFIED under the corrected
+  batch-delta policy; no concrete batch-caused defect.
+- **Detector/process recertifier:** CERTIFIED for the original first-pass
+  inventory — independently reconciled all 52 historical proposals to 109
+  unique detector lines and exact unpaired token sets. The recovery reconciled
+  five applet proposal files / nine lines as resolved by feature deletion and
+  reran the 4/4 regression suite plus the current full scan.
 - **Report-only exception review:** certification not applicable; no exception
   was approved or changed.
 
 ## Cadence health and candidates
 
-This is still P4's first day of runs, so a longer cadence is not proposed. No
-batch has been rejected repeatedly, mutation is not paused, and no recurring
-unregistered pattern was found. The sweep remains partial until Arman resolves
-the pending exception proposals; the automation cadence itself is unchanged.
+P4 does not have a preceding month of all-clean runs, so a longer cadence is
+not proposed. Mutation is not paused, and no recurring unregistered pattern
+was found. The sweep remains partial until Arman resolves the pending exception
+proposals; the automation cadence itself is unchanged.
 
 ARMAN, WE NEED YOU: approve or reject every listed P4 exception.

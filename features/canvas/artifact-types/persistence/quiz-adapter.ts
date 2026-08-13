@@ -78,7 +78,7 @@ async function findSessionByArtifactId(
     .from("quiz_sessions")
     .select("id, state, is_completed, completed_at")
     .is("deleted_at", null)
-    .eq("user_id", userId)
+    .eq("created_by", userId)
     .contains("quiz_metadata", { artifact_id: artifactId })
     .order("created_at", { ascending: false })
     .limit(1)
@@ -187,7 +187,7 @@ export const QUIZ_ADAPTER: ArtifactPersistenceAdapter<QuizArtifactState> = {
             ...(completedAt ? { completed_at: completedAt } : {}),
           })
           .eq("id", existingSessionId)
-          .eq("user_id", userId);
+          .eq("created_by", userId);
 
         if (error) {
           console.error("[QUIZ_ADAPTER.saveState] update error:", error);
@@ -196,7 +196,7 @@ export const QUIZ_ADAPTER: ArtifactPersistenceAdapter<QuizArtifactState> = {
       } else {
         // INSERT a new session. Embed artifactId in quiz_metadata for future lookup.
         const { error } = await supabase.schema("education").from("quiz_sessions").insert({
-          user_id: userId,
+          created_by: userId,
           organization_id: await ensureOrgId(undefined),
           state: quizState as unknown as import("@/types/database.types").Json,
           is_completed: isCompleted,

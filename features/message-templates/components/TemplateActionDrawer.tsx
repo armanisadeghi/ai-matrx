@@ -1,6 +1,7 @@
 "use client";
 
 import { useIsMobile } from "@/hooks/use-mobile";
+import { isPubliclyVisible } from "@/lib/visibility/labels";
 import { MessageTemplateDB } from "@/features/message-templates/types/message-templates-db";
 import {
     Dialog,
@@ -65,7 +66,7 @@ function TemplateActionContent({
                     <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-md border ${ROLE_COLORS[template.role ?? "user"] ?? ROLE_COLORS.user}`}>
                         {template.role}
                     </span>
-                    {template.is_public ? (
+                    {isPubliclyVisible(template.visibility) ? (
                         <span className="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
                             <Globe className="w-3 h-3" />
                             Public

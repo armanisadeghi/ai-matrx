@@ -52,8 +52,9 @@ export interface ShareableResourceEntry {
 
   /**
    * Column holding the public-visibility boolean, when the table has one.
-   * Null for canonical tables (visibility is the `platform.visibility` enum,
-   * driven via make_resource_public/private — never a boolean here).
+   * Null means only “no legacy boolean is declared”; canonical enum tables and
+   * types with no public-state column both use null. Call
+   * `getShareCapabilities()` to resolve the verified physical state column.
    */
   isPublicColumn: string | null;
 
@@ -109,16 +110,6 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     urlPathTemplate: "/agents/card/{id}",
     rlsUsesHasPermission: true,
   },
-  analysis_recipes: {
-    resourceType: "analysis_recipes",
-    tableName: "analysis_recipes",
-    idColumn: "id",
-    ownerColumn: "owner_user_id",
-    isPublicColumn: null,
-    displayLabel: "Analysis Recipe",
-    urlPathTemplate: "/settings/analysis/recipes/{id}",
-    rlsUsesHasPermission: false,
-  },
   app: {
     resourceType: "app",
     tableName: "definition",
@@ -143,7 +134,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   },
   batch_provider_batch: {
     resourceType: "batch_provider_batch",
-    tableName: "auto_ingest_batch",
+    tableName: "provider_batch",
     idColumn: "id",
     ownerColumn: "user_id",
     isPublicColumn: null,
@@ -209,8 +200,9 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   message_template: {
     resourceType: "message_template",
     tableName: "message_template",
+    schemaName: "agent",
     idColumn: "id",
-    ownerColumn: "user_id",
+    ownerColumn: "created_by",
     isPublicColumn: null,
     displayLabel: "Message Template",
     urlPathTemplate: "/settings/message-templates/{id}",
@@ -350,17 +342,6 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     urlPathTemplate: "/files/{id}",
     rlsUsesHasPermission: false,
   },
-  flashcard_data: {
-    resourceType: "flashcard_data",
-    tableName: "flashcard_data",
-    schemaName: "education",
-    idColumn: "id",
-    ownerColumn: "user_id",
-    isPublicColumn: "public",
-    displayLabel: "Flashcard",
-    urlPathTemplate: "/flashcards/{id}",
-    rlsUsesHasPermission: true,
-  },
   folder: {
     resourceType: "folder",
     tableName: "folders",
@@ -432,7 +413,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     tableName: "quiz_sessions",
     schemaName: "education",
     idColumn: "id",
-    ownerColumn: "user_id",
+    ownerColumn: "created_by",
     isPublicColumn: null,
     displayLabel: "Quiz",
     urlPathTemplate: "/quizzes/{id}",
@@ -502,6 +483,17 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     displayLabel: "Scope Item Value Suggestion",
     urlPathTemplate: "/scopes/item-suggestions/{id}",
     rlsUsesHasPermission: false,
+  },
+  shared_canvas_item: {
+    resourceType: "shared_canvas_item",
+    tableName: "shared_canvas_items",
+    schemaName: "canvas",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Shared Canvas",
+    urlPathTemplate: "/canvas/shared/{id}",
+    rlsUsesHasPermission: true,
   },
   skill: {
     resourceType: "skill",
@@ -722,7 +714,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     tableName: "node_data_slot",
     schemaName: "workflow",
     idColumn: "id",
-    ownerColumn: "user_id",
+    ownerColumn: "created_by",
     isPublicColumn: null,
     displayLabel: "Workflow Node Data Slot",
     urlPathTemplate: "/workflows/{id}",
@@ -781,11 +773,13 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     schemaName: "content_ir",
     idColumn: "id",
     ownerColumn: "created_by",
-    // NOTE: the DB row declares 'visibility' (the canonical enum) in the
-    // boolean is_public_column slot — mirrored verbatim for parity; flagged in
-    // FOUND_DEFECTS (it routes ShareModal through make_resource_public).
-    isPublicColumn: "visibility",
-    displayLabel: "Kind Instance",
+    // D117 fixed 2026-08-13: the DB row briefly declared 'visibility' (the
+    // canonical enum) in the boolean is_public_column slot, which routed
+    // ShareModal through make_resource_public. Now NULL in DB and here.
+    isPublicColumn: null,
+    // What a HUMAN calls it in the share dialog / access gate. "Kind Instance"
+    // was developer jargon in a non-technical user's face (2026-08-13).
+    displayLabel: "Saved Result",
     urlPathTemplate: "/shapes/instances/{id}",
     rlsUsesHasPermission: true,
   },
@@ -819,7 +813,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     ownerColumn: "created_by",
     isPublicColumn: null,
     displayLabel: "SEO Collection Run",
-    urlPathTemplate: "/marketing/seo/collections/{id}",
+    urlPathTemplate: "/marketing/ai-visibility/runs/{id}",
     rlsUsesHasPermission: true,
   },
   seo_change_set: {

@@ -289,6 +289,7 @@ export function SnapshotCompare({
       anchor="snapshot_compare"
     >
       <MatrxDataTable
+        urlState={{ id: "page-snapshot-comparison" }}
         data={fields}
         columns={columns}
         getRowId={(field) => field.label}

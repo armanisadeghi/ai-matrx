@@ -68,7 +68,7 @@ export default async function NotesV2Layout({
 
   return (
     <div
-      className="notes-root h-full overflow-hidden relative z-0"
+      className="notes-root relative z-0 h-full overflow-y-auto overflow-x-hidden"
       style={{ paddingTop: "var(--shell-header-h)" }}
     >
       <style dangerouslySetInnerHTML={{ __html: highlightStyles }} />

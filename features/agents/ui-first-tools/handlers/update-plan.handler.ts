@@ -28,7 +28,7 @@ export const updatePlanHandler: ToolHandler<
 > = {
   name: "update_plan",
   async run(args, ctx) {
-    const { callId, conversationId, userId, dispatch } = ctx;
+    const { callId, conversationId, dispatch } = ctx;
 
     const steps = args.steps ?? args.approach ?? [];
     const title = args.title ?? "Plan";
@@ -40,7 +40,6 @@ export const updatePlanHandler: ToolHandler<
     try {
       planRow = await createPlan({
         conversation_id: conversationId,
-        user_id: userId,
         title,
         steps,
         reasoning: args.reasoning ?? null,
@@ -145,10 +144,9 @@ export const updatePlanHandler: ToolHandler<
         await addTasks(
           steps.map((title) => ({
             conversation_id: conversationId,
-            user_id: userId,
             title,
             status: "pending",
-            created_by: "agent",
+            creator_kind: "agent",
             plan_id: planRow!.id,
           })),
         );

@@ -34,6 +34,7 @@ import { printMarkdownContent } from "@/features/conversation/utils/markdown-pri
 import { loadWordPressCSS } from "@/features/html-pages/css/wordpress-styles";
 import { NotesAPI } from "@/features/notes/service/notesApi";
 import { toast } from "@/lib/toast";
+import { announceComingSoon } from "@/lib/coming-soon/announce";
 import { chatConversationsActions } from "../_legacy-stubs";
 import { editMessage } from "../_legacy-stubs";
 import { buildContentBlocksForSave } from "@/features/cx-chat/utils/buildContentBlocksForSave";
@@ -584,9 +585,7 @@ export function getMessageActions(ctx: MessageActionContext): MenuItem[] {
       iconColor: "text-amber-500 dark:text-amber-400",
       label: "Convert to broker",
       action: () => {
-        toast.info("Coming soon", {
-          description: "Convert to broker will be available shortly.",
-        });
+        void announceComingSoon("rich-document.convert-to-broker");
         onClose();
       },
       category: "Actions",
@@ -598,9 +597,7 @@ export function getMessageActions(ctx: MessageActionContext): MenuItem[] {
       iconColor: "text-emerald-500 dark:text-emerald-400",
       label: "Add to docs",
       action: () => {
-        toast.info("Coming soon", {
-          description: "Add to docs will be available shortly.",
-        });
+        void announceComingSoon("chat.add-to-docs");
         onClose();
       },
       category: "Actions",

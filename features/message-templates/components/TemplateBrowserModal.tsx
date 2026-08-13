@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import { isPubliclyVisible } from "@/lib/visibility/labels";
 import { MobileOverlayWrapper } from "@/components/official/MobileOverlayWrapper";
 import {
   Dialog,
@@ -302,7 +303,7 @@ export function TemplateBrowserModal({
                     <Badge variant="secondary" className="text-xs">
                       {selectedTemplate.role}
                     </Badge>
-                    {selectedTemplate.is_public ? (
+                    {isPubliclyVisible(selectedTemplate.visibility) ? (
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Globe className="w-3 h-3" />
                         Public
@@ -420,7 +421,7 @@ export function TemplateBrowserModal({
                           )}
                         </div>
                         <div className="flex-shrink-0">
-                          {template.is_public ? (
+                          {isPubliclyVisible(template.visibility) ? (
                             <Globe className="w-4 h-4 text-green-500" />
                           ) : (
                             <Lock className="w-4 h-4 text-muted-foreground" />

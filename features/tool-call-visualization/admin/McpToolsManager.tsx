@@ -75,8 +75,8 @@ import {
 } from "./mcp-tools/source-kind-badge";
 
 import Link from "next/link";
-import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { AiToolRef } from "@/components/official/entity-ref/AiIdentityRef";
 import {
   mcpServerHref,
   toolEditHref,
@@ -96,9 +96,7 @@ import {
   ADMIN_TOOL_REGISTRY_SURFACE_NAME,
   createAdminToolRegistryScope,
 } from "@/features/surfaces/manifests/admin-tool-registry.manifest";
-import {
-  MOBILE_TABLE,
-} from "@/components/official/mobile-table/mobileTable";
+import { MOBILE_TABLE } from "@/components/official/mobile-table/mobileTable";
 
 const PAGE_LOCATION =
   "AI Matrx Admin — Tool Registry · MCP Tools (/administration/agents/mcp-tools)";
@@ -251,10 +249,15 @@ export function McpToolsManager() {
     async function fetchCounts() {
       const [samplesRes, uiRes] = await Promise.all([
         supabase
-          .schema("tool").from("test_sample")
+          .schema("tool")
+          .from("test_sample")
           .select("tool_name")
           .in("tool_name", toolNames),
-        supabase.schema("tool").from("ui").select("tool_name").in("tool_name", toolNames),
+        supabase
+          .schema("tool")
+          .from("ui")
+          .select("tool_name")
+          .in("tool_name", toolNames),
       ]);
 
       const counts: Record<string, ToolCounts> = {};
@@ -324,12 +327,7 @@ export function McpToolsManager() {
         // raw with the row's own detail route one click away but unreachable by
         // any gesture but a left click.
         render: (t) => (
-          <MatrxUuidCell
-            value={t.id}
-            label="Tool"
-            token="tool"
-            href={toolHref(t.id)}
-          />
+          <AiToolRef toolId={t.id} name={t.name} showId showIcon={false} />
         ),
       },
       {
@@ -342,11 +340,9 @@ export function McpToolsManager() {
         // ADMIN route (the registry has no `hrefFor` for `tool`, deliberately:
         // this console is super-admin only). Peek comes from the registry.
         render: (t) => (
-          <EntityRef
-            token="tool"
-            id={t.id}
+          <AiToolRef
+            toolId={t.id}
             name={t.name}
-            href={toolHref(t.id)}
             showIcon={false}
             className="max-w-[220px] font-mono text-xs font-medium"
           />
@@ -749,15 +745,13 @@ export function McpToolsManager() {
         (selectedTestFilter === "has_annotations" && hasAnn) ||
         (selectedTestFilter === "no_annotations" && !hasAnn);
 
-      if (
-        !(
-          matchesCategory &&
-          matchesSourceKind &&
-          matchesStatus &&
-          matchesTag &&
-          matchesTest
-        )
-      )
+      if (!(
+        matchesCategory &&
+        matchesSourceKind &&
+        matchesStatus &&
+        matchesTag &&
+        matchesTest
+      ))
         return false;
 
       // Column-level filters
@@ -928,7 +922,8 @@ export function McpToolsManager() {
     setBulkBusy(true);
     try {
       const { error: updErr } = await supabase
-        .schema("tool").from("definition")
+        .schema("tool")
+        .from("definition")
         .update({ is_active: active })
         .in("id", targetIds);
       if (updErr) throw updErr;
@@ -953,7 +948,8 @@ export function McpToolsManager() {
       .filter((t) => targetIds.includes(t.id))
       .map((t) => t.name);
     const { count: refCount } = await supabase
-      .schema("chat").from("tool_call")
+      .schema("chat")
+      .from("tool_call")
       .select("id", { count: "exact", head: true })
       .in("tool_name", targetNames);
     const ok = await confirm({
@@ -966,7 +962,8 @@ export function McpToolsManager() {
     setBulkBusy(true);
     try {
       const { error: delErr } = await supabase
-        .schema("tool").from("definition")
+        .schema("tool")
+        .from("definition")
         .delete()
         .in("id", targetIds);
       if (delErr) throw delErr;
@@ -1127,680 +1124,680 @@ export function McpToolsManager() {
       getScope={getSurfaceScope}
       isEditable={false}
     >
-    <div className="flex-1 flex flex-col min-h-0">
-      <div className="flex-shrink-0 space-y-3 px-4 py-3 border-b border-border">
-        {/* Toolbar — row 1: search + actions */}
-        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search name, description, path, tags…"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-              style={{ fontSize: "16px" }}
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </div>
-          <div className="flex items-center gap-2 ml-auto">
-            {activeFilterCount > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearFilters}
-                className="h-8 gap-1.5 text-muted-foreground hover:text-foreground"
-              >
-                <X className="h-3.5 w-3.5" />
-                Clear ({activeFilterCount})
-              </Button>
-            )}
-            {tools.length > 0 && (
-              <>
-                <CopyButtons
-                  size="icon"
-                  label="Tool catalog"
-                  human={() => toolsListSummary(filteredTools)}
-                  json={() => filteredTools}
-                  agent={() => ({
-                    kind: "mcp-tools-catalog",
-                    location: PAGE_LOCATION,
-                    description:
-                      "Full tool registry catalog with parameter schemas (definition metadata only).",
-                    data: tools,
-                    attributes: { count: tools.length },
-                    context: {
-                      visible: filteredTools.length,
-                      search: searchQuery || undefined,
-                      category:
-                        selectedCategory !== "all"
-                          ? selectedCategory
-                          : undefined,
-                      source_kind:
-                        selectedSourceKind !== "all"
-                          ? selectedSourceKind
-                          : undefined,
-                      status: selectedStatus,
-                    },
-                  })}
-                  aiVariants={[
-                    {
-                      id: "summary",
-                      label: "Catalog summary",
-                      hint: "Name, category, tier, tags, param counts — no schemas",
-                      build: () => ({
-                        kind: "mcp-tools-catalog",
-                        location: PAGE_LOCATION,
-                        description:
-                          "Compact digest of the tool registry catalog (no parameter schemas).",
-                        data: tools.map(toolBrief),
-                        attributes: { count: tools.length },
-                      }),
-                    },
-                  ]}
-                  aiCustom={{
-                    label: "Custom catalog export…",
-                    hint: "Pick scope, schemas, descriptions; live size preview",
-                    dialogTitle: "Tool catalog — custom export",
-                    options: [
-                      {
-                        kind: "toggle",
-                        key: "only_visible",
-                        label: "Only the filtered view",
-                        hint: "Off = all tools regardless of filters",
-                        default: false,
-                      },
-                      {
-                        kind: "toggle",
-                        key: "include_schemas",
-                        label: "Parameter schemas",
-                        hint: "The bulk of the payload",
-                        default: false,
-                      },
-                      {
-                        kind: "toggle",
-                        key: "include_descriptions",
-                        label: "Descriptions",
-                        default: true,
-                      },
-                    ],
-                    build: (opts: AiOptionValues) => {
-                      const rows = buildCatalogRows(opts);
-                      return {
-                        text: JSON.stringify(rows, null, 2),
-                        meta: { tools: rows.length },
-                      };
-                    },
-                    wrap: (_text, opts, meta) => ({
+      <div className="flex-1 flex flex-col min-h-0">
+        <div className="flex-shrink-0 space-y-3 px-4 py-3 border-b border-border">
+          {/* Toolbar — row 1: search + actions */}
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search name, description, path, tags…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+                style={{ fontSize: "16px" }}
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-2 ml-auto">
+              {activeFilterCount > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearFilters}
+                  className="h-8 gap-1.5 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  Clear ({activeFilterCount})
+                </Button>
+              )}
+              {tools.length > 0 && (
+                <>
+                  <CopyButtons
+                    size="icon"
+                    label="Tool catalog"
+                    human={() => toolsListSummary(filteredTools)}
+                    json={() => filteredTools}
+                    agent={() => ({
                       kind: "mcp-tools-catalog",
                       location: PAGE_LOCATION,
                       description:
-                        "Custom-groomed tool registry catalog export.",
-                      data: buildCatalogRows(opts),
-                      attributes: { count: Number(meta?.tools ?? 0) },
-                    }),
-                  }}
-                />
-                <ExportMenu
-                  label="mcp-tools"
-                  items={[
-                    jsonExportItem(() => tools, "JSON (all tools)"),
-                    csvExportItem(
-                      () =>
-                        filteredTools.map(toolBrief) as unknown as Array<
-                          Record<string, unknown>
-                        >,
-                      "CSV (current view)",
-                    ),
-                  ]}
-                />
-              </>
-            )}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={refetch}
-              disabled={isLoading}
-              className="h-8 gap-1.5"
-            >
-              <Settings className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Refresh</span>
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={bulkBusy || filteredTools.length === 0}
-                  className="h-8 gap-1.5"
-                  title={
-                    bulkScope === "selected" && selectedToolIds.size > 0
-                      ? `Acts on ${targetIds.length} selected tool${targetIds.length === 1 ? "" : "s"}`
-                      : `Acts on all ${filteredTools.length} visible tool${filteredTools.length === 1 ? "" : "s"}`
-                  }
-                >
-                  {bulkBusy ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <ListChecks className="h-3.5 w-3.5" />
-                  )}
-                  <span className="hidden sm:inline">Bulk</span>
-                  <Badge
-                    variant="secondary"
-                    className="h-4 px-1 text-[10px] tabular-nums"
+                        "Full tool registry catalog with parameter schemas (definition metadata only).",
+                      data: tools,
+                      attributes: { count: tools.length },
+                      context: {
+                        visible: filteredTools.length,
+                        search: searchQuery || undefined,
+                        category:
+                          selectedCategory !== "all"
+                            ? selectedCategory
+                            : undefined,
+                        source_kind:
+                          selectedSourceKind !== "all"
+                            ? selectedSourceKind
+                            : undefined,
+                        status: selectedStatus,
+                      },
+                    })}
+                    aiVariants={[
+                      {
+                        id: "summary",
+                        label: "Catalog summary",
+                        hint: "Name, category, tier, tags, param counts — no schemas",
+                        build: () => ({
+                          kind: "mcp-tools-catalog",
+                          location: PAGE_LOCATION,
+                          description:
+                            "Compact digest of the tool registry catalog (no parameter schemas).",
+                          data: tools.map(toolBrief),
+                          attributes: { count: tools.length },
+                        }),
+                      },
+                    ]}
+                    aiCustom={{
+                      label: "Custom catalog export…",
+                      hint: "Pick scope, schemas, descriptions; live size preview",
+                      dialogTitle: "Tool catalog — custom export",
+                      options: [
+                        {
+                          kind: "toggle",
+                          key: "only_visible",
+                          label: "Only the filtered view",
+                          hint: "Off = all tools regardless of filters",
+                          default: false,
+                        },
+                        {
+                          kind: "toggle",
+                          key: "include_schemas",
+                          label: "Parameter schemas",
+                          hint: "The bulk of the payload",
+                          default: false,
+                        },
+                        {
+                          kind: "toggle",
+                          key: "include_descriptions",
+                          label: "Descriptions",
+                          default: true,
+                        },
+                      ],
+                      build: (opts: AiOptionValues) => {
+                        const rows = buildCatalogRows(opts);
+                        return {
+                          text: JSON.stringify(rows, null, 2),
+                          meta: { tools: rows.length },
+                        };
+                      },
+                      wrap: (_text, opts, meta) => ({
+                        kind: "mcp-tools-catalog",
+                        location: PAGE_LOCATION,
+                        description:
+                          "Custom-groomed tool registry catalog export.",
+                        data: buildCatalogRows(opts),
+                        attributes: { count: Number(meta?.tools ?? 0) },
+                      }),
+                    }}
+                  />
+                  <ExportMenu
+                    label="mcp-tools"
+                    items={[
+                      jsonExportItem(() => tools, "JSON (all tools)"),
+                      csvExportItem(
+                        () =>
+                          filteredTools.map(toolBrief) as unknown as Array<
+                            Record<string, unknown>
+                          >,
+                        "CSV (current view)",
+                      ),
+                    ]}
+                  />
+                </>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={refetch}
+                disabled={isLoading}
+                className="h-8 gap-1.5"
+              >
+                <Settings className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Refresh</span>
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={bulkBusy || filteredTools.length === 0}
+                    className="h-8 gap-1.5"
+                    title={
+                      bulkScope === "selected" && selectedToolIds.size > 0
+                        ? `Acts on ${targetIds.length} selected tool${targetIds.length === 1 ? "" : "s"}`
+                        : `Acts on all ${filteredTools.length} visible tool${filteredTools.length === 1 ? "" : "s"}`
+                    }
                   >
-                    {targetIds.length}
-                  </Badge>
-                  <ChevronDown className="h-3 w-3 opacity-60" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-[260px]">
-                <DropdownMenuLabel className="text-[11px] text-muted-foreground font-normal">
-                  Scope
-                </DropdownMenuLabel>
-                <DropdownMenuItem
-                  onClick={() => setBulkScope("visible")}
-                  className={`text-xs gap-2 ${bulkScope === "visible" ? "font-medium" : ""}`}
-                >
-                  <span className="flex-1">All visible</span>
-                  <Badge variant="outline" className="text-[10px]">
-                    {filteredTools.length}
-                  </Badge>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => setBulkScope("selected")}
-                  disabled={selectedToolIds.size === 0}
-                  className={`text-xs gap-2 ${bulkScope === "selected" ? "font-medium" : ""}`}
-                >
-                  <span className="flex-1">Selected only</span>
-                  <Badge variant="outline" className="text-[10px]">
-                    {selectedToolIds.size}
-                  </Badge>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel className="text-[11px] text-muted-foreground font-normal">
-                  Selection
-                </DropdownMenuLabel>
-                <DropdownMenuItem
-                  onClick={toggleSelectAllVisible}
-                  className="text-xs"
-                >
-                  {allVisibleSelected
-                    ? "Deselect all visible"
-                    : "Select all visible"}
-                </DropdownMenuItem>
-                {selectedToolIds.size > 0 && (
+                    {bulkBusy ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <ListChecks className="h-3.5 w-3.5" />
+                    )}
+                    <span className="hidden sm:inline">Bulk</span>
+                    <Badge
+                      variant="secondary"
+                      className="h-4 px-1 text-[10px] tabular-nums"
+                    >
+                      {targetIds.length}
+                    </Badge>
+                    <ChevronDown className="h-3 w-3 opacity-60" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-[260px]">
+                  <DropdownMenuLabel className="text-[11px] text-muted-foreground font-normal">
+                    Scope
+                  </DropdownMenuLabel>
                   <DropdownMenuItem
-                    onClick={() => setSelectedToolIds(new Set())}
+                    onClick={() => setBulkScope("visible")}
+                    className={`text-xs gap-2 ${bulkScope === "visible" ? "font-medium" : ""}`}
+                  >
+                    <span className="flex-1">All visible</span>
+                    <Badge variant="outline" className="text-[10px]">
+                      {filteredTools.length}
+                    </Badge>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => setBulkScope("selected")}
+                    disabled={selectedToolIds.size === 0}
+                    className={`text-xs gap-2 ${bulkScope === "selected" ? "font-medium" : ""}`}
+                  >
+                    <span className="flex-1">Selected only</span>
+                    <Badge variant="outline" className="text-[10px]">
+                      {selectedToolIds.size}
+                    </Badge>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="text-[11px] text-muted-foreground font-normal">
+                    Selection
+                  </DropdownMenuLabel>
+                  <DropdownMenuItem
+                    onClick={toggleSelectAllVisible}
                     className="text-xs"
                   >
-                    Clear selection ({selectedToolIds.size})
+                    {allVisibleSelected
+                      ? "Deselect all visible"
+                      : "Select all visible"}
                   </DropdownMenuItem>
-                )}
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel className="text-[11px] text-muted-foreground font-normal">
-                  Actions on {targetIds.length} tool
-                  {targetIds.length === 1 ? "" : "s"}
-                </DropdownMenuLabel>
-                <DropdownMenuItem
-                  onClick={() => void handleBulkSetActive(true)}
-                  disabled={bulkBusy || targetIds.length === 0}
-                  className="text-xs"
-                >
-                  Activate
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => void handleBulkSetActive(false)}
-                  disabled={bulkBusy || targetIds.length === 0}
-                  className="text-xs"
-                >
-                  Deactivate
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => void handleBulkDelete()}
-                  disabled={bulkBusy || targetIds.length === 0}
-                  className="text-xs text-destructive focus:text-destructive"
-                >
-                  Delete permanently…
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Button
-              size="sm"
-              onClick={() => navigateTo("/administration/agents/mcp-tools/new")}
-              disabled={isPending}
-              className="h-8 gap-1.5"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              Add Tool
-            </Button>
-          </div>
-        </div>
-
-        {/* Toolbar — row 2: top-level quick filters (preserved) */}
-        <div className="flex flex-wrap gap-2 items-center">
-          <Select
-            value={selectedSourceKind}
-            onValueChange={setSelectedSourceKind}
-          >
-            <SelectTrigger
-              className={`h-8 w-40 text-xs ${selectedSourceKind !== "all" ? "border-primary text-primary" : ""}`}
-            >
-              <Filter className="h-3 w-3 mr-1 flex-shrink-0" />
-              <SelectValue placeholder="Source Kind" />
-            </SelectTrigger>
-            <SelectContent>
-              {sourceKinds.map((kind) => (
-                <SelectItem key={kind} value={kind} className="text-xs">
-                  {kind === "all" ? "All Sources" : sourceKindLabel(kind)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger
-              className={`h-8 w-40 text-xs ${selectedCategory !== "all" ? "border-primary text-primary" : ""}`}
-            >
-              <Filter className="h-3 w-3 mr-1 flex-shrink-0" />
-              <SelectValue placeholder="Category" />
-            </SelectTrigger>
-            <SelectContent>
-              {categories.map((cat) => (
-                <SelectItem key={cat} value={cat} className="text-xs">
-                  {cat === "all" ? "All Categories" : formatText(cat)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={selectedStatus}
-            onValueChange={(v) =>
-              setSelectedStatus(v as "all" | "active" | "inactive")
-            }
-          >
-            <SelectTrigger
-              className={`h-8 w-36 text-xs ${selectedStatus !== "all" ? "border-primary text-primary" : ""}`}
-            >
-              <Filter className="h-3 w-3 mr-1 flex-shrink-0" />
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all" className="text-xs">
-                All Statuses
-              </SelectItem>
-              <SelectItem value="active" className="text-xs">
-                Active only
-              </SelectItem>
-              <SelectItem value="inactive" className="text-xs">
-                Inactive only
-              </SelectItem>
-            </SelectContent>
-          </Select>
-
-          {allTags.length > 1 && (
-            <Select value={selectedTag} onValueChange={setSelectedTag}>
-              <SelectTrigger
-                className={`h-8 w-36 text-xs ${selectedTag !== "all" ? "border-primary text-primary" : ""}`}
+                  {selectedToolIds.size > 0 && (
+                    <DropdownMenuItem
+                      onClick={() => setSelectedToolIds(new Set())}
+                      className="text-xs"
+                    >
+                      Clear selection ({selectedToolIds.size})
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="text-[11px] text-muted-foreground font-normal">
+                    Actions on {targetIds.length} tool
+                    {targetIds.length === 1 ? "" : "s"}
+                  </DropdownMenuLabel>
+                  <DropdownMenuItem
+                    onClick={() => void handleBulkSetActive(true)}
+                    disabled={bulkBusy || targetIds.length === 0}
+                    className="text-xs"
+                  >
+                    Activate
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => void handleBulkSetActive(false)}
+                    disabled={bulkBusy || targetIds.length === 0}
+                    className="text-xs"
+                  >
+                    Deactivate
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => void handleBulkDelete()}
+                    disabled={bulkBusy || targetIds.length === 0}
+                    className="text-xs text-destructive focus:text-destructive"
+                  >
+                    Delete permanently…
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Button
+                size="sm"
+                onClick={() =>
+                  navigateTo("/administration/agents/mcp-tools/new")
+                }
+                disabled={isPending}
+                className="h-8 gap-1.5"
               >
-                <Tag className="h-3 w-3 mr-1 flex-shrink-0" />
-                <SelectValue placeholder="Tag" />
+                <Plus className="h-3.5 w-3.5" />
+                Add Tool
+              </Button>
+            </div>
+          </div>
+
+          {/* Toolbar — row 2: top-level quick filters (preserved) */}
+          <div className="flex flex-wrap gap-2 items-center">
+            <Select
+              value={selectedSourceKind}
+              onValueChange={setSelectedSourceKind}
+            >
+              <SelectTrigger
+                className={`h-8 w-40 text-xs ${selectedSourceKind !== "all" ? "border-primary text-primary" : ""}`}
+              >
+                <Filter className="h-3 w-3 mr-1 flex-shrink-0" />
+                <SelectValue placeholder="Source Kind" />
               </SelectTrigger>
               <SelectContent>
-                {allTags.map((tag) => (
-                  <SelectItem key={tag} value={tag} className="text-xs">
-                    {tag === "all" ? "All Tags" : tag}
+                {sourceKinds.map((kind) => (
+                  <SelectItem key={kind} value={kind} className="text-xs">
+                    {kind === "all" ? "All Sources" : sourceKindLabel(kind)}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-          )}
 
-          <Select
-            value={selectedTestFilter}
-            onValueChange={(v) => setSelectedTestFilter(v as TestFilter)}
-          >
-            <SelectTrigger
-              className={`h-8 w-48 text-xs ${selectedTestFilter !== "all" ? "border-primary text-primary" : ""}`}
+            <Select
+              value={selectedCategory}
+              onValueChange={setSelectedCategory}
             >
-              <TestTube2 className="h-3 w-3 mr-1 flex-shrink-0" />
-              <SelectValue placeholder="Test Readiness" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all" className="text-xs">
-                All Tools
-              </SelectItem>
-              <SelectItem value="fully_ready" className="text-xs">
-                Fully Ready (all 4)
-              </SelectItem>
-              <SelectItem value="has_samples" className="text-xs">
-                Has Samples
-              </SelectItem>
-              <SelectItem value="no_samples" className="text-xs">
-                Missing Samples
-              </SelectItem>
-              <SelectItem value="has_ui" className="text-xs">
-                Has UI Component
-              </SelectItem>
-              <SelectItem value="no_ui" className="text-xs">
-                Missing UI Component
-              </SelectItem>
-              <SelectItem value="has_output_schema" className="text-xs">
-                Has Output Schema
-              </SelectItem>
-              <SelectItem value="no_output_schema" className="text-xs">
-                Missing Output Schema
-              </SelectItem>
-              <SelectItem value="has_annotations" className="text-xs">
-                Has Annotations
-              </SelectItem>
-              <SelectItem value="no_annotations" className="text-xs">
-                Missing Annotations
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Stats row */}
-        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-          <span>
-            <span className="font-semibold text-foreground">
-              {filteredTools.length}
-            </span>{" "}
-            of {tools.length} tools
-          </span>
-          <span>
-            <span className="font-semibold text-success">
-              {filteredTools.filter((t) => t.is_active).length}
-            </span>{" "}
-            active
-          </span>
-          <span className="border-l border-border pl-4">
-            <span className="font-semibold text-info">
-              {
-                filteredTools.filter((t) => {
-                  const c = toolCounts[t.name] ?? {
-                    sampleCount: 0,
-                    uiComponentCount: 0,
-                  };
-                  return (
-                    c.sampleCount > 0 &&
-                    c.uiComponentCount > 0 &&
-                    hasOutputSchema(t) &&
-                    hasAnnotations(t)
-                  );
-                }).length
-              }
-            </span>{" "}
-            fully ready
-          </span>
-          <span>
-            <span className="font-semibold text-success">
-              {
-                filteredTools.filter(
-                  (t) => (toolCounts[t.name]?.sampleCount ?? 0) > 0,
-                ).length
-              }
-            </span>{" "}
-            w/ samples
-          </span>
-          <span>
-            <span className="font-semibold text-success">
-              {
-                filteredTools.filter(
-                  (t) => (toolCounts[t.name]?.uiComponentCount ?? 0) > 0,
-                ).length
-              }
-            </span>{" "}
-            w/ UI
-          </span>
-          <span>
-            <span className="font-semibold text-warning">
-              {filteredTools.filter((t) => !hasOutputSchema(t)).length}
-            </span>{" "}
-            no output schema
-          </span>
-          <span>
-            <span className="font-semibold text-warning">
-              {filteredTools.filter((t) => !hasAnnotations(t)).length}
-            </span>{" "}
-            no annotations
-          </span>
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="flex-1 min-h-0 overflow-auto px-4 py-3 pb-safe">
-        <div className="border border-border rounded-md bg-card">
-          <table className={cn("text-sm border-collapse", MOBILE_TABLE)}>
-            <thead className="sticky top-0 z-20 bg-card shadow-[0_1px_0_0_var(--border)]">
-              <tr className="border-b border-border">
-                <th className="w-[36px] px-2 py-2 text-left">
-                  <Checkbox
-                    checked={allVisibleSelected}
-                    onCheckedChange={toggleSelectAllVisible}
-                    aria-label="Select all visible"
-                  />
-                </th>
-                {columns.map((col) => (
-                  <th
-                    key={col.key}
-                    className={cn(
-                      "px-2 py-2 text-left align-middle text-[11px] font-medium text-muted-foreground whitespace-nowrap",
-                      col.width,
-                    )}
-                  >
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => handleSort(col.key)}
-                        className="flex items-center gap-1 hover:text-foreground transition-colors"
-                        title={`Sort by ${col.header}`}
-                      >
-                        <span>{col.header}</span>
-                        <SortIcon active={sortKey === col.key} dir={sortDir} />
-                      </button>
-                      <ColumnFilterControl
-                        column={col}
-                        value={columnFilters[col.key]}
-                        onChange={(v) => setColumnFilter(col.key, v)}
-                        enumOptions={enumValuesByColumn[col.key] ?? []}
-                      />
-                    </div>
-                  </th>
+              <SelectTrigger
+                className={`h-8 w-40 text-xs ${selectedCategory !== "all" ? "border-primary text-primary" : ""}`}
+              >
+                <Filter className="h-3 w-3 mr-1 flex-shrink-0" />
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((cat) => (
+                  <SelectItem key={cat} value={cat} className="text-xs">
+                    {cat === "all" ? "All Categories" : formatText(cat)}
+                  </SelectItem>
                 ))}
-                <th className="w-[220px] px-2 py-2 text-left text-[11px] font-medium text-muted-foreground whitespace-nowrap">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredTools.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={columns.length + 2}
-                    className="text-center py-16 text-muted-foreground text-sm"
-                  >
-                    <Search className="h-10 w-10 mx-auto mb-3 opacity-30" />
-                    {searchQuery || activeFilterCount > 0
-                      ? "No tools match your filters"
-                      : "No tools in the system"}
-                  </td>
-                </tr>
-              ) : (
-                filteredTools.map((tool) => {
-                  const counts = toolCounts[tool.name] ?? {
-                    sampleCount: 0,
-                    uiComponentCount: 0,
-                  };
-                  const isSelected = selectedToolIds.has(tool.id);
-                  return (
-                    <tr
-                      key={tool.id}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={selectedStatus}
+              onValueChange={(v) =>
+                setSelectedStatus(v as "all" | "active" | "inactive")
+              }
+            >
+              <SelectTrigger
+                className={`h-8 w-36 text-xs ${selectedStatus !== "all" ? "border-primary text-primary" : ""}`}
+              >
+                <Filter className="h-3 w-3 mr-1 flex-shrink-0" />
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-xs">
+                  All Statuses
+                </SelectItem>
+                <SelectItem value="active" className="text-xs">
+                  Active only
+                </SelectItem>
+                <SelectItem value="inactive" className="text-xs">
+                  Inactive only
+                </SelectItem>
+              </SelectContent>
+            </Select>
+
+            {allTags.length > 1 && (
+              <Select value={selectedTag} onValueChange={setSelectedTag}>
+                <SelectTrigger
+                  className={`h-8 w-36 text-xs ${selectedTag !== "all" ? "border-primary text-primary" : ""}`}
+                >
+                  <Tag className="h-3 w-3 mr-1 flex-shrink-0" />
+                  <SelectValue placeholder="Tag" />
+                </SelectTrigger>
+                <SelectContent>
+                  {allTags.map((tag) => (
+                    <SelectItem key={tag} value={tag} className="text-xs">
+                      {tag === "all" ? "All Tags" : tag}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
+            <Select
+              value={selectedTestFilter}
+              onValueChange={(v) => setSelectedTestFilter(v as TestFilter)}
+            >
+              <SelectTrigger
+                className={`h-8 w-48 text-xs ${selectedTestFilter !== "all" ? "border-primary text-primary" : ""}`}
+              >
+                <TestTube2 className="h-3 w-3 mr-1 flex-shrink-0" />
+                <SelectValue placeholder="Test Readiness" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-xs">
+                  All Tools
+                </SelectItem>
+                <SelectItem value="fully_ready" className="text-xs">
+                  Fully Ready (all 4)
+                </SelectItem>
+                <SelectItem value="has_samples" className="text-xs">
+                  Has Samples
+                </SelectItem>
+                <SelectItem value="no_samples" className="text-xs">
+                  Missing Samples
+                </SelectItem>
+                <SelectItem value="has_ui" className="text-xs">
+                  Has UI Component
+                </SelectItem>
+                <SelectItem value="no_ui" className="text-xs">
+                  Missing UI Component
+                </SelectItem>
+                <SelectItem value="has_output_schema" className="text-xs">
+                  Has Output Schema
+                </SelectItem>
+                <SelectItem value="no_output_schema" className="text-xs">
+                  Missing Output Schema
+                </SelectItem>
+                <SelectItem value="has_annotations" className="text-xs">
+                  Has Annotations
+                </SelectItem>
+                <SelectItem value="no_annotations" className="text-xs">
+                  Missing Annotations
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Stats row */}
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+            <span>
+              <span className="font-semibold text-foreground">
+                {filteredTools.length}
+              </span>{" "}
+              of {tools.length} tools
+            </span>
+            <span>
+              <span className="font-semibold text-success">
+                {filteredTools.filter((t) => t.is_active).length}
+              </span>{" "}
+              active
+            </span>
+            <span className="border-l border-border pl-4">
+              <span className="font-semibold text-info">
+                {
+                  filteredTools.filter((t) => {
+                    const c = toolCounts[t.name] ?? {
+                      sampleCount: 0,
+                      uiComponentCount: 0,
+                    };
+                    return (
+                      c.sampleCount > 0 &&
+                      c.uiComponentCount > 0 &&
+                      hasOutputSchema(t) &&
+                      hasAnnotations(t)
+                    );
+                  }).length
+                }
+              </span>{" "}
+              fully ready
+            </span>
+            <span>
+              <span className="font-semibold text-success">
+                {
+                  filteredTools.filter(
+                    (t) => (toolCounts[t.name]?.sampleCount ?? 0) > 0,
+                  ).length
+                }
+              </span>{" "}
+              w/ samples
+            </span>
+            <span>
+              <span className="font-semibold text-success">
+                {
+                  filteredTools.filter(
+                    (t) => (toolCounts[t.name]?.uiComponentCount ?? 0) > 0,
+                  ).length
+                }
+              </span>{" "}
+              w/ UI
+            </span>
+            <span>
+              <span className="font-semibold text-warning">
+                {filteredTools.filter((t) => !hasOutputSchema(t)).length}
+              </span>{" "}
+              no output schema
+            </span>
+            <span>
+              <span className="font-semibold text-warning">
+                {filteredTools.filter((t) => !hasAnnotations(t)).length}
+              </span>{" "}
+              no annotations
+            </span>
+          </div>
+        </div>
+
+        {/* Table */}
+        <div className="flex-1 min-h-0 overflow-auto px-4 py-3 pb-safe">
+          <div className="border border-border rounded-md bg-card">
+            <table className={cn("text-sm border-collapse", MOBILE_TABLE)}>
+              <thead className="sticky top-0 z-20 bg-card shadow-[0_1px_0_0_var(--border)]">
+                <tr className="border-b border-border">
+                  <th className="w-[36px] px-2 py-2 text-left">
+                    <Checkbox
+                      checked={allVisibleSelected}
+                      onCheckedChange={toggleSelectAllVisible}
+                      aria-label="Select all visible"
+                    />
+                  </th>
+                  {columns.map((col) => (
+                    <th
+                      key={col.key}
                       className={cn(
-                        "border-b border-border hover:bg-accent/30 transition-colors",
-                        !tool.is_active && "opacity-60",
-                        isSelected && "bg-accent/20",
+                        "px-2 py-2 text-left align-middle text-[11px] font-medium text-muted-foreground whitespace-nowrap",
+                        col.width,
                       )}
                     >
-                      <td className="px-2 py-1.5 align-middle">
-                        <Checkbox
-                          checked={isSelected}
-                          onCheckedChange={() => toggleToolSelection(tool.id)}
-                          aria-label={`Select ${tool.name}`}
-                        />
-                      </td>
-                      {columns.map((col) => (
-                        <td
-                          key={col.key}
-                          className={cn(
-                            "px-2 py-1.5 align-middle cursor-pointer",
-                            col.width,
-                          )}
-                          onClick={() =>
-                            navigateTo(toolHref(tool.id))
-                          }
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleSort(col.key)}
+                          className="flex items-center gap-1 hover:text-foreground transition-colors"
+                          title={`Sort by ${col.header}`}
                         >
-                          {col.render(tool, counts)}
-                        </td>
-                      ))}
-                      <td
-                        className="px-2 py-1.5 align-middle whitespace-nowrap"
-                        onClick={(e) => e.stopPropagation()}
+                          <span>{col.header}</span>
+                          <SortIcon
+                            active={sortKey === col.key}
+                            dir={sortDir}
+                          />
+                        </button>
+                        <ColumnFilterControl
+                          column={col}
+                          value={columnFilters[col.key]}
+                          onChange={(v) => setColumnFilter(col.key, v)}
+                          enumOptions={enumValuesByColumn[col.key] ?? []}
+                        />
+                      </div>
+                    </th>
+                  ))}
+                  <th className="w-[220px] px-2 py-2 text-left text-[11px] font-medium text-muted-foreground whitespace-nowrap">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredTools.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={columns.length + 2}
+                      className="text-center py-16 text-muted-foreground text-sm"
+                    >
+                      <Search className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                      {searchQuery || activeFilterCount > 0
+                        ? "No tools match your filters"
+                        : "No tools in the system"}
+                    </td>
+                  </tr>
+                ) : (
+                  filteredTools.map((tool) => {
+                    const counts = toolCounts[tool.name] ?? {
+                      sampleCount: 0,
+                      uiComponentCount: 0,
+                    };
+                    const isSelected = selectedToolIds.has(tool.id);
+                    return (
+                      <tr
+                        key={tool.id}
+                        className={cn(
+                          "border-b border-border hover:bg-accent/30 transition-colors",
+                          !tool.is_active && "opacity-60",
+                          isSelected && "bg-accent/20",
+                        )}
                       >
-                        <div className="flex items-center gap-0.5">
-                          <CopyButtons
-                            size="xs"
-                            label={`Tool ${tool.name}`}
-                            human={() => toolSummary(tool)}
-                            json={() => tool}
-                            agent={() => ({
-                              kind: "mcp-tool",
-                              location: PAGE_LOCATION,
-                              description:
-                                "One tool definition row from the registry catalog.",
-                              data: tool,
-                              summary: toolSummary(tool),
-                              attributes: {
-                                id: tool.id,
-                                name: tool.name,
-                                active: tool.is_active ?? false,
-                              },
-                            })}
+                        <td className="px-2 py-1.5 align-middle">
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={() => toggleToolSelection(tool.id)}
+                            aria-label={`Select ${tool.name}`}
                           />
-                          <Switch
-                            checked={tool.is_active ?? false}
-                            onCheckedChange={(v) =>
-                              handleToggleActive(tool.id, v)
-                            }
-                            className="scale-75"
-                          />
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() =>
-                              navigateTo(toolHref(tool.id))
-                            }
-                            title="View Samples"
-                            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                        </td>
+                        {columns.map((col) => (
+                          <td
+                            key={col.key}
+                            className={cn(
+                              "px-2 py-1.5 align-middle cursor-pointer",
+                              col.width,
+                            )}
+                            onClick={() => navigateTo(toolHref(tool.id))}
                           >
-                            <FlaskConical className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() =>
-                              navigateTo(
-                                toolUiHref(tool.id),
-                              )
-                            }
-                            title="UI Component"
-                            className="h-7 w-7 p-0 text-muted-foreground hover:text-primary"
-                          >
-                            <Zap className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() =>
-                              navigateTo(
-                                toolIncidentsHref(tool.id),
-                              )
-                            }
-                            title="Incidents"
-                            className="h-7 w-7 p-0 text-muted-foreground hover:text-warning"
-                          >
-                            <Bug className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() =>
-                              navigateTo(
-                                toolEditHref(tool.id),
-                              )
-                            }
-                            title="Edit Tool"
-                            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-                          >
-                            <Edit className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteTool(tool.id, tool.name)}
-                            title="Delete Tool"
-                            className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+                            {col.render(tool, counts)}
+                          </td>
+                        ))}
+                        <td
+                          className="px-2 py-1.5 align-middle whitespace-nowrap"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="flex items-center gap-0.5">
+                            <CopyButtons
+                              size="xs"
+                              label={`Tool ${tool.name}`}
+                              human={() => toolSummary(tool)}
+                              json={() => tool}
+                              agent={() => ({
+                                kind: "mcp-tool",
+                                location: PAGE_LOCATION,
+                                description:
+                                  "One tool definition row from the registry catalog.",
+                                data: tool,
+                                summary: toolSummary(tool),
+                                attributes: {
+                                  id: tool.id,
+                                  name: tool.name,
+                                  active: tool.is_active ?? false,
+                                },
+                              })}
+                            />
+                            <Switch
+                              checked={tool.is_active ?? false}
+                              onCheckedChange={(v) =>
+                                handleToggleActive(tool.id, v)
+                              }
+                              className="scale-75"
+                            />
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => navigateTo(toolHref(tool.id))}
+                              title="View Samples"
+                              className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                            >
+                              <FlaskConical className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => navigateTo(toolUiHref(tool.id))}
+                              title="UI Component"
+                              className="h-7 w-7 p-0 text-muted-foreground hover:text-primary"
+                            >
+                              <Zap className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() =>
+                                navigateTo(toolIncidentsHref(tool.id))
+                              }
+                              title="Incidents"
+                              className="h-7 w-7 p-0 text-muted-foreground hover:text-warning"
+                            >
+                              <Bug className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => navigateTo(toolEditHref(tool.id))}
+                              title="Edit Tool"
+                              className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                            >
+                              <Edit className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() =>
+                                handleDeleteTool(tool.id, tool.name)
+                              }
+                              title="Delete Tool"
+                              className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
 
-      <AlertDialog
-        open={deleteConfirmation.isOpen}
-        onOpenChange={(o) =>
-          !o &&
-          setDeleteConfirmation({ isOpen: false, toolId: null, toolName: null })
-        }
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Tool</AlertDialogTitle>
-            <AlertDialogDescription>
-              Delete{" "}
-              <strong>&ldquo;{deleteConfirmation.toolName}&rdquo;</strong>? This
-              cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+        <AlertDialog
+          open={deleteConfirmation.isOpen}
+          onOpenChange={(o) =>
+            !o &&
+            setDeleteConfirmation({
+              isOpen: false,
+              toolId: null,
+              toolName: null,
+            })
+          }
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Tool</AlertDialogTitle>
+              <AlertDialogDescription>
+                Delete{" "}
+                <strong>&ldquo;{deleteConfirmation.toolName}&rdquo;</strong>?
+                This cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmDelete}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
     </SurfaceRuntimeProvider>
   );
 }

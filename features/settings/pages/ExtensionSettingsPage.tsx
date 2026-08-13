@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Copy, Check, RefreshCw } from 'lucide-react';
+import { Copy, Check, RefreshCw, TriangleAlert } from 'lucide-react';
 import { Chrome } from '@/components/icons/brand-icons';
 import { toast } from "@/lib/toast";
 
@@ -153,7 +153,7 @@ export default function ExtensionAuthPage() {
 
       <Card className="p-4 md:p-6 bg-yellow-50 dark:bg-yellow-900/10 border-yellow-200 dark:border-yellow-800">
         <h3 className="font-semibold mb-2 flex items-center gap-2">
-          <span className="text-yellow-600 dark:text-yellow-500">⚠️</span>
+          <TriangleAlert className="size-4 text-yellow-600 dark:text-yellow-500" aria-hidden="true" />
           Security Notice
         </h3>
         <ul className="text-sm text-muted-foreground space-y-1">
@@ -166,4 +166,3 @@ export default function ExtensionAuthPage() {
     </div>
   );
 }
-

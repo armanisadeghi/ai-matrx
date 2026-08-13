@@ -1,3 +1,9 @@
+---
+status: active
+updated: 2026-08-12
+repos: [matrx-frontend, aidream, my-matrx]
+---
+
 # Website Factory — bug dispatch board
 
 Defects found during the 2026-07-30 content-plan / CMS readiness audit. Each entry is a
@@ -46,14 +52,9 @@ structured error on rejection.
 
 ## WF-4 — Duplicate header/footer components make the render nondeterministic
 
-**Status:** UNASSIGNED · **Repo:** aidream (+ CMS DB) · **Severity:** MEDIUM
-
-The renderer uses the FIRST active `client_components` row of a given `component_type`; nothing
-prevents two active headers, so which one renders is undefined. **Fix at the DB:** partial
-unique index on `client_components (client_id, component_type) WHERE is_active AND
-component_type IN ('header','footer')` in the CMS Supabase project (`viyklljfdhtidwecakwx`),
-plus a clear error path in `aidream/services/cms/components.py` and the FE components page
-(`app/(core)/cms/[siteId]/components/`) when activating a second one (offer swap).
+**Status:** DONE (shipped 2026-08-07 as CMS migration `0035` — partial unique index
+`client_components_one_active_shell` verified live 2026-08-12 + actionable service error;
+this board entry was stale) · **Repo:** aidream (+ CMS DB) · **Severity:** MEDIUM
 
 ## WF-5 — `use_client_header` / `use_client_footer` exposed nowhere in the UI
 
@@ -138,6 +139,5 @@ the paired `web.site`/brand on `/cms/[siteId]/settings`, using the existing brid
 
 ---
 
-**Assignment tips:** WF-1 blocks WF-6's theme editor. WF-8 is DONE (the loop has now run for
-real — it surfaced and fixed two aidream boot-class bugs). The remaining open items (WF-3,
-WF-4, WF-10) are independent and parallelizable.
+**Assignment tips:** the only remaining open items are WF-3 (HIGH) and WF-10 (LOW) —
+independent and parallelizable. Everything else is DONE.

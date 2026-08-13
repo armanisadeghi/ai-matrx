@@ -1,30 +1,41 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { DatabaseEnum, EnumUsage } from '@/types/enum-types';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  X, 
-  Edit, 
-  Trash2, 
-  List, 
+import React, { useState, useEffect } from "react";
+import { DatabaseEnum, EnumUsage } from "@/types/enum-types";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  X,
+  Edit,
+  Trash2,
+  List,
   Database,
-  Calendar, 
-  User, 
-  Copy, 
-  Maximize2, 
+  Calendar,
+  User,
+  Copy,
+  Maximize2,
   Minimize2,
   Check,
-  ExternalLink
-} from 'lucide-react';
-import { Separator } from '@/components/ui/separator';
-import { useEnums } from '@/lib/hooks/useEnums';
+  ExternalLink,
+} from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { useEnums } from "@/lib/hooks/useEnums";
+import {
+  booleanUrlCodec,
+  enumUrlCodec,
+  useUrlState,
+} from "@/lib/url-state/useUrlState";
 
 /** The detail panel's tabs — a caller can open straight onto one. */
-export type EnumDetailTab = 'details' | 'values' | 'usage';
+export type EnumDetailTab = "details" | "values" | "usage";
 
 interface EnumDetailProps {
   enumType: DatabaseEnum;
@@ -39,22 +50,35 @@ interface EnumDetailProps {
   initialTab?: EnumDetailTab;
 }
 
-export default function EnumDetail({ enumType, onClose, onEdit, onDelete, initialTab }: EnumDetailProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+export default function EnumDetail({
+  enumType,
+  onClose,
+  onEdit,
+  onDelete,
+  initialTab,
+}: EnumDetailProps) {
+  const [isExpanded, setIsExpanded] = useUrlState(
+    "expanded",
+    booleanUrlCodec(false),
+  );
   // The caller re-targets this panel by remounting it (it keys on
   // enum + requested tab), so `initialTab` only has to seed the state.
-  const [activeTab, setActiveTab] = useState<EnumDetailTab>(
-    initialTab ?? 'details',
+  const [activeTab, setActiveTab] = useUrlState(
+    "detailTab",
+    enumUrlCodec<EnumDetailTab>(
+      ["details", "values", "usage"],
+      initialTab ?? "details",
+    ),
   );
   const [isCopied, setIsCopied] = useState(false);
   const [enumUsage, setEnumUsage] = useState<EnumUsage[]>([]);
   const [loadingUsage, setLoadingUsage] = useState(false);
-  
+
   const { getEnumUsage } = useEnums();
 
   // Load enum usage when component mounts or tab changes
   useEffect(() => {
-    if (activeTab === 'usage') {
+    if (activeTab === "usage") {
       loadEnumUsage();
     }
   }, [activeTab, enumType]);
@@ -65,7 +89,7 @@ export default function EnumDetail({ enumType, onClose, onEdit, onDelete, initia
       const usage = await getEnumUsage(enumType.schema, enumType.name);
       setEnumUsage(usage);
     } catch (error) {
-      console.error('Error loading enum usage:', error);
+      console.error("Error loading enum usage:", error);
     } finally {
       setLoadingUsage(false);
     }
@@ -73,7 +97,7 @@ export default function EnumDetail({ enumType, onClose, onEdit, onDelete, initia
 
   // Handle copy enum definition
   const handleCopyDefinition = () => {
-    const definition = `CREATE TYPE ${enumType.schema}.${enumType.name} AS ENUM (${enumType.values.map(v => `'${v}'`).join(', ')});`;
+    const definition = `CREATE TYPE ${enumType.schema}.${enumType.name} AS ENUM (${enumType.values.map((v) => `'${v}'`).join(", ")});`;
     navigator.clipboard.writeText(definition);
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
@@ -81,7 +105,7 @@ export default function EnumDetail({ enumType, onClose, onEdit, onDelete, initia
 
   // Handle copy values
   const handleCopyValues = () => {
-    const values = enumType.values.join(', ');
+    const values = enumType.values.join(", ");
     navigator.clipboard.writeText(values);
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
@@ -93,9 +117,11 @@ export default function EnumDetail({ enumType, onClose, onEdit, onDelete, initia
   };
 
   return (
-    <Card className={`w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 transition-all duration-300 overflow-hidden ${
-      isExpanded ? 'fixed inset-4 z-50 overflow-auto' : 'relative'
-    }`}>
+    <Card
+      className={`w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 transition-all duration-300 overflow-hidden ${
+        isExpanded ? "fixed inset-4 z-50 overflow-auto" : "relative"
+      }`}
+    >
       <CardHeader className="pb-2 border-b border-slate-200 dark:border-slate-700">
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-2">
@@ -111,7 +137,11 @@ export default function EnumDetail({ enumType, onClose, onEdit, onDelete, initia
               onClick={toggleExpanded}
               className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
             >
-              {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+              {isExpanded ? (
+                <Minimize2 className="h-4 w-4" />
+              ) : (
+                <Maximize2 className="h-4 w-4" />
+              )}
             </Button>
             <Button
               variant="ghost"
@@ -128,7 +158,10 @@ export default function EnumDetail({ enumType, onClose, onEdit, onDelete, initia
             <Database className="h-3 w-3" />
             {enumType.schema}
           </Badge>
-          <Badge variant="outline" className="text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-700">
+          <Badge
+            variant="outline"
+            className="text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-700"
+          >
             {enumType.values.length} values
           </Badge>
           {enumType.usage_count !== undefined && (
@@ -136,7 +169,7 @@ export default function EnumDetail({ enumType, onClose, onEdit, onDelete, initia
             // live in — send the user to it.
             <button
               type="button"
-              onClick={() => setActiveTab('usage')}
+              onClick={() => setActiveTab("usage")}
               title={`Show the ${enumType.usage_count} table(s) using ${enumType.name}`}
               className="rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
@@ -155,58 +188,66 @@ export default function EnumDetail({ enumType, onClose, onEdit, onDelete, initia
         </div>
       </CardHeader>
       <CardContent className="p-0">
-        <Tabs 
-          defaultValue="details" 
+        <Tabs
+          defaultValue="details"
           value={activeTab}
           onValueChange={(value) => setActiveTab(value as EnumDetailTab)}
           className="w-full"
         >
           <TabsList className="w-full justify-start px-4 pt-2 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-            <TabsTrigger 
-              value="details" 
+            <TabsTrigger
+              value="details"
               className="text-slate-600 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100"
             >
               Details
             </TabsTrigger>
-            <TabsTrigger 
-              value="values" 
+            <TabsTrigger
+              value="values"
               className="text-slate-600 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100"
             >
               Values
             </TabsTrigger>
-            <TabsTrigger 
-              value="usage" 
+            <TabsTrigger
+              value="usage"
               className="text-slate-600 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100"
             >
               Usage
             </TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="details" className="p-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Enum Definition</h3>
+                <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">
+                  Enum Definition
+                </h3>
                 <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-md">
                   <code className="text-sm text-slate-800 dark:text-slate-200">
                     CREATE TYPE {enumType.schema}.{enumType.name} AS ENUM
                   </code>
                 </div>
-                
+
                 <div className="flex items-center justify-between mt-3 mb-2">
-                  <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Values ({enumType.values.length})</h3>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                    Values ({enumType.values.length})
+                  </h3>
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={handleCopyValues}
                     className="text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 border-slate-300 dark:border-slate-600"
                   >
-                    {isCopied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                    {isCopied ? (
+                      <Check className="h-3 w-3" />
+                    ) : (
+                      <Copy className="h-3 w-3" />
+                    )}
                   </Button>
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-md max-h-48 overflow-y-auto">
                   <div className="flex flex-wrap gap-2">
                     {enumType.values.map((value, index) => (
-                      <Badge 
+                      <Badge
                         key={index}
                         variant="secondary"
                         className="bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200"
@@ -217,40 +258,50 @@ export default function EnumDetail({ enumType, onClose, onEdit, onDelete, initia
                   </div>
                 </div>
               </div>
-              
+
               <div>
                 {enumType.description && (
                   <>
-                    <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Description</h3>
+                    <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">
+                      Description
+                    </h3>
                     <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-md text-slate-800 dark:text-slate-200 text-sm mb-4">
                       {enumType.description}
                     </div>
                   </>
                 )}
-                
+
                 <div className="space-y-3">
                   {enumType.owner && (
                     <div className="flex items-center">
                       <User className="h-4 w-4 text-slate-500 dark:text-slate-400 mr-2" />
-                      <span className="text-sm text-slate-600 dark:text-slate-400">Owner: </span>
-                      <span className="text-sm text-slate-800 dark:text-slate-200 ml-1">{enumType.owner}</span>
+                      <span className="text-sm text-slate-600 dark:text-slate-400">
+                        Owner:{" "}
+                      </span>
+                      <span className="text-sm text-slate-800 dark:text-slate-200 ml-1">
+                        {enumType.owner}
+                      </span>
                     </div>
                   )}
-                  
+
                   {enumType.created && (
                     <div className="flex items-center">
                       <Calendar className="h-4 w-4 text-slate-500 dark:text-slate-400 mr-2" />
-                      <span className="text-sm text-slate-600 dark:text-slate-400">Created: </span>
+                      <span className="text-sm text-slate-600 dark:text-slate-400">
+                        Created:{" "}
+                      </span>
                       <span className="text-sm text-slate-800 dark:text-slate-200 ml-1">
                         {new Date(enumType.created).toLocaleString()}
                       </span>
                     </div>
                   )}
-                  
+
                   {enumType.last_modified && (
                     <div className="flex items-center">
                       <Calendar className="h-4 w-4 text-slate-500 dark:text-slate-400 mr-2" />
-                      <span className="text-sm text-slate-600 dark:text-slate-400">Last Modified: </span>
+                      <span className="text-sm text-slate-600 dark:text-slate-400">
+                        Last Modified:{" "}
+                      </span>
                       <span className="text-sm text-slate-800 dark:text-slate-200 ml-1">
                         {new Date(enumType.last_modified).toLocaleString()}
                       </span>
@@ -266,9 +317,9 @@ export default function EnumDetail({ enumType, onClose, onEdit, onDelete, initia
               <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200">
                 Enum Values ({enumType.values.length})
               </h3>
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={handleCopyDefinition}
                 className="text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 border-slate-300 dark:border-slate-600"
               >
@@ -285,10 +336,10 @@ export default function EnumDetail({ enumType, onClose, onEdit, onDelete, initia
                 )}
               </Button>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {enumType.values.map((value, index) => (
-                <div 
+                <div
                   key={index}
                   className="bg-slate-50 dark:bg-slate-800 p-3 rounded-md border border-slate-200 dark:border-slate-700"
                 >
@@ -296,8 +347,8 @@ export default function EnumDetail({ enumType, onClose, onEdit, onDelete, initia
                     <code className="text-sm text-slate-800 dark:text-slate-200 font-medium">
                       '{value}'
                     </code>
-                    <Badge 
-                      variant="outline" 
+                    <Badge
+                      variant="outline"
                       className="text-xs text-slate-500 dark:text-slate-400 border-slate-300 dark:border-slate-700"
                     >
                       {index + 1}
@@ -317,14 +368,16 @@ export default function EnumDetail({ enumType, onClose, onEdit, onDelete, initia
                 Tables and columns that use this enum type
               </p>
             </div>
-            
+
             {loadingUsage ? (
               <div className="flex justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-700 dark:border-slate-300"></div>
               </div>
             ) : enumUsage.length === 0 ? (
               <div className="text-center py-8">
-                <div className="text-slate-500 dark:text-slate-400">No usage found</div>
+                <div className="text-slate-500 dark:text-slate-400">
+                  No usage found
+                </div>
                 <div className="mt-2 text-sm text-slate-400 dark:text-slate-500">
                   This enum is not currently used by any tables
                 </div>
@@ -332,7 +385,7 @@ export default function EnumDetail({ enumType, onClose, onEdit, onDelete, initia
             ) : (
               <div className="space-y-3">
                 {enumUsage.map((usage, index) => (
-                  <div 
+                  <div
                     key={index}
                     className="bg-slate-50 dark:bg-slate-800 p-4 rounded-md border border-slate-200 dark:border-slate-700"
                   >
@@ -346,7 +399,10 @@ export default function EnumDetail({ enumType, onClose, onEdit, onDelete, initia
                         </div>
                         <Separator orientation="vertical" className="h-4" />
                         <span className="text-sm text-slate-600 dark:text-slate-400">
-                          Column: <code className="text-slate-800 dark:text-slate-200">{usage.column_name}</code>
+                          Column:{" "}
+                          <code className="text-slate-800 dark:text-slate-200">
+                            {usage.column_name}
+                          </code>
                         </span>
                       </div>
                     </div>
@@ -357,18 +413,18 @@ export default function EnumDetail({ enumType, onClose, onEdit, onDelete, initia
           </TabsContent>
         </Tabs>
       </CardContent>
-      
+
       <CardFooter className="flex justify-between border-t border-slate-200 dark:border-slate-700 p-4 bg-slate-50 dark:bg-slate-800">
-        <Button 
-          variant="default" 
+        <Button
+          variant="default"
           onClick={onEdit}
           className="bg-slate-700 hover:bg-slate-600 text-white dark:bg-slate-700 dark:hover:bg-slate-600"
         >
           <Edit className="h-4 w-4 mr-2" />
           Edit Enum
         </Button>
-        <Button 
-          variant="destructive" 
+        <Button
+          variant="destructive"
           onClick={onDelete}
           className="bg-red-600 hover:bg-red-700 text-white"
         >
@@ -378,4 +434,4 @@ export default function EnumDetail({ enumType, onClose, onEdit, onDelete, initia
       </CardFooter>
     </Card>
   );
-} 
+}

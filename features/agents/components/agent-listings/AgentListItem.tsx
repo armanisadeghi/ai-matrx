@@ -28,7 +28,7 @@ import { AgentActionModal } from "./AgentActionModal";
 import { AgentSneakPeekModal } from "./AgentSneakPeekModal";
 import { ComingSoonModal } from "./ComingSoonModal";
 import { FavoriteAgentButton } from "./FavoriteAgentButton";
-import { toast } from "@/lib/toast-service";
+import { announceComingSoon } from "@/lib/coming-soon/announce";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -174,13 +174,13 @@ export function AgentListItem({
     }
   };
 
-  const handleConvertToTemplate = async (e: React.MouseEvent) => {
+  const handleConvertToTemplate = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!isSystemAdmin || isConvertingToTemplate) return;
     setIsConvertingToTemplate(true);
     setIsMenuOpen(false);
     try {
-      toast.info("Convert to Template is coming soon for agents.");
+      void announceComingSoon("agents.save-as-template");
     } finally {
       setIsConvertingToTemplate(false);
     }

@@ -16,6 +16,7 @@ import type {
   PipelineState,
   StageKind,
 } from "../../../hooks/usePipelineProgress";
+import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 
 type FilterKey = "all" | "errors" | "info" | "current";
 
@@ -27,6 +28,7 @@ interface FeedEntry {
   stage: StageKind | null;
   primary: string;
   secondary?: string;
+  modelId?: string;
 }
 
 const STAGE_FROM_EVENT: Record<string, StageKind> = {
@@ -87,7 +89,8 @@ function buildEntries(
       const stage = STAGE_FROM_EVENT[subEvent] ?? null;
       const label = subEvent.replace(/_/g, " ");
       const isFailed = subEvent.includes("_failed");
-      const isComplete = subEvent.includes("_complete") || subEvent.includes("_stored");
+      const isComplete =
+        subEvent.includes("_complete") || subEvent.includes("_stored");
 
       let secondary: string | undefined;
       if ("keyword" in data && typeof data.keyword === "string") {
@@ -100,7 +103,11 @@ function buildEntries(
         }
       }
       const extras: string[] = [];
-      if ("page" in data && typeof data.page === "number" && "total_pages" in data) {
+      if (
+        "page" in data &&
+        typeof data.page === "number" &&
+        "total_pages" in data
+      ) {
         extras.push(`page ${data.page}/${data.total_pages}`);
       }
       if ("char_count" in data && typeof data.char_count === "number") {
@@ -109,9 +116,10 @@ function buildEntries(
       if ("agent_type" in data && typeof data.agent_type === "string") {
         extras.push(String(data.agent_type));
       }
-      if ("model_id" in data && data.model_id) {
-        extras.push(String(data.model_id));
-      }
+      const modelId =
+        "model_id" in data && typeof data.model_id === "string"
+          ? data.model_id
+          : undefined;
       if (extras.length > 0) {
         secondary = secondary
           ? `${secondary} • ${extras.join(" • ")}`
@@ -125,6 +133,7 @@ function buildEntries(
         stage,
         primary: label,
         secondary,
+        modelId,
       });
     } else if (evt.event === "error") {
       const data = evt.data;
@@ -184,7 +193,9 @@ export function ActivityFeed({ rawEvents, state, className }: Props) {
   const filtered = useMemo(() => {
     switch (filter) {
       case "errors":
-        return entries.filter((e) => e.level === "error" || e.level === "warning");
+        return entries.filter(
+          (e) => e.level === "error" || e.level === "warning",
+        );
       case "info":
         return entries.filter((e) => e.kind === "info");
       case "current":
@@ -251,7 +262,7 @@ export function ActivityFeed({ rawEvents, state, className }: Props) {
       </div>
       <div
         ref={scrollRef}
-        className="flex-1 min-h-0 max-h-[55vh] lg:max-h-none overflow-y-auto px-2 py-1.5 font-mono text-[10.5px] space-y-0.5"
+        className="flex-1 min-h-0 max-h-[55dvh] lg:max-h-none overflow-y-auto px-2 py-1.5 font-mono text-[10.5px] space-y-0.5"
       >
         {visible.length === 0 && (
           <div className="text-muted-foreground italic text-[11px] py-4 text-center">
@@ -296,6 +307,13 @@ export function ActivityFeed({ rawEvents, state, className }: Props) {
                   {e.secondary}
                 </span>
               )}
+              {e.modelId ? (
+                <AiModelRef
+                  modelId={e.modelId}
+                  showIcon={false}
+                  className="max-w-48 text-muted-foreground"
+                />
+              ) : null}
             </div>
           );
         })}

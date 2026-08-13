@@ -138,6 +138,23 @@ export function sourceAppFromStorage(value: string): SourceAppValue {
 export type ApiEndpointMode = "agent" | "manual";
 
 /**
+ * Client attestation of HOW an AI request was triggered — the only provenance
+ * input the client may send. The server DERIVES `origin_class` from witnessed
+ * facts; a body can never carry `origin_class` itself.
+ *
+ *   "user" — a person directly triggered this request (clicked send, submitted
+ *            a form, pressed a button). Server classes it `human`.
+ *   "auto" — client code triggered it automatically (page-load effect, timer,
+ *            auto-refresh, background prefetch, an agent tool driving sends).
+ *            Server classes it `client_auto`.
+ *
+ * Omitting the field makes the server class the request `api` (unattested) —
+ * NOT what we want for real UI traffic, so every execution path stamps one.
+ * Be honest: only paths that genuinely start from a user gesture send "user".
+ */
+export type RequestInitiation = "user" | "auto";
+
+/**
  * Conversation lifecycle intent — declared ONCE at creation, never mutated.
  *
  *   "continuous" — a durable thread the user keeps adding turns to (chat,
@@ -195,6 +212,13 @@ export interface ExecutionInstance {
   status: InstanceStatus;
   sourceApp: SourceAppValue;
   sourceFeature: SourceFeatureValue;
+  /**
+   * How this conversation's runs get triggered by default — stamped at
+   * creation (launch option / creation args). Per-send overrides win (a user
+   * typing into an auto-launched conversation is a "user" send). Absent ⇒
+   * the assemblers default to "user" for the interactive send paths.
+   */
+  initiation?: RequestInitiation;
   /** True until the server confirms this conversation ID via X-Conversation-ID header */
   cacheOnly: boolean;
   createdAt: string;
@@ -235,6 +259,24 @@ export interface ExecutionInstance {
   // ── Invocation origin (ConversationInvocation) ──────────────────────────
   /** Stable UI-surface key (e.g. "agent-runner:<agentId>", "code-editor"). */
   surfaceKey?: string;
+  /**
+   * The DB-registered `ui_surface.name` this conversation was LAUNCHED from
+   * (e.g. `matrx-user/quick-note-save`). Distinct from `surfaceKey`, which is
+   * a UI rendering-context string, not a surface the server knows.
+   *
+   * Stamped by `launchAgentExecution` whenever the launch resolved a surface.
+   * `buildToolInjection` prefers it over the route-derived guess so the
+   * server resolves against the surface the run actually belongs to.
+   *
+   * This is the ONLY way an OVERLAY surface can be attributed correctly: its
+   * window renders on top of a mapped route, so `detectActiveSurface()` (which
+   * reads `window.location.pathname`) always reports the ROUTE — on
+   * `/chat/[id]` that is `matrx-user/chat`, never the open window's surface.
+   *
+   * Absent on conversations that never launched from a surface (a plain chat
+   * send), which is what keeps those runs on the route-derived behavior.
+   */
+  surfaceName?: string | null;
   /**
    * When true, the server persists NOTHING for this conversation. Redux
    * (specifically the messages slice) is the sole source of truth.
@@ -1022,6 +1064,14 @@ export interface ManagedAgentOptions {
 
   /** UI surface that triggered the launch. Required for telemetry and attribution. */
   sourceFeature: SourceFeature;
+
+  /**
+   * Provenance attestation for this launch's requests — see
+   * {@link RequestInitiation}. Defaults to "user" (the interactive launch
+   * path). Programmatic schedulers / auto-triggers (mount effects, timers,
+   * agent-tool-driven sends) MUST pass "auto".
+   */
+  initiation?: RequestInitiation;
 
   // ═══════════════════════════════════════════════════════════
   // CONFIG BUNDLE — canonical customization surface

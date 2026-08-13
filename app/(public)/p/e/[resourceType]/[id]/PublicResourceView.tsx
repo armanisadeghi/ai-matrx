@@ -9,6 +9,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ArrowUpRight, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { resolveShareSourceSurface } from "@/features/sharing/lenses/source-surface";
 import { DuplicateToEditButton } from "@/features/sharing/components/DuplicateToEditButton";
 import { isForkable } from "@/utils/permissions/shareLinks";
 import type { PublicResource } from "../../loadPublicResource";
@@ -115,6 +116,12 @@ function renderBody(resource: PublicResource): React.ReactNode {
 export function PublicResourceView({ resource }: { resource: PublicResource }) {
   const forkable = isForkable(resource.resourceType);
   const returnPath = `/p/e/${resource.resourceType}/${resource.resourceId}`;
+  // NEVER /sign-up: the visitor goes to the real feature (workspace when
+  // signed in, that feature's marketing landing when not). Same resolver the
+  // /s/[token] lane uses — features/sharing/lenses/source-surface.ts.
+  const source = resolveShareSourceSurface({
+    resourceType: resource.resourceType,
+  });
 
   return (
     <div className="flex min-h-dvh flex-col bg-textured">
@@ -132,8 +139,8 @@ export function PublicResourceView({ resource }: { resource: PublicResource }) {
             />
           )}
           <Button asChild size="sm" variant="outline">
-            <Link href="/sign-up">
-              Create your own
+            <Link href={source.href}>
+              {source.label}
               <ArrowUpRight className="ml-1 h-4 w-4" />
             </Link>
           </Button>
@@ -157,7 +164,10 @@ export function PublicResourceView({ resource }: { resource: PublicResource }) {
             AI Matrx
           </Link>
           {" — "}
-          <Link href="/sign-up" className="font-medium text-primary hover:underline">
+          <Link
+            href={source.href}
+            className="font-medium text-primary hover:underline"
+          >
             build and share your own
           </Link>
           .

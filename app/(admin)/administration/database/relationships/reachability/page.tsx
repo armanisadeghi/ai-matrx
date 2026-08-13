@@ -21,13 +21,22 @@ export default async function ReachabilityInspectorPage({
 
   return (
     <div className="h-full overflow-y-auto p-4">
-      <ReachabilityInspectorClient
-        initialMode={
-          mode === "containers" || mode === "contents" ? mode : undefined
+      <Suspense
+        fallback={
+          <div className="p-4 text-sm text-muted-foreground">
+            Loading reachability inspector…
+          </div>
         }
-        initialType={type}
-        initialId={id}
-      />
+      >
+        <ReachabilityInspectorClient
+          initialMode={
+            mode === "containers" || mode === "contents" ? mode : undefined
+          }
+          initialType={type}
+          initialId={id}
+        />
+      </Suspense>
     </div>
   );
 }
+import { Suspense } from "react";

@@ -47,16 +47,17 @@ export function ShareButton({
   showStatus = true,
 }: ShareButtonProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { isPublic, loading, refresh } = useSharingStatus(
+  const { isPublic, loading, error, refresh } = useSharingStatus(
     resourceType,
     resourceId,
+    showStatus,
   );
 
   // Only is_public is checked here — single cheap resource-row query.
   // Showing "Shared with N users" on list buttons would require the expensive
   // get_resource_permissions RPC per card. Full detail is inside the modal.
   const getButtonContent = () => {
-    if (loading) return { icon: Share2, label: "Share" };
+    if (loading || error) return { icon: Share2, label: "Share" };
     if (isPublic)
       return { icon: Globe, label: showStatus ? "Public" : "Share" };
     return { icon: Lock, label: showStatus ? "Private" : "Share" };

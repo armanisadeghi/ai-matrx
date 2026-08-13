@@ -5,7 +5,7 @@
  * calls (`cx_tool_call`) for ANY tool, across ALL users — so a renderer can be
  * previewed against genuine data even when we have no hand-written fixture.
  *
- * `cx_tool_call` RLS is per-user (`user_id = auth.uid()` or a shared-conversation
+ * `cx_tool_call` RLS is per-user (`created_by = auth.uid()` or a shared-conversation
  * viewer), so the browser client only ever sees the signed-in user's own calls.
  * This route bypasses that with the admin client AFTER a hard super-admin gate —
  * read-only, never mutating, gated by `requireSuperAdmin()`.
@@ -20,7 +20,7 @@ import { createAdminClient } from "@/utils/supabase/adminClient";
 
 // Columns the renderer needs to rebuild a ToolLifecycleEntry, plus owner context.
 const ROW_COLUMNS =
-  "id, call_id, tool_name, tool_name_as_called, arguments, output, is_error, error_type, error_message, started_at, completed_at, execution_events, created_at, user_id, conversation_id";
+  "id, call_id, tool_name, tool_name_as_called, arguments, output, is_error, error_type, error_message, started_at, completed_at, execution_events, created_at, created_by, conversation_id";
 
 // How many recent rows to scan when aggregating the tool list (bounded).
 const TOOL_SCAN_LIMIT = 3000;

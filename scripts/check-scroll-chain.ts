@@ -18,12 +18,18 @@
  * sit inside a `flex` / `inline-flex` / `grid` parent. Anything else is a
  * broken chain.
  *
- * TWO PASSES, because the real bug crossed a file boundary:
+ * THREE PASSES, because the real bugs crossed file and route boundaries:
  *   1. in-file — a `flex-1 min-h-0` element inside a non-flex parent.
  *   2. cross-file — a COMPONENT whose own root element grows (`flex-1`),
  *      rendered inside a non-flex parent somewhere else. This is exactly the
  *      backlinks shape: `<BacklinkObservationTable/>` (root `flex-1 min-h-0
  *      flex-col`) placed in a plain `<div className="min-h-0 flex-1">`.
+ *   3. route layout — a layout that wraps `{children}` in `overflow-hidden`
+ *      with no vertical scroll fallback. That contract makes every current
+ *      and future leaf page responsible for remembering its own scroll owner;
+ *      one omission silently amputates the page. The guard follows one local
+ *      component boundary because Next layouts commonly delegate their frame
+ *      to a `*LayoutClient` component.
  *
  * A third layer catches what static analysis cannot (a chain broken through a
  * prop, a portal, or a runtime-composed tree): the runtime guard in
@@ -41,7 +47,10 @@ import ts from "typescript";
 
 const ROOT = process.cwd();
 const SCAN_DIRS = ["app", "features", "components", "lib"] as const;
-const SKIP_DIRS = new Set(["node_modules", ".next", ".git", "dist", "build"]);
+// These roots are source-only. Do not skip directories named `build` or
+// `dist`: both are legitimate App Router segments in this repository, and a
+// route-tree guard that silently omits them is worse than no guard.
+const SKIP_DIRS = new Set(["node_modules", ".next", ".git"]);
 
 /** Display tokens that make a child's `flex-1` resolve to a real height. */
 const PARENT_DISPLAY_OK = ["flex", "inline-flex", "grid", "inline-grid"];
@@ -68,6 +77,14 @@ interface Violation {
   parentClasses: string;
   child: string;
   childClasses: string;
+}
+
+interface RouteLayoutViolation {
+  layout: string;
+  source: string;
+  line: number;
+  parent: string;
+  parentClasses: string;
 }
 
 function parseArgs(): { strict: boolean } {
@@ -118,7 +135,11 @@ function classNameOf(node: ts.JsxOpeningLikeElement): string {
       property.name.text === "className",
   );
   if (!attribute?.initializer) return "";
-  if (node.attributes.properties.some((property) => ts.isJsxSpreadAttribute(property))) {
+  if (
+    node.attributes.properties.some((property) =>
+      ts.isJsxSpreadAttribute(property),
+    )
+  ) {
     return UNRESOLVED;
   }
 
@@ -173,6 +194,144 @@ function nearestJsxParent(node: ts.Node): ts.JsxElement | null {
   return null;
 }
 
+/** Every intrinsic JSX ancestor inside the current component return tree. */
+function intrinsicJsxAncestors(node: ts.Node): ts.JsxElement[] {
+  const ancestors: ts.JsxElement[] = [];
+  let current = node.parent;
+  while (current) {
+    if (ts.isJsxElement(current)) {
+      const tag = tagNameOf(current.openingElement);
+      if (isIntrinsic(tag)) ancestors.push(current);
+    }
+    // A nested component/callback owns a different render tree. Do not accuse
+    // an outer wrapper that is not actually an ancestor of this `children`.
+    if (
+      ts.isFunctionDeclaration(current) ||
+      ts.isArrowFunction(current) ||
+      ts.isFunctionExpression(current)
+    ) {
+      break;
+    }
+    current = current.parent;
+  }
+  return ancestors;
+}
+
+const CLIP_TOKENS = [
+  "overflow-hidden",
+  "overflow-clip",
+  "overflow-y-hidden",
+  "overflow-y-clip",
+];
+const SCROLL_TOKENS = [
+  "overflow-auto",
+  "overflow-scroll",
+  "overflow-y-auto",
+  "overflow-y-scroll",
+];
+
+function clipsWithoutScrollFallback(classes: string): boolean {
+  return (
+    classes !== UNRESOLVED &&
+    CLIP_TOKENS.some((token) => hasToken(classes, token)) &&
+    !SCROLL_TOKENS.some((token) => hasToken(classes, token))
+  );
+}
+
+function hasScrollFallback(classes: string): boolean {
+  return (
+    classes !== UNRESOLVED &&
+    SCROLL_TOKENS.some((token) => hasToken(classes, token))
+  );
+}
+
+/**
+ * Route `children` must never be placed behind an unconditional clipper. A
+ * nested editor/table can still own its scroll; `overflow-y-auto` on the
+ * boundary is only the safe fallback when a leaf renders natural-height
+ * content.
+ */
+function routeChildrenClipViolations(
+  sourceFile: ts.SourceFile,
+  sourcePath: string,
+  layoutPath: string,
+): RouteLayoutViolation[] {
+  const violations: RouteLayoutViolation[] = [];
+  const seen = new Set<number>();
+
+  const visit = (node: ts.Node): void => {
+    if (
+      ts.isIdentifier(node) &&
+      node.text === "children" &&
+      ts.isJsxExpression(node.parent)
+    ) {
+      for (const parent of intrinsicJsxAncestors(node)) {
+        const opening = parent.openingElement;
+        const classes = classNameOf(opening);
+        // The first vertical scroll owner makes every outer clipper safe: the
+        // route content is bounded and reachable before it reaches them.
+        if (hasScrollFallback(classes)) break;
+        if (clipsWithoutScrollFallback(classes) && !seen.has(opening.pos)) {
+          seen.add(opening.pos);
+          violations.push({
+            layout: relative(ROOT, layoutPath),
+            source: relative(ROOT, sourcePath),
+            line: lineOf(sourceFile, opening),
+            parent: tagNameOf(opening),
+            parentClasses: classes,
+          });
+        }
+      }
+    }
+    node.forEachChild(visit);
+  };
+  visit(sourceFile);
+  return violations;
+}
+
+/**
+ * The release guard self-tests the two opposite cases that previously fooled
+ * it. Keeping these fixtures inside the executable means the gate cannot pass
+ * after somebody accidentally restores the nearest-parent-only blind spot or
+ * starts flagging safe outer shell clippers again.
+ */
+function verifyRouteLayoutDetector(): void {
+  const findingsFor = (source: string) =>
+    routeChildrenClipViolations(
+      ts.createSourceFile(
+        "fixture.tsx",
+        source,
+        ts.ScriptTarget.Latest,
+        true,
+        ts.ScriptKind.TSX,
+      ),
+      join(ROOT, "fixture.tsx"),
+      join(ROOT, "layout.tsx"),
+    );
+
+  const nestedClipper = findingsFor(`
+    function Layout({ children }) {
+      return <div className="h-full overflow-hidden"><div className="min-h-0 flex-1">{children}</div></div>;
+    }
+  `);
+  if (nestedClipper.length !== 1) {
+    throw new Error(
+      "scroll-chain self-test failed: a clipper above a neutral route-child wrapper was not detected.",
+    );
+  }
+
+  const safeInnerScroller = findingsFor(`
+    function Layout({ children }) {
+      return <div className="h-full overflow-hidden"><div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">{children}</div></div>;
+    }
+  `);
+  if (safeInnerScroller.length !== 0) {
+    throw new Error(
+      "scroll-chain self-test failed: an inner vertical scroll fallback did not protect the outer shell clipper.",
+    );
+  }
+}
+
 function parseFile(path: string): ts.SourceFile {
   return ts.createSourceFile(
     path,
@@ -198,7 +357,9 @@ function rootElementsOfComponents(
   const roots = new Map<string, string[]>();
 
   const record = (name: string, node: ts.Node): void => {
-    const unwrapped = ts.isParenthesizedExpression(node) ? node.expression : node;
+    const unwrapped = ts.isParenthesizedExpression(node)
+      ? node.expression
+      : node;
     if (!ts.isJsxElement(unwrapped) && !ts.isJsxSelfClosingElement(unwrapped)) {
       return;
     }
@@ -301,13 +462,15 @@ function importSources(
         : null;
     if (!base) continue;
 
-    const resolved = [`${base}.tsx`, join(base, "index.tsx")].find((candidate) => {
-      try {
-        return statSync(candidate).isFile();
-      } catch {
-        return false;
-      }
-    });
+    const resolved = [`${base}.tsx`, join(base, "index.tsx")].find(
+      (candidate) => {
+        try {
+          return statSync(candidate).isFile();
+        } catch {
+          return false;
+        }
+      },
+    );
     if (!resolved) continue;
 
     const { name, namedBindings } = statement.importClause;
@@ -386,6 +549,7 @@ function scanFile(
 
 function main(): void {
   const { strict } = parseArgs();
+  verifyRouteLayoutDetector();
   const files = SCAN_DIRS.flatMap((dir) => walkTsx(join(ROOT, dir)));
 
   // Pass 0 — index, per file, every component whose own root element needs a
@@ -404,26 +568,67 @@ function main(): void {
 
   const violations = files.flatMap((file) => scanFile(file, growRootedByFile));
 
-  if (violations.length === 0) {
+  // Pass 3 — route layouts may delegate their frame to one local client
+  // component, so inspect the layout and every directly imported TSX module.
+  const layoutFiles = files.filter((file) => file.endsWith("/layout.tsx"));
+  const routePageFiles = files.filter((file) => file.endsWith("/page.tsx"));
+  const routeLayoutViolations = layoutFiles.flatMap((layoutFile) => {
+    const layoutSource = parseFile(layoutFile);
+    const candidates = new Set<string>([
+      layoutFile,
+      ...importSources(layoutSource, layoutFile).values(),
+    ]);
+    return [...candidates].flatMap((sourcePath) =>
+      routeChildrenClipViolations(
+        parseFile(sourcePath),
+        sourcePath,
+        layoutFile,
+      ),
+    );
+  });
+
+  if (violations.length === 0 && routeLayoutViolations.length === 0) {
     console.log(
-      `scroll-chain: OK — ${files.length} files, no broken bounded-height chains.`,
+      `scroll-chain: OK — ${files.length} files, ${routePageFiles.length} route pages, and ${layoutFiles.length} route layouts; no broken bounded-height chains or unsafe route clippers.`,
     );
     return;
   }
 
-  console.log(
-    `\nscroll-chain: ${violations.length} broken chain(s) — a \`flex-1 min-h-0\` child inside a non-flex parent is height:auto, so its scroll area never bounds:\n`,
-  );
-  for (const violation of violations) {
-    console.log(`  ${violation.file}:${violation.line}`);
+  if (violations.length > 0) {
     console.log(
-      `    <${violation.parent} class="${violation.parentClasses}">   <-- needs \`flex\` + \`flex-col\` (or grid)`,
+      `\nscroll-chain: ${violations.length} broken chain(s) — a \`flex-1 min-h-0\` child inside a non-flex parent is height:auto, so its scroll area never bounds:\n`,
     );
-    console.log(`      <${violation.child} class="${violation.childClasses}">`);
+    for (const violation of violations) {
+      console.log(`  ${violation.file}:${violation.line}`);
+      console.log(
+        `    <${violation.parent} class="${violation.parentClasses}">   <-- needs \`flex\` + \`flex-col\` (or grid)`,
+      );
+      console.log(
+        `      <${violation.child} class="${violation.childClasses}">`,
+      );
+    }
+    console.log(
+      `\nFix: give the parent \`flex flex-col\`, or drop the child's \`flex-1 min-h-0\` if it is not a scroll chain.\n`,
+    );
   }
-  console.log(
-    `\nFix: give the parent \`flex flex-col\`, or drop the child's \`flex-1 min-h-0\` if it is not a scroll chain.\n`,
-  );
+
+  if (routeLayoutViolations.length > 0) {
+    console.log(
+      `\nscroll-chain: ${routeLayoutViolations.length} unsafe route-layout clipper(s) — route children can be taller than the viewport, but the layout provides no vertical scroll fallback:\n`,
+    );
+    for (const violation of routeLayoutViolations) {
+      console.log(`  ${violation.source}:${violation.line}`);
+      if (violation.source !== violation.layout) {
+        console.log(`    imported by ${violation.layout}`);
+      }
+      console.log(
+        `    <${violation.parent} class="${violation.parentClasses}">{children}</${violation.parent}>`,
+      );
+    }
+    console.log(
+      `\nFix: replace the layout boundary's vertical clip with \`overflow-y-auto overflow-x-hidden\`. Full-height editors and tables keep their own inner scroll; natural-height pages inherit the safe fallback.\n`,
+    );
+  }
 
   if (strict) process.exit(1);
 }

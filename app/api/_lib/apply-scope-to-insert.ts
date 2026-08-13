@@ -5,7 +5,7 @@ import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";
 
 /**
  * Resolves `scope` + `scopeId` from a JSON request body into the four row-level
- * scope foreign keys (`user_id`, `organization_id`, `project_id`, `task_id`)
+ * scope foreign keys (`created_by`, `organization_id`, `project_id`, `task_id`)
  * used across the agent-shortcuts / shortcut-categories tables. (Content
  * blocks moved to skill.render_definition, written directly via supabase-js.)
  *
@@ -38,7 +38,7 @@ export async function applyScopeToInsertPayload(args: {
       : null;
 
   // Always normalize so clients cannot inject a scope FK out of band.
-  payload.user_id = null;
+  payload.created_by = null;
   payload.organization_id = null;
   payload.project_id = null;
   payload.task_id = null;
@@ -49,7 +49,7 @@ export async function applyScopeToInsertPayload(args: {
   }
 
   if (scope === "user") {
-    payload.user_id = userId;
+    payload.created_by = userId;
     payload.organization_id = await ensureOrgIdServer(client, undefined);
     return payload;
   }

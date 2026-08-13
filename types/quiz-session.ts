@@ -3,7 +3,7 @@ import type { QuizState } from "@/components/mardown-display/blocks/quiz/quiz-ty
 /** Client/server shape for a persisted quiz session (subset of columns used by UI). */
 export type QuizSession = {
   id: string;
-  user_id: string;
+  created_by: string;
   title: string | null;
   category: string | null;
   state: QuizState;

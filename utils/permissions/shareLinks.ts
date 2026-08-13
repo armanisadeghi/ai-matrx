@@ -14,6 +14,8 @@ import { supabase } from "@/utils/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ResourceType } from "./registry";
 import type { PermissionLevel } from "./types";
+import { isJsonObject } from "@/types/json";
+import { operationFailed } from "@/utils/errors";
 
 export interface ShareLink {
   id: string;
@@ -48,6 +50,17 @@ export interface ShareCapabilities {
   supportsPublic: boolean;
   /** Whether the resource type offers no-login share links (admin policy). */
   isLinkShareable: boolean;
+  /** Verified physical storage for the public/private state; null means unsupported. */
+  publicState:
+    | {
+        column: "visibility" | "card_visibility";
+        kind: "enum";
+      }
+    | {
+        column: string;
+        kind: "boolean";
+      }
+    | null;
 }
 
 /**
@@ -58,18 +71,30 @@ export interface ShareCapabilities {
 export async function getShareCapabilities(
   resourceType: ResourceType,
 ): Promise<ShareCapabilities> {
-  try {
-    const { data } = await supabase.rpc("get_share_capabilities", {
-      p_resource_type: resourceType,
-    });
-    const r = (data ?? {}) as { supports_public?: boolean; is_link_shareable?: boolean };
-    return {
-      supportsPublic: !!r.supports_public,
-      isLinkShareable: !!r.is_link_shareable,
-    };
-  } catch {
-    return { supportsPublic: false, isLinkShareable: false };
+  const { data, error } = await supabase.rpc("get_share_capabilities", {
+    p_resource_type: resourceType,
+  });
+  if (error) {
+    throw operationFailed("check this item's sharing options", error);
   }
+  if (!isJsonObject(data)) {
+    throw operationFailed("check this item's sharing options");
+  }
+
+  const column = data.public_state_column;
+  const kind = data.public_state_kind;
+  const publicState: ShareCapabilities["publicState"] =
+    kind === "enum" && (column === "visibility" || column === "card_visibility")
+      ? { column, kind }
+      : kind === "boolean" && typeof column === "string"
+        ? { column, kind }
+        : null;
+
+  return {
+    supportsPublic: data.supports_public === true && publicState !== null,
+    isLinkShareable: data.is_link_shareable === true,
+    publicState,
+  };
 }
 
 interface CreateShareLinkOptions {
@@ -185,7 +210,11 @@ export async function forkSharedResource(
         p_token: shareToken ?? undefined,
       });
       if (error) return { success: false, error: error.message };
-      const r = data as { success: boolean; error?: string; conversation_id?: string };
+      const r = data as {
+        success: boolean;
+        error?: string;
+        conversation_id?: string;
+      };
       return r?.success
         ? { success: true, path: `/chat/${r.conversation_id}` }
         : { success: false, error: r?.error };
@@ -220,7 +249,10 @@ export async function forkSharedResource(
     }
     return { success: false, error: "This type can't be copied yet" };
   } catch (e) {
-    return { success: false, error: e instanceof Error ? e.message : "Failed to save copy" };
+    return {
+      success: false,
+      error: e instanceof Error ? e.message : "Failed to save copy",
+    };
   }
 }
 
@@ -245,7 +277,11 @@ export async function resolveShareToken(
     p_token: token,
   });
   if (error) {
-    return { success: false, error: "not_found", message: "This link is invalid." };
+    return {
+      success: false,
+      error: "not_found",
+      message: "This link is invalid.",
+    };
   }
   const res = data as Record<string, unknown>;
   return {

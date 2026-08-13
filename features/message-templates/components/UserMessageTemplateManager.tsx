@@ -19,6 +19,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { useSettingsNavigate } from "@/features/settings/components/SettingsPresentationContext";
+import { isPubliclyVisible } from "@/lib/visibility/labels";
 import { idMatchesQuery } from "@/utils/search-scoring";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
@@ -274,11 +275,13 @@ export function UserMessageTemplateManager() {
   }, [templates]);
 
   const myTemplates = useMemo(
-    () => templates.filter((t) => t.user_id === currentUserId),
+    () => templates.filter((t) => t.created_by === currentUserId),
     [templates, currentUserId],
   );
   const publicTemplates = useMemo(
-    () => templates.filter((t) => t.is_public && t.user_id !== currentUserId),
+    () => templates.filter(
+        (t) => isPubliclyVisible(t.visibility) && t.created_by !== currentUserId,
+      ),
     [templates, currentUserId],
   );
   const baseList = activeTab === "my" ? myTemplates : publicTemplates;
@@ -286,8 +289,10 @@ export function UserMessageTemplateManager() {
   const filteredTemplates = useMemo(() => {
     let list = baseList.filter((t) => {
       if (selectedRole !== "all" && t.role !== selectedRole) return false;
-      if (selectedVisibility === "public" && !t.is_public) return false;
-      if (selectedVisibility === "private" && t.is_public) return false;
+      if (selectedVisibility === "public" && !isPubliclyVisible(t.visibility))
+        return false;
+      if (selectedVisibility === "private" && isPubliclyVisible(t.visibility))
+        return false;
       if (
         selectedTags.length > 0 &&
         !selectedTags.every((tag) => t.tags?.includes(tag))
@@ -352,7 +357,7 @@ export function UserMessageTemplateManager() {
     setSelectedTags([]);
   };
 
-  const canEdit = (t: MessageTemplateDB) => t.user_id === currentUserId;
+  const canEdit = (t: MessageTemplateDB) => t.created_by === currentUserId;
 
   const handleNewTemplate = () =>
     startTransition(() => navigate("/settings/message-templates/new"));

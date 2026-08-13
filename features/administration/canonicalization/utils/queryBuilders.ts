@@ -13,15 +13,20 @@ export const DATASET_QUERIES: Record<
   Exclude<CanonicalizationDataset, "overview">,
   string
 > = {
-  summary: `select schema_name, table_name, token, fails, warns, certified
+  summary: `select schema_name, table_name, token, fails, warns, certified, audit_class, audit_class_reason
     from audit.summary
     order by fails desc, warns desc, schema_name, table_name;`,
   findings: `select id, schema_name, table_name, token, source, check_name, status, detail
     from audit.canonical_findings
     order by (status = 'FAIL') desc, (status = 'WARN') desc, schema_name, table_name, check_name;`,
-  "broken-functions": `select schema_name, function_name, signature, lineno, level, sqlstate, message, context
+  // severity comes from the DB (audit.classify_broken_function) and is never
+  // re-derived client-side — `level='error'` covers both real breakage and the
+  // suppressed checker artifacts. Real rows sort to the top so the page opens on
+  // the actionable ones even before the severity filter is applied.
+  "broken-functions": `select schema_name, function_name, signature, lineno, level, sqlstate, message, context,
+      severity, suppression_reason
     from audit.broken_functions
-    order by schema_name, function_name;`,
+    order by (severity = 'real') desc, (severity = 'advisory') desc, schema_name, function_name;`,
   "function-deps": `select function_schema, function_name, signature, dep_type, dep_schema, dep_name
     from audit.function_deps
     order by function_schema, function_name, dep_schema, dep_name;`,
@@ -34,7 +39,9 @@ export const DATASET_QUERIES: Record<
   "stale-registry": `select token, schema_name, table_name
     from audit.stale_registry
     order by token;`,
-  "refresh-log": `select run_at, gate_fail, gate_warn, ext_fail, ext_warn, m2m, unregistered, stale, broken_fn, note
+  "refresh-log": `select run_at, gate_fail, gate_warn, ext_fail, ext_warn, m2m, unregistered, stale,
+      broken_fn, broken_fn_rows, broken_fn_real, broken_fn_advisory, broken_fn_style,
+      broken_fn_suppressed, broken_fn_unchecked, runtime_fail, note
     from audit.refresh_log
     order by run_at desc;`,
 };

@@ -139,7 +139,8 @@ export const ASSOCIATION_TARGET_TYPES = [
   "research_tag", //         a research tag a source is filed under (rs_source_tag M2M collapsed into associations, worklog §4.1)
   "skill", //                a skill — projects link to it (skill→project, role 'member'); code_files attach as resources (code_file→skill, role 'resource')
   "surface", //              a UI surface — agents bind here (agent→surface); context menu reads via agent.menu_surface
-  "plan_entity", //          a Content Planning person/source/media/org — plan_node role edges (about/cites/embeds/authored_by/reviewed_by) target it
+  "plan_entity", //          a Content Planning source/media citation — plan_node role edges (about/cites/embeds) target it; person/org folded into crm.party 2026-08-12
+  "web_site", //             a web.site — parties attach onto a site's roster (party→web_site role 'writes_for'; plan_node/plan_entity containment edges are trigger-written)
   "seo_topic", //            a taxonomy topic — plan_node/plan_entity tag into it (role 'topic')
   "seo_keyword", //          a keyword — plan_node attaches secondaries (role 'secondary_keyword'; the primary is an FK, never an edge)
   "web_page", //             a canonical page — the page workspace attaches notes/tasks/files/keywords onto it (keyword edges: role 'primary'|'supporting')

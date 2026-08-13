@@ -14,7 +14,7 @@
  * That registry is the single source of truth. This catalogue hand-re-lists the
  * same facts and HAS DRIFTED (e.g. `workflow` → bare `public.workflow` instead
  * of `workflow.definition`; `agent_app` instead of the canonical `app` token;
- * `flashcard_data`/`canvas_items`/`rs_topic` tables with no registered token) —
+ * `canvas_items`/`rs_topic` tables with no registered token) —
  * exactly the class of `PGRST205` / `42703` bugs the canonical system exists to
  * kill. The org workspace count grid no longer reads from here; it renders
  * `AssociationCard`s driven by the registry.
@@ -144,7 +144,7 @@ export interface OrgResourceEntry {
    *
    * `key` above is this catalogue's own legacy vocabulary and does NOT match
    * the token for six kinds (`agent_app`→`app`, `sandbox`→`sandbox_instance`,
-   * `flashcard`→`flashcard_data`, `quiz`→`quiz_session`, `canvas`→`canvas_item`,
+   * `flashcard`→`fc_set`, `quiz`→`quiz_session`, `canvas`→`canvas_item`,
    * `research`→`research_topic`). Surfaces that render these rows must resolve
    * routes, icons and peeks from the registry by TOKEN — keying off `key`
    * silently loses the door for exactly those six.
@@ -163,8 +163,8 @@ export interface OrgResourceEntry {
   /**
    * Public-schema table used for the org-owned count
    * (`where organization_id = orgId`) and the contribute item query
-   * (`where user_id = me`). Null = no directly-queryable public table (e.g. it
-   * lives in another schema); only shared grants are counted.
+   * (owner column resolved from the canonical entity registry). Null = no
+   * directly-queryable public table; only shared grants are counted.
    */
   table: string | null;
   /**
@@ -469,16 +469,16 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
   },
   {
     key: "flashcard",
-    token: "flashcard_data",
+    token: "fc_set",
     label: "Flashcard Set",
     labelPlural: "Flashcards",
     role: "destination",
     icon: Layers,
     description: "Study cards generated from your content.",
-    table: "flashcard_data",
+    table: "fc_set",
     hasOrgColumn: true,
-    shareKey: "flashcard_data",
-    titleColumn: "topic",
+    shareKey: "fc_set",
+    titleColumn: "name",
     orgRoute: null,
     scopeable: true,
   },
@@ -492,7 +492,7 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
     description: "Quizzes built from your knowledge.",
     table: "quiz_sessions",
     hasOrgColumn: true,
-    shareKey: "quiz_sessions",
+    shareKey: "quiz_session",
     titleColumn: "title",
     orgRoute: null,
     scopeable: true,

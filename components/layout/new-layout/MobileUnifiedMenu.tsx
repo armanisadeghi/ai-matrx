@@ -15,7 +15,6 @@ import {
   LayoutGrid,
   Bell,
   MessageSquare,
-  Crown,
   LogOut,
   Sun,
   Moon,
@@ -30,7 +29,6 @@ import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import { setMode } from "@/styles/themes/themeSlice";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import { brokerSelectors } from "@/lib/redux/brokerSlice/selectors";
 import { Notification } from "@/types/notification.types";
 import { useQuickActions } from "@/features/quick-actions/hooks/useQuickActions";
 
@@ -45,10 +43,6 @@ export function MobileUnifiedMenu() {
     user.email?.split("@")[0] ||
     "User";
   const profilePhoto = user.userMetadata.picture || null;
-  const userIsCreator = useAppSelector((state) =>
-    brokerSelectors.selectValue(state, "APPLET_USER_IS_ADMIN"),
-  );
-
   // Quick Actions via Redux
   const {
     openQuickNotes,
@@ -130,11 +124,6 @@ export function MobileUnifiedMenu() {
                   <span className="text-xs text-gray-600 dark:text-gray-400 truncate">
                     {user.email}
                   </span>
-                  {Boolean(userIsCreator) && (
-                    <span className="text-xs font-medium text-amber-500 dark:text-amber-400 flex items-center mt-1">
-                      <Crown size={12} className="mr-1" /> Creator
-                    </span>
-                  )}
                 </div>
               </div>
             </div>

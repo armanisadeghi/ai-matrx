@@ -9,7 +9,6 @@ import {
 import * as MenubarPrimitive from "@radix-ui/react-menubar"
 
 import { cn } from "@/styles/themes/utils"
-import { useIsMounted } from "@/hooks/use-is-mounted"
 
 const MenubarMenu = MenubarPrimitive.Menu
 
@@ -22,21 +21,19 @@ const MenubarSub = MenubarPrimitive.Sub
 const MenubarRadioGroup = MenubarPrimitive.RadioGroup
 
 /**
- * Hydration-safe Menubar wrapper.
- * Radix UI generates dynamic IDs for aria-controls that can differ between
- * SSR and client, causing hydration mismatches. This wrapper defers rendering
- * until after hydration to prevent these errors.
+ * THE ROOT RENDERS UNCONDITIONALLY — no mount gate. This wrapper used to defer
+ * rendering until after hydration ("Radix generates dynamic aria-controls ids
+ * that differ between SSR and client"), and that justification was false:
+ * Radix ids come from React's SSR-stable `useId` (verified against
+ * @radix-ui/react-menubar 1.1.18 / react-id 1.1.2). The gate was actively
+ * harmful — it deleted the ENTIRE menu bar from SSR and the first client
+ * paint. See components/ui/context-menu/context-menu.tsx (the precedent
+ * fix, D144).
  */
 const Menubar = React.forwardRef<
   React.ComponentRef<typeof MenubarPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Root>
 >(({ className, ...props }, ref) => {
-  const isMounted = useIsMounted()
-  
-  if (!isMounted) {
-    return null
-  }
-  
   return (
     <MenubarPrimitive.Root
       ref={ref}

@@ -2,7 +2,7 @@
 //
 // Channel A (sessions): subscribed once after the first sessions list fetch,
 // keeps the sidebar in sync across tabs/devices for the same user. Filtered
-// by `user_id`.
+// by `created_by` (the table's owner column — there is no `user_id`).
 //
 // Channel B (active session): subscribed when an active session is selected
 // and torn down + rebuilt when the active session changes. Listens to the
@@ -110,7 +110,7 @@ export const transcriptStudioRealtimeMiddleware: Middleware =
             event: "*",
             schema: "transcripts",
             table: "studio_sessions",
-            filter: `user_id=eq.${userId}`,
+            filter: `created_by=eq.${userId}`,
           },
           (payload) => {
             const newRow = payload.new as SessionRow | undefined;
@@ -120,7 +120,7 @@ export const transcriptStudioRealtimeMiddleware: Middleware =
               return;
             }
             if (newRow?.id) {
-              if (newRow.is_deleted) {
+              if (newRow.deleted_at) {
                 storeApi.dispatch(sessionRemoved(newRow.id));
                 return;
               }

@@ -24,6 +24,7 @@ import { Loader2, TriangleAlert, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import MarkdownStream from "@/components/MarkdownStream";
+import { useRetainRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
 import {
   selectCurrentPhase,
   selectRequestError,
@@ -50,7 +51,10 @@ const ACTIVE_REQUEST_STATUSES = new Set([
   "awaiting-tools",
 ]);
 
-function phaseLabel(phase: StreamPhase | null, fallbackActive: boolean): string {
+function phaseLabel(
+  phase: StreamPhase | null,
+  fallbackActive: boolean,
+): string {
   switch (phase) {
     case "connecting":
       return "Connecting…";
@@ -131,7 +135,8 @@ export function useLiveRunStatus(
   return {
     requestId,
     isActive,
-    statusText: serverPhase ?? phaseLabel(streamPhase, isActive || pending) ?? null,
+    statusText:
+      serverPhase ?? phaseLabel(streamPhase, isActive || pending) ?? null,
     errorMessage: requestError?.user_message ?? requestError?.message ?? null,
     chunkCount,
   };
@@ -179,6 +184,13 @@ export function LiveRunDisplay({
 }: LiveRunDisplayProps) {
   const { requestId, isActive, statusText, errorMessage, chunkCount } =
     useLiveRunStatus(conversationId, requestIdProp, pending);
+
+  // A floating window deliberately survives the route component that launched
+  // it. Retain the canonical request row for exactly as long as this viewer is
+  // mounted, so launcher cleanup during a query-driven remount cannot blank
+  // the output (THE DISAPPEARING-RUN CLASS — see
+  // features/agents/docs/LIVE_RUN_RETENTION.md).
+  useRetainRequestForViewer(requestId, "live-run-display");
 
   const bodyRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {

@@ -1,10 +1,16 @@
 /**
  * Row types and result envelopes for the UI-first tools system.
  *
- * Row types mirror the cx_agent_lists migration shapes. Hand-typed (rather
- * than pulled from `database.types.ts`) because the generated types file
- * isn't always in lockstep — we only re-generate it on demand. Compare the
- * SQL migration if the database drifts.
+ * Row types mirror the `chat` schema shapes. Hand-typed (rather than pulled
+ * from `database.types.ts`) because `steps`/`value` come back as `Json` from
+ * the generator and every consumer here wants the narrowed shape. Because
+ * they are hand-mirrored, the type gate does NOT catch column renames —
+ * compare against the live table whenever the schema changes.
+ *
+ * Ownership is `created_by` (canonical, stamped by the `_stamp_actor`
+ * trigger). `chat.agent_task` has no owner uuid of its own: it is owned
+ * through its parent conversation, and its `creator_kind` enum records who
+ * AUTHORED the task (agent vs user), never who owns it.
  */
 
 import type { TaskStatus } from "./schemas";
@@ -24,14 +30,13 @@ export type CxAgentTaskCreator = "agent" | "user";
 export interface CxAgentPlanRow {
   id: string;
   conversation_id: string;
-  user_id: string;
+  created_by: string | null;
   title: string;
   steps: string[];
   reasoning: string | null;
   domains: string[] | null;
   estimated_minutes: number | null;
   status: CxPlanStatus;
-  project_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -39,13 +44,13 @@ export interface CxAgentPlanRow {
 export interface CxAgentTaskRow {
   id: string;
   conversation_id: string;
-  user_id: string;
   plan_id: string | null;
   title: string;
   status: CxAgentTaskStatus;
   note: string | null;
   position: number;
-  created_by: CxAgentTaskCreator;
+  /** Who authored the task — NOT an owner. Owner is the parent conversation. */
+  creator_kind: CxAgentTaskCreator | null;
   created_at: string;
   updated_at: string;
 }
@@ -53,7 +58,7 @@ export interface CxAgentTaskRow {
 export interface CxUserTodoRow {
   id: string;
   conversation_id: string;
-  user_id: string;
+  created_by: string | null;
   title: string;
   context: string | null;
   due: string | null;
@@ -61,21 +66,6 @@ export interface CxUserTodoRow {
   done_at: string | null;
   ctx_task_id: string | null;
   created_at: string;
-  updated_at: string;
-}
-
-export interface CxAgentMemoryRow {
-  conversation_id: string;
-  user_id: string;
-  key: string;
-  value: unknown;
-  updated_at: string;
-}
-
-export interface AgentUserKvRow {
-  user_id: string;
-  key: string;
-  value: unknown;
   updated_at: string;
 }
 
@@ -124,13 +114,3 @@ export interface PlanResultEnvelope {
   timed_out: boolean;
 }
 
-export interface MemoryResult {
-  ok: boolean;
-  action: string;
-  key?: string;
-  value?: unknown;
-  keys?: string[];
-  message?: string;
-}
-
-export type StorageResult = MemoryResult;

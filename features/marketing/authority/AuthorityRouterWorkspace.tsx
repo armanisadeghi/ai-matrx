@@ -645,6 +645,7 @@ function EvidenceTable({
   return (
     <div className="overflow-hidden rounded-xl border bg-card p-3">
       <MatrxDataTable
+        urlState={{ id: "authority-routes" }}
         data={rows}
         columns={columns}
         getRowId={(page) => page.page_id}

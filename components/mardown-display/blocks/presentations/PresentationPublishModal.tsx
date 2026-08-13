@@ -108,8 +108,9 @@ export const PresentationPublishModal: React.FC<PresentationPublishModalProps> =
                                     </a>
                                 </div>
                                 {copiedUrl && (
-                                    <div className="mt-2 text-xs text-green-600 dark:text-green-400">
-                                        ✓ URL copied to clipboard!
+                                    <div className="mt-2 flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                                        <CheckCircle2 className="size-3.5" aria-hidden="true" />
+                                        URL copied to clipboard!
                                     </div>
                                 )}
                             </div>
@@ -155,4 +156,3 @@ export const PresentationPublishModal: React.FC<PresentationPublishModalProps> =
         </>
     );
 };
-

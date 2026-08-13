@@ -48,19 +48,28 @@ const CODING_SESSION_BINDING_SELECT = `
   error
 `;
 
-function codingSessionsQuery(ownerId: string) {
-  return (
-    supabase
-      .schema("chat")
-      .from("coding_session")
-      .select(CODING_SESSION_SELECT)
-      // VIEW LAW: this is explicitly the caller's personal binding history.
-      // RLS remains the ceiling, not the definition of this list.
-      .eq("created_by", ownerId)
-      .is("deleted_at", null)
-      .order("last_seen_at", { ascending: false })
-      .limit(CODING_SESSION_PAGE_SIZE)
-  );
+function codingSessionsQuery(
+  ownerId: string,
+  opts?: {
+    limit?: number;
+    /** Exclusive keyset cursor — load bindings older than this last_seen_at. */
+    beforeLastSeenAt?: string | null;
+  },
+) {
+  let query = supabase
+    .schema("chat")
+    .from("coding_session")
+    .select(CODING_SESSION_SELECT)
+    // VIEW LAW: this is explicitly the caller's personal binding history.
+    // RLS remains the ceiling, not the definition of this list.
+    .eq("created_by", ownerId)
+    .is("deleted_at", null)
+    .order("last_seen_at", { ascending: false })
+    .limit(opts?.limit ?? CODING_SESSION_PAGE_SIZE);
+  if (opts?.beforeLastSeenAt) {
+    query = query.lt("last_seen_at", opts.beforeLastSeenAt);
+  }
+  return query;
 }
 
 type CodingSessionRow = QueryData<
@@ -90,8 +99,23 @@ export type CodingSessionBinding = QueryData<
   ReturnType<typeof codingSessionBindingsQuery>
 >[number];
 
-/** Reads only the signed-in owner's private bindings; raw entries stay server-side. */
-export async function fetchCodingSessions(): Promise<CodingSessionView[]> {
+export interface CodingSessionsPage {
+  sessions: CodingSessionView[];
+  /** True when older bindings exist beyond this page. */
+  hasMore: boolean;
+  /** Keyset cursor for the next older page (oldest last_seen_at returned). */
+  oldestLastSeenAt: string | null;
+}
+
+/**
+ * Reads one keyset page of the signed-in owner's private bindings, newest
+ * first; raw entries stay server-side. Pass `beforeLastSeenAt` (the previous
+ * page's `oldestLastSeenAt`) to load the next older page.
+ */
+export async function fetchCodingSessions(opts?: {
+  beforeLastSeenAt?: string | null;
+  limit?: number;
+}): Promise<CodingSessionsPage> {
   const {
     data: { user },
     error: authError,
@@ -99,24 +123,39 @@ export async function fetchCodingSessions(): Promise<CodingSessionView[]> {
   if (authError) throw new Error(authError.message);
   if (!user) throw new Error("Sign in to view your coding sessions.");
 
-  const { data, error } = await codingSessionsQuery(user.id);
+  const limit = opts?.limit ?? CODING_SESSION_PAGE_SIZE;
+  // Fetch one extra row purely to know whether an older page exists.
+  const { data, error } = await codingSessionsQuery(user.id, {
+    limit: limit + 1,
+    beforeLastSeenAt: opts?.beforeLastSeenAt ?? null,
+  });
   if (error) throw new Error(error.message);
-  if (data.length === 0) return [];
+  const hasMore = data.length > limit;
+  const rows = hasMore ? data.slice(0, limit) : data;
+  const oldestLastSeenAt =
+    rows.length > 0 ? rows[rows.length - 1].last_seen_at : null;
+  if (rows.length === 0) {
+    return { sessions: [], hasMore: false, oldestLastSeenAt: null };
+  }
 
   const favoriteResult = await favoritesService.getBulk(
     "conversation",
-    data.map((session) => session.conversation_id),
+    rows.map((session) => session.conversation_id),
   );
   if (isScopesRpcErr(favoriteResult)) {
     console.error(
       "[codingSessions] favorite-state read failed — rendering pins unset",
       favoriteResult.error,
     );
-    return data.map((session) => ({
-      ...session,
-      isFavorite: false,
-      favoriteStateKnown: false,
-    }));
+    return {
+      sessions: rows.map((session) => ({
+        ...session,
+        isFavorite: false,
+        favoriteStateKnown: false,
+      })),
+      hasMore,
+      oldestLastSeenAt,
+    };
   }
 
   const favoriteIds = new Set(
@@ -124,11 +163,15 @@ export async function fetchCodingSessions(): Promise<CodingSessionView[]> {
       .filter((state) => state.isFavorite)
       .map((state) => state.entityId),
   );
-  return data.map((session) => ({
-    ...session,
-    isFavorite: favoriteIds.has(session.conversation_id),
-    favoriteStateKnown: true,
-  }));
+  return {
+    sessions: rows.map((session) => ({
+      ...session,
+      isFavorite: favoriteIds.has(session.conversation_id),
+      favoriteStateKnown: true,
+    })),
+    hasMore,
+    oldestLastSeenAt,
+  };
 }
 
 /**

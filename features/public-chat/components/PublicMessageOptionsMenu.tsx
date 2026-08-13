@@ -31,6 +31,7 @@ import { EmailInputDialog } from "@/components/dialogs/EmailInputDialog";
 import { AuthGateDialog } from "@/components/dialogs/AuthGateDialog";
 import { NotesAPI } from "@/features/notes/service/notesApi";
 import { toast } from "@/lib/toast";
+import { announceComingSoon } from "@/lib/coming-soon/announce";
 import { useSelector } from "react-redux";
 import { selectUser } from "@/lib/redux/slices/userSlice";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -447,16 +448,12 @@ const PublicMessageOptionsMenu: React.FC<PublicMessageOptionsMenuProps> = ({
   // ── Coming soon stubs ──────────────────────────────────────────────────────
 
   const handleConvertToBroker = () => {
-    toast.info("Coming soon", {
-      description: "Convert to broker will be available shortly.",
-    });
+    void announceComingSoon("rich-document.convert-to-broker");
     onClose();
   };
 
   const handleAddToDocs = () => {
-    toast.info("Coming soon", {
-      description: "Add to docs will be available shortly.",
-    });
+    void announceComingSoon("chat.add-to-docs");
     onClose();
   };
 

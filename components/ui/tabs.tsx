@@ -4,31 +4,18 @@ import * as React from "react"
 import * as TabsPrimitive from "@radix-ui/react-tabs"
 
 import { cn } from "@/styles/themes/utils"
-import { useIsMounted } from "@/hooks/use-is-mounted"
 
 /**
- * Hydration-safe Tabs wrapper.
- * Radix UI generates dynamic IDs for aria-controls that can differ between
- * SSR and client, causing hydration mismatches. This wrapper defers rendering
- * until after hydration to prevent these errors.
+ * THE ROOT RENDERS UNCONDITIONALLY — no mount gate. This wrapper used to defer
+ * rendering until after hydration ("Radix generates dynamic aria-controls ids
+ * that differ between SSR and client"), and that justification was false:
+ * Radix ids come from React's SSR-stable `useId` (verified against
+ * @radix-ui/react-tabs 1.1.15 / react-id 1.1.2). The gate was actively
+ * harmful — it deleted the ENTIRE tab bar + active panel from SSR and the
+ * first client paint. See components/ui/context-menu/context-menu.tsx
+ * (the precedent fix, D144).
  */
-const Tabs = React.forwardRef<
-  React.ComponentRef<typeof TabsPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof TabsPrimitive.Root>
->(({ children, ...props }, ref) => {
-  const isMounted = useIsMounted()
-  
-  if (!isMounted) {
-    return null
-  }
-  
-  return (
-    <TabsPrimitive.Root ref={ref} {...props}>
-      {children}
-    </TabsPrimitive.Root>
-  )
-})
-Tabs.displayName = "Tabs"
+const Tabs = TabsPrimitive.Root
 
 const TabsList = React.forwardRef<
   React.ComponentRef<typeof TabsPrimitive.List>,

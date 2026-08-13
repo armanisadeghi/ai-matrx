@@ -81,12 +81,10 @@ a clean UI — is the first three:
    no health answer; Anchors appears twice; three levels of nav before a row).
 3. **TASK-BL-UI-C** — mobile pass (hover-only explainers, banned `vh`, iOS
    zoom-triggering inputs, no `pb-safe`).
-4. **TASK-BL-ASSISTS** — mount `AssistStrip` + ship the producer; this is also
-   the missing one-click fix for problems the UI already detects.
-5. **TASK-BL-AGENTS** — bind the two dead-end surface roles.
-6. **TASK-BL-DISAVOW** · **TASK-BL-DRILL** · **TASK-BL-MOVERS** ·
+4. **TASK-BL-AGENTS** — bind the two dead-end surface roles.
+5. **TASK-BL-DISAVOW** · **TASK-BL-DRILL** · **TASK-BL-MOVERS** ·
    **TASK-BL-ANCHORFOOT** · **TASK-BL-WATCH** — the feature remainder.
-7. **TASK-BL-7** — the false "site deleted" error (platform-wide).
+6. **TASK-BL-7** — the false "site deleted" error (platform-wide).
 
 A correctness batch (broken deep link, unreachable tab branch, inert counts
 that should be doors, empty drawer, orphaned batch progress, missing retry)
@@ -95,6 +93,10 @@ was fixed in the same session as this rewrite — see the Change Log entry in
 
 ## Done
 
+- TASK-BL-ASSISTS — canonical site-filtered `AssistStrip` plus a deterministic,
+  already-loaded-state producer for lost-link reclaim, broken-target drafts,
+  critical anchor risk, human risk review, bounded review backlog, and honest
+  competitor-gap investigation.
 - Phase-1 GSC-architecture rebuild (tabs, KPI band, recharts trend, full
   tables, lenses, anchor classifier) — `features/marketing/components/backlinks/`.
 - Source-page capture + AI assessment + human rulings + referring-domain

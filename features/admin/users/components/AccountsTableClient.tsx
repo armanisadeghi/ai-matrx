@@ -48,11 +48,32 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { confirm } from "@/components/dialogs/confirm/confirmDialogOpener";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
-import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { filterAndSortRows } from "@/components/official/matrx-data-table/filter-engine";
+import type {
+  MatrxColumnDef,
+  MatrxDataTableQueryState,
+} from "@/components/official/matrx-data-table/types";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { ADMIN_USERS_SURFACE_NAME } from "@/features/surfaces/manifests/admin-users.manifest";
+import { buildAdminUsersScope } from "../lib/admin-users-scope";
 import { AdminUserRef } from "./AdminUserRef";
 import { USERS_ADMIN_LOCATION, ADMIN_LEVEL_LABEL } from "../constants";
 import type { AdminUserRow } from "../types";
+
+const ROSTER_PAGE_SIZE = 50;
+
+/** Fresh table query state — the shape `MatrxDataTable` reads in controlled mode. */
+function initialQueryState(): MatrxDataTableQueryState {
+  return {
+    page: 1,
+    pageSize: ROSTER_PAGE_SIZE,
+    search: "",
+    anyOf: "",
+    columnFilters: {},
+    sort: null,
+  };
+}
 
 function fmtDate(iso: string | null): string {
   if (!iso) return "—";
@@ -90,6 +111,15 @@ export function AccountsTableClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  // The table's search / column filters / sort / page live HERE rather than
+  // inside MatrxDataTable ("controlled-local": the table still filters the
+  // local rows, the caller just owns the query). Without this the admin's
+  // live query is invisible to everything outside the table — including the
+  // surface emitter, which has to be able to say how many accounts still
+  // match what the admin is looking at.
+  const [queryState, setQueryState] = useState<MatrxDataTableQueryState>(
+    initialQueryState,
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -119,7 +149,8 @@ export function AccountsTableClient() {
 
   const sendAuthLink = useCallback(
     async (row: AdminUserRow, type: "magiclink" | "recovery") => {
-      const noun = type === "magiclink" ? "magic sign-in link" : "password reset link";
+      const noun =
+        type === "magiclink" ? "magic sign-in link" : "password reset link";
       const ok = await confirm({
         title: `Send ${noun}?`,
         description: `Email a ${noun} to ${row.email}. This is a single-use link that lets them sign in / reset without their current password.`,
@@ -130,7 +161,12 @@ export function AccountsTableClient() {
         const res = await fetch("/api/admin/users/auth-link", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: row.id, email: row.email, type, send: true }),
+          body: JSON.stringify({
+            userId: row.id,
+            email: row.email,
+            type,
+            send: true,
+          }),
         });
         const json = await res.json();
         if (!res.ok) throw new Error(json.error ?? "Failed");
@@ -138,7 +174,8 @@ export function AccountsTableClient() {
           action: json.action_link
             ? {
                 label: "Copy link",
-                onClick: () => void navigator.clipboard.writeText(json.action_link),
+                onClick: () =>
+                  void navigator.clipboard.writeText(json.action_link),
               }
             : undefined,
         });
@@ -149,28 +186,25 @@ export function AccountsTableClient() {
     [],
   );
 
-  const toggleOnboarding = useCallback(
-    async (row: AdminUserRow) => {
-      const next = !row.onboarding_completed;
-      try {
-        const res = await fetch("/api/admin/users", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: row.id, onboardingCompleted: next }),
-        });
-        if (!res.ok) throw new Error((await res.json()).error ?? "Failed");
-        setRows((prev) =>
-          prev.map((r) =>
-            r.id === row.id ? { ...r, onboarding_completed: next } : r,
-          ),
-        );
-        toast.success(next ? "Marked as onboarded" : "Marked as new");
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : "Failed");
-      }
-    },
-    [],
-  );
+  const toggleOnboarding = useCallback(async (row: AdminUserRow) => {
+    const next = !row.onboarding_completed;
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: row.id, onboardingCompleted: next }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error ?? "Failed");
+      setRows((prev) =>
+        prev.map((r) =>
+          r.id === row.id ? { ...r, onboarding_completed: next } : r,
+        ),
+      );
+      toast.success(next ? "Marked as onboarded" : "Marked as new");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed");
+    }
+  }, []);
 
   // In-app DM: create/find the direct conversation with the user, then send.
   const [dmTarget, setDmTarget] = useState<AdminUserRow | null>(null);
@@ -184,7 +218,10 @@ export function AccountsTableClient() {
       const convRes = await fetch("/api/messages/conversations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "direct", participant_ids: [dmTarget.id] }),
+        body: JSON.stringify({
+          type: "direct",
+          participant_ids: [dmTarget.id],
+        }),
       });
       const convJson = await convRes.json();
       if (!convRes.ok || !convJson.success)
@@ -198,12 +235,15 @@ export function AccountsTableClient() {
       const msgJson = await msgRes.json();
       if (!msgRes.ok || !msgJson.success)
         throw new Error(msgJson.msg ?? "Could not send message");
-      toast.success(`Message sent to ${dmTarget.display_name ?? dmTarget.email}`, {
-        action: {
-          label: "Open thread",
-          onClick: () => router.push("/messages"),
+      toast.success(
+        `Message sent to ${dmTarget.display_name ?? dmTarget.email}`,
+        {
+          action: {
+            label: "Open thread",
+            onClick: () => router.push("/messages"),
+          },
         },
-      });
+      );
       setDmTarget(null);
       setDmContent("");
     } catch (e) {
@@ -222,9 +262,13 @@ export function AccountsTableClient() {
         cell: (row) => (
           <div className="flex items-center gap-2">
             <Avatar className="h-6 w-6">
-              {row.avatar_url ? <AvatarImage src={row.avatar_url} alt="" /> : null}
+              {row.avatar_url ? (
+                <AvatarImage src={row.avatar_url} alt="" />
+              ) : null}
               <AvatarFallback className="text-[10px]">
-                {(row.display_name ?? row.email ?? "?").slice(0, 2).toUpperCase()}
+                {(row.display_name ?? row.email ?? "?")
+                  .slice(0, 2)
+                  .toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <AdminUserRef
@@ -333,7 +377,9 @@ export function AccountsTableClient() {
         filter: "boolean",
         align: "center",
         cell: (row) => (
-          <span className="text-xs">{row.onboarding_completed ? "Yes" : "New"}</span>
+          <span className="text-xs">
+            {row.onboarding_completed ? "Yes" : "New"}
+          </span>
         ),
         width: 90,
       },
@@ -399,6 +445,26 @@ export function AccountsTableClient() {
     focusedUserId && !loading && !error && focusedUser === null,
   );
 
+  // How many accounts survive the admin's current query. Computed with the
+  // table's OWN engine over the table's OWN inputs, so the number the surface
+  // emits cannot drift from the number the table renders — a re-implemented
+  // count would be a second source of truth that silently disagrees the first
+  // time a filter kind is added.
+  const matchingRows = useMemo(
+    () =>
+      filterAndSortRows(
+        visibleRows,
+        columns.filter((column) => !column.hidden),
+        queryState.columnFilters,
+        queryState.sort,
+        queryState.search,
+        undefined,
+        queryState.layeredFilters,
+        queryState.searchMatchMode,
+      ),
+    [visibleRows, columns, queryState],
+  );
+
   function clearUserFocus() {
     const params = new URLSearchParams(searchParams.toString());
     params.delete("user");
@@ -407,15 +473,46 @@ export function AccountsTableClient() {
   }
 
   return (
+    // The roster's agent emitter. `getScope` is SYNCHRONOUS over the live
+    // render state above — the Surface Context window polls it every 400ms
+    // while it is open, so a build step that fetched would hammer
+    // /api/admin/users behind a panel that looks idle.
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_USERS_SURFACE_NAME}
+      getScope={() =>
+        buildAdminUsersScope({
+          rows,
+          loading,
+          error,
+          focusedUserId,
+          focusedUser,
+          focusMissed,
+          matchingCount: matchingRows.length,
+          search: queryState.search,
+          columnFilters: queryState.columnFilters,
+          sort: queryState.sort,
+          page: queryState.page,
+          pageSize: queryState.pageSize,
+          dmRecipientId: dmTarget?.id ?? null,
+          dmDraft: dmContent,
+        })
+      }
+    >
     <div className="flex h-full flex-col gap-3 p-4">
       {error ? (
-        <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+        <div
+          data-surface-value="roster_load_error"
+          className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
+        >
           {error}
         </div>
       ) : null}
 
       {focusedUserId ? (
-        <div className="flex items-center justify-between gap-3 rounded-md border bg-card px-3 py-2">
+        <div
+          data-surface-value="focused_user"
+          className="flex items-center justify-between gap-3 rounded-md border bg-card px-3 py-2"
+        >
           <div className="flex min-w-0 items-center gap-2 text-sm">
             <UserRound className="h-4 w-4 shrink-0 text-primary" />
             {focusMissed ? (
@@ -445,13 +542,20 @@ export function AccountsTableClient() {
         </div>
       ) : null}
 
-      <div className="min-h-0 flex-1">
+      <div className="min-h-0 flex-1" data-surface-value="visible_user_count">
         <MatrxDataTable
+          urlState={{ id: "user-accounts" }}
           data={visibleRows}
           columns={columns}
           getRowId={(r) => r.id}
           isLoading={loading}
-          pageSize={50}
+          pageSize={ROSTER_PAGE_SIZE}
+          // Local filtering, caller-owned query — see `queryState` above.
+          query={{
+            mode: "controlled-local",
+            state: queryState,
+            onStateChange: setQueryState,
+          }}
           // A focused id that is not in the roster must NOT be reported as a
           // filter miss — that blames a control the user never touched for a
           // record that simply is not in this list. The banner above says what
@@ -560,9 +664,7 @@ export function AccountsTableClient() {
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() =>
-                    router.push(
-                      `/administration/users/email?userId=${row.id}`,
-                    )
+                    router.push(`/administration/users/email?userId=${row.id}`)
                   }
                   disabled={!row.email}
                 >
@@ -604,7 +706,9 @@ export function AccountsTableClient() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => void toggleOnboarding(row)}>
                   <UserCog className="mr-2 h-4 w-4" />
-                  {row.onboarding_completed ? "Mark as new" : "Mark as onboarded"}
+                  {row.onboarding_completed
+                    ? "Mark as new"
+                    : "Mark as onboarded"}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -625,10 +729,11 @@ export function AccountsTableClient() {
             </DialogTitle>
           </DialogHeader>
           <p className="text-xs text-muted-foreground">
-            Sends a direct message from you into the user&apos;s in-app inbox (the
-            DM system). They see it in Messages.
+            Sends a direct message from you into the user&apos;s in-app inbox
+            (the DM system). They see it in Messages.
           </p>
           <Textarea
+            data-surface-value="dm_draft"
             value={dmContent}
             onChange={(e) => setDmContent(e.target.value)}
             placeholder="Write your message…"
@@ -640,7 +745,10 @@ export function AccountsTableClient() {
             <Button variant="ghost" onClick={() => setDmTarget(null)}>
               Cancel
             </Button>
-            <Button onClick={() => void sendDm()} disabled={dmSending || !dmContent.trim()}>
+            <Button
+              onClick={() => void sendDm()}
+              disabled={dmSending || !dmContent.trim()}
+            >
               {dmSending ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
@@ -652,5 +760,6 @@ export function AccountsTableClient() {
         </DialogContent>
       </Dialog>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

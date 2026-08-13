@@ -29,6 +29,7 @@ import {
 } from "@/features/agents/redux/tools/tools.selectors";
 import { fetchAvailableTools } from "@/features/agents/redux/tools/tools.thunks";
 import { AgentToolsModal } from "@/features/agents/components/tools-management/AgentToolsModal";
+import { AiToolRef } from "@/components/official/entity-ref/AiIdentityRef";
 
 interface Props {
   syntheticAgentId: string;
@@ -37,9 +38,7 @@ interface Props {
 export function ToolsSummaryPanel({ syntheticAgentId }: Props) {
   const dispatch = useAppDispatch();
 
-  const tools = useAppSelector((s) =>
-    selectAgentTools(s, syntheticAgentId),
-  );
+  const tools = useAppSelector((s) => selectAgentTools(s, syntheticAgentId));
   const customTools = useAppSelector((s) =>
     selectAgentCustomTools(s, syntheticAgentId),
   );
@@ -96,6 +95,14 @@ export function ToolsSummaryPanel({ syntheticAgentId }: Props) {
                 return {
                   id,
                   label: t?.name ?? id,
+                  labelNode: (
+                    <AiToolRef
+                      toolId={id}
+                      name={t?.name}
+                      showIcon={false}
+                      className="min-w-0 flex-1"
+                    />
+                  ),
                   sub: t?.category ?? undefined,
                 };
               })}
@@ -145,7 +152,12 @@ function SectionList({
 }: {
   icon: React.ReactNode;
   title: string;
-  items: Array<{ id: string; label: string; sub?: string }>;
+  items: Array<{
+    id: string;
+    label: string;
+    labelNode?: React.ReactNode;
+    sub?: string;
+  }>;
 }) {
   return (
     <div className="space-y-1">
@@ -160,9 +172,11 @@ function SectionList({
             key={item.id}
             className="flex items-baseline gap-1.5 px-1.5 py-0.5 rounded text-[11px] bg-muted/40"
           >
-            <span className="font-medium text-foreground truncate flex-1 min-w-0">
-              {item.label}
-            </span>
+            {item.labelNode ?? (
+              <span className="font-medium text-foreground truncate flex-1 min-w-0">
+                {item.label}
+              </span>
+            )}
             {item.sub && (
               <span className="text-[9px] text-muted-foreground/70 shrink-0">
                 {item.sub}

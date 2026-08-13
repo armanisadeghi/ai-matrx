@@ -130,7 +130,9 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
         align: "right",
         width: 100,
         cell: (r) => (
-          <span className="font-mono">{formatTokens(r.total_output_tokens)}</span>
+          <span className="font-mono">
+            {formatTokens(r.total_output_tokens)}
+          </span>
         ),
       },
       {
@@ -154,7 +156,13 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
           </span>
         ),
       },
-      { id: "id", accessorKey: "id", header: "ID", cellKind: "uuid", width: 110 },
+      {
+        id: "id",
+        accessorKey: "id",
+        header: "ID",
+        cellKind: "uuid",
+        width: 110,
+      },
     ];
   }, []);
 
@@ -235,11 +243,16 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
         cellKind: "fk",
         width: 110,
         fk: {
-          href: (id) =>
-            `/administration/chat/cx-dashboard/conversations/${id}`,
+          href: (id) => `/administration/chat/cx-dashboard/conversations/${id}`,
         },
       },
-      { id: "id", accessorKey: "id", header: "ID", cellKind: "uuid", width: 110 },
+      {
+        id: "id",
+        accessorKey: "id",
+        header: "ID",
+        cellKind: "uuid",
+        width: 110,
+      },
     ];
   }, []);
 
@@ -272,185 +285,194 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
       }
       isEditable={false}
     >
-    <div className="space-y-4 p-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold">
-          Errors & Issues
-          <span className="ml-2 font-normal text-muted-foreground">
-            {allIssues} total issues found
-          </span>
-        </h2>
-      </div>
-
-      <CxFiltersBar
-        showSearch={false}
-        showStatusFilter={false}
-        onRefresh={() => router.refresh()}
-        onExportJSON={() =>
-          exportToJSON(
-            [...errors.error_requests, ...errors.error_tool_calls],
-            "errors",
-          )
-        }
-      />
-
-      {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-2">
-        <div className="flex items-center gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 p-3">
-          <Hourglass className="h-4 w-4 text-amber-500" />
-          <div>
-            <p className="text-xs text-muted-foreground">Pending (Python Bug)</p>
-            <p className="text-lg font-semibold">{pendingCount}</p>
-          </div>
+      <div className="space-y-4 p-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold">
+            Errors & Issues
+            <span className="ml-2 font-normal text-muted-foreground">
+              {allIssues} total issues found
+            </span>
+          </h2>
         </div>
-        <div className="flex items-center gap-2 rounded-md border border-orange-500/30 bg-orange-500/5 p-3">
-          <Ban className="h-4 w-4 text-orange-500" />
-          <div>
-            <p className="text-xs text-muted-foreground">Max Tokens Hit</p>
-            <p className="text-lg font-semibold">{maxTokensCount}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 rounded-md border border-red-500/30 bg-red-500/5 p-3">
-          <AlertTriangle className="h-4 w-4 text-red-500" />
-          <div>
-            <p className="text-xs text-muted-foreground">Errors</p>
-            <p className="text-lg font-semibold">{errorCount}</p>
-          </div>
-        </div>
-      </div>
 
-      {/* Problem requests */}
-      {errors.error_requests.length > 0 && (
-        <section className="space-y-2">
-          <h3 className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-            <AlertTriangle className="h-3.5 w-3.5" />
-            Problem Requests ({errors.error_requests.length})
-          </h3>
-          <MatrxDataTable
-            data={errors.error_requests}
-            columns={requestColumns}
-            getRowId={(r) => r.id}
-            pageSize={25}
-            emptyState={{ title: "No problem requests" }}
-            toolbar={{ search: true, searchPlaceholder: "Search requests…" }}
-            copy={{
-              label: "Problem request",
-              listLabel: "Problem requests (this view)",
-              location: "/administration/chat/cx-dashboard/errors",
-              rowKind: "cx-problem-request",
-              listKind: "cx-problem-requests",
-              humanRow: (r) =>
-                [
-                  `Request: ${r.id}`,
-                  `Issue: ${ISSUE_LABELS[requestIssue(r)]}`,
-                  `Conversation: ${r.conversation_title ?? "Untitled"}`,
-                  `Status: ${r.status}${r.finish_reason ? ` (${r.finish_reason})` : ""}`,
-                  `Cost: ${formatCost(Number(r.total_cost))}`,
-                  `Created: ${r.created_at}`,
-                  ...(r.error ? [`Error: ${r.error}`] : []),
-                ].join("\n"),
-              rowAttributes: (r) => ({
-                id: r.id,
-                issue: requestIssue(r),
-                status: r.status,
-              }),
-            }}
-            detail={{
-              title: (r) => r.conversation_title ?? "Untitled request",
-              render: (r) => (
-                <div className="space-y-3 p-1">
-                  {r.error && (
-                    <div className="rounded border border-red-500/30 bg-red-500/5 p-2">
-                      <p className="text-xs font-medium text-red-500">Error</p>
-                      <pre className="mt-1 whitespace-pre-wrap text-xs text-muted-foreground">
-                        {r.error}
-                      </pre>
-                    </div>
-                  )}
-                  <CxJsonViewer
-                    data={r}
-                    label="Full Request Data"
-                    defaultCollapsed={false}
-                  />
-                </div>
-              ),
-            }}
-          />
-        </section>
-      )}
-
-      {/* Tool call errors */}
-      {errors.error_tool_calls.length > 0 && (
-        <section className="space-y-2">
-          <h3 className="flex items-center gap-2 text-xs font-medium text-red-500">
-            <Wrench className="h-3.5 w-3.5" />
-            Tool Call Errors ({errors.error_tool_calls.length})
-          </h3>
-          <MatrxDataTable
-            data={errors.error_tool_calls}
-            columns={toolCallColumns}
-            getRowId={(r) => r.id}
-            pageSize={25}
-            emptyState={{ title: "No tool call errors" }}
-            toolbar={{ search: true, searchPlaceholder: "Search tool calls…" }}
-            copy={{
-              label: "Tool call error",
-              listLabel: "Tool call errors (this view)",
-              location: "/administration/chat/cx-dashboard/errors",
-              rowKind: "cx-tool-call-error",
-              listKind: "cx-tool-call-errors",
-              humanRow: (r) =>
-                [
-                  `Tool: ${r.tool_name} (${r.tool_type})`,
-                  `Error: ${r.error_type ?? "—"} — ${r.error_message ?? "—"}`,
-                  `Duration: ${formatDuration(r.duration_ms)}`,
-                  `Conversation: ${r.conversation_id}`,
-                  `Created: ${r.created_at}`,
-                ].join("\n"),
-              rowAttributes: (r) => ({
-                id: r.id,
-                tool: r.tool_name,
-                error_type: r.error_type,
-              }),
-            }}
-            detail={{
-              title: (r) => r.tool_name,
-              description: (r) => r.error_type ?? undefined,
-              render: (r) => (
-                <div className="space-y-3 p-1">
-                  {r.error_message && (
-                    <div className="rounded border border-red-500/30 bg-red-500/5 p-2">
-                      <p className="text-xs font-medium text-red-500">
-                        {r.error_type ?? "Error"}
-                      </p>
-                      <pre className="mt-1 whitespace-pre-wrap text-xs text-muted-foreground">
-                        {r.error_message}
-                      </pre>
-                    </div>
-                  )}
-                  <CxJsonViewer
-                    data={r}
-                    label="Full Tool Call Data"
-                    defaultCollapsed={false}
-                  />
-                </div>
-              ),
-            }}
-          />
-        </section>
-      )}
-
-      {/* All clear */}
-      {allIssues === 0 && (
-        <CxEmptyState
-          title="No errors found"
-          description="All requests completed successfully."
+        <CxFiltersBar
+          showSearch={false}
+          showStatusFilter={false}
+          onRefresh={() => router.refresh()}
+          onExportJSON={() =>
+            exportToJSON(
+              [...errors.error_requests, ...errors.error_tool_calls],
+              "errors",
+            )
+          }
         />
-      )}
 
-      {/* Raw error data */}
-      <CxJsonViewer data={errors} label="Raw Error Data (Debug)" />
-    </div>
+        {/* Summary cards */}
+        <div className="grid grid-cols-3 gap-2">
+          <div className="flex items-center gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 p-3">
+            <Hourglass className="h-4 w-4 text-amber-500" />
+            <div>
+              <p className="text-xs text-muted-foreground">
+                Pending (Python Bug)
+              </p>
+              <p className="text-lg font-semibold">{pendingCount}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 rounded-md border border-orange-500/30 bg-orange-500/5 p-3">
+            <Ban className="h-4 w-4 text-orange-500" />
+            <div>
+              <p className="text-xs text-muted-foreground">Max Tokens Hit</p>
+              <p className="text-lg font-semibold">{maxTokensCount}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 rounded-md border border-red-500/30 bg-red-500/5 p-3">
+            <AlertTriangle className="h-4 w-4 text-red-500" />
+            <div>
+              <p className="text-xs text-muted-foreground">Errors</p>
+              <p className="text-lg font-semibold">{errorCount}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Problem requests */}
+        {errors.error_requests.length > 0 && (
+          <section className="space-y-2">
+            <h3 className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              Problem Requests ({errors.error_requests.length})
+            </h3>
+            <MatrxDataTable
+              urlState={{ id: "cx-problem-requests" }}
+              data={errors.error_requests}
+              columns={requestColumns}
+              getRowId={(r) => r.id}
+              pageSize={25}
+              emptyState={{ title: "No problem requests" }}
+              toolbar={{ search: true, searchPlaceholder: "Search requests…" }}
+              copy={{
+                label: "Problem request",
+                listLabel: "Problem requests (this view)",
+                location: "/administration/chat/cx-dashboard/errors",
+                rowKind: "cx-problem-request",
+                listKind: "cx-problem-requests",
+                humanRow: (r) =>
+                  [
+                    `Request: ${r.id}`,
+                    `Issue: ${ISSUE_LABELS[requestIssue(r)]}`,
+                    `Conversation: ${r.conversation_title ?? "Untitled"}`,
+                    `Status: ${r.status}${r.finish_reason ? ` (${r.finish_reason})` : ""}`,
+                    `Cost: ${formatCost(Number(r.total_cost))}`,
+                    `Created: ${r.created_at}`,
+                    ...(r.error ? [`Error: ${r.error}`] : []),
+                  ].join("\n"),
+                rowAttributes: (r) => ({
+                  id: r.id,
+                  issue: requestIssue(r),
+                  status: r.status,
+                }),
+              }}
+              detail={{
+                title: (r) => r.conversation_title ?? "Untitled request",
+                render: (r) => (
+                  <div className="space-y-3 p-1">
+                    {r.error && (
+                      <div className="rounded border border-red-500/30 bg-red-500/5 p-2">
+                        <p className="text-xs font-medium text-red-500">
+                          Error
+                        </p>
+                        <pre className="mt-1 whitespace-pre-wrap text-xs text-muted-foreground">
+                          {r.error}
+                        </pre>
+                      </div>
+                    )}
+                    <CxJsonViewer
+                      data={r}
+                      label="Full Request Data"
+                      defaultCollapsed={false}
+                    />
+                  </div>
+                ),
+              }}
+            />
+          </section>
+        )}
+
+        {/* Tool call errors */}
+        {errors.error_tool_calls.length > 0 && (
+          <section className="space-y-2">
+            <h3 className="flex items-center gap-2 text-xs font-medium text-red-500">
+              <Wrench className="h-3.5 w-3.5" />
+              Tool Call Errors ({errors.error_tool_calls.length})
+            </h3>
+            <MatrxDataTable
+              urlState={{ id: "cx-tool-call-errors" }}
+              data={errors.error_tool_calls}
+              columns={toolCallColumns}
+              getRowId={(r) => r.id}
+              pageSize={25}
+              emptyState={{ title: "No tool call errors" }}
+              toolbar={{
+                search: true,
+                searchPlaceholder: "Search tool calls…",
+              }}
+              copy={{
+                label: "Tool call error",
+                listLabel: "Tool call errors (this view)",
+                location: "/administration/chat/cx-dashboard/errors",
+                rowKind: "cx-tool-call-error",
+                listKind: "cx-tool-call-errors",
+                humanRow: (r) =>
+                  [
+                    `Tool: ${r.tool_name} (${r.tool_type})`,
+                    `Error: ${r.error_type ?? "—"} — ${r.error_message ?? "—"}`,
+                    `Duration: ${formatDuration(r.duration_ms)}`,
+                    `Conversation: ${r.conversation_id}`,
+                    `Created: ${r.created_at}`,
+                  ].join("\n"),
+                rowAttributes: (r) => ({
+                  id: r.id,
+                  tool: r.tool_name,
+                  error_type: r.error_type,
+                }),
+              }}
+              detail={{
+                title: (r) => r.tool_name,
+                description: (r) => r.error_type ?? undefined,
+                render: (r) => (
+                  <div className="space-y-3 p-1">
+                    {r.error_message && (
+                      <div className="rounded border border-red-500/30 bg-red-500/5 p-2">
+                        <p className="text-xs font-medium text-red-500">
+                          {r.error_type ?? "Error"}
+                        </p>
+                        <pre className="mt-1 whitespace-pre-wrap text-xs text-muted-foreground">
+                          {r.error_message}
+                        </pre>
+                      </div>
+                    )}
+                    <CxJsonViewer
+                      data={r}
+                      label="Full Tool Call Data"
+                      defaultCollapsed={false}
+                    />
+                  </div>
+                ),
+              }}
+            />
+          </section>
+        )}
+
+        {/* All clear */}
+        {allIssues === 0 && (
+          <CxEmptyState
+            title="No errors found"
+            description="All requests completed successfully."
+          />
+        )}
+
+        {/* Raw error data */}
+        <CxJsonViewer data={errors} label="Raw Error Data (Debug)" />
+      </div>
     </SurfaceRuntimeProvider>
   );
 }

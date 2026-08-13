@@ -896,7 +896,10 @@ export const selectUnifiedSlots = (requestId: string) =>
         ...Object.values(activeOperations ?? {}),
         ...Object.values(completedOperations ?? {}),
       ]) {
-        if (op.operation !== "sub_agent" || typeof op.blockAnchor !== "number") {
+        if (
+          op.operation !== "sub_agent" ||
+          typeof op.blockAnchor !== "number"
+        ) {
           continue;
         }
         const end = Math.min(
@@ -1080,10 +1083,15 @@ export const selectUnifiedSlots = (requestId: string) =>
           // process-stream created for this event — emit it at this exact
           // chronological slot (same exact-pairing rule as media below).
           const dataKind = (entry.data as { kind?: unknown }).kind;
+          const hasContentIr =
+            typeof (entry.data as { content_ir?: unknown }).content_ir ===
+              "object" &&
+            (entry.data as { content_ir?: unknown }).content_ir !== null;
           if (
             entry.blockId !== undefined &&
             (dataKind === "value_store.stored" ||
-              dataKind === "value_store.groomed")
+              dataKind === "value_store.groomed" ||
+              hasContentIr)
           ) {
             pendingStatus = null;
             pushBlock(entry.blockId);
@@ -1354,8 +1362,7 @@ export const selectAgentCallChildStream = (requestId: string, callId: string) =>
             op.blockAnchor !== undefined,
         );
       const completedOp = findOp(completed) as
-        | CompletedOperationEntry
-        | undefined;
+        CompletedOperationEntry | undefined;
       const activeOp = completedOp ? undefined : findOp(active);
       const op = completedOp ?? activeOp;
       if (!op || op.blockAnchor === undefined) return null;

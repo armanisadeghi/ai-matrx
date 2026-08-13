@@ -32,6 +32,12 @@ import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { jsonExportItem } from "@/components/agent-copy/export";
 import { cn } from "@/lib/utils";
 import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
+import { useTableUrlState } from "@/lib/data-table/useTableUrlState";
+import {
+  jsonUrlCodec,
+  stringUrlCodec,
+  useUrlState,
+} from "@/lib/url-state/useUrlState";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { ColumnHeaderCell } from "./ColumnHeaderCell";
 import { DataRowInspector } from "./DataRowInspector";
@@ -78,6 +84,14 @@ import type {
   TableSearchMatchMode,
 } from "./types";
 
+function isStringArray(value: unknown): value is string[] {
+  return (
+    Array.isArray(value) && value.every((item) => typeof item === "string")
+  );
+}
+
+const activeUrlTableIds = new Set<string>();
+
 /**
  * MatrxDataTable — the official canonical data table.
  *
@@ -86,13 +100,113 @@ import type {
  * Copy/Copy-for-AI (row + this view) · inline edit with dirty Save/Cancel pill ·
  * row → SidePanelSurface or WindowPanel · trailing icon → the secondary view.
  */
-export function MatrxDataTable<T>({
+export function MatrxDataTable<T>(props: MatrxDataTableProps<T>) {
+  if (!props.urlState) return <MatrxDataTableCore {...props} />;
+  return <MatrxDataTableWithUrlState {...props} urlState={props.urlState} />;
+}
+
+function MatrxDataTableWithUrlState<T>({
+  urlState,
+  ...props
+}: MatrxDataTableProps<T> & {
+  urlState: NonNullable<MatrxDataTableProps<T>["urlState"]>;
+}) {
+  if (props.query && props.query.mode !== "local") {
+    throw new Error(
+      `MatrxDataTable "${urlState.id}" cannot combine urlState with controlled query mode. Use useTableUrlState({ tableId: "${urlState.id}" }) in the remote query owner.`,
+    );
+  }
+
+  const table = useTableUrlState({
+    tableId: urlState.id,
+    defaultSort: urlState.defaultSort,
+    defaultPageSize: props.pageSize ?? 25,
+    history: urlState.history,
+    textHistory: urlState.textHistory,
+  });
+  useEffect(() => {
+    if (activeUrlTableIds.has(urlState.id)) {
+      throw new Error(
+        `Duplicate MatrxDataTable urlState.id "${urlState.id}" on one page. Give every table a unique stable id.`,
+      );
+    }
+    activeUrlTableIds.add(urlState.id);
+    return () => {
+      activeUrlTableIds.delete(urlState.id);
+    };
+  }, [urlState.id]);
+  const prefix = `table.${urlState.id}`;
+  const [urlSelectedId, setUrlSelectedId] = useUrlState(
+    `${prefix}.row`,
+    stringUrlCodec(),
+  );
+  const [urlWindowRowId, setUrlWindowRowId] = useUrlState(
+    `${prefix}.window`,
+    stringUrlCodec(),
+  );
+  const [urlSelection, setUrlSelection] = useUrlState(
+    `${prefix}.selection`,
+    jsonUrlCodec<string[]>([], isStringArray),
+  );
+  const syncSelectedRow = urlState.selectedRow !== false;
+  const syncWindowRow = urlState.windowRow !== false;
+  const syncSelection = urlState.selection === true && Boolean(props.selection);
+  const selectedId = syncSelectedRow ? urlSelectedId || null : props.selectedId;
+  const windowRowId = syncWindowRow
+    ? urlWindowRowId || null
+    : props.windowRowId;
+  const selection =
+    syncSelection && props.selection
+      ? {
+          ...props.selection,
+          selectedIds: urlSelection,
+          onSelectedIdsChange: (ids: string[]) => {
+            setUrlSelection(ids, { history: urlState.history });
+            props.selection?.onSelectedIdsChange(ids);
+          },
+        }
+      : props.selection;
+
+  return (
+    <MatrxDataTableCore
+      {...props}
+      urlState={urlState}
+      query={{
+        mode: "controlled-local",
+        state: table.state,
+        onStateChange: table.onStateChange,
+      }}
+      selectedId={selectedId}
+      onSelectedIdChange={(id) => {
+        if (syncSelectedRow) {
+          setUrlSelectedId(id === null ? "" : id, {
+            history: urlState.history,
+          });
+        }
+        props.onSelectedIdChange?.(id);
+      }}
+      windowRowId={windowRowId}
+      onWindowRowIdChange={(id) => {
+        if (syncWindowRow) {
+          setUrlWindowRowId(id === null ? "" : id, {
+            history: urlState.history,
+          });
+        }
+        props.onWindowRowIdChange?.(id);
+      }}
+      selection={selection}
+    />
+  );
+}
+
+function MatrxDataTableCore<T>({
   data,
   columns,
   getRowId,
   isLoading = false,
   isFetching = false,
   query,
+  urlState,
   toolbar,
   detail,
   window: windowConfig,
@@ -100,6 +214,8 @@ export function MatrxDataTable<T>({
   edit,
   selectedId: controlledSelectedId,
   onSelectedIdChange,
+  windowRowId: controlledWindowRowId,
+  onWindowRowIdChange,
   selection,
   rowActions,
   rowWrapper,
@@ -115,7 +231,11 @@ export function MatrxDataTable<T>({
   // Two sticky leading cells would overlap, and a frozen checkbox identifies
   // nothing — selection and the mobile frozen identity column are exclusive.
   const mobileScroll = mobile !== "plain" && !selection;
-  const controlledQuery = query?.mode === "controlled" ? query : null;
+  const controlledQuery =
+    query?.mode === "controlled" || query?.mode === "controlled-local"
+      ? query
+      : null;
+  const remoteQuery = query?.mode === "controlled" ? query : null;
   const emitControlledQueryChange = useCallback(
     (
       patch: Partial<MatrxDataTableQueryState>,
@@ -254,7 +374,17 @@ export function MatrxDataTable<T>({
     onSelectedIdChange?.(id);
   };
 
-  const [windowRowId, setWindowRowId] = useState<string | null>(null);
+  const [uncontrolledWindowRowId, setUncontrolledWindowRowId] = useState<
+    string | null
+  >(null);
+  const windowRowId =
+    controlledWindowRowId !== undefined
+      ? controlledWindowRowId
+      : uncontrolledWindowRowId;
+  const setWindowRowId = (id: string | null) => {
+    if (controlledWindowRowId === undefined) setUncontrolledWindowRowId(id);
+    onWindowRowIdChange?.(id);
+  };
   const [windowRowSnapshot, setWindowRowSnapshot] = useState<T | null>(null);
   const [edits, setEdits] = useState<CellEditsMap>({});
   const [saving, setSaving] = useState(false);
@@ -291,13 +421,13 @@ export function MatrxDataTable<T>({
     const meta = new Map<string, QueryFilterMeta>();
     for (const col of visibleColumns) {
       const id = columnId(col);
-      meta.set(id, resolveQueryFilterMeta(col, data, Boolean(controlledQuery)));
+      meta.set(id, resolveQueryFilterMeta(col, data, Boolean(remoteQuery)));
     }
     return meta;
-  }, [visibleColumns, data, controlledQuery]);
+  }, [visibleColumns, data, remoteQuery]);
 
   const processed = useMemo(() => {
-    if (controlledQuery) return data;
+    if (remoteQuery) return data;
     return filterAndSortRows(
       data,
       visibleColumns,
@@ -320,7 +450,7 @@ export function MatrxDataTable<T>({
     anyOfValue,
     layeredFilters,
     searchMatchMode,
-    controlledQuery,
+    remoteQuery,
   ]);
 
   useEffect(() => {
@@ -338,30 +468,24 @@ export function MatrxDataTable<T>({
     controlledQuery,
   ]);
 
-  const totalItems = controlledQuery
-    ? Math.max(0, controlledQuery.totalItems)
+  const totalItems = remoteQuery
+    ? Math.max(0, remoteQuery.totalItems)
     : processed.length;
-  const effectivePageSize = controlledQuery
+  const effectivePageSize = remoteQuery
     ? Math.max(pageSize, 1)
     : defaultPageSize === 0
       ? Math.max(totalItems, 1)
       : pageSize;
   const pageCount = Math.max(1, Math.ceil(totalItems / effectivePageSize));
-  const safePage = controlledQuery
+  const safePage = remoteQuery
     ? safeQueryPage(page, totalItems, effectivePageSize)
     : Math.min(page, pageCount);
   const paginated = useMemo(() => {
-    if (controlledQuery) return processed;
+    if (remoteQuery) return processed;
     if (defaultPageSize === 0) return processed;
     const start = (safePage - 1) * effectivePageSize;
     return processed.slice(start, start + effectivePageSize);
-  }, [
-    processed,
-    safePage,
-    effectivePageSize,
-    defaultPageSize,
-    controlledQuery,
-  ]);
+  }, [processed, safePage, effectivePageSize, defaultPageSize, remoteQuery]);
 
   // A deletion or narrower filter can leave a controlled URL on a page that
   // no longer exists. Emit the clamped page once the new total arrives.
@@ -525,9 +649,9 @@ export function MatrxDataTable<T>({
     selectedIdSet.has(getRowId(row)),
   );
   const allOnPageSelected =
-    selectableRows.length > 0 && selectedOnPage.length === selectableRows.length;
-  const someOnPageSelected =
-    selectedOnPage.length > 0 && !allOnPageSelected;
+    selectableRows.length > 0 &&
+    selectedOnPage.length === selectableRows.length;
+  const someOnPageSelected = selectedOnPage.length > 0 && !allOnPageSelected;
   const selectedRows = useMemo(
     () => data.filter((row) => selectedIdSet.has(getRowId(row))),
     [data, selectedIdSet, getRowId],
@@ -593,6 +717,7 @@ export function MatrxDataTable<T>({
   return (
     <div
       ref={rootRef}
+      data-url-state-table={urlState?.id}
       className={cn(
         "flex h-full min-h-0 flex-col gap-2 max-lg:[&_button]:min-h-11 max-lg:[&_button]:min-w-11 max-lg:[&_input]:min-h-11 max-lg:[&_table_a]:inline-flex max-lg:[&_table_a]:min-h-11 max-lg:[&_table_a]:items-center",
         className,
@@ -1244,12 +1369,23 @@ export function MatrxDataTable<T>({
             </div>
           }
         >
-          {detail?.render?.(selectedRow, {
-            closeDetail: () => setSelectedId(null),
-            openDetail: () => openDetail(selectedRow),
-            openWindow: () => openWindow(selectedRow),
-            closeWindow,
-          }) ?? (
+          {detail?.render ? (
+            // The panel hands children a `min-h-0 flex-1 overflow-hidden` cell
+            // and expects the child to own scrolling. `DataRowInspector` does;
+            // custom `detail.render` bodies mostly did not, so their content
+            // silently cut off at the fold with no scrollbar. Owning it here
+            // fixes the whole class at once — a custom body that already
+            // scrolls (`h-full` + `overflow-y-auto` root) still resolves to
+            // this container's height, so no second scrollbar appears.
+            <div className="h-full min-h-0 overflow-y-auto">
+              {detail.render(selectedRow, {
+                closeDetail: () => setSelectedId(null),
+                openDetail: () => openDetail(selectedRow),
+                openWindow: () => openWindow(selectedRow),
+                closeWindow,
+              })}
+            </div>
+          ) : (
             <DataRowInspector
               row={selectedRow}
               recordKind={copy?.rowKind}
@@ -1272,7 +1408,7 @@ export function MatrxDataTable<T>({
           row={windowRow}
           width={windowConfig?.width}
           height={windowConfig?.height}
-          windowId={`matrx-data-row-${getRowId(windowRow)}`}
+          windowId={`matrx-data-row-${urlState?.id ?? "local"}-${getRowId(windowRow)}`}
           defaultTab={windowConfig?.defaultTab}
           headerActions={
             <div className="flex items-center gap-1">

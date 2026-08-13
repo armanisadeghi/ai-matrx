@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { IconHome, IconNewSection } from "@tabler/icons-react";
+import { IconHome } from "@tabler/icons-react";
 import { FaBrain, FaImage, FaDatabase } from "react-icons/fa";
 import { SiGooglechat } from "react-icons/si";
 import { AiFillAudio } from "react-icons/ai";
@@ -28,11 +28,6 @@ export function MatrixFloatingMenu() {
             label: "Cockpit",
             icon: <FaBrain className="h-full w-full text-neutral-500 dark:text-neutral-300" />,
             href: "/ai/cockpit",
-        },
-        {
-            label: "Applets",
-            icon: <IconNewSection className="h-full w-full text-neutral-500 dark:text-neutral-300" />,
-            href: "/applets",
         },
         {
             label: "Data",

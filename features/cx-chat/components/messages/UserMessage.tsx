@@ -21,6 +21,7 @@ import {
 } from "@/features/conversation/utils/resource-parsing";
 import { ResourcesContainer } from "@/features/agents/resources/ResourceDisplay";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { VideoPublishDate } from "@/features/files/blocks/video/VideoPublishDate";
 import type {
   ConversationMessage,
   ConversationResource,
@@ -87,11 +88,18 @@ function AttachedResourcesDisplay({
                 alt={data.filename || "Attached image"}
               />
             ) : (
-              <div className="h-10 w-12 flex flex-col items-center justify-center bg-muted py-1">
+              <div className="relative h-10 w-12 flex flex-col items-center justify-center bg-muted py-1">
                 <Icon className="h-6 w-6 text-muted-foreground mb-1" />
-                <span className="text-[8px] text-muted-foreground text-center truncate w-full px-1">
-                  {data.filename || resource.type}
-                </span>
+                {resource.type === "youtube" ? (
+                  <VideoPublishDate
+                    publishedAt={data.publishedAt ?? data.published_at}
+                    className="text-[8px]"
+                  />
+                ) : (
+                  <span className="text-[8px] text-muted-foreground text-center truncate w-full px-1">
+                    {data.filename || resource.type}
+                  </span>
+                )}
               </div>
             )}
           </div>

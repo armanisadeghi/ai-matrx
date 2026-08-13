@@ -578,7 +578,7 @@ async function fetchToolSummary(
       .schema("chat")
       .from("tool_call")
       .select("tool_name")
-      .eq("user_id", userId)
+      .eq("created_by", userId)
       .eq("success", true)
       .not("output", "is", null)
       .is("deleted_at", null)
@@ -626,7 +626,7 @@ async function fetchRunsForTool(
         // conversation it came from — the converter ignores it.
         "call_id, conversation_id, tool_name, tool_name_as_called, arguments, output, output_preview, is_error, error_type, error_message, started_at, completed_at, execution_events, status, created_at",
       )
-      .eq("user_id", userId)
+      .eq("created_by", userId)
       .eq("tool_name", toolName)
       .eq("success", true)
       .not("output", "is", null)

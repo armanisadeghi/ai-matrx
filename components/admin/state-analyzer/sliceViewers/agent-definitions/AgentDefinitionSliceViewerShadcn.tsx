@@ -26,6 +26,10 @@ import {
   setToSortedArray,
   useAgentDefinitionSliceViewModel,
 } from "./agent-definition-slice-viewer-model";
+import {
+  AiModelRef,
+  AiToolRef,
+} from "@/components/official/entity-ref/AiIdentityRef";
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
@@ -185,9 +189,7 @@ export default function AgentDefinitionSliceViewerShadcn({
                 {record.parentAgentId ?? "null"}
               </KvRow>
               <KvRow label="version">
-                {record.version != null
-                  ? String(record.version)
-                  : "null"}
+                {record.version != null ? String(record.version) : "null"}
               </KvRow>
               <KvRow label="changedAt">{record.changedAt ?? "null"}</KvRow>
               <KvRow label="changeNote">{record.changeNote ?? "null"}</KvRow>
@@ -195,15 +197,28 @@ export default function AgentDefinitionSliceViewerShadcn({
               <Separator className="my-1" />
               <SectionTitle>flags</SectionTitle>
               <KvRow label="isActive">{String(record.isActive)}</KvRow>
-              <KvRow label="isPublic">{String(record.isPublic)}</KvRow>
               <KvRow label="isArchived">{String(record.isArchived)}</KvRow>
               <KvRow label="isFavorite">{String(record.isFavorite)}</KvRow>
 
               <Separator className="my-1" />
               <SectionTitle>model / tools</SectionTitle>
-              <KvRow label="modelId">{record.modelId ?? "null"}</KvRow>
+              <KvRow label="model">
+                {record.modelId ? (
+                  <AiModelRef modelId={record.modelId} showId />
+                ) : (
+                  "null"
+                )}
+              </KvRow>
               <KvRow label="tools">
-                {record.tools.length ? record.tools.join(", ") : "—"}
+                {record.tools.length ? (
+                  <span className="flex flex-col gap-1">
+                    {record.tools.map((toolId) => (
+                      <AiToolRef key={toolId} toolId={toolId} showId />
+                    ))}
+                  </span>
+                ) : (
+                  "—"
+                )}
               </KvRow>
               <KvRow label="tools.length">{String(record.tools.length)}</KvRow>
               <KvRow label="mcpServers">
@@ -368,7 +383,7 @@ export default function AgentDefinitionSliceViewerShadcn({
 
               <Separator className="my-1" />
               <SectionTitle>ownership</SectionTitle>
-              <KvRow label="userId">{record.userId ?? "null"}</KvRow>
+              <KvRow label="createdBy">{record.createdBy ?? "null"}</KvRow>
               <KvRow label="organizationId">
                 {record.organizationId ?? "null"}
               </KvRow>

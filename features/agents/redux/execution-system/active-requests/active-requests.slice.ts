@@ -119,7 +119,10 @@ function closeOpenTextRun(request: ActiveRequest, timestamp: number): void {
  * `selectUnifiedSlots` bound its sweep instead of hoovering every later block
  * up to the reasoning position.
  */
-function closeOpenReasoningRun(request: ActiveRequest, timestamp: number): void {
+function closeOpenReasoningRun(
+  request: ActiveRequest,
+  timestamp: number,
+): void {
   if (!request.isReasoningStreaming) return;
   request.timeline.push({
     kind: "reasoning_end",
@@ -140,6 +143,37 @@ function closeOpenReasoningRun(request: ActiveRequest, timestamp: number): void 
 export interface ActiveRequestsState {
   byRequestId: Record<string, ActiveRequest>;
   byConversationId: Record<string, string[]>;
+  /** Mounted canonical viewers that still need each request's render blocks. */
+  viewerIdsByRequestId: Record<string, string[]>;
+  /** Requests whose owner cleaned up while a viewer still retains them. */
+  pendingRemovalByRequestId: Record<string, true>;
+}
+
+function deleteRequestEntry(
+  state: ActiveRequestsState,
+  requestId: string,
+): void {
+  const request = state.byRequestId[requestId];
+  if (request) {
+    const conversationRequests = state.byConversationId[request.conversationId];
+    if (conversationRequests) {
+      state.byConversationId[request.conversationId] =
+        conversationRequests.filter((id) => id !== requestId);
+      if (state.byConversationId[request.conversationId].length === 0) {
+        delete state.byConversationId[request.conversationId];
+      }
+    }
+    delete state.byRequestId[requestId];
+  }
+  delete state.viewerIdsByRequestId[requestId];
+  delete state.pendingRemovalByRequestId[requestId];
+}
+
+function hasRequestViewers(
+  state: ActiveRequestsState,
+  requestId: string,
+): boolean {
+  return (state.viewerIdsByRequestId[requestId]?.length ?? 0) > 0;
 }
 
 // =============================================================================
@@ -225,6 +259,8 @@ function buildHydratedResult(row: HydratedRequestRow): Record<string, unknown> {
 const initialState: ActiveRequestsState = {
   byRequestId: {},
   byConversationId: {},
+  viewerIdsByRequestId: {},
+  pendingRemovalByRequestId: {},
 };
 
 // =============================================================================
@@ -248,6 +284,31 @@ const activeRequestsSlice = createSlice({
         conversationId,
         parentConversationId = null,
       } = action.payload;
+
+      // 🚨 NEVER RESET AN EXISTING ROW. A request row is the ONLY copy of the
+      // streamed content every mounted MarkdownStream/LiveRunDisplay renders
+      // from — resetting it blanks those surfaces instantly and permanently
+      // (later events on a reset/deleted row are silently dropped). The one
+      // path that can legitimately arrive here with an existing id is
+      // `adoptForeignStream` re-adopting a server-side pipeline run under the
+      // server's own X-Request-ID (a rejoin, or two surfaces adopting the
+      // same durable run). That stream must CONTINUE into the existing row.
+      // Fresh logical runs always mint a fresh client id, so they never hit
+      // this branch. This is THE DISAPPEARING-RUN CLASS — see
+      // features/agents/docs/LIVE_RUN_RETENTION.md before touching.
+      const existing = state.byRequestId[requestId];
+      if (existing) {
+        // A re-adoption supersedes any deferred owner cleanup.
+        delete state.pendingRemovalByRequestId[requestId];
+        const conversationRequests =
+          state.byConversationId[existing.conversationId];
+        if (!conversationRequests?.includes(requestId)) {
+          (state.byConversationId[existing.conversationId] ??= []).push(
+            requestId,
+          );
+        }
+        return;
+      }
 
       const now = new Date().toISOString();
 
@@ -1143,20 +1204,45 @@ const activeRequestsSlice = createSlice({
 
     // ── Cleanup ────────────────────────────────────────────────
 
-    removeRequest(state, action: PayloadAction<string>) {
-      const request = state.byRequestId[action.payload];
-      if (request) {
-        const conversationRequests =
-          state.byConversationId[request.conversationId];
-        if (conversationRequests) {
-          state.byConversationId[request.conversationId] =
-            conversationRequests.filter((id) => id !== action.payload);
-          if (state.byConversationId[request.conversationId].length === 0) {
-            delete state.byConversationId[request.conversationId];
-          }
-        }
-        delete state.byRequestId[action.payload];
+    retainRequestForViewer(
+      state,
+      action: PayloadAction<{ requestId: string; viewerId: string }>,
+    ) {
+      const { requestId, viewerId } = action.payload;
+      // Deliberately NOT gated on the row existing: a canonical viewer can
+      // mount a beat before its row is created (adoption races the first
+      // render). Registering early is harmless — release cleans it up — and
+      // it closes the gap where an early-mounted viewer got no protection.
+      const viewers = state.viewerIdsByRequestId[requestId] ?? [];
+      if (!viewers.includes(viewerId)) viewers.push(viewerId);
+      state.viewerIdsByRequestId[requestId] = viewers;
+    },
+
+    releaseRequestForViewer(
+      state,
+      action: PayloadAction<{ requestId: string; viewerId: string }>,
+    ) {
+      const { requestId, viewerId } = action.payload;
+      const viewers = state.viewerIdsByRequestId[requestId];
+      if (!viewers) return;
+      const remaining = viewers.filter((id) => id !== viewerId);
+      if (remaining.length > 0) {
+        state.viewerIdsByRequestId[requestId] = remaining;
+        return;
       }
+      delete state.viewerIdsByRequestId[requestId];
+      if (state.pendingRemovalByRequestId[requestId]) {
+        deleteRequestEntry(state, requestId);
+      }
+    },
+
+    removeRequest(state, action: PayloadAction<string>) {
+      const requestId = action.payload;
+      if (hasRequestViewers(state, requestId)) {
+        state.pendingRemovalByRequestId[requestId] = true;
+        return;
+      }
+      deleteRequestEntry(state, requestId);
     },
 
     /**
@@ -1268,9 +1354,20 @@ const activeRequestsSlice = createSlice({
       const conversationId = action.payload;
       const requestIds = state.byConversationId[conversationId] ?? [];
       for (const reqId of requestIds) {
-        delete state.byRequestId[reqId];
+        if (hasRequestViewers(state, reqId)) {
+          state.pendingRemovalByRequestId[reqId] = true;
+        } else {
+          deleteRequestEntry(state, reqId);
+        }
       }
-      delete state.byConversationId[conversationId];
+      const retainedRequestIds = requestIds.filter((requestId) =>
+        hasRequestViewers(state, requestId),
+      );
+      if (retainedRequestIds.length > 0) {
+        state.byConversationId[conversationId] = retainedRequestIds;
+      } else {
+        delete state.byConversationId[conversationId];
+      }
     });
   },
 });
@@ -1310,6 +1407,8 @@ export const {
   rewindContentToBoundary,
   finalizeClientMetrics,
   updateExtractedJson,
+  retainRequestForViewer,
+  releaseRequestForViewer,
   removeRequest,
   hydrateRequestsFromObservability,
 } = activeRequestsSlice.actions;

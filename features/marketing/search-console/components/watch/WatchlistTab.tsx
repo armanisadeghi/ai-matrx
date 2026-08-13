@@ -148,7 +148,10 @@ export function WatchlistTab({
       cell: (row) => (
         <WatchButton
           watched
-          pending={toggle.isPending && toggle.variables?.target.entityId === row.entity_id}
+          pending={
+            toggle.isPending &&
+            toggle.variables?.target.entityId === row.entity_id
+          }
           noun={row.kind === "query" ? "query" : "page"}
           onToggle={() =>
             toggle.mutate({
@@ -194,7 +197,9 @@ export function WatchlistTab({
           <span
             className={cn(
               "block max-w-[24rem] truncate text-xs font-medium sm:max-w-[32rem]",
-              row.impressions === 0 ? "text-muted-foreground" : "text-foreground",
+              row.impressions === 0
+                ? "text-muted-foreground"
+                : "text-foreground",
             )}
             title={row.key}
           >
@@ -282,8 +287,8 @@ export function WatchlistTab({
             </p>
             <p className="max-w-md text-xs text-muted-foreground">
               Use the eye button (or right-click → Watch) on any query or page
-              row — watched items appear here with their live numbers, even
-              when they have zero impressions in the period.
+              row — watched items appear here with their live numbers, even when
+              they have zero impressions in the period.
             </p>
           </div>
         ) : (
@@ -312,6 +317,7 @@ export function WatchlistTab({
           >
             <div className="flex h-full min-h-0 flex-col">
               <MatrxDataTable<GscWatchRow>
+                urlState={{ id: "gsc-watchlist" }}
                 data={rows}
                 columns={columns}
                 getRowId={rowId}

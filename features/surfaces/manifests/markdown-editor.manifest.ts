@@ -137,7 +137,8 @@ const surfaceSpecific: SurfaceValue[] = [
  * The judgment bar, applied honestly. This surface has exactly ONE authored
  * field and seven pipeline readouts, and the split is not close:
  *
- * YES — `content`. The markdown source IS the surface: everything to the
+ * YES — `content` and, added 2026-08-10 after the exclusion below was
+ * disproved live, `processor_id`. The markdown source IS the surface: everything to the
  * right of the divider is derived from it. Drafting, restructuring, tightening
  * and extending a document is the textbook agent-drafts-better case, and on a
  * CLASSIFICATION tester it is the whole point of asking an agent at all
@@ -157,20 +158,31 @@ const surfaceSpecific: SurfaceValue[] = [
  *   the document. Never offered.
  * - `sample_id` loads a canned fixture over the editor. Same destruction, and
  *   picking which fixture to look at is identity, not drafting.
- * - `processor_id` and `config_id` are pipeline internals that the UI itself
- *   derives: the coordinator effect sets the processor, and a second effect
- *   resets the config to the first one matching
- *   `PROCESSOR_CONFIG_TYPE_MAP[processor]`. An agent write to either would be
- *   clobbered by the next effect pass. Mechanical, and not stable enough to
- *   promise.
- * - `view_id` is the genuine borderline — it is the analogue of
- *   `markdown-studio`'s `view_mode`, which IS declared. It loses here on two
- *   counts the studio does not have: it only chooses which renderer draws
- *   inside ONE tab of the right pane (not a mode the whole page is in), and
- *   the coordinator effect resets it to `getDefaultViewId(coordinatorId)`
- *   underneath any agent that sets it. "Switch the structured-view renderer"
- *   is a toggle a developer flips by hand while testing; nobody asks an agent
- *   for it. Excluded deliberately.
+ * - `config_id` is a pipeline internal the UI itself derives: an effect resets
+ *   it to the first config matching `PROCESSOR_CONFIG_TYPE_MAP[processor]`
+ *   whenever the processor moves, so an agent write is order-fragile against
+ *   its own processor write. Mechanical, and not stable enough to promise.
+ * - `processor_id` WAS excluded here on the same "clobbered by the next effect
+ *   pass" reasoning (2026-08-10). That premise turned out to be wrong and the
+ *   target now ships as `pipeline_processor` — see its entry below. Neither
+ *   effect reverts it: the coordinator effect writes the processor only when
+ *   `selectedCoordinatorId` CHANGES (and the coordinator is not agent-
+ *   writable), and the config effect resets the CONFIG, not the processor.
+ *   Verified live twice through a real agent run — `heading-list` and
+ *   `sectioned-list` both stuck and the pipeline re-derived against them.
+ * - `view_id` stays excluded, and for a harder reason than first recorded:
+ *   picking a view independently of the processor feeding it is not merely
+ *   unstable, it CRASHES. From the default state (dynamic coordinator →
+ *   `combined-processor`), selecting "Key Points" throws inside
+ *   `KeyPointsDisplay` ("Cannot read properties of undefined (reading
+ *   'title')") and `OverlayErrorBoundary` replaces the entire window with its
+ *   fallback. This is PRE-EXISTING — a user clicking the same View option
+ *   reproduces it exactly — and the coordinator's own `availableViews` does
+ *   not gate it (it lists `keyPoints` under `dynamic`), so there is no real
+ *   vocabulary to validate an agent's choice against. A sweep of all 11
+ *   processors from the same state found zero crashes, which is why the
+ *   processor ships and the view does not. Revisit only once the custom views
+ *   guard their input.
  * - `processed_data` and `ast` are parser OUTPUT. They have no write path and
  *   must not get one — an agent moves them by writing `content` and letting
  *   the pipeline re-run. That IS the evidence loop on this surface.
@@ -210,11 +222,25 @@ const writeTargets: SurfaceWriteTarget[] = [
     group: "editor_content",
     sortOrder: 110,
   },
+  {
+    name: "pipeline_processor",
+    label: "Processor",
+    description:
+      "Switches which processor parses the markdown into structured output — on a classification tester this is a CONTENT judgment: pick the one that matches how the document is actually written. Must be exactly one registered processor id: \"intro-outro-list\", \"intro-outro-nested-list\", \"heading-list\", \"sectioned-list\", \"combined-processor\", \"ast-to-json-with-config\", \"combined-processor-with-config\", \"structured-ast-with-config\", \"parser-enhanced\", \"parser-separated\", or \"parser-simple\"; anything else is rejected and the error names the live accepted set. Changing this re-runs the pipeline and, for the processors that take one, re-selects a compatible config automatically. View state only — the markdown source itself is untouched.",
+    valueType: "string",
+    updatesValue: "processor_id",
+    mode: "ui",
+    applyPolicy: "ask",
+    group: "processing_pipeline",
+    sortOrder: 320,
+  },
 ];
 
 export const markdownEditorManifest: SurfaceManifest = {
   surfaceName: "matrx-user/markdown-editor",
   readiness: "verified",
+  readinessNote:
+    "Re-verified 2026-08-12 on a MAPPED route after the `SurfaceAgentsPanelImpl` overlay fix. The earlier FEATURE.md entry warned that the panel prefers the ROUTE surface, so verification had to run on an unmapped route (/administration/utilities/markdown-tester); that workaround is now obsolete. With the window open over /dashboard the popover names Markdown Editor and runs against ITS scope — reverting that one line puts `matrx-user/dashboard` back. All three targets exercised live in this pass: `markdown_content` and `append_markdown_content` landed in the visible editor, `pipeline_processor` was declined with \"Keep as is\" and the agent reported the decline without an error, and an undeclared request was refused. READS are fine here, including LARGE values — a 34,045-character document was read back accurately (heading count plus a token near the end) — so this surface is NOT affected by the overlay read gap. Note `/markdown-editor` is a route→surface mapping with no page behind it: the reachable mounts are this floating window and the `markdownEditor` fullscreen overlay, both covered by the manifest's `overlayId` for panel precedence.",
   overlayId: "markdownEditorWindow",
   label: "Markdown Editor",
   intro: `<surface_intro>

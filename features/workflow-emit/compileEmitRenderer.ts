@@ -1,7 +1,7 @@
 /**
  * compileEmitRenderer — thin wrapper over the PROVEN Agent Apps compiler.
  *
- * The Agent Apps applet runtime compiles fully-custom Babel components
+ * The Agent Apps slot runtime compiles fully-custom Babel components
  * SYNCHRONOUSLY (static `import { transform } from "@babel/standalone"` +
  * synchronous `buildComponentScope`). That same compiler renders custom
  * components in dev AND prod, so the workflow-emit renderer reuses it VERBATIM

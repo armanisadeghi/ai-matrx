@@ -1,5 +1,5 @@
 {
-  "_comment": "Registry of relations that were MOVED or RETIRED during the 2026 DB transition. The clean-cut doctrine: the old name no longer exists, so every stale reference MUST error. check-dead-relations.ts scans the codebase for references to the OLD name and lights the terminal RED until they are gone. Add an entry the moment you move/retire a table \u2014 BEFORE repointing \u2014 so the guard drives the repoint. Mirror of platform.deprecated_relations in the DB.",
+  "_comment": "Registry of relations that were MOVED or RETIRED during the 2026 DB transition. The clean-cut doctrine: the old name no longer exists, so every stale reference MUST error. check-dead-relations.ts scans the codebase for references to the OLD name and lights the terminal RED until they are gone. Add an entry the moment you move/retire a table — BEFORE repointing — so the guard drives the repoint. Mirror of platform.deprecated_relations in the DB.",
   "relations": [
     {
       "relation": "pc_shows",
@@ -175,7 +175,7 @@
       "newSchema": "platform",
       "new": "platform.associations",
       "since": "2026-07-02",
-      "reason": "M2M junction collapsed into platform.associations (research_source \u2192 research_tag, worklog \u00a74.1) and archived to graveyard.rs_source_tag. Reads/writes go through associationsService (assoc_* RPCs). Never .from('rs_source_tag')."
+      "reason": "M2M junction collapsed into platform.associations (research_source → research_tag, worklog §4.1) and archived to graveyard.rs_source_tag. Reads/writes go through associationsService (assoc_* RPCs). Never .from('rs_source_tag')."
     },
     {
       "relation": "rs_keyword_source",
@@ -183,7 +183,7 @@
       "newSchema": "platform",
       "new": "platform.associations",
       "since": "2026-07-02",
-      "reason": "M2M junction collapsed into platform.associations (research_source \u2192 research_keyword, worklog \u00a74.2) and archived to graveyard.rs_keyword_source. Per-keyword rank now lives in the association metadata. Reads/writes go through associationsService (assoc_* RPCs). Never .from('rs_keyword_source')."
+      "reason": "M2M junction collapsed into platform.associations (research_source → research_keyword, worklog §4.2) and archived to graveyard.rs_keyword_source. Per-keyword rank now lives in the association metadata. Reads/writes go through associationsService (assoc_* RPCs). Never .from('rs_keyword_source')."
     },
     {
       "relation": "rs_source_keywords",
@@ -215,7 +215,7 @@
       "newSchema": "history",
       "new": "history.row_versions",
       "since": "2026-06-27",
-      "reason": "retired (graveyard) \u2014 note versions live in history.row_versions. Use the RPCs get_note_versions / get_note_version / restore_note_version / delete_note_version / create_note_version_manual. Never .from('note_versions')."
+      "reason": "retired (graveyard) — note versions live in history.row_versions. Use the RPCs get_note_versions / get_note_version / restore_note_version / delete_note_version / create_note_version_manual. Never .from('note_versions')."
     },
     {
       "relation": "note_shares",
@@ -223,7 +223,7 @@
       "newSchema": "iam",
       "new": "iam.permissions",
       "since": "2026-06-27",
-      "reason": "retired (graveyard) \u2014 note sharing is canonical iam.permissions (resource_type='note'). Public notes = workbench.notes.visibility='public'."
+      "reason": "retired (graveyard) — note sharing is canonical iam.permissions (resource_type='note'). Public notes = workbench.notes.visibility='public'."
     },
     {
       "relation": "org_module_settings",
@@ -231,7 +231,7 @@
       "newSchema": "platform",
       "new": "platform.org_module_config",
       "since": "2026-06-27",
-      "reason": "retired (graveyard) \u2014 org module config unified onto platform.org_module_config (entity-token keyed). Read via platform.module_config() / OrgModuleConfig."
+      "reason": "retired (graveyard) — org module config unified onto platform.org_module_config (entity-token keyed). Read via platform.module_config() / OrgModuleConfig."
     },
     {
       "relation": "user_achievements",
@@ -807,7 +807,7 @@
       "newSchema": "agent",
       "new": "agent.context_menu_view",
       "since": "2026-06-28",
-      "reason": "context-menu shim dropped \u2014 read agent.context_menu_view via .schema('agent').from('context_menu_view')."
+      "reason": "context-menu shim dropped — read agent.context_menu_view via .schema('agent').from('context_menu_view')."
     },
     {
       "relation": "ui_surface",
@@ -999,7 +999,7 @@
       "newSchema": "platform",
       "new": "platform.associations",
       "since": "2026-07-02",
-      "reason": "collapsed into platform.associations (tool \u2192 tool_bundle, role='member'; position=sort_order; metadata.local_alias) and moved to graveyard.bundle_member. Reads/writes go through associationsService (assoc_* RPCs), server-side admin routes write platform.associations directly. Never .from('bundle_member')."
+      "reason": "collapsed into platform.associations (tool → tool_bundle, role='member'; position=sort_order; metadata.local_alias) and moved to graveyard.bundle_member. Reads/writes go through associationsService (assoc_* RPCs), server-side admin routes write platform.associations directly. Never .from('bundle_member')."
     },
     {
       "relation": "render_component",
@@ -1007,7 +1007,7 @@
       "newSchema": "content_ir",
       "new": "content_ir.kind_component",
       "since": "2026-07-07",
-      "reason": "retired to graveyard.render_component (Shape System Stage 3, SHAPE_SYSTEM.md R1) \u2014 the dormant render registry lost to content_ir.kind_component, the canonical (kind, platform, role) \u2192 component_key resolver. Its only reader was the never-dispatched fetchRenderComponents thunk, now deleted. skill.render_definition SURVIVES as the markdown-atom palette; only its render_component satellite died. Never .from('render_component')."
+      "reason": "retired to graveyard.render_component (Shape System Stage 3, SHAPE_SYSTEM.md R1) — the dormant render registry lost to content_ir.kind_component, the canonical (kind, platform, role) → component_key resolver. Its only reader was the never-dispatched fetchRenderComponents thunk, now deleted. skill.render_definition SURVIVES as the markdown-atom palette; only its render_component satellite died. Never .from('render_component')."
     },
     {
       "relation": "service",
@@ -1015,7 +1015,7 @@
       "newSchema": "ai",
       "new": "ai.endpoint",
       "since": "2026-07-10",
-      "reason": "retired (ai-schema reshape) \u2014 ai.service split into ai.endpoint (one row per serving vendor: base_url/auth_ref/byok/priority) + ai.api (one row per wire contract: translator_key = old wire_format, transport, enveloped rules, request_defaults). ai.offering.service_id \u2192 endpoint_id + api_id; controls_override \u2192 override (enveloped). Never .schema('ai').from('service')."
+      "reason": "retired (ai-schema reshape) — ai.service split into ai.endpoint (one row per serving vendor: base_url/auth_ref/byok/priority) + ai.api (one row per wire contract: translator_key = old wire_format, transport, enveloped rules, request_defaults). ai.offering.service_id → endpoint_id + api_id; controls_override → override (enveloped). Never .schema('ai').from('service')."
     },
     {
       "relation": "agent_surface",
@@ -1023,7 +1023,7 @@
       "newSchema": "platform",
       "new": "platform.associations",
       "since": "2026-07-12",
-      "reason": "condemned agent\u2194surface junction retired to graveyard; bindings are platform.associations edges (agent\u2192surface, tier-encoded role) read via agent.menu_surface. Use bind-agent-to-surface.service.ts."
+      "reason": "condemned agent↔surface junction retired to graveyard; bindings are platform.associations edges (agent→surface, tier-encoded role) read via agent.menu_surface. Use bind-agent-to-surface.service.ts."
     },
     {
       "relation": "content_blocks",
@@ -1032,6 +1032,236 @@
       "new": "skill.render_definition",
       "since": "2026-08-08",
       "reason": "canonicalized onto skill.render_definition (superset: block_type, skill_id, visibility, category_id). Use .schema('skill').from('render_definition'). Table drop pending CONTRACT phase."
+    },
+    {
+      "relation": "cld_files",
+      "old": "public.cld_files",
+      "newSchema": "files",
+      "new": "files.files",
+      "since": "2026-08-12",
+      "reason": "cld_ family superseded by files.*; table DROPPED (0 rows)."
+    },
+    {
+      "relation": "cld_folders",
+      "old": "public.cld_folders",
+      "newSchema": "files",
+      "new": "files.folders",
+      "since": "2026-08-12",
+      "reason": "superseded; DROPPED (0 rows)."
+    },
+    {
+      "relation": "cld_file_versions",
+      "old": "public.cld_file_versions",
+      "newSchema": "files",
+      "new": "files.file_versions",
+      "since": "2026-08-12",
+      "reason": "superseded; DROPPED (0 rows)."
+    },
+    {
+      "relation": "cld_uploads_inflight",
+      "old": "public.cld_uploads_inflight",
+      "newSchema": "files",
+      "new": "files.uploads_inflight",
+      "since": "2026-08-12",
+      "reason": "superseded; DROPPED (0 rows)."
+    },
+    {
+      "relation": "cld_share_links",
+      "old": "public.cld_share_links",
+      "newSchema": "(deleted)",
+      "new": "(deleted)",
+      "since": "2026-08-12",
+      "reason": "no successor; DROPPED (0 rows, no consumers)."
+    },
+    {
+      "relation": "cld_file_permissions",
+      "old": "public.cld_file_permissions",
+      "newSchema": "graveyard",
+      "new": "graveyard.cld_file_permissions",
+      "since": "2026-08-12",
+      "reason": "public twin DROPPED 2026-08-12 (0 rows, no consumers); an older copy from a prior sweep still sits in graveyard awaiting final DROP."
+    },
+    {
+      "relation": "cld_user_groups",
+      "old": "public.cld_user_groups",
+      "newSchema": "graveyard",
+      "new": "graveyard.cld_user_groups",
+      "since": "2026-08-12",
+      "reason": "public twin DROPPED 2026-08-12 (0 rows, no consumers); an older copy from a prior sweep still sits in graveyard awaiting final DROP."
+    },
+    {
+      "relation": "cld_user_group_members",
+      "old": "public.cld_user_group_members",
+      "newSchema": "graveyard",
+      "new": "graveyard.cld_user_group_members",
+      "since": "2026-08-12",
+      "reason": "public twin DROPPED 2026-08-12 (0 rows, no consumers); an older copy from a prior sweep still sits in graveyard awaiting final DROP."
+    },
+    {
+      "relation": "agenda_task",
+      "old": "public.agenda_task",
+      "newSchema": "(deleted)",
+      "new": "(deleted)",
+      "since": "2026-08-12",
+      "reason": "superseded by matrx-extend sch_* tables; DROPPED (0 rows)."
+    },
+    {
+      "relation": "agenda_run",
+      "old": "public.agenda_run",
+      "newSchema": "(deleted)",
+      "new": "(deleted)",
+      "since": "2026-08-12",
+      "reason": "superseded by matrx-extend sch_* tables; DROPPED (0 rows)."
+    },
+    {
+      "relation": "window_sessions",
+      "old": "public.window_sessions",
+      "newSchema": "(deleted)",
+      "new": "(deleted)",
+      "since": "2026-08-12",
+      "reason": "FE window persistence moved to IndexedDB/localStorage; DROPPED (0 rows)."
+    },
+    {
+      "relation": "forbidden_urls",
+      "old": "public.forbidden_urls",
+      "newSchema": "(deleted)",
+      "new": "(deleted)",
+      "since": "2026-08-12",
+      "reason": "scraper-era leftover; DROPPED (0 rows)."
+    },
+    {
+      "relation": "analysis_recipes",
+      "old": "public.analysis_recipes",
+      "newSchema": "files",
+      "new": "files.analysis",
+      "since": "2026-08-12",
+      "reason": "redaction/analysis config superseded; DROPPED (0 rows)."
+    },
+    {
+      "relation": "container_fields",
+      "old": "public.container_fields",
+      "newSchema": "(deleted)",
+      "new": "(deleted)",
+      "since": "2026-08-12",
+      "reason": "applet-builder junction (FKs pointed into graveyard); DROPPED (0 rows)."
+    },
+    {
+      "relation": "applet_containers",
+      "old": "public.applet_containers",
+      "newSchema": "(deleted)",
+      "new": "(deleted)",
+      "since": "2026-08-12",
+      "reason": "applet-builder junction; DROPPED (0 rows)."
+    },
+    {
+      "relation": "dashboard_saved_views",
+      "old": "public.dashboard_saved_views",
+      "newSchema": "graveyard",
+      "new": "graveyard.dashboard_saved_views",
+      "since": "2026-08-12",
+      "reason": "no code consumers in any repo; moved to graveyard (2 rows preserved)."
+    },
+    {
+      "relation": "microservice_project",
+      "old": "public.microservice_project",
+      "newSchema": "graveyard",
+      "new": "graveyard.microservice_project",
+      "since": "2026-08-12",
+      "reason": "no consumers; moved to graveyard (1 row preserved)."
+    },
+    {
+      "relation": "full_spectrum_positions",
+      "old": "public.full_spectrum_positions",
+      "newSchema": "graveyard",
+      "new": "graveyard.full_spectrum_positions",
+      "since": "2026-08-12",
+      "reason": "2025 recruiting content, no feature; moved to graveyard (12 rows preserved)."
+    },
+    {
+      "relation": "ts_check_runs",
+      "old": "public.ts_check_runs",
+      "newSchema": "graveyard",
+      "new": "graveyard.ts_check_runs",
+      "since": "2026-08-12",
+      "reason": "writer removed from FE scripts; moved to graveyard (1 row preserved)."
+    },
+    {
+      "relation": "site_metadata",
+      "old": "public.site_metadata",
+      "newSchema": "graveyard",
+      "new": "graveyard.site_metadata",
+      "since": "2026-08-12",
+      "reason": "client-site SEO metadata superseded by web.* schema; moved to graveyard (9 rows preserved)."
+    },
+    {
+      "relation": "flexible_data",
+      "old": "public.flexible_data",
+      "newSchema": "platform",
+      "new": "platform.flexible_data",
+      "since": "2026-08-13",
+      "reason": "PROMOTED to platform — permanent flexible-JSON primitive (changeover doctrine §6a). NEVER a retirement candidate. Use .schema(\"platform\").from(\"flexible_data\")."
+    },
+    {
+      "relation": "message_template",
+      "old": "public.message_template",
+      "newSchema": "agent",
+      "new": "agent.message_template",
+      "since": "2026-08-13",
+      "reason": "live agent-builder message-template library. Use .schema(\"agent\").from(\"message_template\")."
+    },
+    {
+      "relation": "heatmap_saves",
+      "old": "public.heatmap_saves",
+      "newSchema": "workbench",
+      "new": "workbench.heatmap_saves",
+      "since": "2026-08-13",
+      "reason": "user data artifact; is_public dropped in favor of the visibility enum. Use .schema(\"workbench\").from(\"heatmap_saves\")."
+    },
+    {
+      "relation": "schema_templates",
+      "old": "public.schema_templates",
+      "newSchema": "workbench",
+      "new": "workbench.schema_templates",
+      "since": "2026-08-13",
+      "reason": "udt dataset-template family lives in workbench. Use .schema(\"workbench\").from(\"schema_templates\")."
+    },
+    {
+      "relation": "cx_agent_memory",
+      "old": "public.cx_agent_memory",
+      "new": null,
+      "since": "2026-08-12",
+      "reason": "RETIRED — no successor. Ephemeral per-conversation KV from the 2026-05-19 matrx-extend port; backed the `scratchpad` tool, retired the same day. NOTE: `chat.agent_memory` is a DIFFERENT table that reused the name — it is the durable store behind the server-side `memory` tool. The user's per-conversation scratchpad is workbench.working_documents kind='scratch'."
+    },
+    {
+      "relation": "agent_user_kv",
+      "old": "public.agent_user_kv",
+      "new": null,
+      "since": "2026-08-12",
+      "reason": "RETIRED — no successor. Per-user persistent KV from the 2026-05-19 matrx-extend port; backed the `storage` tool, retired the same day. Superseded by the `memory` tool (chat.agent_memory), which already scopes to user / project / organization."
+    },
+    {
+      "relation": "applet",
+      "old": "public.applet",
+      "newSchema": "graveyard",
+      "new": "graveyard.applet",
+      "since": "2026-08-13",
+      "reason": "legacy applet/app-builder feature KILLED (Arman); moved to graveyard (6 rows preserved)."
+    },
+    {
+      "relation": "custom_app_configs",
+      "old": "public.custom_app_configs",
+      "newSchema": "graveyard",
+      "new": "graveyard.custom_app_configs",
+      "since": "2026-08-13",
+      "reason": "legacy applet/app-builder feature KILLED (Arman); moved to graveyard (46 rows preserved)."
+    },
+    {
+      "relation": "custom_applet_configs",
+      "old": "public.custom_applet_configs",
+      "newSchema": "graveyard",
+      "new": "graveyard.custom_applet_configs",
+      "since": "2026-08-13",
+      "reason": "legacy applet/app-builder feature KILLED (Arman); moved to graveyard (130 rows preserved)."
     }
   ]
 }

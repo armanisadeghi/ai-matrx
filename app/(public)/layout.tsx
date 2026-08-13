@@ -12,9 +12,11 @@ export default function PublicLayout({
 }) {
   return (
     <Providers>
-      <div className="h-dvh flex flex-col overflow-hidden">
+      <div className="flex h-dvh flex-col overflow-hidden">
         <PublicHeader />
-        <main className="flex-1 min-h-0 overflow-hidden">{children}</main>
+        <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+          {children}
+        </main>
         <PublicFooter />
       </div>
       {/* Canvas front door at layout root so the surface sits above all page

@@ -15,6 +15,22 @@ function throwIfError(error: unknown, action?: string): void {
     throw operationFailed(action ?? "reach this site's reputation workspace", error);
 }
 
+/**
+ * The workspace is eight reads wide. When one fails, the card must say WHICH
+ * piece broke in the user's words — one generic sentence for eight different
+ * reads is how the 2026-08-12 competitor-family outage rendered as an
+ * unactionable "couldn't reach this workspace" (the failing relation was only
+ * visible in the inspector's `cause`).
+ */
+const INVENTORY_READ_ACTIONS = [
+  "count this site's enriched backlinks",
+  "count this site's referring domains",
+  "count this site's competitor opportunities",
+  "count this site's AI visibility citations",
+  "count this site's AI visibility claims",
+  "count this brand's business facts",
+] as const;
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
@@ -47,7 +63,7 @@ async function latestBrief(
     .is("deleted_at", null)
     .limit(1)
     .abortSignal(signal);
-  throwIfError(definitions.error);
+  throwIfError(definitions.error, "load this site's reputation brief");
   const definitionId = definitions.data?.[0]?.id;
   if (!definitionId) return { brief: null, instanceId: null };
   const instances = await supabase
@@ -60,7 +76,7 @@ async function latestBrief(
     .order("created_at", { ascending: false })
     .limit(1)
     .abortSignal(signal);
-  throwIfError(instances.error);
+  throwIfError(instances.error, "load this site's reputation brief");
   const row = instances.data?.[0];
   return {
     brief: parseReputationBrief(row?.data ?? null),
@@ -129,17 +145,18 @@ export async function getReputationWorkspace(
       .is("deleted_at", null)
       .abortSignal(signal),
   ]);
-  throwIfError(casesResponse.error);
-  for (const response of [
+  throwIfError(casesResponse.error, "load this site's reputation cases");
+  const inventoryResponses = [
     enrichedBacklinks,
     referringDomains,
     competitorOpportunities,
     aiCitations,
     aiClaims,
     businessFacts,
-  ]) {
-    throwIfError(response.error);
-  }
+  ] as const;
+  inventoryResponses.forEach((response, index) => {
+    throwIfError(response.error, INVENTORY_READ_ACTIONS[index]);
+  });
   return {
     cases: (casesResponse.data ?? []) as ReputationCaseRow[],
     latestBrief: storedBrief.brief,

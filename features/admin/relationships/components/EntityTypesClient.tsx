@@ -12,7 +12,7 @@
 // active registry tokens (server prop) against the generated vocabulary and
 // stays up until they match again.
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Copy, Pencil, Plus, Power, TriangleAlert } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -34,6 +34,11 @@ import {
 import { RELATIONSHIPS_LOCATION } from "../utils";
 import type { EntityTypeRow } from "../types";
 import { setEntityTypeAgentWritable } from "../entityTypeMutations";
+import {
+  enumUrlCodec,
+  stringUrlCodec,
+  useUrlState,
+} from "@/lib/url-state/useUrlState";
 
 type EntityTypeFacet = "all" | "active" | "inactive";
 
@@ -111,15 +116,31 @@ export function EntityTypesClient({ entityTypes }: Props) {
   const supabase = useMemo(() => createClient(), []);
   const [, startTransition] = useTransition();
 
-  const [facet, setFacet] = useState<EntityTypeFacet>("all");
+  const [facet, setFacet] = useUrlState(
+    "facet",
+    enumUrlCodec<EntityTypeFacet>(["all", "active", "inactive"], "all"),
+  );
   const [editor, setEditor] = useState<EntityTypeEditorState | null>(null);
-  const [sidePanelId, setSidePanelId] = useState<string | null>(null);
+  const [sidePanelParam, setSidePanelParam] = useUrlState(
+    "row",
+    stringUrlCodec(),
+  );
+  const sidePanelId = sidePanelParam || null;
+  const setSidePanelId = (id: string | null) => setSidePanelParam(id ?? "");
   const [saving, setSaving] = useState(false);
   const [writablePending, setWritablePending] = useState<string | null>(null);
   /** Row targeted for deactivate/reactivate confirmation. */
   const [activeTarget, setActiveTarget] = useState<EntityTypeRow | null>(null);
 
   const refresh = () => startTransition(() => router.refresh());
+
+  useEffect(() => {
+    if (!sidePanelId) return;
+    const row = entityTypes.find(
+      (candidate) => candidate.token === sidePanelId,
+    );
+    if (row) setEditor(rowToEditor(row));
+  }, [entityTypes, sidePanelId]);
 
   const existingTokens = useMemo(
     () => new Set(entityTypes.map((r) => r.token)),
@@ -279,10 +300,14 @@ export function EntityTypesClient({ entityTypes }: Props) {
               {row.title_column ?? "(candidate override)"}
               {row.reference_category ? (
                 <span className="text-muted-foreground">
-                  {" "}· {row.reference_category}
+                  {" "}
+                  · {row.reference_category}
                 </span>
               ) : row.content_role ? (
-                <span className="text-muted-foreground"> · {row.content_role}</span>
+                <span className="text-muted-foreground">
+                  {" "}
+                  · {row.content_role}
+                </span>
               ) : null}
             </span>
           ) : (
@@ -428,10 +453,7 @@ export function EntityTypesClient({ entityTypes }: Props) {
     }
   }
 
-  async function toggleAgentWritable(
-    row: EntityTypeRow,
-    enabled: boolean,
-  ) {
+  async function toggleAgentWritable(row: EntityTypeRow, enabled: boolean) {
     setWritablePending(row.token);
     try {
       await setEntityTypeAgentWritable(row.token, enabled);
@@ -460,8 +482,9 @@ export function EntityTypesClient({ entityTypes }: Props) {
           <span className="flex-1">
             Generated types are out of date ({drift.added.length} added /{" "}
             {drift.removed.length} removed vs the registry) — run{" "}
-            <span className="font-mono text-xs">pnpm gen:entity-types</span>{" "}
-            and commit, or <span className="font-mono text-xs">pnpm check:entity-types</span>{" "}
+            <span className="font-mono text-xs">pnpm gen:entity-types</span> and
+            commit, or{" "}
+            <span className="font-mono text-xs">pnpm check:entity-types</span>{" "}
             will fail CI.
             {drift.added.length > 0 ? (
               <span className="block font-mono text-xs">
@@ -505,6 +528,7 @@ export function EntityTypesClient({ entityTypes }: Props) {
 
       <div className="min-h-[28rem]">
         <MatrxDataTable
+          urlState={{ id: "entity-types", selectedRow: false }}
           data={filtered}
           columns={columns}
           getRowId={(r) => r.token}

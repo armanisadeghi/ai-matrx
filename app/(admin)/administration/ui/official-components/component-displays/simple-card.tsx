@@ -5,6 +5,7 @@ import { ComponentDisplayWrapper } from '../component-usage';
 import { SimpleCard } from '@/components/official/cards/CardGrid';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ListTodo, Plus, Settings, Mail, FileText } from 'lucide-react';
+import { toast } from '@/lib/toast';
 
 interface ComponentDisplayProps {
   component?: ComponentEntry;
@@ -124,7 +125,7 @@ import { FileText } from 'lucide-react';
                 icon={<Plus className="h-12 w-12" />}
                 title="Create New Item"
                 description="Add a new item to your collection"
-                onClick={() => alert('Card clicked!')}
+                onClick={() => toast.info('Card clicked!')}
               />
             </div>
           </div>

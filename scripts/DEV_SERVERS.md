@@ -1,106 +1,88 @@
-# Local dev-server & build-cache management
+# Local dev-server and build-cache management
 
-Two concerns, two scripts. Both are scoped to **this repo only** (a dev server for
-another repo — e.g. aidream on a 30xx port — is identified by cwd and left alone).
+One shared preview plus one cleanup system. Both are scoped to this repository;
+the machine-wide guard also refuses a second Next.js dev tree from another repo.
 
-## Why this exists — the numbers
+## Why this exists
 
-A single `next dev` on this repo was measured at **22.8 GB RSS with 17 worker
-processes** after compiling `/dashboard` exactly once, and Turbopack never gives
-that memory back. Seven concurrent servers measured **43.3 GB** of RAM and 90 GB
-of `.next*` on disk. Parallel agents each starting a server, plus servers that
-outlive the session that started them, is what takes the whole machine down.
+A single `next dev` for this repo has measured **22.8 GB RSS** with 17 worker
+processes after compiling `/dashboard`. Seven concurrent servers measured
+43.3 GB of RAM and 90 GB of `.next*` on disk. Two servers can hard-crash a
+16 GB workstation.
 
-**Three things kill this machine, in order of blame:**
+The failure classes are:
 
-1. **Servers that outlive their session.** SessionEnd doesn't fire on a crash or
-   force-quit, so the server is reparented to `launchd` and lives forever. Two
-   were found at 11h36m uptime with their Claude sessions long gone.
-2. **Servers nothing tracks.** An agent that runs `pnpm dev` from Bash creates a
-   server the hook system never registered — it isn't counted by
-   `MAX_AGENT_SERVERS` and no SessionEnd will ever stop it.
-3. **Runaway single servers.** The 22.8 GB case above.
+1. **Duplicate servers.** Provider-specific or raw shell launchers do not share
+   ownership, so parallel agents create competing multi-GB trees.
+2. **Untracked servers.** A raw `pnpm dev` has no durable state record and no
+   safe owner.
+3. **Runaway servers.** Turbopack can retain native memory far beyond Node's
+   JavaScript heap.
 
-## Discovery is PROCESS-based, never PORT-based
+## The one managed preview
 
-`dev-cleanup.sh` finds servers by locating `next-server` processes whose **cwd is
-inside this repo**. It used to scan TCP 3000–3099 for listeners, and that had a
-fatal blind spot: a dev server that binds an ephemeral port (observed: pid 39313
-on **:50862**, 7.5 GB, up 1h24m) was invisible to `dev:status` and immune to
-`dev:stop` — an immortal orphan. **Do not reintroduce a port-range filter as the
-discovery mechanism.**
-
-Kills walk the process tree (`killtree`) rather than `kill -pgid`. A hook-launched
-server can share a process group with the agent that spawned it, and killing that
-group would take the agent down with the server.
-
-## 1. Manual cleanup — `scripts/dev-cleanup.sh`
-
-| pnpm alias | Effect |
+| Command | Effect |
 |---|---|
-| `pnpm dev:status` | Every dev server of ours (pid, RAM, uptime, port, distdir, tracked?) + a per-server reap verdict + build-dir disk use. Non-destructive. |
-| `pnpm dev:reap:dry` | Show exactly what `dev:reap` would kill and why. Non-destructive. |
-| `pnpm dev:reap` | Kill **only** runaway / abandoned / untracked servers. Safe to run anytime; this is what runs automatically. |
-| `pnpm dev:stop` | Stop **every** matrx-frontend dev server. Leaves disk. |
-| `pnpm clean:next` | Delete **every** alternate build dir (`.next-*`: preview / agent / codex / qa / …); **`.next` intact**. Also runs `fix:tsconfig` (prunes dead includes + strips `next-env.d.ts` punch-through imports). |
-| `pnpm clean:next:all` | Delete **all** build caches incl. `.next`, `.turbo`, `node_modules/.cache`. Leaves servers. |
-| `pnpm dev:nuke` | The big red button: `dev:stop` + `clean:next:all`. |
+| `pnpm preview:start` | Reuse the preview only when this exact checkout owns it; otherwise fail loudly so another worktree's code can never be mistaken for the diff under test. |
+| `pnpm preview:status` | Show the machine-wide lease owner, pid, port, and process-group RSS from every worktree. |
+| `pnpm preview:stop` | Stop the preview only from its owning checkout; preserve its build cache for the next run. |
 
-### Reap rules (env-tunable)
+`scripts/agent-dev-server.sh` owns this lifecycle. Its state and start lock live
+in the user's machine-wide temporary directory, not inside a checkout, so two
+worktrees cannot both acquire the slot. It is provider-neutral:
+Claude and Codex start the same process, then open `http://localhost:3001` in
+their own in-app browser. The state records the exact owning checkout; another
+checkout must wait for an explicit release and then start its own build.
 
-| Rule | Default | Env var |
-|---|---|---|
-| Runaway memory | RSS ≥ **16 GB** | `MATRX_DEV_MAX_RSS_GB` |
-| Abandoned | uptime ≥ **4 h** | `MATRX_DEV_MAX_AGE_H` |
-| Untracked orphan | no session owns it **and** uptime ≥ **90 min** | `MATRX_DEV_MAX_UNTRACKED_AGE_MIN` |
+The launcher continuously measures the whole preview process group. At 8 GB RSS
+it stops the server and records a loud failure instead of allowing the old
+23–27 GB runaway. It also stops startup after five minutes without log progress.
+Neither limit automatically restarts the server. Advanced local use can override
+the defaults with `MATRX_PREVIEW_MAX_RSS_GB` and
+`MATRX_PREVIEW_NO_PROGRESS_SEC`.
 
-**Calibrating the RSS ceiling:** a server idles ~0.3 GB, retains 7–9 GB after a
-few heavy routes, and hit 22.8 GB in the pathological case. Because Turbopack
-never releases, RSS is a high-water mark and not a transient peak — the ceiling
-must sit *above* the normal-heavy band or it kills agents doing real work. 16 GB
-catches only the pathological case; the age and untracked rules do the routine
-cleanup.
+**Named `preview_start` and raw `pnpm dev` are banned.** The installed hook
+blocks both and names `pnpm preview:start` as the repair. The shared server is
+not tied to one agent session; ending one task must not kill a server another
+task is using.
 
-**There is no `--max-old-space-size` flag anywhere, deliberately.** Node's default
-heap cap here is already ~4.2 GB while the process reached 22.8 GB, so most of it
-is Turbopack's native Rust allocation plus per-worker heaps — nothing a V8 flag
-bounds. Raising the JS ceiling makes it worse. The RSS reaper is the guard that
-works, because it measures RSS rather than heap.
+## Process discovery and cleanup
 
-## 2. Automatic per-session server — `scripts/agent-dev-server.sh`
+`scripts/dev-cleanup.sh` finds `next-server` processes whose cwd is inside
+this repo. Discovery is process-based, never port-based: an observed runaway
+bound ephemeral port 50862 and was invisible to the old port-range scanner.
 
-Wired to Claude Code **SessionStart / SessionEnd** hooks in
-`.claude/settings.local.json` (local-only; not committed, so it never imposes on
-CI or other clones).
+Kills walk the process tree rather than a process group. A hook-launched server
+can share a process group with its agent; killing that group can kill the agent.
 
-**On session start** it first runs `dev-cleanup.sh reap` (see ordering note
-below), then launches a dedicated `next dev` for that session on a free port in
-**3050–3099** with its own `NEXT_DISTDIR=.next-agent-<sid>` (own lock, no
-collision with your `.next`), then warms it in the background — polls until it
-responds, then hits `/api/dev-login` with a cookie jar so the **authenticated
-`/dashboard` is fully pre-compiled**. The agent receives one ready-to-use URL
-(`/api/dev-login?token=…&next=/dashboard`) and lands logged-in instantly.
+| Command | Effect |
+|---|---|
+| `pnpm dev:status` | Show the repo-scoped process and build-cache inventory. Non-destructive; use `preview:status` for the machine-wide lease. |
+| `pnpm dev:reap:dry` | Show exactly which runaway/abandoned/orphan trees would be killed. |
+| `pnpm dev:reap` | Kill only trees that cross the rules below. |
+| `pnpm dev:stop` | Stop every matrx-frontend dev server. Leaves disk. |
+| `pnpm clean:next` | Delete alternate `.next-*` dirs; preserve `.next`; repair `tsconfig.json`. |
+| `pnpm clean:next:all` | Delete all Next/Turbo build caches. Leaves servers. |
+| `pnpm dev:nuke` | Stop every repo server, then delete every build cache. |
 
-> **Ordering matters:** the reap runs *before* the launch, so it can never kill
-> the server it just created. Don't move it.
+### Reap rules
 
-**On session end** it kills that server's process tree and deletes **only** its own
-`.next-agent-<sid>` dir (never `.next` — the prefix is verified before any `rm`).
+| Rule | Default | Environment override |
+|---|---:|---|
+| Runaway memory | RSS ≥ 16 GB | `MATRX_DEV_MAX_RSS_GB` |
+| Abandoned | uptime ≥ 4 h | `MATRX_DEV_MAX_AGE_H` |
+| Untracked orphan | uptime ≥ 90 min | `MATRX_DEV_MAX_UNTRACKED_AGE_MIN` |
 
-Guards: reuses an existing server on resume; caps concurrent auto-servers at
-**3** (`MAX_AGENT_SERVERS`); `reap_dead` forgets state for servers that already
-died, and the reap above handles servers that *outlive* their session — the case
-`reap_dead` cannot see.
+A server idles around 0.3 GB and can retain 7–9 GB after heavy routes. The 16 GB
+ceiling catches pathological native/Turbopack growth without killing normal
+heavy work. No `--max-old-space-size` flag solves native allocation; RSS is the
+correct guard.
 
-**Opt out** for a shell/session: `MATRX_AGENT_AUTOSERVER=0`.
+## Machine setup
 
-Transient state (pid/port/log/marker per session) lives in
-`.matrx/dev-sessions/` (gitignored).
+`pnpm setup:agent-harness` installs the guard into both `~/.claude` and
+`~/.codex`, removes the obsolete per-session autoserver hooks, and is safe to
+rerun after every pull. `pnpm check:agent-harness` is read-only.
 
-## For agents: don't start your own server
-
-A dev server is already running for your session and its URL is handed to you at
-session start. Use it. If you genuinely need your own, `pnpm dev` now reaps
-orphans first — but a server you start from Bash is **untracked**, so nothing
-will stop it when your session ends until the 90-minute orphan rule catches it.
-Check `pnpm dev:status` before assuming you need a new one.
+Codex skips a new or changed non-managed hook until a human reviews its hash.
+Open `/hooks` once after installation and trust the Matrx dev-server guard.

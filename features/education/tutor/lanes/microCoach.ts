@@ -42,6 +42,8 @@ export function microCoach(ctx: MicroCoachContext) {
         agentId,
         surfaceKey: "flashcards-micro-coach",
         sourceFeature: "education-flashcards",
+        // Fires automatically right after a grade lands — not a user gesture.
+        initiation: "auto",
         variables: {
           front: ctx.front,
           back: ctx.back,

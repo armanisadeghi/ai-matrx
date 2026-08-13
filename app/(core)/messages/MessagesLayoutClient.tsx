@@ -29,7 +29,7 @@ export default function MessagesLayoutClient({
   const userId = user?.id ?? undefined;
 
   return (
-    <div className="h-full flex overflow-hidden bg-background">
+    <div className="flex h-full overflow-y-auto overflow-x-hidden bg-background">
       {/* Desktop Sidebar - Persistent Conversation List */}
       <div className="hidden md:flex md:w-80 flex-col border-r border-border shrink-0 pt-[var(--shell-header-h)]">
         <ConversationList userId={userId} className="flex-1" />

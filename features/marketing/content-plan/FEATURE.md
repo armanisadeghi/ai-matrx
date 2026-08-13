@@ -67,15 +67,22 @@ plan CRUD through it.
   2026-08-10; `initial_message` now actually arrives as an info event).
 - **Setup step agents (`setup/ai.ts`)** — every Setup step has a real AI,
   grounded in the RESEARCH system's final report (the "Document",
-  `research.rs_document.content`, picked by topic in the `SetupAiBar` strip):
-  the **Content Plan Shape Planner** (`b600975c-…`, archetype + counts +
-  concept names) and the **Content Plan Family Namer** (`7a16db8c-…`, real
-  page names for one family — services, locations, guides). Both are platform
-  agents (agx, created via the AI Dream MCP) with json_schema output, run
-  HEADLESS through `launchAgentExecution` + JSON extraction (the
-  useGenerateQuiz pattern). Results stage into the view's own setters — the
-  USER commits. The `site_shaper` surface role is bound to the Shape Planner
-  (manifest + `ui.ui_surface_agent_role`).
+  `research.rs_document.content`, picked by topic in the `SetupAiBar` strip).
+  **Three run on the client** — shape planner, family namer (which also writes
+  count-only families' article topics), entity curator — through
+  `useSetupAgents` → `useLiveAgentRun` → `useHeadlessAgentJson`, so each one
+  streams into `<LiveRunDisplay>`. The other four moved server-side (the two
+  bullets below).
+  🚨 **Agents are addressed by SLOT KEY, never a UUID.** `content_plan.*` slots
+  resolve through `resolveAgentSlot` (`features/agents/slots/service.ts`) —
+  `agent.slot_definition` for the platform default, `agent.slot_binding` for
+  the user's own override. An unseeded, disabled, or version-pinned slot
+  THROWS with the reason; it never falls back to a hardcoded agent. Adding a
+  step means declaring a slot in aidream's `agent_slots/client_slots.py` and
+  consuming its key here. **Known gap:** `launchAgentExecution` consumers
+  (this feature included) apply a binding's *agent* but not its
+  `config_overrides`, so a model/thinking-only override is inert here.
+  Results stage into the view's own setters — the USER commits.
 - 🚨 **The three WHOLE-PLAN Setup passes RUN ON THE SERVER** (since
   2026-08-11) — keyword strategy, entity attachment and the plan review are
   `POST /content-plan/sites/{id}/{keyword-strategy|entity-attachments|review}`,
@@ -141,7 +148,22 @@ cms-starter-kit`. Guarded CMS writes (agent_write_policy + activity log live
   site by the DB guard. Nullable `meta_title` / `meta_description` carry the
   planned search presentation into CMS realization and fill without burying
   that intent in JSON metadata.
-- `plan.entity` — person/source/media/org per site.
+- `plan.node_step` + `plan.node_artifact` (2026-08-12, aidream migration
+  `0344`) — the Website Factory PRODUCTION axis: one `node_step` row per
+  `(node, step)` (`p1_keywords`…`p7_publish`, vocabulary mirrored in
+  `types.ts PIPELINE_STEPS` from aidream `content_plan/artifacts.py`, the ONE
+  writer) and supersession-versioned artifacts (current = `valid_to IS NULL`).
+  The client READS both direct under RLS (`listNodeSteps` /
+  `listNodeArtifacts` in `data/service.ts`) and writes neither; the NodePanel
+  "Pipeline" section renders `NodeStepRail`. A missing step row means "never
+  run" — pending is a deliberately visible state. Distinct from the editorial
+  `plan_status`.
+- `plan.entity` — **source/media citations only** per site. Person/org rows
+  folded into `crm.party` (2026-08-13; DB guard `plan._entity_kind_guard`
+  rejects new live person/org rows, loudly). People/companies on a site's
+  roster are crm parties linked via a `party → web_site` edge with role
+  `writes_for`; the FE reads them with `useSiteParties` and every person row
+  is a door to `/crm/[partyId]`.
 - `plan.profile` — vertical config (attribute schemas, cadences, template
   maps) per org. **No hard site→vertical binding exists yet** (open item in
   the system-of-record doc) — the attributes editor offers an explicit
@@ -151,8 +173,11 @@ cms-starter-kit`. Guarded CMS writes (agent_write_policy + activity log live
   since `plan_seed_categories_public.sql`) via the canonical `useCategories`.
 - Associations (registered pairs): node→topic (`topic`), node→keyword
   (`secondary_keyword` — the PRIMARY keyword is the `primary_keyword_id` FK,
-  never an edge), node→entity (`about`/`cites`/`embeds`/`authored_by`/
-  `reviewed_by`; reviews carry the schema-validated `plan_review` payload).
+  never an edge), node→entity (`about`/`cites`/`embeds` — citations only),
+  node→party (`about`/`cites`/`authored_by`/`reviewed_by`; reviews carry the
+  schema-validated `plan_review` payload, whose binding moved to the
+  (plan_node, party) pair with the fold), party→web_site (`writes_for` — the
+  site roster; client-written via `linkPartyToSite`).
   The `plan_node|plan_entity → web_site` containment edge is written by the
   DB trigger `plan._site_edge` — the client NEVER writes it.
 
@@ -285,7 +310,10 @@ cms-starter-kit`. Guarded CMS writes (agent_write_policy + activity log live
      sent as `cms_site`. A genuinely unlinked plan therefore makes no doomed
      `/cms-pages` request, while a half-linked plan uses the choice it already
      has instead of raising `content_plan_cms_unpaired`.
-4. **Entities** (`EntityManager.tsx`): `plan.entity` CRUD per site.
+4. **Entities** (`EntityManager.tsx`): two halves — People &amp; companies
+   (linked crm parties: create via the canonical `PartyCreateForm`, link
+   existing via CRM name search, unlink, every name a door to `/crm/[id]`)
+   and Sources &amp; media (`plan.entity` CRUD).
 5. **Agent writes** land directly in the DB (chat tools today, aidream
    generator later) and appear on refetch — the header Refresh invalidates
    `planKeys.all`.
@@ -539,6 +567,46 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
 
+- 2026-08-13 — **plan.entity person/org fold into crm.party (CRM Wave 2).**
+  Ratified split executed: person/org rows migrated to `crm.party` (1 party
+  from 2 duplicate live rows; edges repointed with payloads intact; folded
+  rows soft-deleted with `folded_to_party` stamps), `plan.entity` narrowed to
+  source/media citations with a loud DB guard (`plan._entity_kind_guard`) and
+  matching aidream service validation. `EntityManager` split into People &
+  companies (crm parties on `party→web_site` `writes_for` edges — create via
+  `PartyCreateForm`, link-existing search, unlink, doors to `/crm/[id]`) and
+  Sources & media (plan.entity CRUD). `NodeAssociations` + the setup entity
+  attacher route people to `plan_node→party` edges (`plan_review` payload
+  binding moved to that pair); curator/`add_entities` person/org proposals
+  now create linked CRM records. Migration:
+  `migrations/plan_entity_person_org_fold.sql` (applied + ledgered).
+
+- 2026-08-12 — **Pipeline rail (Website Factory P4).** `plan.node_step` /
+  `node_artifact` reads + `NodeStepRail` in the NodePanel (see Data model).
+  Server half: aidream `content_plan/artifacts.py` + producers (deepen →
+  research, cms_fill → build, publish flow-back). Next: step badges on
+  tree/table, per-step run actions.
+
+- 2026-08-13 — **the workspace is the platform's first surface to offer agents
+  CLIENT TOOLS: an agent bound to this page can now move the user's view while
+  it talks.** Three `ui`-mode tools on the `matrx-user/content-plan` manifest,
+  none of which writes plan data: `content_plan_focus_node` (open one node by
+  UUID **or by route** — and switch to the tree first when the current view has
+  no node panel, because selecting a node the user cannot see is not focusing
+  it), `content_plan_switch_view` (tree / table / map / entities / setup /
+  ai-runs), and `content_plan_expand_tree` (all / clusters / pillars / none).
+  Handlers live where the state lives: focus + switch in
+  `ContentPlanWorkbench`, expand in `PlanTree` — which mounts only on the tree
+  view, so on every other view the expand tool is declared-but-unwired and is
+  simply not offered that turn. `select_node` (the existing write target) and
+  `content_plan_focus_node` share ONE node-resolution function, so there is
+  still exactly one way to open a node. `PLAN_VIEWS` is now exported from
+  `usePlanWorkspaceParams` so the handler validates against the real
+  vocabulary instead of re-typed literals. Verified with a live Badass Agent
+  run on `my-test.com`: focus by route selected the row, "collapse to pillars"
+  took the tree from 20 rows to 8, "switch to the map view" moved `?view=`,
+  a bogus route came back as a safe `client_tool_error` envelope the agent
+  quoted verbatim, and the next call still worked (the loop never wedged).
 - 2026-08-12 — Codex: **page intent now uses the canonical keyword and metadata
   system end to end.** The node editor accepts arbitrary primary/supporting
   phrases, resolves keyword identities only at persistence, exposes the full

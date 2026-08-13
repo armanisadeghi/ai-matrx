@@ -126,7 +126,7 @@ function OptionsMenu({
             {headerLabel}
           </DropdownMenuLabel>
         )}
-        <div className="max-h-[60vh] overflow-y-auto">
+        <div className="max-h-[60dvh] overflow-y-auto">
           {options.map((opt) => (
             <DropdownMenuItem
               key={opt.href}

@@ -344,6 +344,39 @@ UI-complete here but only take effect once P1's service layer reads them.
 
 ## Change log
 
+- `2026-08-12` — **Pages list shows content VOLUME, measured in-database.** The
+  list claimed placeholder pages "exist" indistinguishably from finished ones.
+  CMS migration `0036` adds the PostgREST computed field `content_stats`
+  (`{html_len, text_len, draft_html_len, draft_text_len}`; `visible_text_length`
+  strips script/style + tags + whitespace) so the list API selects four
+  integers, never blobs. `utils/contentVolume.ts` classifies conservatively —
+  Empty (both sides 0) / Stub (<500 html OR <60 text — a coming-soon line) /
+  Light (<600 text — styled shells) / Full — grading whichever side (published
+  or draft) holds more, and the char count always renders beside the stage word
+  so the guess can never lie alone (jest: `__tests__/contentVolume.test.ts`).
+  `PageListView` gains a Content column (dot + stage + count, `(draft)` suffix
+  when the draft side was graded, tooltip with both sides) plus an sm-hidden
+  dot twin by the slug for mobile. The DB measures, the client judges.
+- `2026-08-12` — **`matrx-user/cms-site` gains two more agent write targets, on
+  two different tabs: `site_name` (Settings, `draft`) and `add_page` (Pages,
+  `entity`).** Additive to the 2026-08-10 pass's four Settings-tab staging
+  targets, which are kept as they merged. `site_name` stages into the same
+  `useState` the Site Name input drives, sharing the General card's single Save
+  Changes with `site_global_css`. `add_page` is the surface's first real write:
+  it calls the SAME `CmsPageService.createPage` the New Page route uses (so the
+  API's `is_published: false` / `show_in_nav: false` defaults hold — the new
+  page is an unpublished, out-of-nav, empty stub), derives an omitted slug
+  through the canonical `slugifyTitle` and validates an explicit one against
+  `SLUG_RE`, then calls `refreshPages()` so the layout's page cache and
+  `site_structure` do not drift from what was just created. Being a genuine
+  write, it is the one target that refuses when the site's
+  `agent_write_policy` is `blocked`. Handlers live on each tab's own nested
+  provider; the writeback seam only offers a target where a handler is
+  mounted, so Settings and Pages present disjoint tool sets. Live-verified
+  with real Badass Agent runs on `dev-website` (apply, decline, undeclared-
+  target refusal, and both handlers' throws reaching the agent verbatim); test
+  pages were deleted afterwards. See `features/surfaces/FEATURE.md` for the
+  full entry.
 - `2026-08-12` — **The CMS hub's write target independently re-verified live, and
   its missing `features/surfaces/FEATURE.md` entry written.** A follow-up chip was
   assigned to make `matrx-user/cms` agent-writable and found the entry below had

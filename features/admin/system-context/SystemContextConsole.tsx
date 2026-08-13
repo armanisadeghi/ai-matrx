@@ -97,7 +97,9 @@ function feedTarget(
     typeof cfg[key] === "string" && cfg[key] ? (cfg[key] as string) : null;
   if (item.feed_type === "dataset") {
     const id = str("data_store_id");
-    return id ? { token: "data_store", id, name: str("data_store_name") } : null;
+    return id
+      ? { token: "data_store", id, name: str("data_store_name") }
+      : null;
   }
   if (item.feed_type === "agent") {
     const id = str("agent_id");
@@ -479,7 +481,13 @@ export function SystemContextConsole() {
       // `hrefFor` and no peek, so a token here would resolve to nothing. The id
       // stays a copy-only uuid cell until the registry gains a door — the row
       // itself opens through the detail panel. Reported as a registry gap.
-      { id: "id", accessorKey: "id", header: "ID", cellKind: "uuid", width: 110 },
+      {
+        id: "id",
+        accessorKey: "id",
+        header: "ID",
+        cellKind: "uuid",
+        width: 110,
+      },
     ];
   }, []);
 
@@ -566,6 +574,7 @@ export function SystemContextConsole() {
 
         <div className="min-h-0 flex-1">
           <MatrxDataTable
+            urlState={{ id: "system-context" }}
             data={rows}
             columns={columns}
             getRowId={(r) => r.id}
@@ -693,9 +702,7 @@ export function SystemContextConsole() {
               )
             }
             detail={{
-              title: (r) => (
-                <code className="font-mono text-sm">{r.key}</code>
-              ),
+              title: (r) => <code className="font-mono text-sm">{r.key}</code>,
               description: (r) => r.display_name,
               headerActions: (r) =>
                 r.is_computed ? undefined : (

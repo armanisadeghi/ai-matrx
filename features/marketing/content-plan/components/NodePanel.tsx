@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { PartyRow } from "@/features/crm/types";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
 import { createContentPlanNodeScope } from "@/features/surfaces/manifests/content-plan-node.manifest";
 import {
@@ -65,6 +66,7 @@ import { LiveRunWindowController } from "@/features/overlays/openers/liveRunWind
 import type { CmsPageMapEntry } from "../setup/bridge";
 import { useNodeReality } from "../hooks/useNodeReality";
 import { NodeRealityCard } from "./NodeRealityCard";
+import { NodeStepRail } from "./NodeStepRail";
 import { NodeSeoIntentEditor } from "./NodeSeoIntentEditor";
 import { ensureKeywordId } from "@/features/marketing/seo/keyword/data";
 import { useResolvedKeyword } from "@/features/marketing/seo/keyword/hooks";
@@ -81,6 +83,7 @@ export function NodePanel({
   node,
   siteId,
   entities,
+  parties,
   profiles,
   onDeleted,
   deepen,
@@ -92,6 +95,8 @@ export function NodePanel({
   node: PlanNodeRow;
   siteId: string;
   entities: PlanEntityRow[];
+  /** The site's linked crm.party roster (people/companies). */
+  parties: PartyRow[];
   profiles: PlanProfileRow[];
   onDeleted: () => void;
   /** Workbench-owned so an in-flight run survives node switches (the panel
@@ -801,6 +806,14 @@ export function NodePanel({
               />
             </PanelSection>
 
+            {/* The Website Factory production axis (plan.node_step /
+          node_artifact) — distinct from the editorial plan_status. Pending
+          steps are deliberately visible: the pipeline exists in data even
+          where today's fill still skips it. */}
+            <PanelSection title="Pipeline">
+              <NodeStepRail nodeId={node.id} siteId={siteId} />
+            </PanelSection>
+
             <PanelSection title="Targeting">
               <div>
                 <NodeSeoIntentEditor
@@ -873,7 +886,11 @@ export function NodePanel({
               onChange={(attributes) => setDraft((d) => ({ ...d, attributes }))}
             />
 
-            <NodeAssociations nodeId={node.id} entities={entities} />
+            <NodeAssociations
+              nodeId={node.id}
+              entities={entities}
+              parties={parties}
+            />
           </div>
         </div>
 

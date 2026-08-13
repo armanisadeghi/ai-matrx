@@ -15,8 +15,6 @@ import {
   updatePlanArgsSchema,
   requestTakeoverArgsSchema,
   userTodosArgsSchema,
-  scratchpadArgsSchema,
-  storageArgsSchema,
 } from "./schemas";
 import { userHandler } from "../handlers/user.handler";
 import { updatePlanHandler } from "../handlers/update-plan.handler";
@@ -24,8 +22,6 @@ import { requestTakeoverHandler } from "../handlers/request-takeover.handler";
 // `tasks` is intentionally absent — it is server-executed in aidream now (see
 // names.ts). Do not re-add a client handler for it.
 import { userTodosHandler } from "../handlers/user-todos.handler";
-import { scratchpadHandler } from "../handlers/scratchpad.handler";
-import { storageHandler } from "../handlers/storage.handler";
 
 export interface ToolRegistryEntry {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -42,8 +38,6 @@ const registry: Record<string, ToolRegistryEntry> = {
     handler: requestTakeoverHandler,
   },
   user_todos: { schema: userTodosArgsSchema, handler: userTodosHandler },
-  scratchpad: { schema: scratchpadArgsSchema, handler: scratchpadHandler },
-  storage: { schema: storageArgsSchema, handler: storageHandler },
 };
 
 export function getUiFirstToolEntry(

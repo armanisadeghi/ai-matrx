@@ -743,14 +743,6 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     titleFields: ["item_type"],
     bodyFields: ["last_result"],
   }),
-  flashcard_history: createRecordResolver({
-    openItemType: "file",
-    schema: "education",
-    table: "flashcard_history",
-    select: "review_count, correct_count",
-    titleFields: ["review_count"],
-    bodyFields: ["correct_count"],
-  }),
   /**
    * `conversation_value` → { key, conversation_id?, field? } — a stored
    * pass-by-reference agent result (chat.conversation_value; aidream

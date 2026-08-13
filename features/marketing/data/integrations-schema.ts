@@ -24,6 +24,23 @@ export interface CustomProviderIntegrationDraft extends ProviderIntegrationDraft
 export const dataForSeoCadences = ["weekly", "monthly"] as const;
 export type DataForSeoCadence = (typeof dataForSeoCadences)[number];
 
+/**
+ * The provider's accepted bounds for one detail pull. THE source for this
+ * range — `validateSiteIntegrations`, the Backlinks schedule input, and the
+ * `backlink_refresh_schedule` write target's model-facing description all
+ * read these rather than re-typing the numbers.
+ */
+export const DATAFORSEO_DETAIL_LIMIT_MIN = 1;
+export const DATAFORSEO_DETAIL_LIMIT_MAX = 1000;
+
+export function isValidDataForSeoDetailLimit(value: unknown): value is number {
+  return (
+    Number.isInteger(value) &&
+    (value as number) >= DATAFORSEO_DETAIL_LIMIT_MIN &&
+    (value as number) <= DATAFORSEO_DETAIL_LIMIT_MAX
+  );
+}
+
 export interface DataForSeoIntegrationDraft {
   enabled: boolean;
   cadence: DataForSeoCadence;
@@ -386,14 +403,10 @@ export function validateSiteIntegrations(
   draft: SiteIntegrationsDraft,
 ): IntegrationValidationIssue[] {
   const issues: IntegrationValidationIssue[] = [];
-  if (
-    !Number.isInteger(draft.dataForSeo.detailLimit) ||
-    draft.dataForSeo.detailLimit < 1 ||
-    draft.dataForSeo.detailLimit > 1000
-  ) {
+  if (!isValidDataForSeoDetailLimit(draft.dataForSeo.detailLimit)) {
     issues.push({
       field: "dataForSeo.detailLimit",
-      message: "DataForSEO detail limit must be an integer from 1 to 1000.",
+      message: `DataForSEO detail limit must be an integer from ${DATAFORSEO_DETAIL_LIMIT_MIN} to ${DATAFORSEO_DETAIL_LIMIT_MAX}.`,
     });
   }
   validateBuiltIn(

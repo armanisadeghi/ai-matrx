@@ -7,6 +7,7 @@ import FloatingSheet from '@/components/official/FloatingSheet';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { toast } from '@/lib/toast';
 
 interface ComponentDisplayProps {
   component?: ComponentEntry;
@@ -330,7 +331,7 @@ export default function FloatingSheetDisplay({ component }: ComponentDisplayProp
               Cancel
             </Button>
             <Button onClick={() => {
-              alert('Confirmed!');
+              toast.success('Confirmed!');
               setCenterModal(false);
             }}>
               Confirm
@@ -413,4 +414,3 @@ export default function FloatingSheetDisplay({ component }: ComponentDisplayProp
     </ComponentDisplayWrapper>
   );
 }
-

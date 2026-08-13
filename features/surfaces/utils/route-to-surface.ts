@@ -8,11 +8,12 @@
  * flows hit today. Add a row to `SURFACE_BY_ROUTE_PREFIX` when a new
  * route ships AND the corresponding surface exists in `ui.ui_surface`.
  *
- * Mapping discipline: prefer specific over general. The longest matching
- * prefix wins — `/agents/{id}/run` should resolve to
- * `matrx-user/agent-run` even though `/agents` would match
- * `matrx-user/agents`. The list is iterated in declared order so put
- * specific prefixes BEFORE their general ancestors.
+ * Mapping discipline: prefer specific over general. Resolution is
+ * FIRST-MATCH-WINS in declared array order (NOT longest-prefix), so a
+ * specific prefix like `/agents/{id}/run` resolves only because it is
+ * declared BEFORE its general ancestor `/agents`. Always put specific
+ * prefixes ABOVE their ancestors — a child added below its hub silently
+ * never matches.
  *
  * Returns null when no mapping matches; the request then omits
  * `client.surface` and the server resolves tools from
@@ -92,7 +93,6 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   { prefix: "/context-items", surface: "matrx-user/context-items" },
   { prefix: "/scopes", surface: "matrx-user/scopes" },
   { prefix: "/canvas", surface: "matrx-user/canvas" },
-  { prefix: "/ai-results", surface: "matrx-user/ai-results" },
   { prefix: "/rag/search", surface: "matrx-user/rag-search" },
   { prefix: "/rag/library-catalog", surface: "matrx-user/rag-library" },
   { prefix: "/rag/library", surface: "matrx-user/rag-library" },
@@ -103,8 +103,12 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   { prefix: "/sandbox", surface: "matrx-user/sandboxes" },
   { prefix: "/transcripts/cleanup", surface: "matrx-user/transcripts-cleanup" },
   { prefix: "/transcripts/scribe", surface: "matrx-user/transcript-scribe" },
+  // More specific than "/transcripts", so it MUST stay above it. The studio
+  // route is `/transcripts/studio`; the old "/transcript-studio" prefix
+  // matched no route in the app, so the studio silently resolved to the
+  // parent `matrx-user/transcripts` surface.
+  { prefix: "/transcripts/studio", surface: "matrx-user/transcript-studio" },
   { prefix: "/transcripts", surface: "matrx-user/transcripts" },
-  { prefix: "/transcript-studio", surface: "matrx-user/transcript-studio" },
   // Education: specific tools BEFORE the hub prefix.
   { prefix: "/education/tutor", surface: "matrx-user/education-tutor" },
   {
@@ -184,6 +188,15 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
     surface: "matrx-admin/mcp-servers",
   },
   { prefix: "/administration/agents/lookups", surface: "matrx-admin/lookups" },
+  { prefix: "/administration/agents/skills", surface: "matrx-admin/skills" },
+  {
+    prefix: "/administration/knowledge",
+    surface: "matrx-admin/knowledge",
+  },
+  {
+    prefix: "/administration/utilities/kind-registry",
+    surface: "matrx-admin/kind-registry",
+  },
   {
     prefix: "/administration/agents/slots",
     surface: "matrx-admin/agent-slots",
@@ -403,6 +416,26 @@ export function surfaceFromPathname(
   // (which correctly resolves to `matrx-user/files` via the `/files` prefix).
   if (/^\/files\/f\/[^/]+\/studio(?:\/|$)/.test(stripped)) {
     return "matrx-user/analysis-studio";
+  }
+
+  // The flashcard set EDITOR is `/education/flashcards/[setId]/edit` — a
+  // dynamic segment mid-path, so the `/education/flashcards` prefix below
+  // cannot tell it apart from the library list. It is its own surface (ONE set
+  // and its cards, and agent-WRITABLE), so it must not fall through to the
+  // list surface, whose vocabulary this page shares nothing with.
+  if (/^\/education\/flashcards\/[^/]+\/edit(?:\/|$)/.test(stripped)) {
+    return "matrx-user/education-flashcard-editor";
+  }
+
+  // Study-guide AUTHORING is `/education/learn/admin`, which sits under the
+  // `/education/learn` prefix below — and that prefix also covers the PUBLIC
+  // library index and the public `[...slug]` article. Those are anonymous
+  // reader pages with a rendered doc and nothing to edit; this one is the
+  // super-admin editor, with a draft list, staged inputs and agent write
+  // targets. They share no vocabulary, so authoring is its own surface and
+  // must not fall through to the reader mapping.
+  if (/^\/education\/learn\/admin(?:\/|$)/.test(stripped)) {
+    return "matrx-user/education-learn-authoring";
   }
 
   const marketing = resolveMarketingSurface(stripped);

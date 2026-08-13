@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import StructuredSectionCard from "@/components/official/StructuredSectionCard";
-import { ConfirmationDialog } from "@/features/applet/builder/parts/ConfirmationDialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import GenericTablePagination from "./GenericTablePagination";
 
 export interface ColumnConfig<T> {
@@ -493,14 +493,15 @@ export default function GenericDataTable<T>({
             
             {/* Confirmation Dialog */}
             {currentAction?.confirmationProps && (
-                <ConfirmationDialog
+                <ConfirmDialog
                     open={!!itemToAction}
                     onOpenChange={(open) => !open && setItemToAction(null)}
-                    handleDeleteGroup={handleConfirmedAction}
-                    loading={isActionLoading}
+                    onConfirm={handleConfirmedAction}
+                    busy={isActionLoading}
+                    variant="destructive"
                     title={itemToAction ? currentAction.confirmationProps.getTitle(itemToAction) : ''}
                     description={itemToAction ? currentAction.confirmationProps.getDescription(itemToAction) : ''}
-                    deleteButtonText={currentAction.confirmationProps.confirmButtonText}
+                    confirmLabel={currentAction.confirmationProps.confirmButtonText}
                 />
             )}
         </StructuredSectionCard>

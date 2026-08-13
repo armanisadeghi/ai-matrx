@@ -280,7 +280,9 @@ export default function SiteLayoutClient({
               only what we know, and keep both doors open. */}
           <div className="flex flex-col items-center gap-3 text-destructive">
             <AlertCircle className="h-8 w-8" />
-            <p className="text-sm font-medium">We couldn&apos;t open this site</p>
+            <p className="text-sm font-medium">
+              We couldn&apos;t open this site
+            </p>
             <p className="text-xs text-muted-foreground">{error}</p>
             <div className="flex gap-2">
               <Button
@@ -363,7 +365,9 @@ export default function SiteLayoutClient({
         currentMode={currentModeFromPath(pathname, siteId)}
       >
         <div className="h-full flex flex-col overflow-hidden pt-[var(--shell-header-h)]">
-          <div className="flex-1 min-h-0 overflow-hidden">{children}</div>
+          <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+            {children}
+          </div>
         </div>
       </SiteSurfaceRuntime>
     </SiteContext.Provider>

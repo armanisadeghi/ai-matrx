@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, type ReactNode } from "react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +32,11 @@ import {
   getUndoShortcutHint,
   getRedoShortcutHint,
 } from "@/features/agents/hooks/useAgentUndoRedo";
+import {
+  AiModelRef,
+  AiToolRef,
+} from "@/components/official/entity-ref/AiIdentityRef";
+import { ModelTierIdentityList } from "@/features/agents/components/model-tiers/ModelTierIdentityList";
 
 const FIELD_LABELS: Partial<Record<string, string>> = {
   messages: "Messages",
@@ -48,7 +53,6 @@ const FIELD_LABELS: Partial<Record<string, string>> = {
   tags: "Tags",
   category: "Category",
   isActive: "Active",
-  isPublic: "Public",
   isArchived: "Archived",
   isFavorite: "Favorite",
 };
@@ -76,9 +80,37 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function previewValue(entry: UndoEntry): string {
+function previewValue(entry: UndoEntry): ReactNode {
   const val = entry.value;
   if (val == null) return "empty";
+  if (entry.field === "modelId" && typeof val === "string") {
+    return (
+      <AiModelRef modelId={val} showId showIcon={false} disableNavigation />
+    );
+  }
+  if (entry.field === "modelTiers") {
+    return <ModelTierIdentityList value={val} showId disableNavigation />;
+  }
+  if (
+    entry.field === "tools" &&
+    Array.isArray(val) &&
+    val.every((toolId): toolId is string => typeof toolId === "string")
+  ) {
+    if (val.length === 0) return "No tools";
+    return (
+      <span className="flex flex-col gap-1">
+        {val.map((toolId) => (
+          <AiToolRef
+            key={toolId}
+            toolId={toolId}
+            showId
+            showIcon={false}
+            disableNavigation
+          />
+        ))}
+      </span>
+    );
+  }
   if (typeof val === "string") {
     if (val.length === 0) return "empty";
     return val.length > 60 ? `"${val.slice(0, 57)}..."` : `"${val}"`;
@@ -236,7 +268,7 @@ export function UndoHistoryOverlay({
                           {formatTimestamp(entry.timestamp)}
                         </span>
                       </div>
-                      <div className="text-[10px] text-muted-foreground mt-0.5 truncate">
+                      <div className="mt-0.5 text-[10px] text-muted-foreground">
                         {previewValue(entry)}
                       </div>
                     </div>
@@ -286,7 +318,7 @@ export function UndoHistoryOverlay({
                           {formatTimestamp(entry.timestamp)}
                         </span>
                       </div>
-                      <div className="text-[10px] text-muted-foreground mt-0.5 truncate">
+                      <div className="mt-0.5 text-[10px] text-muted-foreground">
                         {previewValue(entry)}
                       </div>
                     </div>

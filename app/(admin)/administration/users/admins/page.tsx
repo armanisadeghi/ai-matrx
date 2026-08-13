@@ -10,9 +10,23 @@
 // mutations still go through the SECURITY DEFINER admin RPCs via
 // /api/admin/admins/* (protected-resources single path of resistance).
 
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useSearchParams } from "next/navigation";
-import { Loader2, Search, ShieldAlert, ShieldCheck, Trash2, UserPlus } from "lucide-react";
+import {
+  Loader2,
+  Search,
+  ShieldAlert,
+  ShieldCheck,
+  Trash2,
+  UserPlus,
+} from "lucide-react";
 import { toast } from "@/lib/toast";
 
 import { Button } from "@/components/ui/button";
@@ -148,9 +162,9 @@ function AdminsManagementPageContent() {
   // typed themselves can never be mistaken for a missing record.
   const focusMissed = Boolean(
     focusedUserId &&
-      !loading &&
-      !loadFailed &&
-      !admins.some((row) => row.user_id === focusedUserId),
+    !loading &&
+    !loadFailed &&
+    !admins.some((row) => row.user_id === focusedUserId),
   );
 
   const { clear: clearUserFocus } = useDeepLinkParam("user");
@@ -230,7 +244,9 @@ function AdminsManagementPageContent() {
   const [retrying, setRetrying] = useState(false);
   const retryLoad = useCallback(() => {
     setRetrying(true);
-    Promise.all([fetchAdmins(), fetchAudit()]).finally(() => setRetrying(false));
+    Promise.all([fetchAdmins(), fetchAudit()]).finally(() =>
+      setRetrying(false),
+    );
   }, [fetchAdmins, fetchAudit]);
 
   async function handleLookup() {
@@ -244,7 +260,9 @@ function AdminsManagementPageContent() {
         `/api/admin/admins/lookup?email=${encodeURIComponent(email)}`,
       );
       if (!res.ok) {
-        const { error } = await res.json().catch(() => ({ error: res.statusText }));
+        const { error } = await res
+          .json()
+          .catch(() => ({ error: res.statusText }));
         setLookupError(error);
         return;
       }
@@ -278,7 +296,9 @@ function AdminsManagementPageContent() {
         }),
       });
       if (!res.ok) {
-        const { error } = await res.json().catch(() => ({ error: res.statusText }));
+        const { error } = await res
+          .json()
+          .catch(() => ({ error: res.statusText }));
         toast.error(`Failed to promote: ${error}`);
         return;
       }
@@ -303,7 +323,9 @@ function AdminsManagementPageContent() {
           body: JSON.stringify({ level }),
         });
         if (!res.ok) {
-          const { error } = await res.json().catch(() => ({ error: res.statusText }));
+          const { error } = await res
+            .json()
+            .catch(() => ({ error: res.statusText }));
           toast.error(`Update failed: ${error}`);
           return;
         }
@@ -332,7 +354,9 @@ function AdminsManagementPageContent() {
           method: "DELETE",
         });
         if (!res.ok) {
-          const { error } = await res.json().catch(() => ({ error: res.statusText }));
+          const { error } = await res
+            .json()
+            .catch(() => ({ error: res.statusText }));
           toast.error(`Revoke failed: ${error}`);
           return;
         }
@@ -374,7 +398,9 @@ function AdminsManagementPageContent() {
         header: "Promoted",
         width: 180,
         cell: (r) => (
-          <span className="text-muted-foreground">{formatDate(r.admin_created_at)}</span>
+          <span className="text-muted-foreground">
+            {formatDate(r.admin_created_at)}
+          </span>
         ),
       },
       {
@@ -383,7 +409,9 @@ function AdminsManagementPageContent() {
         header: "Last sign-in",
         width: 180,
         cell: (r) => (
-          <span className="text-muted-foreground">{formatDate(r.last_sign_in_at)}</span>
+          <span className="text-muted-foreground">
+            {formatDate(r.last_sign_in_at)}
+          </span>
         ),
       },
       {
@@ -404,7 +432,9 @@ function AdminsManagementPageContent() {
         header: "When",
         width: 180,
         cell: (e) => (
-          <span className="text-muted-foreground">{formatDate(e.created_at)}</span>
+          <span className="text-muted-foreground">
+            {formatDate(e.created_at)}
+          </span>
         ),
       },
       {
@@ -416,7 +446,9 @@ function AdminsManagementPageContent() {
           e.actor_user_id ? (
             <AdminUserRef userId={e.actor_user_id} email={e.actor_email} />
           ) : (
-            <span className="italic text-muted-foreground">system / service-role</span>
+            <span className="italic text-muted-foreground">
+              system / service-role
+            </span>
           ),
       },
       {
@@ -445,7 +477,9 @@ function AdminsManagementPageContent() {
         header: "Change",
         accessorFn: auditChange,
         width: 220,
-        cell: (e) => <span className="text-muted-foreground">{auditChange(e)}</span>,
+        cell: (e) => (
+          <span className="text-muted-foreground">{auditChange(e)}</span>
+        ),
       },
     ];
   }, []);
@@ -582,6 +616,7 @@ function AdminsManagementPageContent() {
           )}
           <div className="h-[480px]">
             <MatrxDataTable
+              urlState={{ id: "admins" }}
               data={admins}
               columns={adminColumns}
               getRowId={(r) => r.user_id}
@@ -622,12 +657,16 @@ function AdminsManagementPageContent() {
                 rowDescription: "A single admin row.",
                 listDescription: "All current admins and their levels.",
                 humanRow: adminSummary,
-                rowAttributes: (r) => ({ "user-id": r.user_id, level: r.level }),
+                rowAttributes: (r) => ({
+                  "user-id": r.user_id,
+                  level: r.level,
+                }),
                 listAttributes: (visible, all) => ({ count: all.length }),
               }}
               detail={{
                 title: (r) => r.email ?? r.user_id,
-                description: (r) => `${LEVEL_LABEL[r.level]} · promoted ${formatDate(r.admin_created_at)}`,
+                description: (r) =>
+                  `${LEVEL_LABEL[r.level]} · promoted ${formatDate(r.admin_created_at)}`,
               }}
               rowActions={(row) => {
                 const busy = !!rowBusy[row.user_id];
@@ -638,7 +677,9 @@ function AdminsManagementPageContent() {
                   >
                     <Select
                       value={row.level}
-                      onValueChange={(v) => void handleLevelChange(row, v as AdminLevel)}
+                      onValueChange={(v) =>
+                        void handleLevelChange(row, v as AdminLevel)
+                      }
                       disabled={busy}
                     >
                       <SelectTrigger className="h-7 w-[140px] text-xs">
@@ -680,7 +721,8 @@ function AdminsManagementPageContent() {
               Audit log{auditFailed ? "" : ` (${audit.length})`}
             </h2>
             <p className="text-xs text-muted-foreground">
-              Every admin change is logged at the DB layer, including any made via direct SQL.
+              Every admin change is logged at the DB layer, including any made
+              via direct SQL.
             </p>
           </div>
           {auditFailed && (
@@ -693,6 +735,7 @@ function AdminsManagementPageContent() {
           )}
           <div className="h-[440px]">
             <MatrxDataTable
+              urlState={{ id: "admin-audit" }}
               data={audit}
               columns={auditColumns}
               getRowId={(e) => e.id}
@@ -727,7 +770,8 @@ function AdminsManagementPageContent() {
                 listAttributes: (visible, all) => ({ count: all.length }),
               }}
               detail={{
-                title: (e) => `${e.action} · ${e.target_email ?? e.target_user_id}`,
+                title: (e) =>
+                  `${e.action} · ${e.target_email ?? e.target_user_id}`,
                 description: (e) => formatDate(e.created_at),
               }}
             />

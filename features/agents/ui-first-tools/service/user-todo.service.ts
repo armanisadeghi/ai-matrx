@@ -8,7 +8,6 @@ import type { CxUserTodoRow } from "../tools/types";
 
 export interface CreateUserTodoInput {
   conversation_id: string;
-  user_id: string;
   title: string;
   context?: string | null;
   due?: string | null;
@@ -33,9 +32,9 @@ export async function addUserTodo(
   const { data, error } = await db
     .schema("chat").from("user_todo")
     .insert({
+      // `created_by` is stamped by the `_stamp_actor` trigger — never client-set.
       organization_id: await ensureOrgId(undefined),
       conversation_id: input.conversation_id,
-      user_id: input.user_id,
       title: input.title,
       context: input.context ?? null,
       due: input.due ?? null,

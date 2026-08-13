@@ -14,6 +14,12 @@
  * `<SurfaceRuntimeProvider>` and spreads
  * `useMarketingSiteSurfaceBase().getBaseValues()` into
  * `createMarketingBacklinksScope(...)` at trigger time.
+ *
+ * WRITE half (2026-08-12): exactly ONE target,
+ * `backlink_refresh_schedule` — see the block above `writeTargets` for why
+ * that count is the honest one and why `refresh_profile` is a documented NO.
+ * Everything this page displays about actual links is gated evidence or
+ * model judgment and is deliberately unwritable.
  */
 
 import type {
@@ -21,7 +27,13 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
+import {
+  dataForSeoCadences,
+  DATAFORSEO_DETAIL_LIMIT_MAX,
+  DATAFORSEO_DETAIL_LIMIT_MIN,
+} from "@/features/marketing/data/integrations-schema";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
@@ -219,7 +231,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "refresh_schedule",
     label: "Automatic refresh schedule",
     description:
-      "The site's stored DataForSEO refresh configuration as shown in the schedule editor: { enabled, cadence (weekly|monthly), detail_limit }. Always reflects the saved site row, not unsaved edits. Empty only while the site row is still loading.",
+      "The site's stored DataForSEO refresh configuration as shown in the schedule editor: { enabled, cadence (weekly|monthly), detail_limit }. Always reflects the saved site row, not unsaved edits — which is why its write twin `backlink_refresh_schedule` persists on apply instead of staging a draft. Empty only while the site row is still loading.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 90,
@@ -261,6 +273,42 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * The write half. ONE target, and the count is the honest one rather than a
+ * padded one: everything else this workspace shows is gated evidence or model
+ * output — every backlink row, referring domain, anchor, competitor, score,
+ * verdict and summary — and writing any of it would FORGE evidence, which is
+ * the one thing the surface intro forbids outright. The schedule card is the
+ * single authored control on the page, and its three fields are one decision
+ * behind one Save, so one composite beats three micro-targets (the
+ * `page_meta_tags` rule).
+ *
+ * Also ruled NO, so nobody re-scouts it: `refresh_profile`. It is declared,
+ * it is real view state, and an agent could set it — but it is a mechanical
+ * selector sitting immediately beside the Refresh button the user must press
+ * anyway. The agent's actual contribution there is the RECOMMENDATION ("your
+ * detail rows are four months stale, run a bootstrap"), which it can already
+ * make in prose; pre-moving the dropdown saves one click and costs a confirm
+ * dialog. That is the "pure-mechanical toggle nobody would ask an agent to
+ * flip" case in the judgment bar, not a planning field.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    group: "collection",
+    name: "backlink_refresh_schedule",
+    label: "Automatic refresh schedule",
+    description:
+      `Set how often we automatically check this site for new backlinks, through the same Save the schedule editor uses. Send an object with any of { enabled: boolean, cadence: ${dataForSeoCadences.join(" | ")}, detail_limit: integer ${DATAFORSEO_DETAIL_LIMIT_MIN}-${DATAFORSEO_DETAIL_LIMIT_MAX} } — OMITTED KEYS KEEP THE SAVED VALUE, so "check weekly" need not restate the row limit. detail_limit is how many individual backlink rows each automatic check pulls in. ` +
+      `This target is mode "entity": on Apply it PERSISTS to the site immediately (the user still confirms first) rather than staging an unsaved edit. That is deliberate — the schedule card lives behind a collapsed settings toggle and its read twin refresh_schedule reports the SAVED site row, so a staged draft would be invisible both to the user and to you. Apply, then re-read refresh_schedule in a NEW run to confirm what landed. ` +
+      `This only schedules collection; it never runs a refresh, and it cannot change any backlink, domain, score or judgment.`,
+    valueType: "object",
+    updatesValue: "refresh_schedule",
+    mode: "entity",
+    applyPolicy: "ask",
+    sortOrder: 500,
+  },
+];
+
 export const marketingBacklinksManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-backlinks",
   readiness: "verified",
@@ -278,6 +326,7 @@ Freshness has two clocks: backlink_summary carries when the KPI snapshot was col
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
   agentRoles: [
     {
       name: "backlink_analyst",

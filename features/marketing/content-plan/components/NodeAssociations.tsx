@@ -33,9 +33,14 @@ import {
   usePlanNodeEdgeMutation,
   useSeoTopics,
 } from "../data/hooks";
+import Link from "next/link";
+import type { PartyRow } from "@/features/crm/types";
+
 import {
+  PARTY_TOKEN,
   PLAN_ENTITY_TOKEN,
-  PLAN_NODE_ENTITY_ROLES,
+  PLAN_NODE_PARTY_ROLES,
+  PLAN_NODE_SOURCE_ROLES,
   PLAN_NODE_TOPIC_ROLE,
   SEO_TOPIC_TOKEN,
   type PlanEntityRow,
@@ -53,9 +58,12 @@ const ROLE_LABELS: Record<PlanNodeEntityRole, string> = {
 export function NodeAssociations({
   nodeId,
   entities,
+  parties,
 }: {
   nodeId: string;
   entities: PlanEntityRow[];
+  /** The site's linked crm.party roster (people/companies). */
+  parties: PartyRow[];
 }) {
   const edges = usePlanNodeEdges(nodeId);
   const mutate = usePlanNodeEdgeMutation(nodeId);
@@ -75,7 +83,9 @@ export function NodeAssociations({
   );
   const entityEdges = outgoing.filter(
     (edge) =>
-      edge.direction === "outgoing" && edge.otherType === PLAN_ENTITY_TOKEN,
+      edge.direction === "outgoing" &&
+      (edge.otherType === PLAN_ENTITY_TOKEN ||
+        edge.otherType === PARTY_TOKEN),
   );
 
   const entityById = useMemo(() => {
@@ -83,6 +93,12 @@ export function NodeAssociations({
     for (const entity of entities) map.set(entity.id, entity);
     return map;
   }, [entities]);
+
+  const partyById = useMemo(() => {
+    const map = new Map<string, PartyRow>();
+    for (const party of parties) map.set(party.id, party);
+    return map;
+  }, [parties]);
 
   if (edges.isError) {
     return (
@@ -102,28 +118,37 @@ export function NodeAssociations({
       <EntitySection
         entityEdges={entityEdges}
         entityById={entityById}
+        partyById={partyById}
         entities={entities}
-        onAttach={(entityId, role, reviewDate, notes) =>
-          run({
-            kind: "attach-entity",
-            entityId,
-            role,
-            review:
-              role === "reviewed_by" && reviewDate
-                ? { review_date: reviewDate, ...(notes ? { notes } : {}) }
-                : undefined,
-          })
-        }
-        onDetach={(entityId, role) =>
-          run({ kind: "detach-entity", entityId, role })
+        parties={parties}
+        onAttach={(target, role, reviewDate, notes) => {
+          const review =
+            role === "reviewed_by" && reviewDate
+              ? { review_date: reviewDate, ...(notes ? { notes } : {}) }
+              : undefined;
+          run(
+            target.kind === "party"
+              ? { kind: "attach-party", partyId: target.id, role, review }
+              : { kind: "attach-entity", entityId: target.id, role, review },
+          );
+        }}
+        onDetach={(target, role) =>
+          run(
+            target.kind === "party"
+              ? { kind: "detach-party", partyId: target.id, role }
+              : { kind: "detach-entity", entityId: target.id, role },
+          )
         }
       />
     </div>
   );
 }
 
+/** Which half of the roster an edge/attach targets. */
+type AttachTarget = { kind: "party" | "entity"; id: string };
+
 // Narrow the canonical edge shape (never re-declare it locally).
-type Edge = Pick<AssociationEdge, "otherId" | "label" | "role">;
+type Edge = Pick<AssociationEdge, "otherId" | "otherType" | "label" | "role">;
 
 function Chip({ text, onRemove }: { text: string; onRemove: () => void }) {
   return (
@@ -247,25 +272,42 @@ function TopicSection({
 function EntitySection({
   entityEdges,
   entityById,
+  partyById,
   entities,
+  parties,
   onAttach,
   onDetach,
 }: {
   entityEdges: Edge[];
   entityById: Map<string, PlanEntityRow>;
+  partyById: Map<string, PartyRow>;
   entities: PlanEntityRow[];
+  parties: PartyRow[];
   onAttach: (
-    entityId: string,
+    target: AttachTarget,
     role: PlanNodeEntityRole,
     reviewDate?: string,
     notes?: string,
   ) => void;
-  onDetach: (entityId: string, role: PlanNodeEntityRole) => void;
+  onDetach: (target: AttachTarget, role: PlanNodeEntityRole) => void;
 }) {
-  const [entityId, setEntityId] = useState<string>("");
+  // The picker value encodes the roster half: `party:<id>` / `entity:<id>`.
+  const [picked, setPicked] = useState<string>("");
   const [role, setRole] = useState<PlanNodeEntityRole>("about");
   const [reviewDate, setReviewDate] = useState("");
   const [notes, setNotes] = useState("");
+
+  const target: AttachTarget | null = picked
+    ? {
+        kind: picked.startsWith("party:") ? "party" : "entity",
+        id: picked.slice(picked.indexOf(":") + 1),
+      }
+    : null;
+  // reviewed_by/authored_by are person edges; embeds is a source edge — the
+  // role menu follows what the registered pair for the pick allows.
+  const roleOptions: readonly PlanNodeEntityRole[] =
+    target?.kind === "party" ? PLAN_NODE_PARTY_ROLES : PLAN_NODE_SOURCE_ROLES;
+  const effectiveRole = roleOptions.includes(role) ? role : "about";
 
   return (
     <section>
@@ -274,24 +316,46 @@ function EntitySection({
       </h4>
       <div className="space-y-1.5">
         {entityEdges.map((edge) => {
-          const entity = entityById.get(edge.otherId);
+          const isParty = edge.otherType === "party";
+          const party = isParty ? partyById.get(edge.otherId) : undefined;
+          const entity = isParty ? undefined : entityById.get(edge.otherId);
+          const name =
+            party?.display_name ??
+            entity?.label ??
+            edge.label ??
+            edge.otherId.slice(0, 8);
           const edgeRole = (edge.role ?? "about") as PlanNodeEntityRole;
           return (
             <div
-              key={`${edge.otherId}:${edge.role}`}
+              key={`${edge.otherType}:${edge.otherId}:${edge.role}`}
               className="flex items-center gap-2 rounded border border-border px-2 py-1 text-sm"
             >
               <span className="rounded bg-muted px-1 text-[10px] uppercase text-muted-foreground">
                 {ROLE_LABELS[edgeRole] ?? edge.role}
               </span>
-              <span className="min-w-0 flex-1 truncate font-medium text-foreground">
-                {entity?.label ?? edge.label ?? edge.otherId.slice(0, 8)}
-              </span>
+              {isParty ? (
+                // A person/company is a CRM record — its name is a door.
+                <Link
+                  href={`/crm/${edge.otherId}`}
+                  className="min-w-0 flex-1 truncate font-medium text-foreground hover:underline"
+                >
+                  {name}
+                </Link>
+              ) : (
+                <span className="min-w-0 flex-1 truncate font-medium text-foreground">
+                  {name}
+                </span>
+              )}
               <button
                 type="button"
-                aria-label="Detach entity"
+                aria-label={`Detach ${name}`}
                 className="text-muted-foreground hover:text-destructive"
-                onClick={() => onDetach(edge.otherId, edgeRole)}
+                onClick={() =>
+                  onDetach(
+                    { kind: isParty ? "party" : "entity", id: edge.otherId },
+                    edgeRole,
+                  )
+                }
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -306,13 +370,21 @@ function EntitySection({
       </div>
       <div className="mt-2 space-y-1.5 rounded border border-dashed border-border p-2">
         <div className="flex gap-1.5">
-          <Select value={entityId} onValueChange={setEntityId}>
+          <Select value={picked} onValueChange={setPicked}>
             <SelectTrigger className="h-8 flex-1 text-sm">
-              <SelectValue placeholder="Entity…" />
+              <SelectValue placeholder="Person, company or source…" />
             </SelectTrigger>
             <SelectContent>
+              {parties.map((party) => (
+                <SelectItem key={party.id} value={`party:${party.id}`}>
+                  {party.display_name}
+                  <span className="ml-1 text-xs text-muted-foreground">
+                    ({party.party_kind === "organization" ? "company" : "person"})
+                  </span>
+                </SelectItem>
+              ))}
               {entities.map((entity) => (
-                <SelectItem key={entity.id} value={entity.id}>
+                <SelectItem key={entity.id} value={`entity:${entity.id}`}>
                   {entity.label}
                   <span className="ml-1 text-xs text-muted-foreground">
                     ({entity.entity_type})
@@ -322,14 +394,14 @@ function EntitySection({
             </SelectContent>
           </Select>
           <Select
-            value={role}
+            value={effectiveRole}
             onValueChange={(next) => setRole(next as PlanNodeEntityRole)}
           >
             <SelectTrigger className="h-8 w-32 text-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {PLAN_NODE_ENTITY_ROLES.map((option) => (
+              {roleOptions.map((option) => (
                 <SelectItem key={option} value={option}>
                   {ROLE_LABELS[option]}
                 </SelectItem>
@@ -337,7 +409,7 @@ function EntitySection({
             </SelectContent>
           </Select>
         </div>
-        {role === "reviewed_by" ? (
+        {effectiveRole === "reviewed_by" ? (
           <div className="flex gap-1.5">
             <Input
               type="date"
@@ -357,22 +429,25 @@ function EntitySection({
         <Button
           size="sm"
           className="h-7 text-xs"
-          disabled={!entityId || (role === "reviewed_by" && !reviewDate)}
+          disabled={
+            !target || (effectiveRole === "reviewed_by" && !reviewDate)
+          }
           onClick={() => {
+            if (!target) return;
             onAttach(
-              entityId,
-              role,
+              target,
+              effectiveRole,
               reviewDate || undefined,
               notes || undefined,
             );
-            setEntityId("");
+            setPicked("");
             setReviewDate("");
             setNotes("");
           }}
         >
           <Plus className="mr-1 h-3 w-3" /> Attach
         </Button>
-        {role === "reviewed_by" ? (
+        {effectiveRole === "reviewed_by" ? (
           <p className="text-[11px] text-muted-foreground">
             Reviews require a review date (stored as a validated plan_review
             payload on the edge).

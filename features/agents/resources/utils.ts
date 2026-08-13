@@ -142,6 +142,7 @@ export const RESOURCE_FORMAT_CONFIG = {
       url: data.url,
       video_id: data.videoId,
       ...(data.title && { title: data.title }),
+      ...(data.publishedAt && { published_at: data.publishedAt }),
     }),
     extractContent: (data: YouTubeResourceData) => data.transcript || "",
   },

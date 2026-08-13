@@ -60,6 +60,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast-service";
 import { setPeekedAgentId } from "./agent-peek-tracker";
+import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 
 const OVERVIEW_MESSAGE_PREVIEW_CHARS = 200;
 
@@ -409,12 +410,12 @@ export function AgentSneakPeekContent({
         </Section>
 
         <Section label="Model">
-          {modelLabel ? (
-            <span className="text-sm text-foreground">{modelLabel}</span>
-          ) : record.modelId ? (
-            <span className="text-sm text-muted-foreground italic">
-              Loading…
-            </span>
+          {record.modelId ? (
+            <AiModelRef
+              modelId={record.modelId}
+              name={modelLabel}
+              className="text-sm text-foreground"
+            />
           ) : (
             <EmptyValue />
           )}
@@ -521,7 +522,6 @@ export function AgentSneakPeekContent({
                 value={record.tags?.length ? record.tags.join(", ") : "—"}
               />
               <MetaRow label="Active" value={record.isActive ? "Yes" : "No"} />
-              <MetaRow label="Public" value={record.isPublic ? "Yes" : "No"} />
               <MetaRow
                 label="Archived"
                 value={record.isArchived ? "Yes" : "No"}
@@ -539,7 +539,21 @@ export function AgentSneakPeekContent({
                 label="Updated"
                 value={formatDateTime(record.updatedAt)}
               />
-              <MetaRow label="Model ID" value={record.modelId ?? "—"} mono />
+              <MetaRow
+                label="Model"
+                value={
+                  record.modelId ? (
+                    <AiModelRef
+                      modelId={record.modelId}
+                      name={modelLabel}
+                      showId
+                      showIcon={false}
+                    />
+                  ) : (
+                    "—"
+                  )
+                }
+              />
             </div>
           )}
         </div>

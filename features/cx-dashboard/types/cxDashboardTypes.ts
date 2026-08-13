@@ -7,7 +7,7 @@ export type {
 
 export type CxConversation = {
   id: string;
-  user_id: string;
+  created_by: string | null;
   title: string | null;
   system_instruction: string | null;
   config: Record<string, unknown>;
@@ -22,7 +22,6 @@ export type CxConversation = {
   description: string | null;
   keywords: string[] | null;
   organization_id: string | null;
-  project_id: string | null;
   task_id: string | null;
   metadata: Record<string, unknown>;
   created_at: string;
@@ -43,7 +42,7 @@ export type CxUserRequest = {
   // Derived, not a column: `cx_user_request` no longer stores conversation_id.
   // Resolved through the cx_request m2m (null when no requests exist yet).
   conversation_id: string | null;
-  user_id: string;
+  created_by: string | null;
   total_input_tokens: number;
   total_output_tokens: number;
   total_cached_tokens: number;
@@ -57,6 +56,12 @@ export type CxUserRequest = {
   status: string;
   finish_reason: string | null;
   error: string | null;
+  /**
+   * Server-derived provenance trust class (human | client_auto | api |
+   * child_agent | workflow | scheduled | system | unknown). Never
+   * client-written. Optional: rows fetched before the column existed omit it.
+   */
+  origin_class?: string | null;
   created_at: string;
   completed_at: string | null;
   deleted_at: string | null;
@@ -100,7 +105,6 @@ export type CxToolCall = {
   id: string;
   conversation_id: string;
   message_id: string | null;
-  user_id: string;
   user_request_id: string | null;
   tool_name: string;
   tool_name_as_called: string | null;
@@ -149,7 +153,7 @@ export type CxToolCall = {
 export type CxMedia = {
   id: string;
   conversation_id: string | null;
-  user_id: string;
+  created_by: string | null;
   kind: string;
   url: string;
   mime_type: string | null;

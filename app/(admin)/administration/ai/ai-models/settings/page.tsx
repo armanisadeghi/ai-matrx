@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import SettingsContainer from "@/features/ai-models/components/settings/SettingsContainer";
 
 export const metadata = {
@@ -11,7 +12,10 @@ export default function AiSettingsPage() {
       <Suspense
         fallback={
           <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
-            Loading…
+            <SuspenseLoader
+              centered={false}
+              message="Loading model settings…"
+            />
           </div>
         }
       >

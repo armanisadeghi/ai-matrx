@@ -51,8 +51,16 @@ import {
   type DeadEndRuleId,
   type DeadEndSeverity,
 } from "@/scripts/dead-ends/types";
-import { ENTITY_REGISTRY_PATH, fixPromptForBucket, fixPromptForFinding } from "./fix-prompt";
-import { commitHref, pathHref, sourceHref } from "@/features/admin/reporting/source-links";
+import {
+  ENTITY_REGISTRY_PATH,
+  fixPromptForBucket,
+  fixPromptForFinding,
+} from "./fix-prompt";
+import {
+  commitHref,
+  pathHref,
+  sourceHref,
+} from "@/features/admin/reporting/source-links";
 
 const DOCTRINE_HREF =
   "https://github.com/armanisadeghi/ai-matrx/blob/main/.claude/skills/no-dead-ends/SKILL.md";
@@ -100,7 +108,11 @@ type BucketFilter =
   | { kind: "rule"; value: DeadEndRuleId }
   | { kind: "severity"; value: DeadEndSeverity };
 
-export function DeadEndsConsole({ report, history, problems }: DeadEndsConsoleProps) {
+export function DeadEndsConsole({
+  report,
+  history,
+  problems,
+}: DeadEndsConsoleProps) {
   const [bucket, setBucket] = useState<BucketFilter>({ kind: "none" });
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   /**
@@ -124,7 +136,10 @@ export function DeadEndsConsole({ report, history, problems }: DeadEndsConsolePr
     try {
       await navigator.clipboard.writeText(text);
       setCopiedKey(key);
-      window.setTimeout(() => setCopiedKey((k) => (k === key ? null : k)), 1500);
+      window.setTimeout(
+        () => setCopiedKey((k) => (k === key ? null : k)),
+        1500,
+      );
       toast.success(`${label} copied`);
     } catch {
       // Never swallow: the operator needs to know the click did nothing.
@@ -133,183 +148,183 @@ export function DeadEndsConsole({ report, history, problems }: DeadEndsConsolePr
   };
 
   const columns: MatrxColumnDef<DeadEndFinding>[] = [
-      {
-        id: "severity",
-        accessorKey: "severity",
-        header: "Sev",
-        filter: "select",
-        width: 84,
-        cell: (f) => (
-          <Badge
-            variant={f.severity === "high" ? "destructive" : "secondary"}
-            className="text-[10px] uppercase"
+    {
+      id: "severity",
+      accessorKey: "severity",
+      header: "Sev",
+      filter: "select",
+      width: 84,
+      cell: (f) => (
+        <Badge
+          variant={f.severity === "high" ? "destructive" : "secondary"}
+          className="text-[10px] uppercase"
+        >
+          {f.severity}
+        </Badge>
+      ),
+    },
+    {
+      id: "rule",
+      accessorKey: "rule",
+      header: "Rule",
+      filter: "select",
+      width: 190,
+      cell: (f) => (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setBucket({ kind: "rule", value: f.rule });
+          }}
+          title={`Show only ${RULE_TITLES[f.rule]}`}
+          className="block w-full truncate text-left text-xs text-foreground underline-offset-2 hover:text-primary hover:underline"
+        >
+          {RULE_TITLES[f.rule]}
+        </button>
+      ),
+    },
+    {
+      id: "entity",
+      accessorKey: "entity",
+      header: "Entity",
+      filter: "select",
+      width: 150,
+      cell: (f) => (
+        <span className="flex min-w-0 items-center gap-1">
+          <span className="min-w-0 truncate font-mono text-xs">{f.entity}</span>
+          {f.entityHasRoute ? (
+            <Badge variant="outline" className="h-4 px-1 text-[9px]">
+              route
+            </Badge>
+          ) : isRegistryToken(f.entity) ? (
+            <Link
+              href={sourceHref(ENTITY_REGISTRY_PATH, 1)}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              title="No hrefFor for this token — open the entity registry to add one"
+              className="text-[9px] text-amber-600 underline underline-offset-2 dark:text-amber-500"
+            >
+              no route
+            </Link>
+          ) : null}
+        </span>
+      ),
+    },
+    {
+      id: "file",
+      accessorKey: "file",
+      header: "Source",
+      width: 420,
+      cell: (f) => (
+        <span className="flex min-w-0 max-w-full items-center gap-1">
+          <Link
+            href={sourceHref(f.file, f.line)}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            title={`Open ${f.file}:${f.line} on main (line is from the scan — see the snapshot age)`}
+            className="min-w-0 truncate font-mono text-xs text-foreground underline-offset-2 hover:text-primary hover:underline"
           >
-            {f.severity}
-          </Badge>
-        ),
-      },
-      {
-        id: "rule",
-        accessorKey: "rule",
-        header: "Rule",
-        filter: "select",
-        width: 190,
-        cell: (f) => (
+            {f.file}:{f.line}
+          </Link>
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              setBucket({ kind: "rule", value: f.rule });
+              setBucket({ kind: "file", value: f.file });
             }}
-            title={`Show only ${RULE_TITLES[f.rule]}`}
-            className="block w-full truncate text-left text-xs text-foreground underline-offset-2 hover:text-primary hover:underline"
+            title="Show only this file's findings"
+            className="shrink-0 rounded px-1 text-[10px] text-muted-foreground hover:bg-accent hover:text-foreground"
           >
-            {RULE_TITLES[f.rule]}
+            only
           </button>
-        ),
-      },
-      {
-        id: "entity",
-        accessorKey: "entity",
-        header: "Entity",
-        filter: "select",
-        width: 150,
-        cell: (f) => (
+        </span>
+      ),
+    },
+    {
+      id: "expression",
+      accessorKey: "expression",
+      header: "Renders",
+      width: 220,
+      cell: (f) => (
+        <code
+          className="block w-full truncate text-xs text-muted-foreground"
+          title={f.expression}
+        >
+          {f.expression}
+        </code>
+      ),
+    },
+    {
+      id: "route",
+      accessorKey: "route",
+      header: "Surface",
+      width: 260,
+      cell: (f) =>
+        isConcreteRoute(f.route) ? (
           <span className="flex min-w-0 items-center gap-1">
-            <span className="min-w-0 truncate font-mono text-xs">{f.entity}</span>
-            {f.entityHasRoute ? (
-              <Badge variant="outline" className="h-4 px-1 text-[9px]">
-                route
-              </Badge>
-            ) : isRegistryToken(f.entity) ? (
-              <Link
-                href={sourceHref(ENTITY_REGISTRY_PATH, 1)}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                title="No hrefFor for this token — open the entity registry to add one"
-                className="text-[9px] text-amber-600 underline underline-offset-2 dark:text-amber-500"
-              >
-                no route
-              </Link>
-            ) : null}
-          </span>
-        ),
-      },
-      {
-        id: "file",
-        accessorKey: "file",
-        header: "Source",
-        width: 420,
-        cell: (f) => (
-          <span className="flex min-w-0 max-w-full items-center gap-1">
             <Link
-              href={sourceHref(f.file, f.line)}
+              href={f.route}
+              onClick={(e) => e.stopPropagation()}
+              title={`Open ${f.route}`}
+              className="min-w-0 truncate text-xs underline-offset-2 hover:text-primary hover:underline"
+            >
+              {f.route}
+            </Link>
+            <Link
+              href={f.route}
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              title={`Open ${f.file}:${f.line} on main (line is from the scan — see the snapshot age)`}
-              className="min-w-0 truncate font-mono text-xs text-foreground underline-offset-2 hover:text-primary hover:underline"
+              title={`Open ${f.route} in a new tab`}
+              aria-label={`Open ${f.route} in a new tab`}
+              className="shrink-0 text-muted-foreground hover:text-foreground"
             >
-              {f.file}:{f.line}
+              <ExternalLink className="h-3 w-3" />
             </Link>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setBucket({ kind: "file", value: f.file });
-              }}
-              title="Show only this file's findings"
-              className="shrink-0 rounded px-1 text-[10px] text-muted-foreground hover:bg-accent hover:text-foreground"
-            >
-              only
-            </button>
           </span>
-        ),
-      },
-      {
-        id: "expression",
-        accessorKey: "expression",
-        header: "Renders",
-        width: 220,
-        cell: (f) => (
-          <code
-            className="block w-full truncate text-xs text-muted-foreground"
-            title={f.expression}
+        ) : f.route ? (
+          <span
+            className="truncate text-xs text-muted-foreground"
+            title="Dynamic route pattern — needs a record id to open"
           >
-            {f.expression}
-          </code>
+            {f.route}
+          </span>
+        ) : (
+          <span className="text-xs text-muted-foreground">component</span>
         ),
+    },
+    {
+      id: "fix",
+      header: "Fix",
+      filter: false,
+      sortable: false,
+      width: 76,
+      align: "center",
+      cell: (f) => {
+        const key = `${f.file}:${f.line}:${f.column}`;
+        return (
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-6 px-1.5 text-[10px]"
+            title="Copy a paste-ready repair brief for an agent"
+            aria-label={`Copy a repair brief for ${f.file}:${f.line}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              void copy(key, fixPromptForFinding(f), "Repair brief");
+            }}
+          >
+            {copiedKey === key ? (
+              <Check className="h-3 w-3" />
+            ) : (
+              <Copy className="h-3 w-3" />
+            )}
+          </Button>
+        );
       },
-      {
-        id: "route",
-        accessorKey: "route",
-        header: "Surface",
-        width: 260,
-        cell: (f) =>
-          isConcreteRoute(f.route) ? (
-            <span className="flex min-w-0 items-center gap-1">
-              <Link
-                href={f.route}
-                onClick={(e) => e.stopPropagation()}
-                title={`Open ${f.route}`}
-                className="min-w-0 truncate text-xs underline-offset-2 hover:text-primary hover:underline"
-              >
-                {f.route}
-              </Link>
-              <Link
-                href={f.route}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                title={`Open ${f.route} in a new tab`}
-                aria-label={`Open ${f.route} in a new tab`}
-                className="shrink-0 text-muted-foreground hover:text-foreground"
-              >
-                <ExternalLink className="h-3 w-3" />
-              </Link>
-            </span>
-          ) : f.route ? (
-            <span
-              className="truncate text-xs text-muted-foreground"
-              title="Dynamic route pattern — needs a record id to open"
-            >
-              {f.route}
-            </span>
-          ) : (
-            <span className="text-xs text-muted-foreground">component</span>
-          ),
-      },
-      {
-        id: "fix",
-        header: "Fix",
-        filter: false,
-        sortable: false,
-        width: 76,
-        align: "center",
-        cell: (f) => {
-          const key = `${f.file}:${f.line}:${f.column}`;
-          return (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-6 px-1.5 text-[10px]"
-              title="Copy a paste-ready repair brief for an agent"
-              aria-label={`Copy a repair brief for ${f.file}:${f.line}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                void copy(key, fixPromptForFinding(f), "Repair brief");
-              }}
-            >
-              {copiedKey === key ? (
-                <Check className="h-3 w-3" />
-              ) : (
-                <Copy className="h-3 w-3" />
-              )}
-            </Button>
-          );
-        },
-      },
+    },
   ];
 
   // The delta's baseline is "the newest history point that is NOT this report",
@@ -326,7 +341,8 @@ export function DeadEndsConsole({ report, history, problems }: DeadEndsConsolePr
   );
   const priorPoints =
     currentInHistory >= 0 ? history.slice(0, currentInHistory) : [];
-  const previous = priorPoints.length > 0 ? priorPoints[priorPoints.length - 1] : null;
+  const previous =
+    priorPoints.length > 0 ? priorPoints[priorPoints.length - 1] : null;
   // No match means the two files disagree about which scan is current. Say
   // nothing rather than compute against a point that is not the predecessor.
   const delta =
@@ -384,7 +400,9 @@ export function DeadEndsConsole({ report, history, problems }: DeadEndsConsolePr
           delta={delta}
           history={history}
           endsAtCurrentScan={currentIsPlotted}
-          onPickSeverity={(severity) => setBucket({ kind: "severity", value: severity })}
+          onPickSeverity={(severity) =>
+            setBucket({ kind: "severity", value: severity })
+          }
         />
         <BucketCard
           title="Worst features"
@@ -454,6 +472,7 @@ export function DeadEndsConsole({ report, history, problems }: DeadEndsConsolePr
 
       <div className="min-h-0 flex-1">
         <MatrxDataTable
+          urlState={{ id: "dead-ends" }}
           data={findings}
           columns={columns}
           getRowId={(f) => `${f.file}:${f.line}:${f.column}:${f.rule}`}
@@ -605,7 +624,8 @@ function Header({
         <span className="inline-flex items-center gap-1.5 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-[11px] text-amber-700 dark:text-amber-400">
           <AlertTriangle className="h-3.5 w-3.5" />
           Snapshot is {scanAgeDays} days old — run{" "}
-          <code className="font-mono">pnpm check:dead-ends:write</code> and commit.
+          <code className="font-mono">pnpm check:dead-ends:write</code> and
+          commit.
           <button
             type="button"
             onClick={onCopyRefresh}
@@ -632,9 +652,9 @@ function Header({
                 : "Snapshot is inconsistent — the trend below is from a different scan than the totals."}
           </strong>
           <span>
-            {[...problems, ...(historyDrift ? [historyDrift] : [])].join("; ")}. Re-run{" "}
-            <code className="font-mono">pnpm check:dead-ends:write</code> and commit both
-            JSON files together.
+            {[...problems, ...(historyDrift ? [historyDrift] : [])].join("; ")}.
+            Re-run <code className="font-mono">pnpm check:dead-ends:write</code>{" "}
+            and commit both JSON files together.
           </span>
           <button
             type="button"
@@ -649,7 +669,12 @@ function Header({
       )}
 
       <div className="ml-auto flex items-center gap-2">
-        <Button size="sm" variant="outline" onClick={onCopyAll} className="h-7 text-xs">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={onCopyAll}
+          className="h-7 text-xs"
+        >
           <Copy className="mr-1.5 h-3 w-3" />
           Campaign brief
         </Button>
@@ -688,7 +713,9 @@ function TotalsCard({
   return (
     <div className="rounded-lg border border-border bg-card p-3">
       <div className="flex items-baseline gap-3">
-        <span className="text-2xl font-semibold tabular-nums">{totals.findings}</span>
+        <span className="text-2xl font-semibold tabular-nums">
+          {totals.findings}
+        </span>
         <span className="text-xs text-muted-foreground">findings</span>
         {delta !== null && delta !== 0 && (
           <span
@@ -707,7 +734,9 @@ function TotalsCard({
           </span>
         )}
         {delta === 0 && (
-          <span className="text-xs text-muted-foreground">unchanged since last scan</span>
+          <span className="text-xs text-muted-foreground">
+            unchanged since last scan
+          </span>
         )}
       </div>
 
@@ -719,7 +748,8 @@ function TotalsCard({
           title="Show only high-severity findings"
           className="underline-offset-2 hover:text-foreground hover:underline"
         >
-          <span className="font-medium text-destructive">{totals.high}</span> high
+          <span className="font-medium text-destructive">{totals.high}</span>{" "}
+          high
         </button>
         <button
           type="button"
@@ -727,7 +757,8 @@ function TotalsCard({
           title="Show only medium-severity findings"
           className="underline-offset-2 hover:text-foreground hover:underline"
         >
-          <span className="font-medium text-foreground">{totals.medium}</span> medium
+          <span className="font-medium text-foreground">{totals.medium}</span>{" "}
+          medium
         </button>
         <span>{totals.filesWithFindings} files affected</span>
         {/* `allowlisted` counts findings SUPPRESSED this run, which is 0 when an
@@ -768,7 +799,8 @@ function Trend({
     return (
       <p className="mt-3 text-[11px] text-muted-foreground">
         Trend appears after a second scan — run{" "}
-        <code className="font-mono">pnpm check:dead-ends:write</code> and commit.
+        <code className="font-mono">pnpm check:dead-ends:write</code> and
+        commit.
       </p>
     );
   }
@@ -857,14 +889,21 @@ function BucketCard({
               >
                 {b.key}
               </button>
-              <span className="shrink-0 tabular-nums text-muted-foreground">{b.count}</span>
+              <span className="shrink-0 tabular-nums text-muted-foreground">
+                {b.count}
+              </span>
               {b.high > 0 && (
-                <Badge variant="destructive" className="h-4 shrink-0 px-1 text-[9px]">
+                <Badge
+                  variant="destructive"
+                  className="h-4 shrink-0 px-1 text-[9px]"
+                >
                   {b.high}
                 </Badge>
               )}
               <Link
-                href={b.key.includes(".") ? sourceHref(b.key, 1) : pathHref(b.key)}
+                href={
+                  b.key.includes(".") ? sourceHref(b.key, 1) : pathHref(b.key)
+                }
                 target="_blank"
                 rel="noopener noreferrer"
                 title={`Open ${b.key} in a new tab`}
@@ -910,12 +949,16 @@ function RuleLegend({
           title={`Show only ${RULE_TITLES[rule]}`}
           className={
             "rounded-lg border p-2 text-left transition-colors hover:bg-accent " +
-            (active === rule ? "border-primary bg-accent" : "border-border bg-card")
+            (active === rule
+              ? "border-primary bg-accent"
+              : "border-border bg-card")
           }
         >
           <div className="flex items-baseline gap-2">
             <span className="text-lg font-semibold tabular-nums">{count}</span>
-            <span className="truncate text-xs font-medium">{RULE_TITLES[rule]}</span>
+            <span className="truncate text-xs font-medium">
+              {RULE_TITLES[rule]}
+            </span>
           </div>
           <p className="mt-0.5 line-clamp-2 text-[11px] text-muted-foreground">
             {RULE_DOCTRINE[rule]}
@@ -940,7 +983,9 @@ function FindingDetail({
   return (
     <div className="space-y-3 p-3 text-sm">
       <div className="flex flex-wrap items-center gap-2">
-        <Badge variant={finding.severity === "high" ? "destructive" : "secondary"}>
+        <Badge
+          variant={finding.severity === "high" ? "destructive" : "secondary"}
+        >
           {finding.severity}
         </Badge>
         <Badge variant="outline">{RULE_TITLES[finding.rule]}</Badge>
@@ -1004,7 +1049,8 @@ function FindingDetail({
           {finding.entityHasRoute ? (
             <span className="text-muted-foreground">
               <code className="font-mono">{finding.entity}</code> already has an
-              hrefFor — the door is one <code className="font-mono">EntityRef</code> away.
+              hrefFor — the door is one{" "}
+              <code className="font-mono">EntityRef</code> away.
             </span>
           ) : isRegistryToken(finding.entity) ? (
             <Link
@@ -1013,7 +1059,8 @@ function FindingDetail({
               rel="noopener noreferrer"
               className="underline-offset-2 hover:text-primary hover:underline"
             >
-              Add an hrefFor for <code className="font-mono">{finding.entity}</code>
+              Add an hrefFor for{" "}
+              <code className="font-mono">{finding.entity}</code>
             </Link>
           ) : (
             <span className="text-muted-foreground">
@@ -1024,7 +1071,12 @@ function FindingDetail({
         </Row>
       </dl>
 
-      <Button size="sm" variant="outline" onClick={onCopyFix} className="w-full">
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={onCopyFix}
+        className="w-full"
+      >
         <Copy className="mr-1.5 h-3.5 w-3.5" />
         Copy repair brief for an agent
       </Button>
@@ -1032,7 +1084,13 @@ function FindingDetail({
   );
 }
 
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
+function Row({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="flex gap-2">
       <dt className="w-20 shrink-0 text-muted-foreground">{label}</dt>

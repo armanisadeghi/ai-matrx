@@ -13,6 +13,7 @@ import { ArrowRight, Lock, LockOpen, RefreshCw } from "lucide-react";
 import { toast } from "@/lib/toast";
 
 import { createClient } from "@/utils/supabase/client";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -26,7 +27,7 @@ import {
 } from "@/components/ui/table";
 import { ProblemsPanel } from "./ProblemsPanel";
 import { StatusTile } from "./shared";
-import { label } from "../utils";
+import { label, problemHuman, RELATIONSHIPS_LOCATION } from "../utils";
 import type {
   RelationshipProblem,
   RelationshipSystemStatus,
@@ -144,6 +145,32 @@ export function RelationshipsOverviewClient({ status, problems }: Props) {
           tone={errorCount > 0 ? "danger" : warningCount > 0 ? "warn" : "ok"}
         />
         <div className="ml-auto flex items-center gap-2">
+          <CopyButtons
+            size="sm"
+            label="Relationship system status"
+            human={() =>
+              [
+                `Relationship system status — ${status?.total_rules ?? 0} rules (${status?.rules_conveying ?? 0} conveying), ${status?.closure_rows ?? 0} closure rows, max depth ${status?.max_depth ?? 0}, enforcement ${enforcementOn ? "ON" : "OFF"}`,
+                `${problemCount} problems (${errorCount} errors / ${warningCount} warnings)`,
+                ...problems.map(problemHuman),
+              ].join("\n\n")
+            }
+            json={() => ({ status, problems })}
+            agent={() => ({
+              kind: "relationship-system-overview",
+              location: RELATIONSHIPS_LOCATION,
+              description:
+                "The association/relationship system's live status (rule counts, closure cache, enforcement) plus the unified drift/problems report.",
+              data: { status, problems },
+              attributes: {
+                rules: status?.total_rules ?? 0,
+                enforcement: enforcementOn,
+                problems: problemCount,
+                errors: errorCount,
+                warnings: warningCount,
+              },
+            })}
+          />
           <Button
             variant="outline"
             size="sm"

@@ -8,7 +8,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Archive, Eye, Pause, Play, RefreshCw } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
+
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -237,14 +239,14 @@ export function EnrollmentDetailPanel({
               variant="outline"
               title="Archive this enrollment"
               disabled={archive.isPending}
-              onClick={() => {
-                if (
-                  window.confirm(
-                    `Archive “${enrollment.display_name}”? Reviews stop; existing findings stay.`,
-                  )
-                ) {
-                  archive.mutate();
-                }
+              onClick={async () => {
+                const ok = await confirm({
+                  title: `Archive “${enrollment.display_name}”?`,
+                  description: "Reviews stop; existing findings stay.",
+                  confirmLabel: "Archive",
+                  variant: "destructive",
+                });
+                if (ok) archive.mutate();
               }}
             >
               <Archive className="h-3.5 w-3.5" />

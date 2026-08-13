@@ -105,14 +105,6 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
   "table": "ai.setting",
   "title_column": "key"
  },
- "analysis_recipes": {
-  "table": "analysis_recipes",
-  "title_column": "name"
- },
- "applet": {
-  "table": "applet",
-  "title_column": "name"
- },
  "artifact": {
   "table": "chat.artifact",
   "title_column": "title"
@@ -173,18 +165,6 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
   "table": "crm.campaign",
   "title_column": "name"
  },
- "custom_app_config": {
-  "table": "custom_app_configs",
-  "title_column": "name"
- },
- "custom_applet_config": {
-  "table": "custom_applet_configs",
-  "title_column": "name"
- },
- "dashboard_saved_view": {
-  "table": "dashboard_saved_views",
-  "title_column": "name"
- },
  "dataset": {
   "table": "workbench.udt_datasets",
   "title_column": "description"
@@ -201,20 +181,12 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
   "table": "education.fc_set",
   "title_column": "name"
  },
- "flashcard_history": {
-  "table": "education.flashcard_history",
-  "title_column": null
- },
  "flashcard_set": {
   "table": "users.user_flashcard_sets",
   "title_column": "title"
  },
- "flashcard_sets": {
-  "table": "education.flashcard_sets",
-  "title_column": "name"
- },
  "flexible_data": {
-  "table": "flexible_data",
+  "table": "platform.flexible_data",
   "title_column": "label"
  },
  "game_result": {
@@ -222,7 +194,7 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
   "title_column": "display_name"
  },
  "heatmap_save": {
-  "table": "heatmap_saves",
+  "table": "workbench.heatmap_saves",
   "title_column": "title"
  },
  "item_mastery": {
@@ -242,7 +214,7 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
   "title_column": null
  },
  "message_template": {
-  "table": "message_template",
+  "table": "agent.message_template",
   "title_column": "label"
  },
  "note_folder": {
@@ -408,10 +380,6 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
  "wc_claim": {
   "table": "legal.wc_claim",
   "title_column": null
- },
- "window_session": {
-  "table": "window_sessions",
-  "title_column": "label"
  },
  "workbook": {
   "table": "workbench.udt_workbooks",

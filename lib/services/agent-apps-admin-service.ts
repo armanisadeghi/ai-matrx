@@ -41,7 +41,7 @@ export interface UpdateAgentAppCategoryInput {
 
 export interface AgentAppAdminView {
   id: string;
-  user_id: string | null;
+  created_by: string | null;
   agent_id: string;
   slug: string;
   name: string;
@@ -50,7 +50,7 @@ export interface AgentAppAdminView {
   category?: string | null;
   tags: string[];
   status: "draft" | "published" | "archived" | "suspended";
-  is_public: boolean;
+  visibility: string;
   is_verified: boolean;
   is_featured: boolean;
   rate_limit_per_ip: number | null;
@@ -74,7 +74,7 @@ export interface UpdateAgentAppAdminInput {
   status?: "draft" | "published" | "archived" | "suspended";
   is_verified?: boolean;
   is_featured?: boolean;
-  is_public?: boolean;
+  visibility?: string;
   rate_limit_per_ip?: number;
   rate_limit_window_hours?: number;
   rate_limit_authenticated?: number;
@@ -247,8 +247,9 @@ export async function fetchAgentAppsAdmin(filters?: {
   is_verified?: boolean;
   category?: string;
   limit?: number;
-  /** Filter by ownership scope. `"global"` returns system apps (user_id IS NULL);
-   *  `"user"` returns user-owned apps (user_id IS NOT NULL). Omit for all. */
+  /** Filter by ownership scope. `"global"` returns system apps (created_by IS
+   *  NULL); `"user"` returns user-owned apps (created_by IS NOT NULL). Omit for
+   *  all. */
   scope?: "global" | "user";
 }): Promise<AgentAppAdminView[]> {
   const supabase = getClient();
@@ -264,8 +265,8 @@ export async function fetchAgentAppsAdmin(filters?: {
   if (filters?.is_verified !== undefined)
     query = query.eq("is_verified", filters.is_verified);
   if (filters?.category) query = query.eq("category", filters.category);
-  if (filters?.scope === "global") query = query.is("user_id", null);
-  if (filters?.scope === "user") query = query.not("user_id", "is", null);
+  if (filters?.scope === "global") query = query.is("created_by", null);
+  if (filters?.scope === "user") query = query.not("created_by", "is", null);
   if (filters?.limit) query = query.limit(filters.limit);
 
   const { data, error } = await query;
@@ -274,7 +275,7 @@ export async function fetchAgentAppsAdmin(filters?: {
   if (data && data.length > 0) {
     const userIds = [
       ...new Set(
-        data.map((r) => r.user_id).filter((v): v is string => !!v),
+        data.map((r) => r.created_by).filter((v): v is string => !!v),
       ),
     ];
     if (userIds.length > 0) {
@@ -286,8 +287,8 @@ export async function fetchAgentAppsAdmin(filters?: {
       const userMap = new Map((users ?? []).map((u) => [u.id, u]));
       return data.map((item) => ({
         ...item,
-        creator_email: item.user_id
-          ? userMap.get(item.user_id)?.email
+        creator_email: item.created_by
+          ? userMap.get(item.created_by)?.email
           : undefined,
       })) as AgentAppAdminView[];
     }
@@ -323,7 +324,9 @@ export async function updateAgentAppAdmin(
   if (input.status !== undefined) patch.status = input.status;
   if (input.is_verified !== undefined) patch.is_verified = input.is_verified;
   if (input.is_featured !== undefined) patch.is_featured = input.is_featured;
-  if (input.is_public !== undefined) patch.is_public = input.is_public;
+  if (input.visibility !== undefined)
+    patch.visibility =
+      input.visibility as Database["app"]["Tables"]["definition"]["Update"]["visibility"];
   if (input.rate_limit_per_ip !== undefined)
     patch.rate_limit_per_ip = input.rate_limit_per_ip;
   if (input.rate_limit_window_hours !== undefined)

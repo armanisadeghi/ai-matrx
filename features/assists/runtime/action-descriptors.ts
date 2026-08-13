@@ -33,9 +33,11 @@ export function describeAssistAction(
     }
     case "navigate":
       return {
-        verb: "Take me there",
-        explainer: `Takes you to ${action.href}. Nothing is changed or run.`,
-        receipt: `Opened ${action.href}.`,
+        verb: action.label ?? "Take me there",
+        explainer:
+          action.confirm ??
+          `Takes you to ${action.href}. Nothing is changed or run.`,
+        receipt: action.receipt ?? `Opened ${action.href}.`,
       };
     case "server_action":
       return {

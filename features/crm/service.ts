@@ -14,9 +14,13 @@
 //      indexes cannot be DEFERRABLE).
 
 import { supabase } from "@/utils/supabase/client";
+import { isUuid } from "@/features/scopes/service/associationGuards";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type {
   AddressInsert,
-  AddressRow,
+  DedupScanResult,
+  MergeCandidateWithParties,
+  PartyMergeWithParties,
   AffiliationWithEmployer,
   AffiliationWithPerson,
   ContactChannel,
@@ -27,7 +31,6 @@ import type {
   DateBucket,
   InteractionChannel,
   InteractionDirection,
-  InteractionRow,
   PartyDetail,
   PartyKind,
   PartyListQuery,
@@ -133,18 +136,36 @@ const EMPLOYER_EMBED =
  *   mine → created_by = me · orgs → organization_id ∈ my orgs (or one org) ·
  *   public → visibility = 'public'. Never a bare RLS-filtered read.
  */
-export async function fetchPartyPage(
+/**
+ * The filter methods the party predicates use, structurally — so ONE helper
+ * serves builders parameterized on different select strings (the list page's
+ * embed select and the campaign flow's id-only select). PostgREST builder
+ * methods return `this`, which satisfies the recursive `Q`.
+ */
+type PartyPredicateBuilder<Q> = {
+  is(column: string, value: null): Q;
+  not(column: string, operator: string, value: unknown): Q;
+  eq(column: string, value: unknown): Q;
+  in(column: string, values: readonly unknown[]): Q;
+  ilike(column: string, pattern: string): Q;
+  gte(column: string, value: string): Q;
+  or(filters: string): Q;
+};
+
+/**
+ * Apply the FULL party-list predicate set (canonical, view, scope, kind facet,
+ * column filters, search) to a `crm.party` PostgREST builder. Shared by the
+ * list page AND the campaign "add members from filters" flow, so the records
+ * a filter previews and the records a campaign enrolls can never diverge.
+ */
+export function applyPartyListPredicates<Q extends PartyPredicateBuilder<Q>>(
+  builder: Q,
   query: PartyListQuery,
-  opts: PartySortOpts,
   ctx: CrmQueryContext,
-): Promise<{ rows: PartyListRow[]; total: number }> {
-  let q = supabase
-    .schema("crm")
-    .from("party")
-    .select(EMPLOYER_EMBED, { count: "exact" })
-    // Merge losers stay live on purpose (unmerge needs them); the list shows
-    // only canonical records.
-    .is("canonical_id", null);
+): Q {
+  // Merge losers stay live on purpose (unmerge needs them); lists show only
+  // canonical records.
+  let q = builder.is("canonical_id", null);
   // Trash is the same list over the soft-deleted rows — scope still applies.
   q =
     query.view === "trash"
@@ -192,6 +213,22 @@ export async function fetchPartyPage(
       ].join(","),
     );
   }
+  return q;
+}
+
+export async function fetchPartyPage(
+  query: PartyListQuery,
+  opts: PartySortOpts,
+  ctx: CrmQueryContext,
+): Promise<{ rows: PartyListRow[]; total: number }> {
+  let q = applyPartyListPredicates(
+    supabase
+      .schema("crm")
+      .from("party")
+      .select(EMPLOYER_EMBED, { count: "exact" }),
+    query,
+    ctx,
+  );
 
   // Sort — DB columns only, whitelisted; stale stored keys fall back rather
   // than erroring. EVERY order ends in `id` (total order — rows can never
@@ -291,6 +328,8 @@ export interface CreatePartyInput {
   jobTitle?: string;
   primaryDomain?: string;
   headline?: string;
+  /** Flexible per-record data (crm.party.attributes jsonb), e.g. research provenance. */
+  attributes?: Record<string, unknown>;
 }
 
 export async function createParty(input: CreatePartyInput): Promise<PartyRow> {
@@ -306,11 +345,29 @@ export async function createParty(input: CreatePartyInput): Promise<PartyRow> {
       job_title: input.jobTitle?.trim() || null,
       primary_domain: input.primaryDomain?.trim() || null,
       headline: input.headline?.trim() || null,
+      ...(input.attributes ? { attributes: input.attributes } : {}),
     })
     .select("*")
     .single();
   if (error) throw pgError(error);
   return data;
+}
+
+/**
+ * Hydrate a set of party ids (e.g. ids collected off association edges) into
+ * live rows. Soft-deleted parties are dropped — callers render what remains
+ * and treat a missing id as an unlinked/trashed record, never an error.
+ */
+export async function fetchPartiesByIds(ids: string[]): Promise<PartyRow[]> {
+  if (ids.length === 0) return [];
+  const { data, error } = await supabase
+    .schema("crm")
+    .from("party")
+    .select("*")
+    .in("id", ids)
+    .is("deleted_at", null);
+  if (error) throw pgError(error);
+  return data ?? [];
 }
 
 export async function updateParty(
@@ -357,6 +414,20 @@ export async function purgeParty(id: string): Promise<void> {
 // ── Record detail ───────────────────────────────────────────────────────────
 
 export async function fetchPartyDetail(partyId: string): Promise<PartyDetail> {
+  // `party.id` is a uuid PK, so a non-UUID id can never match — without this
+  // guard it fires SIX parallel 22P02 PostgREST errors (one per query below).
+  // Resolve it to the same "missing" outcome as an empty read; the record
+  // page's AccessGate says the rest.
+  if (!isUuid(partyId)) {
+    throw recordUnavailable({
+      entity: "record",
+      reason: "unknown",
+      recordId: partyId,
+      token: "party",
+      relation: "crm.party",
+    });
+  }
+
   const crm = supabase.schema("crm");
 
   const [party, points, addresses, affiliations, members, interactions] =
@@ -503,7 +574,14 @@ export async function addContactPoint(args: {
 
   // NOTE: `channel` is deliberately NOT written — crm._contact_point_shape()
   // denormalizes it from the medium; a client-written value would be a lie.
-  const { data, error } = await supabase
+  //
+  // NOTE: no `.select()` on this insert. Component tables carry an id-list
+  // std_select policy (`id IN accessible_entity_ids(...)`), and the subquery
+  // runs on the statement's snapshot — it can never contain the row being
+  // inserted, so INSERT…RETURNING 42501s for every authenticated user. The
+  // row IS visible to the very next statement (created_by lane), so needing
+  // the id means re-reading it. Platform-wide defect: FOUND_DEFECTS.md.
+  const { error } = await supabase
     .schema("crm")
     .from("party_contact_point")
     .insert({
@@ -512,9 +590,7 @@ export async function addContactPoint(args: {
       organization_id: args.orgId,
       label: args.label?.trim() || null,
       purpose_code: args.purpose ?? "work",
-    })
-    .select("id")
-    .single();
+    });
   if (error) {
     if (error.code === "23505") {
       throw new Error("This contact method is already on this record");
@@ -522,7 +598,19 @@ export async function addContactPoint(args: {
     throw pgError(error);
   }
 
-  if (args.makePrimary) await setPrimaryContactPoint(data.id);
+  if (args.makePrimary) {
+    const point = await supabase
+      .schema("crm")
+      .from("party_contact_point")
+      .select("id")
+      .eq("party_id", args.partyId)
+      .eq("medium_id", medium.id)
+      .is("deleted_at", null)
+      .limit(1)
+      .maybeSingle();
+    if (point.error) throw pgError(point.error);
+    if (point.data) await setPrimaryContactPoint(point.data.id);
+  }
 }
 
 /** RULE 2: primaries flip ONLY through the RPC (direct updates 23505). */
@@ -558,15 +646,11 @@ export async function addAddress(
     | "postal_code"
     | "country_code"
   >,
-): Promise<AddressRow> {
-  const { data, error } = await supabase
-    .schema("crm")
-    .from("address")
-    .insert(input)
-    .select("*")
-    .single();
+): Promise<void> {
+  // No `.select()` — see addContactPoint: component INSERT…RETURNING 42501s
+  // under the id-list std_select policy. Callers refetch the detail.
+  const { error } = await supabase.schema("crm").from("address").insert(input);
   if (error) throw pgError(error);
-  return data;
 }
 
 export async function removeAddress(id: string): Promise<void> {
@@ -621,6 +705,31 @@ export async function endAffiliation(id: string): Promise<void> {
 }
 
 /**
+ * Name-search live parties (any kind) in one org workspace — the generic
+ * "link an existing person/company" picker read. Small page, canonical rows
+ * only (merged losers excluded).
+ */
+export async function searchPartiesByName(args: {
+  orgId: string;
+  search: string;
+}): Promise<PartyRef[]> {
+  let q = supabase
+    .schema("crm")
+    .from("party")
+    .select("id,display_name,party_kind")
+    .eq("organization_id", args.orgId)
+    .is("deleted_at", null)
+    .is("canonical_id", null)
+    .order("display_name", { ascending: true })
+    .limit(12);
+  const term = sanitizeSearch(args.search);
+  if (term) q = q.ilike("display_name", `%${term}%`);
+  const { data, error } = await q;
+  if (error) throw pgError(error);
+  return data ?? [];
+}
+
+/**
  * Company candidates for the employer picker — organizations in the same org
  * workspace, name-searched, small page.
  */
@@ -647,6 +756,342 @@ export async function searchEmployerCandidates(args: {
   return data ?? [];
 }
 
+// ── Bulk lookups (CSV import dry-run) ───────────────────────────────────────
+
+/** Chunk a key list so no single PostgREST `in()` grows unbounded. */
+function chunk<T>(items: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
+  return out;
+}
+
+/**
+ * Which of these normalized value keys already belong to a LIVE canonical
+ * party in this org — the import dry-run's dedup source. Returns
+ * valueKey → the owning party (first owner wins when a value sits on many).
+ */
+export async function findExistingMediumOwners(args: {
+  orgId: string;
+  channel: ContactChannel;
+  valueKeys: string[];
+}): Promise<Map<string, PartyRef>> {
+  const out = new Map<string, PartyRef>();
+  if (args.valueKeys.length === 0) return out;
+
+  for (const keys of chunk(args.valueKeys, 200)) {
+    const { data, error } = await supabase
+      .schema("crm")
+      .from("party_contact_point")
+      // Table-name embeds are unambiguous here (exactly one FK each);
+      // `!inner` makes the embed filters below narrow the point rows.
+      .select(
+        "medium:contact_medium!inner(value_key,channel), party:party!inner(id,display_name,party_kind)",
+      )
+      .eq("organization_id", args.orgId)
+      .is("deleted_at", null)
+      .eq("medium.channel", args.channel)
+      .in("medium.value_key", keys)
+      .is("party.deleted_at", null)
+      .is("party.canonical_id", null);
+    if (error) throw pgError(error);
+    for (const row of data ?? []) {
+      const key = row.medium?.value_key;
+      const party = row.party;
+      if (key && party && !out.has(key)) {
+        out.set(key, {
+          id: party.id,
+          display_name: party.display_name,
+          party_kind: party.party_kind,
+        });
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * Live canonical parties in this org whose display name matches one of these
+ * names, case-insensitively — how the import links "Acme Corp" in a CSV cell
+ * to the Acme record that already exists. Returns lowercased name → party.
+ */
+export async function findPartiesByNames(args: {
+  orgId: string;
+  kind: PartyKind;
+  names: string[];
+}): Promise<Map<string, PartyRef>> {
+  const out = new Map<string, PartyRef>();
+  const cleaned = args.names.map((n) => n.trim()).filter(Boolean);
+  if (cleaned.length === 0) return out;
+
+  // `ilike` with no wildcard = case-insensitive EXACT match — which requires
+  // escaping the LIKE wildcards (%/_/\), or "Fifty% Off" would pattern-match
+  // strangers. Double-quoting the whole value lets commas/parens ("Acme,
+  // Inc.", "Foo (UK) Ltd") travel through PostgREST `or()` safely.
+  const quote = (n: string) =>
+    `"${n.replace(/\\/g, "\\\\").replace(/[%_]/g, "\\$&").replace(/"/g, '\\"')}"`;
+
+  for (const names of chunk(cleaned, 50)) {
+    const { data, error } = await supabase
+      .schema("crm")
+      .from("party")
+      .select("id,display_name,party_kind")
+      .eq("organization_id", args.orgId)
+      .eq("party_kind", args.kind)
+      .is("deleted_at", null)
+      .is("canonical_id", null)
+      .or(names.map((n) => `display_name.ilike.${quote(n)}`).join(","));
+    if (error) throw pgError(error);
+    for (const row of data ?? []) {
+      const key = row.display_name.trim().toLowerCase();
+      if (!out.has(key)) out.set(key, row);
+    }
+  }
+  return out;
+}
+
+/**
+ * Live canonical companies in this org by exact primary domain (stored
+ * lowercase). Returns domain → party.
+ */
+export async function findPartiesByDomains(args: {
+  orgId: string;
+  domains: string[];
+}): Promise<Map<string, PartyRef>> {
+  const out = new Map<string, PartyRef>();
+  const domains = args.domains.map((d) => d.trim().toLowerCase()).filter(Boolean);
+  if (domains.length === 0) return out;
+
+  for (const batch of chunk(domains, 200)) {
+    const { data, error } = await supabase
+      .schema("crm")
+      .from("party")
+      .select("id,display_name,party_kind,primary_domain")
+      .eq("organization_id", args.orgId)
+      .eq("party_kind", "organization")
+      .is("deleted_at", null)
+      .is("canonical_id", null)
+      .in("primary_domain", batch);
+    if (error) throw pgError(error);
+    for (const row of data ?? []) {
+      if (row.primary_domain && !out.has(row.primary_domain)) {
+        out.set(row.primary_domain, {
+          id: row.id,
+          display_name: row.display_name,
+          party_kind: row.party_kind,
+        });
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * Find-or-create a company by name (import commit path for employer cells).
+ * Lookup is case-insensitive exact; creation writes the name as given.
+ */
+export async function findOrCreateCompanyByName(args: {
+  orgId: string;
+  name: string;
+}): Promise<PartyRef> {
+  const name = args.name.trim();
+  const found = await findPartiesByNames({
+    orgId: args.orgId,
+    kind: "organization",
+    names: [name],
+  });
+  const existing = found.get(name.toLowerCase());
+  if (existing) return existing;
+  const created = await createParty({
+    kind: "organization",
+    displayName: name,
+    orgId: args.orgId,
+  });
+  return {
+    id: created.id,
+    display_name: created.display_name,
+    party_kind: created.party_kind,
+  };
+}
+
+// ── Dedup + merge (crm_03_dedup.sql) ────────────────────────────────────────
+//
+// Auto-merge fires ONLY inside the detection RPC, on identity-key collisions.
+// Everything else is a suggestion the human decides on the review UI. A pair
+// row is ordered (source_id < target_id) so mirrored duplicates can't exist,
+// and a dismissal is durable across every future scan.
+
+// Candidate embeds target the FK COLUMN (same rationale as EMPLOYER_EMBED —
+// self-joins to crm.party are directionally ambiguous by table/FK name).
+const MERGE_PARTY_COLS =
+  "id,display_name,party_kind,job_title,primary_domain,created_at,canonical_id,deleted_at,organization_id";
+const CANDIDATE_EMBED = `*, source:source_id(${MERGE_PARTY_COLS}), target:target_id(${MERGE_PARTY_COLS})`;
+
+/**
+ * Run detection for ONE org: auto-merges both-sides identity-key medium
+ * collisions, refreshes weak-signal suggestions, returns the receipt.
+ */
+export async function runDedupScan(orgId: string): Promise<DedupScanResult> {
+  const { data, error } = await supabase.rpc("crm_detect_merge_candidates", {
+    p_org: orgId,
+  });
+  if (error) throw pgError(error);
+  const result = data as unknown as DedupScanResult;
+  if (!result || !Array.isArray(result.auto_merged)) {
+    throw new Error("[crm] dedup scan returned an unexpected shape");
+  }
+  return result;
+}
+
+/**
+ * Pending duplicate suggestions across the caller's orgs, both parties
+ * resolved. Pairs whose parties are no longer both live canonical records are
+ * filtered here (the next scan retires them server-side as 'stale').
+ */
+export async function fetchMergeCandidates(
+  orgIds: string[],
+): Promise<MergeCandidateWithParties[]> {
+  if (orgIds.length === 0) return [];
+  const { data, error } = await supabase
+    .schema("crm")
+    .from("merge_candidate")
+    .select(CANDIDATE_EMBED)
+    .eq("status", "pending")
+    .is("deleted_at", null)
+    .in("organization_id", orgIds)
+    .order("confidence", { ascending: false })
+    .order("last_detected_at", { ascending: false })
+    .order("id", { ascending: true })
+    .limit(200)
+    .returns<MergeCandidateWithParties[]>();
+  if (error) throw pgError(error);
+  return (data ?? []).filter(
+    (c) =>
+      c.source &&
+      c.target &&
+      !c.source.deleted_at &&
+      !c.target.deleted_at &&
+      !c.source.canonical_id &&
+      !c.target.canonical_id,
+  );
+}
+
+/** True pending-suggestion count for the /crm indicator badge. */
+export async function fetchPendingCandidateCount(
+  orgIds: string[],
+): Promise<number> {
+  if (orgIds.length === 0) return 0;
+  const { count, error } = await supabase
+    .schema("crm")
+    .from("merge_candidate")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "pending")
+    .is("deleted_at", null)
+    .in("organization_id", orgIds);
+  if (error) throw pgError(error);
+  return count ?? 0;
+}
+
+/** Pending suggestions naming THIS party (record-page indicator). */
+export async function fetchCandidatesForParty(
+  partyId: string,
+): Promise<MergeCandidateWithParties[]> {
+  const { data, error } = await supabase
+    .schema("crm")
+    .from("merge_candidate")
+    .select(CANDIDATE_EMBED)
+    .eq("status", "pending")
+    .is("deleted_at", null)
+    .or(`source_id.eq.${partyId},target_id.eq.${partyId}`)
+    .order("confidence", { ascending: false })
+    .returns<MergeCandidateWithParties[]>();
+  if (error) throw pgError(error);
+  return (data ?? []).filter(
+    (c) =>
+      c.source &&
+      c.target &&
+      !c.source.deleted_at &&
+      !c.target.deleted_at &&
+      !c.source.canonical_id &&
+      !c.target.canonical_id,
+  );
+}
+
+/** "Not duplicates" — durable: no future scan resurrects the pair. */
+export async function dismissMergeCandidate(id: string): Promise<void> {
+  const { error } = await supabase.rpc("crm_dismiss_merge_candidate", {
+    p_id: id,
+  });
+  if (error) throw pgError(error);
+}
+
+/**
+ * Merge loser into winner via `public.crm_merge_parties`. Children that would
+ * collide stay on the loser (kept live with canonical_id set) so the recorded
+ * unmerge is exact. Returns the merge id.
+ */
+export async function mergeParties(args: {
+  winnerId: string;
+  loserId: string;
+  reason?: string;
+}): Promise<string> {
+  const { data, error } = await supabase.rpc("crm_merge_parties", {
+    p_winner: args.winnerId,
+    p_loser: args.loserId,
+    p_method: "manual",
+    p_reason: args.reason,
+  });
+  if (error) throw pgError(error);
+  return data as string;
+}
+
+/** Exact replay of one recorded merge — the loser gets its children back. */
+export async function unmergeParties(mergeId: string): Promise<void> {
+  const { error } = await supabase.rpc("crm_unmerge_parties", {
+    p_merge_id: mergeId,
+  });
+  if (error) throw pgError(error);
+}
+
+/** Active (un-undone) merges across the caller's orgs, newest first. */
+export async function fetchRecentMerges(
+  orgIds: string[],
+): Promise<PartyMergeWithParties[]> {
+  if (orgIds.length === 0) return [];
+  const { data, error } = await supabase
+    .schema("crm")
+    .from("party_merge")
+    .select(
+      "*, winner:winner_id(id,display_name,party_kind), loser:loser_id(id,display_name,party_kind)",
+    )
+    .is("unmerged_at", null)
+    .in("organization_id", orgIds)
+    .order("merged_at", { ascending: false })
+    .order("id", { ascending: true })
+    .limit(25)
+    .returns<PartyMergeWithParties[]>();
+  if (error) throw pgError(error);
+  return data ?? [];
+}
+
+/** Merge history touching THIS party (winner or loser side), newest first. */
+export async function fetchMergesForParty(
+  partyId: string,
+): Promise<PartyMergeWithParties[]> {
+  const { data, error } = await supabase
+    .schema("crm")
+    .from("party_merge")
+    .select(
+      "*, winner:winner_id(id,display_name,party_kind), loser:loser_id(id,display_name,party_kind)",
+    )
+    .or(`winner_id.eq.${partyId},loser_id.eq.${partyId}`)
+    .order("merged_at", { ascending: false })
+    .order("id", { ascending: true })
+    .limit(25)
+    .returns<PartyMergeWithParties[]>();
+  if (error) throw pgError(error);
+  return data ?? [];
+}
+
 // ── Interactions ────────────────────────────────────────────────────────────
 
 export async function logInteraction(args: {
@@ -658,8 +1103,10 @@ export async function logInteraction(args: {
   body?: string;
   durationSeconds?: number | null;
   occurredAt?: string;
-}): Promise<InteractionRow> {
-  const { data, error } = await supabase
+}): Promise<void> {
+  // No `.select()` — see addContactPoint: component INSERT…RETURNING 42501s
+  // under the id-list std_select policy. Callers refetch the timeline.
+  const { error } = await supabase
     .schema("crm")
     .from("interaction")
     .insert({
@@ -672,11 +1119,8 @@ export async function logInteraction(args: {
       body: args.body?.trim() || null,
       duration_seconds: args.durationSeconds ?? null,
       occurred_at: args.occurredAt ?? new Date().toISOString(),
-    })
-    .select("*")
-    .single();
+    });
   if (error) throw pgError(error);
-  return data;
 }
 
 export async function removeInteraction(id: string): Promise<void> {

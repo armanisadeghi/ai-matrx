@@ -39,12 +39,12 @@ const CATALOG_TTS_VOICES = new Set([
 export async function transcribeAudioFile(
   file: File,
   options?: TranscriptionOptions,
-  signal?: AbortSignal,
+  request?: { signal?: AbortSignal; timeoutMs?: number },
 ): Promise<TranscriptionResult> {
   const form = new FormData();
   form.append("file", file);
   if (options?.language) form.append("language", options.language);
-  const { data } = await apiMultipart("/audio/transcribe", form, { signal });
+  const { data } = await apiMultipart("/audio/transcribe", form, request);
   return normalizeTranscription(data);
 }
 

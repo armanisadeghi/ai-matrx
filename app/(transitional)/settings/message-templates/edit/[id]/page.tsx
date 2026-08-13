@@ -12,7 +12,7 @@ export default async function EditTemplatePage({ params }: PageProps) {
     const supabase = await createClient();
 
     const { data, error } = await supabase
-        .from("message_template")
+        .schema("agent").from("message_template")
         .select("*")
         .eq("id", id)
         .single();

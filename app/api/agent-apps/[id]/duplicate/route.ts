@@ -99,13 +99,11 @@ export async function POST(
 
     // Always reset scope to the duplicating user — we never want to copy
     // org / project / task ownership. Canonical RLS std_insert on app.definition
-    // requires created_by = auth.uid() (with_check). Set both user_id (bridge)
-    // and created_by (canonical) so the INSERT passes RLS and ownership is clear.
+    // requires created_by = auth.uid() (with_check).
     const { data: newApp, error: insertError } = await supabase
       .schema("app")
       .from("definition")
       .insert({
-        user_id: user.id,
         created_by: user.id,
         organization_id: personalOrgId,
         project_id: null,
@@ -138,7 +136,7 @@ export async function POST(
         preview_image_url: original.preview_image_url,
         favicon_url: original.favicon_url,
         status: "draft",
-        is_public: false,
+        visibility: "internal",
         rate_limit_per_ip: original.rate_limit_per_ip,
         rate_limit_window_hours: original.rate_limit_window_hours,
         rate_limit_authenticated: original.rate_limit_authenticated,

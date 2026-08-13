@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import SyntaxHighlighter from "@/features/administration/database-admin/SyntaxHighlighter";
 import SqlFunctionTester from "./SqlFunctionTester";
+import { enumUrlCodec, useUrlState } from "@/lib/url-state/useUrlState";
 
 interface SqlFunctionDetailProps {
   func: SqlFunction;
@@ -65,8 +66,9 @@ export default function SqlFunctionDetail({
   onDelete,
 }: SqlFunctionDetailProps) {
   const [defCopied, setDefCopied] = useState(false);
-  const [rightPanel, setRightPanel] = useState<"definition" | "test">(
-    "definition",
+  const [rightPanel, setRightPanel] = useUrlState(
+    "panel",
+    enumUrlCodec(["definition", "test"] as const, "definition"),
   );
 
   const parsedArgs = parseArguments(func.arguments);

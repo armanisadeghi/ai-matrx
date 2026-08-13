@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-08-08
+updated: 2026-08-12
 repos: [matrx-frontend, aidream]
 vision: [docs/MARKETING_PROGRAM_BOARD.md]
 ---
@@ -61,6 +61,7 @@ Module-shape / pillar build-out is a sibling: [marketing-module.md](marketing-mo
 10. **Access page grantee picker** — `/access` takes raw UUIDs; needs the platform user/org picker.
 11. **Repo-wide sonner→`@/lib/toast` migration** — separate task chip; recipe in `lib/toast.ts` header.
 12. **Backlog (post-coverage):** GSC-submitted-sitemaps vs ours diff UI; external-link domain rollup UI; brand-level discovery inbox aggregation. (The analysis/finding workers + score-column unhide shipped 2026-08-08 — see Done.)
+13. **Google OAuth / GA4 open threads** (extracted from the deleted `matrx-marketing-platform-handoff-2026-07-19.md`; last verified 2026-07-19 — re-verify current state first, some may have closed since): (a) organization OAuth needs one final production click-through — the canonical permission function passes but no org connection row was ever written; (b) enable `analyticsadmin.googleapis.com` in Google Cloud project `34576215171`, then reconnect/refresh the personal connection and verify GA4 property discovery (Search Console discovery already verified, 33 properties; the connection sits `needs_attention` solely because of this disabled API); (c) verify reconnect/disconnect/revoke for both personal and org connections, and the org flow across owner/admin/member/personal-org/shared-site roles. GA4 *sync* and PageSpeed *history* as data pipelines are server work owned by aidream `docs/handoffs/seo-vertical.md`. The rest of that deleted doc's 2026-07 P1/P2 roadmap (integration binding/sync authorities, crawl scheduling, analysis catalog, findings queues, CMS/task/publish workflow, agency reporting, its route-gap list) is superseded by this doc + seo-vertical.md + website-factory-vision.md at the level that matters; its concrete 2026-07 route/table sketches live in git history under the deleted filename if ever needed.
 
 ## Done
 

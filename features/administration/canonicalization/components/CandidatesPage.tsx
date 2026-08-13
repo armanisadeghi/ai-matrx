@@ -9,7 +9,7 @@
  * scroll area per view while desktop still gets full vertical space per table.
  */
 
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -31,11 +31,15 @@ import {
   STALE_REGISTRY_TABLE_COPY,
   UNREGISTERED_CANDIDATES_TABLE_COPY,
 } from "../utils/aiExport";
+import { enumUrlCodec, useUrlState } from "@/lib/url-state/useUrlState";
 
 type CandidateView = "m2m" | "unregistered" | "stale";
 
 export function CandidatesPage() {
-  const [view, setView] = useState<CandidateView>("m2m");
+  const [view, setView] = useUrlState(
+    "view",
+    enumUrlCodec<CandidateView>(["m2m", "unregistered", "stale"], "m2m"),
+  );
 
   const m2m = useAuditDataset<M2mCandidateRow>(
     "m2m-candidates",
@@ -233,6 +237,7 @@ export function CandidatesPage() {
             defaultSort={{ key: "payload_cols", dir: "asc" }}
             emptyMessage="No M2M candidates found."
             copyForAi={M2M_CANDIDATES_TABLE_COPY}
+            urlStateKey="m2m"
           />
         ) : view === "unregistered" ? (
           <AdminAuditTable
@@ -243,6 +248,7 @@ export function CandidatesPage() {
             defaultSort={{ key: "base_col_score", dir: "desc" }}
             emptyMessage="No unregistered candidates found."
             copyForAi={UNREGISTERED_CANDIDATES_TABLE_COPY}
+            urlStateKey="unregistered"
           />
         ) : (
           <AdminAuditTable
@@ -253,6 +259,7 @@ export function CandidatesPage() {
             defaultSort={{ key: "token", dir: "asc" }}
             emptyMessage="No stale registry rows found."
             copyForAi={STALE_REGISTRY_TABLE_COPY}
+            urlStateKey="stale"
           />
         )}
       </div>

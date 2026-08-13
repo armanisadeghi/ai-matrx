@@ -68,7 +68,6 @@ export const TEMPLATE_DATA: Omit<Partial<AgentDefinition>, "id"> = {
   category: null,
   tags: [],
   isActive: true,
-  isPublic: false,
   isArchived: false,
   isFavorite: false,
   mcpServers: [],

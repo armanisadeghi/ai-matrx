@@ -623,6 +623,30 @@ const surfaceSpecific: SurfaceValue[] = [
 const writeTargets: SurfaceWriteTarget[] = [
   // ---------------------------------------------------------------- extraction
   {
+    name: "extraction_field_correction",
+    label: "Correct an extracted value",
+    description:
+      "Overwrites ONE machine-extracted cell on ONE result row, saved immediately to the stored extraction result. Value: an object `{ row_id, column_key, value }`; the column source must be `agent` or `validation`. One cell per call.",
+    valueType: "object",
+    updatesValue: "extraction_rows",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "extraction_data",
+    sortOrder: 240,
+  },
+  {
+    name: "extraction_review_field",
+    label: "Fill a review field",
+    description:
+      "Writes ONE human-review cell on ONE result row. Value: an object `{ row_id, column_key, value }`; the column source must be `manual`. One cell per call.",
+    valueType: "object",
+    updatesValue: "extraction_rows",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "extraction_data",
+    sortOrder: 250,
+  },
+  {
     name: "extraction_dataset_name",
     label: "Extraction dataset name",
     description: `Renames the extraction dataset. Pass a non-empty string of at most ${EXTRACTION_JOB_NAME_MAX_LENGTH} characters; it REPLACES the current name (see extraction_job_name) and is persisted immediately through the dataset's own updateJob service the moment the user approves — there is no separate Save step. Only available on /knowledge/extractions/[id] once the dataset has loaded and no destructive confirm is running.`,

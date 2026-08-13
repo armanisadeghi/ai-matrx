@@ -68,6 +68,7 @@ import type {
 } from "@/features/rag/components/search/ragAiCopy";
 import { isJsonObject } from "@/types/json";
 import { isSiteCommandMode } from "@/features/marketing/crawler/site-commands";
+import { parseLiveRunProgressState } from "@/features/agents/components/live-run/LiveRunProgress";
 
 const AdminIndicator = lazyOverlay(
   () => import("@/components/admin/controls/AdminIndicator"),
@@ -295,10 +296,6 @@ const AuthGateDialog = lazyOverlay(
     import("@/components/dialogs/AuthGateDialog").then((m) => ({
       default: m.AuthGateDialog,
     })),
-  { ssr: false },
-);
-const FullscreenBrokerState = lazyOverlay(
-  () => import("@/features/applet/runner/response/FullscreenBrokerState"),
   { ssr: false },
 );
 const GscDrilldownWindow = lazyOverlay(
@@ -1062,7 +1059,6 @@ export default function OverlayController() {
       selectIsOverlayOpen(s, "announcements"),
     ),
     authGate: useAppSelector((s) => selectIsOverlayOpen(s, "authGate")),
-    brokerState: useAppSelector((s) => selectIsOverlayOpen(s, "brokerState")),
     browserFrameWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "browserFrameWindow"),
     ),
@@ -1396,9 +1392,6 @@ export default function OverlayController() {
       string,
       unknown
     > | null,
-    brokerState: useAppSelector((s) =>
-      selectOverlayData(s, "brokerState"),
-    ) as Record<string, unknown> | null,
     browserFrameWindow: useAppSelector((s) =>
       selectOverlayData(s, "browserFrameWindow"),
     ) as Record<string, unknown> | null,
@@ -2641,30 +2634,6 @@ export default function OverlayController() {
         );
       })()}
 
-      {/* TODO: review prop wiring for brokerState */}
-      {/* brokerState */}
-      {(() => {
-        const isOpen = isOpenById.brokerState;
-        const data = dataById.brokerState as
-          Record<string, unknown> | null | undefined;
-        if (!isOpen) return null;
-        return (
-          <FullscreenBrokerState
-            isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "brokerState" }))}
-            triggerClassName={
-              typeof data?.triggerClassName === "string"
-                ? data.triggerClassName
-                : undefined
-            }
-            triggerLabel={
-              typeof data?.triggerLabel === "string"
-                ? data.triggerLabel
-                : undefined
-            }
-          />
-        );
-      })()}
 
       {/* browserFrameWindow */}
       {(() => {
@@ -4474,6 +4443,7 @@ export default function OverlayController() {
             }
             label={typeof data?.label === "string" ? data.label : null}
             pending={data?.pending === true}
+            progress={parseLiveRunProgressState(data?.progress)}
             // Undefined when unset so the window's chat-matched size defaults
             // apply; a per-kind override arrives as a number or "70vh".
             width={

@@ -7,6 +7,7 @@ import type {
   FieldDiffProps,
   EnrichmentContext,
 } from "@/components/diff/adapters/types";
+import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 
 function ModelDiffRenderer({ node, enrichment }: FieldDiffProps) {
   const oldId = typeof node.oldValue === "string" ? node.oldValue : null;
@@ -23,23 +24,20 @@ function ModelDiffRenderer({ node, enrichment }: FieldDiffProps) {
           node.changeType !== "unchanged" ? "bg-red-50 dark:bg-red-950/15" : "",
         )}
       >
-        {oldName ? (
-          <div>
-            <div
-              className={cn(
-                node.changeType !== "unchanged"
-                  ? "text-red-700 dark:text-red-300"
-                  : "text-foreground/80",
-              )}
-            >
-              {oldName}
-            </div>
-            <div className="text-[0.5625rem] text-muted-foreground/60 font-mono mt-0.5">
-              {oldId}
-            </div>
-          </div>
+        {oldId ? (
+          <AiModelRef
+            modelId={oldId}
+            name={oldName}
+            showId
+            showIcon={false}
+            className={cn(
+              node.changeType !== "unchanged"
+                ? "text-red-700 dark:text-red-300"
+                : "text-foreground/80",
+            )}
+          />
         ) : (
-          <span className="text-muted-foreground">{oldId ?? "Default"}</span>
+          <span className="text-muted-foreground">Default</span>
         )}
       </div>
       <div
@@ -50,23 +48,20 @@ function ModelDiffRenderer({ node, enrichment }: FieldDiffProps) {
             : "",
         )}
       >
-        {newName ? (
-          <div>
-            <div
-              className={cn(
-                node.changeType !== "unchanged"
-                  ? "text-green-700 dark:text-green-300"
-                  : "text-foreground/80",
-              )}
-            >
-              {newName}
-            </div>
-            <div className="text-[0.5625rem] text-muted-foreground/60 font-mono mt-0.5">
-              {newId}
-            </div>
-          </div>
+        {newId ? (
+          <AiModelRef
+            modelId={newId}
+            name={newName}
+            showId
+            showIcon={false}
+            className={cn(
+              node.changeType !== "unchanged"
+                ? "text-green-700 dark:text-green-300"
+                : "text-foreground/80",
+            )}
+          />
         ) : (
-          <span className="text-muted-foreground">{newId ?? "Default"}</span>
+          <span className="text-muted-foreground">Default</span>
         )}
       </div>
     </div>
@@ -80,8 +75,18 @@ export const ModelAdapter: FieldAdapter = {
   toSummaryText: (node, ctx) => {
     const oldId = typeof node.oldValue === "string" ? node.oldValue : null;
     const newId = typeof node.newValue === "string" ? node.newValue : null;
-    const oldName = oldId ? (ctx?.resolveModelId(oldId) ?? oldId) : "Default";
-    const newName = newId ? (ctx?.resolveModelId(newId) ?? newId) : "Default";
+    const resolvedOld = oldId ? ctx?.resolveModelId(oldId) : null;
+    const resolvedNew = newId ? ctx?.resolveModelId(newId) : null;
+    const oldName = oldId
+      ? resolvedOld && resolvedOld !== oldId
+        ? resolvedOld
+        : `Unknown AI model (${oldId})`
+      : "Default";
+    const newName = newId
+      ? resolvedNew && resolvedNew !== newId
+        ? resolvedNew
+        : `Unknown AI model (${newId})`
+      : "Default";
     return `${oldName} → ${newName}`;
   },
 };

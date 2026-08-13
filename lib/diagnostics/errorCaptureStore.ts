@@ -246,6 +246,16 @@ export interface CapturedError {
    * `message`. This is the field a future user-facing surface would show.
    */
   userMessage?: string;
+  /**
+   * The PRODUCER's own severity verdict, when it ships one (server stream
+   * warnings carry `level` + `recoverable`). Kept as first-class fields, not
+   * folded into `details`, so `errorTierRules` can actually match on them —
+   * a self-declared recoverable warning that lands red is a classification
+   * bug, and it can only be fixed if the classifier can see the claim.
+   */
+  recoverable?: boolean;
+  /** Producer-declared level, e.g. "low" | "medium" | "high". */
+  level?: string;
   /** Backend request id (X-Request-ID / serverDetail.request_id) for log correlation. */
   requestId?: string;
   /** Conversation id when the error belongs to an agent run. */
@@ -287,6 +297,10 @@ export interface CaptureInput {
   hint?: string;
   status?: number;
   userMessage?: string;
+  /** Producer-declared "the run survived this" — see CapturedError.recoverable. */
+  recoverable?: boolean;
+  /** Producer-declared level, e.g. "low" | "medium" | "high". */
+  level?: string;
   requestId?: string;
   conversationId?: string;
   name?: string;
@@ -496,6 +510,8 @@ export function captureError(input: CaptureInput): void {
     hint: input.hint,
     status: input.status,
     userMessage: input.userMessage,
+    recoverable: input.recoverable,
+    level: input.level,
     requestId: input.requestId,
     conversationId: input.conversationId,
     name: input.name,

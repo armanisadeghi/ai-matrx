@@ -14,7 +14,7 @@
  * KgInspectorColumnHeader) rather than reimplementing sort/filter logic.
  */
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Copy, Download, Search, X } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -40,6 +40,12 @@ import {
   type ColumnFilterType,
   type SortDirection,
 } from "@/features/administration/kg-inspector/utils/tableFilters";
+import {
+  enumUrlCodec,
+  jsonUrlCodec,
+  stringUrlCodec,
+  useUrlState,
+} from "@/lib/url-state/useUrlState";
 import { exportRowsAsCsv } from "../utils/exportCsv";
 import {
   auditRowToAgentInput,
@@ -242,6 +248,8 @@ export interface AdminAuditTableProps<T> {
   initialSearch?: string;
   /** Copy + Copy for AI — toolbar (all visible rows) + per-row icon pair. */
   copyForAi?: AuditTableCopyForAi<T>;
+  /** Optional namespace when a page hosts more than one audit table. */
+  urlStateKey?: string;
 }
 
 const DEFAULT_ROW_HEIGHT = 34;
@@ -259,16 +267,29 @@ export function AdminAuditTable<T>({
   initialColumnFilters,
   initialSearch,
   copyForAi,
+  urlStateKey,
 }: AdminAuditTableProps<T>) {
-  const [search, setSearch] = useState(initialSearch ?? "");
-  const [columnFilters, setColumnFilters] = useState<
-    Record<string, ColumnFilter>
-  >(initialColumnFilters ?? {});
-  const [sortKey, setSortKey] = useState(
-    defaultSort?.key ?? columns[0]?.key ?? "",
+  const param = (name: string) =>
+    urlStateKey ? `${urlStateKey}.${name}` : name;
+  const [search, setSearch] = useUrlState(
+    param("q"),
+    stringUrlCodec(initialSearch ?? ""),
   );
-  const [sortDir, setSortDir] = useState<SortDirection>(
-    defaultSort?.dir ?? "asc",
+  const [columnFilters, setColumnFilters] = useUrlState(
+    param("f"),
+    jsonUrlCodec<Record<string, ColumnFilter>>(
+      initialColumnFilters ?? {},
+      (value): value is Record<string, ColumnFilter> =>
+        Boolean(value) && typeof value === "object" && !Array.isArray(value),
+    ),
+  );
+  const [sortKey, setSortKey] = useUrlState(
+    param("sort"),
+    stringUrlCodec(defaultSort?.key ?? columns[0]?.key ?? ""),
+  );
+  const [sortDir, setSortDir] = useUrlState(
+    param("dir"),
+    enumUrlCodec<SortDirection>(["asc", "desc"], defaultSort?.dir ?? "asc"),
   );
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -350,12 +371,10 @@ export function AdminAuditTable<T>({
   };
 
   const setColumnFilter = (key: string, value: ColumnFilter | undefined) => {
-    setColumnFilters((prev) => {
-      const next = { ...prev };
-      if (value) next[key] = value;
-      else delete next[key];
-      return next;
-    });
+    const next = { ...columnFilters };
+    if (value) next[key] = value;
+    else delete next[key];
+    setColumnFilters(next);
   };
 
   const hasActiveFilters =

@@ -78,6 +78,12 @@ interface ModelRegistryState {
   isLoading: boolean;
   error: string | null;
   lastFetched: number | null;
+  /** Per-record label lookup status for historical/deprecated FK references. */
+  identityById: Record<string, ModelIdentityRow>;
+  identityStatusById: Record<
+    string,
+    "idle" | "loading" | "succeeded" | "failed"
+  >;
 }
 
 const initialState: ModelRegistryState = {
@@ -88,6 +94,8 @@ const initialState: ModelRegistryState = {
   isLoading: false,
   error: null,
   lastFetched: null,
+  identityById: {},
+  identityStatusById: {},
 };
 
 // ---------------------------------------------------------------------------
@@ -110,6 +118,11 @@ type ModelOptionRow = {
   is_primary: boolean | null;
   capabilities: Json | null;
 };
+
+type ModelIdentityRow = Pick<
+  AIModelRow,
+  "id" | "name" | "common_name" | "is_deprecated"
+>;
 
 // ---------------------------------------------------------------------------
 // Thunks
@@ -168,18 +181,16 @@ export const fetchModelOptions = createAsyncThunk(
           (r): r is typeof r & { id: string; name: string } =>
             typeof r.id === "string" && typeof r.name === "string",
         )
-        .map(
-          (r): ModelOptionRow => ({
-            id: r.id,
-            name: r.name,
-            common_name: r.common_name,
-            maker: r.maker,
-            cost_rating: r.cost_rating,
-            speed_rating: r.speed_rating,
-            is_primary: r.is_primary,
-            capabilities: r.capabilities,
-          }),
-        );
+        .map((r): ModelOptionRow => ({
+          id: r.id,
+          name: r.name,
+          common_name: r.common_name,
+          maker: r.maker,
+          cost_rating: r.cost_rating,
+          speed_rating: r.speed_rating,
+          is_primary: r.is_primary,
+          capabilities: r.capabilities,
+        }));
     } catch (err: unknown) {
       return rejectWithValue(
         err instanceof Error ? err.message : "Unknown error",
@@ -201,6 +212,43 @@ export const fetchModelOptions = createAsyncThunk(
         // );
       }
       return shouldFetch;
+    },
+  },
+);
+
+/**
+ * Resolve the durable label for one model FK, including deprecated models.
+ * Picker options deliberately cover only active/routable models; history and
+ * audit surfaces must still name a model after it leaves that catalogue.
+ */
+export const fetchModelIdentityById = createAsyncThunk<
+  ModelIdentityRow,
+  string,
+  { state: StateWithModelRegistry }
+>(
+  "modelRegistry/fetchIdentityById",
+  async (modelId) => {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .schema("ai")
+      .from("model_definition")
+      .select("id, name, common_name, is_deprecated")
+      .eq("id", modelId)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) throw new Error(`AI model ${modelId} was not found`);
+    return data;
+  },
+  {
+    condition: (modelId, { getState }) => {
+      const state = getState().modelRegistry;
+      if (state.entities[modelId]) return false;
+      if (state.identityById[modelId]) return false;
+      const status = state.identityStatusById[modelId];
+      return (
+        status !== "loading" && status !== "succeeded" && status !== "failed"
+      );
     },
   },
 );
@@ -389,6 +437,20 @@ const modelRegistrySlice = createSlice({
         state.isLoading = false;
         state.error = action.payload as string;
       });
+
+    // ── fetchModelIdentityById ─────────────────────────────────────
+    builder
+      .addCase(fetchModelIdentityById.pending, (state, action) => {
+        state.identityStatusById[action.meta.arg] = "loading";
+      })
+      .addCase(fetchModelIdentityById.fulfilled, (state, action) => {
+        const row = action.payload;
+        state.identityById[row.id] = row;
+        state.identityStatusById[row.id] = "succeeded";
+      })
+      .addCase(fetchModelIdentityById.rejected, (state, action) => {
+        state.identityStatusById[action.meta.arg] = "failed";
+      });
   },
 });
 
@@ -485,6 +547,17 @@ export const selectModelRegistryError = (state: StateWithModelRegistry) =>
   state.modelRegistry.error;
 export const selectModelRegistryLastFetched = (state: StateWithModelRegistry) =>
   state.modelRegistry.lastFetched;
+export const selectModelIdentityLookupStatus = (
+  state: StateWithModelRegistry,
+  modelId: string,
+) => state.modelRegistry.identityStatusById[modelId] ?? "idle";
+export const selectModelIdentityById = (
+  state: StateWithModelRegistry,
+  modelId: string,
+) => state.modelRegistry.identityById[modelId];
+
+export const selectModelIdentityMap = (state: StateWithModelRegistry) =>
+  state.modelRegistry.identityById;
 
 // ---------------------------------------------------------------------------
 // Derived selectors (Rule 4 — extract in inputs, transform in result)
@@ -554,14 +627,21 @@ export const selectAllModelOptions = createSelector(
 export const selectModelLabelById = createSelector(
   [
     selectEntities,
+    selectModelIdentityMap,
     (_state: StateWithModelRegistry, modelId: string | null | undefined) =>
       modelId,
   ],
-  (entities, modelId): string | undefined => {
+  (entities, identities, modelId): string | undefined => {
     if (!modelId) return undefined;
     const m = entities[modelId];
-    if (!m) return undefined;
-    return m.common_name || m.name || m.id;
+    const identity = identities[modelId];
+    return (
+      m?.common_name ||
+      m?.name ||
+      identity?.common_name ||
+      identity?.name ||
+      undefined
+    );
   },
 );
 
@@ -676,4 +756,3 @@ export const selectModelFullyLoaded = createSelector(
     return entities[modelId]?._fetchType === "full";
   },
 );
-

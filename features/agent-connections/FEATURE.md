@@ -88,7 +88,7 @@ Placeholders (empty-state copy, no data source): `SubAgentsSection`, `ResourcesS
 - `useViewScope` — resolves the ui slice's `viewScope` selection to a concrete scopeId from `appContextSlice` (canonical scope source; nothing mirrored).
 - `useAgents`, `useMcpCatalog` — thin adapters over the agents-system slices (no data owned here).
 - `useResources` — inert, retired (above).
-- `coding-sessions/useCodingSessions.ts` — latest-request-guarded browser read of the signed-in owner's private session bindings. The query declares `created_by = current user` rather than using RLS as its view definition, keeps the last successful rows visible behind `StaleDataNotice` when a refresh fails, and labels the 100-row history ceiling instead of presenting a partial count as a total.
+- `coding-sessions/useCodingSessions.ts` — latest-request-guarded browser read of the signed-in owner's private session bindings. The query declares `created_by = current user` rather than using RLS as its view definition, keeps the last successful rows visible behind `StaleDataNotice` when a refresh fails, and paginates by keyset (`fetchCodingSessions({ beforeLastSeenAt })` → `hasMore`/`loadOlder`) — "Load older sessions" appears whenever older bindings exist, so counts are never silently truncated.
 
 **Redux**
 
@@ -171,6 +171,7 @@ Fidelity is a verdict, never an inference: `event_mirror` says native resume is 
 
 ## Change log
 
+- `2026-08-12` — `fetchCodingSessions` replaced its flat 100-row read with keyset pagination (`beforeLastSeenAt` cursor, `hasMore`, limit+1 probe); `useCodingSessions` exposes `loadOlder`/`loadingMore`, and `PluginsSection` swapped the static "latest 100" disclosure for a real "Load older sessions" control.
 - `2026-08-12` — AI Work stopped treating the capped technical `PluginsSection` as its product inbox. The canonical conversation-history store now owns the unified list/pagination; this feature added only a narrow selected-conversation binding projection. `/agent-connections/plugins` remains unchanged and compatible.
 - `2026-08-11` — Provider conversation doors now target the agentless-safe `/work/conversations/[conversationId]` transcript instead of runnable chat; `PluginsSection` gained opt-in conversation-to-task association for the AI Work inbox.
 - `2026-08-11` — Linked the canonical AI Work Hub plan that turns the existing Coding Platforms,
