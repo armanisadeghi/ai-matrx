@@ -313,6 +313,17 @@ Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) 
 
 ## Change log
 
+- 2026-08-13 — Claude: **`seo_collection_run` share path lands on a real route.** The registry's
+  `urlPathTemplate` pointed at `/marketing/seo/collections/{id}` — a route that never existed, so
+  every signed-in grantee 404'd from "Open in AI Matrx". Now `/marketing/ai-visibility/runs/{id}`:
+  a standalone resolver route (single RLS read of `seo.collection_run`, AccessGate fallback,
+  ShareButton, renders `AiVisibilityReport` via the client `CollectionRunView`) that needs no
+  brand/site access. DB registry updated live (migration
+  `sharing_registry_seo_collection_run_real_route.sql` applied + ledgered), TS mirror + snapshot in
+  sync. Also: canonical ShareButton added to the NESTED snapshot detail (`SnapshotDetail` header,
+  `web_snapshot`) and the capture observations dialog (`CaptureObservationsDialog` header,
+  `web_screenshot`) — the surfaces users actually navigate, whose standalone twins already had it.
+- 2026-08-12 — **Canvas fork converged.** The bespoke `canvas.shared_canvas_items.share_token` lane (the last parallel share-link system after files, §7-G3's disease) now runs entirely on `platform.share_links`: `shared_canvas_item` registered link-shareable (public_columns projection), 24 existing tokens migrated verbatim, both canvas `share_token` columns dropped, canvas lenses (`canvas_item`, `shared_canvas_item`) added to the lens registry. Details: `features/artifacts/FEATURE.md` change log + `common-docs/projects/sharing-experience/canvas-share-convergence.md`.
 - 2026-08-13 — **THE SHARE-LENS REGISTRY lands** (`features/sharing/lenses/`): `SharedResourceView`'s
   per-type `renderBody` switch and the page's hard-coded AI-visibility metadata sniff are
   replaced by `resolveShareLens` / `resolveShareLensMeta` (token-keyed, generic floor
