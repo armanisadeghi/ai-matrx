@@ -42897,192 +42897,6 @@
         }
       }
     },
-    "/admin/saved-views": {
-      "get": {
-        "tags": [
-          "Admin",
-          "Admin Saved Views"
-        ],
-        "summary": "List Saved Views",
-        "operationId": "list_saved_views_admin_saved_views_get",
-        "parameters": [
-          {
-            "name": "table_name",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Table Name"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "additionalProperties": true
-                  },
-                  "title": "Response List Saved Views Admin Saved Views Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Admin",
-          "Admin Saved Views"
-        ],
-        "summary": "Create Saved View",
-        "operationId": "create_saved_view_admin_saved_views_post",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SavedViewCreate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Create Saved View Admin Saved Views Post"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/admin/saved-views/{view_id}": {
-      "patch": {
-        "tags": [
-          "Admin",
-          "Admin Saved Views"
-        ],
-        "summary": "Update Saved View",
-        "operationId": "update_saved_view_admin_saved_views__view_id__patch",
-        "parameters": [
-          {
-            "name": "view_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "View Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SavedViewUpdate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Update Saved View Admin Saved Views  View Id  Patch"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Admin",
-          "Admin Saved Views"
-        ],
-        "summary": "Delete Saved View",
-        "operationId": "delete_saved_view_admin_saved_views__view_id__delete",
-        "parameters": [
-          {
-            "name": "view_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "View Id"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/admin/app-logs/query": {
       "get": {
         "tags": [
@@ -45919,155 +45733,6 @@
                 }
               }
             }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/analysis-recipes": {
-      "get": {
-        "tags": [
-          "Analysis Preferences"
-        ],
-        "summary": "List Recipes",
-        "operationId": "list_recipes_analysis_recipes_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/AnalysisRecipeRecord"
-                  },
-                  "type": "array",
-                  "title": "Response List Recipes Analysis Recipes Get"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Analysis Preferences"
-        ],
-        "summary": "Create Recipe",
-        "operationId": "create_recipe_analysis_recipes_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AnalysisRecipeBody"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CreateRecipeResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/analysis-recipes/{recipe_id}": {
-      "put": {
-        "tags": [
-          "Analysis Preferences"
-        ],
-        "summary": "Update Recipe",
-        "operationId": "update_recipe_analysis_recipes__recipe_id__put",
-        "parameters": [
-          {
-            "name": "recipe_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Recipe Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AnalysisRecipeBody"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PreferencesWriteResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Analysis Preferences"
-        ],
-        "summary": "Delete Recipe",
-        "operationId": "delete_recipe_analysis_recipes__recipe_id__delete",
-        "parameters": [
-          {
-            "name": "recipe_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Recipe Id"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
           },
           "422": {
             "description": "Validation Error",
@@ -49034,11 +48699,6 @@
             "type": "array",
             "title": "Tags"
           },
-          "is_public": {
-            "type": "boolean",
-            "title": "Is Public",
-            "default": false
-          },
           "is_active": {
             "type": "boolean",
             "title": "Is Active",
@@ -50133,11 +49793,6 @@
             "type": "string",
             "title": "Agent Type",
             "default": ""
-          },
-          "is_public": {
-            "type": "boolean",
-            "title": "Is Public",
-            "default": false
           },
           "version": {
             "type": "integer",
@@ -51940,239 +51595,6 @@
           "default_redaction_mode"
         ],
         "title": "AnalysisPreferencesPutResponse"
-      },
-      "AnalysisRecipeBody": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "match_rules": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Match Rules",
-            "default": {}
-          },
-          "detector_overrides": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Detector Overrides",
-            "default": {}
-          },
-          "pattern_overrides": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Pattern Overrides",
-            "default": {}
-          },
-          "default_tiers": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Default Tiers",
-            "default": {}
-          },
-          "redaction_mode": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Redaction Mode"
-          },
-          "substitute_formats": {
-            "additionalProperties": {
-              "type": "string"
-            },
-            "type": "object",
-            "title": "Substitute Formats",
-            "default": {}
-          },
-          "priority": {
-            "type": "integer",
-            "title": "Priority",
-            "default": 100
-          },
-          "is_active": {
-            "type": "boolean",
-            "title": "Is Active",
-            "default": true
-          }
-        },
-        "type": "object",
-        "required": [
-          "name"
-        ],
-        "title": "AnalysisRecipeBody"
-      },
-      "AnalysisRecipeRecord": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "owner_user_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Owner User Id"
-          },
-          "name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "match_rules": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/JsonValue"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "detector_overrides": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/JsonValue"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "pattern_overrides": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/JsonValue"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "default_tiers": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/JsonValue"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "redaction_mode": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Redaction Mode"
-          },
-          "substitute_formats": {
-            "anyOf": [
-              {
-                "additionalProperties": {
-                  "type": "string"
-                },
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Substitute Formats"
-          },
-          "priority": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Priority"
-          },
-          "is_active": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is Active"
-          },
-          "created_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Created At"
-          },
-          "updated_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Updated At"
-          }
-        },
-        "additionalProperties": true,
-        "type": "object",
-        "required": [
-          "id"
-        ],
-        "title": "AnalysisRecipeRecord"
       },
       "AnalyticsSyncBody": {
         "properties": {
@@ -68814,19 +68236,6 @@
         ],
         "title": "CreatePlanRequest"
       },
-      "CreateRecipeResponse": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id"
-        ],
-        "title": "CreateRecipeResponse"
-      },
       "CreateShareLinkRequest": {
         "properties": {
           "permission_level": {
@@ -69050,10 +68459,16 @@
             ],
             "title": "Category"
           },
-          "is_public": {
-            "type": "boolean",
-            "title": "Is Public",
-            "default": false
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "personal",
+              "internal",
+              "link",
+              "public"
+            ],
+            "title": "Visibility",
+            "default": "internal"
           }
         },
         "type": "object",
@@ -89598,6 +89013,40 @@
         ],
         "title": "LogPattern"
       },
+      "ManifestClientToolEntry": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "default": ""
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "input_schema": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Input Schema"
+          },
+          "mode": {
+            "type": "string",
+            "title": "Mode",
+            "default": "ui"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "ManifestClientToolEntry",
+        "description": "One declared CLIENT TOOL (``ui.ui_surface_client_tool``).\n\nThe ACTION tier, beside ``write_targets``' data tier: a page-side function\nan agent bound to this surface may CALL. This is the DECLARED set — surface\nauthors diff it against their local ``clientTools`` registrations to catch\ndrift, exactly as they already do for ``write_targets``.\n\nDECLARED IS NOT LIVE. A tool only runs when the page is mounted AND has\nregistered a handler, so this list is a superset of what is callable in any\ngiven run. The agent-facing feed reconciles it per-request (see\n``conversation_context/surface_context.py``); nothing may treat a row here\nas proof the tool is currently invokable.\n\n``label`` is present because this is a machine/author-facing contract, not\nan agent feed — THE NAMING LAW (labels never enter agent feeds) governs the\ncontext block, not this endpoint.\n\nTool names are GLOBAL per conversation, never per-surface: a colliding name\nis silently SKIPPED at injection, which is why matrx-frontend's\n``check:surface-drift`` enforces cross-surface uniqueness."
+      },
       "ManifestFact": {
         "properties": {
           "label": {
@@ -109209,79 +108658,6 @@
         "title": "SaveDraftRequest",
         "description": "Draft save body. Inherits the canonical ``expected_version``\ncompare-and-swap field (a lost race is a global 409 version_conflict);\n``expected_updated_at`` is the older timestamp guard, kept for callers\nthat only hold ``updated_at``. Omit both for last-write-wins."
       },
-      "SavedViewCreate": {
-        "properties": {
-          "table_name": {
-            "type": "string",
-            "title": "Table Name"
-          },
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "url_params": {
-            "type": "string",
-            "title": "Url Params"
-          }
-        },
-        "type": "object",
-        "required": [
-          "table_name",
-          "name",
-          "url_params"
-        ],
-        "title": "SavedViewCreate"
-      },
-      "SavedViewUpdate": {
-        "properties": {
-          "name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "url_params": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Url Params"
-          }
-        },
-        "type": "object",
-        "title": "SavedViewUpdate"
-      },
       "ScanQuad": {
         "properties": {
           "top_left": {
@@ -116104,6 +115480,14 @@
             "title": "Write Targets",
             "default": []
           },
+          "client_tools": {
+            "items": {
+              "$ref": "#/components/schemas/ManifestClientToolEntry"
+            },
+            "type": "array",
+            "title": "Client Tools",
+            "default": []
+          },
           "intro": {
             "anyOf": [
               {
@@ -121935,17 +121319,6 @@
             ],
             "title": "Tags"
           },
-          "is_public": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is Public"
-          },
           "is_active": {
             "anyOf": [
               {
@@ -127129,38 +126502,23 @@
             "description": "Optional associated task selected by the caller."
           },
           "visibility": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "personal",
-                  "internal",
-                  "link",
-                  "public"
-                ]
-              },
-              {
-                "type": "null"
-              }
+            "type": "string",
+            "enum": [
+              "personal",
+              "internal",
+              "link",
+              "public"
             ],
             "title": "Visibility"
-          },
-          "is_public": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is Public"
           }
         },
         "additionalProperties": false,
         "type": "object",
+        "required": [
+          "visibility"
+        ],
         "title": "VisibilityRequest",
-        "description": "Set a workflow's canonical ``visibility``. ``visibility`` is the\nplatform enum (personal | internal | link | public); ``is_public`` is the\nlegacy boolean wire shape (true → public, false → personal), still\naccepted so older clients keep working. Exactly one must be provided;\n``visibility`` wins when both are."
+        "description": "Set a workflow's canonical ``visibility`` — the platform enum\n(personal | internal | link | public). There is no boolean alias: a\ntwo-state flag cannot express the four canonical states, and the\n``is_public`` wire shape was retired with the column it named."
       },
       "VisibilityResponse": {
         "properties": {
@@ -127171,10 +126529,6 @@
           "visibility": {
             "type": "string",
             "title": "Visibility"
-          },
-          "is_public": {
-            "type": "boolean",
-            "title": "Is Public"
           },
           "public_url": {
             "anyOf": [
@@ -127191,10 +126545,10 @@
         "type": "object",
         "required": [
           "definition_id",
-          "visibility",
-          "is_public"
+          "visibility"
         ],
-        "title": "VisibilityResponse"
+        "title": "VisibilityResponse",
+        "description": "The canonical visibility that now applies. ``public_url`` is set only\nfor ``public`` — there is no boolean twin of the enum on the wire."
       },
       "VisionMediaUploadResponse": {
         "properties": {

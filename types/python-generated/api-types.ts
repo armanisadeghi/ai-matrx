@@ -15807,42 +15807,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/admin/saved-views": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Saved Views */
-        get: operations["list_saved_views_admin_saved_views_get"];
-        put?: never;
-        /** Create Saved View */
-        post: operations["create_saved_view_admin_saved_views_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/admin/saved-views/{view_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Delete Saved View */
-        delete: operations["delete_saved_view_admin_saved_views__view_id__delete"];
-        options?: never;
-        head?: never;
-        /** Update Saved View */
-        patch: operations["update_saved_view_admin_saved_views__view_id__patch"];
-        trace?: never;
-    };
     "/admin/app-logs/query": {
         parameters: {
             query?: never;
@@ -16823,42 +16787,6 @@ export interface paths {
         put: operations["put_my_preferences_me_analysis_preferences_put"];
         post?: never;
         delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/analysis-recipes": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Recipes */
-        get: operations["list_recipes_analysis_recipes_get"];
-        put?: never;
-        /** Create Recipe */
-        post: operations["create_recipe_analysis_recipes_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/analysis-recipes/{recipe_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Update Recipe */
-        put: operations["update_recipe_analysis_recipes__recipe_id__put"];
-        post?: never;
-        /** Delete Recipe */
-        delete: operations["delete_recipe_analysis_recipes__recipe_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -17892,11 +17820,6 @@ export interface components {
             /** Tags */
             tags?: string[];
             /**
-             * Is Public
-             * @default false
-             */
-            is_public?: boolean;
-            /**
              * Is Active
              * @default true
              */
@@ -18364,11 +18287,6 @@ export interface components {
              * @default
              */
             agent_type?: string;
-            /**
-             * Is Public
-             * @default false
-             */
-            is_public?: boolean;
             /**
              * Version
              * @default 1
@@ -19099,91 +19017,6 @@ export interface components {
             };
             /** Default Redaction Mode */
             default_redaction_mode: string;
-        };
-        /** AnalysisRecipeBody */
-        AnalysisRecipeBody: {
-            /** Name */
-            name: string;
-            /** Description */
-            description?: string | null;
-            /**
-             * Match Rules
-             * @default {}
-             */
-            match_rules?: {
-                [key: string]: unknown;
-            };
-            /**
-             * Detector Overrides
-             * @default {}
-             */
-            detector_overrides?: {
-                [key: string]: unknown;
-            };
-            /**
-             * Pattern Overrides
-             * @default {}
-             */
-            pattern_overrides?: {
-                [key: string]: unknown;
-            };
-            /**
-             * Default Tiers
-             * @default {}
-             */
-            default_tiers?: {
-                [key: string]: unknown;
-            };
-            /** Redaction Mode */
-            redaction_mode?: string | null;
-            /**
-             * Substitute Formats
-             * @default {}
-             */
-            substitute_formats?: {
-                [key: string]: string;
-            };
-            /**
-             * Priority
-             * @default 100
-             */
-            priority?: number;
-            /**
-             * Is Active
-             * @default true
-             */
-            is_active?: boolean;
-        };
-        /** AnalysisRecipeRecord */
-        AnalysisRecipeRecord: {
-            /** Id */
-            id: string;
-            /** Owner User Id */
-            owner_user_id?: string | null;
-            /** Name */
-            name?: string | null;
-            /** Description */
-            description?: string | null;
-            match_rules?: components["schemas"]["JsonValue"] | null;
-            detector_overrides?: components["schemas"]["JsonValue"] | null;
-            pattern_overrides?: components["schemas"]["JsonValue"] | null;
-            default_tiers?: components["schemas"]["JsonValue"] | null;
-            /** Redaction Mode */
-            redaction_mode?: string | null;
-            /** Substitute Formats */
-            substitute_formats?: {
-                [key: string]: string;
-            } | null;
-            /** Priority */
-            priority?: number | null;
-            /** Is Active */
-            is_active?: boolean | null;
-            /** Created At */
-            created_at?: string | null;
-            /** Updated At */
-            updated_at?: string | null;
-        } & {
-            [key: string]: unknown;
         };
         /** AnalyticsSyncBody */
         AnalyticsSyncBody: {
@@ -25511,11 +25344,6 @@ export interface components {
             /** Parent Plan Id */
             parent_plan_id?: string | null;
         };
-        /** CreateRecipeResponse */
-        CreateRecipeResponse: {
-            /** Id */
-            id: string;
-        };
         /**
          * CreateShareLinkRequest
          * @description Canonical share-link mint request (``platform.share_links`` levels).
@@ -25605,10 +25433,11 @@ export interface components {
             /** Category */
             category?: string | null;
             /**
-             * Is Public
-             * @default false
+             * Visibility
+             * @default internal
+             * @enum {string}
              */
-            is_public?: boolean;
+            visibility?: "personal" | "internal" | "link" | "public";
         };
         /** CredentialCreateRequest */
         CredentialCreateRequest: {
@@ -33279,6 +33108,52 @@ export interface components {
             sample: string;
             /** Count */
             count: number;
+        };
+        /**
+         * ManifestClientToolEntry
+         * @description One declared CLIENT TOOL (``ui.ui_surface_client_tool``).
+         *
+         *     The ACTION tier, beside ``write_targets``' data tier: a page-side function
+         *     an agent bound to this surface may CALL. This is the DECLARED set — surface
+         *     authors diff it against their local ``clientTools`` registrations to catch
+         *     drift, exactly as they already do for ``write_targets``.
+         *
+         *     DECLARED IS NOT LIVE. A tool only runs when the page is mounted AND has
+         *     registered a handler, so this list is a superset of what is callable in any
+         *     given run. The agent-facing feed reconciles it per-request (see
+         *     ``conversation_context/surface_context.py``); nothing may treat a row here
+         *     as proof the tool is currently invokable.
+         *
+         *     ``label`` is present because this is a machine/author-facing contract, not
+         *     an agent feed — THE NAMING LAW (labels never enter agent feeds) governs the
+         *     context block, not this endpoint.
+         *
+         *     Tool names are GLOBAL per conversation, never per-surface: a colliding name
+         *     is silently SKIPPED at injection, which is why matrx-frontend's
+         *     ``check:surface-drift`` enforces cross-surface uniqueness.
+         */
+        ManifestClientToolEntry: {
+            /** Name */
+            name: string;
+            /**
+             * Label
+             * @default
+             */
+            label?: string;
+            /**
+             * Description
+             * @default
+             */
+            description?: string;
+            /** Input Schema */
+            input_schema?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Mode
+             * @default ui
+             */
+            mode?: string;
         };
         /** ManifestFact */
         ManifestFact: {
@@ -41111,26 +40986,6 @@ export interface components {
             /** Expected Updated At */
             expected_updated_at?: string | null;
         };
-        /** SavedViewCreate */
-        SavedViewCreate: {
-            /** Table Name */
-            table_name: string;
-            /** Name */
-            name: string;
-            /** Description */
-            description?: string | null;
-            /** Url Params */
-            url_params: string;
-        };
-        /** SavedViewUpdate */
-        SavedViewUpdate: {
-            /** Name */
-            name?: string | null;
-            /** Description */
-            description?: string | null;
-            /** Url Params */
-            url_params?: string | null;
-        };
         /**
          * ScanQuad
          * @description Document corners in post-EXIF-transpose pixel coordinates — the
@@ -43857,6 +43712,11 @@ export interface components {
              * @default []
              */
             write_targets?: components["schemas"]["ManifestWriteTargetEntry"][];
+            /**
+             * Client Tools
+             * @default []
+             */
+            client_tools?: components["schemas"]["ManifestClientToolEntry"][];
             /** Intro */
             intro?: string | null;
         };
@@ -46035,8 +45895,6 @@ export interface components {
             category?: string | null;
             /** Tags */
             tags?: string[] | null;
-            /** Is Public */
-            is_public?: boolean | null;
             /** Is Active */
             is_active?: boolean | null;
             /** Is Archived */
@@ -48039,11 +47897,10 @@ export interface components {
         };
         /**
          * VisibilityRequest
-         * @description Set a workflow's canonical ``visibility``. ``visibility`` is the
-         *     platform enum (personal | internal | link | public); ``is_public`` is the
-         *     legacy boolean wire shape (true → public, false → personal), still
-         *     accepted so older clients keep working. Exactly one must be provided;
-         *     ``visibility`` wins when both are.
+         * @description Set a workflow's canonical ``visibility`` — the platform enum
+         *     (personal | internal | link | public). There is no boolean alias: a
+         *     two-state flag cannot express the four canonical states, and the
+         *     ``is_public`` wire shape was retired with the column it named.
          */
         VisibilityRequest: {
             /**
@@ -48061,19 +47918,22 @@ export interface components {
              * @description Optional associated task selected by the caller.
              */
             task_id?: string | null;
-            /** Visibility */
-            visibility?: ("personal" | "internal" | "link" | "public") | null;
-            /** Is Public */
-            is_public?: boolean | null;
+            /**
+             * Visibility
+             * @enum {string}
+             */
+            visibility: "personal" | "internal" | "link" | "public";
         };
-        /** VisibilityResponse */
+        /**
+         * VisibilityResponse
+         * @description The canonical visibility that now applies. ``public_url`` is set only
+         *     for ``public`` — there is no boolean twin of the enum on the wire.
+         */
         VisibilityResponse: {
             /** Definition Id */
             definition_id: string;
             /** Visibility */
             visibility: string;
-            /** Is Public */
-            is_public: boolean;
             /** Public Url */
             public_url?: string | null;
         };
@@ -77548,140 +77408,6 @@ export interface operations {
             };
         };
     };
-    list_saved_views_admin_saved_views_get: {
-        parameters: {
-            query?: {
-                table_name?: string | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_saved_view_admin_saved_views_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SavedViewCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_saved_view_admin_saved_views__view_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                view_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_saved_view_admin_saved_views__view_id__patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                view_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SavedViewUpdate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     query_admin_app_logs_query_get: {
         parameters: {
             query?: {
@@ -79440,123 +79166,6 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["PreferencesWriteResponse"];
                 };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_recipes_analysis_recipes_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AnalysisRecipeRecord"][];
-                };
-            };
-        };
-    };
-    create_recipe_analysis_recipes_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AnalysisRecipeBody"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CreateRecipeResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_recipe_analysis_recipes__recipe_id__put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                recipe_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AnalysisRecipeBody"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PreferencesWriteResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_recipe_analysis_recipes__recipe_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                recipe_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
             /** @description Validation Error */
             422: {
