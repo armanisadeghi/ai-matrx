@@ -13,6 +13,30 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D179 — Keyword Research workbench: remaining UI debt (2026-08-13, Arman review)
+
+Arman reviewed `/marketing/keyword-research` during the sharing pilot and named
+more UI problems than that task closed. Fixed there: the "Saved research" row
+that wasted a full row, the input↔Research misalignment, and the deep-link
+showing unrelated library keywords. **Still open, Arman's words: "there are
+other UI issues with this page as well."** Not enumerated yet — this page wants
+a dedicated `ui-sharp`/`ui-dense` pass over the whole workbench (launcher strip,
+the metrics line under `KeywordInput`, cluster chip, toolbar, table density),
+not another one-off patch. Whoever takes it: screenshot first, list every issue,
+then fix as one change.
+
+### D180 — Hydration mismatch + "script tag while rendering" on `(core)` marketing routes (2026-08-13)
+
+Every `(core)` marketing route logs two console errors on load in dev:
+"Encountered a script tag while rendering React component" followed by
+"Hydration failed because the server rendered HTML didn't match the client."
+Reproduced on `/marketing/keyword-research` AND untouched `/marketing/ai-visibility`,
+so it is shell-level, not feature-level — a `<script>` rendered inside a React
+tree somewhere in the `(core)` layout chain. Found while verifying the keyword
+share pilot; not investigated (out of that task's scope). Hydration failures
+silently re-render the whole tree client-side, so this is a real perf +
+correctness cost, not cosmetic noise.
+
 ### D172 — `normalisePageUrl` rejects a URL its own test says it must accept (2026-08-11)
 
 `features/marketing/lib/page-url.test.ts` "lowercases scheme and host" FAILS on

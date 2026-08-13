@@ -247,6 +247,20 @@ and the same block renders read-only in chat.
 
 ## Change Log
 
+- 2026-08-13 — **Workbench deep-link intelligence + one-row launcher** (Arman
+  review of the pilot). Arriving with `?keyword=` no longer shows the org's
+  whole library under a phrase it has nothing to do with: saved research scopes
+  the explorer to exactly that cluster; no saved research filters the library to
+  the phrase and says so in one line (the pre-filled Research button is the
+  action — a run is paid, so it is never fired for the user). The launcher gained
+  an `actions` slot so "Saved research" rides the input's row instead of eating a
+  full row above it, and the row is `items-start` so the Research button lines up
+  with the input (KeywordInput renders a metrics line below its field, which
+  centering pushed out of alignment). The report permalink now clears the glass
+  header (`--shell-header-h` + gutter). The report's conversion CTA takes
+  `ctaHref`/`ctaLabel` — it never points at `/sign-up`; see
+  `features/sharing/FEATURE.md` § A share page never sends its recipient to an
+  auth wall.
 - 2026-08-13 — **Saved research is SHAREABLE, and the share is a presentation
   report** (pilot 1 of the sharing experience). `content_ir_kind_instance` is
   now link-shareable (`public_columns = id,title,data,created_at`; label
