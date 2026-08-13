@@ -1,5 +1,92 @@
 # P10 — Type suppression debt
 
+## Approved batch follow-up — 2026-08-12
+
+### Scope scanned
+
+- Re-verified the first/full pass and its open P10 sighting, then changed only
+  the five repairs Arman explicitly approved: 10 `as any` casts across six
+  source files. No generated file, suppression, test, or chunk boundary changed.
+- The former `TEMP-RT-DEBUG` cast in `features/tasks/hooks/useTaskManager.ts`
+  was already gone; its ledger entry is checked as `resolved-before-batch`.
+- Reviewed the approved guidance documents in full and encoded item-scoped
+  approval routing in the Pattern Patrol constitution/operator brief, P10 row,
+  and repo-local patrol skill.
+
+### Auto-approved and fixed
+
+- Auto-approved this run: **0**. This was the first human-approved P10 batch.
+- Manually approved and fixed: **5 findings / 10 cast occurrences / 6 files**.
+  - Six JSX label casts removed by preserving `TabDefinition`'s default string
+    contract while allowing `FullScreenOverlay` and `UtilitiesOverlay` to opt
+    into `ReactNode` labels.
+  - Readonly special-variable membership now uses equality-based `some`.
+  - Request-access user type selection now resolves through
+    `USER_TYPE_OPTIONS` and rejects an unknown value with a clear error.
+  - The redundant casted CX-filter property deletion is gone; the existing
+    serializer continues to omit `undefined` values.
+  - PageSpeed LLM format selection now accepts only `markdown` or `json`.
+
+### Manual approval requested
+
+- None in this follow-up. The remaining first-pass debt stays in the ranked
+  chips below and was not included in Arman's approval.
+
+### Excluded as uncertain
+
+- All generated-boundary casts, whole-file disables, hook suppressions, and
+  other data/control-flow contracts remain report-only. None matched a proven
+  behavior-preserving recipe.
+
+### Approved-batch verification and certifier verdict
+
+- **CERTIFIED** — the second adversarial agent confirmed exactly 10 cast
+  removals, no new/widened suppression, no changed chunk boundary, and no
+  target-file TypeScript diagnostic.
+- `pnpm check:hatches --strict` ran and remained red only on the existing
+  repository-wide growth categories; `as any` is now **94** versus the frozen
+  baseline of 136. The approved patch itself accounts for exactly 10 removals.
+- Full `pnpm type-check` ran. It reported only unrelated concurrent
+  `organization_id` contract failures in four API routes; none of the approved
+  files produced a diagnostic. Targeted semantic probes passed for special
+  variables and CX query serialization.
+- Targeted ESLint passed five files. `FullScreenOverlay.tsx` retains two
+  pre-existing `react-hooks/set-state-in-effect` findings outside the changed
+  lines; this P10 batch did not suppress or alter them.
+- Live checks passed request-access selection and CX filters across desktop and
+  mobile plus light and dark. The managed preview exhausted memory before the
+  remaining overlay/demo routes could be reopened; the certifier audited their
+  unchanged runtime contracts and still returned **CERTIFIED**.
+
+### New baseline for the next run
+
+| Category | Current | Frozen baseline | Delta |
+|---|---:|---:|---:|
+| `: any` | 470 | 565 | -95 |
+| `as any` | 94 | 136 | -42 |
+| `as unknown as` | 653 | 530 | +123 |
+| `<any>` | 62 | 86 | -24 |
+| `Record<string, any>` | 82 | 107 | -25 |
+| `@ts-ignore` | 24 | 34 | -10 |
+| `@ts-nocheck` | 5 | 14 | -9 |
+| `@ts-expect-error` raw | 6 | 2 | +4 |
+| `value!` assertion | 347 | 317 | +30 |
+| `?? {}` | 835 | 567 | +268 |
+| `|| {}` | 72 | 84 | -12 |
+| `|| []` | 347 | 415 | -68 |
+| `?? ""` | 3,141 | 2,070 | +1,071 |
+| `|| ""` | 834 | 854 | -20 |
+
+- The next run repeats the full-repository count and active-disable scan; no
+  reduction above authorizes offsetting growth in another category.
+- Cadence health: this is still the first P10 cycle, so no longer-cadence
+  proposal or repeated-rejection pause applies.
+- Candidates noticed: none. No exception was proposed or approved.
+
+---
+
+## Initial first/full pass — retained baseline
+
 - Run date: 2026-08-11
 - Run kind: first run; required full-repository pass
 - Registry tier: R (report, rank, and chip only)

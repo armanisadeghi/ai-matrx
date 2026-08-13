@@ -61,7 +61,15 @@ export function LLMDataModal({ open, onOpenChange, data }: LLMDataModalProps) {
                         )}
                     </div>
 
-                    <Tabs value={format} onValueChange={(v) => setFormat(v as any)} className="w-auto">
+                    <Tabs
+                        value={format}
+                        onValueChange={(value) => {
+                            if (value === "markdown" || value === "json") {
+                                setFormat(value);
+                            }
+                        }}
+                        className="w-auto"
+                    >
                         <TabsList className="h-8">
                             <TabsTrigger value="markdown" className="text-xs gap-1">
                                 <FileText className="w-3 h-3" />
@@ -110,4 +118,3 @@ export function LLMDataModal({ open, onOpenChange, data }: LLMDataModalProps) {
         </Dialog>
     );
 }
-

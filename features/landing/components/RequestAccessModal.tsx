@@ -265,9 +265,21 @@ export function RequestAccessModal({ open, onOpenChange }: RequestAccessModalPro
               </Label>
               <Select
                 value={step1Data.user_type}
-                onValueChange={(value) =>
-                  setStep1Data({ ...step1Data, user_type: value as any, user_type_other: '' })
-                }
+                onValueChange={(value) => {
+                  const option = USER_TYPE_OPTIONS.find(
+                    (candidate) => candidate.value === value,
+                  );
+                  if (!option) {
+                    setError('Please select a valid user type.');
+                    return;
+                  }
+                  setError(null);
+                  setStep1Data({
+                    ...step1Data,
+                    user_type: option.value,
+                    user_type_other: '',
+                  });
+                }}
                 disabled={isSubmitting}
               >
                 <SelectTrigger id="user_type" className="text-base" style={{ fontSize: '16px' }}>
@@ -480,4 +492,3 @@ export function RequestAccessModal({ open, onOpenChange }: RequestAccessModalPro
     </Dialog>
   );
 }
-

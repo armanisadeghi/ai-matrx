@@ -19,9 +19,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChevronLeft, ChevronRight, Save, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export interface TabDefinition {
+export interface TabDefinition<TLabel extends ReactNode = string> {
   id: string;
-  label: string;
+  label: TLabel;
   content: ReactNode;
   className?: string;
 }
@@ -31,7 +31,7 @@ export interface FullScreenOverlayProps {
   onClose: () => void;
   title: string;
   description?: string;
-  tabs: TabDefinition[];
+  tabs: TabDefinition<ReactNode>[];
   initialTab?: string;
   onTabChange?: (newTab: string) => void;
   footerContent?: ReactNode;
@@ -72,7 +72,7 @@ const ScrollableTabBar = ({
   compact,
   homeTabId,
 }: {
-  tabs: TabDefinition[];
+  tabs: TabDefinition<ReactNode>[];
   activeTab: string;
   onTabChange: (id: string) => void;
   compact: boolean;
