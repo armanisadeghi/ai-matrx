@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 348 active entity tokens. A token here is FK-valid for
+// 350 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -212,6 +212,8 @@ export type EntityTypeToken =
   | "plan_cms_fill_job"
   | "plan_entity"
   | "plan_node"
+  | "plan_node_artifact"
+  | "plan_node_step"
   | "plan_profile"
   | "processed_document"
   | "processed_document_page"
@@ -549,6 +551,8 @@ export type ComponentEntityToken =
   | "pc_studio_run_asset"
   | "plan_cms_fill_item"
   | "plan_cms_fill_job"
+  | "plan_node_artifact"
+  | "plan_node_step"
   | "processed_document_page"
   | "redaction_mapping"
   | "research_analysis"
@@ -798,6 +802,8 @@ export type ScopeableEntityToken =
   | "plan_cms_fill_job"
   | "plan_entity"
   | "plan_node"
+  | "plan_node_artifact"
+  | "plan_node_step"
   | "plan_profile"
   | "processed_document"
   | "processed_document_page"
@@ -1185,6 +1191,8 @@ export const ENTITY_TYPE_METADATA = {
   "plan_cms_fill_job": { token: "plan_cms_fill_job", schema: "plan", table: "cms_fill_job", label: "CMS Fill Job", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "plan_entity": { token: "plan_entity", schema: "plan", table: "entity", label: "Plan Entity", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: "label", contentRole: null, referenceCategory: null },
   "plan_node": { token: "plan_node", schema: "plan", table: "node", label: "Plan Node", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: "label", contentRole: null, referenceCategory: null },
+  "plan_node_artifact": { token: "plan_node_artifact", schema: "plan", table: "node_artifact", label: "Plan Node Artifact", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "plan_node_step": { token: "plan_node_step", schema: "plan", table: "node_step", label: "Plan Node Step", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "plan_profile": { token: "plan_profile", schema: "plan", table: "profile", label: "Plan Vertical Profile", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "vertical", contentRole: null, referenceCategory: null },
   "processed_document": { token: "processed_document", schema: "docproc", table: "processed_documents", label: "Processed document", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: "source", referenceCategory: null },
   "processed_document_page": { token: "processed_document_page", schema: "docproc", table: "processed_document_pages", label: "Processed document page", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1537,6 +1545,8 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "plan_cms_fill_job",
   "plan_entity",
   "plan_node",
+  "plan_node_artifact",
+  "plan_node_step",
   "plan_profile",
   "processed_document",
   "processed_document_page",
