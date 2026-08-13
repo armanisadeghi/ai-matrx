@@ -450,7 +450,9 @@ export function AgentSlotsConsole() {
                   ? "NOT a system agent"
                   : r.health}
               </Badge>
-              {r.drift && r.health !== "version drift" && (
+              {/* Drift always names both numbers — "version drift" without
+                  saying WHICH versions was the console's top complaint. */}
+              {r.drift && (
                 <Badge
                   variant="outline"
                   className={HEALTH_CLASS["version drift"]}
