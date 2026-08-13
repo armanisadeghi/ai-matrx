@@ -1,6 +1,7 @@
 import "server-only";
 import { createClient } from "@/utils/supabase/server";
 import { getShareableResource } from "@/utils/permissions/registry";
+import { PUBLIC_LANE_TYPES } from "@/utils/permissions/publicLane";
 
 /**
  * Server loader for the indexable public viewer (`/p/e/[resourceType]/[id]`).
@@ -61,15 +62,6 @@ function firstString(row: Record<string, unknown>, keys: string[]): string | und
   }
   return undefined;
 }
-
-/**
- * The types the indexable public lane serves. An allowlist, not "any public
- * registered type": a resource being public shouldn't auto-publish it to an
- * SEO-indexed page (e.g. a public `wc_claim`, `dm_conversation`, `file`, or
- * `conversation` is not community-library content). Add a type here only when it
- * has a public renderer and is genuinely meant for the SEO/community lane.
- */
-const PUBLIC_LANE_TYPES = new Set<string>(["fc_set", "note", "message_template"]);
 
 export async function loadPublicResource(
   resourceType: string,

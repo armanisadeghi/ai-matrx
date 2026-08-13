@@ -265,6 +265,9 @@ and token landing, `acquisition` flag for conversion chrome). Charter + plan:
 
 ## Invariants & gotchas
 
+- 🚨 **A share surface may never claim access it cannot deliver — and the Public tab must ALWAYS answer "where is the link?"** Three mechanisms produce anonymous reach and they are NOT interchangeable: a **share link** (`platform.share_links` → `/s/[token]`, gated by the registry's `is_link_shareable`), the **indexable public page** (`/p/e/[type]/[id]`, gated by the public-lane list), and **`visibility='public'`** (a DATA state — the `pub_read` RLS policy — which by itself gives an anonymous person NO address to open). Shipped defect (2026-08-13, `web_brand`): `ShareLinkPanel` returned `null` whenever `is_link_shareable` was false, the five web share points had it false with empty `public_columns`, and the tab still told the owner "Anyone with the link can access this" — a promise with no link anywhere on screen, for a type with no public page either. The fixes are permanent rules: **`ShareLinkPanel` never renders null for an owner** (no link lane ⇒ it says so), **the public-lane list lives in `utils/permissions/publicLane.ts`** so the UI and the `/p/e/` loader read ONE list and the tab can surface the real public URL (with copy) exactly when one exists, and the toggle's copy states the true consequence for that type.
+- **Never render an entity token in user-facing copy.** "Anyone with the link can access this web_brand" shipped to a real screen. Use the registry `displayLabel` (`getShareableResource(type)?.displayLabel`) — the token is an internal identifier, and the vocabulary guard (`pnpm check:visibility-vocab`) does not catch this class.
+
 - **NEVER claim privacy from a `visibility` column alone — and never say "Only you".** `visibility` is ONE of the six ways `iam.has_access_for_base` grants access (owner · visibility+org · direct grant · membership · education assignment · **reachability through a container**). A `personal` file attached to an org-internal scope is readable by that whole org. Any surface that reads `row.visibility` and renders a privacy claim is lying: it cannot see grants, memberships, or containers. Lists may describe the **setting** ("Personal", "Organization"); only `public.entity_access_summary` may describe **who can see it**.
 - **The honest answer is `public.entity_access_summary(p_type, p_id)` — one entity at a time.** Returns every reason an entity is reachable: owner, visibility, org, direct grants, memberships, and each reachability container (with its name, level, org and member count). Client: `features/sharing/service/accessSummary.ts` → `useAccessSummary` → `<AccessSummaryPanel entityType entityId />`. Generic across entity tokens — do NOT write a per-feature copy. It walks reachability and resolves container titles, so it is **too expensive for a list**; lists stay on cheap bulk signals. Requires `viewer`; grantee identities are returned only to `admin` callers, and container names are filtered to containers the caller can already see. Mounted (2026-08-08) on: file Info tab, agent detail (`AgentViewContent`), agent Share tab (`AgentSharePanel`), note info (`NoteInfoPanel`), data-store detail (`DataStoresPage`). Any entity token with a `platform.entity_types.title_column` works — mount, don't fork.
 - **The vocabulary is mechanically guarded: `pnpm check:visibility-vocab`** (`scripts/check-visibility-vocab.ts`, in both release-gate lists). It screams on retired spellings (`shared`/`private`) in visibility-shaped unions, on unions that omit `internal` (the collapse), and on user-visible "Only you" claims. Baseline exceptions live in `scripts/visibility-vocab/allowlist.json` with per-entry justifications — delete the entry in the same change that fixes its surface; never allowlist a new write path.
@@ -319,6 +322,17 @@ Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) 
 ---
 
 ## Change log
+
+- 2026-08-13 — **The Public tab always answers the link question.** `ShareLinkPanel` no longer
+  vanishes for owners when a type has no no-login lane (explicit state instead of `null`); the
+  public-lane allowlist moved out of the `/p/e/` server loader into
+  `utils/permissions/publicLane.ts` (`PUBLIC_LANE_TYPES` / `hasPublicPage` / `publicResourceUrl`)
+  so the tab surfaces the real public URL with a copy control exactly when one exists and states
+  the true consequence when one does not; user-facing copy uses the registry `displayLabel`
+  instead of the raw token ("this web_brand"). Registry data: the five remaining web share
+  points (`web_brand`, `web_site`, `web_property`, `web_snapshot`, `web_screenshot`) are now
+  `is_link_shareable` with display-safe `public_columns` projections. Verified live end-to-end:
+  brand → Public tab → Create link → the `/s/<token>` page resolves anonymously.
 
 - 2026-08-13 — **Pilot 1 of the sharing experience: keyword research shares as a presentation
   report.** `content_ir_kind_instance` flipped link-shareable (`public_columns =

@@ -109,7 +109,26 @@ export function ShareLinkPanel({
     }
   }, [revokeTarget, refresh, toast]);
 
-  if (!isOwner || !enabled) return null;
+  // Non-owners have no link controls at all (the owner is the only grantor).
+  if (!isOwner) return null;
+
+  // NEVER vanish silently. When the type has no no-login link lane, the owner
+  // must be told — otherwise the Public tab reads as "anyone with the link"
+  // while offering no link anywhere on screen (the defect this replaced).
+  if (!enabled) {
+    return (
+      <div className="flex items-start gap-2 p-3 bg-muted/30 rounded-lg border">
+        <Link2 className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+        <div className="min-w-0">
+          <h3 className="text-sm font-medium">No-login links aren&rsquo;t on for this item type</h3>
+          <p className="text-xs text-muted-foreground">
+            Share it with specific people or an organization instead — they open
+            it signed in.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-2.5 p-3 bg-muted/30 rounded-lg border">

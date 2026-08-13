@@ -1,9 +1,13 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Globe, AlertTriangle, Lock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Globe, AlertTriangle, Check, Copy, Lock } from "lucide-react";
+import { getShareableResource } from "@/utils/permissions/registry";
+import { publicResourceUrl } from "@/utils/permissions/publicLane";
 import type {
   Permission,
   ResourceType,
@@ -59,7 +63,26 @@ export function PublicAccessTab({
   const [capabilitiesError, setCapabilitiesError] = useState<string | null>(
     null,
   );
+  const [copied, setCopied] = useState(false);
   const { toast } = useToast();
+
+  /** Human label for the item kind — NEVER render the raw entity token. */
+  const typeLabel =
+    getShareableResource(resourceType)?.displayLabel?.toLowerCase() ?? "item";
+  /** The indexable public page, when this type actually has one. */
+  const publicUrl = publicResourceUrl(resourceType, resourceId);
+
+  const copyPublicUrl = useCallback(async () => {
+    if (!publicUrl) return;
+    try {
+      await navigator.clipboard.writeText(publicUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      toast({ title: "Public link copied" });
+    } catch {
+      toast({ title: "Couldn't copy", variant: "destructive" });
+    }
+  }, [publicUrl, toast]);
 
   useEffect(() => {
     let active = true;
@@ -157,8 +180,12 @@ export function PublicAccessTab({
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {isPublic
-                      ? "Anyone with the link can access this — no sign-in required"
-                      : "Enable to let anyone with the link access this resource"}
+                      ? publicUrl
+                        ? "Open to everyone — anyone can view the public page below, no sign-in required"
+                        : "Marked open to everyone. Use a no-login link above to give someone the actual address."
+                      : publicUrl
+                        ? "Turn on to publish a public page anyone can open — no sign-in required"
+                        : `Turn on to mark this ${typeLabel} open to everyone. It has no public page of its own, so share the address with a no-login link.`}
                   </p>
                 </div>
 
@@ -174,12 +201,42 @@ export function PublicAccessTab({
                 ) : null}
               </div>
 
+              {isPublic && publicUrl && (
+                <div className="space-y-1.5 p-3 bg-muted/30 rounded-lg border">
+                  <p className="text-xs font-medium">Public page</p>
+                  <div className="flex items-center gap-1.5 rounded-md border bg-background p-1.5">
+                    <Input
+                      readOnly
+                      value={publicUrl}
+                      className="h-8 flex-1 text-xs font-mono"
+                      onFocus={(e) => e.currentTarget.select()}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 flex-shrink-0"
+                      onClick={copyPublicUrl}
+                      title="Copy public link"
+                    >
+                      {copied ? (
+                        <Check className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <Copy className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               {isPublic && (
                 <Alert className="border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/20 py-2">
                   <AlertTriangle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
                   <AlertDescription className="text-amber-800 dark:text-amber-200 text-xs">
-                    <strong>Public:</strong> Anyone with the link can access
-                    this {resourceType}. No sign-in required.
+                    <strong>Open to everyone:</strong> any signed-in person can
+                    view this {typeLabel}
+                    {publicUrl
+                      ? ", and the public page above opens with no sign-in."
+                      : ". It has no public page of its own — people reach it through a no-login link or from inside the app."}
                   </AlertDescription>
                 </Alert>
               )}
@@ -189,11 +246,11 @@ export function PublicAccessTab({
                   <Lock className="w-10 h-10 mx-auto text-muted-foreground opacity-20" />
                   <div>
                     <h4 className="text-sm font-medium mb-0.5">
-                      Resource is Private
+                      Not open to everyone
                     </h4>
                     <p className="text-xs text-muted-foreground">
-                      Share with specific users or organizations, or make it
-                      public for open access
+                      Only you, people you share with, and members of the
+                      organizations you share with can open this {typeLabel}.
                     </p>
                   </div>
                 </div>
