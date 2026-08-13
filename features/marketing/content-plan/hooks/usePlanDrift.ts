@@ -33,7 +33,11 @@ import {
   bridgeResolveConflict,
   type BridgeAlignResult,
 } from "../setup/bridge";
-import { computePlanDrift, type DriftItem, type PlanDriftModel } from "../lib/drift";
+import {
+  computePlanDrift,
+  type DriftItem,
+  type PlanDriftModel,
+} from "../lib/drift";
 import type { PlanNodeRow } from "../types";
 import { useCmsPageMap } from "./useCmsPageMap";
 import { usePlanReality } from "./usePlanReality";
@@ -61,7 +65,9 @@ export interface RepairOutcome {
 
 function fromAlign(result: BridgeAlignResult): RepairOutcome {
   const lines = result.items.map((item) =>
-    item.error ? `${item.action}: ${item.error}` : `${item.action}: ${item.detail}`,
+    item.error
+      ? `${item.action}: ${item.error}`
+      : `${item.action}: ${item.detail}`,
   );
   return {
     ok: result.failed === 0 && result.errors.length === 0,
@@ -157,9 +163,14 @@ export function usePlanDrift(
             tone: "default",
             run: async (dryRun) =>
               fromAlign(
-                await bridgeAdopt(dispatch, siteId, [item.cmsPageId as string], {
-                  dryRun,
-                }),
+                await bridgeAdopt(
+                  dispatch,
+                  siteId,
+                  [item.cmsPageId as string],
+                  {
+                    dryRun,
+                  },
+                ),
               ),
           },
         ];
@@ -173,7 +184,9 @@ export function usePlanDrift(
             tone: "default",
             run: async (dryRun) =>
               fromAlign(
-                await bridgeRealize(dispatch, siteId, [item.nodeId], { dryRun }),
+                await bridgeRealize(dispatch, siteId, [item.nodeId], {
+                  dryRun,
+                }),
               ),
           },
         ];
@@ -218,13 +231,16 @@ export function usePlanDrift(
   }, [dispatch, siteId, model.items]);
 
   /** Dry-run a repair (never applies). Errors are returned, never thrown. */
-  const preview = useCallback(async (repair: DriftRepair): Promise<RepairOutcome> => {
-    try {
-      return await repair.run(true);
-    } catch (error) {
-      return { ok: false, lines: [extractErrorMessage(error)], changed: 0 };
-    }
-  }, []);
+  const preview = useCallback(
+    async (repair: DriftRepair): Promise<RepairOutcome> => {
+      try {
+        return await repair.run(true);
+      } catch (error) {
+        return { ok: false, lines: [extractErrorMessage(error)], changed: 0 };
+      }
+    },
+    [],
+  );
 
   /** Apply a repair for real, then re-derive drift. */
   const apply = useCallback(
@@ -245,10 +261,8 @@ export function usePlanDrift(
 
   return {
     model,
-    /** True only on FIRST load — a background refresh never blanks the badges.
-     * usePlanReality is manual-run (enabled:false), so its first load is "a run
-     * is in flight and no report exists yet". */
-    isLoading: cmsPages.isLoading || (reality.isRunning && reality.report === null),
+    /** True only on FIRST load — a background refresh never blanks the badges. */
+    isLoading: cmsPages.isLoading || reality.isLoading,
     /** A background re-check is in flight (badges stay on screen). */
     isRefreshing: reality.isRunning,
     isPaired: cmsPages.map !== null,
@@ -259,6 +273,6 @@ export function usePlanDrift(
     preview,
     apply,
     /** Explicit write-run: persists the `realizes` alignment edges. */
-    syncAlignment: reality.run,
+    syncAlignment: reality.sync,
   };
 }

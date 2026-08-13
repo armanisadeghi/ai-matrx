@@ -40,12 +40,13 @@ import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice
 import { cn } from "@/lib/utils";
 
 import { NODE_TYPE_LABELS, planStatusColor } from "../constants";
+import type { PlanDriftModel } from "../lib/drift";
 import { countBy, formatUpdated, withCounts } from "../utils";
 import type { PlanNodeRow, PlanNodeType } from "../types";
 
 /** Bump `version` when a column is added/removed (lib/list-views backfill contract). */
 const SURFACE_PREFS: Partial<ListViewPrefs> = {
-  version: 2,
+  version: 3,
   sort: "route",
   direction: "asc",
   hiddenColumns: ["reviewer"],
@@ -59,6 +60,7 @@ const COLUMN_LABELS: Record<string, string> = {
   priority: "Priority",
   keyword: "Keyword",
   page: "Page",
+  alignment: "Alignment",
   pillar: "Pillar",
   cluster: "Cluster",
   depth: "Depth",
@@ -66,15 +68,14 @@ const COLUMN_LABELS: Record<string, string> = {
   updated: "Updated",
 };
 
-
-
-
 export interface PlanNodesTableProps {
   nodes: PlanNodeRow[];
   isLoading: boolean;
   isFetching: boolean;
   /** node_id → its realized CMS page (WF-11 overlay; absent = no pairing). */
   cmsPageById?: Map<string, { isPublished: boolean; route: string | null }>;
+  /** The workspace's one plan-vs-reality verdict, shared with the drift bar. */
+  drift: PlanDriftModel;
   /** One editor body, hosted by both the canonical window and side panel. */
   renderNodePanel: (node: PlanNodeRow, onDeleted: () => void) => ReactNode;
 }
@@ -84,6 +85,7 @@ export function PlanNodesTable({
   isLoading,
   isFetching,
   cmsPageById,
+  drift,
   renderNodePanel,
 }: PlanNodesTableProps) {
   const { prefs, setPrefs } = useListViewPrefs(
@@ -100,7 +102,10 @@ export function PlanNodesTable({
     anyOf: "",
     columnFilters: {},
     sort: prefs.sort
-      ? { id: prefs.sort, direction: prefs.direction === "desc" ? "desc" : "asc" }
+      ? {
+          id: prefs.sort,
+          direction: prefs.direction === "desc" ? "desc" : "asc",
+        }
       : null,
   }));
 
@@ -135,6 +140,18 @@ export function PlanNodesTable({
       const page = cmsPageById?.get(row.id);
       return page ? (page.isPublished ? "Published" : "Draft") : "None";
     });
+    const alignmentLabel = (row: PlanNodeRow) => {
+      if (!drift.isPaired && !drift.hasCrawlData) return "Not connected";
+      const item = drift.byNodeId.get(row.id);
+      if (!item) return "Aligned";
+      if (item.kind === "conflict") return "Route conflict";
+      return item.reason === "not_built"
+        ? "Not built"
+        : item.reason === "not_published"
+          ? "Draft only"
+          : "Not crawled";
+    };
+    const alignmentCounts = countBy(nodes, alignmentLabel);
 
     return [
       {
@@ -277,7 +294,8 @@ export function PlanNodesTable({
         ),
         cell: (row) => {
           const page = cmsPageById?.get(row.id);
-          if (!page) return <span className="text-sm text-muted-foreground">—</span>;
+          if (!page)
+            return <span className="text-sm text-muted-foreground">—</span>;
           return (
             <Badge
               variant="secondary"
@@ -293,6 +311,44 @@ export function PlanNodesTable({
           );
         },
         width: 100,
+      },
+      {
+        id: "alignment",
+        header: "Alignment",
+        accessorFn: alignmentLabel,
+        filter: "select",
+        filterOptions: withCounts(
+          [
+            "Aligned",
+            "Route conflict",
+            "Not built",
+            "Draft only",
+            "Not crawled",
+            "Not connected",
+          ].map((label) => ({ value: label, label })),
+          alignmentCounts,
+        ),
+        cell: (row) => {
+          const label = alignmentLabel(row);
+          return (
+            <Badge
+              variant="secondary"
+              className={cn(
+                "whitespace-nowrap text-[10px]",
+                label === "Aligned"
+                  ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                  : label === "Route conflict"
+                    ? "bg-destructive/15 text-destructive"
+                    : label === "Not connected"
+                      ? "text-muted-foreground"
+                      : "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+              )}
+            >
+              {label}
+            </Badge>
+          );
+        },
+        width: 120,
       },
       {
         id: "pillar",
@@ -361,7 +417,7 @@ export function PlanNodesTable({
         width: 100,
       },
     ];
-  }, [nodes, statusCategories.categories, statusMetaById, cmsPageById]);
+  }, [nodes, statusCategories.categories, statusMetaById, cmsPageById, drift]);
 
   const hiddenColumns = prefs.hiddenColumns ?? [];
   const visibleColumns = useMemo(

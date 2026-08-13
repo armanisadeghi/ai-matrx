@@ -60,9 +60,11 @@ import {
   type PlanView,
 } from "../hooks/usePlanWorkspaceParams";
 import { PlanAssistStrip } from "./PlanAssistStrip";
+import { PlanDriftBar } from "./PlanDriftBar";
+import { PlanDriftSheet, type DriftFilter } from "./PlanDriftSheet";
 import { PlanGenerateBar } from "./PlanGenerateBar";
-import { PlanRealityBar } from "./PlanRealityBar";
 import { PlanWebsiteBar } from "./PlanWebsiteBar";
+import { usePlanDrift } from "../hooks/usePlanDrift";
 import type { PlanNodeRow } from "../types";
 import { useContentPlanSites } from "./ContentPlanHeader";
 import { EntityManager } from "./EntityManager";
@@ -117,6 +119,8 @@ export function ContentPlanWorkbench({
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [newNodeParentId, setNewNodeParentId] = useState<string | null>(null);
   const [newNodeOpen, setNewNodeOpen] = useState(false);
+  const [driftOpen, setDriftOpen] = useState(false);
+  const [driftFilter, setDriftFilter] = useState<DriftFilter>("all");
 
   // Resolve the selected site against EVERYTHING visible, not just the
   // org-scoped picker list — a shared ?site= link (or an org switch with a
@@ -172,6 +176,7 @@ export function ContentPlanWorkbench({
   }, [statusCategories.categories]);
 
   const nodeRows = useMemo(() => nodes.data ?? [], [nodes.data]);
+  const drift = usePlanDrift(siteId, resolvedCmsSiteId, nodeRows);
   // Bulk-deepen candidates: pages whose brief is empty (route order, so the
   // run walks the site top-down like a reader would).
   const emptyBriefNodes = useMemo(
@@ -445,15 +450,6 @@ export function ContentPlanWorkbench({
           </div>
         ) : null}
 
-        {reality.report &&
-        (view === "tree" || view === "table" || view === "map") ? (
-          <PlanRealityBar
-            report={reality.report}
-            showTreeHint={view === "tree" || view === "map"}
-            onDismiss={reality.dismiss}
-          />
-        ) : null}
-
         {/* AI generation strip — plan-bearing views only; Setup and
           Entities have their own jobs. */}
         {siteId &&
@@ -517,7 +513,10 @@ export function ContentPlanWorkbench({
               cmsPages.map !== null
             }
             keywordSweepEnabled={
-              !!siteId && !nodes.isLoading && !nodes.isError && nodeRows.length > 0
+              !!siteId &&
+              !nodes.isLoading &&
+              !nodes.isError &&
+              nodeRows.length > 0
             }
             className="border-b border-border/40 px-3 py-1.5"
           />
@@ -565,6 +564,7 @@ export function ContentPlanWorkbench({
               isLoading={nodes.isLoading}
               isFetching={nodes.isFetching}
               cmsPageById={cmsPages.pagesByNodeId}
+              drift={drift.model}
               renderNodePanel={(node, onDeleted) => (
                 <NodePanel
                   key={node.id}
@@ -666,6 +666,32 @@ export function ContentPlanWorkbench({
             </ClientGroup>
           )}
         </div>
+
+        {view === "tree" || view === "table" || view === "map" ? (
+          <PlanDriftBar
+            model={drift.model}
+            isLoading={drift.isLoading}
+            isRefreshing={drift.isRefreshing}
+            onOpen={(filter) => {
+              setDriftFilter(filter);
+              setDriftOpen(true);
+            }}
+            onSyncAlignment={() => void drift.syncAlignment()}
+          />
+        ) : null}
+
+        <PlanDriftSheet
+          open={driftOpen}
+          onOpenChange={setDriftOpen}
+          filter={driftFilter}
+          onFilterChange={setDriftFilter}
+          drift={drift}
+          onOpenNode={(nodeId) => {
+            setSelectedNodeId(nodeId);
+            setView("tree");
+            setDriftOpen(false);
+          }}
+        />
 
         {/* Table rows own their window-first detail through MatrxDataTable.
           Map nodes and the mobile tree keep a secondary docked presentation,

@@ -2,7 +2,7 @@
 
 **Status:** active
 **Tier:** 1
-**Last updated:** 2026-08-12
+**Last updated:** 2026-08-13
 
 ## Draft brief — SERVER-side, persisted on arrival
 
@@ -80,7 +80,7 @@ plan CRUD through it.
   THROWS with the reason; it never falls back to a hardcoded agent. Adding a
   step means declaring a slot in aidream's `agent_slots/client_slots.py` and
   consuming its key here. **Known gap:** `launchAgentExecution` consumers
-  (this feature included) apply a binding's *agent* but not its
+  (this feature included) apply a binding's _agent_ but not its
   `config_overrides`, so a model/thinking-only override is inert here.
   Results stage into the view's own setters — the USER commits.
 - 🚨 **The three WHOLE-PLAN Setup passes RUN ON THE SERVER** (since
@@ -211,7 +211,8 @@ cms-starter-kit`. Guarded CMS writes (agent_write_policy + activity log live
    as one `MatrxDataTable` row — CONTROLLED mode over the canonical local
    engine (`filterAndSortRows`) since the plan is fully client-loaded.
    Columns: Label, Route (mono), Type, Status (dot + name), Priority,
-   Keyword (Bound/Missing), Pillar, Cluster, Depth, Reviewer
+   Keyword (Bound/Missing), Page, Alignment (the shared plan-vs-reality
+   verdict), Pillar, Cluster, Depth, Reviewer
    (default-hidden), Updated — every column sorts AND filters; finite
    columns get real option lists with counts (status options in pipeline
    order). Full-row click opens the canonical `NodePanel` in the table-owned
@@ -222,6 +223,13 @@ cms-starter-kit`. Guarded CMS writes (agent_write_policy + activity log live
    direction, page size, hidden columns via the toolbar Columns picker;
    bump its `version` when columns change); search/filters/page never
    persist. Hiding a column drops its live filter/sort with it.
+   1c. **Plan drift is always reachable while editing.** Tree, table, and map
+   mount `PlanDriftBar` as a bottom status line, never above the work where a
+   live refresh can shift the editor. `usePlanDrift` composes the existing CMS
+   page map and the cached auto-run `usePlanReality` report into one verdict;
+   every count opens `PlanDriftSheet` on those rows. Repairs dry-run first and
+   reuse `bridgeAdopt` / `bridgeResolveConflict` / realize / publish. Sync is
+   the explicit immediate re-check; focus and reconnect never trigger writes.
 2. **Node panel** (`NodePanel.tsx`): label/slug/type, page-type + status
    category pickers, priority, technical depth, needs-reviewer, brief
    (line-per-bullet), vertical attributes (schema-driven,
@@ -566,6 +574,13 @@ No new server capability was added: `cms-align` always took a node-id array,
 always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
+
+- 2026-08-13 — Codex: **Mounted the plan-vs-reality repair loop.** Tree,
+  table, and pillar map now keep `PlanDriftBar` at the bottom of the workspace;
+  every count opens the filtered `PlanDriftSheet`, whose existing bridge
+  repairs preview before apply. `usePlanReality` auto-runs once on workspace
+  open (cached; no focus/reconnect refetch), and the table gained a visible,
+  sortable/filterable Alignment verdict from the same drift model (prefs v3).
 
 - 2026-08-13 — **plan.entity person/org fold into crm.party (CRM Wave 2).**
   Ratified split executed: person/org rows migrated to `crm.party` (1 party
