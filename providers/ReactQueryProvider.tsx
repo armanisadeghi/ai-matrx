@@ -15,6 +15,21 @@ const ReactQueryDevtools =
       )
     : () => null;
 
+export const REACT_QUERY_DEFAULT_OPTIONS = {
+  queries: {
+    staleTime: 60 * 1000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  },
+  mutations: {
+    // Mutations are not generically replay-safe. A deterministic PostgREST
+    // conflict was previously issued twice because this provider retried every
+    // failed POST once. Individual mutations may opt in only when their
+    // operation defines idempotency.
+    retry: false,
+  },
+};
+
 export function ReactQueryProvider({
   children,
 }: {
@@ -25,16 +40,7 @@ export function ReactQueryProvider({
   const [queryClient] = useState(
     () =>
       new QueryClient({
-        defaultOptions: {
-          queries: {
-            staleTime: 60 * 1000,
-            retry: 1,
-            refetchOnWindowFocus: false,
-          },
-          mutations: {
-            retry: 1,
-          },
-        },
+        defaultOptions: REACT_QUERY_DEFAULT_OPTIONS,
       }),
   );
 
