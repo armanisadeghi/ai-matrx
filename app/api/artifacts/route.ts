@@ -62,9 +62,9 @@ export async function POST(request: NextRequest) {
         }
 
         // Atomic get-or-create on the ANY-SURFACE natural key
-        //   (user_id, source_system, source_id, artifact_index, artifact_type,
+        //   (created_by, source_system, source_id, artifact_index, artifact_type,
         //   external_system) backed by the FULL `NULLS NOT DISTINCT` unique index
-        // `uq_cx_artifact_source_natural_key` (migration
+        // `uq_cx_artifact_source_natural_key_cb` (migration
         // chat_artifact_discovery_index_artifact_index.sql added artifact_index
         // so multi-artifact messages no longer 23505). This route is chat-only
         // and omits artifact_index (NULL) — one manual slot per message+type.
@@ -79,20 +79,11 @@ export async function POST(request: NextRequest) {
         // (otherwise an empty string writes as "" but reads via `.is(null)`).
         const normalizedExternalSystem = externalSystem || null;
 
-        // `user_id` is the LAST legacy write left in this repo: it is the lead
-        // column of `uq_cx_artifact_source_natural_key`, the dedup index this
-        // upsert infers. Stopping the write before that index is rebuilt on
-        // `created_by` would make every existing row invisible to ON CONFLICT
-        // and reintroduce duplicate artifacts. Delete this line (and switch
-        // `onConflict` below) in the same change that lands the new index.
-        // Ownership itself is already canonical — `_stamp_actor` fills
-        // `created_by`, and every read below keys on it.
         const insertRow = {
           message_id: messageId,
           conversation_id: conversationId,
           source_system: "cx_message",
           source_id: messageId,
-          user_id: user.id,
           organization_id: organizationId ?? null,
           task_id: taskId ?? null,
           artifact_type: artifactType,
@@ -110,8 +101,10 @@ export async function POST(request: NextRequest) {
           .schema("chat")
           .from("artifact")
           .upsert(insertRow, {
+            // Infers `uq_cx_artifact_source_natural_key_cb` — the canonical
+            // dedup key, on `created_by` (stamped by `_stamp_actor`).
             onConflict:
-              "user_id,source_system,source_id,artifact_index,artifact_type,external_system",
+              "created_by,source_system,source_id,artifact_index,artifact_type,external_system",
             ignoreDuplicates: true,
           })
           .select()

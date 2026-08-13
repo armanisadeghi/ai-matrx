@@ -69,21 +69,6 @@ export interface CxUserTodoRow {
   updated_at: string;
 }
 
-export interface CxAgentMemoryRow {
-  conversation_id: string;
-  user_id: string;
-  key: string;
-  value: unknown;
-  updated_at: string;
-}
-
-export interface AgentUserKvRow {
-  user_id: string;
-  key: string;
-  value: unknown;
-  updated_at: string;
-}
-
 // ─── Tool result envelopes (what the handlers POST back to /tool_results) ───
 
 export interface TasksResult {
@@ -129,13 +114,3 @@ export interface PlanResultEnvelope {
   timed_out: boolean;
 }
 
-export interface MemoryResult {
-  ok: boolean;
-  action: string;
-  key?: string;
-  value?: unknown;
-  keys?: string[];
-  message?: string;
-}
-
-export type StorageResult = MemoryResult;

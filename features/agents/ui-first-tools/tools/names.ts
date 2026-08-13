@@ -22,8 +22,6 @@ export const UI_FIRST_TOOL_NAMES = [
   // loop on every task update. The TaskPanel still renders the list via its
   // Supabase Realtime subscription; the agent's writes now happen server-side.
   "user_todos",
-  "scratchpad",
-  "storage",
 ] as const;
 
 export type UiFirstToolName = (typeof UI_FIRST_TOOL_NAMES)[number];

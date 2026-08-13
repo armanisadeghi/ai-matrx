@@ -579,14 +579,6 @@ export const canvasArtifactService = {
       }
 
       const normalizedExternalSystem: string | null = null;
-      // `user_id` is the LAST legacy write left in this repo: it is the lead
-      // column of `uq_cx_artifact_source_natural_key`, the dedup index this
-      // upsert infers. Stopping the write before that index is rebuilt on
-      // `created_by` would make every existing row invisible to ON CONFLICT
-      // and reintroduce duplicate artifacts. Delete this line (and switch
-      // `onConflict` below) in the same change that lands the new index.
-      // Ownership itself is already canonical — `_stamp_actor` fills
-      // `created_by`, and the natural-key read below keys on it.
       const insertRow = {
         canvas_item_id: input.canvasId,
         message_id: isChat ? input.source.id : null,
@@ -594,7 +586,6 @@ export const canvasArtifactService = {
         source_system: input.source.system,
         source_id: input.source.id,
         artifact_index: input.artifactIndex,
-        user_id: userId,
         artifact_type: artifactType,
         status: "published" as const,
         title: input.title ?? null,
@@ -614,8 +605,10 @@ export const canvasArtifactService = {
         .schema("chat")
         .from("artifact")
         .upsert(insertRow, {
+          // Infers `uq_cx_artifact_source_natural_key_cb` — the canonical
+          // dedup key, on `created_by` (stamped by `_stamp_actor`).
           onConflict:
-            "user_id,source_system,source_id,artifact_index,artifact_type,external_system",
+            "created_by,source_system,source_id,artifact_index,artifact_type,external_system",
           ignoreDuplicates: true,
         })
         .select("id")

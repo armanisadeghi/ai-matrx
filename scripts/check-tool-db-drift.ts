@@ -50,9 +50,7 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import {
-  scratchpadArgsSchema,
   requestTakeoverArgsSchema,
-  storageArgsSchema,
   updatePlanArgsSchema,
   userArgsSchema,
   userTodosArgsSchema,
@@ -68,8 +66,6 @@ const SCHEMAS: Record<string, z.ZodTypeAny> = {
   update_plan: updatePlanArgsSchema,
   request_user_takeover: requestTakeoverArgsSchema,
   user_todos: userTodosArgsSchema,
-  scratchpad: scratchpadArgsSchema,
-  storage: storageArgsSchema,
 };
 
 interface DbToolRow {
