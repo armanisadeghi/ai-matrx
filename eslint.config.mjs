@@ -44,12 +44,24 @@ const windowPanelsImportRestriction = {
                 'features/files/virtual-sources is internal — the adapters are registered at module load. Compose against @/features/files/handler/handler or the public hooks.',
         },
         {
+            // uploadGuardOpeners is the ONE sanctioned entry point for
+            // imperative call sites (requestUpload) and is deliberately
+            // absent from this list. Everything else in the directory
+            // (cloudUpload, tusUpload, the host components) stays internal.
+            // NOTE: no bare '@/features/files/upload' directory pattern here —
+            // gitignore semantics make it impossible to re-include a child of
+            // an excluded directory, which would re-ban uploadGuardOpeners.
+            // The barrel itself is banned via `paths` in
+            // deletedFileHooksRestriction below.
             group: [
-                '@/features/files/upload',
-                '@/features/files/upload/*',
+                '@/features/files/upload/index',
+                '@/features/files/upload/cloudUpload',
+                '@/features/files/upload/tusUpload',
+                '@/features/files/upload/UploadGuardHost',
+                '@/features/files/upload/UploadGuardHostImpl',
             ],
             message:
-                'features/files/upload is internal. Use useFileUpload from @/features/files/handler/hooks/useFileUpload (or requestUpload from @/features/files/upload/requestUpload for imperative call sites).',
+                'features/files/upload is internal. Use useFileUpload from @/features/files/handler/hooks/useFileUpload (or requestUpload from @/features/files/upload/uploadGuardOpeners for imperative call sites).',
         },
         {
             group: [
@@ -84,6 +96,14 @@ const deletedFileHooksRestriction = {
             name: '@/features/files',
             message:
                 'The features/files barrel (index.ts) was deleted. Import directly from the owning module — e.g. @/features/files/handler/handler, @/features/files/components/inline/InlineMediaRef, @/features/files/types. See features/files/FEATURE.md.',
+        },
+        {
+            // Exact-match twin of the features/files/upload internal-module
+            // ban above (the directory glob cannot ban the barrel without
+            // also banning the sanctioned uploadGuardOpeners entry point).
+            name: '@/features/files/upload',
+            message:
+                'features/files/upload is internal. Use useFileUpload from @/features/files/handler/hooks/useFileUpload (or requestUpload from @/features/files/upload/uploadGuardOpeners for imperative call sites).',
         },
         {
             name: '@/features/files/hooks/useSignedUrl',
@@ -1351,13 +1371,14 @@ export default [
             ],
             // Browser dialogs are banned — see CLAUDE.md "Browser dialogs are BANNED".
             // Use <ConfirmDialog /> from @/components/ui/confirm-dialog,
-            // or toast.success/error from sonner, or a proper <Dialog />.
-            // Set to 'warn' (not 'error') only because the codebase has a
-            // long tail of legacy violations being cleaned up incrementally.
-            // For new code, treat the warning as a hard stop.
-            'no-alert': 'warn',
+            // confirm() from @/components/dialogs/confirm/ConfirmDialogHost,
+            // toast from @/lib/toast, or <TextInputDialog />.
+            // Promoted warn → error 2026-08-12 (D67): the legacy long tail
+            // was swept to zero (features/, components/, demos, admin
+            // component displays all clean).
+            'no-alert': 'error',
             'no-restricted-globals': [
-                'warn',
+                'error',
                 {
                     name: 'confirm',
                     message:
@@ -1375,7 +1396,7 @@ export default [
                 },
             ],
             'no-restricted-properties': [
-                'warn',
+                'error',
                 {
                     object: 'window',
                     property: 'confirm',

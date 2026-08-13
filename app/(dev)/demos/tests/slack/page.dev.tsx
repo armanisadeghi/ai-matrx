@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import SlackManager from './components/SlackManager';
+import { TextInputDialog } from '@/components/dialogs/text-input/TextInputDialog';
 
 const clientId = process.env.NEXT_PUBLIC_SLACK_CLIENT_ID;
 const scopes = [
@@ -50,19 +51,23 @@ const SlackPage = () => {
 
   const slackAuthUrl = `https://slack.com/oauth/v2/authorize?client_id=${clientId}&scope=${scopes.join(',')}&redirect_uri=${encodeURIComponent(redirectUri + "/api/slack/oauth/callback")}`;
 
+  const [tokenDialogOpen, setTokenDialogOpen] = useState(false);
+
   const handleManualTokenAdd = () => {
-    const token = prompt("Enter your Slack OAuth token (xoxb-...)");
-    if (token) {
-      const savedTokens = localStorage.getItem('slackTokens');
-      const tokensList = savedTokens ? JSON.parse(savedTokens) : [];
+    setTokenDialogOpen(true);
+  };
 
-      if (!tokensList.includes(token)) {
-        tokensList.push(token);
-        localStorage.setItem('slackTokens', JSON.stringify(tokensList));
-      }
+  const handleTokenConfirm = (token: string) => {
+    const savedTokens = localStorage.getItem('slackTokens');
+    const tokensList = savedTokens ? JSON.parse(savedTokens) : [];
 
-      setIsLoggedIn(true);
+    if (!tokensList.includes(token)) {
+      tokensList.push(token);
+      localStorage.setItem('slackTokens', JSON.stringify(tokensList));
     }
+
+    setIsLoggedIn(true);
+    setTokenDialogOpen(false);
   };
 
   return (
@@ -103,6 +108,15 @@ const SlackPage = () => {
               </div>
           )}
         </div>
+        <TextInputDialog
+            open={tokenDialogOpen}
+            onOpenChange={setTokenDialogOpen}
+            title="Add Slack token"
+            description="Enter your Slack OAuth token (xoxb-...)."
+            placeholder="xoxb-..."
+            confirmLabel="Add token"
+            onConfirm={handleTokenConfirm}
+        />
       </div>
   );
 };
