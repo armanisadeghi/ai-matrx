@@ -20,15 +20,22 @@
  *   the remedy registry, so a check whose only remedy is a copy-able manual
  *   instruction (a robots tag, a redirect, a hosting fix) can never produce a
  *   button with nothing behind it. Metadata checks rank first because their
- *   chain is complete end to end: chip -> SEO agent -> SERP proposals ->
- *   `ApplyMetaToPage` -> `updatePageIntent` writes the page.
+ *   chain is complete end to end.
+ * - THE STRONGEST CHIP WINS (`G-FINDING-FIX`, closed 2026-08-13): before a chip
+ *   is emitted, `upgradeToDirectFix` tries the CODE pipe. When the fix is
+ *   genuinely derivable from stored crawl evidence, the chip carries the exact
+ *   replacement text and an `apply_page_meta` action that lands it as the
+ *   page's desired metadata plus a CMS DRAFT — the loop closes on the page, not
+ *   in a conversation. Otherwise the chip stays the agent launch, and the
+ *   judgement-call class is served by the purpose-built SEO Finding Fixer on
+ *   the finding's own page (`FindingFixCard`). Nothing here ever publishes.
  *
  * Sibling work deliberately NOT done here (each is its own gap): making the
- * finding lifecycle user-writable (`G-FINDING-TRACK`), the accepted-finding ->
- * CMS draft fix path (`G-FINDING-FIX`), and absorbing kg-suggestions
- * (`G-SUGGEST-FORK`). Each plugs into this producer rather than replacing it:
- * a new action on a finding is a new remedy in `finding-remedies.ts`, and it
- * starts producing chips here with no change to this file.
+ * finding lifecycle user-writable (`G-FINDING-TRACK`) and absorbing
+ * kg-suggestions (`G-SUGGEST-FORK`). Each plugs into this producer rather than
+ * replacing it: a new action on a finding is a new remedy in
+ * `finding-remedies.ts`, and it starts producing chips here with no change to
+ * this file.
  *
  * System-of-record: /Users/armanisadeghi/code/common-docs/systems/assists/FEATURE.md
  */
@@ -39,6 +46,9 @@ import { emitAssistTracked } from "@/features/assists/redux/emitTracked";
 import type { Assist, EmitAssistInput } from "@/features/assists/types";
 import { listActionableOpenFindings } from "@/features/marketing/data/analysis-service";
 import type { FindingListRow } from "@/features/marketing/data/analysis-types";
+import { getPageWorkspace } from "@/features/marketing/data/service";
+import { planDeterministicFix } from "@/features/marketing/lib/finding-fix";
+import { buildFindingFixEvidence } from "@/features/marketing/lib/finding-fix-evidence";
 import {
   APPLIABLE_METADATA_KEYS,
   aiRemedyItemKeys,
@@ -142,6 +152,76 @@ function findingChip(
 }
 
 /**
+ * THE WRITE-BACK UPGRADE (`G-FINDING-FIX`). For a chip we are about to emit,
+ * try the CODE pipe: if the fix is genuinely derivable from evidence the
+ * crawler already stored, the chip stops being "open an agent about this" and
+ * becomes the change itself — the exact replacement text in the card, and one
+ * verb button that lands it as the page's desired metadata plus a CMS DRAFT.
+ *
+ * Bounded on purpose: one extra read per emitted candidate (at most
+ * MAX_PAGE_CHIPS per sweep), and a failure degrades to the AI chip rather than
+ * losing the chip. Never publishes — see `finding-fix-apply.ts`.
+ */
+async function upgradeToDirectFix(
+  chip: EmitAssistInput,
+  row: FindingListRow,
+  siteId: string,
+): Promise<EmitAssistInput> {
+  if (!row.page_id) return chip;
+  let workspace;
+  try {
+    workspace = await getPageWorkspace(siteId, row.page_id);
+  } catch (error) {
+    console.error("[finding-assists] page read for direct fix failed:", error);
+    return chip;
+  }
+  const draft = planDeterministicFix(
+    buildFindingFixEvidence({
+      itemKey: row.item_key,
+      page: workspace.page,
+      snapshot: workspace.latestSnapshot,
+      // The brand name comes from the page's own og:site_name when it has
+      // one — real evidence beats a domain string as a title suffix.
+      site: null,
+    }),
+  );
+  if (!draft) return chip;
+
+  const what = draft.metaTitle
+    ? draft.metaDescription
+      ? "title and description"
+      : "title"
+    : "description";
+  return {
+    ...chip,
+    title: `Fix the search ${what} — ${pageLabel(row)}`,
+    // The user reads the EXACT text before the button is ever clickable.
+    body: [
+      draft.rationale,
+      "",
+      draft.metaTitle ? `Title: ${draft.metaTitle}` : null,
+      draft.metaDescription ? `Description: ${draft.metaDescription}` : null,
+    ]
+      .filter((line): line is string => line !== null)
+      .join("\n"),
+    reasoning: `Drafted from ${draft.source} — no model call, and checked against the same limits the analysis re-runs with.`,
+    action: {
+      kind: "apply_page_meta",
+      siteId,
+      pageId: row.page_id,
+      ...(draft.metaTitle ? { metaTitle: draft.metaTitle } : {}),
+      ...(draft.metaDescription
+        ? { metaDescription: draft.metaDescription }
+        : {}),
+      source: draft.source,
+      rationale: draft.rationale,
+    },
+    // Ranked above the launch-an-agent chips: this one ends on the page.
+    priority: (chip.priority ?? 0) + 2,
+  };
+}
+
+/**
  * One chip for a check failing across many pages. The action is a real door,
  * not advice: the register filtered to exactly that check, which is where the
  * user (or the sibling `G-FINDING-FIX` work) acts on the batch.
@@ -214,7 +294,7 @@ export async function produceFindingAssists(args: {
     const chip = findingChip(row, siteId, siteDomain, expiresAtIso());
     if (!chip) continue;
     chippedKeys.add(row.item_key);
-    candidates.push(chip);
+    candidates.push(await upgradeToDirectFix(chip, row, siteId));
   }
 
   // Rollup: the most widespread check that did NOT already get a page chip.

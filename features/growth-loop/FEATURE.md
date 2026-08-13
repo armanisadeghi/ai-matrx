@@ -89,6 +89,15 @@ Rules (also stated at the top of the file):
 
 ## Change log
 
+- 2026-08-13 — claude: **`G-FINDING-FIX` CLOSED — the write-back half of the loop connects on
+  all three pipes.** AI: `scripts/seed_finding_fixer.py` (aidream) creates the purpose-built
+  system agent `seo_finding_fixer_v1`, seeds + activates its two Content-IR kinds, and pins the
+  slot `seo.finding_fixer`, which is now reachable at `POST /seo/findings/draft-fix`. CODE:
+  `planDeterministicFix` drafts the derivable class with zero model calls and the findings assist
+  producer upgrades those chips to the new `apply_page_meta` action. HUMAN: `FindingFixCard`
+  shows before/after plus risks behind one Apply-as-a-draft button. All three land through the
+  seams that already existed (`updatePageIntent` + `executeCmsPush`), writing draft twins only —
+  nothing publishes and no route moves.
 - 2026-08-13 — claude: **the HUMAN pipe of the run object shipped** (`run/`). A site owner can
   start their site's loop, see which of the twelve stages it is on, see the blocker in plain
   English, and continue / skip / pause / re-check it. `G-ORCHESTRATOR` narrowed from
