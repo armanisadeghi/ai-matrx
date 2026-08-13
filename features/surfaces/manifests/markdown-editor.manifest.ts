@@ -239,6 +239,8 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const markdownEditorManifest: SurfaceManifest = {
   surfaceName: "matrx-user/markdown-editor",
   readiness: "verified",
+  readinessNote:
+    "Re-verified 2026-08-12 on a MAPPED route after the `SurfaceAgentsPanelImpl` overlay fix. The earlier FEATURE.md entry warned that the panel prefers the ROUTE surface, so verification had to run on an unmapped route (/administration/utilities/markdown-tester); that workaround is now obsolete. With the window open over /dashboard the popover names Markdown Editor and runs against ITS scope — reverting that one line puts `matrx-user/dashboard` back. All three targets exercised live in this pass: `markdown_content` and `append_markdown_content` landed in the visible editor, `pipeline_processor` was declined with \"Keep as is\" and the agent reported the decline without an error, and an undeclared request was refused. READS are fine here, including LARGE values — a 34,045-character document was read back accurately (heading count plus a token near the end) — so this surface is NOT affected by the overlay read gap. Note `/markdown-editor` is a route→surface mapping with no page behind it: the reachable mounts are this floating window and the `markdownEditor` fullscreen overlay, both covered by the manifest's `overlayId` for panel precedence.",
   overlayId: "markdownEditorWindow",
   label: "Markdown Editor",
   intro: `<surface_intro>
