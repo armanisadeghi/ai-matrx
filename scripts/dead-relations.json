@@ -1076,26 +1076,26 @@
     {
       "relation": "cld_file_permissions",
       "old": "public.cld_file_permissions",
-      "newSchema": "(deleted)",
-      "new": "(deleted)",
+      "newSchema": "graveyard",
+      "new": "graveyard.cld_file_permissions",
       "since": "2026-08-12",
-      "reason": "no successor; DROPPED (0 rows; only consumer was the uncalled cld RPC family, also dropped)."
+      "reason": "public twin DROPPED 2026-08-12 (0 rows, no consumers); an older copy from a prior sweep still sits in graveyard awaiting final DROP."
     },
     {
       "relation": "cld_user_groups",
       "old": "public.cld_user_groups",
-      "newSchema": "(deleted)",
-      "new": "(deleted)",
+      "newSchema": "graveyard",
+      "new": "graveyard.cld_user_groups",
       "since": "2026-08-12",
-      "reason": "no successor; DROPPED (0 rows)."
+      "reason": "public twin DROPPED 2026-08-12 (0 rows, no consumers); an older copy from a prior sweep still sits in graveyard awaiting final DROP."
     },
     {
       "relation": "cld_user_group_members",
       "old": "public.cld_user_group_members",
-      "newSchema": "(deleted)",
-      "new": "(deleted)",
+      "newSchema": "graveyard",
+      "new": "graveyard.cld_user_group_members",
       "since": "2026-08-12",
-      "reason": "no successor; DROPPED (0 rows)."
+      "reason": "public twin DROPPED 2026-08-12 (0 rows, no consumers); an older copy from a prior sweep still sits in graveyard awaiting final DROP."
     },
     {
       "relation": "agenda_task",
