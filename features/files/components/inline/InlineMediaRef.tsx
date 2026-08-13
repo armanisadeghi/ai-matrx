@@ -41,6 +41,7 @@ import {
   VolumeX,
 } from "lucide-react";
 import { useFileAs } from "@/features/files/handler/hooks/useFileAs";
+import { useFileBlob } from "@/features/files/hooks/useFileBlob";
 import { useOutputSinkRef } from "@/features/audio/useOutputSinkRef";
 import { useMediaElementPlaybackSession } from "@/features/audio/session/useMediaElementPlaybackSession";
 import {
@@ -567,11 +568,23 @@ export function InlineMediaRef({
   className,
 }: InlineMediaRefProps) {
   const source = useMemo(() => toFileSource(ref), [ref]);
+  const sourceFileId =
+    source && source.kind === "file_id" ? source.fileId : null;
+  const needsPixelReadableBlob = Boolean(crossOrigin && sourceFileId);
+
+  // Canvas consumers cannot use an authenticated download URL as <img src>
+  // (the element cannot attach our bearer token), and the CDN deliberately
+  // does not promise CORS headers. Reuse the canonical authenticated byte
+  // cache: it downloads by file ID and exposes a same-origin blob: URL whose
+  // pixels marker.js/canvas may safely read.
+  const { url: pixelReadableUrl, error: pixelReadableError } = useFileBlob(
+    needsPixelReadableBlob ? sourceFileId : null,
+  );
   // Canvas-capable consumers need a URL whose bytes remain readable after
-  // load. Let the universal handler select its CORS-safe transport instead
-  // of leaking a signed/CDN URL decision into each canvas feature.
-  const { result: resolvedUrl } = useFileAs(
-    source,
+  // load. File IDs use the authenticated blob cache above. External URLs
+  // still flow through the universal handler's fetchable transport.
+  const { result: resolvedUrl, error: resolveError } = useFileAs(
+    needsPixelReadableBlob ? null : source,
     crossOrigin ? { kind: "fetchable_url" } : { kind: "html_src" },
   );
   // Routes <audio>/<video> to the user's chosen output device (setSinkId) and
@@ -604,9 +617,6 @@ export function InlineMediaRef({
     onPause: () => setIsMediaPlaying(false),
     onEnded: () => setIsMediaPlaying(false),
   };
-  const sourceFileId =
-    source && source.kind === "file_id" ? source.fileId : null;
-
   // A freshly re-minted URL after the resolved one failed to load. For an
   // owned file, a dead URL is a non-event — we re-mint from file_id rather
   // than surface a broken image.
@@ -617,7 +627,9 @@ export function InlineMediaRef({
     remintAttempts.current = 0;
   }, [sourceFileId]);
 
-  const url = remintedUrl ?? resolvedUrl;
+  const url = remintedUrl ?? pixelReadableUrl ?? resolvedUrl;
+  const mediaResolutionError =
+    pixelReadableError ?? resolveError?.message ?? null;
   const dimensions = resolveDimensions(size);
   const isFill = dimensions === "fill";
   const elementType = inferElementType(ref, as);
@@ -674,6 +686,32 @@ export function InlineMediaRef({
     );
 
   if (!url) {
+    if (mediaResolutionError) {
+      if (errorFallback === null) return null;
+      if (errorFallback === "info") {
+        return (
+          <InformativeErrorFallback
+            url={sourceFileId ? `file:${sourceFileId}` : "unresolved-media"}
+            alt={alt}
+            elementType={elementType}
+            mediaRef={ref}
+            dimensions={dimensions}
+            rounded={rounded}
+            className={className}
+          />
+        );
+      }
+      return (
+        <FallbackVisual
+          kind={errorFallback}
+          dimensions={dimensions}
+          rounded={rounded}
+          border={border}
+          className={className}
+          icon={fallbackIcon ?? defaultIcon}
+        />
+      );
+    }
     if (!fallback) return null;
     return (
       <FallbackVisual
