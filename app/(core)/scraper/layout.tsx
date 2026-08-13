@@ -12,7 +12,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <>
       <ScraperHubHeader />
-      <div className="h-full overflow-hidden flex flex-col bg-textured">
+      <div className="flex h-full flex-col overflow-y-auto overflow-x-hidden bg-textured">
         {children}
       </div>
     </>

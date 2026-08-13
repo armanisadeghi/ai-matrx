@@ -34,7 +34,7 @@ export default function ImagesLayout({ children }: { children: ReactNode }) {
       </PageHeader>
       <div className="flex h-full min-h-0 overflow-hidden bg-textured">
         <ImagesSidebar />
-        <main className="flex-1 min-w-0 min-h-0 overflow-hidden max-md:pb-24 pt-[var(--shell-header-h)]">
+        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden pt-[var(--shell-header-h)] max-md:pb-24">
           {children}
         </main>
       </div>

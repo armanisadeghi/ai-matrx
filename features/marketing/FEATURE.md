@@ -6,6 +6,13 @@
 
 ## Internal Authority Router
 
+The site layout's route-child boundary always provides a vertical-scroll
+fallback (`overflow-y-auto overflow-x-hidden`). Individual table/editor leaves
+may own a more specific inner scrollport, but no site page can depend on every
+future leaf remembering to opt into scrolling. This invariant is enforced
+repo-wide by `pnpm check:scroll-chain:strict`, which follows route layouts into
+their directly imported client shells.
+
 `/marketing/brands/[brandId]/sites/[siteId]/authority` is the site-wide
 authority-flow workspace. It combines the existing backlink intelligence,
 crawler link graph/Link Score, GSC demand and SEO Juice, page roles, keyword
@@ -735,6 +742,16 @@ as keyof paths` cast pending the OpenAPI type sync).
   dead `batch_item` branch while preserving every live site/page/session/item
   integrity check; a rollback-only clone insert verified the trigger on the
   live database.
+- 2026-08-12 — Codex: **Route layouts can no longer amputate natural-height
+  pages.** The authority workspace reproduced the systemic failure: its 1,146px
+  content sat inside the site layout's 756px `overflow-hidden` child boundary,
+  leaving no permitted scroller. A production audit confirmed the same class
+  on site capabilities/ranks and multiple public routes. Every route boundary
+  found by the full App Router sweep now supplies a vertical-scroll fallback;
+  existing table/editor leaves retain their inner scrollports. The existing
+  `check:scroll-chain` release gate now audits all route pages and layouts,
+  including one directly imported client-shell boundary, so a new
+  `{children}` clipper fails strict checks before release.
 - 2026-08-13 — Codex: **The shared Marketing cross-pointer trigger is now
   statically typed per table branch.** Its eleven-table polymorphism previously
   made `plpgsql_check` report every other branch's `NEW.<column>` as a missing

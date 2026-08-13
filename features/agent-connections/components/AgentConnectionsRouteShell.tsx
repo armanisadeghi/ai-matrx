@@ -151,7 +151,7 @@ export function AgentConnectionsRouteShell({
   });
 
   const mainPane = (
-    <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
+    <div className="h-full overflow-y-auto overflow-x-hidden pt-[var(--shell-header-h)]">
       {children}
     </div>
   );
@@ -162,52 +162,56 @@ export function AgentConnectionsRouteShell({
       getScope={getScope}
       getWriteHandlers={getWriteHandlers}
     >
-    <PanelControlProvider>
-      <PageHeader>
-        <AgentConnectionsHeaderControls />
-      </PageHeader>
-      <AgentConnectionsNavProvider mode="route">
-        <MobilePanelShell
-          desktop={
-            <ClientGroup
-              id={GROUP_ID}
-              groupKey={GROUP_KEY}
-              cookieName={cookieName}
-              orientation="horizontal"
-              defaultLayout={defaultLayout}
-              className="h-full w-full"
-            >
-              <RegisteredPanel
-                registerAs="sidebar"
+      <PanelControlProvider>
+        <PageHeader>
+          <AgentConnectionsHeaderControls />
+        </PageHeader>
+        <AgentConnectionsNavProvider mode="route">
+          <MobilePanelShell
+            desktop={
+              <ClientGroup
+                id={GROUP_ID}
                 groupKey={GROUP_KEY}
-                id="sidebar"
-                collapsible
-                collapsedSize="0%"
-                defaultSize="18%"
-                minSize="10%"
+                cookieName={cookieName}
+                orientation="horizontal"
+                defaultLayout={defaultLayout}
+                className="h-full w-full"
               >
-                <div className="h-full overflow-hidden pt-[var(--shell-header-h)] bg-muted/10 border-r border-border flex flex-col">
+                <RegisteredPanel
+                  registerAs="sidebar"
+                  groupKey={GROUP_KEY}
+                  id="sidebar"
+                  collapsible
+                  collapsedSize="0%"
+                  defaultSize="18%"
+                  minSize="10%"
+                >
+                  <div className="h-full overflow-hidden pt-[var(--shell-header-h)] bg-muted/10 border-r border-border flex flex-col">
+                    <AgentConnectionsSidebar
+                      basePath={AGENT_CONNECTIONS_BASE}
+                    />
+                  </div>
+                </RegisteredPanel>
+                <Handle hideWhenCollapsed={["sidebar"]} />
+                <Panel id="main" minSize="40%">
+                  {mainPane}
+                </Panel>
+              </ClientGroup>
+            }
+            main={mainPane}
+            panels={[
+              {
+                id: "sections",
+                label: "Sections",
+                icon: ListTree,
+                content: (
                   <AgentConnectionsSidebar basePath={AGENT_CONNECTIONS_BASE} />
-                </div>
-              </RegisteredPanel>
-              <Handle hideWhenCollapsed={["sidebar"]} />
-              <Panel id="main" minSize="40%">
-                {mainPane}
-              </Panel>
-            </ClientGroup>
-          }
-          main={mainPane}
-          panels={[
-            {
-              id: "sections",
-              label: "Sections",
-              icon: ListTree,
-              content: <AgentConnectionsSidebar basePath={AGENT_CONNECTIONS_BASE} />,
-            },
-          ]}
-        />
-      </AgentConnectionsNavProvider>
-    </PanelControlProvider>
+                ),
+              },
+            ]}
+          />
+        </AgentConnectionsNavProvider>
+      </PanelControlProvider>
     </SurfaceRuntimeProvider>
   );
 }

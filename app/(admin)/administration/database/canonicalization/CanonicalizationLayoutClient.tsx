@@ -99,7 +99,9 @@ export function CanonicalizationLayoutClient({
                 }}
                 className={cn(
                   "flex items-center gap-2 border-b border-border/60 px-4 py-3 text-sm font-medium last:border-b-0",
-                  active ? "bg-accent text-accent-foreground" : "text-muted-foreground",
+                  active
+                    ? "bg-accent text-accent-foreground"
+                    : "text-muted-foreground",
                 )}
               >
                 {pending ? (
@@ -147,7 +149,9 @@ export function CanonicalizationLayoutClient({
         </div>
       )}
 
-      <div className="min-h-0 flex-1 overflow-hidden">{children}</div>
+      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+        {children}
+      </div>
     </div>
   );
 }

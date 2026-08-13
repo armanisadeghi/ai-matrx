@@ -39,7 +39,11 @@ import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
-import { useBrand, useSite, useSiteOptions } from "@/features/marketing/data/hooks";
+import {
+  useBrand,
+  useSite,
+  useSiteOptions,
+} from "@/features/marketing/data/hooks";
 import type { MarketingSite } from "@/features/marketing/types";
 import {
   jsonNumber,
@@ -319,7 +323,7 @@ export function MarketingSiteLayoutClient({
         ]}
       />
       <div className="flex h-full min-h-0 flex-col overflow-hidden pt-[var(--shell-header-h)]">
-        <div className="min-h-0 flex-1 overflow-hidden">
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
           <MarketingSiteSurfaceProvider>
             <MarketingSiteWriteTargets site={current} />
             {children}

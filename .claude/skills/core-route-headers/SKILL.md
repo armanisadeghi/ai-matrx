@@ -36,6 +36,11 @@ someone fixes it.
 
 1. **Faux in-body header** — a body-rendered bar with title + actions (`border-b` + `bg-card`/`bg-background/*`). Move controls into `<PageHeader>`; delete the bar.
 2. **Banned height math** — `h-[calc(100dvh-…)]`, `h-page`, `h-screen`, `min-h-screen` on a (core) body. Replace with `h-full overflow-hidden` (see USAGE.md body-type table).
+   A **route layout boundary** is different: it must never put `{children}`
+   behind unconditional vertical clipping. Use `overflow-y-auto
+   overflow-x-hidden` as the fallback there; full-height leaf editors and
+   tables retain their own inner scroll, while natural-height leaves cannot be
+   amputated by one missed class.
 3. **Title/description block in a dashboard page** — marketing copy inside app chrome. **Delete it**; the header center carries a `text-sm` title at most.
 4. **Missing top clearance for floating/static content** — content that must NOT slide behind the glass (grid of cards with action buttons, sticky toolbars) needs `pt-[var(--shell-header-h)]` (never a hardcoded `pt-12`); freely-scrolling content gets **no** top padding so it floats behind the glass. This is the `/agents/all` mobile bug: card buttons float up into the header.
 5. **Desktop actions vanish on mobile** — `hidden lg:flex` with no mobile counterpart. The rule: desktop actions collapse into one or two **bottom sheets** on mobile (`HeaderActions` in `components/header-variants/` renders `BottomSheet` below `lg`; or `components/official/bottom-sheet/BottomSheet.tsx` directly). `features/agents/components/shared/AgentHeaderMobile.tsx` exists but is commented out in `AgentHeader.tsx` — that class of gap.
@@ -79,6 +84,7 @@ Per-breakpoint content: `<PageHeader desktop={…} mobile={…} />`. Mobile neve
 
 ```bash
 pnpm check:page-headers            # faux-header markers (KNOWN NARROW — misses bg-background/* bars)
+pnpm check:scroll-chain:strict     # all route pages/layouts + cross-component bounded-height chains
 grep -rln "calc(100dvh\|calc(100vh\|h-screen\|h-page" app/\(core\) --include="*.tsx"
 grep -rLn "PageHeader" <route dir>  # route family never injecting the header
 grep -rn "pt-12\|pt-10\|pt-8" <route dir>  # hardcoded header offsets → var(--shell-header-h)

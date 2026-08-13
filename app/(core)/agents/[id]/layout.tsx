@@ -29,7 +29,7 @@ export default async function AgentDetailLayout({
     <>
       {/* Hydrates Redux store. Runs after paint so layout never blocks on it. */}
       <AgentHydratorServer agentId={id} />
-      <div className="h-full overflow-hidden">{children}</div>
+      <div className="h-full overflow-y-auto overflow-x-hidden">{children}</div>
     </>
   );
 }

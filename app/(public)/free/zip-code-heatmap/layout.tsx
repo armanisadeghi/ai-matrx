@@ -13,7 +13,7 @@ export default function ZipCodeHeatmapLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden">
+    <div className="flex h-[calc(100dvh-2.5rem)] flex-col overflow-y-auto overflow-x-hidden">
       {children}
     </div>
   );
