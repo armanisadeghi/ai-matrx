@@ -74,6 +74,25 @@ an agent must never assume one has run.
 
 ## Change Log
 
+- **2026-08-13** — **Surface read half completed (`readiness` `partial` →
+  `verified`), and a dead tools fetch fixed.** The five per-tab values the
+  entry below left unemitted — `server_tools`, `server_configs`,
+  `server_connected_user_count`, `selected_server_active_tab`,
+  `latest_test_result` — now reach the provider: each tab reports what it
+  loaded UP into a ref `getScope` samples at Run (lifting them into page state
+  would remount the detail pane mid-fetch), and `null` "not loaded" stays
+  distinct from `[]` "none exist" so an agent can tell the two apart.
+  `<Tabs>` is controlled now, because the manifest declares the active tab and
+  an uncontrolled `defaultValue` meant nobody held the answer. The row→value
+  derivation moved into `mcp-servers-scope.ts`. `selected_server` gained the
+  PERSISTED `last_test_*` columns the header badge renders (distinct from this
+  session's `latest_test_result`) plus `website_url`; `server_configs` gained
+  `env_schema` / `notes` / `min_node_version` — the env SCHEMA only (key,
+  label, required, secret), never values. **Bug fixed:** `ToolsTab` passed the
+  SLUG to `listServerTools`, which filters the uuid column
+  `managed_by_server_id` — a leftover from the pre-2026 `${slug}:%` signature —
+  so the Tools tab could only ever error or come back empty.
+
 - **2026-08-13** — **Agent-writable: one `new_server_draft` target, plus this
   surface's first `SurfaceRuntimeProvider`.** The authored half of the
   Add-server wizard (name, vendor, category, description) moved from
