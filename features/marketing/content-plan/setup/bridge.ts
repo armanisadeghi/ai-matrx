@@ -270,6 +270,72 @@ export async function bridgeRealize(
   return parseAlign(requireBody(result, "cms-align"));
 }
 
+/**
+ * Adopt live-but-unplanned CMS pages into the plan: the server creates the
+ * plan node at each page's route and links the pair. Dry-run first, always.
+ */
+export async function bridgeAdopt(
+  dispatch: AppDispatch,
+  siteId: string,
+  pageIds: string[],
+  options: { dryRun: boolean; cmsSite?: string },
+): Promise<BridgeAlignResult> {
+  const result = await dispatch(
+    callApi({
+      path: "/content-plan/sites/{site_id}/cms-align",
+      method: "POST",
+      pathParams: { site_id: siteId },
+      body: {
+        cms_site: options.cmsSite ?? null,
+        actions: pageIds.map((pageId) => ({ action: "adopt", page_id: pageId })),
+        dry_run: options.dryRun,
+      },
+    }),
+  );
+  return parseAlign(requireBody(result, "cms-align"));
+}
+
+/**
+ * Resolve a route conflict on ONE linked pair via the server's `map` action:
+ * `plan_yields` rewrites the plan node's route to the page's; `cms_yields`
+ * moves the page to the plan's route (refused on a published page unless
+ * `force`, which also records the old route for a redirect). Dry-run first.
+ */
+export async function bridgeResolveConflict(
+  dispatch: AppDispatch,
+  siteId: string,
+  options: {
+    nodeId: string;
+    pageId: string;
+    resolve: "plan_yields" | "cms_yields";
+    force?: boolean;
+    dryRun: boolean;
+    cmsSite?: string;
+  },
+): Promise<BridgeAlignResult> {
+  const result = await dispatch(
+    callApi({
+      path: "/content-plan/sites/{site_id}/cms-align",
+      method: "POST",
+      pathParams: { site_id: siteId },
+      body: {
+        cms_site: options.cmsSite ?? null,
+        actions: [
+          {
+            action: "map",
+            node_id: options.nodeId,
+            page_id: options.pageId,
+            resolve: options.resolve,
+            force: options.force === true,
+          },
+        ],
+        dry_run: options.dryRun,
+      },
+    }),
+  );
+  return parseAlign(requireBody(result, "cms-align"));
+}
+
 function parsePublish(data: Record<string, unknown>): BridgePublishResult {
   const items: BridgePublishItem[] = [];
   for (const row of Array.isArray(data.results) ? data.results : []) {

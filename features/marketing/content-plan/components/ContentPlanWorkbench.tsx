@@ -50,10 +50,12 @@ import {
 } from "../setup/draft";
 import { liveMatchesById, usePlanReality } from "../hooks/usePlanReality";
 import { useCmsPageMap } from "../hooks/useCmsPageMap";
+import { usePlanDrift } from "../hooks/usePlanDrift";
 import { usePlanWorkspaceParams } from "../hooks/usePlanWorkspaceParams";
 import { PlanAssistStrip } from "./PlanAssistStrip";
+import { PlanDriftBar } from "./PlanDriftBar";
+import { PlanDriftSheet, type DriftFilter } from "./PlanDriftSheet";
 import { PlanGenerateBar } from "./PlanGenerateBar";
-import { PlanRealityBar } from "./PlanRealityBar";
 import { PlanWebsiteBar } from "./PlanWebsiteBar";
 import type { PlanNodeRow } from "../types";
 import { useContentPlanSites } from "./ContentPlanHeader";
@@ -117,7 +119,8 @@ export function ContentPlanWorkbench({
   // Bulk deepen: the SAME deepen fanned over every empty-brief page.
   const bulkDeepen = usePlanBulkDeepen(siteId);
   const [bulkDeepenConfirm, setBulkDeepenConfirm] = useState(false);
-  // Reality report (run from the header button — shared query cache).
+  // Reality report (auto, read-only, cached — shared query cache with the
+  // header's manual re-run button).
   const reality = usePlanReality(siteId);
   const liveById = useMemo(
     () => liveMatchesById(reality.report),
@@ -139,6 +142,20 @@ export function ContentPlanWorkbench({
     (cmsLink.data?.linked ? cmsLink.data.cmsSiteId : null) ??
     cmsPages.map?.cmsSiteId ??
     null;
+
+  // ONE drift state (bar + sheet + repairs) over the two witnesses above —
+  // both auto-loading, so drift is visible with no button press.
+  const drift = usePlanDrift(
+    siteId,
+    nodes.data ?? [],
+    cmsLink.data?.linked ? cmsLink.data.cmsSiteId : null,
+  );
+  const [driftOpen, setDriftOpen] = useState(false);
+  const [driftFilter, setDriftFilter] = useState<DriftFilter>("all");
+  const openDrift = useCallback((filter: DriftFilter) => {
+    setDriftFilter(filter);
+    setDriftOpen(true);
+  }, []);
 
   const statusCategories = useCategories({
     dimension: CATEGORY_DIMENSIONS.planStatus,
@@ -331,12 +348,15 @@ export function ContentPlanWorkbench({
           </div>
         ) : null}
 
-        {reality.report &&
-        (view === "tree" || view === "table" || view === "map") ? (
-          <PlanRealityBar
-            report={reality.report}
-            showTreeHint={view === "tree" || view === "map"}
-            onDismiss={reality.dismiss}
+        {/* The always-on line of measured truth: plan vs the live site.
+            Every count is a door into the drift sheet (THE DOOR LAW). */}
+        {siteId && (view === "tree" || view === "table" || view === "map") ? (
+          <PlanDriftBar
+            model={drift.model}
+            isLoading={drift.isLoading}
+            isRefreshing={drift.isRefreshing}
+            onOpen={openDrift}
+            onSyncAlignment={() => void drift.syncAlignment()}
           />
         ) : null}
 
@@ -579,6 +599,20 @@ export function ContentPlanWorkbench({
             />
           </SidePanelSurface>
         ) : null}
+
+        <PlanDriftSheet
+          open={driftOpen}
+          onOpenChange={setDriftOpen}
+          filter={driftFilter}
+          onFilterChange={setDriftFilter}
+          drift={drift}
+          onOpenNode={(nodeId) => {
+            setDriftOpen(false);
+            setSelectedNodeId(nodeId);
+            // The table doesn't read the selection — land where it shows.
+            if (view === "table") setView("tree");
+          }}
+        />
 
         {siteId && site ? (
           <NewNodeDialog
