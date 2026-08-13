@@ -99,7 +99,7 @@ export async function submitFeedback(
         feedback_type: input.feedback_type,
         route: input.route,
         description: input.description,
-        image_urls: input.image_urls || null,
+        image_file_ids: input.image_file_ids ?? [],
         status: "new",
         category_id: categoryId,
         assigned_to: assignedTo,
@@ -483,7 +483,7 @@ export async function sendUserReviewMessage(
   feedbackId: string,
   message: string,
   senderName?: string,
-  imageUrls?: string[],
+  imageFileIds?: string[],
 ): Promise<{ success: boolean; error?: string; data?: FeedbackUserMessage }> {
   try {
     const { supabase, user } = await requireAdminServiceAccess();
@@ -493,7 +493,8 @@ export async function sendUserReviewMessage(
       p_feedback_id: feedbackId,
       p_message: message,
       p_sender_name: name,
-      p_image_urls: imageUrls && imageUrls.length > 0 ? imageUrls : undefined,
+      p_image_file_ids:
+        imageFileIds && imageFileIds.length > 0 ? imageFileIds : undefined,
     });
     if (error) return { success: false, error: error.message };
     if (data === null) {
@@ -522,7 +523,7 @@ export async function adminReplyUserReview(
   feedbackId: string,
   message: string,
   senderName?: string,
-  imageUrls?: string[],
+  imageFileIds?: string[],
 ): Promise<{ success: boolean; error?: string; data?: FeedbackUserMessage }> {
   try {
     const { supabase, user } = await requireAdminServiceAccess();
@@ -532,7 +533,8 @@ export async function adminReplyUserReview(
       p_feedback_id: feedbackId,
       p_message: message,
       p_sender_name: name,
-      p_image_urls: imageUrls && imageUrls.length > 0 ? imageUrls : undefined,
+      p_image_file_ids:
+        imageFileIds && imageFileIds.length > 0 ? imageFileIds : undefined,
     });
     if (error) return { success: false, error: error.message };
     if (data === null) {
@@ -561,7 +563,7 @@ export async function replyToUserReview(
   feedbackId: string,
   message: string,
   senderName?: string,
-  imageUrls?: string[],
+  imageFileIds?: string[],
 ): Promise<{ success: boolean; error?: string; data?: FeedbackUserMessage }> {
   try {
     const supabase = await createClient();
@@ -576,7 +578,8 @@ export async function replyToUserReview(
       p_feedback_id: feedbackId,
       p_message: message,
       p_sender_name: name,
-      p_image_urls: imageUrls && imageUrls.length > 0 ? imageUrls : undefined,
+      p_image_file_ids:
+        imageFileIds && imageFileIds.length > 0 ? imageFileIds : undefined,
     });
     if (error) return { success: false, error: error.message };
     if (data === null) {

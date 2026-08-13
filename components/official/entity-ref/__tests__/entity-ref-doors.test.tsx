@@ -17,7 +17,14 @@ import { EntityRef } from "../EntityRef";
 
 jest.mock("next/link", () => ({
     __esModule: true,
-    default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => (
+  default: ({
+    href,
+    children,
+    ...rest
+  }: {
+    href: string;
+    children: React.ReactNode;
+  }) => (
         <a href={href} {...rest}>
             {children}
         </a>
@@ -59,10 +66,14 @@ describe("EntityRef doors for slots/shortcuts surfaces", () => {
         const open = container.querySelector('a[title="Open Flashcard Generator"]');
         expect(open?.getAttribute("href")).toBe("/agents/a1");
         expect(
-            container.querySelector('a[title="Open Flashcard Generator in a new tab"]'),
+      container.querySelector(
+        'a[title="Open Flashcard Generator in a new tab"]',
+      ),
         ).not.toBeNull();
         expect(
-            container.querySelector('button[title="Quick look at Flashcard Generator"]'),
+      container.querySelector(
+        'button[title="Quick look at Flashcard Generator"]',
+      ),
         ).not.toBeNull();
     });
 
@@ -83,7 +94,9 @@ describe("EntityRef doors for slots/shortcuts surfaces", () => {
         );
         const open = container.querySelector('a[title="Open Summarize"]');
         expect(open?.getAttribute("href")).toBe("/agents/a1/shortcuts/s1");
-        expect(container.querySelector('button[title="Quick look at Summarize"]')).not.toBeNull();
+    expect(
+      container.querySelector('button[title="Quick look at Summarize"]'),
+    ).not.toBeNull();
     });
 
     it("a name with no route and no peek renders as plain text, never a dead link", () => {
@@ -91,4 +104,16 @@ describe("EntityRef doors for slots/shortcuts surfaces", () => {
         expect(container.querySelector("a")).toBeNull();
         expect(container.textContent).toContain("best crm");
     });
+
+  it("preserves rich label children when the identity has no reachable door", () => {
+    renderRef(
+      <EntityRef token="seo_keyword" id="k1" name="best crm">
+        <span>best crm</span>
+        <code>k1</code>
+      </EntityRef>,
+    );
+    expect(container.querySelector("a, button")).toBeNull();
+    expect(container.textContent).toContain("best crm");
+    expect(container.textContent).toContain("k1");
+  });
 });

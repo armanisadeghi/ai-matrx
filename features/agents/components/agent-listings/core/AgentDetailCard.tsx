@@ -25,6 +25,7 @@ import {
 } from "../AgentSneakPeekModal";
 import { Button } from "@/components/ui/button";
 import { FavoriteAgentButton } from "../FavoriteAgentButton";
+import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 
 export interface AgentDetailCardProps {
   agent: AgentDefinitionRecord;
@@ -132,9 +133,10 @@ export function AgentDetailCard({ agent, onSelect }: AgentDetailCardProps) {
 
         {agent.modelId && (
           <div className="flex items-center gap-2">
-            <span className="text-xs text-foreground/80 font-mono truncate">
-              {agent.modelId}
-            </span>
+            <AiModelRef
+              modelId={agent.modelId}
+              className="max-w-full text-xs text-foreground/80"
+            />
           </div>
         )}
 

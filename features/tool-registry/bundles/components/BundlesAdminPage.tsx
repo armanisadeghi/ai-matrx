@@ -55,7 +55,7 @@ import {
 } from "@/features/tool-registry/doors";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
-import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { AiToolRef } from "@/components/official/entity-ref/AiIdentityRef";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_BUNDLES_SURFACE_NAME } from "@/features/surfaces/manifests/admin-bundles.manifest";
 import {
@@ -189,7 +189,9 @@ function BundlesAdminPageInner() {
         <Badge variant="outline" className="text-[10px]">
           {bundles.length}
         </Badge>
-        {loading && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+          {loading && (
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+          )}
         <Button
           size="sm"
           variant="ghost"
@@ -264,7 +266,9 @@ function BundlesAdminPageInner() {
                       className={`w-full text-left px-3 py-2 border-b border-border/50 hover:bg-muted/40 transition-colors ${isSel ? "bg-muted" : ""} ${b.is_active ? "" : "opacity-60"}`}
                     >
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="font-mono text-xs truncate">{b.name}</span>
+                          <span className="font-mono text-xs truncate">
+                            {b.name}
+                          </span>
                         <Badge
                           variant={b.is_system ? "default" : "secondary"}
                           className="text-[10px] flex-shrink-0"
@@ -415,7 +419,8 @@ function NewBundleDialog({
             />
             {!nameValid && name.length > 0 && (
               <p className="text-[11px] text-destructive">
-                Lowercase letters / digits / hyphens / underscores. Must start with a letter or digit.
+                Lowercase letters / digits / hyphens / underscores. Must start
+                with a letter or digit.
               </p>
             )}
             {nameClash && (
@@ -426,7 +431,9 @@ function NewBundleDialog({
             {nameValid && !nameClash && (
               <p className="text-[11px] text-muted-foreground">
                 Lister will be auto-created as{" "}
-                <code className="bg-muted px-1 py-0.5 rounded font-mono">{listerName}</code>
+                <code className="bg-muted px-1 py-0.5 rounded font-mono">
+                  {listerName}
+                </code>
               </p>
             )}
           </div>
@@ -464,8 +471,15 @@ function NewBundleDialog({
           <Button variant="ghost" onClick={onClose} disabled={busy}>
             Cancel
           </Button>
-          <Button onClick={() => void submit()} disabled={busy || !nameValid || nameClash}>
-            {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Create bundle"}
+          <Button
+            onClick={() => void submit()}
+            disabled={busy || !nameValid || nameClash}
+          >
+            {busy ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              "Create bundle"
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -488,7 +502,9 @@ function BundleDetail({
   const [name, setName] = useState(bundle.name);
   const [description, setDescription] = useState(bundle.description);
   const [isActive, setIsActive] = useState(bundle.is_active);
-  const [metadataJson, setMetadataJson] = useState(JSON.stringify(bundle.metadata ?? {}, null, 2));
+  const [metadataJson, setMetadataJson] = useState(
+    JSON.stringify(bundle.metadata ?? {}, null, 2),
+  );
   const [savingMeta, setSavingMeta] = useState(false);
   const [adding, setAdding] = useState(false);
 
@@ -581,13 +597,23 @@ function BundleDetail({
       <section className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-medium">Identity</h2>
-          <Button size="sm" onClick={() => void onSaveMeta()} disabled={savingMeta}>
-            {savingMeta ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Save"}
+          <Button
+            size="sm"
+            onClick={() => void onSaveMeta()}
+            disabled={savingMeta}
+          >
+            {savingMeta ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              "Save"
+            )}
           </Button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="space-y-1">
-            <Label className="text-[11px] text-muted-foreground">Name (globally unique)</Label>
+            <Label className="text-[11px] text-muted-foreground">
+              Name (globally unique)
+            </Label>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -603,7 +629,9 @@ function BundleDetail({
           </div>
         </div>
         <div className="space-y-1">
-          <Label className="text-[11px] text-muted-foreground">Description</Label>
+          <Label className="text-[11px] text-muted-foreground">
+            Description
+          </Label>
           <Textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -614,7 +642,10 @@ function BundleDetail({
         <div className="flex flex-wrap gap-2 text-[11px] text-muted-foreground">
           <span>
             Type:{" "}
-            <Badge variant={bundle.is_system ? "default" : "secondary"} className="text-[10px]">
+            <Badge
+              variant={bundle.is_system ? "default" : "secondary"}
+              className="text-[10px]"
+            >
               {bundle.is_system ? "system" : "personal"}
             </Badge>
           </span>
@@ -623,18 +654,23 @@ function BundleDetail({
             // bare uuid in a <code> block with nothing to click.
             <span className="inline-flex items-center gap-1">
               Lister tool:
-              <MatrxUuidCell
-                value={bundle.lister_tool_id}
-                label="Lister tool"
-                token="tool"
-                href={toolHref(bundle.lister_tool_id)}
+              <AiToolRef
+                toolId={bundle.lister_tool_id}
+                showId
+                showIcon={false}
               />
             </span>
           )}
           {!bundle.lister_tool_id && (
             <span>
               No lister assigned —{" "}
-              <em>create a tool named <code className="bg-muted px-1 py-0.5 rounded">bundle:list_{bundle.name}</code> and link it via the metadata jsonb (`lister_tool_id`).</em>
+              <em>
+                create a tool named{" "}
+                <code className="bg-muted px-1 py-0.5 rounded">
+                  bundle:list_{bundle.name}
+                </code>{" "}
+                and link it via the metadata jsonb (`lister_tool_id`).
+              </em>
             </span>
           )}
         </div>
@@ -659,8 +695,12 @@ function BundleDetail({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <h2 className="text-sm font-medium">Members</h2>
-            <Badge variant="outline" className="text-[10px]">{members.length}</Badge>
-            {loading && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+            <Badge variant="outline" className="text-[10px]">
+              {members.length}
+            </Badge>
+            {loading && (
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+            )}
           </div>
           <Button size="sm" onClick={() => setAdding(true)} className="gap-1.5">
             <Plus className="h-3.5 w-3.5" />
@@ -747,12 +787,7 @@ function MemberRow({
             />
           ) : (
             // The join returned no tool row — say that, never invent a name.
-            <MatrxUuidCell
-              value={item.member.tool_id}
-              label="Tool"
-              token="tool"
-              href={toolHref(item.member.tool_id)}
-            />
+            <AiToolRef toolId={item.member.tool_id} showId showIcon={false} />
           )}
         </div>
         {item.tool?.description && (
@@ -787,7 +822,9 @@ function MemberRow({
           )}
         </div>
       </TableCell>
-      <TableCell className="text-right text-xs tabular-nums">{item.member.sort_order}</TableCell>
+      <TableCell className="text-right text-xs tabular-nums">
+        {item.member.sort_order}
+      </TableCell>
       <TableCell className="text-right">
         <Button
           variant="ghost"
@@ -815,10 +852,15 @@ function AddMemberDialog({
   onAdded: () => void;
 }) {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<{ id: string; name: string; description: string }[]>([]);
+  const [results, setResults] = useState<
+    { id: string; name: string; description: string }[]
+  >([]);
   const [busy, setBusy] = useState(false);
   const [searching, setSearching] = useState(false);
-  const [selectedTool, setSelectedTool] = useState<{ id: string; name: string } | null>(null);
+  const [selectedTool, setSelectedTool] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const [alias, setAlias] = useState("");
   const [sort, setSort] = useState(100);
 
@@ -827,10 +869,12 @@ function AddMemberDialog({
     setSearching(true);
     void searchToolsForBundle(query)
       .then((rows) => {
-        if (!cancelled) setResults(rows.filter((r) => !existingToolIds.has(r.id)));
+        if (!cancelled)
+          setResults(rows.filter((r) => !existingToolIds.has(r.id)));
       })
       .catch((e) => {
-        if (!cancelled) toast.error(e instanceof Error ? e.message : "Search failed");
+        if (!cancelled)
+          toast.error(e instanceof Error ? e.message : "Search failed");
       })
       .finally(() => {
         if (!cancelled) setSearching(false);
@@ -843,7 +887,9 @@ function AddMemberDialog({
   const onPick = (tool: { id: string; name: string }) => {
     setSelectedTool(tool);
     // Default alias: local part of canonical (after the colon if namespaced)
-    const localPart = tool.name.includes(":") ? tool.name.split(":", 2)[1] : tool.name;
+    const localPart = tool.name.includes(":")
+      ? tool.name.split(":", 2)[1]
+      : tool.name;
     setAlias(localPart);
   };
 
@@ -951,13 +997,20 @@ function AddMemberDialog({
                     alwaysShowActions
                   />
                 </span>
-                <Button variant="ghost" size="sm" onClick={() => setSelectedTool(null)} className="h-6 text-xs">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedTool(null)}
+                  className="h-6 text-xs"
+                >
                   Change
                 </Button>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <Label className="text-[11px] text-muted-foreground">Local alias (within bundle)</Label>
+                  <Label className="text-[11px] text-muted-foreground">
+                    Local alias (within bundle)
+                  </Label>
                   <Input
                     value={alias}
                     onChange={(e) => setAlias(e.target.value)}
@@ -966,7 +1019,9 @@ function AddMemberDialog({
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-[11px] text-muted-foreground">Sort order</Label>
+                  <Label className="text-[11px] text-muted-foreground">
+                    Sort order
+                  </Label>
                   <Input
                     type="number"
                     value={sort}
@@ -983,7 +1038,10 @@ function AddMemberDialog({
           <Button variant="ghost" onClick={onClose} disabled={busy}>
             Cancel
           </Button>
-          <Button onClick={() => void onAdd()} disabled={busy || !selectedTool || !alias.trim()}>
+          <Button
+            onClick={() => void onAdd()}
+            disabled={busy || !selectedTool || !alias.trim()}
+          >
             {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Add"}
           </Button>
         </DialogFooter>

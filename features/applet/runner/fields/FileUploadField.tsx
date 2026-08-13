@@ -16,6 +16,8 @@ function isUploadedFileResult(value: unknown): value is UploadedFileResult {
     return (
         typeof value === "object" &&
         value !== null &&
+        "fileId" in value &&
+        typeof value.fileId === "string" &&
         "url" in value &&
         typeof value.url === "string" &&
         "type" in value &&

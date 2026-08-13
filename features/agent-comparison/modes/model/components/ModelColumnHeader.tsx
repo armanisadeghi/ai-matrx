@@ -114,11 +114,12 @@ export function ModelColumnHeader({
     // Auto-rename the column to the model's display name on first pick,
     // unless the user has already given it a custom label.
     if (column.label.startsWith("Model ")) {
-      const friendly =
-        options.find((o) => o.value === modelId)?.label ?? modelId.slice(0, 20);
+      const friendly = options.find((o) => o.value === modelId)?.label;
+      if (friendly) {
       dispatch(
         renameModelColumn({ columnId: column.columnId, label: friendly }),
       );
+    }
     }
   };
 

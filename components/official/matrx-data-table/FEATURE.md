@@ -30,10 +30,23 @@ tables (AI Models, relationships, …) can cut over to one contract.
   direct database query and returns only the current rows.
 - **Controlled-local mode delegates state, not query execution.** Pass
   `query={{ mode: "controlled-local", state, onStateChange }}` when the caller
-  owns URL state but the canonical table must still filter, sort, and paginate
-  its complete local dataset. Prefer `UrlStateMatrxDataTable` from
-  `lib/data-table/UrlStateMatrxDataTable.tsx` for the zero-config URL-backed
-  form; use `paramPrefix` when multiple tables share one route.
+  owns state but the canonical table must still filter, sort, and paginate its
+  complete local dataset. Most local callers use `urlState` instead.
+- **URL state is built in and opt-in.** `urlState={{ id: "accounts" }}` stores
+  table-owned search, match mode, any-of, layered/column filters, sort,
+  pagination, open row, and open window under `table.accounts.*`. The stable id
+  is required, unique per mounted table, and isolated from page/sibling state.
+  Add `selection: true` only when checkbox selection belongs in a link. Text
+  entry pushes once then replaces rapid keystrokes; discrete changes always
+  push. Override with `textHistory` or `history` only for a known interaction.
+- **Remote tables keep URL state beside the query.** Use
+  `useTableUrlState({ tableId: "accounts" })`, pass `state`/`onStateChange` to
+  controlled mode, and fetch from `queryState`. A remote table cannot also set
+  `urlState`; filtering only its loaded page is a defect.
+- **Externally owned controls stay externally owned.** Toolbar facets and any
+  editor hydration triggered by row/window selection use `useUrlState` at the
+  page level. Set `selectedRow: false` or `windowRow: false` when that external
+  owner already controls the same state.
 - **Controlled search feedback is immediate.** Consumers may debounce the query
   state, but must pass the immediate display state back to the table.
 - **Primary search semantics are explicit when enabled.** Set
@@ -102,6 +115,7 @@ expose `aria-sort` on the `<th>` automatically.
 
 ```tsx
 <MatrxDataTable
+  urlState={{ id: "agent-registry" }}
   data={rows}
   columns={[
     { accessorKey: "id", header: "ID", cellKind: "uuid" },
@@ -137,6 +151,7 @@ expose `aria-sort` on the `<th>` automatically.
 
 | Feature     | How                                                                               |
 | ----------- | --------------------------------------------------------------------------------- |
+| URL state   | `urlState={{ id }}`; emits only non-default `table.<id>.*` parameters             |
 | Filters     | Per-column + ordered layered rules; searchable selects; clear-X; Clear all        |
 | `anyOf`     | OR-search across named columns                                                    |
 | Copy        | Per-row + toolbar “this view”                                                     |
@@ -149,7 +164,7 @@ expose `aria-sort` on the `<th>` automatically.
 Do not drop these when replacing `AiModelTable`:
 
 - Sticky header + typed column filters (provider, bools, number ranges)
-- `MatrxUuidCell` on `id` (already swapped in AiModelTable)
+- `AiModelRef showId` on `id` — a model UUID is useful only beside its name
 - `provider_id` as `cellKind: "fk"` with WindowPanel / route to provider
 - CopyButtons per row + this-view
 - Bool badges, JSON capability summary
@@ -158,17 +173,19 @@ Do not drop these when replacing `AiModelTable`:
 ## Reuse gate
 
 | Source                        | Took                                        | Left behind                             |
-| ----------------------------- | ------------------------------------------- | --------------------------------------- |
-| AiModelTable                  | sticky + filters + UuidCell → MatrxUuidCell | domain coupling, split-pane sidebar     |
+| ----------------------------- | ------------------------------------------------ | --------------------------------------- |
+| AiModelTable                  | sticky + filters + canonical `AiModelRef showId` | domain coupling, split-pane sidebar     |
 | aidream UuidDisplay / IdField | short + copy + FK open semantics            | `/database/…` routes, GlobalRecordSheet |
 | GenericDataTable              | pagination, empty/loading                   | no sticky / filters / panels            |
 
 ## Change log
 
-- 2026-08-12 — Added controlled-local query state and the shared
-  `UrlStateMatrxDataTable`, allowing local tables to preserve search, match
-  mode, any-of, layered/column filters, sorting, and pagination through copied
-  links, refresh, and browser Back/Forward.
+- 2026-08-12 — Absorbed URL ownership into `MatrxDataTable` as the opt-in
+  `urlState={{ id }}` contract. Stable `table.<id>.*` namespaces support sibling
+  tables and page parameters; query state, row/window state, and optional
+  checkbox selection survive copied links, refresh, and Back/Forward. Removed
+  the parallel `UrlStateMatrxDataTable` wrapper and rolled the contract across
+  route-level consumers.
 - 2026-08-11 — Added the shared compact layered-filter builder, URL-safe rule
   codec, local evaluator, controlled-query state, whole-word exclusions,
   numeric comparisons/ranges, ordered chips, drag/keyboard reorder, and one
@@ -180,6 +197,8 @@ Do not drop these when replacing `AiModelTable`:
   | `CopyButtons` | agent envelope | — |
 
 ## Change Log
+
+- `2026-08-12` — `AiModelTable` moved from generic UUID rendering to `AiModelRef showId`, preserving audit identity while adding the model's human name.
 
 - `2026-08-09` — **Clipped-content guard.** The table root is `h-full`, which is
   inert unless every ancestor is a flex column; one plain block wrapper left

@@ -2,7 +2,7 @@
 
 **Status:** `stable`
 **Tier:** `2`
-**Last updated:** `2026-07-17`
+**Last updated:** `2026-08-12`
 
 ---
 
@@ -58,7 +58,8 @@ release-audit coverage.
 
 **Redux slice**
 
-- `features/ai-models/redux/modelRegistrySlice.ts` — `modelRegistry` slice: normalized `entities` + `activeIds`/`deprecatedIds`, `fetchScope`, per-record `_fetchType` (`'options' | 'full'`). Thunks: `fetchModelOptions`, `fetchModelById`. Action: `hydrateModels` (SSR). Memoized selectors including factory `makeSelectModelById` for multi-ID subscribers.
+- `features/ai-models/redux/modelRegistrySlice.ts` — `modelRegistry` slice: normalized `entities` + `activeIds`/`deprecatedIds`, `fetchScope`, per-record `_fetchType` (`'options' | 'full'`). Thunks: `fetchModelOptions`, `fetchModelById`, plus `fetchModelIdentityById` for a lightweight historical/deprecated label cache that never pollutes active picker IDs. Action: `hydrateModels` (SSR). Memoized selectors including factory `makeSelectModelById` for multi-ID subscribers.
+- `components/official/entity-ref/AiIdentityRef.tsx` — canonical `AiModelRef` / `AiToolRef` identity display. It resolves joined labels, active registries, then historical rows; `showId` keeps the full FK under the human name for audits and version history.
 
 ---
 
@@ -147,6 +148,7 @@ release-audit coverage.
 - **A model is not callable until it has an `ai.offering`.** `ai.model_definition` is identity + capabilities; routing is `ai.offering` (model × endpoint × api × `provider_model_id`). Pickers (`fetchModelOptions`, SSR `fetchAIModels`) MUST filter through `ai.model_offering` — a bare model row looks "set up" in admin but `resolve_call_profile` raises. Creating a model without an offering is an incomplete create. (2026-07-09: grok-4.5 failed every call for exactly this.)
 - **The `ai.model_definition` table is the single source of truth for model IDs, capabilities, pricing, and constraints.** Never hard-code provider model strings (`"claude-3-5-sonnet-…"`, `"gpt-4o"`) at call sites. Resolve via `useModelFull` or the server reader.
 - **Agents reference models by `model_id` only.** `agent.definition.model_id` is a UUID pointing at `ai.model_definition.id` — never a provider string. Converters (`features/agents/redux/agent-definition/converters.ts`) preserve this on both read and write.
+- **A model FK is never a display label.** Render it through `AiModelRef`; audit/version surfaces pass `showId`, while ordinary surfaces show the resolved common/name only. Deprecated and otherwise non-routable models resolve through the slice's separate identity cache so historical rows never leak into active pickers.
 - **Constraints are advisory at the agent level and enforced server-side at call time.** The Builder/Runner UI MAY surface constraint violations as warnings but MUST NOT block save. The LLM-call layer runs `ModelConstraint[]` evaluation against the assembled request and rejects/downgrades per `severity`.
 - **Registry records have two data levels.** `_fetchType: 'options'` only guarantees `id`, `name`, `common_name`, `maker`, `cost_rating`, `speed_rating`, `is_primary`, `capabilities` (sourced from `ai.model_public`; `model_class` is gone from the view and from `AIModelRecord`). Anything else (`controls`, `context_window`, `constraints`) requires `_fetchType: 'full'` — sourced from **`ai.model_config`** (the resolution view), NOT `model_definition`. Always gate on `useModelFull()` or `selectModelFullyLoaded()` before reading those fields. Read `maker` for brand, never `provider`.
 - **"No model chosen" resolves through ONE place: `redux/platformDefaultModel.ts`.** User preferences (`userPreferences.prompts/textGeneration/imageGeneration/aiModels.defaultModel`) hold `null` = platform default; consumers resolve it at consumption time via `selectPlatformDefaultTextModel/-ImageModel` (first `is_primary` model with that output modality, in the registry's stable common_name order). The resolver screams once per modality (never picks index 0) when the LOADED catalog has no primary. Never hardcode a default model id in a seed or callsite — the legacy seeded constants ("GPT-4o", "standard", the GPT-4.1-Mini uuid) are folded to null at every preferences load boundary (`stripLegacyDefaultModelSentinels`).
@@ -196,6 +198,8 @@ Phase D (2026-07-10) is DONE: the resolution layer (`ai.resolve_model_config` + 
 ---
 
 ## Change log
+
+- `2026-08-12` — **Model/tool foreign keys became named identities everywhere.** Added the shared `AiModelRef` / `AiToolRef`, historical/deactivated lookup caches that stay separate from active picker catalogs, and an admin model deep link (`?model=<id>`) into the existing split-pane editor. Agent version diff + edit history, research/marketing histories, admin/debug tables, bundles/bindings, agent cards/settings, and other explicit model/tool displays now show a human name; audit/history rows retain the complete ID beneath it. Unknown rows say `Unknown AI model` / `Unknown tool` with the ID instead of presenting the UUID as if it were meaningful.
 
 - `2026-08-11` — **The model Description finally has an editor, and agents can write it.** `ai.model_definition.description` was a real column rendered to USERS as the second line of every model-picker row (`components/lab/ModelListDropdown.tsx`, via `useModelCatalog`), but nothing in this admin could set it: `AiModelForm` had no field, and `AiModelDetailPanel`'s `AI_MODEL_COLUMNS` whitelist STRIPPED a pasted `description` from the Raw JSON tab as an unknown column. Added the Description textarea to the Details form, `description` to `AiModelFormData` / `rowToFormData` / `EMPTY_FORM` / the save payload, and `description` to the column whitelist. On the back of that, `matrx-admin/ai-models` became agent-writable: two ask-policy `mode:"entity"` surface write targets, `model_description` and `model_common_name`, registered by `AiModelDetailPanel` through `useSurfaceWriteHandlers` and landing via `aiModelService.update` — the same call the panel's own Save makes. Bounds and validators are shared with the manifest from the new `model-metadata.ts`, so the contract the model reads IS the contract enforced; both validators THROW rather than coerce. **The editor came first on purpose:** an entity write to a field no admin can then correct in the UI is a one-way door (the `tool_group` lesson from `admin-tool-registry`). Everything else on the row stays human — capabilities, context window, max tokens, ratings, the deprecated/primary/premium flags, visibility and the fallback FKs all change what the platform DOES with the model for every caller on it, and `name` is the provider-facing dispatch key that a wrong value breaks every call site with. Handlers also refuse by throw while the panel is creating a new model, while a save is in flight, and while the Raw JSON tab is dirty (that tab writes the whole row and would clobber the agent's write). Live-verified with a real Badass Agent run on `/administration/ai/ai-models`. See the `writeTargets` doc comment in `features/surfaces/manifests/admin-ai-models.manifest.ts` for the field-by-field reasoning.
 

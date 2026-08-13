@@ -50,6 +50,10 @@ import {
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
 } from "@/components/official/mobile-table/mobileTable";
+import {
+  AiModelRef,
+  AiToolRef,
+} from "@/components/official/entity-ref/AiIdentityRef";
 
 export interface AgentJsonDisplayProps {
   /** Raw streamed text — may contain pre/post markdown around the json block. */
@@ -403,9 +407,12 @@ function PrettyView({
           <div className="flex items-center gap-1.5 text-xs">
             <Database className="h-3.5 w-3.5 text-gray-600 dark:text-gray-400" />
             <span className="text-muted-foreground">Model:</span>
-            <code className="font-mono text-[10px] bg-muted px-1.5 py-0.5 rounded">
-              {data.model_id}
-            </code>
+            <AiModelRef
+              modelId={data.model_id}
+              showId
+              showIcon={false}
+              className="rounded bg-muted px-1.5 py-0.5 text-[10px]"
+            />
           </div>
         </section>
       )}
@@ -502,9 +509,31 @@ function VariablesTable({
       <table className={cn("text-xs", MOBILE_TABLE)}>
         <thead>
           <tr className="bg-muted/50 border-b">
-            <th className={cn("px-2 py-1 text-left font-semibold", MOBILE_TABLE_FROZEN_HEAD, "max-sm:bg-muted")}>Name</th>
-            <th className={cn("px-2 py-1 text-left font-semibold", MOBILE_TABLE_CELL)}>Default</th>
-            <th className={cn("px-2 py-1 text-left font-semibold", MOBILE_TABLE_CELL)}>Help</th>
+            <th
+              className={cn(
+                "px-2 py-1 text-left font-semibold",
+                MOBILE_TABLE_FROZEN_HEAD,
+                "max-sm:bg-muted",
+              )}
+            >
+              Name
+            </th>
+            <th
+              className={cn(
+                "px-2 py-1 text-left font-semibold",
+                MOBILE_TABLE_CELL,
+              )}
+            >
+              Default
+            </th>
+            <th
+              className={cn(
+                "px-2 py-1 text-left font-semibold",
+                MOBILE_TABLE_CELL,
+              )}
+            >
+              Help
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -520,10 +549,20 @@ function VariablesTable({
                   </span>
                 )}
               </td>
-              <td className={cn("px-2 py-1.5 text-muted-foreground", MOBILE_TABLE_CELL)}>
+              <td
+                className={cn(
+                  "px-2 py-1.5 text-muted-foreground",
+                  MOBILE_TABLE_CELL,
+                )}
+              >
                 {renderValuePreview(v.defaultValue)}
               </td>
-              <td className={cn("px-2 py-1.5 text-muted-foreground", MOBILE_TABLE_CELL)}>
+              <td
+                className={cn(
+                  "px-2 py-1.5 text-muted-foreground",
+                  MOBILE_TABLE_CELL,
+                )}
+              >
                 {v.helpText
                   ? v.helpText.length > 60
                     ? v.helpText.slice(0, 60) + "…"
@@ -548,9 +587,29 @@ function ContextSlotsTable({
       <table className={cn("text-xs", MOBILE_TABLE)}>
         <thead>
           <tr className="bg-muted/50 border-b">
-            <th className={cn("px-2 py-1 text-left font-semibold", MOBILE_TABLE_FROZEN_HEAD, "max-sm:bg-muted")}>Key</th>
-            <th className={cn("px-2 py-1 text-left font-semibold", MOBILE_TABLE_CELL)}>Type</th>
-            <th className={cn("px-2 py-1 text-left font-semibold", MOBILE_TABLE_CELL)}>
+            <th
+              className={cn(
+                "px-2 py-1 text-left font-semibold",
+                MOBILE_TABLE_FROZEN_HEAD,
+                "max-sm:bg-muted",
+              )}
+            >
+              Key
+            </th>
+            <th
+              className={cn(
+                "px-2 py-1 text-left font-semibold",
+                MOBILE_TABLE_CELL,
+              )}
+            >
+              Type
+            </th>
+            <th
+              className={cn(
+                "px-2 py-1 text-left font-semibold",
+                MOBILE_TABLE_CELL,
+              )}
+            >
               Label / Description
             </th>
           </tr>
@@ -563,10 +622,20 @@ function ContextSlotsTable({
                   {s.key}
                 </code>
               </td>
-              <td className={cn("px-2 py-1.5 text-muted-foreground", MOBILE_TABLE_CELL)}>
+              <td
+                className={cn(
+                  "px-2 py-1.5 text-muted-foreground",
+                  MOBILE_TABLE_CELL,
+                )}
+              >
                 {s.type ?? "text"}
               </td>
-              <td className={cn("px-2 py-1.5 text-muted-foreground", MOBILE_TABLE_CELL)}>
+              <td
+                className={cn(
+                  "px-2 py-1.5 text-muted-foreground",
+                  MOBILE_TABLE_CELL,
+                )}
+              >
                 {s.label || s.description || "—"}
               </td>
             </tr>
@@ -601,9 +670,18 @@ function SettingsGrid({
           <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
             {key.replace(/_/g, " ")}
           </span>
+          {key === "model_id" && typeof value === "string" ? (
+            <AiModelRef
+              modelId={value}
+              showId
+              showIcon={false}
+              className="text-xs text-gray-900 dark:text-gray-100"
+            />
+          ) : (
           <span className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">
             {renderValuePreview(value)}
           </span>
+          )}
         </div>
       ))}
     </div>
@@ -637,10 +715,21 @@ function renderValuePreview(v: unknown): string {
   return String(v);
 }
 
-function renderToolBadge(t: unknown): string {
-  if (typeof t === "string") return t;
+function renderToolBadge(t: unknown): React.ReactNode {
+  if (typeof t === "string") {
+    return <AiToolRef toolId={t} showIcon={false} />;
+  }
   if (t && typeof t === "object") {
-    const r = t as { name?: unknown; type?: unknown };
+    const r = t as { id?: unknown; name?: unknown; type?: unknown };
+    if (typeof r.id === "string") {
+      return (
+        <AiToolRef
+          toolId={r.id}
+          name={typeof r.name === "string" ? r.name : undefined}
+          showIcon={false}
+        />
+      );
+    }
     if (typeof r.name === "string") return r.name;
     if (typeof r.type === "string") return r.type;
   }

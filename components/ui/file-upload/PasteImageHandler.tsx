@@ -33,7 +33,7 @@ type SaveToOption = "public" | "personal";
 export interface PasteImageUploadResult {
   url: string;
   type: string;
-  fileId?: string;
+  fileId: string;
   pageUrl?: string;
 }
 

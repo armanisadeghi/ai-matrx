@@ -17,6 +17,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from "@/lib/toast";
 import { formatDistanceToNow } from 'date-fns';
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import {
+    feedbackScreenshotHref,
+    getFeedbackScreenshotRefs,
+} from "@/features/feedback/screenshot-refs";
 
 // ──────────────────────────────────────────────────
 // Progress Stepper - User-facing stage definitions
@@ -287,6 +291,7 @@ function FeedbackItem({ item, onUpdate }: { item: UserFeedback; onUpdate: () => 
     const [isSendingReply, setIsSendingReply] = useState(false);
 
     const isUserReview = item.status === 'user_review';
+    const screenshotRefs = getFeedbackScreenshotRefs(item);
 
     const loadMessages = useCallback(async () => {
         setIsLoadingMessages(true);
@@ -522,31 +527,31 @@ function FeedbackItem({ item, onUpdate }: { item: UserFeedback; onUpdate: () => 
                     </div>
 
                     {/* Images */}
-                    {item.image_urls && item.image_urls.length > 0 && (
+                    {screenshotRefs.length > 0 && (
                         <div className="space-y-1">
                             <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
                                 <ImageIcon className="h-3 w-3" />
-                                Attached Screenshots ({item.image_urls.length})
+                                Attached Screenshots ({screenshotRefs.length})
                             </p>
                             <div className="flex gap-2 flex-wrap">
-                                {item.image_urls.map((url, i) => (
-                                    <a
-                                        key={i}
-                                        href={url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="block w-20 h-20 rounded border border-border overflow-hidden bg-muted hover:ring-2 hover:ring-primary transition-all"
-                                    >
-                                        <InlineMediaRef
-                                            ref={url}
-                                            size="fill"
-                                            fit="cover"
-                                            rounded="none"
-                                            fallback={null}
-                                            alt={`Screenshot ${i + 1}`}
-                                        />
-                                    </a>
-                                ))}
+                                {screenshotRefs.map((screenshotRef, i) => (
+                                  <a
+                                      key={screenshotRef}
+                                      href={feedbackScreenshotHref(screenshotRef)}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="block w-20 h-20 rounded border border-border overflow-hidden bg-muted hover:ring-2 hover:ring-primary transition-all"
+                                  >
+                                      <InlineMediaRef
+                                          ref={screenshotRef}
+                                          size="fill"
+                                          fit="cover"
+                                          rounded="none"
+                                          fallback={null}
+                                          alt={`Screenshot ${i + 1}`}
+                                      />
+                                  </a>
+                              ))}
                             </div>
                         </div>
                     )}

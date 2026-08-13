@@ -64,6 +64,9 @@ export interface UserFeedback {
   ai_assessment: string | null;
   autonomy_score: number | null;
   resolution_notes: string | null;
+  /** Canonical files.files identities for screenshots. */
+  image_file_ids: string[];
+  /** Historical read-only screenshots predating file identity persistence. */
   image_urls: string[] | null;
   created_at: string;
   updated_at: string;
@@ -113,6 +116,8 @@ export interface FeedbackUserMessage {
   content: string;
   created_at: string;
   email_sent: boolean;
+  image_file_ids: string[];
+  /** Historical read-only screenshots predating file identity persistence. */
   image_urls?: string[] | null;
 }
 
@@ -120,7 +125,7 @@ export interface CreateFeedbackInput {
   feedback_type: FeedbackType;
   route: string;
   description: string;
-  image_urls?: string[];
+  image_file_ids?: string[];
   /**
    * Admin-only. Server action ignores these fields if the caller is not an
    * admin. Setting `assigned_to` to a non-self admin user fires a DM + email
@@ -134,7 +139,7 @@ export interface UpdateFeedbackInput {
   description?: string;
   feedback_type?: FeedbackType;
   route?: string;
-  image_urls?: string[] | null;
+  image_file_ids?: string[];
   status?: FeedbackStatus;
   priority?: FeedbackPriority;
   admin_notes?: string;

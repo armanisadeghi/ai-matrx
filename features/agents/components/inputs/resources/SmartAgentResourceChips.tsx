@@ -11,13 +11,7 @@
 
 import { useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import {
-  Image as ImageIcon,
-  AlertCircle,
-  Layers,
-  Loader2,
-  X,
-} from "lucide-react";
+import { Layers } from "lucide-react";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { selectInstanceResources } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
 import { selectSubmissionPhase } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
@@ -27,9 +21,7 @@ import {
 } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
 import { isEditableCapableBlockType } from "@/features/agents/redux/execution-system/instance-resources/editable-resource-types";
 import { selectShowAttachments } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import type {
-  ManagedResource,
-} from "@/features/agents/types/instance.types";
+import type { ManagedResource } from "@/features/agents/types/instance.types";
 import type { ResourceEditableState } from "@/features/agents/components/messages-display/user/ResourceAttachmentTile";
 import { BlockHoverPreview } from "@/features/agents/components/previews/BlockHoverPreview";
 import { ResourceAttachmentTile } from "@/features/agents/components/messages-display/user/ResourceAttachmentTile";
@@ -37,7 +29,7 @@ import { ContextItemDrawer } from "@/features/agents/components/context-items/Co
 import { useContextItemDrawer } from "@/features/agents/components/context-items/useContextItemDrawer";
 import { normalizeResource } from "@/features/agents/components/context-items/normalize";
 import type { ContextDrawerItem } from "@/features/agents/components/context-items/types";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { MediaAttachmentThumbnail } from "@/features/files/components/inline/MediaAttachmentThumbnail";
 import { parseReferenceFence } from "@/features/matrx-envelope/referenceFence";
 import { revokeTrackedObjectUrl } from "@/lib/media/object-url-registry";
 
@@ -83,7 +75,8 @@ function getResourceLabel(resource: ManagedResource): string {
   if (resource.blockType === "editor_code_snippet") {
     const src = isRecord(resource.source) ? resource.source : null;
     if (typeof src?.file === "string") {
-      const startLine = typeof src.startLine === "number" ? src.startLine : null;
+      const startLine =
+        typeof src.startLine === "number" ? src.startLine : null;
       const endLine = typeof src.endLine === "number" ? src.endLine : null;
       const range =
         startLine !== null && endLine !== null
@@ -160,66 +153,13 @@ function ImageResourceThumbnail({
     : (getImageRef(resource.finalPayload) ?? getImageRef(resource.source));
 
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.85 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.85 }}
-      className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-md border border-border bg-muted"
-    >
-      <button
-        type="button"
-        onClick={onOpen}
-        aria-label={`View image: ${title}`}
-        className="flex h-full w-full items-center justify-center"
-      >
-        {imageRef ? (
-          <>
-            <InlineMediaRef
-              ref={imageRef}
-              size="fill"
-              fit="cover"
-              rounded="none"
-              fallback="skeleton"
-              errorFallback="icon"
-              alt={title}
-              className="transition-[filter] group-hover:brightness-90"
-            />
-            {isPending ? (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                <Loader2 className="h-5 w-5 animate-spin text-white drop-shadow" />
-              </div>
-            ) : isError ? (
-              <div className="absolute inset-0 flex items-center justify-center bg-destructive/30">
-                <AlertCircle className="h-5 w-5 text-white drop-shadow" />
-              </div>
-            ) : (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity group-hover:opacity-100">
-                <ImageIcon className="h-4 w-4 text-white drop-shadow" />
-              </div>
-            )}
-          </>
-        ) : isPending ? (
-          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-        ) : isError ? (
-          <AlertCircle className="h-4 w-4 text-destructive" />
-        ) : (
-          <ImageIcon className="h-5 w-5 text-muted-foreground" />
-        )}
-      </button>
-
-      <button
-        type="button"
-        onClick={(event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          onRemove();
-        }}
-        aria-label={`Remove ${title}`}
-        className="absolute right-0 top-0 z-10 rounded-bl-md bg-black/60 p-0.5 text-white opacity-0 transition-opacity hover:bg-destructive focus-visible:opacity-100 group-hover:opacity-100 pointer-coarse:opacity-100"
-      >
-        <X className="h-3 w-3" />
-      </button>
-    </motion.div>
+    <MediaAttachmentThumbnail
+      mediaRef={imageRef}
+      status={isPending ? "pending" : isError ? "error" : "ready"}
+      title={title}
+      onOpen={onOpen}
+      onRemove={onRemove}
+    />
   );
 }
 

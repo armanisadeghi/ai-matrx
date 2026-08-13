@@ -1,8 +1,8 @@
 import { EnhancedFileDetails } from "@/utils/file-operations/constants";
 
 export type UploadedFileResult = {
-  /** cld_files UUID — set whenever the upload landed in cloud-files. */
-  fileId?: string;
+  /** Canonical files.files UUID. Uploads without identity are rejected. */
+  fileId: string;
   url: string;
   type: string;
   details?: EnhancedFileDetails;

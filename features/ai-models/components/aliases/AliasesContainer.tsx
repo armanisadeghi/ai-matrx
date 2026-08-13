@@ -31,9 +31,8 @@ import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { aiModelService } from "../../service";
 import type { AiModel, AiModelAliasRow } from "../../types";
 import { cn } from "@/lib/utils";
-import {
-  MOBILE_TABLE_FROZEN,
-} from "@/components/official/mobile-table/mobileTable";
+import { MOBILE_TABLE_FROZEN } from "@/components/official/mobile-table/mobileTable";
+import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 
 const ALIAS_KINDS = ["alias", "deprecated", "latest"] as const;
 type AliasKind = (typeof ALIAS_KINDS)[number];
@@ -89,13 +88,21 @@ export default function AliasesContainer() {
     return () => clearTimeout(t);
   }, [load]);
 
-  const modelLabel = useCallback(
-    (id: string | null): string => {
-      if (!id) return "—";
+  const modelName = useCallback(
+    (id: string | null): string | null => {
+      if (!id) return null;
       const m = models.find((x) => x.id === id);
-      return m ? m.common_name || m.name || id : id;
+      return m ? m.common_name || m.name || null : null;
     },
     [models],
+  );
+
+  const modelLabel = useCallback(
+    (id: string | null): string => {
+      if (!id) return "Unknown AI model";
+      return modelName(id) ?? `Unknown AI model (${id})`;
+    },
+    [modelName],
   );
 
   const modelGroups = useMemo(() => {
@@ -162,9 +169,7 @@ export default function AliasesContainer() {
         );
       } else if (editingId) {
         const saved = await aiModelService.updateAlias(editingId, payload);
-        setAliases((prev) =>
-          prev.map((a) => (a.id === saved.id ? saved : a)),
-        );
+        setAliases((prev) => prev.map((a) => (a.id === saved.id ? saved : a)));
       }
       cancelEdit();
     } catch (err) {
@@ -235,7 +240,9 @@ export default function AliasesContainer() {
               </Label>
               <Select
                 value={form.kind}
-                onValueChange={(v) => setForm({ ...form, kind: v as AliasKind })}
+                onValueChange={(v) =>
+                  setForm({ ...form, kind: v as AliasKind })
+                }
               >
                 <SelectTrigger className="h-8 text-sm">
                   <SelectValue />
@@ -364,7 +371,14 @@ export default function AliasesContainer() {
                       {row.kind}
                     </Badge>
                   </td>
-                  <td className="px-3 py-1.5">{modelLabel(row.model_id)}</td>
+                  <td className="px-3 py-1.5">
+                    <AiModelRef
+                      modelId={row.model_id}
+                      name={modelName(row.model_id)}
+                      showId
+                      showIcon={false}
+                    />
+                  </td>
                   <td className="sm:max-w-64 sm:truncate px-3 py-1.5 text-muted-foreground">
                     {row.notes ?? ""}
                   </td>

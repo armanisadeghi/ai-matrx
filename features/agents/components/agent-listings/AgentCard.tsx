@@ -36,6 +36,7 @@ import {
   buildSystemAgentRosterEntries,
   systemAgentRosterEntrySummary,
 } from "@/features/agents/format";
+import { selectModelLabelById } from "@/features/ai-models/redux/modelRegistrySlice";
 
 interface AgentCardProps {
   id: string;
@@ -70,6 +71,17 @@ export function AgentCard({
   const name = record?.name ?? "Untitled Agent";
   const description = record?.description ?? undefined;
   const isArchived = record?.isArchived ?? false;
+  const modelLabel = useAppSelector((state) =>
+    selectModelLabelById(state, record?.modelId ?? null),
+  );
+  const rosterEntry = record
+    ? buildSystemAgentRosterEntries(
+        [record],
+        record.modelId && modelLabel
+          ? new Map([[record.modelId, modelLabel]])
+          : undefined,
+      )[0]
+    : null;
 
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isActionModalOpen, setIsActionModalOpen] = useState(false);
@@ -421,16 +433,12 @@ export function AgentCard({
             />
           </div>
           <div className="flex items-center gap-1 shrink-0">
-            {record && (
+            {record && rosterEntry && (
               <CopyButtons
                 size="icon"
                 label={name}
-                human={() =>
-                  systemAgentRosterEntrySummary(
-                    buildSystemAgentRosterEntries([record])[0],
-                  )
-                }
-                json={() => buildSystemAgentRosterEntries([record])[0]}
+                human={() => systemAgentRosterEntrySummary(rosterEntry)}
+                json={() => rosterEntry}
                 agent={() => ({
                   kind:
                     record.agentType === "builtin" ? "system-agent" : "agent",

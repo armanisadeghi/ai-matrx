@@ -34,9 +34,7 @@ import {
   resolveEntityToken,
   tryGetEntityInfo,
 } from "@/features/scopes/registry/entityRegistry";
-import {
-  hasPeek,
-} from "@/features/organizations/peek/kinds-list";
+import { hasPeek } from "@/features/organizations/peek/kinds-list";
 import { ResourcePeekHost } from "@/features/organizations/peek/ResourcePeekHost";
 import { allowNativeNewTab } from "@/utils/navigation/should-open-in-new-tab";
 import { cn } from "@/lib/utils";
@@ -274,7 +272,7 @@ export function EntityRef({
         </button>
       ) : (
         <span className={cn("min-w-0", labelFit)} title={label}>
-          {label}
+          {labelBody}
         </span>
       )}
 

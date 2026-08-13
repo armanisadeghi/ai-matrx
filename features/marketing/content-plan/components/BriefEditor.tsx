@@ -22,6 +22,7 @@ import { History, RotateCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 import PageBriefBlock, {
   PageBriefPoints,
 } from "@/components/mardown-display/blocks/page-brief/PageBriefBlock";
@@ -145,7 +146,17 @@ export function BriefEditor({
                       {run.status === "completed"
                         ? `${run.brief_line_count} point${run.brief_line_count === 1 ? "" : "s"}`
                         : run.status}
-                      {run.model_id ? ` · ${run.model_id}` : ""}
+                      {run.model_id ? (
+                        <span className="ml-1 inline-flex align-top">
+                          ·
+                          <AiModelRef
+                            modelId={run.model_id}
+                            showId
+                            showIcon={false}
+                            className="ml-1"
+                          />
+                        </span>
+                      ) : null}
                     </p>
                     {run.angle ? (
                       <p className="mt-0.5 line-clamp-2 text-[11px] text-muted-foreground">

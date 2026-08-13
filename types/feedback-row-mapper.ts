@@ -179,6 +179,7 @@ function isUserFeedbackRowLike(val: Json): val is UserFeedbackRowLike {
     rn("testing_url") &&
     rn("testing_result") &&
     rn("username") &&
+    isStringArrayOrNull(o["image_file_ids"]) &&
     (o["image_urls"] === null || isStringArrayOrNull(o["image_urls"]))
   );
 }
@@ -341,6 +342,7 @@ export function mapUserFeedbackRow(row: UserFeedbackRowLike): UserFeedback {
     ai_assessment: row.ai_assessment,
     autonomy_score: row.autonomy_score,
     resolution_notes: row.resolution_notes,
+    image_file_ids: row.image_file_ids,
     image_urls: row.image_urls,
     created_at: row.created_at,
     updated_at: row.updated_at,
@@ -412,6 +414,7 @@ export function mapFeedbackUserMessageRow(
     content: row.content,
     created_at: row.created_at,
     email_sent: row.email_sent,
+    image_file_ids: row.image_file_ids,
     image_urls: row.image_urls,
   };
 }
@@ -441,6 +444,12 @@ export function parseFeedbackUserMessageJson(
     return null;
   }
   if (typeof o.sender_type !== "string") return null;
+  if (!Array.isArray(o.image_file_ids)) return null;
+  const imageFileIds: string[] = [];
+  for (const x of o.image_file_ids) {
+    if (typeof x !== "string") return null;
+    imageFileIds.push(x);
+  }
   let imageUrls: string[] | null = null;
   if (o.image_urls !== null) {
     if (!Array.isArray(o.image_urls)) return null;
@@ -468,6 +477,7 @@ export function parseFeedbackUserMessageJson(
       email_sent: o.email_sent,
       sender_name: senderName,
       sender_type: o.sender_type,
+      image_file_ids: imageFileIds,
       image_urls: imageUrls,
     });
   } catch {

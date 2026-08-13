@@ -75,8 +75,8 @@ import {
 } from "./mcp-tools/source-kind-badge";
 
 import Link from "next/link";
-import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { AiToolRef } from "@/components/official/entity-ref/AiIdentityRef";
 import {
   mcpServerHref,
   toolEditHref,
@@ -96,9 +96,7 @@ import {
   ADMIN_TOOL_REGISTRY_SURFACE_NAME,
   createAdminToolRegistryScope,
 } from "@/features/surfaces/manifests/admin-tool-registry.manifest";
-import {
-  MOBILE_TABLE,
-} from "@/components/official/mobile-table/mobileTable";
+import { MOBILE_TABLE } from "@/components/official/mobile-table/mobileTable";
 
 const PAGE_LOCATION =
   "AI Matrx Admin — Tool Registry · MCP Tools (/administration/agents/mcp-tools)";
@@ -251,10 +249,15 @@ export function McpToolsManager() {
     async function fetchCounts() {
       const [samplesRes, uiRes] = await Promise.all([
         supabase
-          .schema("tool").from("test_sample")
+          .schema("tool")
+          .from("test_sample")
           .select("tool_name")
           .in("tool_name", toolNames),
-        supabase.schema("tool").from("ui").select("tool_name").in("tool_name", toolNames),
+        supabase
+          .schema("tool")
+          .from("ui")
+          .select("tool_name")
+          .in("tool_name", toolNames),
       ]);
 
       const counts: Record<string, ToolCounts> = {};
@@ -324,12 +327,7 @@ export function McpToolsManager() {
         // raw with the row's own detail route one click away but unreachable by
         // any gesture but a left click.
         render: (t) => (
-          <MatrxUuidCell
-            value={t.id}
-            label="Tool"
-            token="tool"
-            href={toolHref(t.id)}
-          />
+          <AiToolRef toolId={t.id} name={t.name} showId showIcon={false} />
         ),
       },
       {
@@ -342,11 +340,9 @@ export function McpToolsManager() {
         // ADMIN route (the registry has no `hrefFor` for `tool`, deliberately:
         // this console is super-admin only). Peek comes from the registry.
         render: (t) => (
-          <EntityRef
-            token="tool"
-            id={t.id}
+          <AiToolRef
+            toolId={t.id}
             name={t.name}
-            href={toolHref(t.id)}
             showIcon={false}
             className="max-w-[220px] font-mono text-xs font-medium"
           />
@@ -749,15 +745,13 @@ export function McpToolsManager() {
         (selectedTestFilter === "has_annotations" && hasAnn) ||
         (selectedTestFilter === "no_annotations" && !hasAnn);
 
-      if (
-        !(
+      if (!(
           matchesCategory &&
           matchesSourceKind &&
           matchesStatus &&
           matchesTag &&
           matchesTest
-        )
-      )
+      ))
         return false;
 
       // Column-level filters
@@ -928,7 +922,8 @@ export function McpToolsManager() {
     setBulkBusy(true);
     try {
       const { error: updErr } = await supabase
-        .schema("tool").from("definition")
+        .schema("tool")
+        .from("definition")
         .update({ is_active: active })
         .in("id", targetIds);
       if (updErr) throw updErr;
@@ -953,7 +948,8 @@ export function McpToolsManager() {
       .filter((t) => targetIds.includes(t.id))
       .map((t) => t.name);
     const { count: refCount } = await supabase
-      .schema("chat").from("tool_call")
+      .schema("chat")
+      .from("tool_call")
       .select("id", { count: "exact", head: true })
       .in("tool_name", targetNames);
     const ok = await confirm({
@@ -966,7 +962,8 @@ export function McpToolsManager() {
     setBulkBusy(true);
     try {
       const { error: delErr } = await supabase
-        .schema("tool").from("definition")
+        .schema("tool")
+        .from("definition")
         .delete()
         .in("id", targetIds);
       if (delErr) throw delErr;
@@ -1374,7 +1371,9 @@ export function McpToolsManager() {
             </DropdownMenu>
             <Button
               size="sm"
-              onClick={() => navigateTo("/administration/agents/mcp-tools/new")}
+                onClick={() =>
+                  navigateTo("/administration/agents/mcp-tools/new")
+                }
               disabled={isPending}
               className="h-8 gap-1.5"
             >
@@ -1405,7 +1404,10 @@ export function McpToolsManager() {
             </SelectContent>
           </Select>
 
-          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+            <Select
+              value={selectedCategory}
+              onValueChange={setSelectedCategory}
+            >
             <SelectTrigger
               className={`h-8 w-40 text-xs ${selectedCategory !== "all" ? "border-primary text-primary" : ""}`}
             >
@@ -1606,7 +1608,10 @@ export function McpToolsManager() {
                         title={`Sort by ${col.header}`}
                       >
                         <span>{col.header}</span>
-                        <SortIcon active={sortKey === col.key} dir={sortDir} />
+                          <SortIcon
+                            active={sortKey === col.key}
+                            dir={sortDir}
+                          />
                       </button>
                       <ColumnFilterControl
                         column={col}
@@ -1665,9 +1670,7 @@ export function McpToolsManager() {
                             "px-2 py-1.5 align-middle cursor-pointer",
                             col.width,
                           )}
-                          onClick={() =>
-                            navigateTo(toolHref(tool.id))
-                          }
+                            onClick={() => navigateTo(toolHref(tool.id))}
                         >
                           {col.render(tool, counts)}
                         </td>
@@ -1706,9 +1709,7 @@ export function McpToolsManager() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() =>
-                              navigateTo(toolHref(tool.id))
-                            }
+                              onClick={() => navigateTo(toolHref(tool.id))}
                             title="View Samples"
                             className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
                           >
@@ -1717,11 +1718,7 @@ export function McpToolsManager() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() =>
-                              navigateTo(
-                                toolUiHref(tool.id),
-                              )
-                            }
+                              onClick={() => navigateTo(toolUiHref(tool.id))}
                             title="UI Component"
                             className="h-7 w-7 p-0 text-muted-foreground hover:text-primary"
                           >
@@ -1731,9 +1728,7 @@ export function McpToolsManager() {
                             variant="ghost"
                             size="sm"
                             onClick={() =>
-                              navigateTo(
-                                toolIncidentsHref(tool.id),
-                              )
+                                navigateTo(toolIncidentsHref(tool.id))
                             }
                             title="Incidents"
                             className="h-7 w-7 p-0 text-muted-foreground hover:text-warning"
@@ -1743,11 +1738,7 @@ export function McpToolsManager() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() =>
-                              navigateTo(
-                                toolEditHref(tool.id),
-                              )
-                            }
+                              onClick={() => navigateTo(toolEditHref(tool.id))}
                             title="Edit Tool"
                             className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
                           >
@@ -1756,7 +1747,9 @@ export function McpToolsManager() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleDeleteTool(tool.id, tool.name)}
+                              onClick={() =>
+                                handleDeleteTool(tool.id, tool.name)
+                              }
                             title="Delete Tool"
                             className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
                           >
@@ -1777,7 +1770,11 @@ export function McpToolsManager() {
         open={deleteConfirmation.isOpen}
         onOpenChange={(o) =>
           !o &&
-          setDeleteConfirmation({ isOpen: false, toolId: null, toolName: null })
+            setDeleteConfirmation({
+              isOpen: false,
+              toolId: null,
+              toolName: null,
+            })
         }
       >
         <AlertDialogContent>
@@ -1785,8 +1782,8 @@ export function McpToolsManager() {
             <AlertDialogTitle>Delete Tool</AlertDialogTitle>
             <AlertDialogDescription>
               Delete{" "}
-              <strong>&ldquo;{deleteConfirmation.toolName}&rdquo;</strong>? This
-              cannot be undone.
+                <strong>&ldquo;{deleteConfirmation.toolName}&rdquo;</strong>?
+                This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

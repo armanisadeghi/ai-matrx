@@ -8,6 +8,7 @@ import type {
   SystemAnnouncement,
   UserFeedback,
 } from "@/types/feedback.types";
+import { getFeedbackScreenshotRefs } from "@/features/feedback/screenshot-refs";
 
 /**
  * Shared human/agent formatters for the admin feedback feature
@@ -176,10 +177,11 @@ export function feedbackMarkdown(
     });
   }
 
-  if (item.image_urls?.length) {
+  const screenshotRefs = getFeedbackScreenshotRefs(item);
+  if (screenshotRefs.length) {
     sections.push("## Screenshots");
-    item.image_urls.forEach((url, i) =>
-      sections.push(`- Screenshot ${i + 1}: ${url}`),
+    screenshotRefs.forEach((ref, i) =>
+      sections.push(`- Screenshot ${i + 1}: ${ref}`),
     );
     sections.push("");
   }

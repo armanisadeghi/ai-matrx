@@ -9,6 +9,7 @@ import { SectionFooter } from "../SectionFooter";
 import { ListRow } from "../ListRow";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
+import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 import { useAgents } from "../../hooks/useAgents";
 import { selectSelectedItemId, setSelectedItemId } from "../../redux/ui/slice";
 import type { AgentDefinitionRecord } from "@/features/agents/types/agent-definition.types";
@@ -132,7 +133,12 @@ function AgentDetail({
         <DetailField label="ID" value={agent.id} mono />
         <DetailField label="Name" value={agent.name} />
         <DetailField label="Description" value={agent.description ?? "—"} />
-        <DetailField label="Model" value={agent.modelId ?? "—"} />
+        <DetailField
+          label="Model"
+          value={
+            agent.modelId ? <AiModelRef modelId={agent.modelId} showId /> : "—"
+          }
+        />
         <DetailField label="Agent type" value={agent.agentType} />
         <DetailField
           label="MCP servers"
@@ -165,7 +171,7 @@ function DetailField({
   mono,
 }: {
   label: string;
-  value: string;
+  value: React.ReactNode;
   mono?: boolean;
 }) {
   return (

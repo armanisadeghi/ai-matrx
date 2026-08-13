@@ -17,6 +17,7 @@ import { useState } from "react";
 import { AdminAuditTable } from "@/features/administration/canonicalization/components/AdminAuditTable";
 import type { AuditColumnDef } from "@/features/administration/canonicalization/components/AdminAuditTable";
 import type { AiApi, AiEndpoint, AiModel, AiOffering } from "../../types";
+import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 
 interface OfferingTableProps {
   offerings: AiOffering[];
@@ -42,7 +43,11 @@ export default function OfferingTable({
   const [pendingDelete, setPendingDelete] = useState<AiOffering | null>(null);
   const modelName = (id: string) => {
     const m = models.find((x) => x.id === id);
-    return m?.common_name || m?.name || id;
+    return m?.common_name || m?.name || `Unknown AI model (${id})`;
+  };
+  const resolvedModelName = (id: string) => {
+    const m = models.find((x) => x.id === id);
+    return m?.common_name || m?.name || null;
   };
   const endpointName = (id: string) => {
     const e = endpoints.find((x) => x.id === id);
@@ -59,6 +64,14 @@ export default function OfferingTable({
       label: "Model",
       type: "text",
       getValue: (o) => modelName(o.model_id),
+      render: (o) => (
+        <AiModelRef
+          modelId={o.model_id}
+          name={resolvedModelName(o.model_id)}
+          showId
+          showIcon={false}
+        />
+      ),
       width: "minmax(180px,1.4fr)",
     },
     {
@@ -176,8 +189,16 @@ export default function OfferingTable({
                   This removes the{" "}
                   <strong>{endpointName(pendingDelete.endpoint_id)}</strong>{" "}
                   offering for{" "}
-                  <strong>{modelName(pendingDelete.model_id)}</strong>. This
-                  cannot be undone.
+                  <strong>
+                    <AiModelRef
+                      modelId={pendingDelete.model_id}
+                      name={resolvedModelName(pendingDelete.model_id)}
+                      showId
+                      showIcon={false}
+                      disableNavigation
+                    />
+                  </strong>
+                  . This cannot be undone.
                 </>
               )}
             </AlertDialogDescription>

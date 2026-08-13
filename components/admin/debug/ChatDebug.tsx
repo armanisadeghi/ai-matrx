@@ -49,6 +49,7 @@ import {
   Loader2,
   AlertTriangle,
 } from "lucide-react";
+import { AiToolRef } from "@/components/official/entity-ref/AiIdentityRef";
 
 // Pull sessionId from activeChatSlice — activeChat slice has been removed, stubbed here.
 const selectSessionId = (_state: RootState): string | null => null;
@@ -201,7 +202,16 @@ export default function ChatDebug() {
             label="Tools"
             value={
               selectedAgent.tools?.length ? (
-                selectedAgent.tools.join(", ")
+                <span className="flex flex-col gap-1">
+                  {selectedAgent.tools.map((toolId) => (
+                    <AiToolRef
+                      key={toolId}
+                      toolId={toolId}
+                      showId
+                      showIcon={false}
+                    />
+                  ))}
+                </span>
               ) : (
                 <span className="text-slate-500">none</span>
               )

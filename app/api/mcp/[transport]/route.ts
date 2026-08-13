@@ -54,11 +54,9 @@ const adminDecisionSchema = z.enum([
   "deferred",
   "split",
 ]);
-const screenshotUrlsSchema = z
-  .array(z.string().url())
-  .describe(
-    "Durable public screenshot URLs. Signed/temporary share URLs are rejected.",
-  );
+const screenshotFileIdsSchema = z
+  .array(z.string().uuid())
+  .describe("Canonical Files IDs for attached screenshots.");
 
 const feedbackToolSchema = z
   .object({
@@ -97,7 +95,7 @@ const feedbackToolSchema = z
       .optional()
       .describe("File path, route, component, or repository"),
     priority: feedbackPrioritySchema.optional(),
-    screenshot_urls: screenshotUrlsSchema.optional(),
+    screenshot_file_ids: screenshotFileIdsSchema.optional(),
     agent_name: z
       .string()
       .min(1)
@@ -115,7 +113,7 @@ const feedbackToolSchema = z
         route: z.string().optional(),
         status: feedbackStatusSchema.optional(),
         priority: feedbackPrioritySchema.optional(),
-        screenshot_urls: screenshotUrlsSchema.optional(),
+        screenshot_file_ids: screenshotFileIdsSchema.optional(),
         admin_notes: z.string().optional(),
         ai_assessment: z.string().optional(),
         ai_solution_proposal: z.string().optional(),
@@ -134,7 +132,7 @@ const feedbackToolSchema = z
       })
       .optional()
       .describe(
-        "Fields to patch for update; screenshot_urls maps to stored image_urls",
+        "Fields to patch for update; screenshots are canonical Files IDs",
       ),
     comment: z.string().min(1).optional(),
     triage: z
@@ -252,7 +250,7 @@ const handler = createMcpHandler(
         feedback_type,
         route,
         priority,
-        screenshot_urls,
+        screenshot_file_ids,
         agent_name,
         query,
         status,
@@ -273,7 +271,7 @@ const handler = createMcpHandler(
             description: requireValue(description, "description"),
             route,
             priority,
-            image_urls: screenshot_urls,
+            image_file_ids: screenshot_file_ids,
           });
           return asMcpText(
             result.success && result.data
@@ -299,14 +297,12 @@ const handler = createMcpHandler(
         if (action === "get")
           return asMcpText(await getFeedbackItem(requireValue(id, "id")));
         if (action === "update") {
-          const { screenshot_urls: updateScreenshots, ...rest } = requireValue(
-            updates,
-            "updates",
-          );
+          const { screenshot_file_ids: updateScreenshots, ...rest } =
+            requireValue(updates, "updates");
           return asMcpText(
             await updateFeedbackItem(requireValue(id, "id"), {
               ...rest,
-              image_urls: updateScreenshots,
+              image_file_ids: updateScreenshots,
             }),
           );
         }
@@ -390,7 +386,7 @@ const handler = createMcpHandler(
               "Route, file path, or component where the issue was found",
             ),
           priority: feedbackPrioritySchema.optional(),
-          screenshot_urls: screenshotUrlsSchema.optional(),
+          screenshot_file_ids: screenshotFileIdsSchema.optional(),
         }),
       },
       async ({
@@ -400,14 +396,14 @@ const handler = createMcpHandler(
         description,
         route,
         priority,
-        screenshot_urls,
+        screenshot_file_ids,
       }) => {
         const result = await submitFeedback(agent_id, agent_name, {
           feedback_type,
           description,
           route,
           priority,
-          image_urls: screenshot_urls,
+          image_file_ids: screenshot_file_ids,
         });
         return {
           content: [
@@ -706,7 +702,7 @@ const handler = createMcpHandler(
       "- Report: pass only `description`; action defaults to `report` and type defaults to `bug`.",
       "- Never invent or look up an agent/user ID. Caller identity is not part of submission.",
       "- List/search requires no item ID and returns IDs for get/update/comment/triage/resolve.",
-      "- Attach screenshots with durable public `screenshot_urls`; every read returns them as `image_urls`.",
+      "- Attach screenshots with canonical `screenshot_file_ids`; every read returns them as `image_file_ids`.",
       "- The older named tools remain compatibility aliases.",
       "",
       "## Your Role",

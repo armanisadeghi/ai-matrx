@@ -1,19 +1,19 @@
-import { validateFeedbackScreenshotUrls } from "@/lib/services/agent-feedback.service";
+import { validateFeedbackScreenshotFileIds } from "@/lib/services/agent-feedback.service";
 
 describe("agent feedback screenshot contract", () => {
-  test("accepts and deduplicates durable public CDN URLs", () => {
-    const url = "https://cdn.matrxserver.com/user/file?v=cache";
-    expect(validateFeedbackScreenshotUrls([url, url])).toEqual([url]);
+  test("accepts and deduplicates canonical file IDs", () => {
+    const fileId = "4cd24752-2e65-4c31-92ee-7f12f2cb6d41";
+    expect(validateFeedbackScreenshotFileIds([fileId, fileId])).toEqual([
+      fileId,
+    ]);
   });
 
-  test.each([
-    "file:///tmp/screenshot.png",
-    "http://example.com/screenshot.png",
-    "https://bucket.s3.amazonaws.com/file?X-Amz-Signature=secret",
-    "https://server.app.matrxserver.com/share/token/download",
-  ])("rejects non-durable screenshot URL %s", (url) => {
-    expect(() => validateFeedbackScreenshotUrls([url])).toThrow(
-      /durable public|durable public HTTPS/,
-    );
-  });
+  test.each(["file:///tmp/screenshot.png", "not-a-file-id"])(
+    "rejects non-ID screenshot reference %s",
+    (value) => {
+      expect(() => validateFeedbackScreenshotFileIds([value])).toThrow(
+        /file ID/,
+      );
+    },
+  );
 });
