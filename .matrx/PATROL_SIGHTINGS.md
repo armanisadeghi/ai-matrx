@@ -10,7 +10,7 @@ Format: `- [ ] <P#> | <file-or-route> | <one line> | <date>`
 
 ## Open
 
-- [ ] P2 | see `.matrx/patrol-reports/inventory-law.md` | 35 catalogue findings remain; the manually approved Master Input agent-door repair passed static gates but was fully reverted after two certification rejections, so P2 mutation is paused until the approved browser can complete desktop/mobile and light/dark proof | rejected-reverted | 2026-08-12
+- [ ] P2 | see `.matrx/patrol-reports/inventory-law.md` | 34 baseline catalogue items remain after the manually approved Master Input agent-door repair certified; release pending; continue item-scoped approval routing | 2026-08-12
 - [ ] P3 | see `.matrx/patrol-reports/mobile-friendly-ui.md` | 16 approved literal `vh`→`dvh` findings were recovered and certified; 47 code-bearing `vh` occurrences remain across 38 runtime files for the newly gated mechanical recipe or per-surface review | 2026-08-12
 - [ ] P6 | see `.matrx/patrol-reports/no-emojis-in-ui.md` | 19 approved files passed accessible-state repair, desktop/mobile × light/dark proof, and the full type gate, then shipped in `v0.4.527`; 203 lines remain in 75 files | 2026-08-12
 - [ ] P5 | see `.matrx/patrol-reports/copy-everywhere.md` | initial 101-item screening queue corrected; six certain table gaps remain open after their approved batch was REJECTED for unavailable visual certification and fully reverted; detector and manual-approval routing added | 2026-08-12
@@ -23,6 +23,7 @@ Format: `- [ ] <P#> | <file-or-route> | <one line> | <date>`
 ## Cleared
 
 - [x] P1 | `app/(admin)/administration/ai/ai-tasks/page.tsx`, `app/(admin)/administration/agents/agent-apps/{analytics,executions}/page.tsx`, `app/(core)/organizations/page.tsx` | six registered-token dead ends repaired with canonical EntityRef doors; adversarial heading-semantics regression fixed; final verdict CERTIFIED | fixed-certified | 2026-08-12
+- [x] P2 | `features/agent-comparison/components/MasterInputWindow.tsx` | configured agent labels were inert inside the mapping window | fixed-certified (canonical new-tab `EntityRef`; type PASS→PASS; detector 11→10; adversarial verdict CERTIFIED) | 2026-08-12
 - [x] P3 | see `.matrx/patrol-reports/mobile-friendly-ui.md` | prior infrastructure-based rejection superseded: recovered 16-token literal `vh`→`dvh` batch across 15 files passed baseline-delta gates and independent adversarial certification | fixed-certified | 2026-08-12
 - [x] P4 | `components/mardown-display/markdown-classification/custom-views/view-components/CandidateProfileView.tsx:209,211` | pale light-theme header skeletons now use theme-relative `bg-foreground/{20,10}` | fixed-certified | 2026-08-12
 - [x] P4 | `features/war-room/components/room/RoomHeader.tsx:657` | mobile action-sheet row now uses semantic `active:bg-accent/50 border-border` | fixed-certified | 2026-08-12

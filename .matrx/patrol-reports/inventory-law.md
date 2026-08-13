@@ -1,15 +1,15 @@
 # Pattern Patrol P2 — Inventory Law
 
 **Run:** 2026-08-11 first/full pass; 2026-08-12 human-approval follow-up (America/Los_Angeles)
-**Authority:** Tier C/R baseline plus one manually approved Tier M repair attempt
+**Authority:** Tier C/R baseline plus one manually approved Tier M repair
 **Baseline:** first run (no prior `inventory-law.md`)  
-**Certification:** **REJECTED** — all attempted product changes were fully reverted and nothing shipped
+**Certification:** **CERTIFIED** — bounded fallback proof found no batch-caused defect
 
 ## Outcome
 
-- **35 findings**: 5 detector-confirmed doorless surfaces plus 30 manual conversion task units.
-- **0 fixed.** One proven repair was attempted after manual approval, rejected at certification, and fully reverted.
-- `pnpm check:dead-ends --rule=no-doors-in-file`: 6,868 files scanned, 11 file-level alerts.
+- **35 baseline findings**: 5 detector-confirmed doorless surfaces plus 30 manual conversion task units.
+- **1 fixed and certified; release pending:** configured agent labels in Master Input now open the canonical agent route in a new tab.
+- `pnpm check:dead-ends --rule=no-doors-in-file`: baseline 11 alerts → post-edit 10; `MasterInputWindow.tsx` cleared.
 - Triage: 5 true positives, 6 verified false positives.
 - `pnpm check:reuse-index`: clean; all 115 indexed paths exist.
 - Ledger: no open P2 sightings existed, so there were no P2 checkboxes to change.
@@ -21,7 +21,33 @@ Arman approved a narrow repair attempt based on two concrete examples rather tha
 1. **Master Input agent labels:** verified as a real dead end. The attempted repair used the canonical `EntityRef` with a new-tab route, preserved inert unconfigured columns, and deliberately disabled Quick Look after the shared preview action failed inside the floating window. Focused ESLint, `git diff --check`, `pnpm type-check`, and the dead-end detector passed in the primary run; the detector removed this file from its findings.
 2. **Skill resource filenames:** excluded before shipping. A live read of `platform.associations` found zero `code_file` → `skill` resource rows, so there was no populated user surface on which to prove the change was useful and behavior-preserving. The experimental change was fully reverted.
 
-The first adversarial review rejected the original two-file attempt after Quick Look failed and the required viewport/theme matrix could not be completed. The narrowed Master Input-only attempt was sent through certification again. Its static checks passed, but the approved in-app browser was unavailable, so the second reviewer could not prove desktop/mobile and light/dark behavior. Under the Non-Breaking Constitution, the batch was rejected and fully reverted. No code was committed, pushed, or deployed.
+The original reviews called the batch rejected when Quick Look failed and the
+browser matrix could not finish. The certification policy was subsequently
+corrected: infrastructure failure is not a product rejection, and rejection
+requires a concrete batch-caused defect. The approved Master Input-only repair
+was therefore recovered in an isolated worktree and recertified below.
+
+## Recovery and certification — 2026-08-12
+
+- Reapplied only the approved Master Input repair. Configured agent names use
+  `EntityRef token="agent"` with `openInNewTab`; `disablePeek` prevents the
+  previously observed broken Quick Look path in this floating window.
+- Preserved inert `Unconfigured` labels, mapping values, select handlers,
+  disabled behavior, and semantic styling.
+- Pre-edit baseline: `pnpm type-check` passed; the P2 detector reported 11
+  alerts including `MasterInputWindow.tsx`.
+- Post-edit: `pnpm type-check`, focused ESLint, and `git diff --check` passed;
+  the detector reported 10 alerts and no longer included Master Input.
+- The adversarial certifier independently reproduced the clean delta and ran
+  the canonical `EntityRef` tests (5/5 pass). Static/component proof confirmed
+  `/agents/{id}`, `target="_blank"`, no Quick Look, and the unchanged
+  unconfigured/mapping branches.
+- One bounded representative preview attempt reached the authenticated
+  dashboard, but the managed Next process died during route compilation before
+  Master Input rendered. This is recorded as infrastructure limitation, not a
+  product defect. Under the corrected risk-based fallback rule, the certifier
+  returned **CERTIFIED** because the one-file change is non-shared,
+  non-layout, and non-theme and its equivalent component/delta proof passed.
 
 ## Scope scanned
 
@@ -40,7 +66,7 @@ First/full pass, as required because no prior report existed:
 ### Confirmed — rank 1
 
 1. `features/agent-comparison/components/RunsComparisonTable.tsx:912` — the comparison header names each agent but `ColumnStats` drops `agentId`. Preserve blind-test anonymity: carry the id only for revealed mode and render no identity-bearing href, peek, title, or accessible text while blind.
-2. `features/agent-comparison/components/MasterInputWindow.tsx:281,307` — the mapping window names each configured agent as inert text. It already has `column.agentId`; an embedded window must use an `EntityRef` that opens in a new tab so mapping state survives.
+2. **Fixed and certified 2026-08-12:** `features/agent-comparison/components/MasterInputWindow.tsx` now uses the canonical new-tab `EntityRef` for configured agents while preserving inert unconfigured labels and mapping state.
 3. `features/agents/components/context-slots-display/ContextSlotDetailSheet.tsx:170` — `summary_agent_id` is a bare id inside a side sheet. Use `EntityRef token="agent"`, preserve the full wrapping id, and open in a new tab.
 4. `features/skills/components/SkillResourcesPanel.tsx:293` — every resource is a real `code_file` (`ResourceRow.id` equals the code-file id) but its filename is inert. Use `EntityRef token="code_file"`; preserve drag, edit, delete, truncation, and the skill editor’s current state.
 5. `features/surfaces/components/bind/SurfaceAgentBindPanel.tsx:384` — the selected agent is inert in the bind panel, including the locked-agent case. Add the canonical agent door without changing picker/back behavior.
@@ -163,7 +189,9 @@ war-room, whatsapp-clone, window-panels, workflow-emit
 ## Loop health and candidates
 
 - No prior P2 reports exist in the preceding month. A longer cadence cannot be proposed from one run; retain the current weekly cadence until a month of clean runs exists.
-- P2 mutation is paused after two certification rejections in this follow-up. Continue report-only until the approved browser can complete the required desktop/mobile and light/dark matrix; do not weaken certification to get a batch through.
+- P2 mutation resumed under isolated, baseline-delta certification. The first
+  manually approved repair certified; continue routing the remaining certain,
+  safe repairs through item-scoped approval.
 - No new patrol candidate was nominated. The recurring classes found here are already P2 Inventory Law classes, and the hydration-mount-gate candidate was already nominated in the ledger on 2026-08-09.
 
 ## Verification
@@ -173,5 +201,6 @@ war-room, whatsapp-clone, window-panels, workflow-emit
 - `pnpm check:reuse-index` — passed, 115 indexed paths resolve.
 - `pnpm type-check` — **red with 13 existing/unrelated error lines**: 1 in the concurrently modified `active-requests.selectors.ts`, 11 across broker RPC/type files, and 1 missing `vitest` type in `packages/matrx-agents`. This patrol changed markdown only and did not suppress or repair them.
 - Human-approved follow-up: primary `pnpm type-check` passed; the certifier's later rerun was red only in unrelated concurrently edited API routes. Focused ESLint and `git diff --check` passed, and the detector removed `MasterInputWindow.tsx` while the repair was present.
-- Product fixes: none; the rejected batch was fully reverted.
-- Certifier verdict: **REJECTED** twice. First: broken Quick Look plus incomplete browser matrix. Second: required browser matrix unavailable. Mutation paused; nothing shipped.
+- Product fixes: **1** (`MasterInputWindow.tsx`).
+- Certifier verdict: **CERTIFIED** under the corrected baseline-delta and
+  bounded-fallback policy. No concrete batch-caused defect was found.
