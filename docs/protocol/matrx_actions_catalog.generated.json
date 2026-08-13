@@ -2638,20 +2638,6 @@
    "delete": "no",
    "family": "Conversations",
    "identity_fields": [],
-   "label": "Conversation Documents",
-   "noun": "cx_conversation_documents",
-   "reference": "no",
-   "schemas": null,
-   "table": "graveyard.conversation_documents",
-   "title_column": null,
-   "update": "no",
-   "view": "no"
-  },
-  {
-   "create": "no",
-   "delete": "no",
-   "family": "Conversations",
-   "identity_fields": [],
    "label": "Media",
    "noun": "cx_media",
    "reference": "no",
@@ -3711,20 +3697,6 @@
    "create": "planned",
    "delete": "planned",
    "family": "Skills",
-   "identity_fields": [],
-   "label": "Skill Category",
-   "noun": "skill_category",
-   "reference": "no",
-   "schemas": null,
-   "table": "graveyard.skill_category_legacy",
-   "title_column": null,
-   "update": "planned",
-   "view": "no"
-  },
-  {
-   "create": "planned",
-   "delete": "planned",
-   "family": "Skills",
    "identity_fields": [
     "id"
    ],
@@ -4331,20 +4303,6 @@
     }
    },
    "table": "iam.access_requests",
-   "title_column": null,
-   "update": "planned",
-   "view": "no"
-  },
-  {
-   "create": "planned",
-   "delete": "planned",
-   "family": "System",
-   "identity_fields": [],
-   "label": "Share Link",
-   "noun": "share_link",
-   "reference": "no",
-   "schemas": null,
-   "table": "graveyard.files_share_links",
    "title_column": null,
    "update": "planned",
    "view": "no"
@@ -7873,22 +7831,6 @@
    "create": "planned",
    "delete": "planned",
    "family": "Other",
-   "identity_fields": [
-    "id"
-   ],
-   "label": "Analysis Recipe",
-   "noun": "analysis_recipes",
-   "reference": "yes",
-   "schemas": null,
-   "table": "analysis_recipes",
-   "title_column": "name",
-   "update": "planned",
-   "view": "yes"
-  },
-  {
-   "create": "planned",
-   "delete": "planned",
-   "family": "Other",
    "identity_fields": [],
    "label": "App Instance",
    "noun": "app_instance",
@@ -9400,10 +9342,6 @@
        "default": null,
        "title": "Session Id"
       },
-      "share_token": {
-       "default": null,
-       "title": "Share Token"
-      },
       "source_id": {
        "default": null,
        "title": "Source Id"
@@ -9515,10 +9453,6 @@
       "session_id": {
        "default": null,
        "title": "Session Id"
-      },
-      "share_token": {
-       "default": null,
-       "title": "Share Token"
       },
       "source_id": {
        "default": null,
@@ -11690,7 +11624,7 @@
    "identity_fields": [
     "id"
    ],
-   "label": "Kind Instance",
+   "label": "Saved Result",
    "noun": "content_ir_kind_instance",
    "reference": "yes",
    "schemas": {
@@ -12767,100 +12701,6 @@
     }
    },
    "table": "custom_applet_configs",
-   "title_column": "name",
-   "update": "planned",
-   "view": "yes"
-  },
-  {
-   "create": "planned",
-   "delete": "planned",
-   "family": "Other",
-   "identity_fields": [
-    "id"
-   ],
-   "label": "Dashboard Saved View",
-   "noun": "dashboard_saved_view",
-   "reference": "yes",
-   "schemas": {
-    "create": {
-     "additionalProperties": true,
-     "properties": {
-      "description": {
-       "default": null,
-       "title": "Description"
-      },
-      "metadata": {
-       "default": {},
-       "title": "Metadata"
-      },
-      "name": {
-       "title": "Name"
-      },
-      "table_name": {
-       "title": "Table Name"
-      },
-      "url_params": {
-       "title": "Url Params"
-      }
-     },
-     "required": [
-      "table_name",
-      "name",
-      "url_params"
-     ],
-     "title": "CreateDashboardSavedViewItem",
-     "type": "object"
-    },
-    "delete": {
-     "additionalProperties": true,
-     "properties": {
-      "id": {
-       "title": "Id",
-       "type": "string"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "DeleteDashboardSavedViewItem",
-     "type": "object"
-    },
-    "update": {
-     "additionalProperties": true,
-     "properties": {
-      "description": {
-       "default": null,
-       "title": "Description"
-      },
-      "id": {
-       "title": "Id",
-       "type": "string"
-      },
-      "metadata": {
-       "default": null,
-       "title": "Metadata"
-      },
-      "name": {
-       "default": null,
-       "title": "Name"
-      },
-      "table_name": {
-       "default": null,
-       "title": "Table Name"
-      },
-      "url_params": {
-       "default": null,
-       "title": "Url Params"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "UpdateDashboardSavedViewItem",
-     "type": "object"
-    }
-   },
-   "table": "dashboard_saved_views",
    "title_column": "name",
    "update": "planned",
    "view": "yes"
@@ -16166,138 +16006,6 @@
    "title_column": "label",
    "update": "planned",
    "view": "yes"
-  },
-  {
-   "create": "planned",
-   "delete": "planned",
-   "family": "Other",
-   "identity_fields": [],
-   "label": "Microservice Project",
-   "noun": "microservice_project",
-   "reference": "no",
-   "schemas": {
-    "create": {
-     "additionalProperties": true,
-     "properties": {
-      "is_system": {
-       "default": false,
-       "title": "Is System"
-      },
-      "metadata": {
-       "default": {},
-       "title": "Metadata"
-      },
-      "project_code": {
-       "title": "Project Code"
-      },
-      "project_description": {
-       "title": "Project Description"
-      },
-      "project_name": {
-       "title": "Project Name"
-      },
-      "public_read": {
-       "default": false,
-       "title": "Public Read"
-      },
-      "repo_id": {
-       "title": "Repo Id"
-      },
-      "repo_name": {
-       "title": "Repo Name"
-      },
-      "repo_org_name": {
-       "title": "Repo Org Name"
-      },
-      "repo_url": {
-       "title": "Repo Url"
-      }
-     },
-     "required": [
-      "project_name",
-      "project_description",
-      "repo_name",
-      "repo_id",
-      "repo_org_name",
-      "repo_url",
-      "project_code"
-     ],
-     "title": "CreateMicroserviceProjectItem",
-     "type": "object"
-    },
-    "delete": {
-     "additionalProperties": true,
-     "properties": {
-      "id": {
-       "title": "Id",
-       "type": "string"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "DeleteMicroserviceProjectItem",
-     "type": "object"
-    },
-    "update": {
-     "additionalProperties": true,
-     "properties": {
-      "id": {
-       "title": "Id",
-       "type": "string"
-      },
-      "is_system": {
-       "default": null,
-       "title": "Is System"
-      },
-      "metadata": {
-       "default": null,
-       "title": "Metadata"
-      },
-      "project_code": {
-       "default": null,
-       "title": "Project Code"
-      },
-      "project_description": {
-       "default": null,
-       "title": "Project Description"
-      },
-      "project_name": {
-       "default": null,
-       "title": "Project Name"
-      },
-      "public_read": {
-       "default": null,
-       "title": "Public Read"
-      },
-      "repo_id": {
-       "default": null,
-       "title": "Repo Id"
-      },
-      "repo_name": {
-       "default": null,
-       "title": "Repo Name"
-      },
-      "repo_org_name": {
-       "default": null,
-       "title": "Repo Org Name"
-      },
-      "repo_url": {
-       "default": null,
-       "title": "Repo Url"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "UpdateMicroserviceProjectItem",
-     "type": "object"
-    }
-   },
-   "table": "microservice_project",
-   "title_column": null,
-   "update": "planned",
-   "view": "no"
   },
   {
    "create": "planned",
@@ -20515,9 +20223,6 @@
        "default": 0,
        "title": "Share Count"
       },
-      "share_token": {
-       "title": "Share Token"
-      },
       "tags": {
        "default": [],
        "title": "Tags"
@@ -20547,7 +20252,6 @@
       }
      },
      "required": [
-      "share_token",
       "title",
       "canvas_type",
       "canvas_data"
@@ -20672,10 +20376,6 @@
        "default": null,
        "title": "Share Count"
       },
-      "share_token": {
-       "default": null,
-       "title": "Share Token"
-      },
       "tags": {
        "default": null,
        "title": "Tags"
@@ -20716,20 +20416,6 @@
    "title_column": "title",
    "update": "planned",
    "view": "yes"
-  },
-  {
-   "create": "planned",
-   "delete": "planned",
-   "family": "Other",
-   "identity_fields": [],
-   "label": "Shortcut Category",
-   "noun": "shortcut_category",
-   "reference": "no",
-   "schemas": null,
-   "table": "graveyard.shortcut_categories_legacy",
-   "title_column": null,
-   "update": "planned",
-   "view": "no"
   },
   {
    "create": "planned",
@@ -24457,6 +24143,10 @@
        "default": false,
        "title": "Has Open Issues"
       },
+      "image_file_ids": {
+       "default": [],
+       "title": "Image File Ids"
+      },
       "image_urls": {
        "default": null,
        "title": "Image Urls"
@@ -24601,6 +24291,10 @@
       "id": {
        "title": "Id",
        "type": "string"
+      },
+      "image_file_ids": {
+       "default": null,
+       "title": "Image File Ids"
       },
       "image_urls": {
        "default": null,
@@ -27402,100 +27096,6 @@
    "title_column": null,
    "update": "no",
    "view": "no"
-  },
-  {
-   "create": "planned",
-   "delete": "planned",
-   "family": "Other",
-   "identity_fields": [
-    "id"
-   ],
-   "label": "Window Session",
-   "noun": "window_session",
-   "reference": "yes",
-   "schemas": {
-    "create": {
-     "additionalProperties": true,
-     "properties": {
-      "data": {
-       "default": {},
-       "title": "Data"
-      },
-      "label": {
-       "default": null,
-       "title": "Label"
-      },
-      "metadata": {
-       "default": {},
-       "title": "Metadata"
-      },
-      "panel_state": {
-       "default": {},
-       "title": "Panel State"
-      },
-      "window_type": {
-       "title": "Window Type"
-      }
-     },
-     "required": [
-      "window_type"
-     ],
-     "title": "CreateWindowSessionItem",
-     "type": "object"
-    },
-    "delete": {
-     "additionalProperties": true,
-     "properties": {
-      "id": {
-       "title": "Id",
-       "type": "string"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "DeleteWindowSessionItem",
-     "type": "object"
-    },
-    "update": {
-     "additionalProperties": true,
-     "properties": {
-      "data": {
-       "default": null,
-       "title": "Data"
-      },
-      "id": {
-       "title": "Id",
-       "type": "string"
-      },
-      "label": {
-       "default": null,
-       "title": "Label"
-      },
-      "metadata": {
-       "default": null,
-       "title": "Metadata"
-      },
-      "panel_state": {
-       "default": null,
-       "title": "Panel State"
-      },
-      "window_type": {
-       "default": null,
-       "title": "Window Type"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "UpdateWindowSessionItem",
-     "type": "object"
-    }
-   },
-   "table": "window_sessions",
-   "title_column": "label",
-   "update": "planned",
-   "view": "yes"
   },
   {
    "create": "no",

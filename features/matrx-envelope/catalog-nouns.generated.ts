@@ -105,10 +105,6 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
   "table": "ai.setting",
   "title_column": "key"
  },
- "analysis_recipes": {
-  "table": "analysis_recipes",
-  "title_column": "name"
- },
  "applet": {
   "table": "applet",
   "title_column": "name"
@@ -179,10 +175,6 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
  },
  "custom_applet_config": {
   "table": "custom_applet_configs",
-  "title_column": "name"
- },
- "dashboard_saved_view": {
-  "table": "dashboard_saved_views",
   "title_column": "name"
  },
  "dataset": {
@@ -400,10 +392,6 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
  "wc_claim": {
   "table": "legal.wc_claim",
   "title_column": null
- },
- "window_session": {
-  "table": "window_sessions",
-  "title_column": "label"
  },
  "workbook": {
   "table": "workbench.udt_workbooks",
