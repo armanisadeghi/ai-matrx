@@ -11,7 +11,7 @@ Format: `- [ ] <P#> | <file-or-route> | <one line> | <date>`
 ## Open
 
 - [ ] P2 | see `.matrx/patrol-reports/inventory-law.md` | 35 catalogue findings remain; the manually approved Master Input agent-door repair passed static gates but was fully reverted after two certification rejections, so P2 mutation is paused until the approved browser can complete desktop/mobile and light/dark proof | rejected-reverted | 2026-08-12
-- [ ] P3 | see `.matrx/patrol-reports/mobile-friendly-ui.md` | first/full skill-level scan found 63 code-bearing `vh` unit lines across 53 runtime source files; the narrow `h-screen|100vh` registry grep misses them, and arbitrary height semantics remain Tier R until each surface is reviewed and the registry names an exact mechanical transformation | 2026-08-12
+- [ ] P3 | see `.matrx/patrol-reports/mobile-friendly-ui.md` | 16 approved literal `vh`→`dvh` findings were recovered and certified; 47 code-bearing `vh` occurrences remain across 38 runtime files for the newly gated mechanical recipe or per-surface review | 2026-08-12
 - [ ] P6 | see `.matrx/patrol-reports/no-emojis-in-ui.md` | 19 approved files passed accessible-state repair, desktop/mobile × light/dark proof, and the full type gate, then shipped in `v0.4.527`; 203 lines remain in 75 files | 2026-08-12
 - [ ] P5 | see `.matrx/patrol-reports/copy-everywhere.md` | initial 101-item screening queue corrected; six certain table gaps remain open after their approved batch was REJECTED for unavailable visual certification and fully reverted; detector and manual-approval routing added | 2026-08-12
 - [x] P10 | `features/tasks/hooks/useTaskManager.ts:150` | former `TEMP-RT-DEBUG` cast was removed by its owning task before the approved P10 batch; re-verification found no remaining harness symbol or cast | resolved-before-batch | 2026-08-12
@@ -24,7 +24,7 @@ Format: `- [ ] <P#> | <file-or-route> | <one line> | <date>`
 
 ## Cleared
 
-- [x] P3 | see `.matrx/patrol-reports/mobile-friendly-ui.md` | attempted 16-token literal `vh`→`dvh` batch across 15 files was REJECTED because the managed preview became runaway before any changed surface completed the mobile/desktop and light/dark matrix; all 16 product substitutions were fully reverted | rejected-reverted | 2026-08-12
+- [x] P3 | see `.matrx/patrol-reports/mobile-friendly-ui.md` | prior infrastructure-based rejection superseded: recovered 16-token literal `vh`→`dvh` batch across 15 files passed baseline-delta gates and independent adversarial certification | fixed-certified | 2026-08-12
 - [x] P7 | see `.matrx/patrol-reports/no-browser-dialogs.md` | attempted 16-alert/9-file automatic batch was REJECTED because the managed preview became runaway before the complete browser matrix; all product changes fully reverted | rejected-reverted | 2026-08-12
 - [x] P3 | `components/ui/drawer.tsx:87` | canonical `DrawerContent` was fixed to the mobile viewport bottom without default `pb-safe` | 2026-08-12 | fixed-certified (added the approved primitive-level `pb-safe` default and regression assertion; mobile/desktop plus light/dark adversarial verdict CERTIFIED)
 - [x] P4 | `components/errors/ErrorBoundaryView.tsx:121` | shared CopyButton uses `hover:bg-white/10` on both dark code and neutral light surfaces; light-mode hover is effectively invisible | 2026-08-11 | fixed-certified (theme surfaces now use `hover:bg-accent`; the fixed dark stack surface explicitly opts into stable on-dark chrome; adversarial verdict CERTIFIED)

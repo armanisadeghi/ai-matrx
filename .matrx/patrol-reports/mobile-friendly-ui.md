@@ -3,13 +3,11 @@
 - **Run date:** 2026-08-12 (America/Los_Angeles)
 - **Run kind:** first/full pass, resumed for one certified repair and one
   manually approved viewport-unit attempt
-- **Outcome:** 64 verified findings across 54 files; 1 fixed and certified, 63
-  Tier-R `vh` occurrences remain open
-- **Run status:** the canonical drawer repair remains certified. A later
-  manually approved 16-token literal `vh`→`dvh` batch was independently
-  REJECTED because the managed preview became runaway before the required
-  visual matrix; all 16 product substitutions were fully reverted and nothing
-  from that batch will ship
+- **Outcome:** 64 verified findings across 54 files; 17 fixed and certified, 47
+  plain-`vh` occurrences remain open
+- **Run status:** the canonical drawer repair and the recovered 16-token
+  literal `vh`→`dvh` batch are independently CERTIFIED under the corrected
+  baseline-delta policy
 
 ## Scope scanned
 
@@ -39,19 +37,17 @@ changed line as scope.
 The registry detector for `h-screen|100vh` found no runtime violation. Its only
 matches are explanatory comments in `app/globals.css`.
 
-The stricter mobile skill requires `dvh`, never plain `vh`. The full numeric-unit
-detector now returns 74 raw lines. Triage removes five comment-only lines and
-six lines in the confirmed zero-consumer
-`components/matrx/resizable/panel-config.ts`, leaving **63 code-bearing `vh`
-occurrences across 53 runtime files**. Two occurrences in the structurally new
-`features/marketing/seo/public-tools/AiVisibilityTool.tsx` were added after the
-initial baseline, increasing the verified backlog from 61 to 63.
+The stricter mobile skill requires `dvh`, never plain `vh`. After the recovered
+batch, the full numeric-unit detector returns 58 raw lines. Triage removes five
+comment-only lines and six lines in the confirmed zero-consumer
+`components/matrx/resizable/panel-config.ts`, leaving **47 code-bearing `vh`
+occurrences across 38 runtime files**.
 
-These remain Tier R. They mix `min-height`, `max-height`, dialog sizing,
-desktop window configuration, popover constraints, and loading/empty-state
-layout. P3 authorizes Tier M only for the exact `h-screen` to `h-dvh` transform;
-changing these arbitrary height semantics without surface judgment would exceed
-the approved recipe.
+The remaining backlog mixes desktop window configuration, parser/config
+contracts, loading/empty-state layout, and other surfaces needing per-item
+review. The newly certified direct literal CSS/Tailwind recipe is now eligible
+for narrowly gated Tier-M automation; layout or runtime-contract judgment
+remains Tier R.
 
 Durable full-pass detector:
 
@@ -92,15 +88,15 @@ remain report-only layout judgment; no core route header was changed.
 
 ## Fixes and certification
 
-- **Fixed:** 1 of 64 findings
-- **Tier-M batch:** 2 files, within the 15-file ceiling
-- **Adversarial certifier:** **CERTIFIED**
-- **Rejected batches:** none
-- **Paused mutation:** none; all remaining findings are registry-declared Tier R
-- **Delivery:** committed locally in `89dbf6077`; push/release paused rather than
-  bypassing unrelated shared-checkout gates (`pnpm type-check`, two unapplied
-  migrations, one drifted migration, and local `main` eight commits behind
-  `origin/main`)
+- **Fixed:** 17 of 64 findings
+- **Tier-M batches:** canonical drawer (2 files) plus recovered literal viewport
+  batch (15 files), each within the ceiling
+- **Adversarial certifier:** **CERTIFIED** for both batches
+- **Rejected batches:** none under the current policy; the old
+  infrastructure/global-baseline rejection is superseded
+- **Paused mutation:** none; 47 findings remain
+- **Delivery:** recovered batch certified in isolated branch
+  `codex/p3-vh-recovery`; integration and release follow this report update
 
 Certification evidence:
 
@@ -112,39 +108,47 @@ Certification evidence:
   interaction behavior
 - 1280x800 light and dark: desktop surface retained its normal non-drawer
   layout with no fixed drawer/dialog and no horizontal overflow
-- repo-wide `pnpm type-check` was rerun but is red in concurrent, unrelated
-  feedback/schema work; neither patrol batch file is implicated and no
-  suppression, generated-file edit, or widening was used by P3
-- `pnpm check:migrations` reports an unrelated concurrent unapplied migration
-  and the pre-existing drifted `web_audit_rollup_gone_pages.sql`; P3 did not
-  touch migrations or generated files
+- the drawer batch's historical type/migration failures were unrelated shared
+  state; the recovered viewport batch started from isolated `origin/main` and
+  recorded a green `pnpm type-check` before and after
+- no suppression, generated-file edit, migration, or chunk-boundary change was
+  used by either P3 batch
 
-### Manually approved literal viewport batch — REJECTED and reverted
+### Manually approved literal viewport batch — recovered and CERTIFIED
 
 Arman manually approved 16 direct literal CSS/Tailwind `vh`→`dvh`
 substitutions across 15 runtime files. Static review confirmed the intended
 one-token-only edits, no suppression/generated/chunk changes, a clean
 `git diff --check`, and no residual plain `vh` in the proposed batch.
 
-The adversarial certifier returned **REJECTED**. The managed preview loaded one
-authenticated mobile dashboard, then became unresponsive/runaway at 24.8 GB.
-After a repository-approved stop/restart, it became runaway again at 16.3 GB;
-`/research/topics/new` timed out and the next target was connection-refused.
-None of the 15 changed surfaces completed the mandatory 375x812 + 1280x800,
-light + dark matrix, so footer reachability, overflow, and interactions were
-not proven. All 16 product substitutions were fully reverted. The 63-finding
-plain-`vh` backlog therefore remains open.
+The old infrastructure/global-baseline rejection was invalid under the
+corrected patrol policy and is superseded. The batch was recovered in an
+isolated worktree from `origin/main`, with exact pre-edit and post-edit gates.
+The adversarial certifier returned **CERTIFIED**:
 
-Additional gate context: repo-wide `pnpm type-check` was red only in unrelated
-concurrent API routes missing `organization_id`; scoped ESLint findings were
-pre-existing and outside the changed tokens; three existing sandbox-gate tests
-also failed in unrelated state-resolution behavior. `pnpm check:ui-primitives`
-exited 0 with its existing 19 warnings.
+- exact diff: 15 files, 16 literal `vh`→`dvh` substitutions, with every number
+  and surrounding width/flex/overflow/theme/interaction class unchanged
+- scoped old-`vh` detector: 16 findings → 0; `git diff --check` clean
+- `pnpm type-check`: PASS → PASS
+- doctrine: PASS → PASS; UI-primitives: 19 warnings → the same 19; tsconfig:
+  PASS with two notes → the same result
+- scoped ESLint: 6 errors/2 warnings → the same exact baseline diagnostics
+- sandbox focused Jest: 3 failures/6 passes → the same exact baseline tests
+- migration check: exit 0 with credentials-absent skip → the same result
+- adversarial risk review covered standard capped dialogs, fixed-height flex
+  dialogs, a custom overlay, bounded popover/ScrollArea containers, and the
+  editable minimum-height textarea; no batch-caused defect was found
 
-The approved general approval-routing guidance was retained. The proposed
-literal-viewport auto-approval class was **not** activated: the registry now
-records the exact manual-proposal criteria and requires one representative
-batch to complete certification before promotion.
+The one bounded preview attempt attached to a pre-existing shared server at
+20.8 GB RSS, already above the mandated 8 GB cap, so it did not navigate or
+restart. Per the updated constitution, the certifier used focused static and
+code-semantic equivalent evidence rather than treating infrastructure as a
+product rejection. Desktop/theme styling and all interaction semantics are
+unchanged by this one-token unit substitution.
+
+This successful representative batch promotes the exact literal viewport
+recipe to narrowly gated P3 auto-approval in the registry; layout judgment and
+runtime/config contracts remain manual.
 
 ## Structural baseline for the next run
 
@@ -162,8 +166,7 @@ raw changed-line volume.
 ## Cadence health and candidates
 
 This is the only P3 run in the preceding month, so there is not enough clean-run
-history to propose a longer cadence. One later manual batch was rejected for an
-unavailable visual-certification harness and fully reverted; this is not yet a
-repeat-rejection pause for P3. The schedule remains unchanged. No recurring
-unregistered class was established. The plain `vh` backlog is already P3, not
-a candidate-bench nomination.
+history to propose a longer cadence. The earlier infrastructure-based rejection
+is superseded; P3 mutation is not paused. The schedule remains unchanged. No
+recurring unregistered class was established. The plain `vh` backlog is already
+P3, not a candidate-bench nomination.

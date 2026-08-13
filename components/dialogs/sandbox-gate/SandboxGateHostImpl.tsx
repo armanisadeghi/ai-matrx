@@ -99,7 +99,7 @@ export default function SandboxGateHostImpl() {
         </DialogHeader>
 
         {active ? (
-          <div className="max-h-[50vh] overflow-y-auto rounded-md border border-border">
+          <div className="max-h-[50dvh] overflow-y-auto rounded-md border border-border">
             <SandboxPanel conversationId={active.opts.conversationId} />
           </div>
         ) : null}

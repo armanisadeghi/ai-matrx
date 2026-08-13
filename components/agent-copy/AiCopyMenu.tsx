@@ -526,7 +526,7 @@ function AiCustomDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[88vh] w-[min(1100px,95vw)] max-w-none flex-col">
+      <DialogContent className="flex max-h-[88dvh] w-[min(1100px,95vw)] max-w-none flex-col">
         <DialogHeader>
           <DialogTitle>
             {source.dialogTitle ?? `${label} — custom export`}
