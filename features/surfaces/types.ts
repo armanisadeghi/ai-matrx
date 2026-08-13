@@ -567,6 +567,42 @@ export interface SurfaceAgentRoleDrift {
   >;
 }
 
+/**
+ * Single drift entry for a SurfaceWriteTarget not synced between code and DB.
+ *
+ * The WRITE half of the manifest is mirrored to `ui.ui_surface_write_target`
+ * so server-side agents can see what a surface ACCEPTS. That mirror can go
+ * stale exactly like the value mirror — a branch syncs targets its manifest
+ * declares, the branch never lands, and the rows outlive the code. Reporting
+ * them is what lets an admin decide; the alternative (a global `deleteStale`
+ * sweep) is indiscriminate and deletes rows belonging to unmerged work.
+ */
+export interface SurfaceWriteTargetDrift {
+  surfaceName: string;
+  targetName: string;
+  /** `manifest_only` = code has it, DB doesn't. `db_only` = DB has it, code doesn't. `diff` = both have it but fields differ. */
+  kind: "manifest_only" | "db_only" | "diff";
+  /** Field-level diff when `kind === "diff"`. */
+  diff?: Partial<
+    Record<
+      keyof SurfaceWriteTarget | "groupKey",
+      { manifest: unknown; db: unknown }
+    >
+  >;
+}
+
+/** Single drift entry for a SurfaceClientTool not synced between code and DB. */
+export interface SurfaceClientToolDrift {
+  surfaceName: string;
+  toolName: string;
+  /** `manifest_only` = code has it, DB doesn't. `db_only` = DB has it, code doesn't. `diff` = both have it but fields differ. */
+  kind: "manifest_only" | "db_only" | "diff";
+  /** Field-level diff when `kind === "diff"`. */
+  diff?: Partial<
+    Record<keyof SurfaceClientTool, { manifest: unknown; db: unknown }>
+  >;
+}
+
 /** A config namespace referenced somewhere but missing a registered handler. */
 export interface UnknownNamespace {
   namespace: string;
@@ -630,6 +666,18 @@ export interface SurfaceDriftReport {
   dbRolesNotInManifest: SurfaceAgentRoleDrift[];
   /** Agent roles present in both but with diverging field values. */
   roleDiffs: SurfaceAgentRoleDrift[];
+  /** Write targets that exist in code manifests but not in DB. */
+  writeTargetManifestsMissingInDb: SurfaceWriteTargetDrift[];
+  /** Write targets that exist in DB but no longer in any code manifest. */
+  dbWriteTargetsNotInManifest: SurfaceWriteTargetDrift[];
+  /** Write targets present in both but with diverging field values. */
+  writeTargetDiffs: SurfaceWriteTargetDrift[];
+  /** Client tools that exist in code manifests but not in DB. */
+  clientToolManifestsMissingInDb: SurfaceClientToolDrift[];
+  /** Client tools that exist in DB but no longer in any code manifest. */
+  dbClientToolsNotInManifest: SurfaceClientToolDrift[];
+  /** Client tools present in both but with diverging field values. */
+  clientToolDiffs: SurfaceClientToolDrift[];
   /** Config namespaces referenced (manifest or `ui_surface_config`) without a registered handler. */
   unknownNamespaces: UnknownNamespace[];
   /** Broken `surface_value` mappings in agent↔surface binding value_mappings (platform.associations edge metadata). */

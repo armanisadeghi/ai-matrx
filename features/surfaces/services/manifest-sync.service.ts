@@ -2,8 +2,11 @@
  * Manifest sync service.
  *
  * - Diffs the code-side `SurfaceManifest` registry against
- *   `ui.ui_surface_value` (values) and `ui.ui_surface_agent_role`
- *   (agent roles).
+ *   `ui.ui_surface_value` (values), `ui.ui_surface_agent_role` (agent roles),
+ *   `ui.ui_surface_write_target` (the write half) and
+ *   `ui.ui_surface_client_tool` (the action half). All four mirrors are
+ *   diffed the same way — a mirror nothing diffs is a mirror that drifts in
+ *   silence, and the only remedy left is an indiscriminate global sweep.
  * - Mirrors the manifest's WRITE half (`ui.ui_surface_write_target`) and
  *   ACTION half (`ui.ui_surface_client_tool`) so the server — and every
  *   server-side agent — can see what a surface accepts and what it can do.
@@ -37,6 +40,8 @@ import type {
   SurfaceAgentRole,
   SurfaceAgentRoleDrift,
   SurfaceClientTool,
+  SurfaceClientToolDrift,
+  SurfaceClientToolInputSchema,
   SurfaceDriftReport,
   SurfaceLabelDrift,
   SurfaceUrlPatternDrift,
@@ -44,6 +49,7 @@ import type {
   SurfaceValue,
   SurfaceValueDrift,
   SurfaceWriteTarget,
+  SurfaceWriteTargetDrift,
   UnknownNamespace,
   ValueMapping,
 } from "@/features/surfaces/types";
@@ -61,8 +67,12 @@ type UiSurfaceAgentRoleRow =
   Database["ui"]["Tables"]["ui_surface_agent_role"]["Row"];
 type UiSurfaceAgentRoleInsert =
   Database["ui"]["Tables"]["ui_surface_agent_role"]["Insert"];
+type UiSurfaceWriteTargetRow =
+  Database["ui"]["Tables"]["ui_surface_write_target"]["Row"];
 type UiSurfaceWriteTargetInsert =
   Database["ui"]["Tables"]["ui_surface_write_target"]["Insert"];
+type UiSurfaceClientToolRow =
+  Database["ui"]["Tables"]["ui_surface_client_tool"]["Row"];
 type UiSurfaceClientToolInsert =
   Database["ui"]["Tables"]["ui_surface_client_tool"]["Insert"];
 
@@ -80,9 +90,16 @@ const ROLE_KINDS = ["single", "multi"] as const;
 type DbRoleKind = (typeof ROLE_KINDS)[number];
 const AUTO_RUN_MODES = ["always", "never", "user-choice"] as const;
 type DbAutoRun = (typeof AUTO_RUN_MODES)[number];
+const WRITE_MODES = ["draft", "entity", "ui"] as const;
+type DbWriteMode = (typeof WRITE_MODES)[number];
+const APPLY_POLICIES = ["manual", "ask", "auto"] as const;
+type DbApplyPolicy = (typeof APPLY_POLICIES)[number];
 
 /** SurfaceValue plus the registry-resolved canonical group key. */
 type SyncSurfaceValue = SurfaceValue & { groupKey?: string };
+
+/** SurfaceWriteTarget projected onto the DB's `group_key` column name. */
+type SyncSurfaceWriteTarget = SurfaceWriteTarget & { groupKey?: string };
 
 function manifestRowFor(
   surfaceName: string,
@@ -293,6 +310,156 @@ function diffSurfaceAgentRole(
   return Object.keys(diff).length > 0 ? diff : undefined;
 }
 
+function dbRowToSurfaceWriteTarget(
+  row: UiSurfaceWriteTargetRow,
+): SyncSurfaceWriteTarget {
+  return {
+    name: row.name,
+    label: row.label,
+    description: row.description,
+    valueType: (VALUE_TYPES.includes(row.value_type as DbValueType)
+      ? (row.value_type as DbValueType)
+      : "string") as SurfaceWriteTarget["valueType"],
+    mode: (WRITE_MODES.includes(row.mode as DbWriteMode)
+      ? (row.mode as DbWriteMode)
+      : "draft") as SurfaceWriteTarget["mode"],
+    applyPolicy: (APPLY_POLICIES.includes(row.apply_policy as DbApplyPolicy)
+      ? (row.apply_policy as DbApplyPolicy)
+      : "manual") as SurfaceWriteTarget["applyPolicy"],
+    // `updates_value` is nullable in the DB and optional in code. Both absences
+    // mean the same thing (no read twin), so the row keeps `undefined` and the
+    // comparator normalizes each side to `null` before comparing.
+    updatesValue: row.updates_value ?? undefined,
+    groupKey: row.group_key,
+    sortOrder: row.sort_order,
+  };
+}
+
+/**
+ * Field-by-field write-target comparison, with the SAME default-normalization
+ * discipline as `diffSurfaceValue` — the DB column defaults are what
+ * `manifestWriteTargetRowFor` writes, so an omitted optional in code must
+ * compare equal to the default sitting in the row. Getting this wrong would
+ * report all 360 declared targets as drifted the moment one field is optional.
+ */
+function diffSurfaceWriteTarget(
+  manifest: SyncSurfaceWriteTarget,
+  db: SyncSurfaceWriteTarget,
+): SurfaceWriteTargetDrift["diff"] {
+  const diff: SurfaceWriteTargetDrift["diff"] = {};
+  // Direct-compare fields — required in code, non-null in the DB.
+  const direct: (keyof SyncSurfaceWriteTarget)[] = [
+    "label",
+    "description",
+    "valueType",
+    "mode",
+  ];
+  for (const k of direct) {
+    const m = manifest[k];
+    const d = db[k];
+    if (m !== d) diff[k] = { manifest: m, db: d };
+  }
+  // Optional fields with DB-side defaults — compare with defaults applied.
+  // `applyPolicy` defaults to "manual" (the SAFE default: a target that omits
+  // the field is NOT agent-writable, and must not read as drifted against a
+  // row that correctly stores "manual").
+  const mPolicy = manifest.applyPolicy ?? "manual";
+  const dPolicy = db.applyPolicy ?? "manual";
+  if (mPolicy !== dPolicy) diff.applyPolicy = { manifest: mPolicy, db: dPolicy };
+  // `updatesValue` is `undefined` in code / `null` in the DB when absent.
+  const mUpdates = manifest.updatesValue ?? null;
+  const dUpdates = db.updatesValue ?? null;
+  if (mUpdates !== dUpdates) {
+    diff.updatesValue = { manifest: mUpdates, db: dUpdates };
+  }
+  // `group` in code lands in `group_key` in the DB, defaulting to "general".
+  const mGroup = manifest.groupKey ?? manifest.group ?? "general";
+  const dGroup = db.groupKey ?? db.group ?? "general";
+  if (mGroup !== dGroup) diff.groupKey = { manifest: mGroup, db: dGroup };
+  const mSort = manifest.sortOrder ?? 1000;
+  const dSort = db.sortOrder ?? 1000;
+  if (mSort !== dSort) diff.sortOrder = { manifest: mSort, db: dSort };
+  return Object.keys(diff).length > 0 ? diff : undefined;
+}
+
+/**
+ * Canonical JSON for comparing a client tool's `input_schema` across the
+ * code/jsonb boundary. This comparator has no existing precedent in this
+ * service, so the two rules it encodes are stated explicitly:
+ *
+ * 1. **Object key order is NOT drift.** Postgres `jsonb` physically reorders
+ *    keys on storage, so `{type, properties}` comes back as `{properties,
+ *    type}` no matter what was written. A raw `JSON.stringify` comparison
+ *    would therefore report every single tool as drifted, forever — the same
+ *    trap `normalizeGroups` (step 10) already documents for `value_groups`.
+ *    Keys are sorted recursively before stringifying.
+ *
+ * 2. **Array order IS preserved, deliberately.** Sorting arrays would make the
+ *    comparison blind to a reordered `enum` / `oneOf` / `anyOf` / `prefixItems`
+ *    — all order-bearing or order-visible to the model reading the schema.
+ *    That trades a harmless false POSITIVE (a reordered `required` list shows
+ *    as drift and a sync fixes it) for a false NEGATIVE (a genuinely changed
+ *    enum ordering never surfaces). A drift report that stays silent about
+ *    real divergence is the failure mode worth avoiding, so array order stands.
+ *
+ * `undefined`-valued keys are dropped so a code-side `{a: undefined}` matches a
+ * DB-side `{}` — `JSON.stringify` already does this for objects, and doing it
+ * explicitly keeps the recursion honest about what it compared.
+ */
+function canonicalJson(input: unknown): string {
+  const canonicalize = (v: unknown): unknown => {
+    if (Array.isArray(v)) return v.map(canonicalize);
+    if (v && typeof v === "object") {
+      const rec = v as Record<string, unknown>;
+      const out: Record<string, unknown> = {};
+      for (const key of Object.keys(rec).sort()) {
+        if (rec[key] === undefined) continue;
+        out[key] = canonicalize(rec[key]);
+      }
+      return out;
+    }
+    return v;
+  };
+  return JSON.stringify(canonicalize(input) ?? null);
+}
+
+function dbRowToSurfaceClientTool(row: UiSurfaceClientToolRow): SurfaceClientTool {
+  return {
+    name: row.name,
+    label: row.label,
+    description: row.description,
+    // The DB column is CHECK-constrained to a JSON object; the cast carries it
+    // back onto the generated wire type without widening the code-side shape.
+    inputSchema: (row.input_schema ?? {}) as SurfaceClientToolInputSchema,
+    mode: (WRITE_MODES.includes(row.mode as DbWriteMode)
+      ? (row.mode as DbWriteMode)
+      : "ui") as SurfaceClientTool["mode"],
+  };
+}
+
+function diffSurfaceClientTool(
+  manifest: SurfaceClientTool,
+  db: SurfaceClientTool,
+): SurfaceClientToolDrift["diff"] {
+  const diff: SurfaceClientToolDrift["diff"] = {};
+  const direct: (keyof SurfaceClientTool)[] = ["label", "description"];
+  for (const k of direct) {
+    const m = manifest[k];
+    const d = db[k];
+    if (m !== d) diff[k] = { manifest: m, db: d };
+  }
+  // `mode` is optional in code and defaults to "ui" on both sides.
+  const mMode = manifest.mode ?? "ui";
+  const dMode = db.mode ?? "ui";
+  if (mMode !== dMode) diff.mode = { manifest: mMode, db: dMode };
+  // Structural comparison — see `canonicalJson` for why key order is ignored
+  // and array order is not.
+  if (canonicalJson(manifest.inputSchema) !== canonicalJson(db.inputSchema)) {
+    diff.inputSchema = { manifest: manifest.inputSchema, db: db.inputSchema };
+  }
+  return Object.keys(diff).length > 0 ? diff : undefined;
+}
+
 // ---------------------------------------------------------------------------
 // listSurfaceValues — DB read for one surface
 // ---------------------------------------------------------------------------
@@ -322,11 +489,15 @@ export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
   const [
     allDbRowsRes,
     allDbRoleRowsRes,
+    allDbWriteTargetRowsRes,
+    allDbClientToolRowsRes,
     configNamespaceRowsRes,
     agentBindingsRes,
   ] = await Promise.all([
     sb.schema("ui").from("ui_surface_value").select("*"),
     sb.schema("ui").from("ui_surface_agent_role").select("*"),
+    sb.schema("ui").from("ui_surface_write_target").select("*"),
+    sb.schema("ui").from("ui_surface_client_tool").select("*"),
     sb
       .schema("ui")
       .from("ui_surface_config")
@@ -341,11 +512,15 @@ export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
 
   if (allDbRowsRes.error) throw allDbRowsRes.error;
   if (allDbRoleRowsRes.error) throw allDbRoleRowsRes.error;
+  if (allDbWriteTargetRowsRes.error) throw allDbWriteTargetRowsRes.error;
+  if (allDbClientToolRowsRes.error) throw allDbClientToolRowsRes.error;
   if (configNamespaceRowsRes.error) throw configNamespaceRowsRes.error;
   if (agentBindingsRes.error) throw agentBindingsRes.error;
 
   const dbRows = allDbRowsRes.data ?? [];
   const dbRoleRows = allDbRoleRowsRes.data ?? [];
+  const dbWriteTargetRows = allDbWriteTargetRowsRes.data ?? [];
+  const dbClientToolRows = allDbClientToolRowsRes.data ?? [];
 
   // 2. Index DB rows by surface for fast lookup.
   const dbBySurface = new Map<string, Map<string, UiSurfaceValueRow>>();
@@ -369,6 +544,30 @@ export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
     }
     inner.set(row.name, row);
   }
+  const dbWriteTargetsBySurface = new Map<
+    string,
+    Map<string, UiSurfaceWriteTargetRow>
+  >();
+  for (const row of dbWriteTargetRows) {
+    let inner = dbWriteTargetsBySurface.get(row.surface_name);
+    if (!inner) {
+      inner = new Map();
+      dbWriteTargetsBySurface.set(row.surface_name, inner);
+    }
+    inner.set(row.name, row);
+  }
+  const dbClientToolsBySurface = new Map<
+    string,
+    Map<string, UiSurfaceClientToolRow>
+  >();
+  for (const row of dbClientToolRows) {
+    let inner = dbClientToolsBySurface.get(row.surface_name);
+    if (!inner) {
+      inner = new Map();
+      dbClientToolsBySurface.set(row.surface_name, inner);
+    }
+    inner.set(row.name, row);
+  }
 
   // 3. Index manifests.
   const manifestSurfaceNames = new Set(getRegisteredSurfaceNames());
@@ -377,6 +576,14 @@ export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
     string,
     Map<string, SurfaceAgentRole>
   >();
+  const manifestWriteTargetsBySurface = new Map<
+    string,
+    Map<string, SurfaceWriteTarget>
+  >();
+  const manifestClientToolsBySurface = new Map<
+    string,
+    Map<string, SurfaceClientTool>
+  >();
   for (const manifest of ALL_MANIFESTS) {
     const inner = new Map<string, SurfaceValue>();
     for (const v of manifest.values) inner.set(v.name, v);
@@ -384,6 +591,12 @@ export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
     const roleInner = new Map<string, SurfaceAgentRole>();
     for (const r of manifest.agentRoles ?? []) roleInner.set(r.name, r);
     manifestRolesBySurface.set(manifest.surfaceName, roleInner);
+    const targetInner = new Map<string, SurfaceWriteTarget>();
+    for (const t of manifest.writeTargets ?? []) targetInner.set(t.name, t);
+    manifestWriteTargetsBySurface.set(manifest.surfaceName, targetInner);
+    const toolInner = new Map<string, SurfaceClientTool>();
+    for (const t of manifest.clientTools ?? []) toolInner.set(t.name, t);
+    manifestClientToolsBySurface.set(manifest.surfaceName, toolInner);
   }
 
   // 4. manifest_only / diff: walk manifests, compare to DB.
@@ -464,6 +677,99 @@ export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
         dbRolesNotInManifest.push({
           surfaceName,
           roleName,
+          kind: "db_only",
+        });
+      }
+    }
+  }
+
+  // 6b. Write targets — same walk as values, against ui_surface_write_target.
+  //
+  //     This half was computed by nothing until now, which meant the mirror
+  //     could diverge invisibly: rows synced from a branch whose manifest never
+  //     landed, and rows left behind by a target that was renamed or removed,
+  //     both just sat there. The only lever an admin had was `deleteStale`, a
+  //     GLOBAL sweep that cannot tell "stale" from "another agent's unmerged
+  //     work" — so the safe move was to run nothing and see nothing. Listing
+  //     the rows is what turns that into a decision.
+  const writeTargetManifestsMissingInDb: SurfaceWriteTargetDrift[] = [];
+  const writeTargetDiffs: SurfaceWriteTargetDrift[] = [];
+  for (const [surfaceName, mTargets] of manifestWriteTargetsBySurface) {
+    const dbTargets = dbWriteTargetsBySurface.get(surfaceName);
+    for (const [targetName, manifestTarget] of mTargets) {
+      const dbRow = dbTargets?.get(targetName);
+      if (!dbRow) {
+        writeTargetManifestsMissingInDb.push({
+          surfaceName,
+          targetName,
+          kind: "manifest_only",
+        });
+        continue;
+      }
+      const dbTarget = dbRowToSurfaceWriteTarget(dbRow);
+      const fieldDiff = diffSurfaceWriteTarget(manifestTarget, dbTarget);
+      if (fieldDiff) {
+        writeTargetDiffs.push({
+          surfaceName,
+          targetName,
+          kind: "diff",
+          diff: fieldDiff,
+        });
+      }
+    }
+  }
+  const dbWriteTargetsNotInManifest: SurfaceWriteTargetDrift[] = [];
+  for (const [surfaceName, dbTargets] of dbWriteTargetsBySurface) {
+    const mTargets = manifestWriteTargetsBySurface.get(surfaceName);
+    for (const [targetName] of dbTargets) {
+      if (!mTargets || !mTargets.has(targetName)) {
+        dbWriteTargetsNotInManifest.push({
+          surfaceName,
+          targetName,
+          kind: "db_only",
+        });
+      }
+    }
+  }
+
+  // 6c. Client tools — the ACTION half, against ui_surface_client_tool.
+  //     Zero manifests declare a client tool today and the table is empty, so
+  //     this correctly reports zero drift; it starts reporting the moment the
+  //     first adopter lands, instead of being the next invisible mirror.
+  const clientToolManifestsMissingInDb: SurfaceClientToolDrift[] = [];
+  const clientToolDiffs: SurfaceClientToolDrift[] = [];
+  for (const [surfaceName, mTools] of manifestClientToolsBySurface) {
+    const dbTools = dbClientToolsBySurface.get(surfaceName);
+    for (const [toolName, manifestTool] of mTools) {
+      const dbRow = dbTools?.get(toolName);
+      if (!dbRow) {
+        clientToolManifestsMissingInDb.push({
+          surfaceName,
+          toolName,
+          kind: "manifest_only",
+        });
+        continue;
+      }
+      const dbTool = dbRowToSurfaceClientTool(dbRow);
+      const fieldDiff = diffSurfaceClientTool(manifestTool, dbTool);
+      if (fieldDiff) {
+        clientToolDiffs.push({
+          surfaceName,
+          toolName,
+          kind: "diff",
+          diff: fieldDiff,
+        });
+      }
+    }
+  }
+  const dbClientToolsNotInManifest: SurfaceClientToolDrift[] = [];
+  for (const [surfaceName, dbTools] of dbClientToolsBySurface) {
+    const mTools = manifestClientToolsBySurface.get(surfaceName);
+    for (const [toolName] of dbTools) {
+      if (!mTools || !mTools.has(toolName)) {
+        dbClientToolsNotInManifest.push({
+          surfaceName,
+          toolName,
           kind: "db_only",
         });
       }
@@ -599,6 +905,12 @@ export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
     roleManifestsMissingInDb,
     dbRolesNotInManifest,
     roleDiffs,
+    writeTargetManifestsMissingInDb,
+    dbWriteTargetsNotInManifest,
+    writeTargetDiffs,
+    clientToolManifestsMissingInDb,
+    dbClientToolsNotInManifest,
+    clientToolDiffs,
     unknownNamespaces,
     brokenAgentMappings,
     urlPatternDrifts,
