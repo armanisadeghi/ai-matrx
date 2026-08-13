@@ -34,6 +34,7 @@ import { ChevronDown, ChevronRight, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
 import { useCategories } from "@/features/scopes/hooks/useCategories";
+import { useSurfaceClientTools } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { cn } from "@/lib/utils";
 
 import { NODE_TYPE_LABELS, planStatusColor } from "../constants";
@@ -206,6 +207,35 @@ export function PlanTree({
   const expandAll = () => setCollapsed(new Set());
   const collapseAll = () =>
     setCollapsed(collapseAllTargets(buildPlanTree(nodes)));
+
+  // Surface client tool (manifest `matrx-user/content-plan`): the collapse set
+  // lives HERE, so the handler registers from here — `useSurfaceClientTools`
+  // works at any depth. Registered only while the tree is actually rendered,
+  // so on the table/map/entities/setup/ai-runs views the tool is
+  // declared-but-unwired and is simply not offered to the agent. Each branch
+  // calls the SAME function the toolbar's controls call — no parallel path.
+  useSurfaceClientTools("matrx-user/content-plan", {
+    content_plan_expand_tree: (input: unknown) => {
+      const level = (input ?? {}) as { level?: unknown };
+      if (level.level === "none") {
+        collapseAll();
+        return { level: "none" };
+      }
+      if (
+        level.level === "all" ||
+        level.level === "pillars" ||
+        level.level === "clusters"
+      ) {
+        applyLevel(level.level satisfies TreeLevel);
+        return { level: level.level };
+      }
+      throw new Error(
+        `content_plan_expand_tree expects level to be one of all, clusters, pillars, none; got ${JSON.stringify(
+          level.level,
+        )}.`,
+      );
+    },
+  });
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(String(event.active.id));
