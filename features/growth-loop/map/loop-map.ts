@@ -728,12 +728,13 @@ export const GAPS: LoopGap[] = [
         id: "G-PUBLISH-CRAWL",
         title: "Publishing a page tells nobody",
         severity: "blocker",
-        status: "in-progress",
+        status: "closed",
         at: "serve->crawl",
         breaks: ["code", "ai"],
         detail:
-            "COMMITTED, NOT DEPLOYED. aidream/services/web_announce/ is on origin/main and called from cms/pages.py publish. But the DEPLOYED server is 13 commits behind and does not contain it, and the live cms_publish_crawl_reconcile task is still enabled=false / 0 runs, correctly gated on its handler. Deploying aidream closes this.",
+            "CLOSED AND RUNNING 2026-08-13. aidream deployed; web_announce is called from cms/pages.py:932 on publish and from system_task_runner.py:958 for the reconcile sweep. Live-verified: the 'CMS publish → crawl reconcile' task is enabled with 198 runs / 0 failures. Still deliberately NOT claimed here: the IndexNow / Search Console submit ping on publish — that is a new gap if wanted, not this one.",
         lane: "L1",
+        evidence: "aidream/aidream/services/web_announce/",
     },
     {
         id: "G-CRAWL-SCHEDULE",
@@ -821,12 +822,13 @@ export const GAPS: LoopGap[] = [
         id: "G-TEMPLATE",
         title: "Realized pages are empty — template_map is never read",
         severity: "major",
-        status: "in-progress",
+        status: "closed",
         at: "brief->realize",
         breaks: ["code"],
         detail:
-            "COMMITTED, NOT DEPLOYED. aidream/services/content_plan/templates.py is on origin — a library layer over plan.profile.template_map with a real resolution chain; cms_reconciler scaffolds html_content/css_content on create and cms_fill treats a scaffold as unfilled. Verified 2026-08-12: the deployed server does NOT contain it, so production still realizes empty drafts.",
+            "CLOSED 2026-08-13. aidream deployed. content_plan/templates.py is a library layer over plan.profile.template_map with a real resolution chain, consumed by four modules (routers/content_plan.py, content_plan/service.py, cms_fill.py, cms_reconciler.py): cms_reconciler scaffolds html_content/css_content on create and cms_fill treats a scaffold as unfilled. Production no longer realizes empty drafts.",
         lane: "L3",
+        evidence: "aidream/aidream/services/content_plan/templates.py",
     },
     {
         id: "G-CMS-IDENTITY",
@@ -855,12 +857,13 @@ export const GAPS: LoopGap[] = [
         id: "G-PLAN-STATUS",
         title: "plan_status has no enforced state machine",
         severity: "major",
-        status: "in-progress",
+        status: "closed",
         at: "writeback->plan",
         breaks: ["code"],
         detail:
-            "SPLIT STATE — THE DB IS AHEAD OF THE CODE. Migrations 0326/0327/0328 ARE APPLIED LIVE, so plan._status_flow_guard is enforcing transitions in production right now. The aidream service half that cooperates with it (the audited override_reason escape hatch in content_plan/service.py) is NOT on origin. Deployed code therefore meets a trigger it does not know about; an illegal transition raises where it previously succeeded. Severity raised from minor for that reason.",
+            "CLOSED 2026-08-13 — the split is healed. plan._status_flow_guard enforces transitions live (migrations 0326/0327/0328), and the service half that cooperates with it now ships and is deployed: content_plan/service.py:383 reads status_override_reason as the audited escape hatch and refuses it when no status change accompanies it. Code and trigger agree again.",
         lane: "L4",
+        evidence: "aidream/aidream/services/content_plan/service.py",
     },
     {
         id: "G-RECONCILE-UI",
@@ -877,12 +880,13 @@ export const GAPS: LoopGap[] = [
         id: "G-RESEARCH-TRIGGER",
         title: "Research cannot be started by code or by an agent",
         severity: "major",
-        status: "in-progress",
+        status: "closed",
         at: "research",
         breaks: ["code", "ai"],
         detail:
-            "COMMITTED, NOT DEPLOYED. Both pipes are on origin: aidream/tools/research_tool.py exposes research_run(action='start'), and research_refresh_dispatch is registered for the scheduled lane with migrations 0323/0324/0325 applied live. The live Research refresh dispatch task is still enabled=false / 0 runs because the deployed server predates the handler.",
+            "CLOSED AND RUNNING 2026-08-13. aidream deployed. Both pipes live: aidream/tools/research_tool.py exposes research_run(action='start') for the AI pipe, and research_refresh_dispatch drives the scheduled lane. Live-verified: the 'Research refresh dispatch' task is enabled with 394 runs / 2 failures.",
         lane: "L5",
+        evidence: "aidream/aidream/tools/research_tool.py",
     },
     {
         id: "G-PIPE-SELECTOR",
@@ -892,7 +896,7 @@ export const GAPS: LoopGap[] = [
         at: "plan",
         breaks: ["code", "human", "ai"],
         detail:
-            "ON ORIGIN, STILL FORKED AND STILL HALF-DEAD. packages/matrx-graph/nodes/pipe/ defines StepContract, PipeBindings{code,human,ai}, select_pipe and a registered pipe.step executor validating all three legs against one schema — the right shape. Re-verified 2026-08-12: set_ai_pipe_runner is still called only inside matrx-graph itself, never wired by an aidream host, so the AI leg still fails with no_ai_pipe_runner; the competing services/growth_loop/pipes.py resolve_pipe still exists; nothing was migrated onto pipe.step.",
+            "ONE AUTHORITY, AI LEG DEAD. packages/matrx-graph/nodes/pipe/ defines StepContract, PipeBindings{code,human,ai}, select_pipe and a registered pipe.step executor validating all three legs against one schema — the right shape. CORRECTION 2026-08-13: services/growth_loop/pipes.py is NOT a competing fork — earlier entries claimed it was. Its module docstring refuses to execute on purpose ('Building the executor here would create exactly the second authority the gap entry warns about'); resolve_pipe is a PURE policy->ResolvedPipe function meant to compose with the node. Two real defects remain: (1) set_ai_pipe_runner is still called only inside matrx-graph, never by an aidream host, so the AI leg fails with no_ai_pipe_runner; (2) that docstring is stale — it says the pipe node does not exist, and it does.",
         lane: "L5",
     },
     {
@@ -903,7 +907,7 @@ export const GAPS: LoopGap[] = [
         at: "plan",
         breaks: ["human", "ai"],
         detail:
-            "ON ORIGIN, STILL ENFORCED NOWHERE. EscalationPolicy exists, human_input and pipe.step accept an escalation config and freeze an absolute deadline, and services/human_decisions/ implements the fallback decider, notifier and caps. Re-verified 2026-08-12: decide_for_absent_human still has NO caller outside its own module, no sweeper task is registered, and the scheduler never reads the escalation key. An unanswered human_input still blocks forever.",
+            "ON ORIGIN, STILL ENFORCED NOWHERE. EscalationPolicy exists, human_input and pipe.step accept an escalation config and freeze an absolute deadline, and services/human_decisions/ implements the fallback decider, notifier and caps. Re-verified 2026-08-13: decide_for_absent_human still has NO caller outside its own module, no sweeper task is registered, and the scheduler never reads the escalation key. An unanswered human_input still blocks forever. The DEFAULT this must enforce is already decided in code — growth_loop/pipes.py default_policy(): human first, AI fallback at 3600s, with realize/serve/crawl/measure pinned to CODE. Do not re-decide it.",
         lane: "L5",
     },
     {
@@ -914,7 +918,7 @@ export const GAPS: LoopGap[] = [
         at: "research",
         breaks: ["code", "human", "ai"],
         detail:
-            "SCHEMA LIVE, CODE ON ORIGIN, NOTHING DRIVES IT. growth.loop_run / loop_stage_run / loop_event exist live and services/growth_loop/ implements start_loop / enter_stage / complete_stage / block_stage with the correct twelve stages. Re-verified 2026-08-12: api/routers/growth_loop.py is STILL NOT MOUNTED in app.py (zero references), no stage service writes to the tables, no frontend reads them. Committing it changed nothing about it being dead.",
+            "MOUNTED 2026-08-13, NOT YET DRIVEN. THE ROOT CAUSE, for the record: 3,209 lines landed on 2026-08-11 (aidream 7505afdf6, the stale-machine rescue) and were dead for two days because app.py mounts 138 routers and growth_loop was the one never added — the whole backend failed on its last connecting line. That is now supplied (13 routes at /api/growth-loop/*, authed). REMAINING: no stage service calls enter_stage/complete_stage, no frontend reads growth.loop_run, and all three tables still have zero rows. Closing this needs a first real loop started from a UI and advanced by a stage.",
         lane: "L6",
     },
     {
@@ -948,7 +952,7 @@ export const GAPS: LoopGap[] = [
         at: "measure",
         breaks: ["code"],
         detail:
-            "PageSpeed is solved and live (seo_pagespeed_coverage, resumable ten-minute coverage on origin; 49 runs / 13 failed on the live scheduler — the failure rate deserves a look). GA4 is not: ga4_schedule.py and its registration are local-only, and although migration 0322 is applied, the seeded task sits enabled=false / 0 runs awaiting the handler. Separately, SitePerformanceWorkspace reads an automation field this checkout's backend does not return.",
+            "BOTH HANDLERS NOW LIVE AND BOTH FAILING. Verified 2026-08-13: GA4 shipped and its task is enabled — and has failed 2 of 2 runs with the swallowed message '3 site syncs failed' (a count where the per-site cause must be). PageSpeed regressed hard: 267 runs / 155 failed (58%), up from 49/13, and 90 of those failures are TWO page ids retried forever on terminal PSI verdicts (NO_FCP, FAILED_DOCUMENT_REQUEST) — a poison-pill loop, not a systemic break; 16 more are 'runner cancelled before completion' (the ten-minute budget). Scheduling is solved; error handling is not. Separately, SitePerformanceWorkspace reads an automation field the backend does not return.",
         lane: "L1",
     },
 ];
