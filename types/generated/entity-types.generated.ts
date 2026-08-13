@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 350 active entity tokens. A token here is FK-valid for
+// 351 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -121,6 +121,7 @@ export type EntityTypeToken =
   | "crm_campaign"
   | "crm_campaign_member"
   | "crm_interaction"
+  | "crm_merge_candidate"
   | "crm_party_merge"
   | "cx_agent_memory"
   | "cx_agent_plan"
@@ -514,6 +515,7 @@ export type ComponentEntityToken =
   | "crm_affiliation"
   | "crm_campaign_member"
   | "crm_interaction"
+  | "crm_merge_candidate"
   | "crm_party_merge"
   | "cx_agent_plan"
   | "cx_agent_task"
@@ -726,6 +728,7 @@ export type ScopeableEntityToken =
   | "crm_campaign"
   | "crm_campaign_member"
   | "crm_interaction"
+  | "crm_merge_candidate"
   | "crm_party_merge"
   | "data_store"
   | "dataset"
@@ -1100,6 +1103,7 @@ export const ENTITY_TYPE_METADATA = {
   "crm_campaign": { token: "crm_campaign", schema: "crm", table: "campaign", label: "Campaign", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: "container", referenceCategory: null },
   "crm_campaign_member": { token: "crm_campaign_member", schema: "crm", table: "campaign_member", label: "Campaign Member", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "crm_interaction": { token: "crm_interaction", schema: "crm", table: "interaction", label: "Interaction", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "subject", contentRole: null, referenceCategory: null },
+  "crm_merge_candidate": { token: "crm_merge_candidate", schema: "crm", table: "merge_candidate", label: "Merge Candidate", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "crm_party_merge": { token: "crm_party_merge", schema: "crm", table: "party_merge", label: "Party Merge", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "cx_agent_memory": { token: "cx_agent_memory", schema: "chat", table: "agent_memory", label: "Agent Memory", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: false, category: "Conversations", referencePickable: true, titleColumn: "key", contentRole: null, referenceCategory: null },
   "cx_agent_plan": { token: "cx_agent_plan", schema: "chat", table: "agent_plan", label: "Agent Plan", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: false, category: "Conversations", referencePickable: false, titleColumn: "title", contentRole: null, referenceCategory: null },
@@ -1454,6 +1458,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "crm_campaign",
   "crm_campaign_member",
   "crm_interaction",
+  "crm_merge_candidate",
   "crm_party_merge",
   "cx_agent_memory",
   "cx_agent_plan",
