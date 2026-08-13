@@ -27,15 +27,27 @@ import {
   resolveTopicAudioSource,
 } from "@/features/education/media/audio/resolveAudioSource";
 import { studyMediaService } from "@/features/education/media/service";
+import {
+  MEDIA_GENERATOR_SOURCE_KINDS,
+  isMediaGeneratorSourceKind,
+  type MediaGeneratorSourceKind,
+} from "@/features/education/media/types";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   createEducationMemoryScope,
+  MEMORY_FOCUS_MAX,
+  MEMORY_TOPIC_MAX,
+  MEMORY_TOPIC_MIN,
   type MemoryDeckOption,
 } from "@/features/surfaces/manifests/education-memory.manifest";
 import { useGenerateMemoryAid } from "../useGenerateMemoryAid";
 import { memoryAidCounts } from "../types";
 
-type SourceKind = "deck" | "topic";
+// The generator source vocabulary lives ONCE in media/types.ts — the picker
+// below renders from it, the manifest interpolates it into the write-target
+// prose, and the handler validates against it, so what the UI offers, what the
+// agent is told it may send, and what is accepted cannot drift.
+type SourceKind = MediaGeneratorSourceKind;
 
 const SURFACE_NAME = "matrx-user/education-memory";
 
@@ -154,8 +166,135 @@ export function MemoryNew() {
     });
   };
 
+  // ── Surface write targets (the write half) ──────────────────────────────
+  // Both targets STAGE into the same setters the learner's own typing uses —
+  // never a parallel write path — so an applied write is visible in the form
+  // immediately and nothing is generated or persisted. The metered spend stays
+  // behind the learner's own Generate press, where the COPPA gate, the
+  // entitlement guard and studyMediaService.create run. Handlers validate FIRST
+  // and THROW on a bad shape (the writeback seam turns a throw into a safe error
+  // envelope the agent reads); no setter fires until every check has passed.
+  // Fresh closures per call (getWriteHandlers contract). The list and detail
+  // mounts of this surface register NO handlers — see the manifest docblock.
+  const getSurfaceWriteHandlers = () => ({
+    generation_source: (value: unknown) => {
+      if (isGenerating)
+        throw new Error(
+          "generation_source refused — memory aids are being generated right now. Wait for the run to finish before changing the source.",
+        );
+      if (typeof value !== "object" || value === null || Array.isArray(value))
+        throw new Error(
+          'generation_source expects an OBJECT like { source_kind?: "deck" | "topic", topic?: string, deck_id?: string }.',
+        );
+      const patch = value as Record<string, unknown>;
+      const allowed = ["source_kind", "topic", "deck_id"];
+      const unknownKeys = Object.keys(patch).filter(
+        (k) => !allowed.includes(k),
+      );
+      if (unknownKeys.length > 0)
+        throw new Error(
+          `generation_source rejected — unsupported field(s): ${unknownKeys.join(", ")}. It accepts only ${allowed.join(", ")}. The focus angle has its own target, generation_focus.`,
+        );
+
+      const hasKind = patch.source_kind !== undefined;
+      const hasTopic = patch.topic !== undefined;
+      const hasDeck = patch.deck_id !== undefined;
+      if (!hasKind && !hasTopic && !hasDeck)
+        throw new Error(
+          `generation_source needs at least one of ${allowed.join(", ")}.`,
+        );
+      // topic and deck_id are the two ALTERNATIVE sources — only one can be
+      // what the aids are built from, so a value naming both is contradictory
+      // rather than something to silently pick a winner from.
+      if (hasTopic && hasDeck)
+        throw new Error(
+          "generation_source rejected — topic and deck_id are alternative sources; send one, not both.",
+        );
+
+      let nextKind: SourceKind | null = null;
+      if (hasKind) {
+        if (
+          typeof patch.source_kind !== "string" ||
+          !isMediaGeneratorSourceKind(patch.source_kind)
+        )
+          throw new Error(
+            `generation_source.source_kind expects exactly one of: ${MEDIA_GENERATOR_SOURCE_KINDS.join(", ")}.`,
+          );
+        nextKind = patch.source_kind;
+      }
+
+      let nextTopic: string | null = null;
+      if (hasTopic) {
+        if (typeof patch.topic !== "string")
+          throw new Error(
+            "generation_source.topic expects a plain text string, not JSON and not JSON-encoded, no code fence.",
+          );
+        const trimmed = patch.topic.trim();
+        if (trimmed.length < MEMORY_TOPIC_MIN || trimmed.length > MEMORY_TOPIC_MAX)
+          throw new Error(
+            `generation_source.topic expects ${MEMORY_TOPIC_MIN}-${MEMORY_TOPIC_MAX} characters after trimming (got ${trimmed.length}).`,
+          );
+        if (nextKind === "deck")
+          throw new Error(
+            'generation_source rejected — a topic cannot be the source while source_kind is "deck". Send the topic on its own (it switches to topic mode), or send deck_id instead.',
+          );
+        nextTopic = trimmed;
+        nextKind = "topic";
+      }
+
+      let nextDeckId: string | null = null;
+      if (hasDeck) {
+        if (typeof patch.deck_id !== "string" || !patch.deck_id.trim())
+          throw new Error(
+            "generation_source.deck_id expects a non-empty deck id string from available_decks.",
+          );
+        if (nextKind === "topic")
+          throw new Error(
+            'generation_source rejected — a deck cannot be the source while source_kind is "topic". Send deck_id on its own (it switches to deck mode), or send topic instead.',
+          );
+        if (decks.length === 0)
+          throw new Error(
+            "generation_source.deck_id rejected — the learner has no flashcard decks to build aids from, so only topic mode can work here.",
+          );
+        const match = decks.find((d) => d.id === patch.deck_id);
+        if (!match)
+          throw new Error(
+            `generation_source.deck_id ${JSON.stringify(patch.deck_id)} is not one of the learner's decks. Read available_decks and use an \`id\` from it.`,
+          );
+        nextDeckId = match.id;
+        nextKind = "deck";
+      }
+
+      // Every check passed — only now does any state change.
+      if (nextKind) setSourceKind(nextKind);
+      if (nextTopic !== null) setTopic(nextTopic);
+      if (nextDeckId !== null) setDeckId(nextDeckId);
+    },
+
+    generation_focus: (value: unknown) => {
+      if (isGenerating)
+        throw new Error(
+          "generation_focus refused — memory aids are being generated right now. Wait for the run to finish before changing the focus.",
+        );
+      if (typeof value !== "string")
+        throw new Error(
+          "generation_focus expects a plain text string, not JSON and not JSON-encoded, no code fence. Send the empty string to clear the focus.",
+        );
+      const trimmed = value.trim();
+      if (trimmed.length > MEMORY_FOCUS_MAX)
+        throw new Error(
+          `generation_focus expects at most ${MEMORY_FOCUS_MAX} characters after trimming (got ${trimmed.length}).`,
+        );
+      setFocus(trimmed);
+    },
+  });
+
   return (
-    <SurfaceRuntimeProvider surfaceName={SURFACE_NAME} getScope={buildScope}>
+    <SurfaceRuntimeProvider
+      surfaceName={SURFACE_NAME}
+      getScope={buildScope}
+      getWriteHandlers={getSurfaceWriteHandlers}
+    >
     <div className="mx-auto w-full max-w-2xl space-y-6 p-4">
       <div className="flex items-center gap-3">
         <Button
