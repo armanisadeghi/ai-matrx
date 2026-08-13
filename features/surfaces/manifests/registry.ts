@@ -107,6 +107,7 @@ import { educationGradeWorkManifest } from "./education-grade-work.manifest";
 import { educationPlannerManifest } from "./education-planner.manifest";
 import { educationMindMapsManifest } from "./education-mind-maps.manifest";
 import { educationMemoryManifest } from "./education-memory.manifest";
+import { educationPracticeOralManifest } from "./education-practice-oral.manifest";
 import { settingsManifest } from "./settings.manifest";
 import { agentAppsManifest } from "./agent-apps.manifest";
 import { agentConnectionsManifest } from "./agent-connections.manifest";
@@ -268,6 +269,7 @@ const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   educationPlannerManifest,
   educationMindMapsManifest,
   educationMemoryManifest,
+  educationPracticeOralManifest,
   settingsManifest,
   agentAppsManifest,
   agentConnectionsManifest,
