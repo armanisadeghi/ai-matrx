@@ -1,3 +1,9 @@
+---
+status: active
+updated: 2026-08-12
+repos: [matrx-frontend, aidream, my-matrx]
+---
+
 # Website Factory — bug dispatch board
 
 Defects found during the 2026-07-30 content-plan / CMS readiness audit. Each entry is a

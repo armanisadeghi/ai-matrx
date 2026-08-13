@@ -12,6 +12,9 @@ website through many specialized agent steps. This doc is the tracking spine: Ar
 where each missing piece inserts into what exists today, and the ordered work list.
 Point-fix defects found in the same audit are assignable one-by-one on
 [website-factory-bug-dispatch.md](./website-factory-bug-dispatch.md) (WF-1…WF-12).
+The AI steps inside the plan editor (Setup agents, grounding strip) are owned by
+[content-plan-ai-steps.md](./content-plan-ai-steps.md) — its grounding items converge
+with P1/P2 research-artifact wiring here; sync when either lands.
 
 ## Vision — Arman's words (2026-07-30)
 
