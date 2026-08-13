@@ -968,8 +968,8 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
               />
             </div>
           </div>
-          <ScrollArea className="h-[320px] lg:h-[calc(100%-105px)]">
-            <div className="space-y-1 p-2">
+          <ScrollArea className="h-[320px] w-full lg:h-[calc(100%-105px)]">
+            <div className="min-w-0">
               {visibleTables
                 .toSorted(
                   (a, b) =>
@@ -983,31 +983,23 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
                     type="button"
                     onClick={() => chooseTable(table)}
                     className={cn(
-                      "flex min-h-12 w-full items-center gap-2 rounded-md px-2.5 py-2 text-left transition-colors hover:bg-accent",
+                      "grid min-h-11 w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-border/40 px-3 py-2 text-left transition-colors last:border-b-0 hover:bg-accent/70 focus-visible:relative focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
                       selectedTableName === table.table_name &&
-                        "bg-accent ring-1 ring-primary/30",
+                        "bg-accent text-accent-foreground",
                     )}
                   >
-                    <span
-                      className={cn(
-                        "h-2.5 w-2.5 shrink-0 rounded-full border",
-                        dispositionClass(table.disposition),
-                      )}
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-medium">
+                    <span className="min-w-0">
+                      <span className="block whitespace-normal break-words text-sm font-medium leading-tight [overflow-wrap:anywhere]">
                         {table.label ?? titleCase(table.table_name)}
                       </span>
-                      <span className="block truncate font-mono text-[10px] text-muted-foreground">
+                      <span className="mt-0.5 block whitespace-normal break-all font-mono text-[10px] leading-tight text-muted-foreground">
                         {table.table_name}
                       </span>
                     </span>
-                    {table.issue_codes.length > 0 ? (
-                      <Badge variant="destructive">
+                    {table.issue_codes.length > 0 && (
+                      <Badge variant="destructive" className="shrink-0">
                         {table.issue_codes.length}
                       </Badge>
-                    ) : (
-                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
                     )}
                   </button>
                 ))}
