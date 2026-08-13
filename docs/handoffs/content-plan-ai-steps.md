@@ -201,6 +201,21 @@ research linking: start with the final report (the "Document"), user picks the t
 
 ## Decisions needed
 
+**The Keyword Intelligence window is dead for every signed-in user, and the fix
+is a security-policy change somebody has to own.**
+Situation: opening a keyword from a plan node returns HTTP 500 every time.
+`seo.search_performance_daily` has 13.2 million rows, and its row-level security
+policy answers "which rows may this user see?" by building a list of *every*
+matching row id — 13,183,309 of them. Just counting that list takes 44.6
+seconds; the database gives a page 8 seconds before it gives up. So the query
+never had a chance, on any site, including sites with no data at all. The same
+pattern will hit any other large table registered the same way.
+Decide: who makes the policy change (it is the platform's shared access kernel,
+and CLAUDE.md forbids an agent changing a security layer on its own authority),
+and whether the correction is scoped to this table or made in the kernel for
+every large table at once. Full evidence: `FOUND_DEFECTS.md` D182.
+
+
 **The review queue is 18 rows deep with nothing approved. Do you want a single mobile +
 headings pass across the whole Content Plan feature before anything else?**
 Situation: every rejection you wrote names the same handful of problems — no page heading,
