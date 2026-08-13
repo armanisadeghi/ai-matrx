@@ -24,6 +24,7 @@ import {
   SEVERITY_OPTIONS,
   SeverityBadge,
 } from "@/features/marketing/components/analysis/AnalysisBadges";
+import { FindingsAssistStrip } from "@/features/marketing/components/analysis/FindingsAssistStrip";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingAnalysisScope } from "@/features/surfaces/manifests/marketing-analysis.manifest";
@@ -326,8 +327,17 @@ export function SiteAnalysisTable() {
     >
     <main
       data-surface-value="top_queue_items"
-      className="h-full overflow-hidden bg-textured p-3 sm:p-4"
+      className="flex h-full flex-col overflow-hidden bg-textured p-3 sm:p-4"
     >
+      {/* The same finding assists as the register — the finding is the thing,
+          not the tab it was noticed on. */}
+      <FindingsAssistStrip
+        siteId={site.id}
+        sitePath={sitePath}
+        siteDomain={site.domain}
+        className="mb-2 shrink-0"
+      />
+      <div className="min-h-0 flex-1">
       <MatrxDataTable<PriorityQueueRow>
         data={priority.data?.rows ?? []}
         columns={columns}
@@ -433,6 +443,7 @@ export function SiteAnalysisTable() {
             "The priority queue includes only open, non-suppressed findings. Analysis results will populate it after providers run.",
         }}
       />
+      </div>
     </main>
     </SurfaceRuntimeProvider>
   );

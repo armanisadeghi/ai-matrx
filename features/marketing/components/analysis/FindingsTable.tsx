@@ -34,6 +34,7 @@ import {
   SeverityBadge,
   SUBJECT_TYPE_OPTIONS,
 } from "@/features/marketing/components/analysis/AnalysisBadges";
+import { FindingsAssistStrip } from "@/features/marketing/components/analysis/FindingsAssistStrip";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingFindingsScope } from "@/features/surfaces/manifests/marketing-findings.manifest";
@@ -351,7 +352,17 @@ export function FindingsTable() {
         });
       }}
     >
-    <main className="h-full overflow-hidden bg-textured p-3 sm:p-4">
+    <main className="flex h-full flex-col overflow-hidden bg-textured p-3 sm:p-4">
+      {/* This site's finding assists — the analyze -> suggest bridge. The
+          deterministic sweep runs once per site per session; the same chips
+          also live in the global dock. */}
+      <FindingsAssistStrip
+        siteId={site.id}
+        sitePath={sitePath}
+        siteDomain={site.domain}
+        className="mb-2 shrink-0"
+      />
+      <div className="min-h-0 flex-1">
       <MatrxDataTable<FindingListRow>
         data={findings.data?.rows ?? []}
         columns={columns}
@@ -460,6 +471,7 @@ export function FindingsTable() {
             "Findings are durable lifecycle state derived from analysis results. Clear filters to include resolved or suppressed records.",
         }}
       />
+      </div>
     </main>
     </SurfaceRuntimeProvider>
   );

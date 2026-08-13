@@ -642,15 +642,20 @@ export const EDGES: LoopEdge[] = [
         gaps: ["G-FINDING-ASSIST", "G-SUGGEST-FORK"],
         pipes: {
             code: {
-                state: "missing",
-                note: "THE SECOND BIG BREAK. web.finding rows never become assists. The 15-check catalogue produces findings nobody is ever offered.",
+                state: "partial",
+                note: "THE SECOND BIG BREAK IS CLOSED (G-FINDING-ASSIST, 2026-08-13): web.finding rows now become platform.assists rows — a deterministic per-site sweep emits up to two page chips plus one cross-page rollup, mounted on the register, the priority queue, and the audit rollup. Still partial only because three suggestion systems remain forked (G-SUGGEST-FORK).",
+                ref: "features/marketing/findings-assists-producer.ts",
             },
             human: {
-                state: "partial",
-                note: "A user can look at findings but cannot act on one — the register is read-only in the app.",
-                ref: "FindingsTable.tsx",
+                state: "live",
+                note: "A user can act on a finding (acknowledge/resolve/suppress via finding-mutations.ts) AND is now offered the highest-value ones as chips where they stand, instead of having to think to open the register.",
+                ref: "FindingsAssistStrip.tsx",
             },
-            ai: MISSING("No agent turns findings into proposals."),
+            ai: {
+                state: "partial",
+                note: "The chip's verb button hands the SEO agent a prepared brief for the specific finding (metadata checks run all the way to ApplyMetaToPage). No agent yet proposes across the whole register unprompted.",
+                ref: "features/marketing/lib/finding-remedies.ts",
+            },
         },
     },
     {
@@ -769,12 +774,14 @@ export const GAPS: LoopGap[] = [
         id: "G-FINDING-ASSIST",
         title: "Findings never reach the assists ledger",
         severity: "major",
-        status: "in-progress",
+        status: "closed",
         at: "analyze->suggest",
         breaks: ["code", "ai"],
         detail:
-            "BUILT BUT UNSHIPPED. features/marketing/findings-assists-producer.ts (251 lines) is the missing ledger producer and is untracked. What IS shipped stops short: finding-remedies.ts registers 18 remedies and FindingRemedyCard renders them through makeEphemeralAssist, which deliberately writes no platform.assists row — so today they never reach the dock, never dedupe, and a dismissal never sticks.",
+            "CLOSED 2026-08-13. The producer existed but nothing mounted it — dead code that compiled. FindingsAssistStrip is now mounted on all three surfaces where findings are read (register, priority queue, audit rollup). PROOF on live Matrx Main: platform.assists went from ZERO finding-sourced rows to three for prpinjectionmd.com — two page chips (seo.finding.meta_description_presence, seo.finding.h1_presence) and one rollup (seo.finding_rollup.meta_description_length, '121+ pages share one problem'), each with a stable dedupe key '<sourceKey>:<siteId>:<pageId|site>'. Dismissal is durable: 'Don't show again' wrote status='dismissed' and three later sweeps (including a hard reload) re-ran filterUndecidedKeys and did not resurrect it. Chips obey THE INTENTIONAL-ACTION LAW — clicking expands the card; only 'Open agent' runs. Fixed in the same pass: isFindingAssist matched 'seo.finding.' so every rollup chip was silently filtered out of the page strip while sitting in the ledger.",
         lane: "L2",
+        evidence:
+            "ai-matrx/features/marketing/components/analysis/FindingsAssistStrip.tsx",
     },
     {
         id: "G-FINDING-TRACK",

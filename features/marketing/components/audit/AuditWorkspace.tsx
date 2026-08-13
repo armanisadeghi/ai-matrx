@@ -22,6 +22,7 @@ import {
 } from "@/features/marketing/data/hooks";
 import { AuditScoreTrendChart } from "@/features/marketing/components/audit/AuditScoreTrendChart";
 import { CatalogueAnalysisPanel } from "@/features/marketing/components/analysis/CatalogueAnalysisPanel";
+import { FindingsAssistStrip } from "@/features/marketing/components/analysis/FindingsAssistStrip";
 import {
   LoadingSurface,
   MetricCell,
@@ -642,6 +643,14 @@ function AuditBody({
             <AgentCopyGroomerLauncher config={groomerConfig} />
           </div>
         </section>
+
+        {/* This site's finding assists — the audit rollup is where the user
+            first sees how bad it is, so the one-click fixes belong here too. */}
+        <FindingsAssistStrip
+          siteId={siteId}
+          sitePath={sitePath}
+          siteDomain={siteDomain}
+        />
 
         <section
           data-surface-value="audit_rollup"

@@ -76,10 +76,16 @@ const SEVERITY_RANK: Record<string, number> = {
 };
 
 /** Is this pending assist one of ours, addressed to this site? (Site scope
- * rides the dedupe key — the row's entity is the page, not the site.) */
+ * rides the dedupe key — the row's entity is the page, not the site.)
+ *
+ * Both families count: page chips (`seo.finding.<check>`) AND the rollup
+ * (`seo.finding_rollup.<check>`). Matching on `"seo.finding."` alone silently
+ * dropped every rollup from the page strip while it sat in the ledger and the
+ * global dock — the exact "emitted but invisible where the user stands"
+ * failure this producer exists to end. */
 export function isFindingAssist(assist: Assist, siteId: string): boolean {
   return (
-    assist.sourceKey.startsWith(`${SOURCE_PREFIX}.`) &&
+    assist.sourceKey.startsWith(SOURCE_PREFIX) &&
     (assist.dedupeKey?.includes(`:${siteId}:`) ?? false)
   );
 }
