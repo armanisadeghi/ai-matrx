@@ -57,9 +57,9 @@ const FilePickerWindow = dynamic(
 // Same lazy rule for the association window shell (it parses WindowPanel).
 const AssociationWindow = dynamic(
   () =>
-    import(
-      "@/features/scopes/components/associations/AssociationWindow"
-    ).then((m) => ({ default: m.AssociationWindow })),
+    import("@/features/scopes/components/associations/AssociationWindow").then(
+      (m) => ({ default: m.AssociationWindow }),
+    ),
   { ssr: false, loading: () => null },
 );
 
@@ -95,10 +95,37 @@ export function AssociationPicker(props: AssociationPickerProps) {
         onClose={() => props.onOpenChange(false)}
         scopeId={`association:${props.containerLabel ?? "container"}`}
         title={
-          props.containerLabel
-            ? `Add files to ${props.containerLabel}`
-            : "Add files"
+          props.containerLabel ? `Add to ${props.containerLabel}` : "Add files"
         }
+        onUpload={async (files) => {
+          const failures: string[] = [];
+          for (const file of files) {
+            try {
+              const result = await props.onAttach(file.fileId, file.name);
+              if (!result.ok) failures.push(file.name);
+            } catch (error: unknown) {
+              console.error(
+                "[AssociationPicker] uploaded file association failed",
+                { fileId: file.fileId, error },
+              );
+              failures.push(file.name);
+            }
+          }
+          if (failures.length > 0) {
+            toast.error(
+              `${failures.length} uploaded ${failures.length === 1 ? "file was" : "files were"} not added`,
+              {
+                description:
+                  "The upload is safe in Files. You can retry the association here.",
+                action: {
+                  label: "Open Files",
+                  onClick: () =>
+                    window.open("/files", "_blank", "noopener,noreferrer"),
+                },
+              },
+            );
+          }
+        }}
         onPick={async (selection) => {
           if (props.attachedIds.has(selection.fileId)) {
             await props.onDetach(selection.fileId);

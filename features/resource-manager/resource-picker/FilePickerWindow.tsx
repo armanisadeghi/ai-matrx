@@ -26,6 +26,7 @@ import {
   type FileSelection,
   type FilesResourcePickerFilter,
 } from "./FilesResourcePicker";
+import { InlineUploadArea, type UploadedFile } from "./InlineUploadArea";
 
 export type { FileSelection };
 
@@ -38,7 +39,15 @@ export interface FilePickerWindowProps {
    * Fired per picked file. The window stays open for multi-pick; return
    * `"close"` to close it after a pick.
    */
-  onPick: (selection: FileSelection) => void | "close" | Promise<void | "close">;
+  onPick: (
+    selection: FileSelection,
+  ) => void | "close" | Promise<void | "close">;
+  /**
+   * When provided, the canonical picker also offers local upload. Uploaded
+   * files are durable before this callback fires, so association/resource
+   * hosts can write their edges immediately and keep the window open.
+   */
+  onUpload?: (files: UploadedFile[]) => void | Promise<void>;
   /** Header title. Default "Choose a file". */
   title?: string;
   /** Human-readable scope for the window id (debugging / tray labels). */
@@ -50,6 +59,7 @@ export function FilePickerWindow({
   open,
   onClose,
   onPick,
+  onUpload,
   title = "Choose a file",
   scopeId,
   initialFilter,
@@ -76,9 +86,11 @@ export function FilePickerWindow({
       id={`file-picker:${scopeId}:${instanceId}`}
       title={title}
       titleNode={
-        <span className="flex items-center gap-1.5">
-          <FolderOpen className="size-3.5 text-primary" />
-          {title}
+        <span className="flex min-w-0 max-w-full items-center gap-1.5 text-xs font-medium text-foreground/80">
+          <FolderOpen className="size-3.5 shrink-0 text-primary" />
+          <span className="min-w-0 truncate" title={title}>
+            {title}
+          </span>
         </span>
       }
       onClose={onClose}
@@ -102,6 +114,9 @@ export function FilePickerWindow({
         onSelect={(selection) => void handleSelect(selection)}
         initialFilter={initialFilter}
         fillHost
+        topSlot={
+          onUpload ? <InlineUploadArea onSelect={onUpload} /> : undefined
+        }
       />
     </WindowPanel>
   );

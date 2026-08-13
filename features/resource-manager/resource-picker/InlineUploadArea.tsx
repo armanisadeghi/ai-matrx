@@ -15,6 +15,7 @@ import {
     AlertCircle,
     CheckCircle2,
     File as FileIcon,
+    FolderUp,
     Loader2,
     Minimize2,
     Upload,
@@ -24,10 +25,18 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { composeUploadFolderPath } from "@/features/files/handler/utils/upload-folder-path";
-import { compressPdfMultipart, materializeAssetResult } from "@/features/files/api/assets";
-import { getFileDetailsByUrl, EnhancedFileDetails } from "@/utils/file-operations/constants";
+import {
+    compressPdfMultipart,
+    materializeAssetResult,
+} from "@/features/files/api/assets";
+import {
+    getFileDetailsByUrl,
+    EnhancedFileDetails,
+} from "@/utils/file-operations/constants";
 
 export interface UploadedFile {
+    /** Original local filename, retained even when the durable URL is opaque. */
+    name: string;
     /**
      * cld_files UUID. When present, downstream code building outbound AI
      * API payloads should construct a `MediaRef` from this id (via
@@ -71,6 +80,7 @@ function classifyUploadType(mimeType: string): string {
 
 interface FileStatus {
     file: File;
+    relativePath: string;
     status: "pending" | "compressing" | "uploading" | "done" | "error";
     errorMessage?: string;
     compressionNote?: string;
@@ -84,7 +94,9 @@ function formatBytes(bytes: number): string {
     return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
 }
 
-async function compressImageFile(file: File): Promise<{ file: File; note: string } | null> {
+async function compressImageFile(
+    file: File,
+): Promise<{ file: File; note: string } | null> {
     return new Promise((resolve) => {
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -93,27 +105,43 @@ async function compressImageFile(file: File): Promise<{ file: File; note: string
             img.onload = () => {
                 const MAX_DIM = 1920;
                 let { width, height } = img;
-                if (width > MAX_DIM) { height = (height * MAX_DIM) / width; width = MAX_DIM; }
-                if (height > MAX_DIM) { width = (width * MAX_DIM) / height; height = MAX_DIM; }
+                if (width > MAX_DIM) {
+                    height = (height * MAX_DIM) / width;
+                    width = MAX_DIM;
+                }
+                if (height > MAX_DIM) {
+                    width = (width * MAX_DIM) / height;
+                    height = MAX_DIM;
+                }
                 const canvas = document.createElement("canvas");
                 canvas.width = width;
                 canvas.height = height;
                 const ctx = canvas.getContext("2d");
-                if (!ctx) { resolve(null); return; }
+                if (!ctx) {
+                    resolve(null);
+                    return;
+                }
                 ctx.fillStyle = "white";
                 ctx.fillRect(0, 0, width, height);
                 ctx.drawImage(img, 0, 0, width, height);
                 canvas.toBlob(
                     (blob) => {
-                        if (!blob) { resolve(null); return; }
-                        const compressed = new File([blob], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" });
+                        if (!blob) {
+                            resolve(null);
+                            return;
+                        }
+                        const compressed = new File(
+                            [blob],
+                            file.name.replace(/\.[^.]+$/, ".jpg"),
+                            { type: "image/jpeg" },
+                        );
                         resolve({
                             file: compressed,
                             note: `Compressed from ${formatBytes(file.size)} → ${formatBytes(compressed.size)}`,
                         });
                     },
                     "image/jpeg",
-                    0.82
+                    0.82,
                 );
             };
             img.onerror = () => resolve(null);
@@ -124,7 +152,10 @@ async function compressImageFile(file: File): Promise<{ file: File; note: string
     });
 }
 
-async function compressPdfFile(file: File, maxSizeMB = 50): Promise<{ file: File; note: string } | null> {
+async function compressPdfFile(
+    file: File,
+    maxSizeMB = 50,
+): Promise<{ file: File; note: string } | null> {
     try {
         // Calls Python /assets/pdf-compress/multipart directly (no Next.js
         // hop). Level 2 = light cleanup; the server escalates tiers as
@@ -134,7 +165,9 @@ async function compressPdfFile(file: File, maxSizeMB = 50): Promise<{ file: File
             maxSizeBytes: maxSizeMB * 1024 * 1024,
         });
         const blob = await materializeAssetResult(data);
-        const compressed = new File([blob], file.name, { type: "application/pdf" });
+        const compressed = new File([blob], file.name, {
+            type: "application/pdf",
+        });
         return {
             file: compressed,
             note: `Compressed from ${formatBytes(file.size)} → ${formatBytes(compressed.size)}`,
@@ -146,151 +179,321 @@ async function compressPdfFile(file: File, maxSizeMB = 50): Promise<{ file: File
 
 const LARGE_FILE_THRESHOLD = 10 * 1024 * 1024; // 10 MB — warn user, attempt compression
 
-export function InlineUploadArea({ onSelect, onBusyChange }: InlineUploadAreaProps) {
+interface UploadCandidate {
+    file: File;
+    /** Path relative to the chosen/dropped root, including the filename. */
+    relativePath: string;
+}
+
+interface FileSystemEntryLike {
+    isFile: boolean;
+    isDirectory: boolean;
+    name: string;
+}
+
+interface FileSystemFileEntryLike extends FileSystemEntryLike {
+    file: (
+        success: (file: File) => void,
+        failure?: (error: DOMException) => void,
+    ) => void;
+}
+
+interface FileSystemDirectoryEntryLike extends FileSystemEntryLike {
+    createReader: () => {
+        readEntries: (
+            success: (entries: FileSystemEntryLike[]) => void,
+            failure?: (error: DOMException) => void,
+        ) => void;
+    };
+}
+
+function candidateFromFile(file: File): UploadCandidate {
+    return {
+        file,
+        relativePath: file.webkitRelativePath || file.name,
+    };
+}
+
+async function readDirectoryEntries(
+    directory: FileSystemDirectoryEntryLike,
+): Promise<FileSystemEntryLike[]> {
+    const reader = directory.createReader();
+    const entries: FileSystemEntryLike[] = [];
+    // Chromium returns directory entries in batches; an empty batch is EOF.
+    for (;;) {
+        const batch = await new Promise<FileSystemEntryLike[]>(
+            (resolve, reject) => reader.readEntries(resolve, reject),
+        );
+        if (batch.length === 0) return entries;
+        entries.push(...batch);
+    }
+}
+
+async function collectEntryFiles(
+    entry: FileSystemEntryLike,
+    parentPath = "",
+): Promise<UploadCandidate[]> {
+    if (entry.isFile) {
+        const file = await new Promise<File>((resolve, reject) =>
+            (entry as FileSystemFileEntryLike).file(resolve, reject),
+        );
+        return [{ file, relativePath: `${parentPath}${file.name}` }];
+    }
+    if (!entry.isDirectory) return [];
+
+    const directory = entry as FileSystemDirectoryEntryLike;
+    const childPath = `${parentPath}${directory.name}/`;
+    const children = await readDirectoryEntries(directory);
+    const nested = await Promise.all(
+        children.map((child) => collectEntryFiles(child, childPath)),
+    );
+    return nested.flat();
+}
+
+async function collectDroppedFiles(
+    dataTransfer: DataTransfer,
+): Promise<UploadCandidate[]> {
+    const collected: UploadCandidate[] = [];
+    for (const item of Array.from(dataTransfer.items)) {
+        if (item.kind !== "file") continue;
+        const entry = (
+            item as DataTransferItem & {
+                webkitGetAsEntry?: () => FileSystemEntryLike | null;
+            }
+        ).webkitGetAsEntry?.();
+        if (entry) {
+            collected.push(...(await collectEntryFiles(entry)));
+            continue;
+        }
+        const file = item.getAsFile();
+        if (file) collected.push(candidateFromFile(file));
+    }
+    return collected.length > 0
+        ? collected
+        : Array.from(dataTransfer.files, candidateFromFile);
+}
+
+function uploadDirectory(relativePath: string): string {
+    const lastSlash = relativePath.lastIndexOf("/");
+    return lastSlash > 0 ? relativePath.slice(0, lastSlash) : "";
+}
+
+export function InlineUploadArea({
+    onSelect,
+    onBusyChange,
+}: InlineUploadAreaProps) {
     const [isDragging, setIsDragging] = useState(false);
+    const [isFinalizing, setIsFinalizing] = useState(false);
     const [fileStatuses, setFileStatuses] = useState<FileStatus[]>([]);
     const [uploadError, setUploadError] = useState<string | null>(null);
     const fileInputRef = React.useRef<HTMLInputElement>(null);
+    const folderInputRef = React.useRef<HTMLInputElement>(null);
 
-    const { upload, uploading: isLoading, error: hookErrorObj } = useFileUpload();
+    const {
+        upload,
+        uploading: isLoading,
+        error: hookErrorObj,
+    } = useFileUpload();
     const hookError = hookErrorObj?.message ?? null;
 
-    const isProcessing = fileStatuses.some((f) => f.status === "compressing" || f.status === "uploading");
+    const isProcessing =
+        isFinalizing ||
+        fileStatuses.some(
+            (f) => f.status === "compressing" || f.status === "uploading",
+        );
 
     const setBusy = useCallback(
         (busy: boolean) => onBusyChange?.(busy),
         [onBusyChange],
     );
 
-    const handleFiles = useCallback(async (files: File[]) => {
-        if (files.length === 0) return;
+    const handleFiles = useCallback(
+        async (candidates: UploadCandidate[]) => {
+            if (candidates.length === 0) return;
 
-        setBusy(true);
-        setUploadError(null);
-        const initialStatuses: FileStatus[] = files.map((f) => ({ file: f, status: "pending" }));
-        setFileStatuses(initialStatuses);
+            setBusy(true);
+            setUploadError(null);
+            const initialStatuses: FileStatus[] = candidates.map(
+                ({ file, relativePath }) => ({
+                    file,
+                    relativePath,
+                    status: "pending",
+                }),
+            );
+            setFileStatuses(initialStatuses);
 
-        const filesToUpload: File[] = [];
-        const updatedStatuses = [...initialStatuses];
+            const filesToUpload: UploadCandidate[] = [];
+            const updatedStatuses = [...initialStatuses];
 
-        // Pre-process: compress large files
-        for (let i = 0; i < files.length; i++) {
-            const file = files[i];
-            if (file.size > LARGE_FILE_THRESHOLD) {
-                const isImage = file.type.startsWith("image/");
-                const isPdf = file.type === "application/pdf";
+            // Pre-process: compress large files
+            for (let i = 0; i < candidates.length; i++) {
+                const candidate = candidates[i];
+                const file = candidate.file;
+                if (file.size > LARGE_FILE_THRESHOLD) {
+                    const isImage = file.type.startsWith("image/");
+                    const isPdf = file.type === "application/pdf";
 
-                if (isImage || isPdf) {
-                    updatedStatuses[i] = { ...updatedStatuses[i], status: "compressing" };
-                    setFileStatuses([...updatedStatuses]);
-
-                    const result = isImage
-                        ? await compressImageFile(file)
-                        : await compressPdfFile(file);
-
-                    if (result) {
+                    if (isImage || isPdf) {
                         updatedStatuses[i] = {
                             ...updatedStatuses[i],
-                            file: result.file,
-                            status: "uploading",
-                            compressionNote: result.note,
+                            status: "compressing",
                         };
-                        filesToUpload.push(result.file);
+                        setFileStatuses([...updatedStatuses]);
+
+                        const result = isImage
+                            ? await compressImageFile(file)
+                            : await compressPdfFile(file);
+
+                        if (result) {
+                            updatedStatuses[i] = {
+                                ...updatedStatuses[i],
+                                file: result.file,
+                                relativePath: `${uploadDirectory(candidate.relativePath)}${uploadDirectory(candidate.relativePath) ? "/" : ""}${result.file.name}`,
+                                status: "uploading",
+                                compressionNote: result.note,
+                            };
+                            filesToUpload.push({
+                                file: result.file,
+                                relativePath: updatedStatuses[i].relativePath,
+                            });
+                        } else {
+                            // Compression failed — upload original and warn
+                            updatedStatuses[i] = {
+                                ...updatedStatuses[i],
+                                status: "uploading",
+                                compressionNote: `Could not compress — uploading original (${formatBytes(file.size)})`,
+                            };
+                            filesToUpload.push(candidate);
+                        }
                     } else {
-                        // Compression failed — upload original and warn
                         updatedStatuses[i] = {
                             ...updatedStatuses[i],
                             status: "uploading",
-                            compressionNote: `Could not compress — uploading original (${formatBytes(file.size)})`,
                         };
-                        filesToUpload.push(file);
+                        filesToUpload.push(candidate);
                     }
                 } else {
-                    updatedStatuses[i] = { ...updatedStatuses[i], status: "uploading" };
-                    filesToUpload.push(file);
-                }
-            } else {
-                updatedStatuses[i] = { ...updatedStatuses[i], status: "uploading" };
-                filesToUpload.push(file);
-            }
-        }
-
-        setFileStatuses([...updatedStatuses]);
-
-        const results: UploadedFile[] = [];
-        let firstError: string | null = null;
-        const folderPath = composeUploadFolderPath(
-            "userContent",
-            "prompt-attachments",
-        );
-
-        for (const file of filesToUpload) {
-            const statusIdx = updatedStatuses.findIndex(
-                (s) => s.file === file && s.status === "uploading",
-            );
-            try {
-                const normalized = await upload(
-                    { kind: "file", file },
-                    {
-                        folderPath,
-                        visibility: "personal",
-                        createShareLink: true,
-                        shareLinkPermissionLevel: "viewer",
-                    },
-                );
-                const url = normalized.url ?? "";
-                results.push({
-                    fileId: normalized.fileId,
-                    url,
-                    type: classifyUploadType(file.type),
-                    mime_type: normalized.meta.mime ?? file.type,
-                    details: getFileDetailsByUrl(
-                        url,
-                        {
-                            eTag: "",
-                            size: file.size,
-                            mimetype: file.type,
-                            cacheControl: "max-age=3600",
-                            lastModified: new Date(file.lastModified).toISOString(),
-                            contentLength: file.size,
-                        } as never,
-                        normalized.fileId,
-                    ),
-                });
-                if (statusIdx >= 0) {
-                    updatedStatuses[statusIdx] = {
-                        ...updatedStatuses[statusIdx],
-                        status: "done",
+                    updatedStatuses[i] = {
+                        ...updatedStatuses[i],
+                        status: "uploading",
                     };
-                }
-            } catch (err) {
-                const errMsg =
-                    err instanceof Error
-                        ? err.message
-                        : "Upload failed. The file may be too large or the server rejected it.";
-                if (!firstError) firstError = errMsg;
-                if (statusIdx >= 0) {
-                    updatedStatuses[statusIdx] = {
-                        ...updatedStatuses[statusIdx],
-                        status: "error",
-                        errorMessage: errMsg,
-                    };
+                    filesToUpload.push(candidate);
                 }
             }
+
             setFileStatuses([...updatedStatuses]);
-        }
 
-        if (firstError) setUploadError(firstError);
-        setBusy(false);
-        if (results.length > 0) await onSelect(results);
-    }, [upload, onSelect, setBusy]);
+            const results: UploadedFile[] = [];
+            let firstError: string | null = null;
+            for (const candidate of filesToUpload) {
+                const file = candidate.file;
+                const statusIdx = updatedStatuses.findIndex(
+                    (s) =>
+                        s.relativePath === candidate.relativePath &&
+                        s.status === "uploading",
+                );
+                try {
+                    const relativeDirectory = uploadDirectory(
+                        candidate.relativePath,
+                    );
+                    const folderPath = composeUploadFolderPath(
+                        "userContent",
+                        relativeDirectory
+                            ? `prompt-attachments/${relativeDirectory}`
+                            : "prompt-attachments",
+                    );
+                    const normalized = await upload(
+                        { kind: "file", file },
+                        {
+                            folderPath,
+                            visibility: "personal",
+                            createShareLink: true,
+                            shareLinkPermissionLevel: "viewer",
+                        },
+                    );
+                    const url = normalized.url ?? "";
+                    results.push({
+                        name: file.name,
+                        fileId: normalized.fileId,
+                        url,
+                        type: classifyUploadType(file.type),
+                        mime_type: normalized.meta.mime ?? file.type,
+                        details: getFileDetailsByUrl(
+                            url,
+                            {
+                                eTag: "",
+                                size: file.size,
+                                mimetype: file.type,
+                                cacheControl: "max-age=3600",
+                                lastModified: new Date(
+                                    file.lastModified,
+                                ).toISOString(),
+                                contentLength: file.size,
+                            } as never,
+                            normalized.fileId,
+                        ),
+                    });
+                    if (statusIdx >= 0) {
+                        updatedStatuses[statusIdx] = {
+                            ...updatedStatuses[statusIdx],
+                            status: "done",
+                        };
+                    }
+                } catch (err) {
+                    const errMsg =
+                        err instanceof Error
+                            ? err.message
+                            : "Upload failed. The file may be too large or the server rejected it.";
+                    if (!firstError) firstError = errMsg;
+                    if (statusIdx >= 0) {
+                        updatedStatuses[statusIdx] = {
+                            ...updatedStatuses[statusIdx],
+                            status: "error",
+                            errorMessage: errMsg,
+                        };
+                    }
+                }
+                setFileStatuses([...updatedStatuses]);
+            }
 
-    const handleDrop = useCallback((e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsDragging(false);
-        void handleFiles(Array.from(e.dataTransfer.files));
-    }, [handleFiles]);
+            if (firstError) setUploadError(firstError);
+            try {
+                if (results.length > 0) {
+                    setIsFinalizing(true);
+                    await onSelect(results);
+                }
+            } finally {
+                // Upload + host-side durable wiring is one busy interval.
+                // Association/chat hosts must finish their edges before the
+                // user can reset or start a second batch.
+                setIsFinalizing(false);
+                setBusy(false);
+            }
+        },
+        [upload, onSelect, setBusy],
+    );
+
+    const handleDrop = useCallback(
+        (e: React.DragEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsDragging(false);
+            void collectDroppedFiles(e.dataTransfer)
+                .then(handleFiles)
+                .catch((error: unknown) => {
+                    console.error(
+                        "[InlineUploadArea] failed to read dropped files",
+                        error,
+                    );
+                    setUploadError(
+                        error instanceof Error
+                            ? error.message
+                            : "Could not read that folder.",
+                    );
+                });
+        },
+        [handleFiles],
+    );
 
     const handleDragOver = useCallback((e: React.DragEvent) => {
         e.preventDefault();
@@ -304,16 +507,36 @@ export function InlineUploadArea({ onSelect, onBusyChange }: InlineUploadAreaPro
         setIsDragging(false);
     }, []);
 
-    const handleFileInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        void handleFiles(Array.from(e.target.files || []));
-        if (fileInputRef.current) fileInputRef.current.value = "";
-    }, [handleFiles]);
+    const handleFileInputChange = useCallback(
+        (e: React.ChangeEvent<HTMLInputElement>) => {
+            void handleFiles(
+                Array.from(e.target.files || [], candidateFromFile),
+            );
+            if (fileInputRef.current) fileInputRef.current.value = "";
+        },
+        [handleFiles],
+    );
+
+    const handleFolderInputChange = useCallback(
+        (e: React.ChangeEvent<HTMLInputElement>) => {
+            void handleFiles(
+                Array.from(e.target.files || [], candidateFromFile),
+            );
+            if (folderInputRef.current) folderInputRef.current.value = "";
+        },
+        [handleFiles],
+    );
 
     const openFilePicker = useCallback(() => fileInputRef.current?.click(), []);
+    const openFolderPicker = useCallback(
+        () => folderInputRef.current?.click(),
+        [],
+    );
 
     const clearAndReset = useCallback(() => {
         setFileStatuses([]);
         setUploadError(null);
+        setIsFinalizing(false);
         setBusy(false);
     }, [setBusy]);
 
@@ -331,31 +554,63 @@ export function InlineUploadArea({ onSelect, onBusyChange }: InlineUploadAreaPro
                 onChange={handleFileInputChange}
                 className="hidden"
             />
+            <input
+                ref={folderInputRef}
+                type="file"
+                multiple
+                onChange={handleFolderInputChange}
+                className="hidden"
+                // React's DOM types do not expose the browser-standard folder
+                // picker attributes yet; Chromium/Safari preserve paths in
+                // File.webkitRelativePath.
+                {...({ webkitdirectory: "", directory: "" } as Record<
+                    string,
+                    string
+                >)}
+            />
 
             {fileStatuses.length === 0 ? (
                 /* Idle: one dense drop strip. */
-                <button
-                    type="button"
-                    onClick={openFilePicker}
-                    disabled={isLoading}
+                <div
                     onDrop={handleDrop}
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
                     className={cn(
-                        "flex h-9 w-full items-center justify-center gap-1.5 rounded-md border border-dashed text-xs transition-colors",
+                        "flex min-h-10 w-full items-center justify-center gap-2 rounded-md border border-dashed px-2 text-xs transition-colors",
                         isDragging
                             ? "border-primary bg-primary/5 text-primary"
                             : "border-border text-muted-foreground hover:border-muted-foreground/40 hover:text-foreground",
                     )}
                 >
                     <Upload className="h-3.5 w-3.5 shrink-0" />
-                    <span>
-                        {isDragging ? "Drop to upload" : "Drop files here or "}
-                        {!isDragging && (
-                            <span className="font-medium text-primary">browse</span>
-                        )}
-                    </span>
-                </button>
+                    {isDragging ? (
+                        <span>Drop to upload and add</span>
+                    ) : (
+                        <>
+                            <span className="hidden sm:inline">
+                                Drop files or folders here, or
+                            </span>
+                            <button
+                                type="button"
+                                onClick={openFilePicker}
+                                disabled={isLoading}
+                                className="font-medium text-primary hover:underline disabled:opacity-50"
+                            >
+                                browse files
+                            </button>
+                            <span aria-hidden="true">/</span>
+                            <button
+                                type="button"
+                                onClick={openFolderPicker}
+                                disabled={isLoading}
+                                className="inline-flex items-center gap-1 font-medium text-primary hover:underline disabled:opacity-50"
+                            >
+                                <FolderUp className="h-3 w-3" />
+                                folder
+                            </button>
+                        </>
+                    )}
+                </div>
             ) : (
                 <div className="space-y-1">
                     {/* Compact progress rows — capped and scrollable. */}
@@ -373,13 +628,26 @@ export function InlineUploadArea({ onSelect, onBusyChange }: InlineUploadAreaPro
                                 )}
                             >
                                 <span className="shrink-0">
-                                    {fs.status === "compressing" && <Minimize2 className="h-3 w-3 animate-pulse text-blue-500" />}
-                                    {fs.status === "uploading" && <Loader2 className="h-3 w-3 animate-spin text-blue-500" />}
-                                    {fs.status === "done" && <CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />}
-                                    {fs.status === "error" && <AlertCircle className="h-3 w-3 text-destructive" />}
-                                    {fs.status === "pending" && <FileIcon className="h-3 w-3 text-muted-foreground" />}
+                                    {fs.status === "compressing" && (
+                                        <Minimize2 className="h-3 w-3 animate-pulse text-blue-500" />
+                                    )}
+                                    {fs.status === "uploading" && (
+                                        <Loader2 className="h-3 w-3 animate-spin text-blue-500" />
+                                    )}
+                                    {fs.status === "done" && (
+                                        <CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                                    )}
+                                    {fs.status === "error" && (
+                                        <AlertCircle className="h-3 w-3 text-destructive" />
+                                    )}
+                                    {fs.status === "pending" && (
+                                        <FileIcon className="h-3 w-3 text-muted-foreground" />
+                                    )}
                                 </span>
-                                <span className="min-w-0 flex-1 truncate text-foreground" title={fs.file.name}>
+                                <span
+                                    className="min-w-0 flex-1 truncate text-foreground"
+                                    title={fs.file.name}
+                                >
                                     {fs.file.name}
                                 </span>
                                 <span className="shrink-0 text-muted-foreground">
@@ -396,7 +664,9 @@ export function InlineUploadArea({ onSelect, onBusyChange }: InlineUploadAreaPro
                     {displayError && (
                         <div className="flex items-start gap-1.5 rounded border border-destructive/20 bg-destructive/10 px-1.5 py-1 text-[11px] text-destructive">
                             <AlertCircle className="mt-0.5 h-3 w-3 shrink-0" />
-                            <span className="min-w-0 flex-1">{displayError}</span>
+                            <span className="min-w-0 flex-1">
+                                {displayError}
+                            </span>
                             <button
                                 type="button"
                                 onClick={clearAndReset}

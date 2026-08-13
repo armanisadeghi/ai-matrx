@@ -486,6 +486,7 @@ See [migration/MASTER-PLAN.md](migration/MASTER-PLAN.md) for the phase-ordered p
 
 ## Change log
 
+- **2026-08-13 — Canonical file picker supports create-or-select, bulk files, and folders.** `FilePickerWindow` accepts an optional `onUpload` callback and composes the existing `InlineUploadArea` above `FilesResourcePicker`, so association/resource hosts can offer local creation and stored-file selection in one surface without forking either system. `InlineUploadArea` now accepts folder selection and recursively traverses dropped directories; nested relative paths are preserved under `My Files/prompt-attachments`, every created file remains on the one `useFileUpload` path, and the host callback fires only with durable file ids. Rich WindowPanel titles are constrained to one line with ellipsis; the file window uses compact 12px title chrome.
 - **2026-08-13 — Canonical video publish-date treatment.**
   `features/files/blocks/video/VideoPublishDate.tsx` is the one compact
   `MM/DD/YY` / `No Date` UI used by YouTube players, cards, and attachment
