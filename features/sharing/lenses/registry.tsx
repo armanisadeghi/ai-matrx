@@ -24,13 +24,13 @@ import {
   AiVisibilityRenderer,
   CanvasRenderer,
   CodeRenderer,
-  FileRenderer,
   FlashcardRenderer,
   FolderRenderer,
   GenericRenderer,
   MarkdownRenderer,
 } from "@/features/sharing/lenses/default-renderers";
 import { KindInstanceRenderer } from "@/features/sharing/lenses/kind-instance";
+import { SharedFileLens } from "@/features/sharing/lenses/file-lens";
 
 export interface ShareLensProps {
   /** The resolved share payload (registry `public_columns` projection). */
@@ -53,7 +53,7 @@ const SHARE_LENS_REGISTRY: Record<string, ShareLensRender> = {
   canvas_item: (p) => <CanvasRenderer result={p.result} />,
   shared_canvas_item: (p) => <CanvasRenderer result={p.result} />,
   fc_card: (p) => <FlashcardRenderer result={p.result} />,
-  file: (p) => <FileRenderer result={p.result} token={p.token} />,
+  file: (p) => <SharedFileLens result={p.result} token={p.token} />,
   folder: (p) => <FolderRenderer result={p.result} />,
   seo_collection_run: (p) => (
     <AiVisibilityRenderer result={p.result} token={p.token} />
@@ -65,6 +65,19 @@ const SHARE_LENS_REGISTRY: Record<string, ShareLensRender> = {
     <KindInstanceRenderer result={p.result} token={p.token} />
   ),
 };
+
+/**
+ * Lenses that own the WHOLE landing body — the shell renders them full-bleed
+ * (no padded max-width column, definite height) so a viewer can use the
+ * entire viewport. Full-bleed lenses own their own scroll.
+ */
+const FULL_BLEED_LENSES = new Set<string>(["file"]);
+
+export function shareLensIsFullBleed(
+  resourceType: string | null | undefined,
+): boolean {
+  return !!resourceType && FULL_BLEED_LENSES.has(resourceType);
+}
 
 /**
  * Resolve the lens for a resource type. Always returns a renderer — unknown

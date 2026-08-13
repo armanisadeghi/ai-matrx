@@ -247,7 +247,9 @@ default-path floor. `lenses/metadata.ts` is the server-safe half (per-token soci
 `generateMetadata` AND per-token OG-image payloads for `opengraph-image.tsx` — the OG route
 owns only the card JSX: the report card for `seo_collection_run`, the branded generic card for
 everyone else). `lenses/default-renderers.tsx`
-holds the bodies (markdown/code/flashcard/file/folder/AI-visibility/generic).
+holds the lightweight bodies (markdown/code/flashcard/folder/AI-visibility/generic);
+the FILE lens lives in `lenses/file-lens.tsx` (see below).
+
 ### 🚨 A SHARE PAGE NEVER SENDS ITS RECIPIENT TO `/sign-up` OR `/login`
 
 **Arman's ruling, 2026-08-13.** Everything basic on this platform is free up front — keyword
@@ -270,6 +272,23 @@ growing its own copy of this decision is the defect.
 Auth routes remain correct in exactly one place: `DuplicateToEditButton`, where the visitor is
 asking to OWN a copy and therefore needs an account.
 
+**Full-bleed lenses.** A lens whose body is a viewer (not a document) registers in
+`FULL_BLEED_LENSES` (`lenses/registry.tsx`); the shell (`SharedResourceView`) then renders it
+with definite height and no padded max-width column — the lens owns the whole landing body and
+its own scroll. First member: `file`.
+
+**The file lens is a product surface (`lenses/file-lens.tsx`, 2026-08-13).** A shared file's
+recipient is a prospect (VISION.md: a share IS a referral), so the landing does two jobs:
+(1) VIEW — PDFs render through THE canonical `PdfDocumentRenderer`
+(`features/pdf/components/viewer/`, behind a `React.lazy` in-gate boundary + a post-hydration
+mount gate, since pdfjs cannot SSR) streaming directly from aidream's token-validated
+`/share/{token}` byte URL (`shareUrls(token).public` — durable, never a signed URL); images/
+video/audio render full-stage; every previewable type gets a true Fullscreen toggle
+(Fullscreen API on the stage) + "New tab" + Download; (2) CAPABILITY — a per-type capability
+section below the fold (PDF: extract/ask/analyze/redact; image/AV/generic variants) where every
+card is a `signUpHref("/s/{token}")` conversion CTA. Nothing widens what the token authorizes —
+anonymous visitors get CTAs, not tools. `lenses/metadata.ts` carries the matching `file` meta
+entry (type-aware social title/description).
 **POLYMORPHIC tokens dispatch INSIDE their lens, never by adding token entries.**
 `content_ir_kind_instance` carries many kinds (keyword research, flashcard sets, briefs,
 decks…) and its public projection deliberately omits the kind — so
@@ -350,6 +369,17 @@ Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) 
   shell CTA, the keyword-research report CTA, the AI-visibility report CTA (now `/seo/ai-visibility`
   — the free public tool an anonymous recipient can run immediately), and both `/p/e/` CTAs. Four
   `/sign-up` dead ends removed; `DuplicateToEditButton` deliberately keeps its auth route.
+- 2026-08-13 — **The shared-file landing became a real product surface** (Arman's critique: a
+  cramped iframe in a max-w-3xl column offering nothing but Download). New `lenses/file-lens.tsx`
+  replaces `FileRenderer`: full-bleed layout (new registry `FULL_BLEED_LENSES` +
+  `shareLensIsFullBleed`, honored by `SharedResourceView`), PDFs through the canonical
+  `PdfDocumentRenderer` (real paging/zoom/rotate/fit, progressive Range loading, `React.lazy` +
+  post-hydration mount so pdfjs never SSRs), Fullscreen/New-tab/Download affordances,
+  full-stage image/video/audio, honest no-preview card, and a per-type "what AI Matrx can do
+  with this file" capability section whose cards are `signUpHref` conversion CTAs. `file` meta
+  entry added to `lenses/metadata.ts`. Bytes stay on the token-validated durable
+  `shareUrls(token)` endpoints — no signed URLs, no widening of anonymous access. Verified
+  signed-out in the browser (PDF/image/txt · light/dark · mobile 390px).
 - 2026-08-13 — **The Public tab always answers the link question.** `ShareLinkPanel` no longer
   vanishes for owners when a type has no no-login lane (explicit state instead of `null`); the
   public-lane allowlist moved out of the `/p/e/` server loader into

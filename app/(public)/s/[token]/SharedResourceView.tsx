@@ -17,7 +17,10 @@ import {
   type ResolvedShareToken,
 } from "@/utils/permissions/shareLinks";
 import { DuplicateToEditButton } from "@/features/sharing/components/DuplicateToEditButton";
-import { resolveShareLens } from "@/features/sharing/lenses/registry";
+import {
+  resolveShareLens,
+  shareLensIsFullBleed,
+} from "@/features/sharing/lenses/registry";
 import { resolveShareSourceSurface } from "@/features/sharing/lenses/source-surface";
 import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
 
@@ -33,6 +36,7 @@ export function SharedResourceView({
   useClippedContentGuard(contentRef, { label: "Shared resource content" });
   const lens = resolveShareLens(result.resourceType);
   const source = resolveShareSourceSurface(result);
+  const fullBleed = shareLensIsFullBleed(result.resourceType);
 
   return (
     <>
@@ -63,11 +67,19 @@ export function SharedResourceView({
         </Button>
       </PublicHeaderActionsPortal>
 
-      <div className="h-full overflow-y-auto bg-textured scrollbar-thin">
-        <div ref={contentRef} className="px-4 py-4 sm:px-6 sm:py-6">
+      {fullBleed ? (
+        // Full-bleed lens (e.g. a shared file's viewer): the lens owns the
+        // whole body — definite height, its own scroll, no padded column.
+        <div ref={contentRef} className="h-full bg-textured">
           {lens({ result, token })}
         </div>
-      </div>
+      ) : (
+        <div className="h-full overflow-y-auto bg-textured scrollbar-thin">
+          <div ref={contentRef} className="px-4 py-4 sm:px-6 sm:py-6">
+            {lens({ result, token })}
+          </div>
+        </div>
+      )}
     </>
   );
 }

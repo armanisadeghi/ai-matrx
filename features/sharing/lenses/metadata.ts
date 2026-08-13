@@ -77,9 +77,41 @@ function kindInstanceMeta(result: ResolvedShareToken): ShareLensMeta | null {
   };
 }
 
+/** File meta — type-aware title/description for the shared-file lens
+ * (`./file-lens.tsx`): the social card names what the recipient will get
+ * and what the platform can do with it, not a generic "Shared item". */
+function fileMeta(result: ResolvedShareToken): ShareLensMeta | null {
+  const resource = result.resource;
+  if (!resource) return null;
+  const name =
+    typeof resource["file_name"] === "string" && resource["file_name"].trim()
+      ? (resource["file_name"] as string)
+      : genericTitle(resource);
+  if (!name) return null;
+  const mime =
+    typeof resource["mime_type"] === "string"
+      ? (resource["mime_type"] as string)
+      : "";
+  const kindLabel =
+    mime === "application/pdf"
+      ? "PDF document"
+      : mime.startsWith("image/")
+        ? "image"
+        : mime.startsWith("video/")
+          ? "video"
+          : mime.startsWith("audio/")
+            ? "recording"
+            : "file";
+  return {
+    title: name,
+    description: `A ${kindLabel} shared with you on AI Matrx — view it online, download it, or let AI extract, summarize, and work with it.`,
+  };
+}
+
 const SHARE_LENS_META: Record<string, ShareLensMetaResolver> = {
   seo_collection_run: aiVisibilityMeta,
   content_ir_kind_instance: kindInstanceMeta,
+  file: fileMeta,
 };
 
 /**

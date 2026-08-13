@@ -15,9 +15,7 @@ import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
-  Download,
   ExternalLink,
-  FileIcon,
   FolderClosed,
   Loader2,
   ScanSearch,
@@ -25,7 +23,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { getResourceSharePath } from "@/utils/permissions/registry";
 import type { ResolvedShareToken } from "@/utils/permissions/shareLinks";
-import { shareUrls } from "@/features/files/handler/utils/python-base";
 import {
   AiVisibilityReport,
   parsePublicVisibilityResult,
@@ -174,101 +171,9 @@ export function GenericRenderer({ result }: { result: ResolvedShareToken }) {
   );
 }
 
-function formatBytes(size: unknown): string | null {
-  const n = typeof size === "number" ? size : Number(size);
-  if (!Number.isFinite(n) || n <= 0) return null;
-  const units = ["B", "KB", "MB", "GB"];
-  let v = n;
-  let i = 0;
-  while (v >= 1024 && i < units.length - 1) {
-    v /= 1024;
-    i += 1;
-  }
-  return `${v.toFixed(v >= 10 || i === 0 ? 0 : 1)} ${units[i]}`;
-}
-
-/**
- * Shared file: metadata (registry `public_columns` projection) + inline
- * preview / download through aidream's token-validated
- * `/share/{token}/download` byte endpoint. The token-backed URL is durable
- * public media (NOT an expiring signed URL) — safe for raw tags here.
- */
-export function FileRenderer({
-  result,
-  token,
-}: {
-  result: ResolvedShareToken;
-  token: string;
-}) {
-  const name = str(result.resource, "file_name") || resourceTitle(result);
-  const mime = str(result.resource, "mime_type");
-  const size = formatBytes(result.resource?.["size_bytes"]);
-  const urls = shareUrls(token);
-
-  let preview: React.ReactNode = null;
-  if (mime.startsWith("image/")) {
-    preview = (
-      // Token-backed public byte URL (durable, not a signed URL) — safe for a
-      // raw tag on this anonymous page where InlineMediaRef (authed re-mint)
-      // does not apply.
-      <img
-        src={urls.public}
-        alt={name}
-        className="max-h-[70vh] w-auto max-w-full rounded-lg border border-border"
-      />
-    );
-  } else if (mime.startsWith("video/")) {
-    preview = (
-      <video
-        src={urls.public}
-        controls
-        className="max-h-[70vh] w-full rounded-lg border border-border"
-      />
-    );
-  } else if (mime.startsWith("audio/")) {
-    preview = <audio src={urls.public} controls className="w-full" />;
-  } else if (mime === "application/pdf") {
-    preview = (
-      <iframe
-        src={urls.public}
-        title={name}
-        className="h-[70vh] w-full rounded-lg border border-border bg-card"
-      />
-    );
-  }
-
-  return (
-    <div className="mx-auto w-full max-w-3xl space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex min-w-0 items-center gap-3">
-          <FileIcon className="h-8 w-8 shrink-0 text-muted-foreground" />
-          <div className="min-w-0">
-            <h1 className="truncate text-xl font-semibold text-foreground">
-              {name}
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              {[mime || null, size].filter(Boolean).join(" · ") ||
-                "Shared file"}
-            </p>
-          </div>
-        </div>
-        <Button asChild>
-          <a href={urls.attachment}>
-            <Download className="mr-1.5 h-4 w-4" />
-            Download
-          </a>
-        </Button>
-      </div>
-      {preview ? (
-        <div className="flex justify-center">{preview}</div>
-      ) : (
-        <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
-          No inline preview for this file type — use Download to get the file.
-        </div>
-      )}
-    </div>
-  );
-}
+// The shared-FILE lens moved to ./file-lens.tsx (2026-08-13) when it became
+// a full product surface (canonical PDF viewer + fullscreen + capability
+// CTAs) — this file keeps only the lightweight default bodies.
 
 /** Shared folder: metadata card. Contents require sign-in — anonymous child
  * listing is not part of the share-link lane (yet). */
