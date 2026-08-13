@@ -47,10 +47,20 @@ system doc). The repo-specific facts it needs:
   one side must not move the other (mobile↔desktop, dark↔light);
   `pnpm type-check` before any done-claim; deploy only via
   `./scripts/release.sh` — and if you commit without releasing, SAY SO.
+- **Isolation:** scheduled patrols run in an isolated Codex worktree. If this
+  run is in the shared checkout or sees unrelated dirty files, stop before
+  mutation and repair the execution environment; do not treat concurrent work
+  as patrol gate evidence.
 - **Certification (Tier M):** a second adversarial agent ("assume this batch
-  broke something; find it") reruns the gates and checks the changed surfaces
-  on the OTHER theme and OTHER viewport. CERTIFIED or REJECTED; rejected
-  batches are fixed or fully reverted. No certifier line → invalid run.
+  broke something; find it") compares pre-edit and post-edit type/gate
+  diagnostics. New batch-caused failures reject; unchanged baseline debt is
+  loud but cannot reject. Apply `FEATURE.md`'s risk-based visual proof: every
+  changed file gets scoped static coverage, repeated mechanical edits get one
+  representative surface per distinct risk class, and shared primitive/layout/
+  interaction/theme changes get the full relevant matrix. CERTIFIED ships;
+  REJECTED requires a concrete batch defect and is fixed/reverted;
+  INFRASTRUCTURE BLOCKED preserves the approved diff for retry. A broken preview
+  is never proof that product code broke. No independent verdict → invalid run.
 - **Scoping:** structural novelty (new `app/**/page.tsx` leaves, new
   `features/*` dirs, new files matching the patrol's surface signature) + the
   ledger + a full pass every Nth run. NEVER scope by raw git churn.
@@ -98,6 +108,8 @@ patterns.
 - Reporting a clean run as wasted effort — zero findings is the system working.
 - Marking a registry status ✅ that isn't (the registry must never lie).
 - Giving a polished normal-looking summary for a degraded or incomplete run.
+- Rejecting or reverting valid work because an unrelated baseline gate or the
+  preview harness failed.
 - Stopping after detection because no finding was auto-approved instead of
   routing the safe repairs to Arman.
 - Treating “looks intentional” or “false positive” as approval to suppress it.
