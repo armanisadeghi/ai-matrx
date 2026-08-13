@@ -27,6 +27,7 @@ Format: `- [ ] <P#> | <file-or-route> | <one line> | <date>`
 
 ## Cleared
 
+- [x] P3 | see `.matrx/patrol-reports/mobile-friendly-ui.md` | attempted 16-token literal `vh`→`dvh` batch across 15 files was REJECTED because the managed preview became runaway before any changed surface completed the mobile/desktop and light/dark matrix; all 16 product substitutions were fully reverted | rejected-reverted | 2026-08-12
 - [x] P7 | see `.matrx/patrol-reports/no-browser-dialogs.md` | attempted 16-alert/9-file automatic batch was REJECTED because the managed preview became runaway before the complete browser matrix; all product changes fully reverted | rejected-reverted | 2026-08-12
 - [x] P3 | `components/ui/drawer.tsx:87` | canonical `DrawerContent` was fixed to the mobile viewport bottom without default `pb-safe` | 2026-08-12 | fixed-certified (added the approved primitive-level `pb-safe` default and regression assertion; mobile/desktop plus light/dark adversarial verdict CERTIFIED)
 - [x] P4 | `components/errors/ErrorBoundaryView.tsx:121` | shared CopyButton uses `hover:bg-white/10` on both dark code and neutral light surfaces; light-mode hover is effectively invisible | 2026-08-11 | fixed-certified (theme surfaces now use `hover:bg-accent`; the fixed dark stack surface explicitly opts into stable on-dark chrome; adversarial verdict CERTIFIED)
