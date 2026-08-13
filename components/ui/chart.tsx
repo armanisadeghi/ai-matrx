@@ -1,9 +1,10 @@
-// @ts-nocheck
 "use client"
 
 import * as React from "react"
 import * as RechartsPrimitive from "recharts"
-import {
+import type { LegendPayload } from "recharts"
+import type {
+  Formatter,
   NameType,
   Payload,
   ValueType,
@@ -108,16 +109,32 @@ ${colorConfig
 
 const ChartTooltip = RechartsPrimitive.Tooltip
 
+// recharts 3 injects `active` / `payload` / `label` into the tooltip `content`
+// element when it clones it — they are NOT part of TooltipProps anymore
+// (Omit'ed as "PropertiesReadFromContext" in recharts/types/component/Tooltip),
+// so they are declared here explicitly, optional because the element is
+// authored without them (`content={<ChartTooltipContent />}`).
+type ChartTooltipContentProps = React.ComponentProps<"div"> & {
+  active?: boolean
+  payload?: ReadonlyArray<Payload<ValueType, NameType>>
+  label?: React.ReactNode
+  labelFormatter?: (
+    label: React.ReactNode,
+    payload: ReadonlyArray<Payload<ValueType, NameType>>
+  ) => React.ReactNode
+  labelClassName?: string
+  formatter?: Formatter<ValueType, NameType>
+  color?: string
+  hideLabel?: boolean
+  hideIndicator?: boolean
+  indicator?: "line" | "dot" | "dashed"
+  nameKey?: string
+  labelKey?: string
+}
+
 const ChartTooltipContent = React.forwardRef<
   HTMLDivElement,
-  React.ComponentProps<typeof RechartsPrimitive.Tooltip> &
-    React.ComponentProps<"div"> & {
-      hideLabel?: boolean
-      hideIndicator?: boolean
-      indicator?: "line" | "dot" | "dashed"
-      nameKey?: string
-      labelKey?: string
-    }
+  ChartTooltipContentProps
 >(
   (
     {
@@ -198,7 +215,7 @@ const ChartTooltipContent = React.forwardRef<
 
             return (
               <div
-                key={item.dataKey}
+                key={item.dataKey?.toString() ?? index}
                 className={cn(
                   "flex w-full flex-wrap items-stretch gap-2 [&>svg]:h-2.5 [&>svg]:w-2.5 [&>svg]:text-muted-foreground",
                   indicator === "dot" && "items-center"
@@ -264,10 +281,14 @@ ChartTooltipContent.displayName = "ChartTooltip"
 
 const ChartLegend = RechartsPrimitive.Legend
 
+// Same cloning contract as the tooltip: recharts 3 omits `payload` from
+// LegendProps (it is injected into the `content` element), so it is declared
+// here explicitly.
 const ChartLegendContent = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div"> &
-    Pick<RechartsPrimitive.LegendProps, "payload" | "verticalAlign"> & {
+    Pick<RechartsPrimitive.LegendProps, "verticalAlign"> & {
+      payload?: ReadonlyArray<LegendPayload>
       hideIcon?: boolean
       nameKey?: string
     }
@@ -369,5 +390,3 @@ export {
   ChartLegendContent,
   ChartStyle,
 }
-
-
