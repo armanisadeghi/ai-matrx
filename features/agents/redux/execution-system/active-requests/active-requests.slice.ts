@@ -1176,20 +1176,42 @@ const activeRequestsSlice = createSlice({
 
     // ── Cleanup ────────────────────────────────────────────────
 
-    removeRequest(state, action: PayloadAction<string>) {
-      const request = state.byRequestId[action.payload];
-      if (request) {
-        const conversationRequests =
-          state.byConversationId[request.conversationId];
-        if (conversationRequests) {
-          state.byConversationId[request.conversationId] =
-            conversationRequests.filter((id) => id !== action.payload);
-          if (state.byConversationId[request.conversationId].length === 0) {
-            delete state.byConversationId[request.conversationId];
-          }
-        }
-        delete state.byRequestId[action.payload];
+    retainRequestForViewer(
+      state,
+      action: PayloadAction<{ requestId: string; viewerId: string }>,
+    ) {
+      const { requestId, viewerId } = action.payload;
+      if (!state.byRequestId[requestId]) return;
+      const viewers = state.viewerIdsByRequestId[requestId] ?? [];
+      if (!viewers.includes(viewerId)) viewers.push(viewerId);
+      state.viewerIdsByRequestId[requestId] = viewers;
+    },
+
+    releaseRequestForViewer(
+      state,
+      action: PayloadAction<{ requestId: string; viewerId: string }>,
+    ) {
+      const { requestId, viewerId } = action.payload;
+      const viewers = state.viewerIdsByRequestId[requestId];
+      if (!viewers) return;
+      const remaining = viewers.filter((id) => id !== viewerId);
+      if (remaining.length > 0) {
+        state.viewerIdsByRequestId[requestId] = remaining;
+        return;
       }
+      delete state.viewerIdsByRequestId[requestId];
+      if (state.pendingRemovalByRequestId[requestId]) {
+        deleteRequestEntry(state, requestId);
+      }
+    },
+
+    removeRequest(state, action: PayloadAction<string>) {
+      const requestId = action.payload;
+      if (hasRequestViewers(state, requestId)) {
+        state.pendingRemovalByRequestId[requestId] = true;
+        return;
+      }
+      deleteRequestEntry(state, requestId);
     },
 
     /**
@@ -1301,9 +1323,20 @@ const activeRequestsSlice = createSlice({
       const conversationId = action.payload;
       const requestIds = state.byConversationId[conversationId] ?? [];
       for (const reqId of requestIds) {
-        delete state.byRequestId[reqId];
+        if (hasRequestViewers(state, reqId)) {
+          state.pendingRemovalByRequestId[reqId] = true;
+        } else {
+          deleteRequestEntry(state, reqId);
+        }
       }
-      delete state.byConversationId[conversationId];
+      const retainedRequestIds = requestIds.filter((requestId) =>
+        hasRequestViewers(state, requestId),
+      );
+      if (retainedRequestIds.length > 0) {
+        state.byConversationId[conversationId] = retainedRequestIds;
+      } else {
+        delete state.byConversationId[conversationId];
+      }
     });
   },
 });
@@ -1343,6 +1376,8 @@ export const {
   rewindContentToBoundary,
   finalizeClientMetrics,
   updateExtractedJson,
+  retainRequestForViewer,
+  releaseRequestForViewer,
   removeRequest,
   hydrateRequestsFromObservability,
 } = activeRequestsSlice.actions;
