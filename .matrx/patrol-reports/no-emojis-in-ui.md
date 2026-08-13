@@ -16,18 +16,18 @@
 ## Detection and triage baseline
 
 - Initial verified P6 findings: 226 user-visible lines in 94 files.
-- Fixed locally but not shipped: 23 user-visible lines in 19 files across two separately approved batches (14 files + 5 files).
+- Fixed, certified, and shipped: 23 user-visible lines in 19 files across two separately approved batches (14 files + 5 files), released in `v0.4.527` (`99b0d4703`).
 - Remaining: 203 user-visible lines in 75 files. These stay unresolved pending per-surface safety review; none was silently excluded or proposed as an exception.
 - Rank 1 — production/shared surfaces: 64 remaining lines in 34 files.
 - Rank 2 — admin, demo, debug, and rendered sample surfaces: 139 lines in 41 files. These remain findings because people can see them; the false-positive rule does not exempt a rendered demo or sample.
 - False positives: 53 lines. Thirty-six files were false-positive-only: 37 documentation/comment lines in 30 files, 10 browser-console diagnostic lines in 5 files, and 1 non-UI parser constant. Five additional documentation/comment lines were excluded from four otherwise-live finding files.
 - Fixtures/sample data: no rendered fixture or sample was cleared as a false positive. The only exclusions were non-rendered documentation, console-only diagnostics, and parser behavior.
 - Approved exceptions: none. Proposed exceptions: none.
-- Approval routes: 19 files manually approved and fixed locally; 75 files unresolved pending per-surface review; 0 proposed exceptions.
-- Certifier verdicts: **REJECTED** for Batch A (14 files) and Batch B (5 files). The certifier found three accessible-state regressions; all three were repaired with screen-reader text. Fleet Health verified Tic-Tac-Toe at desktop and 375×812 mobile widths in both light and dark themes. The mobile DOM confirms `New Game`, `Reset Scores`, and the future-of-TicTacToe copy contain no emoji; screenshots were captured. The observed mobile horizontal overflow predates and is unrelated to P6. Neither batch is certified or shipped because the mandatory full type gate is red.
-- Main-agent checks: P6 skill validation PASS; touched-file detector PASS except the two documented comment-only false positives in Batch B; scoped `git diff --check` PASS; doctrine/UI/doc-claim gates PASS. Targeted lint surfaced pre-existing same-file debt plus one banned `Sparkles` proposal; `Sparkles` was removed and the text preserved. Full `pnpm type-check` fails only outside the 19 P6 files: four API-route `organization_id` boundary errors and `types/feedback-row-mapper.ts` missing `image_file_ids`.
+- Approval routes: 19 files manually approved, fixed, certified, and shipped; 75 files unresolved pending per-surface review; 0 proposed exceptions.
+- Certifier verdicts: **CERTIFIED** for Batch A (14 files) and Batch B (5 files). The certifier initially found three accessible-state regressions; all three were repaired with screen-reader text. Fleet Health verified Tic-Tac-Toe at desktop and 375×812 mobile widths in both light and dark themes. The mobile DOM confirms `New Game`, `Reset Scores`, and the future-of-TicTacToe copy contain no emoji; screenshots were captured. The observed mobile horizontal overflow predates and is unrelated to P6. The unrelated full-repository type errors that blocked the original verdict were subsequently repaired, and the combined `main` type gate is green.
+- Main-agent checks: P6 skill validation PASS; touched-file detector PASS except the two documented comment-only false positives in Batch B; scoped `git diff --check` PASS; doctrine/UI/doc-claim gates PASS; current full `pnpm type-check` PASS. Targeted lint surfaced pre-existing same-file debt plus one banned `Sparkles` proposal; `Sparkles` was removed and the text preserved.
 
-## Approved fixes awaiting certification
+## Approved fixes shipped
 
 - **Batch A — 14 files:** replaced product-authored status, warning, visibility, keyword, document, truncation, game, reset, and celebration glyphs with semantic Lucide icons; deleted decorative sparkles and the redundant high-score trophy. Text, handlers, semantic colors, ARIA meaning, and interaction behavior remain unchanged.
 - **Batch B — 5 files:** removed emoji prefixes from structured feedback headers; replaced feature/status/recommended/dropped-state glyphs with `Check`, `Star`, and `CheckCircle2`. The two surviving detector hits are non-rendered comments already covered by the false-positive baseline.
@@ -133,5 +133,5 @@
 ## Cadence health and candidates
 
 - This is the first P6 run, so there is no preceding month of clean runs and no cadence-lengthening proposal.
-- Two Tier M batches remain rejected and unshipped. The complete desktop/mobile × light/dark matrix now passes; mutation is paused solely on the unrelated red full type gate. This is not yet a repeated-rejection pattern.
+- Two Tier M batches were certified after the accessible-state repairs, complete desktop/mobile × light/dark proof, and a green full type gate. They shipped in `v0.4.527`; the remaining 203 findings continue through per-surface review.
 - No recurring unregistered class was observed, so no Candidate-bench nomination was added.
