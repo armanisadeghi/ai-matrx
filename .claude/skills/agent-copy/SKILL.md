@@ -1,6 +1,6 @@
 ---
 name: agent-copy
-description: Add "Copy" + "Copy for AI" buttons to any surface that shows data (rows, cards, lists, detail/record pages) using the shared `components/agent-copy` primitive. Use when wiring copy actions onto a new admin or user page/feature, continuing the app-wide rollout, or extending the agent payload (screenshot, surfaces-registry context, page state). Triggers on `components/agent-copy/**`, `<CopyButtons>`, `buildAgentPayload`, or any task like "add copy buttons", "copy this row/list/record", "copy for AI/agent", "let the agent pick up this data". NOT for the live-chat message bar (that is `AssistantActionBar` / `messageActionRegistry`) or markdown content actions (that is the `rich-document-actions` skill).
+description: Add "Copy" + "Copy for AI" buttons to any surface that shows data (rows, cards, lists, detail/record pages) using the shared `components/agent-copy` primitive. Use when wiring copy actions onto a new admin or user page/feature, continuing the app-wide rollout, or extending the agent payload (screenshot, surfaces-registry context, page state). Triggers on `components/agent-copy/**`, `CopyButtons`, `buildAgentPayload`, or any task like "add copy buttons", "copy this row/list/record", "copy for AI/agent", "let the agent pick up this data". NOT for the live-chat message bar (that is `AssistantActionBar` / `messageActionRegistry`) or markdown content actions (that is the `rich-document-actions` skill).
 ---
 
 # agent-copy — copy data (human + AI) anywhere
@@ -54,8 +54,8 @@ Source + full docs: [`components/agent-copy/README.md`](../../../components/agen
   WindowPanel where the user grooms the whole-page payload: sections with
   `full/compact/brief/off` dials, Everything/Balanced/Minimal presets, live
   size (chars + ~tokens), live preview. Full contract in the README.
-- The **"Copy for AI" button is a deliberate seam**: when the surfaces-registry
-  + tool-injection layer lands, it flips from "copy to clipboard" to "hand
+- The **"Copy for AI" button is a deliberate seam**: when the surfaces-registry +
+  tool-injection layer lands, it flips from "copy to clipboard" to "hand
   context + callable actions to the agent" and every existing callsite comes
   along for free. So keep `kind` slugs stable and `attributes` meaningful.
 
@@ -111,6 +111,30 @@ muted `tabular-nums` beside the title, never a sentence pushing the search.
 `JsonInspector` takes `agentCopy` for raw-JSON surfaces. Reference wiring for a
 full page (cards + dimension lists + table + groomer):
 `features/marketing/components/backlinks/BacklinksWorkspace.tsx`.
+
+### P5 patrol: approval and false-positive gate
+
+Run `pnpm check:copy-everywhere`; run `pnpm test:copy-everywhere` after changing
+the detector. The detector's result is a routing decision, not a raw grep count:
+
+- `compliant` already passes `copy` to the table.
+- `equivalent-controls` already has canonical whole-list Copy plus row Copy for
+  AI in the same surface. Do not add a duplicate table toolbar. Verify the
+  controls in context and leave it alone.
+- `auto-approved` is the narrow mechanical class: a production
+  `MatrxDataTable` has an explicit toolbar, no `copy`, and no equivalent
+  canonical controls. Add only the built-in `copy` config, using the feature's
+  existing summary/location helpers and the row's real user-facing fields.
+- `review` lacks enough structural evidence. Inspect it and propose it to Arman
+  only when the defect, exact canonical fix, and value of fixing it are all
+  certain. Never stop at a count merely because the auto-approved list is empty.
+- `excluded` covers tests, demos, and the canonical table primitive.
+
+Native tables, JSON/code blocks, lists, detail panes, editors, visualizers, and
+parent-owned action bars remain report-only until their own detector recipes can
+distinguish records from tools and enclosing controls. The first inventory's
+`SitesPortfolio` false positive is the permanent warning: missing `copy` alone
+does not prove missing adoption.
 
 ### Whole-page: quick pair + Groomer
 
@@ -186,6 +210,7 @@ first and emit the gap list; only then wire, batch by batch:
 ## Rollout status (update this as you go)
 
 **Done:**
+
 - Primitive + README + roadmap (`components/agent-copy/`), `xs` size, groomer
   window (`AgentCopyGroomerWindow` + launcher + `groomer-types.ts`).
 - Graded Copy-for-AI variants: `AiCopyMenu`, `CopyButtons.aiVariants`,

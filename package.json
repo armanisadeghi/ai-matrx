@@ -84,6 +84,8 @@
     "check:dead-ends": "tsx scripts/dead-ends/check-dead-ends.ts",
     "check:dead-ends:write": "tsx scripts/dead-ends/check-dead-ends.ts --write",
     "check:dead-ends:strict": "tsx scripts/dead-ends/check-dead-ends.ts --strict",
+    "check:copy-everywhere": "node .claude/skills/agent-copy/scripts/detect-copy-adoption.mjs",
+    "test:copy-everywhere": "node --test .claude/skills/agent-copy/scripts/detect-copy-adoption.test.mjs",
     "check:lint-debt": "tsx scripts/lint-debt/check-lint-debt.ts",
     "check:lint-debt:write": "tsx scripts/lint-debt/check-lint-debt.ts --write",
     "check:lint-debt:strict": "tsx scripts/lint-debt/check-lint-debt.ts --strict",
