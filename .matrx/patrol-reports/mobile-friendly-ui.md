@@ -95,8 +95,10 @@ remain report-only layout judgment; no core route header was changed.
 - **Rejected batches:** none under the current policy; the old
   infrastructure/global-baseline rejection is superseded
 - **Paused mutation:** none; 47 findings remain
-- **Delivery:** product commit `70a7a1e4f` shipped to the main site in release
-  `v0.4.548` (`0eef3cc50`)
+- **Delivery:** product commit `70a7a1e4f` first entered main in `v0.4.548` and
+  is an ancestor of READY main-site production release `v0.4.550`
+  (`9419ff9bd`), Vercel deployment
+  `dpl_C9bwWNG9fJZqdhzpwnnbFQF61c45`
 
 Certification evidence:
 
