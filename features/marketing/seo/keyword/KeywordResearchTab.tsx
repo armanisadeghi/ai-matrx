@@ -120,6 +120,18 @@ export function KeywordResearchTab({
           "keyword_selection expects { phrase: string, selected: boolean }",
         );
       }
+      // The manifest promises this target is "Rejected when the window has no
+      // page binding", and the effect above deliberately unpublishes the
+      // selection UI state in that case so the blocks render read-only. Without
+      // this guard the handler still accepted the write and reported success
+      // while nothing was selectable and nothing could ever be persisted —
+      // the silent no-op the comment above rules out, and a promise the agent
+      // was told it could rely on.
+      if (!pageId) {
+        throw new Error(
+          'keyword_selection needs a page binding: this window was opened without one, so there is nothing to attach a supporting keyword to. Open Keyword Intelligence from a page (its "Add as supporting" control only exists there), or ask the user which page they mean.',
+        );
+      }
       toggleKeyword(write.phrase, write.selected === true);
     },
   });
