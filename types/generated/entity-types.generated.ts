@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 355 active entity tokens. A token here is FK-valid for
+// 351 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -130,7 +130,6 @@ export type EntityTypeToken =
   | "cx_agent_task"
   | "cx_code_edit"
   | "cx_code_message_file"
-  | "cx_conversation_documents"
   | "cx_media"
   | "cx_observational_memory"
   | "cx_observational_memory_event"
@@ -284,11 +283,8 @@ export type EntityTypeToken =
   | "seo_site_topic_value"
   | "seo_topic"
   | "seo_web_analytics_daily"
-  | "share_link"
   | "shared_canvas_item"
-  | "shortcut_category"
   | "skill"
-  | "skill_category"
   | "skill_render_definition"
   | "sms_consent"
   | "sms_conversation"
@@ -527,7 +523,6 @@ export type ComponentEntityToken =
   | "cx_agent_task"
   | "cx_code_edit"
   | "cx_code_message_file"
-  | "cx_conversation_documents"
   | "cx_media"
   | "cx_observational_memory"
   | "cx_observational_memory_event"
@@ -881,9 +876,7 @@ export type ScopeableEntityToken =
   | "seo_topic"
   | "seo_web_analytics_daily"
   | "shared_canvas_item"
-  | "shortcut_category"
   | "skill"
-  | "skill_category"
   | "skill_render_definition"
   | "sms_consent"
   | "sms_conversation"
@@ -1119,7 +1112,6 @@ export const ENTITY_TYPE_METADATA = {
   "cx_agent_task": { token: "cx_agent_task", schema: "chat", table: "agent_task", label: "Agent Task", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: false, category: "Conversations", referencePickable: false, titleColumn: "title", contentRole: null, referenceCategory: null },
   "cx_code_edit": { token: "cx_code_edit", schema: "chat", table: "code_edit", label: "Code Edit", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: false, category: "Conversations", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "cx_code_message_file": { token: "cx_code_message_file", schema: "chat", table: "code_message_file", label: "Code Message File", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: false, category: "Conversations", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
-  "cx_conversation_documents": { token: "cx_conversation_documents", schema: "graveyard", table: "conversation_documents", label: "Conversation Documents", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: false, category: "Conversations", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "cx_media": { token: "cx_media", schema: "chat", table: "media", label: "Media", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: false, category: "Conversations", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "cx_observational_memory": { token: "cx_observational_memory", schema: "chat", table: "observational_memory", label: "Observational Memory", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: false, category: "Conversations", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "cx_observational_memory_event": { token: "cx_observational_memory_event", schema: "chat", table: "observational_memory_event", label: "Observational Memory Event", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: false, category: "Conversations", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1273,11 +1265,8 @@ export const ENTITY_TYPE_METADATA = {
   "seo_site_topic_value": { token: "seo_site_topic_value", schema: "seo", table: "site_topic_value", label: "Site Topic Value", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "seo", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_topic": { token: "seo_topic", schema: "seo", table: "topic", label: "SEO Topic", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "seo", referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "seo_web_analytics_daily": { token: "seo_web_analytics_daily", schema: "seo", table: "web_analytics_daily", label: "Web Analytics Daily", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
-  "share_link": { token: "share_link", schema: "graveyard", table: "files_share_links", label: "Share Link", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: false, category: "System", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "shared_canvas_item": { token: "shared_canvas_item", schema: "canvas", table: "shared_canvas_items", label: "Shared Canvas Item", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "title", contentRole: null, referenceCategory: null },
-  "shortcut_category": { token: "shortcut_category", schema: "graveyard", table: "shortcut_categories_legacy", label: "Shortcut Category", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "skill": { token: "skill", schema: "skill", table: "definition", label: "Skill", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "Skills", referencePickable: true, titleColumn: "label", contentRole: "utility", referenceCategory: null },
-  "skill_category": { token: "skill_category", schema: "graveyard", table: "skill_category_legacy", label: "Skill Category", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "Skills", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "skill_render_definition": { token: "skill_render_definition", schema: "skill", table: "render_definition", label: "Skill Render Definition", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "Skills", referencePickable: true, titleColumn: "label", contentRole: null, referenceCategory: null },
   "sms_consent": { token: "sms_consent", schema: "communication", table: "sms_consent", label: "SMS Consent", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "sms_conversation": { token: "sms_conversation", schema: "communication", table: "sms_conversations", label: "SMS Conversation", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1478,7 +1467,6 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "cx_agent_task",
   "cx_code_edit",
   "cx_code_message_file",
-  "cx_conversation_documents",
   "cx_media",
   "cx_observational_memory",
   "cx_observational_memory_event",
@@ -1632,11 +1620,8 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "seo_site_topic_value",
   "seo_topic",
   "seo_web_analytics_daily",
-  "share_link",
   "shared_canvas_item",
-  "shortcut_category",
   "skill",
-  "skill_category",
   "skill_render_definition",
   "sms_consent",
   "sms_conversation",
