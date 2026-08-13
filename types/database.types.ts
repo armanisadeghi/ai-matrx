@@ -769,7 +769,6 @@ export type Database = {
           created_by: string | null
           deleted_at: string | null
           id: string
-          is_public: boolean | null
           label: string | null
           metadata: Json
           organization_id: string
@@ -777,7 +776,6 @@ export type Database = {
           tags: string[] | null
           updated_at: string
           updated_by: string | null
-          user_id: string | null
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
         }
@@ -787,7 +785,6 @@ export type Database = {
           created_by?: string | null
           deleted_at?: string | null
           id?: string
-          is_public?: boolean | null
           label?: string | null
           metadata?: Json
           organization_id: string
@@ -795,7 +792,6 @@ export type Database = {
           tags?: string[] | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -805,7 +801,6 @@ export type Database = {
           created_by?: string | null
           deleted_at?: string | null
           id?: string
-          is_public?: boolean | null
           label?: string | null
           metadata?: Json
           organization_id?: string
@@ -813,7 +808,6 @@ export type Database = {
           tags?: string[] | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -2892,7 +2886,6 @@ export type Database = {
           favicon_url: string | null
           id: string
           is_featured: boolean | null
-          is_public: boolean
           is_verified: boolean | null
           last_execution_at: string | null
           layout_config: Json | null
@@ -2926,7 +2919,6 @@ export type Database = {
           updated_at: string
           updated_by: string | null
           use_latest: boolean
-          user_id: string | null
           variable_schema: Json | null
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
@@ -2947,7 +2939,6 @@ export type Database = {
           favicon_url?: string | null
           id?: string
           is_featured?: boolean | null
-          is_public?: boolean
           is_verified?: boolean | null
           last_execution_at?: string | null
           layout_config?: Json | null
@@ -2981,7 +2972,6 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           use_latest?: boolean
-          user_id?: string | null
           variable_schema?: Json | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
@@ -3002,7 +2992,6 @@ export type Database = {
           favicon_url?: string | null
           id?: string
           is_featured?: boolean | null
-          is_public?: boolean
           is_verified?: boolean | null
           last_execution_at?: string | null
           layout_config?: Json | null
@@ -3036,7 +3025,6 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           use_latest?: boolean
-          user_id?: string | null
           variable_schema?: Json | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
