@@ -1,6 +1,6 @@
 {
   "name": "app-matrx",
-  "version": "0.4.553",
+  "version": "0.4.554",
   "private": true,
   "scripts": {
     "dev": "bash scripts/dev-cleanup.sh reap && NODE_OPTIONS='--dns-result-order=ipv4first' next dev",
@@ -173,7 +173,7 @@
     "dev:nuke": "bash scripts/dev-cleanup.sh all",
     "preview:start": "bash scripts/agent-dev-server.sh start",
     "preview:stop": "bash scripts/agent-dev-server.sh stop",
-    "preview:status": "bash scripts/dev-cleanup.sh status",
+    "preview:status": "bash scripts/agent-dev-server.sh status",
     "fix:tsconfig": "tsx scripts/check-tsconfig-hygiene.ts --fix",
     "lab:graph": "tsx scripts/build-lab/graph-report.ts",
     "lab:run": "bash scripts/build-lab/run.sh"
