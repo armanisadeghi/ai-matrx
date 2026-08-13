@@ -6,27 +6,26 @@ import { Cross2Icon } from "@radix-ui/react-icons";
 import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/utils";
-import { useIsMounted } from "@/hooks/use-is-mounted";
 import { treeContainsComponent } from "@/lib/react/treeContainsComponent";
 import { RadixDialogModalProvider } from "@/components/ui/radix-dialog-modal-context";
 import { DialogContentPrimitive } from "@/components/ui/dialog";
 
 /**
- * Hydration-safe Sheet wrapper.
- * Radix UI generates dynamic IDs for aria-controls that can differ between
- * SSR and client, causing hydration mismatches. This wrapper defers rendering
- * until after hydration to prevent these errors.
+ * THE ROOT RENDERS UNCONDITIONALLY — no mount gate. This wrapper used to defer
+ * rendering until after hydration ("Radix generates dynamic aria-controls ids
+ * that differ between SSR and client"), and that justification was false:
+ * Radix ids come from React's SSR-stable `useId` (verified against
+ * @radix-ui/react-dialog 1.1.17 / react-id 1.1.2). The gate was actively
+ * harmful — the Trigger wraps ALWAYS-VISIBLE content, so `return null`
+ * deleted it from SSR and the first client paint. See
+ * components/ui/context-menu/context-menu.tsx (the precedent fix, D144).
+ * The RadixDialogModalProvider wrapper stays — it is unrelated to hydration.
  */
 const Sheet = React.forwardRef<
   React.ComponentRef<typeof SheetPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof SheetPrimitive.Root>
 >(({ children, ...props }, ref) => {
-  const isMounted = useIsMounted();
   const modal = props.modal ?? true;
-
-  if (!isMounted) {
-    return null;
-  }
 
   return (
     <RadixDialogModalProvider modal={modal}>
