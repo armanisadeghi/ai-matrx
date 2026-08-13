@@ -82,8 +82,12 @@ function shortUrl(value: string): string {
 
 function markdownLink(label: string, href: string): string {
   const safeLabel = label.replaceAll("[", "\\[").replaceAll("]", "\\]");
-  const safeHref = href.replaceAll("<", "%3C").replaceAll(">", "%3E");
-  return `[${safeLabel}](<${safeHref}>)`;
+  const safeHref = encodeURI(href)
+    .replaceAll("(", "%28")
+    .replaceAll(")", "%29")
+    .replaceAll("<", "%3C")
+    .replaceAll(">", "%3E");
+  return `[${safeLabel}](${safeHref})`;
 }
 
 function plural(count: number, singular: string, pluralForm = `${singular}s`) {

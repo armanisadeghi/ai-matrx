@@ -218,6 +218,8 @@ describe("buildBacklinksAssistCandidates", () => {
     expect(found.title).toContain("7 broken backlink destinations");
     expect(found.body).toContain("HTTP 404");
     expect(found.body).toContain("will not change the site");
+    expect(found.body).toContain("[example.com](/marketing/sites/site-1)");
+    expect(found.body).not.toContain("](<");
   });
 
   test("emits anchor risk only for critical deterministic warnings", () => {
