@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 351 active entity tokens. A token here is FK-valid for
+// 347 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -60,7 +60,6 @@ export type EntityTypeToken =
   | "agent_surface_binding"
   | "agent_template"
   | "agent_usage"
-  | "agent_user_kv"
   | "ai_api"
   | "ai_endpoint"
   | "ai_model"
@@ -102,7 +101,6 @@ export type EntityTypeToken =
   | "coding_session_entry"
   | "comment"
   | "comparison_set"
-  | "component_group"
   | "contact_medium"
   | "contact_submission"
   | "content_ir_kind"
@@ -149,7 +147,6 @@ export type EntityTypeToken =
   | "fc_detail"
   | "fc_set"
   | "feature_doc"
-  | "field_component"
   | "file"
   | "file_analysis"
   | "file_entities"
@@ -219,7 +216,6 @@ export type EntityTypeToken =
   | "processed_document"
   | "processed_document_page"
   | "project"
-  | "prompt"
   | "quiz_session"
   | "redaction_mapping"
   | "research_analysis"
@@ -504,7 +500,6 @@ export type ComponentEntityToken =
   | "canvas_item_state"
   | "cmp_entry"
   | "coding_session_entry"
-  | "component_group"
   | "content_ir_kind_component"
   | "content_ir_kind_component_incident"
   | "content_ir_kind_edge"
@@ -532,7 +527,6 @@ export type ComponentEntityToken =
   | "dm_message"
   | "dm_participant"
   | "fc_detail"
-  | "field_component"
   | "file_analysis"
   | "file_entities"
   | "file_overrides"
@@ -668,7 +662,6 @@ export type ScopeableEntityToken =
   | "agent_surface_binding"
   | "agent_template"
   | "agent_usage"
-  | "agent_user_kv"
   | "ai_api"
   | "ai_endpoint"
   | "ai_model"
@@ -710,7 +703,6 @@ export type ScopeableEntityToken =
   | "coding_session_entry"
   | "comment"
   | "comparison_set"
-  | "component_group"
   | "contact_medium"
   | "contact_submission"
   | "content_ir_kind"
@@ -742,7 +734,6 @@ export type ScopeableEntityToken =
   | "fc_detail"
   | "fc_set"
   | "feature_doc"
-  | "field_component"
   | "file"
   | "file_analysis"
   | "file_entities"
@@ -811,7 +802,6 @@ export type ScopeableEntityToken =
   | "processed_document"
   | "processed_document_page"
   | "project"
-  | "prompt"
   | "quiz_session"
   | "redaction_mapping"
   | "research_analysis"
@@ -1042,7 +1032,6 @@ export const ENTITY_TYPE_METADATA = {
   "agent_surface_binding": { token: "agent_surface_binding", schema: "platform", table: "associations", label: "Agent Surface Binding", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "Agents", referencePickable: true, titleColumn: "label", contentRole: null, referenceCategory: null },
   "agent_template": { token: "agent_template", schema: "agent", table: "template", label: "Agent Template", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "Agents", referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "agent_usage": { token: "agent_usage", schema: "agent", table: "usage", label: "Agent Usage", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "Agents", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
-  "agent_user_kv": { token: "agent_user_kv", schema: "public", table: "agent_user_kv", label: "Agent User KV", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "ai_api": { token: "ai_api", schema: "ai", table: "api", label: "AI API", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "ai_endpoint": { token: "ai_endpoint", schema: "ai", table: "endpoint", label: "AI Endpoint", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "display_name", contentRole: null, referenceCategory: null },
   "ai_model": { token: "ai_model", schema: "ai", table: "model_definition", label: "AI Model", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
@@ -1084,7 +1073,6 @@ export const ENTITY_TYPE_METADATA = {
   "coding_session_entry": { token: "coding_session_entry", schema: "chat", table: "coding_session_entry", label: "Coding Session Entry", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "comment": { token: "comment", schema: "platform", table: "comments", label: "Comment", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "comparison_set": { token: "comparison_set", schema: "agent", table: "cmp_comparison_sets", label: "Comparison Set", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
-  "component_group": { token: "component_group", schema: "public", table: "component_groups", label: "Component Group", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "contact_medium": { token: "contact_medium", schema: "crm", table: "contact_medium", label: "Contact Medium", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "display_value", contentRole: "utility", referenceCategory: null },
   "contact_submission": { token: "contact_submission", schema: "public", table: "contact_submissions", label: "Contact Submission", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "content_ir_kind": { token: "content_ir_kind", schema: "content_ir", table: "kind_definition", label: "Content-IR Kind", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "label", contentRole: null, referenceCategory: null },
@@ -1131,7 +1119,6 @@ export const ENTITY_TYPE_METADATA = {
   "fc_detail": { token: "fc_detail", schema: "education", table: "fc_detail", label: "Flashcard Detail", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "fc_set": { token: "fc_set", schema: "education", table: "fc_set", label: "Flashcard Set", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "feature_doc": { token: "feature_doc", schema: "admin", table: "feature_docs", label: "Feature Doc", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "documentation", referencePickable: true, titleColumn: "title", contentRole: null, referenceCategory: null },
-  "field_component": { token: "field_component", schema: "public", table: "field_components", label: "Field Component", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "file": { token: "file", schema: "files", table: "files", label: "File", baseTier: 1, isComponent: false, isModule: true, isListed: false, scopeable: true, category: "Sources", referencePickable: true, titleColumn: "file_name", contentRole: "source", referenceCategory: null },
   "file_analysis": { token: "file_analysis", schema: "files", table: "analysis", label: "File Analysis", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "file_entities": { token: "file_entities", schema: "files", table: "entities", label: "Extracted Term", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "label", contentRole: null, referenceCategory: null },
@@ -1201,7 +1188,6 @@ export const ENTITY_TYPE_METADATA = {
   "processed_document": { token: "processed_document", schema: "docproc", table: "processed_documents", label: "Processed document", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: "source", referenceCategory: null },
   "processed_document_page": { token: "processed_document_page", schema: "docproc", table: "processed_document_pages", label: "Processed document page", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "project": { token: "project", schema: "workspace", table: "projects", label: "Project", baseTier: 1, isComponent: false, isModule: true, isListed: false, scopeable: true, category: "Workspaces", referencePickable: true, titleColumn: "name", contentRole: "container", referenceCategory: null },
-  "prompt": { token: "prompt", schema: "public", table: "prompts", label: "Prompt", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "quiz_session": { token: "quiz_session", schema: "education", table: "quiz_sessions", label: "Quiz Session", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "title", contentRole: "destination", referenceCategory: null },
   "redaction_mapping": { token: "redaction_mapping", schema: "pdf", table: "redaction_mapping", label: "Redaction Mapping", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "research_analysis": { token: "research_analysis", schema: "research", table: "rs_analysis", label: "Research Analysis", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1397,7 +1383,6 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "agent_surface_binding",
   "agent_template",
   "agent_usage",
-  "agent_user_kv",
   "ai_api",
   "ai_endpoint",
   "ai_model",
@@ -1439,7 +1424,6 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "coding_session_entry",
   "comment",
   "comparison_set",
-  "component_group",
   "contact_medium",
   "contact_submission",
   "content_ir_kind",
@@ -1486,7 +1470,6 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "fc_detail",
   "fc_set",
   "feature_doc",
-  "field_component",
   "file",
   "file_analysis",
   "file_entities",
@@ -1556,7 +1539,6 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "processed_document",
   "processed_document_page",
   "project",
-  "prompt",
   "quiz_session",
   "redaction_mapping",
   "research_analysis",
