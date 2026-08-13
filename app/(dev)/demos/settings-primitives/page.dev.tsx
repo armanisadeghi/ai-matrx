@@ -37,6 +37,7 @@ import { SettingsSubHeader } from "@/components/official/settings/layout/Setting
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
 import { SettingsGrid } from "@/components/official/settings/layout/SettingsGrid";
 import { SettingsReadOnlyValue } from "@/components/official/settings/layout/SettingsReadOnlyValue";
+import { toast } from "@/lib/toast";
 
 export default function SettingsPrimitivesDemoPage() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
@@ -339,7 +340,7 @@ export default function SettingsPrimitivesDemoPage() {
             description="Restore every preference to its default value."
             actionLabel="Reset to defaults"
             kind="outline"
-            onClick={() => alert("Would reset…")}
+            onClick={() => toast.info("Would reset…")}
           />
           <SettingsButton
             label="Clear local cache"
@@ -347,14 +348,14 @@ export default function SettingsPrimitivesDemoPage() {
             actionLabel="Clear cache"
             kind="default"
             actionIcon={Zap}
-            onClick={() => alert("Would clear…")}
+            onClick={() => toast.info("Would clear…")}
           />
           <SettingsButton
             label="Delete account"
             description="Permanent — no undo."
             actionLabel="Delete account"
             kind="destructive"
-            onClick={() => alert("Would delete…")}
+            onClick={() => toast.info("Would delete…")}
           />
           <SettingsLink
             label="Open documentation"

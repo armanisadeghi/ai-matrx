@@ -7,6 +7,7 @@ import { brokerActions } from "@/lib/redux/brokerSlice/slice";
 import { useServerBrokerSync } from "@/lib/redux/brokerSlice/hooks/useTempBroker";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { SLACK_BROKER_IDS } from "./BrokerSlackClient";
+import { toast } from "@/lib/toast";
 
 
 interface BrokerFormConfig {
@@ -148,7 +149,7 @@ export function BrokerFormExample() {
                 ]}
                 onSubmit={async (values) => {
                     console.log("Form submitted with broker values", values);
-                    alert("Message submitted! Check console for values.");
+                    toast.success("Message submitted! Check console for values.");
                 }}
             />
         </div>

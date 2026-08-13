@@ -40,6 +40,9 @@
 
 ## Change log
 
+- 2026-08-12 — Added canonical row/view/window/field Copy, JSON, export, and
+  Copy-for-AI controls to Claims, Sources, Signals, and History through
+  `MatrxDataTable.copy`.
 - 2026-08-12 — Made public rendering fail closed for empty/all-failed provider
   payloads so authorization failures cannot appear as zero-result reports.
 - 2026-08-12 — Replaced the public run's append-only Content IR status transcript

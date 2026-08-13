@@ -68,6 +68,9 @@ schema. There is no Python database proxy. The canonical records are:
 
 ## Change log
 
+- 2026-08-12 — Added canonical row/view/window/field Copy, JSON, export, and
+  Copy-for-AI controls to the untracked-change recovery queue through
+  `MatrxDataTable.copy`.
 - 2026-08-11 — Added the theory-backed site ledger, structured four-stage composer,
   implementation verification, GSC/GA4 evidence evaluation, immutable assessments,
   event timeline, row-to-WindowPanel detail, canonical entity doors, and untracked

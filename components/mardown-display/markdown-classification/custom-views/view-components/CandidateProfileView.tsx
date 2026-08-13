@@ -206,9 +206,9 @@ export const CandidateProfileSkeleton = () => {
       {/* Header Skeleton */}
       <div className="px-8 py-10 bg-gradient-to-r from-indigo-400/30 via-purple-400/30 to-pink-400/30">
         {/* Name skeleton */}
-        <div className="h-9 w-64 bg-white/20 rounded-lg animate-pulse"></div>
+        <div className="h-9 w-64 bg-foreground/20 rounded-lg animate-pulse"></div>
         {/* Intro skeleton */}
-        <div className="mt-4 h-6 w-full max-w-md bg-white/10 rounded-md animate-pulse"></div>
+        <div className="mt-4 h-6 w-full max-w-md bg-foreground/10 rounded-md animate-pulse"></div>
       </div>
       
       {/* Content Container */}

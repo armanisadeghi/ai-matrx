@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ExternalLink, ArrowUpDown, ArrowUp, ArrowDown, Copy, Filter } from "lucide-react";
 import type { SearchAnalyticsResponse, Dimension, SearchAnalyticsRow } from "../types";
+import { toast } from "@/lib/toast";
 
 interface DataTableProps {
     data: SearchAnalyticsResponse | null;
@@ -143,7 +144,7 @@ export function DataTable({ data, dimension, title }: DataTableProps) {
         // Note: Full filter implementation would need the property URL and proper encoding
         // For now, just copy the value for the user to manually filter
         handleCopy(value);
-        alert(`Value copied! You can manually filter by "${value}" in Google Search Console.`);
+        toast.success(`Value copied! You can manually filter by "${value}" in Google Search Console.`);
     };
 
     return (
@@ -326,4 +327,3 @@ export function DataTable({ data, dimension, title }: DataTableProps) {
         </Card>
     );
 }
-
