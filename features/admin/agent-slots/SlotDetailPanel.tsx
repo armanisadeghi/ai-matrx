@@ -931,7 +931,11 @@ export function SlotDetail({
       : "Current binding";
 
   return (
-    <div className="space-y-3 p-3">
+    // SidePanelSurface (and the WindowPanel body) hand children an
+    // overflow-hidden flex cell and expect the child to own its scroll —
+    // without this wrapper the drawer simply cut off at the fold, which is
+    // exactly the defect the 2026-08-12 rebuild was ordered over.
+    <div className="h-full min-h-0 space-y-3 overflow-y-auto p-3">
       {row.slot.description && (
         <p className="text-xs text-muted-foreground">{row.slot.description}</p>
       )}
