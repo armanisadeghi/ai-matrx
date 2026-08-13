@@ -5,6 +5,11 @@
 // The list-first home for the Memory Tools (VISION §11). Lists every memory-aid
 // set the user owns or can see (RLS-filtered, recent-first) with a New button.
 // Mirrors MindMapHome. React Compiler is on: no manual memo.
+//
+// Emits the `list` view of the `matrx-user/education-memory` surface. The route
+// has been mapped to that surface since the tool shipped, but nothing mounted a
+// runtime — so agents run from the Agents popover here launched with an empty
+// application scope. See education-memory.manifest.ts.
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -12,13 +17,39 @@ import Link from "next/link";
 import { Brain, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  createEducationMemoryScope,
+  type MemoryLibraryEntry,
+} from "@/features/surfaces/manifests/education-memory.manifest";
 import { studyMediaService } from "@/features/education/media/service";
 import type { StudyMediaRow } from "@/features/education/media/types";
+
+const SURFACE_NAME = "matrx-user/education-memory";
 
 export function MemoryHome() {
   const router = useRouter();
   const [rows, setRows] = useState<StudyMediaRow[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Read at trigger time, never from stale closure state.
+  const buildScope = () =>
+    createEducationMemoryScope({
+      view: "list",
+      library_loaded: !loading,
+      ...(loading
+        ? {}
+        : {
+            aid_count: rows.length,
+            aid_library: rows.map(
+              (r): MemoryLibraryEntry => ({
+                id: r.id,
+                title: r.title,
+                source_title: r.source_title,
+              }),
+            ),
+          }),
+    });
 
   useEffect(() => {
     let active = true;
@@ -33,6 +64,7 @@ export function MemoryHome() {
   }, []);
 
   return (
+    <SurfaceRuntimeProvider surfaceName={SURFACE_NAME} getScope={buildScope}>
     <div className="mx-auto w-full max-w-3xl space-y-5 p-4">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
@@ -76,7 +108,7 @@ export function MemoryHome() {
           </Button>
         </div>
       ) : (
-        <ul className="space-y-2">
+        <ul className="space-y-2" data-surface-value="aid_library">
           {rows.map((row) => (
             <li key={row.id}>
               {/* A record with its own page — an anchor, not a <button>.
@@ -103,5 +135,6 @@ export function MemoryHome() {
         </ul>
       )}
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

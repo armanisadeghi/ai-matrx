@@ -27,10 +27,17 @@ import {
   resolveTopicAudioSource,
 } from "@/features/education/media/audio/resolveAudioSource";
 import { studyMediaService } from "@/features/education/media/service";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  createEducationMemoryScope,
+  type MemoryDeckOption,
+} from "@/features/surfaces/manifests/education-memory.manifest";
 import { useGenerateMemoryAid } from "../useGenerateMemoryAid";
 import { memoryAidCounts } from "../types";
 
 type SourceKind = "deck" | "topic";
+
+const SURFACE_NAME = "matrx-user/education-memory";
 
 export function MemoryNew() {
   const router = useRouter();
@@ -115,7 +122,40 @@ export function MemoryNew() {
     });
   }
 
+  // Read at trigger time, never from stale closure state. The composer is
+  // READ-ONLY to agents: this surface declares no write targets, because topic
+  // and focus are one composite request consumed by a metered Generate button
+  // that stays human-pressed. An agent here advises on what to ask for.
+  const buildScope = () => {
+    const trimmedTopic = topic.trim();
+    const trimmedFocus = focus.trim();
+    const deckTitle = decks.find((d) => d.id === deckId)?.name ?? null;
+    return createEducationMemoryScope({
+      view: "new",
+      request_source_kind: sourceKind,
+      ...(sourceKind === "deck" && deckId ? { request_deck_id: deckId } : {}),
+      ...(sourceKind === "deck" && deckTitle
+        ? { request_deck_title: deckTitle }
+        : {}),
+      ...(sourceKind === "topic" && trimmedTopic
+        ? { request_topic: trimmedTopic }
+        : {}),
+      ...(trimmedFocus ? { request_focus: trimmedFocus } : {}),
+      generation_request: {
+        source_kind: sourceKind,
+        deck_id: sourceKind === "deck" ? deckId || null : null,
+        deck_title: sourceKind === "deck" ? deckTitle : null,
+        topic: sourceKind === "topic" ? trimmedTopic || null : null,
+        focus: trimmedFocus || null,
+      },
+      available_decks: decks.map(
+        (d): MemoryDeckOption => ({ id: d.id, name: d.name }),
+      ),
+    });
+  };
+
   return (
+    <SurfaceRuntimeProvider surfaceName={SURFACE_NAME} getScope={buildScope}>
     <div className="mx-auto w-full max-w-2xl space-y-6 p-4">
       <div className="flex items-center gap-3">
         <Button
@@ -151,6 +191,7 @@ export function MemoryNew() {
           <select
             value={deckId}
             onChange={(e) => setDeckId(e.target.value)}
+            data-surface-value="request_deck_id"
             className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground"
           >
             <option value="">Select a deck…</option>
@@ -165,6 +206,7 @@ export function MemoryNew() {
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             placeholder="e.g. The cranial nerves"
+            data-surface-value="request_topic"
             className="min-h-20 text-base"
           />
         )}
@@ -179,6 +221,7 @@ export function MemoryNew() {
           value={focus}
           onChange={(e) => setFocus(e.target.value)}
           placeholder="Concentrate on a specific list, term set, or concept…"
+          data-surface-value="request_focus"
           className="text-base"
         />
       </section>
@@ -204,6 +247,7 @@ export function MemoryNew() {
       <gen.Paywall />
       <coppa.Gate />
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 
