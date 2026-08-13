@@ -423,6 +423,8 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const transcriptStudioManifest: SurfaceManifest = {
   surfaceName: "matrx-user/transcript-studio",
   readiness: "verified",
+  readinessNote:
+    "Re-verified 2026-08-12 after the `SurfaceAgentsPanelImpl` overlay fix. REACHABILITY is fixed and confirmed: with the studio window open over a mapped route (/dashboard) the header popover now names Transcript Studio and runs against ITS scope — reverting that one line puts `matrx-user/dashboard` back — and both targets are injected, with the ask dialog carrying this manifest's prose verbatim. WRITES COULD NOT BE EXERCISED END TO END, and the blocker is NOT this surface's contract: the studio cannot load ANY session, because `features/transcript-studio/service/studioService.ts` (and `transcriptBridge.ts`) filter `studio_sessions` on `is_deleted` / `user_id`, while the live `transcripts.studio_sessions` table has `deleted_at` / `created_by` and no such columns — PostgREST answers 42703 `column studio_sessions.is_deleted does not exist`, so the session list is empty and the window offers only \"Start a new session\". Both targets address a row by an `id` taken from `concept_items` / `cleaned_segments`, so with no session open there is nothing to address: `concept_item` correctly refuses with `No session is open — select or start a transcription session before editing its concepts.` The targets are sound and guarded; they are simply unusable until that schema drift is repaired.",
   overlayId: "transcriptStudioWindow",
   urlPattern: "/transcripts/studio",
   label: "Transcript Studio",
