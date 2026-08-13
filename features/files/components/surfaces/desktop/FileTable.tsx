@@ -62,6 +62,7 @@ import {
 } from "@/features/files/utils/file-types";
 import { ShareLinkDialog } from "@/features/files/components/core/ShareLinkDialog/ShareLinkDialog";
 import { useInfiniteWindow } from "@/features/files/hooks/useInfiniteWindow";
+import { useFilesSurfaceClientTools } from "../useFilesSurfaceClientTools";
 import type { CloudFilesSection } from "./section";
 import {
   buildRows,
@@ -171,6 +172,13 @@ export function FileTable({
       sortDir,
     ],
   );
+
+  // Surface client tools (`matrx-user/files`). Registered HERE, not on
+  // PageShell's provider, because `rows` above is the only place the exactly-
+  // rendered set exists — see useFilesSurfaceClientTools for why that is what
+  // stops a reveal from returning ok while the page does not move. FileGrid
+  // registers the same tools; the two never mount together.
+  useFilesSurfaceClientTools({ rows, viewLabel: "list" });
 
   // Owner options for the Owner column dropdown. Computed from the input
   // (unfiltered by other columns) so users always see every owner they
