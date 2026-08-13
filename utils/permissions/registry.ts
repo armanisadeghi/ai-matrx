@@ -773,10 +773,10 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     schemaName: "content_ir",
     idColumn: "id",
     ownerColumn: "created_by",
-    // NOTE: the DB row declares 'visibility' (the canonical enum) in the
-    // boolean is_public_column slot — mirrored verbatim for parity; flagged in
-    // FOUND_DEFECTS (it routes ShareModal through make_resource_public).
-    isPublicColumn: "visibility",
+    // D117 fixed 2026-08-13: the DB row briefly declared 'visibility' (the
+    // canonical enum) in the boolean is_public_column slot, which routed
+    // ShareModal through make_resource_public. Now NULL in DB and here.
+    isPublicColumn: null,
     // What a HUMAN calls it in the share dialog / access gate. "Kind Instance"
     // was developer jargon in a non-technical user's face (2026-08-13).
     displayLabel: "Saved Result",

@@ -103,7 +103,7 @@
     "table_name": "kind_instance",
     "id_column": "id",
     "owner_column": "created_by",
-    "is_public_column": "visibility",
+    "is_public_column": null,
     "display_label": "Saved Result",
     "url_path_template": "/shapes/instances/{id}",
     "rls_uses_has_permission": true,
@@ -735,17 +735,6 @@
     "url_path_template": "/marketing/snapshots/{id}",
     "rls_uses_has_permission": true,
     "is_active": true
-  },
-  {
-    "resource_type": "wf_definition",
-    "table_name": "wf_definition",
-    "id_column": "id",
-    "owner_column": "user_id",
-    "is_public_column": null,
-    "display_label": "Workflow",
-    "url_path_template": "/workflows/{id}",
-    "rls_uses_has_permission": false,
-    "is_active": false
   },
   {
     "resource_type": "wf_node_data_slot",
