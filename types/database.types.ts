@@ -3606,8 +3606,10 @@ export type Database = {
           lineno: number | null
           message: string | null
           schema_name: string | null
+          severity: string | null
           signature: string | null
           sqlstate: string | null
+          suppression_reason: string | null
         }
         Insert: {
           context?: string | null
@@ -3616,8 +3618,10 @@ export type Database = {
           lineno?: number | null
           message?: string | null
           schema_name?: string | null
+          severity?: string | null
           signature?: string | null
           sqlstate?: string | null
+          suppression_reason?: string | null
         }
         Update: {
           context?: string | null
@@ -3626,8 +3630,10 @@ export type Database = {
           lineno?: number | null
           message?: string | null
           schema_name?: string | null
+          severity?: string | null
           signature?: string | null
           sqlstate?: string | null
+          suppression_reason?: string | null
         }
         Relationships: []
       }
@@ -3745,6 +3751,12 @@ export type Database = {
       refresh_log: {
         Row: {
           broken_fn: number | null
+          broken_fn_advisory: number | null
+          broken_fn_real: number | null
+          broken_fn_rows: number | null
+          broken_fn_style: number | null
+          broken_fn_suppressed: number | null
+          broken_fn_unchecked: number | null
           ext_fail: number | null
           ext_warn: number | null
           gate_fail: number | null
@@ -3752,11 +3764,18 @@ export type Database = {
           m2m: number | null
           note: string | null
           run_at: string | null
+          runtime_fail: number | null
           stale: number | null
           unregistered: number | null
         }
         Insert: {
           broken_fn?: number | null
+          broken_fn_advisory?: number | null
+          broken_fn_real?: number | null
+          broken_fn_rows?: number | null
+          broken_fn_style?: number | null
+          broken_fn_suppressed?: number | null
+          broken_fn_unchecked?: number | null
           ext_fail?: number | null
           ext_warn?: number | null
           gate_fail?: number | null
@@ -3764,11 +3783,18 @@ export type Database = {
           m2m?: number | null
           note?: string | null
           run_at?: string | null
+          runtime_fail?: number | null
           stale?: number | null
           unregistered?: number | null
         }
         Update: {
           broken_fn?: number | null
+          broken_fn_advisory?: number | null
+          broken_fn_real?: number | null
+          broken_fn_rows?: number | null
+          broken_fn_style?: number | null
+          broken_fn_suppressed?: number | null
+          broken_fn_unchecked?: number | null
           ext_fail?: number | null
           ext_warn?: number | null
           gate_fail?: number | null
@@ -3776,6 +3802,7 @@ export type Database = {
           m2m?: number | null
           note?: string | null
           run_at?: string | null
+          runtime_fail?: number | null
           stale?: number | null
           unregistered?: number | null
         }
@@ -3840,8 +3867,25 @@ export type Database = {
       }
     }
     Functions: {
+      classify_broken_function: {
+        Args: {
+          p_func_oid: unknown
+          p_level: string
+          p_message: string
+          p_sqlstate: string
+        }
+        Returns: {
+          severity: string
+          suppression_reason: string
+        }[]
+      }
+      effective_search_path: {
+        Args: { p_proconfig: string[] }
+        Returns: string
+      }
       is_m2m_shape: { Args: { p_rel: unknown }; Returns: boolean }
       refresh: { Args: never; Returns: string }
+      refresh_log_recount: { Args: never; Returns: undefined }
       refresh_static: { Args: never; Returns: string }
       run_function_runtime_probes: { Args: never; Returns: number }
       table_impact: {

@@ -2855,6 +2855,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/coding-sessions/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Coding Session Identities
+         * @description Owner-scoped provider-session identity list for local reconciliation.
+         *
+         *     Matrx Local uses this to send metadata updates (SessionMetadata) only for
+         *     sessions the bridge already knows, so labels of never-mirrored local
+         *     sessions never leave the machine. Identity + display metadata only; no
+         *     raw entries, no conversation content.
+         */
+        get: operations["list_coding_session_identities_coding_sessions_sessions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/coding-sessions/claude/capabilities": {
         parameters: {
             query?: never;
@@ -11275,7 +11300,7 @@ export interface paths {
         /**
          * Get Node Data Slots
          * @description All persisted data slots for one node (empty list when none exist),
-         *     plus the computed ``best`` pointer (live > test > declared).
+         *     plus the computed ``best`` pointer (newest of live/test, else declared).
          */
         get: operations["get_node_data_slots_workflows__definition_id__nodes__node_id__slots_get"];
         put?: never;
@@ -34280,7 +34305,7 @@ export interface components {
             slots: components["schemas"]["NodeDataSlotPayload"][];
             /**
              * Best
-             * @description The best available sample among the present slots: last_live_output > last_test_output > declared_sample.
+             * @description The best available sample among the present slots: the NEWER of last_live_output / last_test_output by captured_at (live wins a tie or missing timestamp), else declared_sample.
              */
             best?: ("declared_sample" | "last_test_output" | "last_live_output") | null;
         };
@@ -53799,6 +53824,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BridgeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_coding_session_identities_coding_sessions_sessions_get: {
+        parameters: {
+            query?: {
+                provider?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Validation Error */

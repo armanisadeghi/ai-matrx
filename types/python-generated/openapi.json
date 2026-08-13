@@ -6741,6 +6741,64 @@
         }
       }
     },
+    "/coding-sessions/sessions": {
+      "get": {
+        "tags": [
+          "Coding Sessions"
+        ],
+        "summary": "List Coding Session Identities",
+        "description": "Owner-scoped provider-session identity list for local reconciliation.\n\nMatrx Local uses this to send metadata updates (SessionMetadata) only for\nsessions the bridge already knows, so labels of never-mirrored local\nsessions never leave the machine. Identity + display metadata only; no\nraw entries, no conversation content.",
+        "operationId": "list_coding_session_identities_coding_sessions_sessions_get",
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "claude_code",
+              "title": "Provider"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 500,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response List Coding Session Identities Coding Sessions Sessions Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/coding-sessions/claude/capabilities": {
       "get": {
         "tags": [
@@ -30242,7 +30300,7 @@
           "Workflow"
         ],
         "summary": "Get Node Data Slots",
-        "description": "All persisted data slots for one node (empty list when none exist),\nplus the computed ``best`` pointer (live > test > declared).",
+        "description": "All persisted data slots for one node (empty list when none exist),\nplus the computed ``best`` pointer (newest of live/test, else declared).",
         "operationId": "get_node_data_slots_workflows__definition_id__nodes__node_id__slots_get",
         "parameters": [
           {
@@ -91487,7 +91545,7 @@
               }
             ],
             "title": "Best",
-            "description": "The best available sample among the present slots: last_live_output > last_test_output > declared_sample."
+            "description": "The best available sample among the present slots: the NEWER of last_live_output / last_test_output by captured_at (live wins a tie or missing timestamp), else declared_sample."
           }
         },
         "type": "object",
