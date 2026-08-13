@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-08-08`
+**Last updated:** `2026-08-13`
 
 ---
 
@@ -288,6 +288,11 @@ find yourself writing code to add an output, something above is wrong.
 
 ## Change log
 
+- 2026-08-13 — **YouTube publish dates are visible across every research video
+  surface.** The existing batch identity read from `research.youtube_video` now
+  feeds one compact `MM/DD/YY` / `No Date` treatment through the shared
+  `VideoSourceMeta`, repairing source lists, tables, detail, media gallery, and
+  the topic YouTube library without per-card queries or layout growth.
 - 2026-08-13 — **AI topic review restores its missing launch actions.** The
   review canvas requires the canonical `research_topic` destination before it
   renders **Start Research** and **View & Edit First**, but the shared entity

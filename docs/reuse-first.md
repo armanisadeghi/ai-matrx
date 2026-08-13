@@ -190,6 +190,7 @@ this section exists to stop. Campaign: `docs/handoffs/inventory-law-sweep.md`.
 | Upload / normalize / resolve any file                     | `fileHandler`                      | `features/files/handler/handler.ts` — see `features/files/handler/FEATURE.md`        |
 | Render owned media (self-healing URLs)                    | `InlineMediaRef`                   | `features/files/components/inline/InlineMediaRef.tsx`                                |
 | Compact interactive media attachment                      | `MediaAttachmentThumbnail`         | `features/files/components/inline/MediaAttachmentThumbnail.tsx`                      |
+| Compact video publish date (MM/DD/YY or No Date)         | `VideoPublishDate`                 | `features/files/blocks/video/VideoPublishDate.tsx`                                   |
 | `(core)` route header chrome                              | `PageHeader`                       | `features/shell/components/header/PageHeader.tsx`                                    |
 | Route-specific actions in the canonical `(public)` header | `PublicHeaderActionsPortal`        | `components/matrx/PublicHeaderActionsPortal.tsx`                                     |
 | Resizable workbench side/bottom panel                     | `MatrxDynamicPanel`                | `components/matrx/resizable/MatrxDynamicPanel.tsx`                                   |

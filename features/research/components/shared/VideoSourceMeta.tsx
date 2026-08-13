@@ -2,6 +2,7 @@
 
 import { Eye, Loader2, CheckCircle2, AlertTriangle, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { VideoPublishDate } from "@/features/files/blocks/video/VideoPublishDate";
 import {
   formatYouTubeCount,
   formatYouTubeDuration,
@@ -34,6 +35,7 @@ export function VideoSourceMeta({
           {identity.channel_title}
         </span>
       )}
+      <VideoPublishDate publishedAt={identity.published_at} />
       {identity.duration && (
         <span className="font-mono tabular-nums">
           {formatYouTubeDuration(identity.duration)}

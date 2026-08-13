@@ -200,26 +200,36 @@ export function useYouTubeVideoIndex(sources: ResearchSource[]) {
     }
     return [...new Set(ids)].sort();
   }, [sources]);
-  const key = videoIds.join(",");
+  const index = useYouTubeVideoIdentityIndex(videoIds);
 
+  const identityFor = (
+    source: ResearchSource,
+  ): service.YouTubeVideoIdentity | undefined => {
+    if (source.source_type !== "youtube") return undefined;
+    const id = youtubeId(source.url);
+    return id ? index.identityForId(id) : undefined;
+  };
+
+  return { ...index, identityFor };
+}
+
+/**
+ * Batch-load the canonical YouTube identity slice for any video-owning
+ * surface, not only `rs_source` rows. Website inventories and research media
+ * reuse this so publish dates never require per-card reads.
+ */
+export function useYouTubeVideoIdentityIndex(videoIds: string[]) {
+  const uniqueVideoIds = [...new Set(videoIds.filter(Boolean))].sort();
+  const key = uniqueVideoIds.join(",");
   const { data, isLoading, error, refresh } = useServiceQuery<
     Map<string, service.YouTubeVideoIdentity>
   >(
-    () => service.getYouTubeVideoIdentities(videoIds),
+    () => service.getYouTubeVideoIdentities(uniqueVideoIds),
     [key],
-    videoIds.length > 0,
+    uniqueVideoIds.length > 0,
   );
-
-  const identityFor = useCallback(
-    (source: ResearchSource): service.YouTubeVideoIdentity | undefined => {
-      if (source.source_type !== "youtube" || !data) return undefined;
-      const id = youtubeId(source.url);
-      return id ? data.get(id) : undefined;
-    },
-    [data],
-  );
-
-  return { identityFor, isLoading, error, refresh };
+  const identityForId = (videoId: string) => data?.get(videoId);
+  return { identityForId, identities: data, isLoading, error, refresh };
 }
 
 // ============================================================================

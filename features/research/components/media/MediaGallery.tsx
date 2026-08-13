@@ -38,6 +38,8 @@ import {
 import { cn } from "@/lib/utils";
 import { useTopicContext } from "../../context/ResearchContext";
 import { useResearchMedia } from "../../hooks/useResearchState";
+import { useYouTubeVideoIdentityIndex } from "../../hooks/useResearchState";
+import type { YouTubeVideoIdentity } from "../../service";
 import { updateMedia } from "../../service";
 import type { ResearchMedia } from "../../types";
 import { idMatchesQuery } from "@/utils/search-scoring";
@@ -55,6 +57,7 @@ import {
 } from "./mediaEmbed";
 import MediaDebugPanel from "./MediaDebugPanel";
 import { SessionMediaElement } from "@/features/audio/session/SessionMediaElement";
+import { VideoPublishDate } from "@/features/files/blocks/video/VideoPublishDate";
 import { uploadFileWithProgress } from "@/features/files/api/files";
 import {
   parseYouTubeUrl,
@@ -104,6 +107,12 @@ export default function MediaGallery() {
   }, [mediaList, typeFilter, relevanceFilter, search]);
 
   const buckets = useMemo(() => bucketMedia(filtered), [filtered]);
+  const youtubeVideoIds = buckets.videos.flatMap((item) => {
+    const parsed = parseYouTubeUrl(item.url);
+    return parsed ? [parsed.videoId] : [];
+  });
+  const { identityForId: youtubeIdentityForId } =
+    useYouTubeVideoIdentityIndex(youtubeVideoIds);
 
   const handleToggleRelevance = useCallback(
     async (item: ResearchMedia) => {
@@ -239,6 +248,7 @@ export default function MediaGallery() {
             <VideoSection
               items={buckets.videos}
               onToggleRelevance={handleToggleRelevance}
+              identityForId={youtubeIdentityForId}
             />
           )}
           {buckets.audio.length > 0 && (
@@ -765,11 +775,13 @@ function YouTubeVideoCard({
   item,
   videoId,
   start,
+  identity,
   onToggleRelevance,
 }: {
   item: ResearchMedia;
   videoId: string;
   start?: number;
+  identity?: YouTubeVideoIdentity;
   onToggleRelevance: (item: ResearchMedia) => void;
 }) {
   const label =
@@ -790,6 +802,10 @@ function YouTubeVideoCard({
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
           loading="lazy"
+        />
+        <VideoPublishDate
+          publishedAt={identity?.published_at}
+          className="pointer-events-none absolute bottom-1.5 left-1.5 z-10 rounded bg-black/75 px-1 py-0.5 text-white shadow-sm"
         />
       </div>
       <div className="p-1.5 flex items-center justify-between gap-1">
@@ -932,9 +948,11 @@ function YouTubeChannelsSection({ items, onToggleRelevance }: SectionProps) {
  * until the user hits play, so we never load N iframes at once. */
 function VideoCard({
   item,
+  videoIdentity,
   onToggleRelevance,
 }: {
   item: ResearchMedia;
+  videoIdentity?: YouTubeVideoIdentity;
   onToggleRelevance: (item: ResearchMedia) => void;
 }) {
   const [playing, setPlaying] = useState(false);
@@ -947,6 +965,7 @@ function VideoCard({
         item={item}
         videoId={yt.videoId}
         start={yt.start}
+        identity={videoIdentity}
         onToggleRelevance={onToggleRelevance}
       />
     );
@@ -1047,7 +1066,13 @@ function VideoCard({
   );
 }
 
-function VideoSection({ items, onToggleRelevance }: SectionProps) {
+function VideoSection({
+  items,
+  onToggleRelevance,
+  identityForId,
+}: SectionProps & {
+  identityForId: (videoId: string) => YouTubeVideoIdentity | undefined;
+}) {
   return (
     <section className="space-y-2">
       <SectionHeader
@@ -1057,13 +1082,17 @@ function VideoSection({ items, onToggleRelevance }: SectionProps) {
         description="Embeddable videos play inline via iframe"
       />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-        {items.map((item) => (
-          <VideoCard
-            key={item.id}
-            item={item}
-            onToggleRelevance={onToggleRelevance}
-          />
-        ))}
+        {items.map((item) => {
+          const videoId = parseYouTubeUrl(item.url)?.videoId;
+          return (
+            <VideoCard
+              key={item.id}
+              item={item}
+              videoIdentity={videoId ? identityForId(videoId) : undefined}
+              onToggleRelevance={onToggleRelevance}
+            />
+          );
+        })}
       </div>
     </section>
   );

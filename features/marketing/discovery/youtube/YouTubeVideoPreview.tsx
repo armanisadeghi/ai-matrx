@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import { Button } from "@/components/ui/button";
+import { VideoPublishDate } from "@/features/files/blocks/video/VideoPublishDate";
 import { youTubeEmbedUrl, youTubeWatchUrl } from "@/lib/media/youtube";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { formatYouTubeCount, formatYouTubeDuration } from "./formatters";
@@ -28,13 +29,17 @@ export function YouTubeVideoPreviewContent({
 }) {
   return (
     <>
-      <div className="aspect-video overflow-hidden rounded-t-3xl bg-black">
+      <div className="relative aspect-video overflow-hidden rounded-t-3xl bg-black">
         <iframe
           src={youTubeEmbedUrl(video.video_id)}
           title={video.title}
           className="h-full w-full"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
+        />
+        <VideoPublishDate
+          publishedAt={video.published_at}
+          className="absolute left-2 top-2 z-10 rounded bg-black/75 px-1.5 py-0.5 text-white shadow-sm"
         />
       </div>
       <div className="p-5 sm:p-7">

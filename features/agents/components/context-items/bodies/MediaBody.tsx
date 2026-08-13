@@ -17,6 +17,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import type { ContextItemBodyProps } from "../types";
+import { VideoPublishDate } from "@/features/files/blocks/video/VideoPublishDate";
+import { videoPublishDateFromMetadata } from "@/lib/media/video-date";
 
 function youtubeId(url: string): string | null {
   const m = url.match(
@@ -43,13 +45,19 @@ export function MediaBody({ item }: ContextItemBodyProps) {
     const id = youtubeId(fileUrl);
     if (id) {
       return (
-        <iframe
-          src={`https://www.youtube.com/embed/${id}`}
-          title={item.title}
-          className="h-full w-full bg-black"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-        />
+        <div className="relative h-full w-full bg-black">
+          <iframe
+            src={`https://www.youtube.com/embed/${id}`}
+            title={item.title}
+            className="h-full w-full bg-black"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+          <VideoPublishDate
+            publishedAt={videoPublishDateFromMetadata(item.raw)}
+            className="pointer-events-none absolute left-2 top-2 z-10 rounded bg-black/75 px-1.5 py-0.5 text-white shadow-sm"
+          />
+        </div>
       );
     }
   }

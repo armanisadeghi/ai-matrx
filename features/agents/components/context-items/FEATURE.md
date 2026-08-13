@@ -70,6 +70,9 @@ Only the Body mounts `useWorkingDocument`; title actions + history read the shar
 
 ## Change log
 
+- `2026-08-13` — YouTube attachment previews render the shared compact publish
+  date as a no-layout-shift player overlay, reading provider metadata when the
+  attachment carries it and showing `No Date` for legacy URL-only blocks.
 - `2026-08-11` — codex: **typed attachments now round-trip and render end to end.** Replaced the force-cast outbound payload builder with exact request/persisted projections; generated parsing now validates at runtime. Added one shared user/assistant `MessageAttachmentStrip`; exact text-first webpage snapshots; linked renderers for all seven Matrx entity references; submitted `input_context`; document/YouTube preservation; Voice Pad transcript projection; immutable submitted note/task/webpage views; and exhaustive attachment-matrix regression coverage.
 
 - `2026-07-16` — claude: **PDF identity pill in the drawer title bar.** New registry `Title` slot (full title-bar replacement; `resolveContextItemTitle`) + `ProcessedDocumentTitle` — the canonical `PdfNamedSurfaceSwitcher` glass pill (PDF icon = sibling-document switcher when several PDFs are attached via `onSelectItem`; click-to-rename via the real `renameFile` thunk; PDF-everywhere links; full /files `···`/right-click menus incl. Knowledge assets / Knowledge search; macOS-style find-in-document). Header search submissions flow drawer → Body via `searchSubmission` → `LibraryPreviewPage externalSearch` (its internal `DocumentSearchBar` is dropped with `hideSearchBar` — summary + ranked results still render in-body).

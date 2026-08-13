@@ -114,6 +114,7 @@ export interface YouTubeResourceData {
   channelName?: string;
   transcript?: string;
   duration?: string;
+  publishedAt?: string | null;
 }
 
 /**

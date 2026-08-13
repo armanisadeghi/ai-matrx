@@ -21,6 +21,7 @@ import {
   youTubeWatchUrl,
 } from "@/lib/media/youtube";
 import { vimeoEmbedUrl, vimeoId } from "@/lib/media/vimeo";
+import { videoPublishDateFromMetadata } from "@/lib/media/video-date";
 import {
   isMediaResourceKind,
   type ParsedSnapshotResource,
@@ -82,6 +83,8 @@ export interface SiteVideoAsset {
   embedUrl: string | null;
   /** Poster derived without an API call (YouTube only, today). */
   posterUrl: string | null;
+  /** Provider/schema publish date when the crawl captured one. */
+  publishedAt: string | null;
   /** The scraper's resource kind ("video" | "embed" | "iframe" | "audio"…). */
   kind: string;
   tag: string | null;
@@ -106,6 +109,7 @@ function canonicalize(resource: ParsedSnapshotResource): {
   videoId: string | null;
   embedUrl: string | null;
   posterUrl: string | null;
+  publishedAt: string | null;
 } | null {
   const url = resource.url.trim();
   if (!url || isTrackingEmbed(url) || IMAGE_FILE_EXT.test(url)) return null;
@@ -119,6 +123,7 @@ function canonicalize(resource: ParsedSnapshotResource): {
       videoId: yt.videoId,
       embedUrl: youTubeEmbedUrl(yt.videoId, { start: yt.start }),
       posterUrl: youTubeThumbnail(yt.videoId),
+      publishedAt: videoPublishDateFromMetadata(resource.attributes),
     };
   }
 
@@ -131,6 +136,7 @@ function canonicalize(resource: ParsedSnapshotResource): {
       videoId: vm,
       embedUrl: vimeoEmbedUrl(vm),
       posterUrl: null,
+      publishedAt: videoPublishDateFromMetadata(resource.attributes),
     };
   }
 
@@ -163,6 +169,7 @@ function canonicalize(resource: ParsedSnapshotResource): {
     videoId: null,
     embedUrl: null,
     posterUrl: null,
+    publishedAt: videoPublishDateFromMetadata(resource.attributes),
   };
 }
 
@@ -183,6 +190,7 @@ export function buildSiteVideoAssets(
       if (!canonical) continue;
       const existing = byKey.get(canonical.key);
       if (existing) {
+        existing.publishedAt ??= canonical.publishedAt;
         if (!existing.pages.some((page) => page.pageId === row.pageId)) {
           existing.pages.push({
             pageId: row.pageId,

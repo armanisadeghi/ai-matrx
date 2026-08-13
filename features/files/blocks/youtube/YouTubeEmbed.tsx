@@ -8,6 +8,7 @@ import {
   youTubeThumbnail,
   youTubeWatchUrl,
 } from "@/lib/media/youtube";
+import { VideoPublishDate } from "@/features/files/blocks/video/VideoPublishDate";
 
 interface YouTubeEmbedProps {
   /** The 11-ish char YouTube video id. */
@@ -22,6 +23,8 @@ interface YouTubeEmbedProps {
    * when available so the facade matches what the author embedded.
    */
   poster?: string;
+  /** Provider publish timestamp when the upstream block carries it. */
+  publishedAt?: string | null;
   className?: string;
 }
 
@@ -42,6 +45,7 @@ export const YouTubeEmbed: React.FC<YouTubeEmbedProps> = ({
   start,
   title,
   poster,
+  publishedAt,
   className,
 }) => {
   const [playing, setPlaying] = useState(false);
@@ -92,6 +96,10 @@ export const YouTubeEmbed: React.FC<YouTubeEmbedProps> = ({
             </span>
           </button>
         )}
+        <VideoPublishDate
+          publishedAt={publishedAt}
+          className="pointer-events-none absolute left-2 top-2 z-10 rounded bg-black/75 px-1.5 py-0.5 text-white shadow-sm"
+        />
       </div>
       {title ? (
         <div className="flex items-center justify-between gap-2 px-2.5 py-1.5">

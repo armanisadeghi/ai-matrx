@@ -47,6 +47,7 @@ import {
   type OwnedPublicResource,
 } from "../service";
 import { parseYouTubeId } from "../youtube";
+import { VideoPublishDate } from "@/features/files/blocks/video/VideoPublishDate";
 import { CreatorPayoutsPanel } from "./CreatorPayoutsPanel";
 import { formatPriceCents } from "@/lib/stripe/connect";
 import type {
@@ -227,7 +228,10 @@ function FeaturedRow({
       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted">{icon}</span>
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm font-medium text-foreground">{title}</div>
-        <div className="truncate text-xs text-muted-foreground">{sub}</div>
+        <div className="flex items-center gap-1.5 truncate text-xs text-muted-foreground">
+          <span className="truncate">{sub}</span>
+          {item.kind === "youtube" ? <VideoPublishDate publishedAt={item.publishedAt} /> : null}
+        </div>
       </div>
       <div className="flex shrink-0 items-center gap-0.5">
         <Button variant="ghost" size="icon" className="h-7 w-7" disabled={isFirst} onClick={onUp}>
@@ -288,7 +292,7 @@ function Editor({ initial }: { initial: CreatorProfileMine }) {
       setYtInput("");
       return;
     }
-    const item: FeaturedYouTube = { kind: "youtube", videoId: id };
+    const item: FeaturedYouTube = { kind: "youtube", videoId: id, publishedAt: null };
     setFeatured((p) => [...p, item]);
     setYtInput("");
   }

@@ -19,6 +19,7 @@ import { toast } from "@/lib/toast";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { YouTubeDiscovery } from "@/features/marketing/discovery/youtube/YouTubeDiscovery";
 import { YouTubeResearchActions } from "@/features/marketing/discovery/youtube/YouTubeResearchActions";
+import { VideoPublishDate } from "@/features/files/blocks/video/VideoPublishDate";
 import {
   getYouTubeLibraryVideo,
   getTopicYouTubeVideos,
@@ -276,6 +277,10 @@ export default function ResearchYouTubePage() {
                           className="object-cover transition hover:scale-[1.02]"
                         />
                       )}
+                      <VideoPublishDate
+                        publishedAt={video.published_at}
+                        className="absolute bottom-2 left-2 rounded bg-black/75 px-1.5 py-0.5 text-white shadow-sm"
+                      />
                     </Link>
                     <div className="p-5">
                       <div className="flex items-start gap-3">

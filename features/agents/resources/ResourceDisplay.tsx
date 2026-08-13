@@ -28,6 +28,7 @@ import { ParsedResource } from "./types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { VideoPublishDate } from "@/features/files/blocks/video/VideoPublishDate";
 
 interface ResourceDisplayProps {
     resource: ParsedResource;
@@ -111,6 +112,11 @@ export function ResourceDisplay({ resource, className }: ResourceDisplayProps) {
                             <Badge variant="outline" className="text-[10px] px-1 py-0 h-4">
                                 {resource.metadata.status}
                             </Badge>
+                        )}
+                        {resource.type === "youtube" && (
+                            <VideoPublishDate
+                                publishedAt={resource.metadata.publishedAt ?? resource.metadata.published_at}
+                            />
                         )}
                     </div>
                     {(resource.metadata.folder || resource.metadata.project) && (

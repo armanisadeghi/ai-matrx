@@ -1,6 +1,6 @@
 # Creator Profiles & Public Landing Pages (`features/education/creators`)
 
-**Status:** live · **Tier:** 2 (Education Hub — growth) · **Spec:** [`CONVERGENCE_C_CREATORS.md`](../../../docs/proposals/education-projects/CONVERGENCE_C_CREATORS.md) · **Last updated:** 2026-07-14
+**Status:** live · **Tier:** 2 (Education Hub — growth) · **Spec:** [`CONVERGENCE_C_CREATORS.md`](../../../docs/proposals/education-projects/CONVERGENCE_C_CREATORS.md) · **Last updated:** 2026-08-13
 
 > The platform's single biggest growth lever: teachers and successful YouTubers claim a public handle and build an SEO-first page at **`/c/[handle]`** featuring their YouTube videos + free Matrx tools (flashcards, guides) + classes with enroll CTAs. **The creators bring the business.** Free content is instantly usable logged-out (drives signups); paid classes show an enroll/price CTA.
 
@@ -98,6 +98,9 @@ A featured class's **access mode + price are single-sourced LIVE from the class 
 
 ## Change log
 
+- **2026-08-13** — Featured YouTube embeds and dashboard rows now render the
+  shared compact publish date without changing embed dimensions; legacy items
+  with no enriched provider timestamp visibly say `No Date`.
 - **2026-07-15** — **Creator payouts LIVE (Stripe Connect Express).** `EnrollButton` now starts real Stripe Checkout for paid classes (`startClassCheckout`); added `CreatorPayoutsPanel` (Connect onboard/status + Express dashboard link) to the dashboard; a featured class's access mode + price are single-sourced LIVE from the class scope (`creator_public_page` reads `settings.price_cents`), shown read-only in the dashboard. Webhook-only paid gate. Full subsystem doc: `features/entitlements/FEATURE.md` §Creator payouts. Blocked on Arman (enable Connect + webhook secret).
 - **2026-07-15** — `learn.aimatrx.com` code readiness: `EDU_ORIGIN` (`features/education/constants.ts`) centralizes the public education origin behind `NEXT_PUBLIC_EDU_ORIGIN`; every public canonical/OG/JSON-LD/sitemap URL builder repointed; `proxy.ts` host gate serves only the education/creator/public/auth surface on the edu host. See "Public education origin" above. Domain not yet added in Vercel — code-only.
 - **2026-07-14** — Created (Convergence C). Extended `users.profiles` with creator columns (zero new tables) + 8 creator RPCs (`migrations/education_creator_profiles.sql`); public SEO landing page at `/c/[handle]` (server-rendered, Person/Course JSON-LD, OG, sitemap); authed dashboard at `/education/creator` (claim handle, feature videos/tools/classes, publish); anon funnel reuses `/p/e` + `DuplicateToEditButton`; `EnrollButton` consumes the documented `edu_class_join` contract (stubbed until landed). Registered `creator` in `EDU_TOOLS` + the education admin map.
