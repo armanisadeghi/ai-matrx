@@ -299,6 +299,21 @@ describe("Education tool-family resolution", () => {
     );
   });
 
+  it("splits study-guide authoring off the public /education/learn reader", () => {
+    // The admin editor is its own surface — it shares no vocabulary with the
+    // anonymous reader pages the `/education/learn` prefix otherwise covers.
+    expect(surfaceFromPathname("/education/learn/admin")).toBe(
+      "matrx-user/education-learn-authoring",
+    );
+    // ...and the reader half must NOT be stolen by that regex.
+    expect(surfaceFromPathname("/education/learn")).toBe(
+      "matrx-user/education-learn",
+    );
+    expect(surfaceFromPathname("/education/learn/admin-guide/intro")).toBe(
+      "matrx-user/education-learn",
+    );
+  });
+
   it("keeps the pre-existing education surfaces and the hub fallback", () => {
     expect(surfaceFromPathname("/education/tutor/abc")).toBe(
       "matrx-user/education-tutor",

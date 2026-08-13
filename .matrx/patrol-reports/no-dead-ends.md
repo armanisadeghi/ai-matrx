@@ -64,10 +64,10 @@ Surrounding responsive/theme classes and the already-tested EntityRef primitive 
 - A checked P1 recovery outcome was added to `.matrx/PATROL_SIGHTINGS.md`; there are no open P1 sightings from this batch.
 - Current full snapshot: 102 findings, 71 high, 31 medium, 63 files.
 - Finding-file list: 63 entries; SHA-256 `efb6df1628971d773111fc18f7be6e1505b4f6d212eeae29b0dc335dd67c9275`.
-- Route-leaf list (`page.tsx` and `page.dev.tsx`): 1,000 entries; SHA-256 `7d201bc1d7b66337870d4170f81966692e3d66a019fec6e54a2b6f6f5c67a17c`.
+- Route-leaf list (`page.tsx` and `page.dev.tsx`): 1,001 entries; SHA-256 `9456c397c6fa4258192d6e02350fde5bdbabfa4ecc06962e7924c09434cb0ebf`.
 - Top-level feature-directory list: 121 entries; SHA-256 `b6bcb08ef4a4e924023386a8e9717df23fd0daac1add8e845e78bc4826115467`.
 - EntityRef importer list: 183 entries; SHA-256 `e2354e93f21dab63d3d2fb6abcc0cff3b4fff3abcc79f003cf1bc8ec038a1fae`.
-- Snapshot source commit before the uncommitted batch: `64c99e7088c4e81d8f4682b2672835157e192266`.
+- Certified batch commit: `893fd01b5bbce53fd13c432496f365dac8ef8476`; integration base refreshed through `effc858f9b55e5c70abf8f1b2a445d3cb9444f35` before final snapshot.
 
 ## Loop health and candidates
 

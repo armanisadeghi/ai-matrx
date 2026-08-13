@@ -38,7 +38,7 @@ export function DerivativeResultsDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="flex h-[90vh] w-[96vw] max-w-[1500px] flex-col gap-0 overflow-hidden p-0"
+        className="flex h-[90dvh] w-[96vw] max-w-[1500px] flex-col gap-0 overflow-hidden p-0"
       >
         <DialogHeader className="border-b border-border/60 px-4 py-2.5">
           <DialogTitle className="flex items-center gap-2 text-sm">

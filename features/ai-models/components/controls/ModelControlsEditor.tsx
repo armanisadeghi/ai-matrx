@@ -544,7 +544,7 @@ export default function ModelControlsEditor({
             Refresh
           </button>
         </div>
-        <div className="p-2 max-h-[45vh] overflow-auto">
+        <div className="p-2 max-h-[45dvh] overflow-auto">
           <FullJsonViewer
             data={(resolved?.controls ?? {}) as object}
             initialExpanded

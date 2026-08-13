@@ -139,7 +139,7 @@ export function YouTubeVideoPreviewDialog({
         if (event.currentTarget === event.target) onClose();
       }}
     >
-      <div className="max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-3xl border border-border bg-background text-foreground shadow-2xl dark:border-white/10 dark:bg-[#0d1015] dark:text-zinc-100">
+      <div className="max-h-[92dvh] w-full max-w-5xl overflow-y-auto rounded-3xl border border-border bg-background text-foreground shadow-2xl dark:border-white/10 dark:bg-[#0d1015] dark:text-zinc-100">
         <YouTubeVideoPreviewContent
           video={video}
           action={

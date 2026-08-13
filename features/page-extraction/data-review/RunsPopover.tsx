@@ -192,7 +192,7 @@ export function RunsPopover({
         <div className="border-b border-border px-3 py-2 text-xs font-medium text-muted-foreground">
           Run history
         </div>
-        <div className="max-h-[60vh] overflow-y-auto p-1">
+        <div className="max-h-[60dvh] overflow-y-auto p-1">
           <button
             type="button"
             onClick={() => {

@@ -19,8 +19,14 @@ import type { LucideIcon } from "lucide-react";
  */
 export type AccessTier = "free" | "trial" | "premium";
 
-/** Build status of a route/tool/feature. Mirrors the FeatureAdminMap vocabulary. */
-export type EduStatus = "live" | "beta" | "coming-soon" | "planned";
+/**
+ * Build status of a route/tool/feature. Mirrors the FeatureAdminMap vocabulary.
+ * The runtime tuple is the source of truth, so code that must CHECK a status
+ * (rather than merely type one) has a real vocabulary to check against instead
+ * of re-typing the literals.
+ */
+export const EDU_STATUSES = ["live", "beta", "coming-soon", "planned"] as const;
+export type EduStatus = (typeof EDU_STATUSES)[number];
 
 /** The five discovery axes + the content engine. Each is a top-level namespace. */
 export type EduAxisId =

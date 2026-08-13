@@ -267,7 +267,7 @@ export function EnhanceSetDialog({
           />
         </div>
 
-        <ScrollArea className="max-h-[55vh]">
+        <ScrollArea className="max-h-[55dvh]">
           <div className="space-y-2.5 px-5 py-4">
             {cards.length === 0 ? (
               <p className="py-6 text-center text-sm text-muted-foreground">

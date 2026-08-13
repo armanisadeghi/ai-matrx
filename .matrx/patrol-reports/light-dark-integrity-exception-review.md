@@ -1,11 +1,12 @@
 # P4 Human Exception Review
 
-- **Prepared:** 2026-08-11 (America/Los_Angeles)
-- **Status:** EXCEPTION APPROVAL REQUIRED
+- **Prepared:** 2026-08-11; reconciled 2026-08-12 (America/Los_Angeles)
+- **Status:** EXCEPTION APPROVAL REQUIRED FOR ACTIVE PROPOSALS
 - **Approved exceptions:** 0
-- **Pending proposals:** 52 files / 109 raw-token lines
-- **Reviewable now:** 50
-- **Blocked on a review harness:** 2
+- **Pending proposals:** 47 files / 100 raw-token lines
+- **Reviewable now:** 47
+- **Resolved by feature deletion:** 5 files / 9 raw-token lines
+- **Blocked on a review harness:** 0
 
 These are proposals, not exclusions. Every item stays an open P4 finding until
 Arman reviews the stated UI and explicitly approves or rejects it. Approval is
@@ -257,41 +258,41 @@ rejection routes the item to a normal P4 repair.
    - Normal-fix effect: A semantic background would make iframe loading and transparent areas follow the app theme instead of staying page-like white.
    - Decision: **PENDING — Arman must approve or reject.**
 
-28. **P4-PENDING-028** — [Open review surface](https://aimatrx.com/agent-apps/templates)
+28. **P4-PENDING-028 — RESOLVED BY FEATURE DELETION**
 
    - Source: `features/applet/builder/parts/Stepper.tsx:44,105`
    - Exact raw tokens by line: `44: bg-white`; `105: bg-white`
    - Why it may be legitimate: The current-step indicator is a white dot placed on the fixed rose status circle in desktop and compact branches.
    - Review state: Open or create an applet/agent-app flow that uses the stepper and inspect active/completed step dots. A configured record is required.
    - Normal-fix effect: A semantic foreground could change with the app theme and weaken contrast against the fixed rose circle.
-   - Decision: **PENDING — Arman must approve or reject.**
+   - Decision: **RESOLVED — the applet/app-builder feature and this source file were deleted before recovery certification. No exception was approved.**
 
-29. **P4-PENDING-029** — **BLOCKED — no stable/current production review surface**
+29. **P4-PENDING-029 — RESOLVED BY FEATURE DELETION**
 
    - Source: `features/applet/home/app-display/ModernGlass.tsx:93,94`
    - Exact raw tokens by line: `93: bg-white/10`; `94: bg-white/5`
    - Why it may be legitimate: Two translucent white blurred circles are decorative light blooms inside a deliberately dark glass composition.
    - Review state: No importer or stable harness was found. A dedicated review harness is required.
    - Normal-fix effect: Semantic fills would recolor or remove the intended glass-light highlights when the app theme changes.
-   - Decision: **BLOCKED — no approval is valid until a stable review harness exists.**
+   - Decision: **RESOLVED — the applet/app-builder feature and this source file were deleted before recovery certification. No exception was approved.**
 
-30. **P4-PENDING-030** — [Open review surface](https://aimatrx.com/agent-apps/templates)
+30. **P4-PENDING-030 — RESOLVED BY FEATURE DELETION**
 
    - Source: `features/applet/runner/layouts/options/concepts/ContextualSearchLayout.tsx:45`
    - Exact raw tokens by line: `45: hover:bg-white`
    - Why it may be legitimate: The inactive selector uses a translucent white hover over a fixed black pill placed on an authored contextual background.
    - Review state: Open/run an applet configured to the Contextual Search layout and select an inactive context option to inspect its hover state.
    - Normal-fix effect: A semantic hover would follow the app theme and may not remain visible over the fixed black selector.
-   - Decision: **PENDING — Arman must approve or reject.**
+   - Decision: **RESOLVED — the applet/app-builder feature and this source file were deleted before recovery certification. No exception was approved.**
 
-31. **P4-PENDING-031** — [Open review surface](https://aimatrx.com/agent-apps/templates)
+31. **P4-PENDING-031 — RESOLVED BY FEATURE DELETION**
 
    - Source: `features/applet/runner/layouts/options/concepts/MapBasedSearchLayout.tsx:65`
    - Exact raw tokens by line: `65: bg-white`
    - Why it may be legitimate: The field count is displayed as a fixed white pill inside the rose Filters button.
    - Review state: Open/run an applet configured to the Map Based Search layout and inspect the numbered white marker on its authored surface.
    - Normal-fix effect: A semantic surface would follow the app theme and alter the fixed rose-on-white badge design.
-   - Decision: **PENDING — Arman must approve or reject.**
+   - Decision: **RESOLVED — the applet/app-builder feature and this source file were deleted before recovery certification. No exception was approved.**
 
 32. **P4-PENDING-032** — [Open review surface](https://aimatrx.com/cms)
 
@@ -473,14 +474,14 @@ rejection routes the item to a normal P4 repair.
    - Normal-fix effect: Semantic fills would track the app theme and alter contrast against the fixed colored header backgrounds.
    - Decision: **PENDING — Arman must approve or reject.**
 
-52. **P4-PENDING-052** — **BLOCKED — no stable/current production review surface**
+52. **P4-PENDING-052 — RESOLVED BY FEATURE DELETION**
 
    - Source: `features/applet/styles/StyledComponents.tsx:234,242,243`
    - Exact raw tokens by line: `234: text-black`; `242: text-black`; `243: text-black`
    - Why it may be legitimate: Yellow, amber, and lime action-button variants keep black text across both theme-specific colored backgrounds for contrast.
    - Review state: The apparent app-builder route returns 404 in production. Build a Tier-C review harness, then choose yellow, amber, and lime action-button colors and inspect their black labels in both themes.
    - Normal-fix effect: A normal semantic foreground token would flip the label with the app theme and could make it unreadable on these bright fixed status colors.
-   - Decision: **BLOCKED — no approval is valid until a stable review harness exists.**
+   - Decision: **RESOLVED — the applet/app-builder feature and this source file were deleted before recovery certification. No exception was approved.**
 
 ## Non-proposals from the same full pass
 
@@ -488,14 +489,14 @@ rejection routes the item to a normal P4 repair.
   theme branch, are overridden by a consumer, are commented/non-rendered, or
   have no current consumer. They are not allowlisted and will be scanned again
   if code changes make them live.
-- 3 lines were confirmed defects in two files:
+- 3 lines were confirmed defects in two files and fixed-certified on
+  2026-08-12:
   `CandidateProfileView.tsx` (2 skeleton lines) and `RoomHeader.tsx` (1
-  mobile sheet row). Their attempted Tier-M batch was rejected and fully
-  reverted; both findings remain open in the sighting ledger.
-- 17 candidate files have no stable/current production render path. Fifteen are
-  currently compliant/non-rendered; the two pending proposals are
-  `features/applet/home/app-display/ModernGlass.tsx` and
-  `features/applet/styles/StyledComponents.tsx`, neither of which can be
-  approved until a Tier-C review harness exists.
+  mobile sheet row). The recovered Tier-M batch passed delta-based adversarial
+  certification.
+- 17 historical candidate files had no stable/current production render path.
+  Fifteen were compliant/non-rendered; the other two were applet proposals now
+  resolved by deletion with the rest of that feature. No exception was silently
+  approved because it lacked a route.
 
 ARMAN, WE NEED YOU: approve or reject every listed P4 exception.

@@ -312,7 +312,7 @@ function ChangeComposer({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[92vh] max-w-4xl overflow-y-auto">
+      <DialogContent className="max-h-[92dvh] max-w-4xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Document an SEO change and its theory</DialogTitle>
           <DialogDescription>

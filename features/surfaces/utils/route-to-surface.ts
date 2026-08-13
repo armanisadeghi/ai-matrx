@@ -418,6 +418,17 @@ export function surfaceFromPathname(
     return "matrx-user/education-flashcard-editor";
   }
 
+  // Study-guide AUTHORING is `/education/learn/admin`, which sits under the
+  // `/education/learn` prefix below — and that prefix also covers the PUBLIC
+  // library index and the public `[...slug]` article. Those are anonymous
+  // reader pages with a rendered doc and nothing to edit; this one is the
+  // super-admin editor, with a draft list, staged inputs and agent write
+  // targets. They share no vocabulary, so authoring is its own surface and
+  // must not fall through to the reader mapping.
+  if (/^\/education\/learn\/admin(?:\/|$)/.test(stripped)) {
+    return "matrx-user/education-learn-authoring";
+  }
+
   const marketing = resolveMarketingSurface(stripped);
   if (marketing) return marketing;
 

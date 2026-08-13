@@ -161,7 +161,7 @@ export function CleanupReviewDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="flex h-[88vh] w-[92vw] max-w-3xl flex-col gap-0 p-0"
+        className="flex h-[88dvh] w-[92vw] max-w-3xl flex-col gap-0 p-0"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
         {/* pr-14 clears the Dialog's built-in close (X) button */}

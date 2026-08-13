@@ -70,7 +70,7 @@ export function AnalyzeCurationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl w-[92vw] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl w-[92vw] max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-sm">
             <Scissors className="h-4 w-4 text-primary" />
@@ -141,7 +141,7 @@ export function AnalyzeCurationDialog({
           onChange={(e) => setText(e.target.value)}
           spellCheck={false}
           placeholder="No page content for this source."
-          className="w-full min-h-[45vh] resize-y rounded-lg border border-border bg-background p-3 text-xs font-mono leading-relaxed focus:outline-none focus:ring-1 focus:ring-primary"
+          className="w-full min-h-[45dvh] resize-y rounded-lg border border-border bg-background p-3 text-xs font-mono leading-relaxed focus:outline-none focus:ring-1 focus:ring-primary"
         />
 
         <DialogFooter className="gap-2 sm:gap-2">

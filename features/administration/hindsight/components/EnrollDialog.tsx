@@ -206,7 +206,7 @@ export function EnrollDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="flex max-h-[85vh] max-w-lg flex-col overflow-hidden"
+        className="flex max-h-[85dvh] max-w-lg flex-col overflow-hidden"
         onPointerDownOutside={(e) => e.preventDefault()}
         onInteractOutside={(e) => e.preventDefault()}
       >

@@ -13,6 +13,25 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D181 — Component-table `INSERT…RETURNING` fails 42501 platform-wide (2026-08-13)
+
+Component tables' `std_select` policies use the id-list form
+(`id IN (SELECT unnest(iam.accessible_entity_ids('<token>','viewer')))`) with no
+row-local arm, while entity tables get `created_by = (select auth.uid()) OR
+iam.has_access(...)`. Postgres evaluates `INSERT…RETURNING` against the SELECT
+policy, and the id-list subquery runs on the statement snapshot — it can never
+see the row being inserted — so **every authenticated `.insert().select()` on
+those tables fails 42501**. Verified live: `crm.party_contact_point` insert
+succeeds bare, fails with RETURNING, same user, proven editor access on the
+parent. **132 policies across 20 schemas** have the shape (seo 33, web 22,
+chat 17, workflow 9, research 8, crm 6, content_ir 5, agent/app/tool 4 each, …).
+Fix: the component `std_select` template in the canonical generator
+(`iam.apply_rls` v2) needs the same `created_by` OR-arm entities get, then
+re-apply everywhere + `notify pgrst, 'reload schema'`; audit which FE surfaces
+silently broke. Chip fired 2026-08-13. `features/crm/service.ts` already dropped
+RETURNING on its component inserts as a hedge (its record-page add-email/
+add-phone/add-address/log-call were all broken by this).
+
 ### D179 — Keyword Research workbench: remaining UI debt (2026-08-13, Arman review)
 
 Arman reviewed `/marketing/keyword-research` during the sharing pilot and named

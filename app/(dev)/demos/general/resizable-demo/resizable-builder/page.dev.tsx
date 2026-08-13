@@ -7,6 +7,7 @@ import {
   NestedResizableLayout,
   Section,
 } from "@/components/matrx/resizable/NestedResizableLayout";
+import { toast } from "@/lib/toast";
 
 const ResizableLayoutDemo = () => {
   // Initial sections configuration based on the provided interface
@@ -341,10 +342,10 @@ const ResizableLayoutDemo = () => {
 
       const configString = JSON.stringify(sections, getCircularReplacer(), 2);
       console.log(configString);
-      alert("Configuration exported to console");
+      toast.success("Configuration exported to console");
     } catch (error) {
       console.error("Error exporting configuration:", error);
-      alert("Error exporting configuration. See console for details.");
+      toast.error("Error exporting configuration. See console for details.");
     }
   };
 
