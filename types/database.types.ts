@@ -46863,6 +46863,81 @@ export type Database = {
         }
         Relationships: []
       }
+      page_measurement_health: {
+        Row: {
+          consecutive_terminal_failures: number
+          created_at: string
+          id: string
+          last_error: string | null
+          last_failure_at: string | null
+          last_failure_code: string | null
+          last_outcome: string | null
+          last_success_at: string | null
+          organization_id: string
+          page_id: string
+          quarantine_count: number
+          quarantine_expires_at: string | null
+          quarantine_reason: string | null
+          quarantined_at: string | null
+          release_reason: string | null
+          released_at: string | null
+          site_id: string | null
+          strategy: string
+          total_successes: number
+          total_terminal_failures: number
+          total_transient_failures: number
+          updated_at: string
+        }
+        Insert: {
+          consecutive_terminal_failures?: number
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          last_failure_at?: string | null
+          last_failure_code?: string | null
+          last_outcome?: string | null
+          last_success_at?: string | null
+          organization_id: string
+          page_id: string
+          quarantine_count?: number
+          quarantine_expires_at?: string | null
+          quarantine_reason?: string | null
+          quarantined_at?: string | null
+          release_reason?: string | null
+          released_at?: string | null
+          site_id?: string | null
+          strategy: string
+          total_successes?: number
+          total_terminal_failures?: number
+          total_transient_failures?: number
+          updated_at?: string
+        }
+        Update: {
+          consecutive_terminal_failures?: number
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          last_failure_at?: string | null
+          last_failure_code?: string | null
+          last_outcome?: string | null
+          last_success_at?: string | null
+          organization_id?: string
+          page_id?: string
+          quarantine_count?: number
+          quarantine_expires_at?: string | null
+          quarantine_reason?: string | null
+          quarantined_at?: string | null
+          release_reason?: string | null
+          released_at?: string | null
+          site_id?: string | null
+          strategy?: string
+          total_successes?: number
+          total_terminal_failures?: number
+          total_transient_failures?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       page_performance: {
         Row: {
           accessibility_score: number | null
@@ -48897,6 +48972,39 @@ export type Database = {
           keyword_id: string
           traffic_class: string
         }[]
+      }
+      release_page_measurement_quarantine: {
+        Args: { p_page_id: string; p_reason?: string; p_strategy?: string }
+        Returns: {
+          consecutive_terminal_failures: number
+          created_at: string
+          id: string
+          last_error: string | null
+          last_failure_at: string | null
+          last_failure_code: string | null
+          last_outcome: string | null
+          last_success_at: string | null
+          organization_id: string
+          page_id: string
+          quarantine_count: number
+          quarantine_expires_at: string | null
+          quarantine_reason: string | null
+          quarantined_at: string | null
+          release_reason: string | null
+          released_at: string | null
+          site_id: string | null
+          strategy: string
+          total_successes: number
+          total_terminal_failures: number
+          total_transient_failures: number
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "page_measurement_health"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       site_keyword_performance_page: {
         Args: {

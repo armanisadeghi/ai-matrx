@@ -136,13 +136,29 @@ export function FindingFixCard({
   const page = workspace.data?.page ?? null;
   const snapshot = workspace.data?.latestSnapshot ?? null;
 
+  const evidence = useMemo(
+    () =>
+      page ? buildFindingFixEvidence({ itemKey, page, snapshot, site }) : null,
+    [itemKey, page, snapshot, site],
+  );
+
   /** THE CODE PIPE — free, deterministic, instant. Null = correctly declined. */
-  const codeDraft = useMemo(() => {
-    if (!page) return null;
-    return planDeterministicFix(
-      buildFindingFixEvidence({ itemKey, page, snapshot, site }),
-    );
-  }, [itemKey, page, snapshot, site]);
+  const codeDraft = useMemo(
+    () => (evidence ? planDeterministicFix(evidence) : null),
+    [evidence],
+  );
+
+  /**
+   * What the user is replacing. The page's authored intent when it has one,
+   * otherwise what the crawler actually found on the live page — showing
+   * "nothing here today" for a page that plainly HAS a title is a lie the
+   * user would catch immediately.
+   */
+  const before = {
+    title: page?.meta_title_desired ?? evidence?.currentTitle ?? null,
+    description:
+      page?.meta_description_desired ?? evidence?.currentMetaDescription ?? null,
+  };
 
   /** THE AI PIPE's draft, narrowed to the fields this card can apply. */
   const aiDraft = useMemo<FindingFixDraft | null>(() => {
@@ -240,14 +256,14 @@ export function FindingFixCard({
             {reviewable.draft.metaTitle ? (
               <Field
                 label="Title in search results"
-                before={page?.meta_title_desired ?? null}
+                before={before.title}
                 after={reviewable.draft.metaTitle}
               />
             ) : null}
             {reviewable.draft.metaDescription ? (
               <Field
                 label="Description in search results"
-                before={page?.meta_description_desired ?? null}
+                before={before.description}
                 after={reviewable.draft.metaDescription}
               />
             ) : null}
