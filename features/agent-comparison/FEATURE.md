@@ -48,6 +48,7 @@ and Runs floating windows.
 | Resizable horizontal split (N panels) | `ResizablePanelGroup` / `ResizablePanel` / `ResizableHandle` wrappers |
 | Horizontal reorder | `@dnd-kit/sortable` with `horizontalListSortingStrategy` |
 | Floating windows | `WindowPanel` from `features/window-panels` |
+| Agent identity doors in Master Input | `EntityRef` with state-preserving new-tab navigation |
 
 ---
 
@@ -110,6 +111,12 @@ and Runs floating windows.
 - Read-only. Renders one compact `SessionStatsPanel` per column inside
   one `<WindowPanel>`. Each panel keys off its own `conversationId`.
 
+### Master Input window
+- Configured agent labels are canonical `EntityRef` doors that open the agent
+  in a new tab, preserving the comparison and mapping state in this window.
+- Unconfigured columns remain inert, and Quick Look stays disabled in this
+  floating-window context.
+
 ### Save / Load
 - **Save** (toolbar): if `activeSetId` is null, prompt for a name; INSERT
   one `cmp_comparison_sets` row, then bulk INSERT `cmp_comparison_entries`
@@ -166,6 +173,9 @@ attributable to this page in analytics.
 
 ## Change Log
 
+- 2026-08-12 — Master Input mapping rows now open configured agents through
+  the canonical `EntityRef` in a new tab while preserving unconfigured labels
+  and all mapping controls.
 - 2026-07-24 — **Model comparisons now use the full Smart Agent Input.** Replaced
   the locked mode's bespoke variable fields + text-only textarea with the
   canonical `SmartAgentInput` on a dedicated cache-only draft instance. The new
