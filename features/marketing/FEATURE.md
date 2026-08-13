@@ -2,7 +2,7 @@
 
 **Status:** active  
 **Tier:** 1  
-**Last updated:** 2026-08-12
+**Last updated:** 2026-08-13
 
 ## Internal Authority Router
 
@@ -179,7 +179,7 @@ Agency-scale brand operations. The anchor entity is the **Brand** (`web.brand`) 
   and referring-domain opportunity detail.
 - `.../integrations` — verified Google Search Console/GA4 property bindings, reusable Google/YouTube account connections, app-managed PageSpeed, and custom provider bindings.
 - `.../crawls/[crawlId]/snapshots` and `.../links` — run-scoped capture and link evidence.
-- `.../access` — site-root sharing.
+- `.../access` — site-root sharing on the canonical permissions system: `SiteAccessWorkspace` composes the canonical sharing tabs (`ShareWithUserTab` / `ShareWithOrgTab` / `PublicAccessTab` / `PermissionsList` / `AccessSummaryPanel`) over `useSharing("web_site", …)`, AgentSharePanel-style. One grant on `web_site` conveys the whole subtree.
 - `.../settings` — the site's control room: identity + lifecycle, the default
   crawl policy every crawl inherits, GA4 evidence, the strategy interview, and
   **"Where this site's data comes from"** — one `MatrxDataTable` over every
@@ -328,6 +328,13 @@ Grants: `migrations/web_marketing_crud_grants.sql` added the missing authenticat
 
 ## Invariants & gotchas
 
+- **The shared cross-pointer trigger binds a typed row inside every table branch.**
+  `web.validate_cross_pointers()` is attached to eleven `web.*` tables; raw
+  table-specific `NEW.<column>` access makes `audit.refresh()` report false
+  `42703` failures when `plpgsql_check` validates it against a different trigger
+  relation. Convert through `jsonb_populate_record(NULL::web.<table>,
+to_jsonb(NEW))` and dereference that composite so column drift still fails
+  loudly. See `migrations/web_validate_cross_pointers_typed_rows.sql`.
 - **A per-page SEO verdict is NEVER re-derived in a component.** Every status/score/reasoning comes from `features/marketing/seo/audit/checks.ts` (`runPageChecks` / `PAGE_CHECKS`), the byte-identical mirror of aidream `matrx_scraper/seo_audit.py`. A surface that compares a word count to 300 in TSX has forked the rule; import the check. Thresholds live in exactly one place per rule — the CAPS constants in `checks.ts`, except the SERP length limits, which are imported from `seo/serp/metrics.ts`. Touching either side means touching both in the same unit of work and regenerating `__fixtures__/page-checks-parity.json`; `checks.parity.test.ts` fails otherwise.
 - **Number fields that clamp to a min must never clamp on every keystroke.** Use `components/shared/ClampedNumberInput` (draft string + commit on blur/Enter). `Number("") || min` immediately overwrites a cleared field and makes the input unusable.
 - **Single-entity fetchers use `.maybeSingle()` + `assertFound` (`data/service.ts`), never `.single()`.** A row can be soft-deleted out from under an open view; `.single()`'s 0-row PGRST116 leaks a red "Cannot coerce…" error into the inspector. **A zero-row read never asserts deletion** — it is equally a denial, a stale id, or a signed-out session, so it throws through `lib/records/recordUnavailable.ts` and the surface renders `<AccessGate token id/>` ([`features/access-gate/FEATURE.md`](../access-gate/FEATURE.md)), which asks the platform which of the four it actually is. **Always pass the canonical entity token** (`assertFound(data, error, "site", siteId, "web_site")`) — with a token the error resolves to the gate itself, and without one the surface can only recite both possibilities. Delete mutations invalidate LIST keys only and never refetch the deleted entity's own subtree (see `useDeleteSite`).
@@ -418,6 +425,7 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-08-13 — Claude: **Site-access sharing fork annihilated, canonical composed.** `SiteAccessWorkspace` was a hand-rolled grant UI over bespoke `data/access-service.ts` (`fn_grant/list/revoke_resource_permission` iam RPCs — raw UUID entry, no share modal machinery, no public tab). It now composes the canonical sharing system (`useSharing("web_site")` + ShareWithUserTab / ShareWithOrgTab / PublicAccessTab / PermissionsList / AccessSummaryPanel, precedent `AgentSharePanel`); `access-service.ts` is DELETED with zero remaining references. Registry snapshot re-synced with live DB in the same change (`analysis_recipes` retired, `batch_provider_batch` → `provider_batch`). Grant/revoke verified live in the browser as owner; non-owner and non-grantee (AccessGate) states verified too.
 - 2026-08-12 — Claude: **Competitor Autopsy re-verified after a `main` force-rewrite — nothing shipped, and its duplicate review-queue row is flagged.** `/marketing/competitors` was assigned a second write-target chip; the write half (`matrx-user/marketing-competitors`, 3 ask-policy targets) had already landed, so per the collision rule nothing was reimplemented. The re-verification was worth doing because `origin/main` was force-rewritten mid-session (`93f7087e` → `d52be631`) and the rewrite preserved every fragile piece: the `registry.ts` registration at lines 87/239 without which the surface offers no write tool at all (and which `check:surface-drift` structurally cannot catch), the `tracking_status` `"tracking"` → `"tracked"` fix at all three sites that made the Track row action work, `check:surface-drift` green at 143 surfaces / 3628 values, and a clean `type-check`. Also confirmed the shipped bundling of `competitor_domains` + `max_competitors` + `pages_per_competitor` into ONE `autopsy_run_plan` object is the correct call and not a shortcut — the fields interact (a stale budget silently truncates a longer domain list), and `applySurfaceWrite` resolves every handler closure before the first confirm, so splitting them would let interdependent fields resolve against different snapshots. **Action item for the queue, not the code:** `agent.review_queue` holds two rows for this same page (`57356eeb`, `459592e2`) from two racing agents — dedup by `url`, since the titles share no distinctive substring. See [`features/surfaces/FEATURE.md`](../surfaces/FEATURE.md) for the mount-scan false-positive trap the run also documented.
 - 2026-08-12 — Claude: **Backlinks is agent-writable — an agent can set the automatic refresh schedule, and nothing else on the page.** `BacklinksWorkspace` already mounted a `SurfaceRuntimeProvider` with `getScope` and no `getWriteHandlers`; it now registers one handler for `matrx-user/marketing-backlinks`'s single write target, `backlink_refresh_schedule` (`applyPolicy: "ask"`, `mode: "entity"`), taking `{enabled?, cadence?, detail_limit?}` — omitted keys keep the SAVED value, so "check weekly" need not restate a row limit. **The write path is shared with the button, not parallel to it:** `saveSchedule` was refactored into `persistSchedule(next)` and the card's Save click now calls it too, so an agent apply lands through the exact `parseSiteIntegrations` → `validateSiteIntegrations` → `buildSiteIntegrations` → `updateSiteIntegrations` sequence the user's own click runs; it throws rather than toasting, and each caller surfaces that its own way. A freshest-row `siteRef` guard was added because `setQueryData` reaches the `site` prop only on the next render, so two applies in one agent message would otherwise send a stale `version` and trip `SiteVersionConflictError` spuriously. **Anti-drift:** `integrations-schema.ts` gained `DATAFORSEO_DETAIL_LIMIT_MIN|MAX` + `isValidDataForSeoDetailLimit`, now the ONE source for `validateSiteIntegrations`, the schedule input's `min`/`max`, the handler's error text and the model-facing description (which also interpolates `dataForSeoCadences`). **Everything else on this page stays unwritable by doctrine** — every backlink row, referring domain, anchor, competitor, score, verdict and summary is gated evidence or model judgment, and writing it would forge evidence; `refresh_profile` is examined and ruled NO in the manifest as a mechanical selector beside the Refresh button the user must press anyway. Live-verified with five real Badass Agent runs against a throwaway site: the description was quoted verbatim in the ask dialog, Apply persisted to `web.site.integrations` (confirmed by SQL), "Keep as is" left the row's `version` unadvanced, both bad shapes (`detail_limit: 5000`, `cadence: "daily"`) returned the handler's throw verbatim with nothing persisted, and an undeclared `referring_domain_opinions` write was refused with no dialog. See `features/surfaces/FEATURE.md` for the full design argument, especially why the mode is `entity` despite a staging buffer existing.
 
@@ -725,6 +733,12 @@ as keyof paths` cast pending the OpenAPI type sync).
   dead `batch_item` branch while preserving every live site/page/session/item
   integrity check; a rollback-only clone insert verified the trigger on the
   live database.
+- 2026-08-13 — Codex: **The shared Marketing cross-pointer trigger is now
+  statically typed per table branch.** Its eleven-table polymorphism previously
+  made `plpgsql_check` report every other branch's `NEW.<column>` as a missing
+  field. `web_validate_cross_pointers_typed_rows.sql` preserves the single
+  trigger and every integrity check while binding each branch to its real
+  `web.*` composite row type, leaving `audit.broken_functions` clean.
 - 2026-08-11 — Codex: **Page totals now mean evidence-backed pages, not every
   durable URL candidate.** `v_page_list` exposes canonical identity and retained
   page-evidence verdicts; Overview, Pages, and Coverage exclude aliases,
