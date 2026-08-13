@@ -56,6 +56,10 @@ import {
   formatDateOnly,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import {
+  humanLines,
+  webLocation,
+} from "@/features/marketing/lib/copy-payloads";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
 import { toast } from "@/lib/toast";
@@ -1605,6 +1609,7 @@ function UntrackedTable({
   brandId: string;
   onDocument: (row: UntrackedSnapshotChange) => void;
 }) {
+  const { site } = useMarketingSite();
   const columns = useMemo<MatrxColumnDef<UntrackedSnapshotChange>[]>(
     () => [
       {
@@ -1648,6 +1653,21 @@ function UntrackedTable({
       getRowId={(row) => row.id}
       pageSize={25}
       toolbar={{ searchPlaceholder: "Search untracked pages or change types…" }}
+      copy={{
+        label: "Untracked page change",
+        listLabel: "Untracked page changes",
+        location: webLocation(
+          `SEO change tracking — ${site.root_url} — Untracked`,
+        ),
+        rowKind: "web-untracked-page-change",
+        listKind: "web-untracked-page-changes",
+        humanRow: (row) =>
+          humanLines([
+            ["Page", row.page_path || row.page_url || row.page_id],
+            ["Observed change", row.changed_fields?.map(titleCase).join(", ")],
+            ["Observed", formatDate(row.captured_at)],
+          ]),
+      }}
       rowActions={(row) => (
         <Button size="sm" className="h-7" onClick={() => onDocument(row)}>
           <FlaskConical className="mr-1.5 h-3.5 w-3.5" />
