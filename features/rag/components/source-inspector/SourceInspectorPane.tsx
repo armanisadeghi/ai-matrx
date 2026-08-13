@@ -371,7 +371,7 @@ export function SourceInspectorPane({
           tabs
         ) : isMobile ? (
           <div className="flex h-full flex-col">
-            <div className="h-[42vh] shrink-0 border-b border-border">
+            <div className="h-[42dvh] shrink-0 border-b border-border">
               {visual}
             </div>
             <div className="min-h-0 flex-1">{tabs}</div>

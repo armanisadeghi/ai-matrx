@@ -1,55 +1,58 @@
 # P3 Mobile-Friendly UI Patrol
 
-- **Run date:** 2026-08-12 (America/Los_Angeles)
-- **Run kind:** first/full pass, resumed for one certified repair and one
-  manually approved viewport-unit attempt
-- **Outcome:** 64 verified findings across 54 files; 17 fixed and certified, 47
-  plain-`vh` occurrences remain open
-- **Run status:** the canonical drawer repair and the recovered 16-token
-  literal `vh`→`dvh` batch are independently CERTIFIED under the corrected
-  baseline-delta policy
+- **Run date:** 2026-08-13 (America/Los_Angeles)
+- **Run kind:** structural-novelty pass + ledger verification + full viewport-unit detector
+- **Outcome:** 46 live plain-`vh` tokens verified; 37 auto-fixed in two certified 15-file batches and 9 excluded runtime/window/config tokens remain. Structural review added four Tier-R mobile findings.
+- **Certifier verdict:** **CERTIFIED** for both Tier-M batches; no batch was rejected or paused.
+- **Delivery:** **INFRASTRUCTURE BLOCKED** after preservation commit. The isolated
+  patrol worktree is on `codex/p3-mobile-friendly-ui-20260813`, while
+  `release.sh` hard-requires the local branch named `main`; `main` is checked
+  out by the shared checkout, which this patrol may not mutate or commandeer.
+  The certified branch is pushed for retry through the serialized lane; no raw
+  push to `origin/main` and no release-script bypass was used.
 
 ## Scope scanned
 
-The first pass established its baseline at
-`24a25f61878d6e60310eb4a907df3928afc7eaf6`. This resumed pass reran the full
-P3 detectors, independently verified both P3 ledger entries, and included
-structurally new routes/client components since that baseline. It did not use
-raw git churn as scope.
+The isolated worktree was fast-forwarded cleanly to `origin/main`
+`b4b5464f26fcfa367fbbd2d2cd940704f47f7bc9` (`v0.4.561`) before the immutable
+baseline. Worktree-local dependencies were installed with
+`pnpm install --offline --frozen-lockfile`; no shared `node_modules` symlink was
+used.
 
-- 1,061 route leaves under `app/**/page.tsx` / `page.dev.tsx`
-- 355 direct client route leaves
-- 5,306 client `.tsx` files under `app/`, `components/`, and `features/`
-- 122 top-level feature directories
-- all runtime TS/TSX/JS/JSX/CSS/SCSS under `app`, `components`, `features`,
-  `hooks`, `lib`, `providers`, `styles`, and `utils`, excluding generated,
-  documentation, migration, public-asset, build-output, and dependency trees
+Structural novelty since the stored baseline commit
+`24a25f61878d6e60310eb4a907df3928afc7eaf6`:
 
-The structural baseline remains 1,061 route leaves and 122 top-level feature
-directories. The client-file list now contains 5,306 files; the next run must
-diff structural kinds against the baseline commit rather than treating every
-changed line as scope.
+- 5 new route leaves, all under `(core)`:
+  `/crm/campaigns`, `/crm/campaigns/[campaignId]`,
+  `/crm/campaigns/[campaignId]/dial`, `/crm/import`, and
+  `/marketing/ai-visibility/runs/[runId]`
+- 27 newly added direct client `.tsx` files
+- 0 new top-level feature directories
+- the open P3 ledger entry
+- a full P3 viewport-unit and fixed-bottom pass
 
-## Findings
+Current structural baseline:
 
-### Banned viewport units
+- 1,003 route leaves; SHA-256
+  `b9a7802bc8e293d79f7aea2910ec5a846ec0346f5289db8cb295276bbdcb8835`
+- 4,962 direct client `.tsx` files; SHA-256
+  `bda76b2ac8ab791d1df9a176c3e5c5e3b82d7c9f628e33a56a4c4bcafa95d091`
+- 121 top-level feature directories; SHA-256
+  `b7fe66d584074bd0df19cd37f41cb65f8b4ae6415e7864ca558fe6592a0cb52a`
 
-The registry detector for `h-screen|100vh` found no runtime violation. Its only
+## Detector results and false-positive triage
+
+The exact `h-screen|100vh` detector remains clean in runtime code; its only
 matches are explanatory comments in `app/globals.css`.
 
-The stricter mobile skill requires `dvh`, never plain `vh`. After the recovered
-batch, the full numeric-unit detector returns 58 raw lines. Triage removes five
-comment-only lines and six lines in the confirmed zero-consumer
-`components/matrx/resizable/panel-config.ts`, leaving **47 code-bearing `vh`
-occurrences across 38 runtime files**.
+The full numeric-unit detector started at 57 raw tokens on 56 lines in 41 files.
+Triage excluded five comment-only tokens and six expressions in the confirmed
+zero-consumer `components/matrx/resizable/panel-config.ts`, leaving 46 live
+tokens. The two certified batches removed 37. The final raw detector has 20
+lines in 11 files: 9 live excluded tokens, five comments, and six zero-consumer
+prototype expressions.
 
-The remaining backlog mixes desktop window configuration, parser/config
-contracts, loading/empty-state layout, and other surfaces needing per-item
-review. The newly certified direct literal CSS/Tailwind recipe is now eligible
-for narrowly gated Tier-M automation; layout or runtime-contract judgment
-remains Tier R.
-
-Durable full-pass detector:
+Durable detector:
 
 ```bash
 rg --pcre2 -n --glob '*.{ts,tsx,js,jsx,css,scss}' \
@@ -57,118 +60,128 @@ rg --pcre2 -n --glob '*.{ts,tsx,js,jsx,css,scss}' \
   app components features hooks lib providers styles utils
 ```
 
-False-positive classes remain identifier variables such as
-`const vh = window.innerHeight`, comments, already-correct `dvh`, and the
-confirmed zero-consumer resizable prototype. Priority remains: full-height
-dialogs/public viewers first, shared header/menu primitives second, bounded
-desktop/admin popovers and minimum-height empty states last.
+The fixed-bottom detector returned 32 candidates. Context review found no new
+safe-area violation: candidates already carry `pb-safe`/`env(...)`, delegate
+safe padding to their body/footer/nav, are full-height sidebars/backdrops, or
+belong to the same zero-consumer prototypes. The canonical drawer remains
+protected by the 2026-08-12 certified `pb-safe` repair.
 
-### Fixed-bottom safe areas
+## Auto-fixed now
 
-The fixed-bottom detector returned 32 candidates on the resumed pass. Context
-review confirmed that all but the canonical drawer were already protected by
-`pb-safe`/`env(safe-area-inset-bottom)`, delegated safe padding to their fixed
-panel body/footer/nav, were full-height sidebars/backdrops or desktop-only
-positioning, or belonged to the known zero-consumer resizable prototypes.
+Two batches, each exactly 15 files, applied only the registry-approved direct
+literal CSS/Tailwind/inline-style `vh`→`dvh` transform. Numeric values, every
+other class/property, source order, logic, interaction, theme behavior, and
+chunk entry remained identical.
 
-The verified canonical finding was repaired:
+### Batch 1 — 20 tokens / 15 files — CERTIFIED
 
-- `components/ui/drawer.tsx:87` now includes `pb-safe` in the shared styled
-  `DrawerContent` fixed-bottom class.
-- `components/ui/radix-dialog-accessibility.test.tsx` now asserts that the
-  canonical Vaul drawer carries the safe-area class.
-- `DrawerContentPrimitive` remains unstyled by design for custom layouts and
-  was correctly excluded as a false-positive class.
+- shared canvas lens, flashcard source lists, application config/catalog diff
+  panes, scraper bookmark list
+- admin breadcrumb/navigation menus
+- legal case loading/empty states
+- canonical entity/crumb header option menus
+- RAG source inspector mobile pane
+- canonical header bottom-sheet CSS
 
-### Core route header cross-check
+Scoped old-`vh` detector: 20→0. Independent adversarial verdict:
+**CERTIFIED**.
 
-`pnpm check:page-headers` reported eight existing dev/public faux-header
-candidates during the first pass. They are outside P3's mechanical classes and
-remain report-only layout judgment; no core route header was changed.
+### Batch 2 — 17 tokens / 15 files — CERTIFIED
 
-## Fixes and certification
+- research activity feed, sidebar admin menus, layered table filter builder
+- War Room loading skeleton, backlink JSON inspector, content-plan legend
+- knowledge-graph low-quality section, SQL result inspector, surface role list
+- scope breadcrumb, canonical SVG/diff render blocks, toast cap
+- smart-input context-doc menu and HTML inline preview
 
-- **Fixed:** 17 of 64 findings
-- **Tier-M batches:** canonical drawer (2 files) plus recovered literal viewport
-  batch (15 files), each within the ceiling
-- **Adversarial certifier:** **CERTIFIED** for both batches
-- **Rejected batches:** none under the current policy; the old
-  infrastructure/global-baseline rejection is superseded
-- **Paused mutation:** none; 47 findings remain
-- **Delivery:** product commit `70a7a1e4f` first entered main in `v0.4.548` and
-  is an ancestor of READY main-site production release `v0.4.550`
-  (`9419ff9bd`), Vercel deployment
-  `dpl_C9bwWNG9fJZqdhzpwnnbFQF61c45`
+Scoped old-`vh` detector: 16 lines / 17 tokens→0. Independent adversarial
+verdict: **CERTIFIED**.
 
-Certification evidence:
+For both batches, `pnpm type-check` stayed PASS→PASS; page-header warnings
+stayed 8→8; tsconfig stayed PASS with the same two notes; doctrine stayed exit
+0 with the same 11 unrelated warnings; UI-primitives stayed exit 0 with the
+same 19 warnings. Scoped ESLint diagnostics were unchanged from their exact
+pre-edit baselines, and `git diff --check` was clean.
 
-- focused Jest suite: 6/6 passed
-- changed-file lint, `git diff --check`, doctrine, tsconfig, and UI primitive
-  gates passed; UI-primitives retained 19 unrelated existing warnings
-- 375x812 light and dark: drawer computed 12px bottom safe padding, ended
-  exactly at the viewport bottom, had no horizontal overflow, and retained its
-  interaction behavior
-- 1280x800 light and dark: desktop surface retained its normal non-drawer
-  layout with no fixed drawer/dialog and no horizontal overflow
-- the drawer batch's historical type/migration failures were unrelated shared
-  state; the recovered viewport batch started from isolated `origin/main` and
-  recorded a green `pnpm type-check` before and after
-- no suppression, generated-file edit, migration, or chunk-boundary change was
-  used by either P3 batch
+The managed preview lease was owned by the shared checkout at 29.3 GB RSS, so
+this worktree correctly refused to reuse or stop it. Per the patrol
+constitution, both certifiers completed bounded static/component evidence by
+risk class: menus/scrollers, full/min-height states, panes/previews, inline
+styles, and shared CSS. Desktop values/properties remain equivalent; mobile
+heights now follow browser chrome.
 
-### Manually approved literal viewport batch — recovered and CERTIFIED
+## Manual approval requested
 
-Arman manually approved 16 direct literal CSS/Tailwind `vh`→`dvh`
-substitutions across 15 runtime files. Static review confirmed the intended
-one-token-only edits, no suppression/generated/chunk changes, a clean
-`git diff --check`, and no residual plain `vh` in the proposed batch.
+### 1. Nine excluded runtime/window/config `vh` tokens
 
-The old infrastructure/global-baseline rejection was invalid under the
-corrected patrol policy and is superseded. The batch was recovered in an
-isolated worktree from `origin/main`, with exact pre-edit and post-edit gates.
-The adversarial certifier returned **CERTIFIED**:
+These are certain P3 doctrine violations but are outside the auto-approval
+gate because the string crosses a component/config boundary instead of being
+consumed at the literal source. Approve a bounded unit-only batch after tracing
+each consumer:
 
-- exact diff: 15 files, 16 literal `vh`→`dvh` substitutions, with every number
-  and surrounding width/flex/overflow/theme/interaction class unchanged
-- scoped old-`vh` detector: 16 findings → 0; `git diff --check` clean
-- `pnpm type-check`: PASS → PASS
-- doctrine: PASS → PASS; UI-primitives: 19 warnings → the same 19; tsconfig:
-  PASS with two notes → the same result
-- scoped ESLint: 6 errors/2 warnings → the same exact baseline diagnostics
-- sandbox focused Jest: 3 failures/6 passes → the same exact baseline tests
-- migration check: exit 0 with credentials-absent skip → the same result
-- adversarial risk review covered standard capped dialogs, fixed-height flex
-  dialogs, a custom overlay, bounded popover/ScrollArea containers, and the
-  editable minimum-height textarea; no batch-caused defect was found
+- `features/window-panels/windows/seo/KeywordResearchWindow.tsx:162`
+- `features/window-panels/windows/marketing/SiteCommandRunWindow.tsx:40`
+- `features/window-panels/windows/agents/LiveRunWindow.tsx:66`
+- `features/window-panels/windows/projects/CreateProjectWindow.tsx:119`
+- `features/agents/components/inputs/smart-input/PlusAttachMenu.tsx:76`
+- `features/marketing/seo/public-tools/AiVisibilityTool.tsx:105,328`
+- `features/agents/components/agent-widgets/AgentFlexiblePanel.tsx:10`
+- `features/marketing/content-plan/components/NodePanel.tsx:602`
 
-The one bounded preview attempt attached to a pre-existing shared server at
-20.8 GB RSS, already above the mandated 8 GB cap, so it did not navigate or
-restart. Per the updated constitution, the certifier used focused static and
-code-semantic equivalent evidence rather than treating infrastructure as a
-product rejection. Desktop/theme styling and all interaction semantics are
-unchanged by this one-token unit substitution.
+Why it matters: mobile browser chrome changes the usable height; `vh` can make
+floating windows and menus extend below the reachable viewport. Safe intended
+fix: trace the consumer, prove the value reaches CSS unchanged, then substitute
+only `vh`→`dvh` and certify desktop/mobile.
 
-This successful representative batch promotes the exact literal viewport
-recipe to narrowly gated P3 auto-approval in the registry; layout judgment and
-runtime/config contracts remain manual.
+### 2. CRM mobile controls below the 16px / 44pt minima
 
-## Structural baseline for the next run
+Production `v0.4.561` at 375×812 verified:
 
-Use baseline commit `24a25f61878d6e60310eb4a907df3928afc7eaf6`, then add
-open P3 ledger sightings and the required periodic full pass. Never scope by
-raw changed-line volume.
+- `/crm/import`: organization select and pasted-CSV textarea compute to 12px;
+  People, Companies, organization, Template, and Use-pasted-text controls are
+  28–32px tall.
+- `/crm/campaigns` → **New campaign**: name/description compute to 14px and
+  Cancel/Create are 28px tall.
+- matching source classes occur in `CampaignCreateDialog.tsx:96,137`,
+  `AddMembersDialog.tsx:206`, `AddToCampaignDialog.tsx:210`,
+  `CallQueuePage.tsx:515`, and `ImportWizard.tsx:294,348,449`.
 
-- route leaves (1,061):
-  `a99b52673d5eacd5244080730b6b33a27de090386a587c51b1d90f5a8353becd`
-- top-level feature directories (122):
-  `edda1d66263b6d74c36ab96a4fdf184b5fd1c2a0005da1ce6de100f299d0e2e0`
-- current client TSX inventory (5,306):
-  `487cc70fdad379e3d2564622b53910cdb4bd13334fb8e643f80f4bf28a3b893e`
+Why it matters: iOS zooms sub-16px form controls, and undersized targets are
+hard to tap. Safe intended fix: mobile `text-base` inputs and `h-10`/`h-11`
+controls while retaining the current compact desktop classes at the desktop
+breakpoint; certify every distinct dialog/form risk class.
+
+### 3. New collection-run core route keeps identity/share chrome in the body
+
+`features/marketing/seo/ai-visibility/CollectionRunView.tsx:38-54` renders a
+page-title/share toolbar inside the page body. The new `(core)` route
+`/marketing/ai-visibility/runs/[runId]` supplies no `PageHeader`/`RouteHeader`.
+
+Why it matters: body chrome duplicates the shell row and can collide with the
+glass header on narrow screens. Safe intended fix: move route identity and
+Share into the canonical AppShell header, retain report content in the
+`h-full` body, and certify desktop/intermediate/mobile in both themes.
+
+## Backlog retained
+
+### CRM campaign empty state is centered outside the mobile viewport
+
+At production `/crm/campaigns` on 375×812, the table correctly owns horizontal
+scroll and the document itself does not overflow, but the empty-state cell is
+791px wide. Its centered message/action render mostly offscreen. The defect is
+certain; a safe fix is not yet proven because `MatrxDataTable` is a shared
+primitive and changing empty-state anchoring can affect every consumer. Retain
+for a focused responsive table audit that inventories the primitive's mobile
+consumers before implementation.
+
+The nine runtime/window/config tokens above are not exceptions and remain open
+until Arman approves or rejects the proposed bounded batch. No exception was
+proposed, added, suppressed, or allowlisted.
 
 ## Cadence health and candidates
 
-This is the only P3 run in the preceding month, so there is not enough clean-run
-history to propose a longer cadence. The earlier infrastructure-based rejection
-is superseded; P3 mutation is not paused. The schedule remains unchanged. No
-recurring unregistered class was established. The plain `vh` backlog is already
-P3, not a candidate-bench nomination.
+The preceding month contains only the 2026-08-12 first/full run and this run;
+the patrol is not in an all-clean streak, so no longer cadence is proposed.
+Both current batches certified, so mutation is not paused. No recurring
+unregistered class was established; the additional findings are existing P3
+doctrine classes.

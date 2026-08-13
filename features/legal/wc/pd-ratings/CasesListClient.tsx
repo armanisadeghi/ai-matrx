@@ -95,7 +95,7 @@ export function CasesListClient() {
     return (
       <>
         <CasesHeader showNewCase={false} />
-        <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="flex items-center justify-center min-h-[60dvh]">
           <div className="flex items-center gap-3 text-muted-foreground">
             <Loader2 className="h-5 w-5 animate-spin" />
             <span className="text-sm">Loading your cases…</span>
@@ -262,7 +262,7 @@ function CenteredCard({
   actions?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-center min-h-[60vh] px-4">
+    <div className="flex items-center justify-center min-h-[60dvh] px-4">
       <div className="text-center max-w-md">
         <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary mb-4">
           <Icon className="h-6 w-6" />

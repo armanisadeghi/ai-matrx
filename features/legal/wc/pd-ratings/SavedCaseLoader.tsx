@@ -47,7 +47,7 @@ export function SavedCaseLoader({ claimId }: SavedCaseLoaderProps) {
     return (
       <>
         <LoaderHeader />
-        <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="flex items-center justify-center min-h-[60dvh]">
           <div className="flex items-center gap-3 text-muted-foreground">
             <Loader2 className="h-5 w-5 animate-spin" />
             <span className="text-sm">Loading saved case…</span>
@@ -93,7 +93,7 @@ function ErrorState({
   return (
     <>
       <LoaderHeader />
-      <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex items-center justify-center min-h-[60dvh]">
         <div className="text-center max-w-md mx-auto px-4">
           <div className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-destructive/10 text-destructive mb-3">
             <AlertCircle className="h-5 w-5" />

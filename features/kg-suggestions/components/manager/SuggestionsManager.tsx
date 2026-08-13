@@ -214,7 +214,7 @@ export function SuggestionsManager() {
           ) : null}
         </div>
         {showLowQuality ? (
-          <div className="px-3 pb-2 pb-safe sm:max-h-[40vh] sm:overflow-auto">
+          <div className="px-3 pb-2 pb-safe sm:max-h-[40dvh] sm:overflow-auto">
             <div className="grid gap-2 opacity-70 lg:grid-cols-2 2xl:grid-cols-3">
               {lowQuality.map((row) => (
                 <KgSuggestionRowItem

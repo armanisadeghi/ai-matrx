@@ -270,7 +270,7 @@ function RoomSkeleton({ mode }: { mode: RoomMode }) {
           />
         ))}
       </aside>
-      <main className="flex-1 min-h-0 @max-4xl:min-h-[50vh]">
+      <main className="flex-1 min-h-0 @max-4xl:min-h-[50dvh]">
         <div className="h-full rounded-2xl border border-border bg-card/60 animate-pulse" />
       </main>
     </div>

@@ -103,7 +103,7 @@ const BookmarkManager = ({ open, onOpenChange }) => {
               <Button onClick={handleAdd}>Add</Button>
             </div>
             {/* Bookmarks List */}
-            <div className="max-h-[50vh] overflow-y-auto">
+            <div className="max-h-[50dvh] overflow-y-auto">
               {bookmarks.map((bookmark, index) => (
                 editingIndex === index ? (
                   <div key={index} className="flex space-x-2 p-2 border-b">

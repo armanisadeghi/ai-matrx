@@ -59,7 +59,7 @@ function CrumbDropdown({ crumb }: { crumb: AdminCrumb }) {
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="start"
-        className="max-h-[70vh] w-60 overflow-y-auto"
+        className="max-h-[70dvh] w-60 overflow-y-auto"
       >
         {crumb.isPage && (
           <>

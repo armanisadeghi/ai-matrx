@@ -318,7 +318,7 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
             // Generous default (~a full page), grows to fill available space
             // when expanded. The canvas gives the true full-height view.
             style={{
-              height: expanded ? "min(85vh, 1400px)" : "min(70vh, 720px)",
+              height: expanded ? "min(85dvh, 1400px)" : "min(70dvh, 720px)",
             }}
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-presentation"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"

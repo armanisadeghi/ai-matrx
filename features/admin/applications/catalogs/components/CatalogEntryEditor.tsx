@@ -949,7 +949,7 @@ export function CatalogEntryEditor({
                   ) : null}
                 </div>
               ) : null}
-              <div className="max-h-[55vh] overflow-y-auto rounded-md border border-border">
+              <div className="max-h-[55dvh] overflow-y-auto rounded-md border border-border">
                 <DiffViewer
                   original={currentJson}
                   modified={pendingSnapshotJson(app, pendingSave)}
@@ -982,7 +982,7 @@ export function CatalogEntryEditor({
         contentClassName="sm:max-w-3xl"
         content={
           row ? (
-            <pre className="max-h-[45vh] overflow-auto rounded-md border border-border bg-muted/40 p-3 text-xs">
+            <pre className="max-h-[45dvh] overflow-auto rounded-md border border-border bg-muted/40 p-3 text-xs">
               {rowSnapshotJson(row)}
             </pre>
           ) : null

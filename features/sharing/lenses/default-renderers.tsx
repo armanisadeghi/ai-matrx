@@ -257,7 +257,7 @@ export function CanvasRenderer({ result }: { result: ResolvedShareToken }) {
         : { type: "html", data: rawContent };
 
   return (
-    <div className="h-[70vh] min-h-[420px] w-full overflow-hidden rounded-xl border border-border bg-card">
+    <div className="h-[70dvh] min-h-[420px] w-full overflow-hidden rounded-xl border border-border bg-card">
       <React.Suspense
         fallback={
           <div className="flex h-full items-center justify-center">

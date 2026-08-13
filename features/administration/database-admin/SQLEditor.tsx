@@ -60,7 +60,7 @@ export const SQLEditor = ({ loading, error, onExecuteQuery }: SQLEditorProps) =>
           )}
 
           {queryResult != null && (
-            <div className="h-[min(28rem,50vh)] min-h-[16rem] rounded-md border overflow-hidden">
+            <div className="h-[min(28rem,50dvh)] min-h-[16rem] rounded-md border overflow-hidden">
               <JsonInspector data={queryResult} defaultView="json" />
             </div>
           )}
