@@ -654,7 +654,7 @@ function SheetRow({
       type="button"
       onClick={onPress}
       className={cn(
-        "flex items-center w-full px-5 min-h-[52px] active:bg-white/5 transition-colors border-b border-white/[0.06] last:border-0",
+        "flex items-center w-full px-5 min-h-[52px] active:bg-accent/50 transition-colors border-b border-border last:border-0",
         destructive ? "text-destructive" : "text-foreground",
       )}
     >
