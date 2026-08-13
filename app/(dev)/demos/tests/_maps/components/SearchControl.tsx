@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { useThemeMode } from '@/styles/themes/useThemeMode';
+import { toast } from '@/lib/toast';
 
 interface SearchControlProps {
   position?: 'topleft' | 'topright' | 'bottomleft' | 'bottomright';
@@ -81,11 +82,11 @@ export default function SearchControl({
                 map.removeLayer(marker);
               }, 5000);
             } else {
-              alert('Location not found. Please try a different search term.');
+              toast.error('Location not found. Please try a different search term.');
             }
           } catch (error) {
             console.error('Error searching for location:', error);
-            alert('Error searching for location. Please try again.');
+            toast.error('Error searching for location. Please try again.');
           } finally {
             setIsSearching(false);
           }
@@ -107,4 +108,4 @@ export default function SearchControl({
   }, [map, position, placeholder, width]); // Dependencies updated
   
   return null;
-} 
+}

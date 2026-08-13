@@ -6,6 +6,7 @@ import { ComponentDisplayWrapper } from '../component-usage';
 import { FileCode, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { toast } from '@/lib/toast';
 
 interface ComponentDisplayProps {
   component?: ComponentEntry;
@@ -43,7 +44,7 @@ export default function PlaceholderDisplay({ component }: ComponentDisplayProps)
             className="gap-2"
             onClick={() => {
               // This is just a placeholder, in a real app you'd navigate to documentation
-              alert('Navigate to documentation');
+              toast.info('Navigate to documentation');
             }}
           >
             <FileCode className="h-4 w-4" />
@@ -53,4 +54,4 @@ export default function PlaceholderDisplay({ component }: ComponentDisplayProps)
       </div>
     </ComponentDisplayWrapper>
   );
-} 
+}
