@@ -1,0 +1,7 @@
+-- Applied via Supabase MCP 2026-08-12 (app_execution_rate_limit_owner_col_cut).
+-- user_id -> created_by on app.execution + app.rate_limit (created_by pre-backfilled, 0 mismatches).
+-- NULL stays load-bearing (created_by NULL = anonymous; bucket ladder user -> fingerprint -> ip
+-- preserved verbatim). Rewrote check_rate_limit + enforce_aga_rate_limit; rebuilt the three
+-- partial-unique bucket indexes + execution owner index on created_by; dropped user_id from both.
+-- Full SQL in supabase_migrations.schema_migrations. FE writers shipped in the same window
+-- (track route, agent-apps types).
