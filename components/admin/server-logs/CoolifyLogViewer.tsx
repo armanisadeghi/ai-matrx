@@ -37,6 +37,9 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { formatAbsoluteDate, formatRelativeTime } from "@/utils/datetime";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { ADMIN_SERVER_LOGS_SURFACE_NAME } from "@/features/surfaces/manifests/admin-server-logs.manifest";
+import { buildAdminServerLogsScope } from "@/features/server-logs/server-logs-scope";
 import {
   parseLogLines,
   applyFilters,
@@ -1106,6 +1109,42 @@ export default function CoolifyLogViewer({
   const selectionCount = selectionSet.size;
 
   return (
+    /* Surface emitter for `matrx-admin/server-logs`. Read-only by design — the
+       manifest declares NO writeTargets (this page is the RECORD of what
+       happened, and every input on it is view state), so no getWriteHandlers.
+       `getScope` MUST stay synchronous: the Surface Context window samples it
+       every 400ms while open, and a fetching emitter would re-hit
+       /api/admin/coolify-logs behind an idle-looking panel. Everything below is
+       already in this render's closure. */
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_SERVER_LOGS_SURFACE_NAME}
+      getScope={() =>
+        buildAdminServerLogsScope({
+          selectedApp,
+          appEnvironment: appMeta?.env ?? "production",
+          apps: APPS,
+          lineCount,
+          pollInterval,
+          fetchedAt,
+          loading,
+          error,
+          filters,
+          noiseExcludes: filters.noiseExcludes,
+          viewMode,
+          startOffset,
+          displayCount,
+          rawLogs,
+          fetchedLineCount: rawLineCount,
+          visibleLines: filteredLines,
+          selectedLine,
+          selectedLineIndexes: selectionSet,
+          selectionAnchor: selAnchor,
+          selectionTail: selTail,
+        })
+      }
+    >
+    {/* Body indentation is left as-is so this wrapper stays a small diff on a
+        1,500-line component (the repo has no formatter to normalize it). */}
     <div className="w-full h-full flex flex-col bg-background text-foreground overflow-hidden">
       {/* ── Top toolbar ── */}
       <div className="shrink-0 flex items-center gap-2 px-3 py-2 border-b border-border bg-card flex-wrap">
@@ -1483,5 +1522,6 @@ export default function CoolifyLogViewer({
         )}
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
