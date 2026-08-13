@@ -20,8 +20,7 @@ const SHORTCUT_FIELDS = [
   "is_active",
   "created_by",
   "organization_id",
-  "project_id",
-  "task_id",
+  // project/task scoping is platform.associations edges, not columns
   // AgentExecutionConfig bundle
   "display_mode",
   "show_variable_panel",
@@ -74,9 +73,7 @@ export async function GET(request: NextRequest) {
       // Global/platform content now lives in the system org (was NULL org).
       query = query
         .is("created_by", null)
-        .eq("organization_id", await resolveSystemOrgId(supabase))
-        .is("project_id", null)
-        .is("task_id", null);
+        .eq("organization_id", await resolveSystemOrgId(supabase));
     } else if (scope === "user") {
       query = query.eq("created_by", user.id);
     } else if (scope === "organization") {
@@ -87,22 +84,32 @@ export async function GET(request: NextRequest) {
         );
       }
       query = query.eq("organization_id", scopeId);
-    } else if (scope === "project") {
+    } else if (scope === "project" || scope === "task") {
       if (!scopeId) {
         return NextResponse.json(
-          { error: "scopeId is required when scope=project" },
+          { error: `scopeId is required when scope=${scope}` },
           { status: 400 },
         );
       }
-      query = query.eq("project_id", scopeId);
-    } else if (scope === "task") {
-      if (!scopeId) {
+      // Scoping lives in platform.associations (agent_shortcut → project/task edges).
+      const { data: edges, error: edgeError } = await supabase
+        .schema("platform")
+        .from("associations")
+        .select("source_id")
+        .eq("source_type", "agent_shortcut")
+        .eq("target_type", scope)
+        .eq("target_id", scopeId);
+      if (edgeError) {
         return NextResponse.json(
-          { error: "scopeId is required when scope=task" },
-          { status: 400 },
+          { error: "Failed to resolve shortcut scoping", details: edgeError.message },
+          { status: 500 },
         );
       }
-      query = query.eq("task_id", scopeId);
+      const scopedIds = (edges ?? []).map((edge) => edge.source_id);
+      if (scopedIds.length === 0) {
+        return NextResponse.json({ data: [] });
+      }
+      query = query.in("id", scopedIds);
     } else if (scope) {
       return NextResponse.json(
         { error: `Unknown scope: ${scope}` },
@@ -179,12 +186,51 @@ export async function POST(request: NextRequest) {
     });
     if (scoped instanceof NextResponse) return scoped;
 
+    // Scoping is platform.associations edges now — the columns no longer exist.
+    // Pull the resolved project/task off the payload and write edges after insert.
+    const scopedProjectId = (scoped.project_id as string | null) ?? null;
+    const scopedTaskId = (scoped.task_id as string | null) ?? null;
+    delete scoped.project_id;
+    delete scoped.task_id;
+
     const { data, error } = await supabase
       .schema("agent")
       .from("shortcut")
       .insert(scoped as never)
       .select()
       .single();
+
+    if (!error && data && (scopedProjectId || scopedTaskId)) {
+      const edgeTargets = [
+        scopedProjectId ? { type: "project", id: scopedProjectId } : null,
+        scopedTaskId ? { type: "task", id: scopedTaskId } : null,
+      ].filter((t): t is { type: string; id: string } => t !== null);
+      const { error: edgeError } = await supabase
+        .schema("platform")
+        .from("associations")
+        .insert(
+          edgeTargets.map((target) => ({
+            source_type: "agent_shortcut",
+            source_id: (data as { id: string }).id,
+            target_type: target.type,
+            target_id: target.id,
+            organization_id: (scoped.organization_id as string) ?? null,
+            created_by: user.id,
+          })) as never,
+        );
+      if (edgeError) {
+        // Loud, never silent: a shortcut without its scoping edge is a broken create.
+        console.error("Shortcut created but scoping edge failed:", edgeError);
+        return NextResponse.json(
+          {
+            error: "Shortcut created but project/task scoping failed",
+            details: edgeError.message,
+            data,
+          },
+          { status: 500 },
+        );
+      }
+    }
 
     if (error) {
       console.error("Error creating agent shortcut:", error);

@@ -269,8 +269,10 @@ export function dbRowToAgentShortcut(row: ShortcutRow): AgentShortcut {
 
     userId: row.created_by,
     organizationId: row.organization_id,
-    projectId: row.project_id,
-    taskId: row.task_id,
+    // project/task scoping lives in platform.associations; table rows no longer
+    // carry it — the RPC read paths (which project the edges) fill these fields.
+    projectId: null,
+    taskId: null,
 
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -367,8 +369,8 @@ export function agentShortcutToInsert(shortcut: AgentShortcut): ShortcutInsert {
 
     created_by: shortcut.userId,
     organization_id: shortcut.organizationId,
-    project_id: shortcut.projectId,
-    task_id: shortcut.taskId,
+    // project/task scoping is written as platform.associations edges via the
+    // agx_create_shortcut RPC — never as table columns (they no longer exist).
   };
 
   return insert;
@@ -479,8 +481,7 @@ export function agentShortcutToUpdate(
     }
     update.organization_id = partial.organizationId;
   }
-  if (partial.projectId !== undefined) update.project_id = partial.projectId;
-  if (partial.taskId !== undefined) update.task_id = partial.taskId;
+  // projectId/taskId updates are association-edge operations, not column writes.
 
   return update;
 }

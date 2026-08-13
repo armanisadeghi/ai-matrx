@@ -1034,8 +1034,7 @@ function shortcutToApiBody(
   if (patch.userId !== undefined) out.created_by = patch.userId;
   if (patch.organizationId !== undefined)
     out.organization_id = patch.organizationId;
-  if (patch.projectId !== undefined) out.project_id = patch.projectId;
-  if (patch.taskId !== undefined) out.task_id = patch.taskId;
+  // projectId/taskId are association edges now — not writable columns.
   return out;
 }
 

@@ -891,7 +891,6 @@ export type Database = {
           metadata: Json
           organization_id: string
           pre_execution_message: string | null
-          project_id: string | null
           response_density: string
           scope_mappings: Json | null
           show_definition_message_content: boolean
@@ -900,7 +899,6 @@ export type Database = {
           show_variable_panel: boolean
           sort_order: number
           surface_name: string | null
-          task_id: string | null
           updated_at: string
           updated_by: string | null
           use_latest: boolean
@@ -938,7 +936,6 @@ export type Database = {
           metadata?: Json
           organization_id: string
           pre_execution_message?: string | null
-          project_id?: string | null
           response_density?: string
           scope_mappings?: Json | null
           show_definition_message_content?: boolean
@@ -947,7 +944,6 @@ export type Database = {
           show_variable_panel?: boolean
           sort_order?: number
           surface_name?: string | null
-          task_id?: string | null
           updated_at?: string
           updated_by?: string | null
           use_latest?: boolean
@@ -985,7 +981,6 @@ export type Database = {
           metadata?: Json
           organization_id?: string
           pre_execution_message?: string | null
-          project_id?: string | null
           response_density?: string
           scope_mappings?: Json | null
           show_definition_message_content?: boolean
@@ -994,7 +989,6 @@ export type Database = {
           show_variable_panel?: boolean
           sort_order?: number
           surface_name?: string | null
-          task_id?: string | null
           updated_at?: string
           updated_by?: string | null
           use_latest?: boolean
@@ -1331,11 +1325,9 @@ export type Database = {
           name: string
           organization_id: string
           output_schema: Json | null
-          project_id: string | null
           settings: Json
           source_agent_id: string | null
           tags: string[]
-          task_id: string | null
           tool_config: Json
           tools: string[]
           updated_at: string
@@ -1364,11 +1356,9 @@ export type Database = {
           name: string
           organization_id: string
           output_schema?: Json | null
-          project_id?: string | null
           settings?: Json
           source_agent_id?: string | null
           tags?: string[]
-          task_id?: string | null
           tool_config?: Json
           tools?: string[]
           updated_at?: string
@@ -1397,11 +1387,9 @@ export type Database = {
           name?: string
           organization_id?: string
           output_schema?: Json | null
-          project_id?: string | null
           settings?: Json
           source_agent_id?: string | null
           tags?: string[]
-          task_id?: string | null
           tool_config?: Json
           tools?: string[]
           updated_at?: string
