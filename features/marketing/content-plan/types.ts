@@ -11,6 +11,26 @@ import type { Database } from "@/types/database.types";
 export type PlanNodeRow = Database["plan"]["Tables"]["node"]["Row"];
 export type PlanEntityRow = Database["plan"]["Tables"]["entity"]["Row"];
 export type PlanProfileRow = Database["plan"]["Tables"]["profile"]["Row"];
+export type PlanNodeStepRow = Database["plan"]["Tables"]["node_step"]["Row"];
+export type PlanNodeArtifactRow =
+  Database["plan"]["Tables"]["node_artifact"]["Row"];
+
+/**
+ * The Website Factory pipeline axis (researched → written → reviewed → built →
+ * published). Vocabulary mirror of aidream
+ * `services/content_plan/artifacts.py` STEPS — the server is canonical; a
+ * missing `plan.node_step` row means the step has never run.
+ */
+export const PIPELINE_STEPS = [
+  { step: "p1_keywords", label: "Keywords" },
+  { step: "p2_research", label: "Research" },
+  { step: "p3_family", label: "Family" },
+  { step: "p4_write", label: "Write" },
+  { step: "p5_review", label: "Review" },
+  { step: "p6_build", label: "Build" },
+  { step: "p7_publish", label: "Publish" },
+] as const;
+export type PipelineStepKey = (typeof PIPELINE_STEPS)[number]["step"];
 
 /**
  * Columns on plan.node that are TRIGGER-OWNED derived cache

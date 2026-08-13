@@ -11142,6 +11142,84 @@ export type Database = {
           },
         ]
       }
+      merge_candidate: {
+        Row: {
+          confidence: number
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          detected_at: string
+          dismissed_at: string | null
+          dismissed_by: string | null
+          id: string
+          last_detected_at: string
+          metadata: Json
+          organization_id: string
+          signals: Json
+          source_id: string
+          status: string
+          target_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          detected_at?: string
+          dismissed_at?: string | null
+          dismissed_by?: string | null
+          id?: string
+          last_detected_at?: string
+          metadata?: Json
+          organization_id: string
+          signals?: Json
+          source_id: string
+          status?: string
+          target_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          detected_at?: string
+          dismissed_at?: string | null
+          dismissed_by?: string | null
+          id?: string
+          last_detected_at?: string
+          metadata?: Json
+          organization_id?: string
+          signals?: Json
+          source_id?: string
+          status?: string
+          target_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merge_candidate_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "party"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "merge_candidate_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "party"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       party: {
         Row: {
           aka: string[]
@@ -11543,7 +11621,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      name_key: { Args: { p_name: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never
@@ -35453,6 +35531,11 @@ export type Database = {
           p_tagline?: string
         }
         Returns: Json
+      }
+      crm_detect_merge_candidates: { Args: { p_org: string }; Returns: Json }
+      crm_dismiss_merge_candidate: {
+        Args: { p_id: string }
+        Returns: undefined
       }
       crm_merge_parties: {
         Args: {

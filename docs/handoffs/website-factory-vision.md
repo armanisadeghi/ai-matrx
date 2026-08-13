@@ -103,11 +103,19 @@ fork it.
 lifecycle with publication; there is no "researched / written / reviewed / built" axis and no
 node-level "has page / is live" flag, and the plan UI shows none of the CMS linkage.
 
-## P4 — the per-page working-content record: PROPOSED DESIGN (2026-08-07, awaiting Arman)
+## P4 — the per-page working-content record: BUILT 2026-08-12 (shape as proposed — flag for Arman's review)
 
-Ruling so far (Arman, 2026-08-07): plan side, main DB — *"absolutely no question"*. What he
-wants reviewed is the SHAPE: columns vs tables vs `platform.associations`, done like a
-professional. This section is the proposal; nothing is built until he signs off.
+Ruling (Arman, 2026-08-07): plan side, main DB — *"absolutely no question"*; the SHAPE below
+was the argued proposal and was **built exactly as written** (bias-to-action call, 2026-08-12
+session; append-only data, nothing downstream depends on it yet, so shape adjustments stay
+cheap). Live: aidream migration `0344` (`plan.node_artifact` + `plan.node_step`, components of
+`plan_node`, canonical RLS, site/org trigger-stamped, supersession index proven live);
+writer module `aidream/services/content_plan/artifacts.py` (STEPS vocabulary, loud-open
+recording); wired producers: deepen → `p2_research` (+ research artifact), cms_fill →
+`p6_build` running/done/failed (+ `final` build artifact, preview-write included), publish
+flow-back → `p7_publish`. FE: direct RLS reads + the NodePanel "Pipeline" rail
+(`NodeStepRail.tsx`). NOT yet done: formal content-ir kind registration for the two envelope
+shapes, tree/table step badges, per-step run actions, and the p1/p3/p4/p5 specialist steps.
 
 ### The two tables (and why exactly two)
 
@@ -197,10 +205,10 @@ pipeline is just "run every non-done step in order".
 
 1. **Prove the current loop once end-to-end.** Test site → starter kit → cms-fill (~10 nodes) → publish → view on mymatrx.com/c/{slug}. `plan.cms_fill_job` has 0 rows ever; nothing downstream should be designed on an unexercised pipeline. Surface every failure found.
 2. **Fix `theme_config` → CSS in my-matrx** (filed defect). Without it, S2 theming is fake — theme edits after starter-kit change nothing.
-3. **Design the per-node content record (P4)** — where drafts, revisions, research artifacts, and per-step status live. This unblocks P1/P2/P3/P5. Needs a schema decision (see Decisions).
-4. **Decompose `cms_fill` into explicit pipeline steps** behind the SAME button: persisted step records per node, each step independently re-runnable; initial step implementations may be thin (even the current single prompt split apart), but the steps must exist in data, not prose. Reuse the durable-queue pattern.
+3. ~~Design + build the per-node content record (P4)~~ **DONE 2026-08-12** (see the P4 section — tables, writer, producers, FE rail all live; review the shape).
+4. **Decompose `cms_fill` into explicit pipeline steps** behind the SAME button. STARTED 2026-08-12: fill/deepen/publish now persist step state + artifacts (the steps exist in data); still monolithic per page — the author call is one prompt. Next: split context-assembly (`p3_family`), structured write (`p4_write`), review (`p5_review`) into separately re-runnable item types on the same durable queue.
 5. **Site design system (S3) + page templates (S4)**: template/block entities in the CMS DB, starter kit installs a default set, `page_type` binds node → template, per-site "templates required vs theme-only" setting. Page build step consumes them.
-6. **Plan UI shows the pipeline**: the linked-CMS-page half is DONE (2026-08-07, WF-11 — `GET /content-plan/sites/{id}/cms-pages` + tree/table Draft/Published badges + NodePanel "CMS Page" card with edit/live links). Remaining: per-node STEP status (researched/written/reviewed/built axis) and per-node "run step / generate this page" actions.
+6. **Plan UI shows the pipeline**: linked-CMS-page half DONE (2026-08-07, WF-11); NodePanel step rail DONE (2026-08-12, `NodeStepRail` + direct `node_step`/`node_artifact` reads). Remaining: step badges on tree/table views, and per-node "run step / generate this page" actions.
 7. **First specialist agents on the rails**: writer, reviewer/fact-checker, page-builder as saved agents; orchestrate per-page via AgentPlan; `cms_fill`'s inline prompt becomes the page-builder's starting prompt.
 8. Wire per-node keyword/content research (P1/P2) to store artifacts on the content record; connect `features/research/` pipeline as the P2 engine.
 
@@ -212,5 +220,5 @@ pipeline is just "run every non-done step in order".
 
 ## Decisions needed (Arman)
 
-1. **Where does per-page content live?** Situation: a page's draft content, research artifacts, and review revisions currently have no home — the plan node (main Supabase project) holds only a bullet-list brief, and the CMS project holds only finished HTML. Decide: (a) new tables in the `plan` schema next to `plan.node` (content stays with the plan, main project), or (b) draft-content tables in the CMS project next to `client_pages` (content stays with the site). Recommendation: (a) — the content lifecycle belongs to planning; the CMS receives only the final built page, and cross-project links already exist via `plan_node_id`.
+1. ~~Where does per-page content live?~~ **Ruled (a) 2026-08-07 and BUILT 2026-08-12** as the P4 section's exact shape. Open for review, not decision: sanity-check the shape on the live tables (`plan.node_artifact` / `plan.node_step`); adjustments are cheap while nothing downstream depends on them.
 2. **Templates: how strict?** Situation: the vision says "no page created without a prebuilt template" but also allows theme-only free-form sites. Decide: is template-required the default for new sites with an explicit per-site opt-out, or opt-in? Recommendation: required by default, `client_sites.settings` flag to relax.

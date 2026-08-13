@@ -141,6 +141,16 @@ cms-starter-kit`. Guarded CMS writes (agent_write_policy + activity log live
   site by the DB guard. Nullable `meta_title` / `meta_description` carry the
   planned search presentation into CMS realization and fill without burying
   that intent in JSON metadata.
+- `plan.node_step` + `plan.node_artifact` (2026-08-12, aidream migration
+  `0344`) — the Website Factory PRODUCTION axis: one `node_step` row per
+  `(node, step)` (`p1_keywords`…`p7_publish`, vocabulary mirrored in
+  `types.ts PIPELINE_STEPS` from aidream `content_plan/artifacts.py`, the ONE
+  writer) and supersession-versioned artifacts (current = `valid_to IS NULL`).
+  The client READS both direct under RLS (`listNodeSteps` /
+  `listNodeArtifacts` in `data/service.ts`) and writes neither; the NodePanel
+  "Pipeline" section renders `NodeStepRail`. A missing step row means "never
+  run" — pending is a deliberately visible state. Distinct from the editorial
+  `plan_status`.
 - `plan.entity` — person/source/media/org per site.
 - `plan.profile` — vertical config (attribute schemas, cadences, template
   maps) per org. **No hard site→vertical binding exists yet** (open item in
@@ -538,6 +548,12 @@ No new server capability was added: `cms-align` always took a node-id array,
 always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
+
+- 2026-08-12 — **Pipeline rail (Website Factory P4).** `plan.node_step` /
+  `node_artifact` reads + `NodeStepRail` in the NodePanel (see Data model).
+  Server half: aidream `content_plan/artifacts.py` + producers (deepen →
+  research, cms_fill → build, publish flow-back). Next: step badges on
+  tree/table, per-step run actions.
 
 - 2026-08-13 — **the workspace is the platform's first surface to offer agents
   CLIENT TOOLS: an agent bound to this page can now move the user's view while
