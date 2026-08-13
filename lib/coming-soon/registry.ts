@@ -320,6 +320,108 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
     stage: "planned",
     surfaces: ["Math problem block action bar (chat content)"],
   },
+  "rich-document.convert-to-broker": {
+    id: "rich-document.convert-to-broker",
+    label: "Convert to Broker",
+    owner: "rich-document",
+    promise:
+      "Turn this response or document into a reusable broker that agents can reference as structured context.",
+    stage: "planned",
+    surfaces: [
+      "Rich document action menu",
+      "Authenticated chat message action menu",
+      "Public chat message action menu",
+    ],
+  },
+  "chat.add-to-docs": {
+    id: "chat.add-to-docs",
+    label: "Add to Docs",
+    owner: "chat",
+    promise:
+      "Send this response straight into the document workspace without copying and pasting it by hand.",
+    stage: "planned",
+    surfaces: [
+      "Authenticated chat message action menu",
+      "Public chat message action menu",
+    ],
+  },
+  "image-studio.smart-crop": {
+    id: "image-studio.smart-crop",
+    label: "Smart Crop",
+    owner: "image-studio",
+    promise:
+      "Detect the important subject automatically and frame an avatar crop around it.",
+    stage: "blocked",
+    blockedBy:
+      "The avatar control is built, but face detection is disabled in IMAGE_STUDIO_BACKEND_CAPABILITIES until the deployed endpoint is available.",
+    surfaces: ["Image Studio avatar mode"],
+  },
+  "image-studio.edit-suggestions": {
+    id: "image-studio.edit-suggestions",
+    label: "AI Edit Suggestions",
+    owner: "image-studio",
+    promise:
+      "Analyze the current image and recommend concrete edits that improve it.",
+    stage: "blocked",
+    blockedBy:
+      "The edit-toolbar control is built, but edit suggestions are disabled in IMAGE_STUDIO_BACKEND_CAPABILITIES until the deployed endpoint is available.",
+    surfaces: ["Image Studio edit toolbar"],
+  },
+  "image-studio.prompt-edit": {
+    id: "image-studio.prompt-edit",
+    label: "Prompt-based Image Editing",
+    owner: "image-studio",
+    promise:
+      "Describe a change in plain language and apply it directly to the current image.",
+    stage: "blocked",
+    blockedBy:
+      "The prompt-edit control is built, but prompt editing is disabled in IMAGE_STUDIO_BACKEND_CAPABILITIES until the deployed endpoint is available.",
+    surfaces: ["Image Studio edit toolbar"],
+  },
+  "image-studio.suggest-annotations": {
+    id: "image-studio.suggest-annotations",
+    label: "Suggest Annotations",
+    owner: "image-studio",
+    promise:
+      "Analyze the image and recommend useful callouts, arrows, and highlights.",
+    stage: "blocked",
+    blockedBy:
+      "The annotate-mode control is built, but the annotation-suggestion agent is not deployed.",
+    surfaces: ["Image Studio annotate mode"],
+  },
+  "image-studio.pii-redaction": {
+    id: "image-studio.pii-redaction",
+    label: "Redact Sensitive Information",
+    owner: "image-studio",
+    promise:
+      "Find sensitive personal information in an image and prepare safe redactions.",
+    stage: "blocked",
+    blockedBy:
+      "The annotate-mode control is built, but the PII-redaction agent is not deployed.",
+    surfaces: ["Image Studio annotate mode"],
+  },
+  "image-studio.face-detection": {
+    id: "image-studio.face-detection",
+    label: "Detect Faces",
+    owner: "image-studio",
+    promise:
+      "Find faces in an image so they can be obscured without locating each one by hand.",
+    stage: "blocked",
+    blockedBy:
+      "The blur-faces control is built, but face detection is disabled in IMAGE_STUDIO_BACKEND_CAPABILITIES until the deployed endpoint is available.",
+    surfaces: ["Image Studio annotate mode"],
+  },
+  "education.premium-checkout": {
+    id: "education.premium-checkout",
+    label: "Education Premium Checkout",
+    owner: "education",
+    promise:
+      "Start a secure checkout for the Education Premium plan and activate the subscription immediately.",
+    stage: "blocked",
+    blockedBy:
+      "The live Stripe checkout endpoint returns 503 until Education Premium billing is configured.",
+    surfaces: ["/pricing Premium plan action"],
+  },
 };
 
 export function getComingSoon(id: string): ComingSoonEntry | undefined {

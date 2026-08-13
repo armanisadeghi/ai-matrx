@@ -4,7 +4,7 @@
 // stay consistent across surfaces while we build the real implementations.
 
 import { Briefcase } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { announceComingSoon } from "@/lib/coming-soon/announce";
 import { registerAction } from "../registry";
 
 registerAction({
@@ -17,8 +17,6 @@ registerAction({
   renderSlot: "overflow",
   order: 20,
   run: () => {
-    toast.info("Coming soon", {
-      description: "Convert to broker will be available shortly.",
-    });
+    void announceComingSoon("rich-document.convert-to-broker");
   },
 });

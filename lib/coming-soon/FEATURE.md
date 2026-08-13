@@ -34,4 +34,5 @@ So: same handling as a found defect. **Report it, and ask to solve it.**
 
 ## Change log
 
+- **2026-08-13** — First P9 patrol batch registered nine previously untracked chat, Image Studio, and Education promises and routed their existing action handlers through `announceComingSoon`.
 - **2026-07-25** — Created alongside `/agents/browse`, seeded with the six agent-record promises (three inherited from `/agents/all`'s dead-end icons, three new).

@@ -10,6 +10,7 @@ Format: `- [ ] <P#> | <file-or-route> | <one line> | <date>`
 
 ## Open
 
+- [ ] P9 | see `.matrx/patrol-reports/coming-soon-compliance.md` | first/full pass found 12 verified promise cases: corrected 10-case/14-handler Tier-M batch is preserved after two concrete rejections were fixed, but final interaction certification is infrastructure-blocked by a foreign preview lease; two manual proposals and 99 detector candidates remain routed | infrastructure-blocked | 2026-08-13
 - [ ] P2 | see `.matrx/patrol-reports/inventory-law.md` | 34 baseline catalogue items remain after the manually approved Master Input agent-door repair shipped in `v0.4.550`; continue item-scoped approval routing | 2026-08-12
 - [ ] P3 | see `.matrx/patrol-reports/mobile-friendly-ui.md` | 16 approved literal `vh`→`dvh` findings shipped and were verified in READY production `v0.4.550`; 47 code-bearing `vh` occurrences remain across 38 runtime files for the newly gated mechanical recipe or per-surface review | 2026-08-12
 - [ ] P6 | see `.matrx/patrol-reports/no-emojis-in-ui.md` | 19 approved files passed accessible-state repair, desktop/mobile × light/dark proof, and the full type gate, then shipped in `v0.4.527`; 203 lines remain in 75 files | 2026-08-12

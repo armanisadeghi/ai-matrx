@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Loader2, RotateCw, Save, X, Zap, ZoomIn } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { announceComingSoon } from "@/lib/coming-soon/announce";
 import { detectFaces } from "../../api/python";
 import { IMAGE_STUDIO_BACKEND_CAPABILITIES } from "../../constants/backend-capabilities";
 import { cropFileToFile } from "../../utils/crop-file";
@@ -65,7 +66,7 @@ export function AvatarModeShell({
 
   const handleSmartCrop = useCallback(async () => {
     if (!IMAGE_STUDIO_BACKEND_CAPABILITIES.faceDetection) {
-      toast.info("Smart crop is coming soon.");
+      void announceComingSoon("image-studio.smart-crop");
       return;
     }
     // The "smart-crop" LLM agent and `face-detect` Python endpoint are both
@@ -112,11 +113,11 @@ export function AvatarModeShell({
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Smart crop failed";
       // Backend not yet implemented → 404. Surface a friendly message.
-      toast.info(
-        msg.includes("404")
-          ? "Smart crop is coming soon — adjust the crop manually."
-          : msg,
-      );
+      if (msg.includes("404")) {
+        void announceComingSoon("image-studio.smart-crop");
+      } else {
+        toast.info(msg);
+      }
     } finally {
       setSmartCropping(false);
     }
