@@ -28,7 +28,7 @@ export default function MessageTemplatePeek({ id, open, onClose }: PeekProps) {
     (async () => {
       setLoading(true);
       const { data } = await supabase
-        .from("message_template")
+        .schema("agent").from("message_template")
         .select("label, created_at")
         .is("deleted_at", null)
         .eq("id", id)

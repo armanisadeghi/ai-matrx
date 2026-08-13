@@ -762,6 +762,63 @@ export type Database = {
           },
         ]
       }
+      message_template: {
+        Row: {
+          content: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          is_public: boolean | null
+          label: string | null
+          metadata: Json | null
+          organization_id: string
+          role: Database["public"]["Enums"]["message_role"] | null
+          tags: string[] | null
+          updated_at: string | null
+          updated_by: string | null
+          user_id: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_public?: boolean | null
+          label?: string | null
+          metadata?: Json | null
+          organization_id: string
+          role?: Database["public"]["Enums"]["message_role"] | null
+          tags?: string[] | null
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_public?: boolean | null
+          label?: string | null
+          metadata?: Json | null
+          organization_id?: string
+          role?: Database["public"]["Enums"]["message_role"] | null
+          tags?: string[] | null
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
       review_queue: {
         Row: {
           created_at: string
@@ -29544,6 +29601,65 @@ export type Database = {
         }
         Relationships: []
       }
+      flexible_data: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          created_by: string | null
+          data: Json
+          deleted_at: string | null
+          id: string
+          label: string
+          metadata: Json
+          organization_id: string
+          slug: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          data?: Json
+          deleted_at?: string | null
+          id?: string
+          label: string
+          metadata?: Json
+          organization_id: string
+          slug?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          data?: Json
+          deleted_at?: string | null
+          id?: string
+          label?: string
+          metadata?: Json
+          organization_id?: string
+          slug?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flexible_data_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       matrx_action_ledger: {
         Row: {
           conversation_id: string | null
@@ -31737,57 +31853,6 @@ export type Database = {
         }
         Relationships: []
       }
-      flexible_data: {
-        Row: {
-          category_id: string | null
-          created_at: string
-          created_by: string | null
-          data: Json
-          deleted_at: string | null
-          id: string
-          label: string
-          metadata: Json
-          organization_id: string
-          slug: string | null
-          updated_at: string
-          updated_by: string | null
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          category_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          data?: Json
-          deleted_at?: string | null
-          id?: string
-          label: string
-          metadata?: Json
-          organization_id: string
-          slug?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          category_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          data?: Json
-          deleted_at?: string | null
-          id?: string
-          label?: string
-          metadata?: Json
-          organization_id?: string
-          slug?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Relationships: []
-      }
       guest_conversion_audit: {
         Row: {
           anon_user_id: string
@@ -31949,63 +32014,6 @@ export type Database = {
         }
         Relationships: []
       }
-      heatmap_saves: {
-        Row: {
-          created_at: string | null
-          created_by: string | null
-          data: Json
-          deleted_at: string | null
-          description: string | null
-          id: string
-          is_public: boolean | null
-          metadata: Json
-          organization_id: string
-          title: string
-          updated_at: string | null
-          updated_by: string | null
-          user_id: string | null
-          version: number
-          view_settings: Json | null
-          visibility: string
-        }
-        Insert: {
-          created_at?: string | null
-          created_by?: string | null
-          data: Json
-          deleted_at?: string | null
-          description?: string | null
-          id?: string
-          is_public?: boolean | null
-          metadata?: Json
-          organization_id: string
-          title?: string
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number
-          view_settings?: Json | null
-          visibility?: string
-        }
-        Update: {
-          created_at?: string | null
-          created_by?: string | null
-          data?: Json
-          deleted_at?: string | null
-          description?: string | null
-          id?: string
-          is_public?: boolean | null
-          metadata?: Json
-          organization_id?: string
-          title?: string
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number
-          view_settings?: Json | null
-          visibility?: string
-        }
-        Relationships: []
-      }
       infra_status: {
         Row: {
           component: string
@@ -32069,66 +32077,6 @@ export type Database = {
           id?: string
           industry_id?: string | null
           organization_id?: string | null
-        }
-        Relationships: []
-      }
-      message_template: {
-        Row: {
-          content: string | null
-          created_at: string
-          created_by: string | null
-          deleted_at: string | null
-          id: string
-          is_public: boolean | null
-          label: string | null
-          metadata: Json | null
-          organization_id: string
-          project_id: string | null
-          role: Database["public"]["Enums"]["message_role"] | null
-          tags: string[] | null
-          updated_at: string | null
-          updated_by: string | null
-          user_id: string | null
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          content?: string | null
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string
-          is_public?: boolean | null
-          label?: string | null
-          metadata?: Json | null
-          organization_id: string
-          project_id?: string | null
-          role?: Database["public"]["Enums"]["message_role"] | null
-          tags?: string[] | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          content?: string | null
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string
-          is_public?: boolean | null
-          label?: string | null
-          metadata?: Json | null
-          organization_id?: string
-          project_id?: string | null
-          role?: Database["public"]["Enums"]["message_role"] | null
-          tags?: string[] | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
@@ -32431,33 +32379,6 @@ export type Database = {
         Update: {
           applied_at?: string
           version?: string
-        }
-        Relationships: []
-      }
-      schema_templates: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          fields: Json
-          id: string
-          template_name: string
-          version: number
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          fields: Json
-          id?: string
-          template_name: string
-          version?: number
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          fields?: Json
-          id?: string
-          template_name?: string
-          version?: number
         }
         Relationships: []
       }
@@ -56094,6 +56015,60 @@ export type Database = {
   }
   workbench: {
     Tables: {
+      heatmap_saves: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          data: Json
+          deleted_at: string | null
+          description: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          title: string
+          updated_at: string | null
+          updated_by: string | null
+          user_id: string | null
+          version: number
+          view_settings: Json | null
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          data: Json
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          title?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+          view_settings?: Json | null
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          data?: Json
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          title?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+          view_settings?: Json | null
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
       note_folders: {
         Row: {
           created_at: string
@@ -56235,6 +56210,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      schema_templates: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          fields: Json
+          id: string
+          template_name: string
+          version: number
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          fields: Json
+          id?: string
+          template_name: string
+          version?: number
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          fields?: Json
+          id?: string
+          template_name?: string
+          version?: number
+        }
+        Relationships: []
       }
       udt_dataset_fields: {
         Row: {

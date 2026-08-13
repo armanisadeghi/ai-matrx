@@ -15,7 +15,7 @@ export default async function TemplateDetailPage({ params, searchParams }: PageP
     const supabase = await createClient();
 
     const [templateResult, userResult] = await Promise.all([
-        supabase.from("message_template").select("*").eq("id", id).single(),
+        supabase.schema("agent").from("message_template").select("*").eq("id", id).single(),
         supabase.auth.getUser(),
     ]);
 

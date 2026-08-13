@@ -79,7 +79,7 @@ export async function createSchemaTemplate(
     
     // Insert the template into the database
     const { data, error } = await supabase
-      .from('schema_templates')
+      .schema('workbench').from('schema_templates')
       .insert({
         template_name: templateName,
         description: description || '',
@@ -110,7 +110,7 @@ export async function getSchemaTemplates(
 ): Promise<SchemaTemplate[]> {
   try {
     const { data, error } = await supabase
-      .from('schema_templates')
+      .schema('workbench').from('schema_templates')
       .select('*')
       .order('template_name');
     
@@ -135,7 +135,7 @@ export async function getSchemaTemplateById(
 ): Promise<SchemaTemplate | null> {
   try {
     const { data, error } = await supabase
-      .from('schema_templates')
+      .schema('workbench').from('schema_templates')
       .select('*')
       .eq('id', templateId)
       .single();
@@ -161,7 +161,7 @@ export async function deleteSchemaTemplate(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const { error } = await supabase
-      .from('schema_templates')
+      .schema('workbench').from('schema_templates')
       .delete()
       .eq('id', templateId);
     
@@ -224,7 +224,7 @@ export async function updateSchemaTemplate(
       if (!updates.version) {
         // Fetch current version
         const { data: template } = await supabase
-          .from('schema_templates')
+          .schema('workbench').from('schema_templates')
           .select('version')
           .eq('id', templateId)
           .single();
@@ -241,7 +241,7 @@ export async function updateSchemaTemplate(
     }
     
     const { error } = await supabase
-      .from('schema_templates')
+      .schema('workbench').from('schema_templates')
       .update(updateData)
       .eq('id', templateId);
     

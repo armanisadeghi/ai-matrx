@@ -12,7 +12,7 @@ const SELECT_COLS = "id, label, role, updated_at, tags";
 
 const fetchOwned = async (orgId: string) => {
   const res = await supabase
-    .from("message_template")
+    .schema("agent").from("message_template")
     .select(SELECT_COLS)
     .is("deleted_at", null)
     .eq("organization_id", orgId)

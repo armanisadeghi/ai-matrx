@@ -13,7 +13,7 @@ export async function generateMetadata({
   try {
     const supabase = await createClient();
     const { data } = await supabase
-      .from("heatmap_saves")
+      .schema("workbench").from("heatmap_saves")
       .select("title, description")
       .is("deleted_at", null)
       .eq("id", id)

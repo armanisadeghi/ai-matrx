@@ -35,7 +35,7 @@ export async function fetchMessageTemplates(
   options: MessageTemplateQueryOptions = {},
 ) {
   const supabase = getClient();
-  let query = supabase.from("message_template").select("*");
+  let query = supabase.schema("agent").from("message_template").select("*");
 
   // Apply filters
   if (options.role) {
@@ -119,7 +119,7 @@ export async function getTemplateById(
 ): Promise<MessageTemplateDB | null> {
   const supabase = getClient();
   const { data, error } = await supabase
-    .from("message_template")
+    .schema("agent").from("message_template")
     .select("*")
     .eq("id", id)
     .single();
@@ -142,7 +142,7 @@ export async function createTemplate(
   const organizationId = await ensureOrgId(undefined);
 
   const { data, error } = await supabase
-    .from("message_template")
+    .schema("agent").from("message_template")
     .insert([
       {
         label: input.label,
@@ -179,7 +179,7 @@ export async function updateTemplate(
   if (input.tags !== undefined) updateData.tags = input.tags;
 
   const { data, error } = await supabase
-    .from("message_template")
+    .schema("agent").from("message_template")
     .update(updateData)
     .eq("id", input.id)
     .select()
@@ -195,7 +195,7 @@ export async function deleteTemplate(id: string): Promise<void> {
   const supabase = getClient();
 
   const { error } = await supabase
-    .from("message_template")
+    .schema("agent").from("message_template")
     .delete()
     .eq("id", id);
 
@@ -215,7 +215,7 @@ export async function getAllTags(): Promise<string[]> {
   const supabase = getClient();
 
   const { data, error } = await supabase
-    .from("message_template")
+    .schema("agent").from("message_template")
     .select("tags");
 
   if (error) throw new Error(error.message || "Failed to fetch tags");

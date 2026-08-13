@@ -32,7 +32,7 @@ export const BLOCK_SCHEMAS_CATEGORY_ID = "671a423f-d350-4457-83e5-389eac70f287";
 export const SAMPLE_BLOCK_DATA_CATEGORY_ID =
   "6f46917c-be9a-4763-b4dd-107546a3d282";
 
-type FlexibleDataTable = Database["public"]["Tables"]["flexible_data"];
+type FlexibleDataTable = Database["platform"]["Tables"]["flexible_data"];
 type FlexibleDataRow = FlexibleDataTable["Row"];
 type FlexibleDataInsert = FlexibleDataTable["Insert"];
 type FlexibleDataUpdate = FlexibleDataTable["Update"];
@@ -166,7 +166,7 @@ export async function listFlexibleData(
   categoryId: string,
 ): Promise<FlexibleDataRecord[]> {
   const { data, error } = await (await getSupabase())
-    .from("flexible_data")
+    .schema("platform").from("flexible_data")
     .select(LIST_COLUMNS)
     .eq("category_id", categoryId)
     .is("deleted_at", null)
@@ -187,7 +187,7 @@ export async function listFlexibleData(
 
 export async function getFlexibleData(id: string): Promise<FlexibleDataRecord> {
   const { data, error } = await (await getSupabase())
-    .from("flexible_data")
+    .schema("platform").from("flexible_data")
     .select(LIST_COLUMNS)
     .eq("id", id)
     .is("deleted_at", null)
@@ -219,7 +219,7 @@ export async function createFlexibleData(
   };
 
   const { data, error } = await (await getSupabase())
-    .from("flexible_data")
+    .schema("platform").from("flexible_data")
     .insert(payload)
     .select(LIST_COLUMNS)
     .single();
@@ -245,7 +245,7 @@ export async function updateFlexibleData(
   if (input.visibility !== undefined) payload.visibility = input.visibility;
 
   const { data, error } = await (await getSupabase())
-    .from("flexible_data")
+    .schema("platform").from("flexible_data")
     .update(payload)
     .eq("id", id)
     .is("deleted_at", null)
@@ -263,7 +263,7 @@ export async function updateFlexibleData(
 
 export async function deleteFlexibleData(id: string): Promise<void> {
   const { error } = await (await getSupabase())
-    .from("flexible_data")
+    .schema("platform").from("flexible_data")
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", id)
     .is("deleted_at", null);
@@ -497,7 +497,7 @@ export async function getBlockSchemaBySlug(
   slug: string,
 ): Promise<KindSchema | null> {
   const { data, error } = await (await getSupabase())
-    .from("flexible_data")
+    .schema("platform").from("flexible_data")
     .select(LIST_COLUMNS)
     .eq("category_id", BLOCK_SCHEMAS_CATEGORY_ID)
     .eq("slug", slug)

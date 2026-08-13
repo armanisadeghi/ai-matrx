@@ -65,7 +65,7 @@ interface UserTable {
   description?: string;
   created_at: string;
   updated_at: string;
-  is_public: boolean;
+  visibility: string;
 }
 
 interface TableField {

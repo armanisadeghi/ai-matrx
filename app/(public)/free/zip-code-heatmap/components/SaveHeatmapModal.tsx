@@ -76,7 +76,7 @@ export default function SaveHeatmapModal({
 
       // Insert heatmap save
       const { data: savedHeatmap, error: insertError } = await supabase
-        .from('heatmap_saves')
+        .schema('workbench').from('heatmap_saves')
         .insert({
           user_id: user?.id || null,
           organization_id: organizationId,
@@ -88,7 +88,7 @@ export default function SaveHeatmapModal({
             scalingMethod: viewSettings.colorScaleOptions.scalingMethod,
             colorScheme: viewSettings.colorScaleOptions.colorScheme,
           },
-          is_public: isPublic,
+          visibility: isPublic ? "public" : "personal",
         })
         .select('id')
         .single();

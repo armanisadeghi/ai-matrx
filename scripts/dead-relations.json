@@ -1192,6 +1192,38 @@
       "new": "graveyard.site_metadata",
       "since": "2026-08-12",
       "reason": "client-site SEO metadata superseded by web.* schema; moved to graveyard (9 rows preserved)."
+    },
+    {
+      "relation": "flexible_data",
+      "old": "public.flexible_data",
+      "newSchema": "platform",
+      "new": "platform.flexible_data",
+      "since": "2026-08-13",
+      "reason": "PROMOTED to platform \u2014 permanent flexible-JSON primitive (changeover doctrine \u00a76a). NEVER a retirement candidate. Use .schema(\"platform\").from(\"flexible_data\")."
+    },
+    {
+      "relation": "message_template",
+      "old": "public.message_template",
+      "newSchema": "agent",
+      "new": "agent.message_template",
+      "since": "2026-08-13",
+      "reason": "live agent-builder message-template library. Use .schema(\"agent\").from(\"message_template\")."
+    },
+    {
+      "relation": "heatmap_saves",
+      "old": "public.heatmap_saves",
+      "newSchema": "workbench",
+      "new": "workbench.heatmap_saves",
+      "since": "2026-08-13",
+      "reason": "user data artifact; is_public dropped in favor of the visibility enum. Use .schema(\"workbench\").from(\"heatmap_saves\")."
+    },
+    {
+      "relation": "schema_templates",
+      "old": "public.schema_templates",
+      "newSchema": "workbench",
+      "new": "workbench.schema_templates",
+      "since": "2026-08-13",
+      "reason": "udt dataset-template family lives in workbench. Use .schema(\"workbench\").from(\"schema_templates\")."
     }
   ]
 }
