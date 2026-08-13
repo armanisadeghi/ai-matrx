@@ -409,7 +409,6 @@ export type Database = {
           is_active: boolean
           is_archived: boolean
           is_favorite: boolean
-          is_public: boolean
           matrx_actions: Json
           mcp_servers: string[]
           messages: Json
@@ -433,7 +432,6 @@ export type Database = {
           ui_gates: Json
           updated_at: string
           updated_by: string | null
-          user_id: string | null
           variable_definitions: Json | null
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
@@ -453,7 +451,6 @@ export type Database = {
           is_active?: boolean
           is_archived?: boolean
           is_favorite?: boolean
-          is_public?: boolean
           matrx_actions?: Json
           mcp_servers?: string[]
           messages?: Json
@@ -477,7 +474,6 @@ export type Database = {
           ui_gates?: Json
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           variable_definitions?: Json | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
@@ -497,7 +493,6 @@ export type Database = {
           is_active?: boolean
           is_archived?: boolean
           is_favorite?: boolean
-          is_public?: boolean
           matrx_actions?: Json
           mcp_servers?: string[]
           messages?: Json
@@ -521,7 +516,6 @@ export type Database = {
           ui_gates?: Json
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           variable_definitions?: Json | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
@@ -5307,7 +5301,7 @@ export type Database = {
           title: string
           updated_at: string
           updated_by: string | null
-          user_id: string
+          user_id: string | null
           version: number
         }
         Insert: {
@@ -5326,7 +5320,7 @@ export type Database = {
           title: string
           updated_at?: string
           updated_by?: string | null
-          user_id: string
+          user_id?: string | null
           version?: number
         }
         Update: {
@@ -5345,7 +5339,7 @@ export type Database = {
           title?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
+          user_id?: string | null
           version?: number
         }
         Relationships: [
@@ -5504,6 +5498,9 @@ export type Database = {
           conversation_id: string
           created_at: string
           created_by: Database["public"]["Enums"]["cx_agent_task_creator"]
+          creator_kind:
+            | Database["public"]["Enums"]["cx_agent_task_creator"]
+            | null
           id: string
           metadata: Json
           note: string | null
@@ -5514,13 +5511,16 @@ export type Database = {
           title: string
           updated_at: string
           updated_by: string | null
-          user_id: string
+          user_id: string | null
           version: number
         }
         Insert: {
           conversation_id: string
           created_at?: string
           created_by?: Database["public"]["Enums"]["cx_agent_task_creator"]
+          creator_kind?:
+            | Database["public"]["Enums"]["cx_agent_task_creator"]
+            | null
           id?: string
           metadata?: Json
           note?: string | null
@@ -5531,13 +5531,16 @@ export type Database = {
           title: string
           updated_at?: string
           updated_by?: string | null
-          user_id: string
+          user_id?: string | null
           version?: number
         }
         Update: {
           conversation_id?: string
           created_at?: string
           created_by?: Database["public"]["Enums"]["cx_agent_task_creator"]
+          creator_kind?:
+            | Database["public"]["Enums"]["cx_agent_task_creator"]
+            | null
           id?: string
           metadata?: Json
           note?: string | null
@@ -5548,7 +5551,7 @@ export type Database = {
           title?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
+          user_id?: string | null
           version?: number
         }
         Relationships: [
@@ -5601,7 +5604,7 @@ export type Database = {
           title: string | null
           updated_at: string
           updated_by: string | null
-          user_id: string
+          user_id: string | null
           version: number
         }
         Insert: {
@@ -5629,7 +5632,7 @@ export type Database = {
           title?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id: string
+          user_id?: string | null
           version?: number
         }
         Update: {
@@ -5657,7 +5660,7 @@ export type Database = {
           title?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
+          user_id?: string | null
           version?: number
         }
         Relationships: [
@@ -5704,7 +5707,7 @@ export type Database = {
           status: Database["public"]["Enums"]["code_edit_status"]
           updated_at: string
           updated_by: string | null
-          user_id: string
+          user_id: string | null
           version: number
         }
         Insert: {
@@ -5726,7 +5729,7 @@ export type Database = {
           status: Database["public"]["Enums"]["code_edit_status"]
           updated_at?: string
           updated_by?: string | null
-          user_id: string
+          user_id?: string | null
           version?: number
         }
         Update: {
@@ -5748,7 +5751,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["code_edit_status"]
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
+          user_id?: string | null
           version?: number
         }
         Relationships: [
@@ -5805,7 +5808,7 @@ export type Database = {
           status: Database["public"]["Enums"]["code_message_file_status"]
           updated_at: string
           updated_by: string | null
-          user_id: string
+          user_id: string | null
           version: number
         }
         Insert: {
@@ -5830,7 +5833,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["code_message_file_status"]
           updated_at?: string
           updated_by?: string | null
-          user_id: string
+          user_id?: string | null
           version?: number
         }
         Update: {
@@ -5855,7 +5858,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["code_message_file_status"]
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
+          user_id?: string | null
           version?: number
         }
         Relationships: [
@@ -6331,7 +6334,7 @@ export type Database = {
           updated_at: string
           updated_by: string | null
           url: string
-          user_id: string
+          user_id: string | null
           version: number
         }
         Insert: {
@@ -6349,7 +6352,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           url: string
-          user_id: string
+          user_id?: string | null
           version?: number
         }
         Update: {
@@ -6367,7 +6370,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           url?: string
-          user_id?: string
+          user_id?: string | null
           version?: number
         }
         Relationships: [
@@ -6625,7 +6628,7 @@ export type Database = {
           triggered_at: string
           updated_at: string
           updated_by: string | null
-          user_id: string
+          user_id: string | null
           user_request_id: string | null
           version: number
         }
@@ -6650,7 +6653,7 @@ export type Database = {
           triggered_at?: string
           updated_at?: string
           updated_by?: string | null
-          user_id: string
+          user_id?: string | null
           user_request_id?: string | null
           version?: number
         }
@@ -6675,7 +6678,7 @@ export type Database = {
           triggered_at?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
+          user_id?: string | null
           user_request_id?: string | null
           version?: number
         }
@@ -6738,7 +6741,7 @@ export type Database = {
           status: string
           updated_at: string
           updated_by: string | null
-          user_id: string
+          user_id: string | null
           version: number
         }
         Insert: {
@@ -6761,7 +6764,7 @@ export type Database = {
           status?: string
           updated_at?: string
           updated_by?: string | null
-          user_id: string
+          user_id?: string | null
           version?: number
         }
         Update: {
@@ -6784,7 +6787,7 @@ export type Database = {
           status?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
+          user_id?: string | null
           version?: number
         }
         Relationships: [
@@ -7083,7 +7086,7 @@ export type Database = {
           total_tokens: number | null
           updated_at: string
           updated_by: string | null
-          user_id: string
+          user_id: string | null
           user_request_id: string | null
           value_ref_key: string | null
           version: number
@@ -7137,7 +7140,7 @@ export type Database = {
           total_tokens?: number | null
           updated_at?: string
           updated_by?: string | null
-          user_id: string
+          user_id?: string | null
           user_request_id?: string | null
           value_ref_key?: string | null
           version?: number
@@ -7191,7 +7194,7 @@ export type Database = {
           total_tokens?: number | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
+          user_id?: string | null
           user_request_id?: string | null
           value_ref_key?: string | null
           version?: number
@@ -7452,7 +7455,7 @@ export type Database = {
           title: string
           updated_at: string
           updated_by: string | null
-          user_id: string
+          user_id: string | null
           version: number
         }
         Insert: {
@@ -7470,7 +7473,7 @@ export type Database = {
           title: string
           updated_at?: string
           updated_by?: string | null
-          user_id: string
+          user_id?: string | null
           version?: number
         }
         Update: {
@@ -7488,7 +7491,7 @@ export type Database = {
           title?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
+          user_id?: string | null
           version?: number
         }
         Relationships: [
@@ -34196,6 +34199,7 @@ export type Database = {
           agent_type: string
           category: string
           created_at: string
+          created_by: string
           description: string
           id: string
           is_active: boolean
@@ -34210,7 +34214,6 @@ export type Database = {
           tags: string[]
           task_id: string
           updated_at: string
-          user_id: string
         }[]
       }
       agx_get_list_full: {
@@ -34220,6 +34223,7 @@ export type Database = {
           agent_type: string
           category: string
           created_at: string
+          created_by: string
           description: string
           id: string
           is_active: boolean
@@ -34234,7 +34238,6 @@ export type Database = {
           tags: string[]
           task_id: string
           updated_at: string
-          user_id: string
         }[]
       }
       agx_get_shared_for_chat: {
@@ -34525,6 +34528,7 @@ export type Database = {
           agent_type: string
           category: string
           created_at: string
+          created_by: string
           description: string
           id: string
           is_active: boolean
@@ -34541,7 +34545,6 @@ export type Database = {
           task_id: string
           total_count: number
           updated_at: string
-          user_id: string
           version: number
           visibility: string
         }[]
@@ -34574,6 +34577,7 @@ export type Database = {
           agent_type: string
           category: string
           created_at: string
+          created_by: string
           description: string
           id: string
           is_active: boolean
@@ -34590,7 +34594,6 @@ export type Database = {
           tags: string[]
           task_id: string
           updated_at: string
-          user_id: string
         }[]
       }
       agx_search_score: {
