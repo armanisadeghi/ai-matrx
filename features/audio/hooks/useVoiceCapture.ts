@@ -20,7 +20,7 @@
 // only reflect its own session. Non-owning instances read inert values (0, "")
 // so the owner's ~60fps level ticks never re-render every other mic on screen.
 
-import { useCallback, useId, useRef } from "react";
+import { useCallback, useEffect, useId, useRef } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   useGlobalRecordingOptional,
@@ -85,7 +85,9 @@ export function useVoiceCapture(
 
   // Latest callbacks/label without re-creating `start` every render.
   const optsRef = useRef(options);
-  optsRef.current = options;
+  useEffect(() => {
+    optsRef.current = options;
+  }, [options]);
 
   // Ownership-gated reads. Each selector returns an inert value for non-owners
   // so a recording in surface A never re-renders surface B on level/duration
@@ -136,6 +138,10 @@ export function useVoiceCapture(
         optsRef.current.onChunk?.(info.text, info);
       },
       onComplete: (result) => {
+        // The engine reports terminal transcription failure separately through
+        // onError. Do not let partial text masquerade as a successful final
+        // transcript and trigger a downstream submit/action.
+        if (!result.success) return;
         optsRef.current.onTranscript?.(result.text ?? "", result);
       },
       onError: (message, code) => {

@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-07-26`
+**Last updated:** `2026-08-12`
 
 ---
 
@@ -14,7 +14,7 @@
 - **`useGlobalRecording()` is context-free.** There is NO GlobalRecordingProvider anymore. State comes from `recordingsSlice` (the engine mirrors everything, incl. `isFinalizing`); verbs come from `features/audio/recordingCommands.ts` — a proxy that activates the latch, warms the mic in the same gesture tick (`acquireMicStream` races the chunk download, so the permission prompt is never delayed), queues a cold-tab start latest-wins, and flushes when the engine registers.
 - **Crash recovery without a gesture:** `features/audio/audioBootMarker.ts` (localStorage `matrx.audio.dirtyRecording`). The engine sets it on recording start and clears it on clean finalize; `AudioSystemHost` checks it post-idle and activates so the IndexedDB orphan scan + recovery toast run; the recovery provider clears it on a clean empty scan and when the last orphan is dismissed.
 - **ONE-BOUNDARY LAW:** `AudioSystemHost → AudioSystemHostImpl` is the only unconditional `ssr:false` boundary for audio. Inside the Impl everything imports statically; only condition-gated rare-event leaves (recovery toast body, audio modal body) keep their own lazy imports (OverlayController leaf pattern). ESLint (`audioSystemStaticImportBan` in `eslint.config.mjs`) bans static value imports of `useChunkedRecordAndTranscribe` / `useCartesiaStreamingSpeaker` / `useAutoVoiceResponse` outside their single legal importers.
-- **Nothing is lost while dormant:** the audio slices are always registered, and the framework-free singletons (`playbackQueue`, `audioSessionRegistry`, `voicePlaybackBus`) accumulate state and replay the current snapshot on subscribe — `enqueuePlayback` even *plays* (adapters are lazily imported) before any host mounts; the hosts are mirrors/UI.
+- **Nothing is lost while dormant:** the audio slices are always registered, and the framework-free singletons (`playbackQueue`, `audioSessionRegistry`, `voicePlaybackBus`) accumulate state and replay the current snapshot on subscribe — `enqueuePlayback` even _plays_ (adapters are lazily imported) before any host mounts; the hosts are mirrors/UI.
 
 > Combined doc covering the three audio-adjacent features. This doc lives under `features/audio/` as the umbrella.
 
@@ -33,10 +33,12 @@ Three sibling features that together form the audio pipeline:
 ## Entry points
 
 **Audio — `features/audio/`**
+
 - `components/`, `hooks/`, `services/`, `utils/`, `providers/`, `voice/`
 - `constants.ts`, `types.ts` (no root barrel — import from concrete modules, e.g. `hooks/useRecordAndTranscribe`, `components/TranscriptionLoader`; `VoiceTextarea` / `VoiceInputButton` live under `components/official/`)
 
 **TTS — `features/tts/`**
+
 - `components/`, `hooks/`, `service/`, `constants/`, `context/`
 - `types.ts`, `index.ts`, `migrations/`
 - `TROUBLESHOOTING.md` (existing)
@@ -44,6 +46,7 @@ Three sibling features that together form the audio pipeline:
 - **Routes:** `/voice` (guest marketing landing; authed → `/voice/playground`), `/voice/playground` (`AiVoicePage`), `/voice/tester` (`TtsTesterBench`)
 
 **Podcasts — `features/podcasts/`**
+
 - `components/`, `hooks/`, `service.ts`, `types.ts`, `index.ts`
 - `README.md` (existing)
 
@@ -52,6 +55,7 @@ Three sibling features that together form the audio pipeline:
 ## Per-feature summary
 
 ### Audio
+
 - Low-level recording / playback hooks
 - **LiveKit** for real-time voice conversations (mobile-relevant)
 - Provider abstraction in `providers/` and `voice/`
@@ -59,12 +63,12 @@ Three sibling features that together form the audio pipeline:
 
 #### Transcription window panels (registry: `features/window-panels/registry/windowRegistryMetadata.ts`)
 
-| Slug | Component | AI cleanup | Notes |
-|---|---|---|---|
-| `voice-pad` | `components/official-candidate/voice-pad/components/VoicePad.tsx` | No | Compact recorder + transcript |
-| `voice-pad-advanced` | `components/official-candidate/voice-pad/components/VoicePadAdvanced.tsx` | No | Same Redux slice as `voice-pad`; UI variant. Likely retire candidate. |
-| `transcription-cleanup` | `components/official-candidate/transcription-cleanup/components/TranscriptionCleanup.tsx` | Yes | "Transcription Cleanup" — system-owned cleaner agents in `ai-agents.ts` |
-| `ai-voice-window` | `features/audio/voice/AiVoiceFloatingWorkspace.tsx` | N/A — TTS only | Unrelated to transcription |
+| Slug                    | Component                                                                                 | AI cleanup     | Notes                                                                   |
+| ----------------------- | ----------------------------------------------------------------------------------------- | -------------- | ----------------------------------------------------------------------- |
+| `voice-pad`             | `components/official-candidate/voice-pad/components/VoicePad.tsx`                         | No             | Compact recorder + transcript                                           |
+| `voice-pad-advanced`    | `components/official-candidate/voice-pad/components/VoicePadAdvanced.tsx`                 | No             | Same Redux slice as `voice-pad`; UI variant. Likely retire candidate.   |
+| `transcription-cleanup` | `components/official-candidate/transcription-cleanup/components/TranscriptionCleanup.tsx` | Yes            | "Transcription Cleanup" — system-owned cleaner agents in `ai-agents.ts` |
+| `ai-voice-window`       | `features/audio/voice/AiVoiceFloatingWorkspace.tsx`                                       | N/A — TTS only | Unrelated to transcription                                              |
 
 The full-page `Transcript Studio` (`features/transcript-studio/`) is the most capable transcription surface; see its FEATURE.md.
 
@@ -73,12 +77,14 @@ The full-page `Transcript Studio` (`features/transcript-studio/`) is the most ca
 All transcription surfaces (window panels above, all 4 Transcript Studio columns, and the transcript processor at `/transcription/processor`) render `<ContentActionBar />` from `components/content-actions/`. This delivers Save to Notes (with append/replace), Save to Tasks, Save to Scratch, Save to Code, Save as File, Email, Print, plus copy variants — without per-surface implementation. The append/replace flow lives in `features/notes/actions/quick-save/QuickNoteSaveCore.tsx`.
 
 ### TTS
+
 - Text → audio via provider adapters
 - Chat integration: TTS in the Conversation System uses **Cartesia** (see `features/conversation/FEATURE.md` shared features)
 - Eleven Labs added per `TASK-Eleven-labs-addition.md`
 - Swappable providers via the service layer
 
 ### Podcasts
+
 - Generate / persist / play podcast episodes
 - Podcast provider selection and default casts are server policy. The studio
   reads `GET /podcast/cast-preview` and must not derive a provider from host
@@ -133,10 +139,11 @@ Verify exact schemas in Supabase before extending.
 - **One live capture, app-wide — enforced by `captureLock.ts`.** Every recorder (the global transcription session AND raw-blob recorders: `useSimpleRecorder`, the flashcard recorders) must `claimCapture({ id, stop })` before opening a `MediaRecorder` and `releaseCapture(id)` when it ends. Claiming is **start-always-wins**: a new claim synchronously stops the current holder, so two captures can never overlap. The global session presents as a single holder (`"global-recording-session"`) and manages global↔global takeover internally; raw recorders use a per-instance `useId()`. A takeover MUST be treated as a **discard** by raw recorders (never auto-deliver a half-finished blob). Never open a `MediaRecorder` without claiming the lock; never call raw `getUserMedia`/`track.stop()` — go through `micStream` (singleton) + `captureLock`.
 - **One live playback, app-wide — enforced by `playbackLock.ts`.** The OUTPUT twin of `captureLock`. Every playback PATH (the unified `playbackQueue`, the streaming auto-voice `useCartesiaStreamingSpeaker`, the podcast player via `useMediaElementPlaybackSession`, and the xAI voice agent `voice-agent/audio/audioPlayback.ts`) must `claimPlayback({ id, stop })` before producing audio and `releasePlayback(id)` when it stops. Claiming is **start-always-wins**: a new claim synchronously stops the current holder, so two voices can never play at once (this killed the War Room "two voices in my ear" overlap). The queue claims `"playback-queue"` on each item start and releases when it goes idle (a preempt clears its queue); the streaming speaker claims a per-instance `useId()` from its phase funnel (busy phases claim, `idle`/`error` release, `paused` keeps the lock). The lock emits takeovers to `AudioPlaybackHost`, which **auto-surfaces the Audio window-panel** whenever playback gets "complex" (something queued, or a cross-path takeover).
 - **One playback QUEUE, app-wide — `features/audio/playback/playbackQueue.ts`.** The output twin of `captureLock`. Every "speak this text" request goes through `useAudioPlayback().enqueue(...)` (or the `useTtsSpeak` convenience layer). Audio plays **one item at a time**; a request that arrives while something is playing is **queued, never overlapped**. Finished items stay in history (`status: "done"`) so the UI can offer replay; clear with `clear()`. Providers plug in via lazy `PlaybackAdapter`s (`adapters/cartesiaAdapter.ts`, `adapters/groqAdapter.ts`) — the queue module never statically imports a TTS SDK, so nothing audio-heavy lands in the app shell; adapters load on the first `speak`. The queue is mirrored into Redux (`audioPlaybackSlice`) by the always-mounted `AudioPlaybackHost`; read it via `useAudioPlayback` / the `selectors.ts` selectors. **Do not** add a second playback path; **prefer** `enqueue` over calling `useCartesiaSpeaker`/`useTextToSpeech` directly (those hooks now self-register + claim the lock, so they're safe, but the queue gives ordered, non-preempting playback + history). (The streaming auto-voice `useCartesiaStreamingSpeaker`/`AudioOutputHost`, the podcast player, and the xAI voice agent all surface in the Audio panel via the **session registry** below — they run their own engines, not the queue, but every one registers a session + claims the lock.)
-- **One audio SESSION registry, app-wide — `features/audio/session/audioSessionRegistry.ts`.** The single source of truth for EVERY audio activity (playback AND recording, live + history) that the avatar-menu **Audio panel** (`AudioControlWindow`) renders — the layer ABOVE the locks: locks enforce one-at-a-time, the registry remembers everything so the user can see and **replay** what they missed. Producers register a session (`registerSession`/`updateSession`/`endSession`, or the atomic `beginPlaybackSession`, which claims `playbackLock` AND registers in one call); the queue is projected in declaratively via `syncSource("queue", …)`. Control callbacks (pause/resume/stop/replay) live in the registry's side-table, **never Redux**. Mirrored into Redux (`audioSessionsSlice`) by the always-mounted `AudioSessionHost`; read via `useAudioSessions`. SDK-free — only producers pull TTS SDKs, lazily. Raw `<audio>`/`<video>` players join via `useMediaElementPlaybackSession` (drive `isPlaying` from the element's real play/pause events so a lock takeover stays in sync). **The one and only way in — EVERY path is now in:** every playback path registers a session + claims `playbackLock` *at the source* — the queue, the streaming read-aloud (`useCartesiaStreamingSpeaker`), the one-shot read-aloud (`useCartesiaSpeaker` via `usePlaybackSessionController`), the Groq player (`useTextToSpeech` via `useMediaElementPlaybackSession`), the podcast player, and the xAI voice agent. So a consumer never has to change: anything using these hooks is automatically visible + arbitrated. Every recorder registers a recording session via `beginRecordingSession` (`GlobalRecordingProvider`, `useSimpleRecorder`, the flashcard recorders) under `captureLock` — the registry session is purely for panel visibility. A bypass trips the loud runtime guard `reportAudioBypassViolation` (`features/audio/session/bypassGuard.ts`); ESLint bans the static back door (`no-restricted-imports` on `useCartesiaStreamingSpeaker` outside the canonical TTS surfaces). The one-shot hooks are no longer banned — they self-register, so they are safe to use — but **new bulk/sequential speech should still `enqueue` through the queue** (it queues instead of preempting and keeps ordered history).
+- **One audio SESSION registry, app-wide — `features/audio/session/audioSessionRegistry.ts`.** The single source of truth for EVERY audio activity (playback AND recording, live + history) that the avatar-menu **Audio panel** (`AudioControlWindow`) renders — the layer ABOVE the locks: locks enforce one-at-a-time, the registry remembers everything so the user can see and **replay** what they missed. Producers register a session (`registerSession`/`updateSession`/`endSession`, or the atomic `beginPlaybackSession`, which claims `playbackLock` AND registers in one call); the queue is projected in declaratively via `syncSource("queue", …)`. Control callbacks (pause/resume/stop/replay) live in the registry's side-table, **never Redux**. Mirrored into Redux (`audioSessionsSlice`) by the always-mounted `AudioSessionHost`; read via `useAudioSessions`. SDK-free — only producers pull TTS SDKs, lazily. Raw `<audio>`/`<video>` players join via `useMediaElementPlaybackSession` (drive `isPlaying` from the element's real play/pause events so a lock takeover stays in sync). **The one and only way in — EVERY path is now in:** every playback path registers a session + claims `playbackLock` _at the source_ — the queue, the streaming read-aloud (`useCartesiaStreamingSpeaker`), the one-shot read-aloud (`useCartesiaSpeaker` via `usePlaybackSessionController`), the Groq player (`useTextToSpeech` via `useMediaElementPlaybackSession`), the podcast player, and the xAI voice agent. So a consumer never has to change: anything using these hooks is automatically visible + arbitrated. Every recorder registers a recording session via `beginRecordingSession` (`GlobalRecordingProvider`, `useSimpleRecorder`, the flashcard recorders) under `captureLock` — the registry session is purely for panel visibility. A bypass trips the loud runtime guard `reportAudioBypassViolation` (`features/audio/session/bypassGuard.ts`); ESLint bans the static back door (`no-restricted-imports` on `useCartesiaStreamingSpeaker` outside the canonical TTS surfaces). The one-shot hooks are no longer banned — they self-register, so they are safe to use — but **new bulk/sequential speech should still `enqueue` through the queue** (it queues instead of preempting and keeps ordered history).
 - **LiveKit is not Expo Go compatible.** Requires `npx expo prebuild`. Mobile builds need the native modules.
 - **TTS providers are swappable.** Always go through the service layer; never pin a provider in a component.
 - **STT is audio-evidence-only.** The shared `/audio/transcribe` and `/audio/transcribe-url` contracts do not accept provider `prompt` text. Groq Whisper interprets it as context/continuation rather than a constrained vocabulary, so dictionary terms must never be passed through it; this prevents unspoken terms from appearing in a transcript.
+- **A failed recording never becomes success.** `useChunkedRecordAndTranscribe` gives failed live chunks one full-recording fallback. If that fallback also fails, `resolveTranscriptionFinalization` returns `success:false`, `audioSafetyStore.markFailed()` keeps the audio recoverable, the dirty boot marker stays set, and no transcript is auto-persisted or submitted downstream. Only a clean chunk lane or a successful fallback may call `markComplete()`.
 - **Audio assets go through the universal file handler** (`fileHandler.upload(...)` / `useFileUpload` from `@/features/files`). Do not invent a parallel storage scheme. The legacy `audioStorageService.ts` is a thin wrapper that funnels through the handler.
 - **Recording storage is personal, not ambient-org scoped.** Chunk journals and finalized recordings use personal visibility, so the universal file handler keeps them independent of whichever organization/project/task happens to be active in the UI.
 - **Playback state is transient.** Do not persist per-message play state in the DB.
@@ -169,7 +176,7 @@ The retired Next middle-tier routes under `app/api/audio/*` and `app/api/voice*`
 
 ## Recorded audio MIME — single source of truth (never send a raw recorder type)
 
-WebM and MP4 are *containers*: identical magic bytes carry audio or video. When a multipart `file` part reaches the server with no Content-Type, `application/octet-stream`, a `video/*` type, or a parameterized recorder type (`audio/webm;codecs=opus`), the magic-byte sniffer cannot disambiguate and defaults WebM → `video/webm` / MP4 → `video/mp4` (the MP4 branch short-circuits first). Result: every mic recording lands in cld_files tagged as **video** and renders with a video player.
+WebM and MP4 are _containers_: identical magic bytes carry audio or video. When a multipart `file` part reaches the server with no Content-Type, `application/octet-stream`, a `video/*` type, or a parameterized recorder type (`audio/webm;codecs=opus`), the magic-byte sniffer cannot disambiguate and defaults WebM → `video/webm` / MP4 → `video/mp4` (the MP4 branch short-circuits first). Result: every mic recording lands in cld_files tagged as **video** and renders with a video player.
 
 `MediaRecorder` needs `;codecs=opus` to record, and the assembled `Blob.type` is often empty — so the recorder MIME is never safe to forward verbatim. The browser sets a multipart part's Content-Type from `File.type`, so a clean `audio/*` `File.type` is the strongest portable signal.
 
@@ -189,10 +196,11 @@ The canonical "what mic/speaker is selected and is the mic permission granted" s
 
 ## Test coverage (honest)
 
-Unit tests exist for exactly two primitives — `features/audio/__tests__/sinkAwarePlayer.test.ts` (state machine + sink routing, fake AudioContext) and `features/audio/__tests__/captureLock.test.ts` (start-always-wins takeover, id-guarded release, subscription). The device manager is covered in `features/media-devices/__tests__/deviceManager.test.ts`. Everything else in this feature (recorders, playback queue, session registry, TTS hooks, providers) is verified manually/in-browser only — do not claim otherwise.
+Unit tests cover `sinkAwarePlayer`, `captureLock`, the speech API boundary, and transcription finalization decisions; the device manager is covered in `features/media-devices/__tests__/deviceManager.test.ts`. MediaRecorder lifecycle, playback queue, session registry, TTS hooks, and providers still require manual/in-browser verification — do not claim otherwise.
 
 ## Change log
 
+- `2026-08-12` — **Chunk deadlines are typed; dual-lane failure stays recoverable.** The 30s live-chunk deadline used a local `AbortController`, so every actual timeout was mislabeled as a yellow user/navigation abort and then duplicated as a red `console.error`. Multipart requests now use the canonical client's structured `request_timeout` path with the client request id preserved. If live chunks and the stop-time full-recording fallback both fail, finalization returns `success:false`, marks the IndexedDB record `failed`, keeps the boot marker, skips auto-persistence/downstream submission, and surfaces the existing recovery UI on next boot; it never emits an empty successful transcript or marks the only audio evidence complete.
 - `2026-08-11` — **Voice Pad write guard now reads REAL mic state, at call time.** The pad's agent write handlers (`draft_text` / `append_draft_text`) guarded on "`live_transcript` is non-empty", which is empty in the two windows that matter — between pressing record and the first streamed chunk, and while a stopped recording is still being transcribed — so an agent write could land mid-dictation and hide the words just spoken behind a non-null draft. `VoicePad.tsx` now subscribes to `MicrophoneIconButton`'s existing `onRecordingStateChange` and refuses on `isRecording || isTranscribing`; both flags are emitted as `is_recording` / `is_transcribing` surface read values so an agent sees the refusal coming. Handler state is also read at call time (refs for mic state, `store.getState()` for the pad buffer) because `applySurfaceWrite` resolves handlers before the confirm dialog. NOTE for whoever has a real microphone: the refusal branch is untested at runtime — the verification container exposes no audio input device even with Chromium's fake-device flags, so recording never starts there.
 
 - `2026-08-11` — **Voice Pad write targets independently re-verified against merged main; no code change.** A third agent picked this surface up before the parallel work below had landed, built the competing shape (one `draft_text` object target taking `{text, mode}`, the `transcripts-cleanup` idiom), and discarded it on finding the entry below already merged — the `draft_text` / `append_draft_text` string pair stands. Re-ran the full pass on the shipped code as it stood BEFORE the mic-state guard above: two per-target ask dialogs with the manifest prose verbatim, replace then append both landing (rewrite byte-preserved behind the blank-line separator), a clean decline, the seam's refusal for a forced `transcript_entries` write, and the handler's own `draft_text expects a plain text string, got object.` for a forced object — pad unchanged, zero `surface-writeback` error captures. **Practical note for anyone testing this pad:** open it over a route with NO surface mapping (`/reports` or `/vault`). On a mapped route like `/dashboard` the header Agents panel launches with THAT route's surface and an empty scope while still injecting the pad's write targets, so the agent gets the tool but cannot see the dictation and will ask you to paste it — the shell's route-vs-runtime split, not a broken target. The missing adopter-list entry in `features/surfaces/FEATURE.md` was restored at the same time.
