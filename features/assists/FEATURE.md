@@ -24,11 +24,22 @@ A chip NEVER runs from an ambiguous gesture. Hover expands the FULL card immedia
 | Card                 | `components/AssistCard.tsx`         | The expanded view: full title, markdown body (lazy `BasicMarkdownContent`), reasoning, source/confidence, verb button + "Not now" + "Don't show again".                                                                                                                                                                                                      |
 | Descriptors          | `runtime/action-descriptors.ts`     | verb / explainer / receipt per action kind — the intentional-action contract.                                                                                                                                                                                                                                                                                |
 | Page strip           | `components/AssistStrip.tsx`        | THE one-line per-page mount: `<AssistStrip surfaceName="…" filter?/>`. Self-hydrating; renders nothing at 0.                                                                                                                                                                                                                                                 |
-| Dock                 | `components/AssistsDock.tsx`        | Global (ambient-layer) stack, mounted once in `app/DeferredSingletonCore.tsx`. Renders nothing at count 0. No realtime channel (deliberate — fetch on mount + focus).                                                                                                                                                                                        |
+| Dock                 | `components/AssistsDock.tsx`        | Global (ambient-layer) stack, mounted once in `app/DeferredSingletonCore.tsx`. Renders nothing at count 0. Low-confidence rows fold into the "+N more" line, which is a door to the manager. No realtime channel (deliberate — fetch on mount + focus). |
+| Manager | `manager/AssistsManager.tsx` + `manager/useAssistsQuery.ts` | The triage surface at **`/assists`** — EVERY status, server-side filter / sort / paginate, per-status counts, Flagged / Unseen / snoozed toggles, bulk snooze + bulk dismiss, restore. Reads its own query, never the slice (decided history in the slice would put dismissed rows back in the dock), and reconciles decisions INTO the slice. Every row's title is the canonical `AssistChip`: the manager adds reach, never a second way to act. |
 
 ## DB
 
-`platform.assists` (entity token `assist`, RLS via `iam.apply_rls` variant `entity`, visibility `personal`). Producers set `created_by` = the addressee. Migration: `migrations/platform_assists_ledger.sql`. Unique live-pending index on `dedupe_key`.
+`platform.assists` (entity token `assist`, RLS via `iam.apply_rls` variant `entity`, visibility `personal`). Producers set `created_by` = the addressee. Migrations: `migrations/platform_assists_ledger.sql`, then `migrations/platform_assists_absorb_capabilities.sql`. Unique live-pending index on `dedupe_key`.
+
+**The absorbed columns** — every one is read and written by the client. A column with no consumer is a half-landed migration, which is exactly what this table carried until 2026-08-13:
+
+| Column | Carries | Absorbed from |
+| --- | --- | --- |
+| `evidence` jsonb | `{kind, label?, snippet?, href?, ref?, items?}` — the receipt rendered under "What we saw", with `href` keeping THE DOOR LAW. | kg-suggestions `context_snippet` + source preview; `web.finding`'s analysis result |
+| `first_seen_at` / `occurrences` | When this dedupe key was FIRST noticed, and how many times it has recurred. A re-notice refreshes title / body / evidence and increments the count — it never moves `first_seen_at`, because "you have had this for three weeks" is the signal a plain upsert destroys. | `web.finding.first_detected_at` |
+| `resolved_at` + status `resolved` | The condition stopped reproducing and nobody decided anything. `resolveAssistsByDedupeKeys()` is the producer API; a DB check makes status and timestamp inseparable, so `restoreAssist` clears both. | `web.finding`'s analyzer-owned resolve |
+| `decision_note` | The user's own words at decision time, rendered when a row resurfaces. Written ONLY when supplied — a later plain decide never erases one. | kg-suggestions defer-with-note |
+| `is_starred` / `viewed_at` | Triage flag + unseen dot. Reading a row in the manager stamps it seen, so the dot means "new since you looked", not "never clicked". | kg-suggestions manager |
 
 ## Producers live in the OWNING feature, not here
 
