@@ -8,7 +8,7 @@
 ## Outcome
 
 - **35 baseline findings**: 5 detector-confirmed doorless surfaces plus 30 manual conversion task units.
-- **1 fixed and certified; release pending:** configured agent labels in Master Input now open the canonical agent route in a new tab.
+- **1 fixed, certified, and shipped in `v0.4.550`:** configured agent labels in Master Input now open the canonical agent route in a new tab.
 - `pnpm check:dead-ends --rule=no-doors-in-file`: baseline 11 alerts → post-edit 10; `MasterInputWindow.tsx` cleared.
 - Triage: 5 true positives, 6 verified false positives.
 - `pnpm check:reuse-index`: clean; all 115 indexed paths exist.
@@ -48,6 +48,13 @@ was therefore recovered in an isolated worktree and recertified below.
   product defect. Under the corrected risk-based fallback rule, the certifier
   returned **CERTIFIED** because the one-file change is non-shared,
   non-layout, and non-theme and its equivalent component/delta proof passed.
+- Released from an isolated `main` checkout through `./scripts/release.sh` as
+  `v0.4.550` (`9419ff9bd`). The atomic `origin/main` + tag push succeeded.
+- The 22-check post-push advisory suite completed: 17 checks were clean; five
+  unrelated repository-wide advisory categories remained loud (agent-sync
+  parser/snapshot drift, access guards, visibility vocabulary, docs guards,
+  and the broader dead-end backlog). The batch-specific type, focused lint,
+  diff, migration, doctrine, doc-claim, and P2 detector results stayed clean.
 
 ## Scope scanned
 

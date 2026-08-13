@@ -10,7 +10,7 @@ Format: `- [ ] <P#> | <file-or-route> | <one line> | <date>`
 
 ## Open
 
-- [ ] P2 | see `.matrx/patrol-reports/inventory-law.md` | 34 baseline catalogue items remain after the manually approved Master Input agent-door repair certified; release pending; continue item-scoped approval routing | 2026-08-12
+- [ ] P2 | see `.matrx/patrol-reports/inventory-law.md` | 34 baseline catalogue items remain after the manually approved Master Input agent-door repair shipped in `v0.4.550`; continue item-scoped approval routing | 2026-08-12
 - [ ] P3 | see `.matrx/patrol-reports/mobile-friendly-ui.md` | 16 approved literal `vh`→`dvh` findings were recovered and certified; 47 code-bearing `vh` occurrences remain across 38 runtime files for the newly gated mechanical recipe or per-surface review | 2026-08-12
 - [ ] P6 | see `.matrx/patrol-reports/no-emojis-in-ui.md` | 19 approved files passed accessible-state repair, desktop/mobile × light/dark proof, and the full type gate, then shipped in `v0.4.527`; 203 lines remain in 75 files | 2026-08-12
 - [x] P5 | see `.matrx/patrol-reports/copy-everywhere.md` | six certain table gaps repaired with canonical `MatrxDataTable.copy`; certified by clean baseline delta plus focused rendered-component fallback after the direct preview exceeded the fleet memory cap | 2026-08-12
