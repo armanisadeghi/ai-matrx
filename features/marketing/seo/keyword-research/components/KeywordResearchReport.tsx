@@ -104,7 +104,9 @@ export default function KeywordResearchReport({
     <>
       {/* Clusters — the registered kind component, read-only wherever no
           surface publishes `keyword_selection`. */}
-      <KeywordResearchBlock serverData={researchData} />
+      <div id="keyword-clusters" className="scroll-mt-4">
+        <KeywordResearchBlock serverData={researchData} />
+      </div>
 
       {measuredRows.length > 0 && variant === "page" ? (
         <section className="rounded-xl border border-border bg-card">
@@ -197,8 +199,17 @@ export default function KeywordResearchReport({
               {artifact.primary_keyword}
             </h1>
             <p className="mt-1.5 text-sm text-muted-foreground">
-              {summary.keywordCount} related keywords across{" "}
-              {summary.clusterCount}{" "}
+              {/* A count is a door: every keyword it counts is rendered below,
+                  so the number jumps to them. (Per-keyword intelligence is a
+                  signed-in surface — an anonymous recipient must never be sent
+                  to a door that will not open for them.) */}
+              <a
+                href="#keyword-clusters"
+                className="underline-offset-2 hover:text-foreground hover:underline"
+              >
+                {summary.keywordCount} related keywords
+              </a>{" "}
+              across {summary.clusterCount}{" "}
               {summary.clusterCount === 1 ? "cluster" : "clusters"}
               {generatedAt
                 ? ` · researched ${new Date(generatedAt).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}`
