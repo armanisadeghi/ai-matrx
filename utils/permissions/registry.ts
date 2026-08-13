@@ -110,16 +110,6 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     urlPathTemplate: "/agents/card/{id}",
     rlsUsesHasPermission: true,
   },
-  analysis_recipes: {
-    resourceType: "analysis_recipes",
-    tableName: "analysis_recipes",
-    idColumn: "id",
-    ownerColumn: "owner_user_id",
-    isPublicColumn: null,
-    displayLabel: "Analysis Recipe",
-    urlPathTemplate: "/settings/analysis/recipes/{id}",
-    rlsUsesHasPermission: false,
-  },
   app: {
     resourceType: "app",
     tableName: "definition",
@@ -144,7 +134,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   },
   batch_provider_batch: {
     resourceType: "batch_provider_batch",
-    tableName: "auto_ingest_batch",
+    tableName: "provider_batch",
     idColumn: "id",
     ownerColumn: "user_id",
     isPublicColumn: null,
@@ -422,7 +412,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     tableName: "quiz_sessions",
     schemaName: "education",
     idColumn: "id",
-    ownerColumn: "user_id",
+    ownerColumn: "created_by",
     isPublicColumn: null,
     displayLabel: "Quiz",
     urlPathTemplate: "/quizzes/{id}",
@@ -809,7 +799,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     ownerColumn: "created_by",
     isPublicColumn: null,
     displayLabel: "SEO Collection Run",
-    urlPathTemplate: "/marketing/seo/collections/{id}",
+    urlPathTemplate: "/marketing/ai-visibility/runs/{id}",
     rlsUsesHasPermission: true,
   },
   seo_change_set: {
