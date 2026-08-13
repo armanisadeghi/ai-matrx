@@ -28,6 +28,7 @@ import {
 } from "@/features/files/redux/slice";
 import { ShareLinkDialog } from "@/features/files/components/core/ShareLinkDialog/ShareLinkDialog";
 import { useInfiniteWindow } from "@/features/files/hooks/useInfiniteWindow";
+import { useFilesSurfaceClientTools } from "../useFilesSurfaceClientTools";
 import type {
   CloudFilePermission,
   CloudFileRecord,
@@ -125,6 +126,11 @@ export function FileGrid({
       sortDir,
     ],
   );
+
+  // Surface client tools (`matrx-user/files`) — the grid twin of FileTable's
+  // registration. Same handlers, same rows contract; the two never mount
+  // together (`viewMode === "grid"` picks one).
+  useFilesSurfaceClientTools({ rows, viewLabel: "grid" });
 
   // Infinite scroll. Initial 60 cells = 4–6 visible rows depending on
   // breakpoint, which fills the viewport on every screen size. Reset
