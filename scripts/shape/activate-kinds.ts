@@ -289,16 +289,24 @@ async function main(): Promise<number> {
   console.log(`\n${C.cyan}${C.bold}--apply: flipping is_active=true for ${toActivate.length} passer(s)…${C.reset}`);
   let failures = 0;
   for (const v of toActivate) {
-    const { error } = await supabase
+    // The sanctioned gate: content_ir.set_kind_activation (SECURITY DEFINER RPC).
+    // A direct .update({ is_active }) is rejected by the guard trigger
+    // guard_kind_is_active_write — is_active is a gated column (D166). The RPC
+    // re-runs the DB-side dual gate (evaluate_kind_activation) before flipping,
+    // and accepts the service role as an authorized actor.
+    const { data, error } = await supabase
       .schema("content_ir")
-      .from("kind_definition")
-      .update({ is_active: true })
-      .eq("id", v.row.id);
+      .rpc("set_kind_activation", {
+        p_kind_definition_id: v.row.id,
+        p_active: true,
+        p_note: "activate-kinds.ts --apply (dual gate passed in-process)",
+      });
     if (error) {
       failures += 1;
       console.error(`  ${C.red}✗ ${v.slug}: ${error.message}${C.reset}`);
     } else {
-      console.log(`  ${C.green}✓ ${v.slug} (id ${v.row.id}) → is_active=true${C.reset}`);
+      const gated = (data as { gated?: boolean } | null)?.gated === true ? " (DB dual gate re-verified)" : "";
+      console.log(`  ${C.green}✓ ${v.slug} (id ${v.row.id}) → is_active=true${gated}${C.reset}`);
     }
   }
   if (failures > 0) {
