@@ -12,6 +12,8 @@ import Link from "next/link";
 import { Network, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createEducationMindMapsScope } from "@/features/surfaces/manifests/education-mind-maps.manifest";
 import { studyMediaService } from "../../service";
 import type { StudyMediaRow } from "../../types";
 
@@ -32,7 +34,35 @@ export function MindMapHome() {
     };
   }, []);
 
+  // Live surface scope for the Agents chrome (matrx-user/education-mind-maps,
+  // list view). Synchronous over live render state — no fetch; the Surface
+  // Context window polls this every 400ms. This mount registers NO write
+  // handlers: the library owns no editable state (there is not even a search
+  // box), so there is nothing here an agent could stage.
+  const getScope = () =>
+    createEducationMindMapsScope({
+      view: "list",
+      maps_loaded: !loading,
+      ...(loading
+        ? {}
+        : {
+            mind_map_count: rows.length,
+            mind_maps: rows.map((row) => ({
+              id: row.id,
+              title: row.title,
+              source_kind: row.source_kind,
+              source_title: row.source_title,
+              status: row.status,
+              updated_at: row.updated_at,
+            })),
+          }),
+    });
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/education-mind-maps"
+      getScope={getScope}
+    >
     <div className="mx-auto w-full max-w-3xl space-y-5 p-4">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
@@ -90,5 +120,6 @@ export function MindMapHome() {
         </ul>
       )}
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

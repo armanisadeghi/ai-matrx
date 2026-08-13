@@ -105,6 +105,7 @@ import { educationFastfireManifest } from "./education-fastfire.manifest";
 import { educationAssessmentManifest } from "./education-assessment.manifest";
 import { educationGradeWorkManifest } from "./education-grade-work.manifest";
 import { educationPlannerManifest } from "./education-planner.manifest";
+import { educationMindMapsManifest } from "./education-mind-maps.manifest";
 import { settingsManifest } from "./settings.manifest";
 import { agentAppsManifest } from "./agent-apps.manifest";
 import { agentConnectionsManifest } from "./agent-connections.manifest";
@@ -264,6 +265,7 @@ const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   educationAssessmentManifest,
   educationGradeWorkManifest,
   educationPlannerManifest,
+  educationMindMapsManifest,
   settingsManifest,
   agentAppsManifest,
   agentConnectionsManifest,

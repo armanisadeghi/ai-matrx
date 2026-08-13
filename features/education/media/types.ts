@@ -39,6 +39,34 @@ export type EduAudioFormat = "overview" | "debate" | "panel" | "review";
 /** Where a media artifact was generated from (single-valued provenance). */
 export type EduMediaSourceKind = "deck" | "note" | "topic";
 
+/**
+ * The source modes the study-media GENERATOR FORMS offer — the "From a deck /
+ * From a topic" picker on Mind Maps (`MindMapNew`), Audio Study
+ * (`AudioStudyNew`) and Memory Tools (`MemoryNew`), which each used to declare
+ * their own private `type SourceKind = "deck" | "topic"`.
+ *
+ * Deliberately NARROWER than `EduMediaSourceKind` above: that one is the
+ * PERSISTED provenance of a finished artifact and also admits `note` (the
+ * ingest paths can point at one), while no generator form offers a note picker.
+ * Keep them separate — widening this to match provenance would advertise a
+ * source mode the forms cannot render.
+ *
+ * This is the ONE home for the vocabulary. The forms' pickers render from it,
+ * the surface manifests interpolate it into their write-target descriptions,
+ * and the write handlers validate against it — so what the UI offers, what an
+ * agent is told it may send, and what the handler accepts cannot drift.
+ */
+export const MEDIA_GENERATOR_SOURCE_KINDS = ["deck", "topic"] as const;
+
+export type MediaGeneratorSourceKind =
+  (typeof MEDIA_GENERATOR_SOURCE_KINDS)[number];
+
+export function isMediaGeneratorSourceKind(
+  value: string,
+): value is MediaGeneratorSourceKind {
+  return MEDIA_GENERATOR_SOURCE_KINDS.some((k) => k === value);
+}
+
 /** A resolved source the generator was pointed at. */
 export interface EduMediaSource {
   kind: EduMediaSourceKind;
