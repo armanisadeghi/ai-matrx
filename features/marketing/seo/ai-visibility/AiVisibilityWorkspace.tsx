@@ -31,6 +31,10 @@ import {
   StatusBadge,
   formatDate,
 } from "@/features/marketing/components/shared/MarketingUi";
+import {
+  humanLines,
+  webLocation,
+} from "@/features/marketing/lib/copy-payloads";
 import type { MarketingSite } from "@/features/marketing/types";
 import { markdownToPlainText } from "@/lib/markdown/plain-text";
 import { cn } from "@/lib/utils";
@@ -530,6 +534,30 @@ export function AiVisibilityWorkspace({
             search: true,
             searchPlaceholder: "Search claims, wording, or subjects…",
           }}
+          copy={{
+            label: "AI visibility claim",
+            listLabel: "AI visibility claims",
+            location: webLocation(`AI Visibility — ${site.name} — Claims`),
+            rowKind: "web-ai-visibility-claim",
+            listKind: "web-ai-visibility-claims",
+            humanRow: (row) =>
+              humanLines([
+                ["Provider", engineLabel(row.engine)],
+                ["Query", row.query],
+                ["Subject", row.subject],
+                ["Claim", row.claim_text],
+                ["Verification", row.verification_status],
+                ["Decision role", row.influence_role],
+                ["Impact", row.significance],
+                [
+                  "Critical warning",
+                  row.influential_unverified
+                    ? "Unverified + influential"
+                    : undefined,
+                ],
+                ["Evidence", markdownToPlainText(row.evidence_text)],
+              ]),
+          }}
           detail={{
             title: (row) => row.subject,
             description: (row) =>
@@ -555,6 +583,26 @@ export function AiVisibilityWorkspace({
           toolbar={{
             search: true,
             searchPlaceholder: "Search cited pages and domains…",
+          }}
+          copy={{
+            label: "AI visibility citation",
+            listLabel: "AI visibility citations",
+            location: webLocation(`AI Visibility — ${site.name} — Sources`),
+            rowKind: "web-ai-visibility-citation",
+            listKind: "web-ai-visibility-citations",
+            humanRow: (row) =>
+              humanLines([
+                ["Provider", engineLabel(row.engine)],
+                ["Query", row.query],
+                ["Citation order", row.ordinal],
+                ["Page", row.title || row.url],
+                ["URL", row.url],
+                ["Domain", row.domain],
+                ["Page capture", row.capture_status],
+                ["Why cited", row.cited_for],
+                ["Endorsement", row.endorsement_signal],
+                ["Evidence quality", row.evidence_quality],
+              ]),
           }}
           detail={{
             title: (row) => row.title || row.domain || row.url,
@@ -590,6 +638,23 @@ export function AiVisibilityWorkspace({
             searchPlaceholder:
               "Search authority, evidence, language, rankings…",
           }}
+          copy={{
+            label: "AI visibility decision signal",
+            listLabel: "AI visibility decision signals",
+            location: webLocation(`AI Visibility — ${site.name} — Signals`),
+            rowKind: "web-ai-visibility-signal",
+            listKind: "web-ai-visibility-signals",
+            humanRow: (row) =>
+              humanLines([
+                ["Provider", engineLabel(row.engine)],
+                ["Query", row.query],
+                ["Signal class", row.category],
+                ["Decision signal", row.signal],
+                ["Observed evidence", row.evidence_text],
+                ["Affected subject", row.target_subject],
+                ["Influence", row.influence],
+              ]),
+          }}
           detail={{
             title: (row) => row.signal,
             description: (row) =>
@@ -614,6 +679,24 @@ export function AiVisibilityWorkspace({
         toolbar={{
           search: true,
           searchPlaceholder: "Search prior exact queries…",
+        }}
+        copy={{
+          label: "AI visibility analysis",
+          listLabel: "AI visibility analysis history",
+          location: webLocation(`AI Visibility — ${site.name} — History`),
+          rowKind: "web-ai-visibility-analysis",
+          listKind: "web-ai-visibility-analysis-history",
+          humanRow: (row) =>
+            humanLines([
+              ["Query", row.query],
+              ["Provider", engineLabel(row.engine)],
+              ["Mentioned", row.target_mentioned ? "Yes" : "No"],
+              ["Cited", row.target_cited ? "Yes" : "No"],
+              ["Sources", row.citation_count],
+              ["Unverified + influential", row.unverified_influential_count],
+              ["Recommendation", row.recommendation_strength],
+              ["Observed", formatDate(row.observed_at)],
+            ]),
         }}
         detail={{
           title: (row) => row.query,

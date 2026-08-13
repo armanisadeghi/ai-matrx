@@ -24,6 +24,10 @@ import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import { supabase } from "@/utils/supabase/client";
 import type { Json } from "@/types/database.types";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import {
+  humanLines,
+  webLocation,
+} from "@/features/marketing/lib/copy-payloads";
 
 const VERDICTS = [
   "valuable",
@@ -167,7 +171,7 @@ export function ReferringDomainIntelligenceTable({
 }: {
   siteId: string;
 }) {
-  const { sitePath } = useMarketingSite();
+  const { site, sitePath } = useMarketingSite();
   const table = useMarketingTableState({
     defaultSort: { id: "opinion_score", direction: "desc" },
     defaultPageSize: 50,
@@ -295,6 +299,25 @@ export function ReferringDomainIntelligenceTable({
         onStateChange: table.onStateChange,
       }}
       toolbar={{ searchPlaceholder: "Search sites, kinds, or what we said…" }}
+      copy={{
+        label: "Referring domain",
+        listLabel: "Referring domain intelligence",
+        location: webLocation(
+          `Backlinks — ${site.root_url} — Referring domains`,
+        ),
+        rowKind: "web-referring-domain",
+        listKind: "web-referring-domains",
+        humanRow: (row) =>
+          humanLines([
+            ["Domain", row.display_domain],
+            ["Kind of site", humanizeAssessmentValue(row.domain_type)],
+            ["Links from this site", row.current_backlinks],
+            ["Our score", row.opinion_score ?? "Not reviewed"],
+            ["Our verdict", humanizeAssessmentValue(row.opinion_verdict)],
+            ["Why we say that", row.opinion_summary || "Not reviewed yet"],
+            ["Site authority", providerNumber(row, "domain_rank") ?? "—"],
+          ]),
+      }}
       detail={{
         title: (row) => row.display_domain,
         description: (row) => row.opinion_summary || "What we know about this site",
