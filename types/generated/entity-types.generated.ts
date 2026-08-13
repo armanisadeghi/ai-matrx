@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 351 active entity tokens. A token here is FK-valid for
+// 348 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -77,7 +77,6 @@ export type EntityTypeToken =
   | "app_rate_limit"
   | "app_setting"
   | "app_sync_status"
-  | "applet"
   | "artifact"
   | "assessment"
   | "assessment_item"
@@ -123,8 +122,6 @@ export type EntityTypeToken =
   | "crm_campaign_member"
   | "crm_interaction"
   | "crm_party_merge"
-  | "custom_app_config"
-  | "custom_applet_config"
   | "cx_agent_memory"
   | "cx_agent_plan"
   | "cx_agent_task"
@@ -409,7 +406,6 @@ export type ReferencePickableEntityToken =
   | "ai_provider"
   | "ai_setting"
   | "app"
-  | "applet"
   | "assessment"
   | "canvas_comment"
   | "canvas_item"
@@ -425,8 +421,6 @@ export type ReferencePickableEntityToken =
   | "context_item"
   | "conversation"
   | "crm_campaign"
-  | "custom_app_config"
-  | "custom_applet_config"
   | "cx_agent_memory"
   | "data_store"
   | "dataset"
@@ -685,7 +679,6 @@ export type ScopeableEntityToken =
   | "app_rate_limit"
   | "app_setting"
   | "app_sync_status"
-  | "applet"
   | "artifact"
   | "assessment"
   | "assessment_item"
@@ -730,8 +723,6 @@ export type ScopeableEntityToken =
   | "crm_campaign_member"
   | "crm_interaction"
   | "crm_party_merge"
-  | "custom_app_config"
-  | "custom_applet_config"
   | "data_store"
   | "dataset"
   | "derive_run"
@@ -1059,7 +1050,6 @@ export const ENTITY_TYPE_METADATA = {
   "app_rate_limit": { token: "app_rate_limit", schema: "app", table: "rate_limit", label: "App Rate Limit", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "Apps", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "app_setting": { token: "app_setting", schema: "public", table: "app_settings", label: "App Setting", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "app_sync_status": { token: "app_sync_status", schema: "public", table: "app_sync_status", label: "App Sync Status", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
-  "applet": { token: "applet", schema: "public", table: "applet", label: "Applet", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "artifact": { token: "artifact", schema: "chat", table: "artifact", label: "Artifact", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "title", contentRole: null, referenceCategory: null },
   "assessment": { token: "assessment", schema: "education", table: "assessment", label: "Assessment", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "title", contentRole: null, referenceCategory: null },
   "assessment_item": { token: "assessment_item", schema: "education", table: "assessment_item", label: "Assessment Item", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1105,8 +1095,6 @@ export const ENTITY_TYPE_METADATA = {
   "crm_campaign_member": { token: "crm_campaign_member", schema: "crm", table: "campaign_member", label: "Campaign Member", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "crm_interaction": { token: "crm_interaction", schema: "crm", table: "interaction", label: "Interaction", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "subject", contentRole: null, referenceCategory: null },
   "crm_party_merge": { token: "crm_party_merge", schema: "crm", table: "party_merge", label: "Party Merge", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
-  "custom_app_config": { token: "custom_app_config", schema: "public", table: "custom_app_configs", label: "Custom App Config", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
-  "custom_applet_config": { token: "custom_applet_config", schema: "public", table: "custom_applet_configs", label: "Custom Applet Config", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "cx_agent_memory": { token: "cx_agent_memory", schema: "chat", table: "agent_memory", label: "Agent Memory", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: false, category: "Conversations", referencePickable: true, titleColumn: "key", contentRole: null, referenceCategory: null },
   "cx_agent_plan": { token: "cx_agent_plan", schema: "chat", table: "agent_plan", label: "Agent Plan", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: false, category: "Conversations", referencePickable: false, titleColumn: "title", contentRole: null, referenceCategory: null },
   "cx_agent_task": { token: "cx_agent_task", schema: "chat", table: "agent_task", label: "Agent Task", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: false, category: "Conversations", referencePickable: false, titleColumn: "title", contentRole: null, referenceCategory: null },
@@ -1414,7 +1402,6 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "app_rate_limit",
   "app_setting",
   "app_sync_status",
-  "applet",
   "artifact",
   "assessment",
   "assessment_item",
@@ -1460,8 +1447,6 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "crm_campaign_member",
   "crm_interaction",
   "crm_party_merge",
-  "custom_app_config",
-  "custom_applet_config",
   "cx_agent_memory",
   "cx_agent_plan",
   "cx_agent_task",
