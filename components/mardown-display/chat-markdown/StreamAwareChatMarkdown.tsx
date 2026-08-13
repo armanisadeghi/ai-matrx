@@ -14,6 +14,7 @@ import type {
 } from "@/lib/chat-protocol/types";
 import { MarkdownErrorBoundary } from "./internal-handlers/MarkdownErrorBoundary";
 import { LiveToolCallCard } from "@/features/tool-call-visualization/components/LiveToolCallCard";
+import { useRetainRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
 
 // ---------------------------------------------------------------------------
 // Server-processed block state — used when backend sends render_block events
@@ -111,6 +112,18 @@ export const StreamAwareChatMarkdown: React.FC<
       );
     }
   }
+  // 🚨 THE DISAPPEARING-RUN CLASS: this component is the ONE seam every
+  // `MarkdownStream` renders through, so retaining here protects EVERY
+  // canonical viewer of a request row — chat, floating run windows, adopted
+  // pipeline streams (keyword research, deepen, crawler, podcast…). While a
+  // viewer is mounted, owner cleanup (`removeRequest` / conversation cleanup)
+  // DEFERS instead of deleting, so streamed content can never vanish out from
+  // under a surface that is still showing it. Do NOT remove this because
+  // "nothing seems to break" — the breakage is a mid-run blank screen on
+  // whichever surface reaps last. Doctrine:
+  // features/agents/docs/LIVE_RUN_RETENTION.md
+  useRetainRequestForViewer(requestId, "markdown-stream");
+
   const [processedContent, setProcessedContent] = useState<string>(
     content || "",
   );

@@ -52,12 +52,13 @@ Arman's ruling, 2026-08-11. Two halves, both absolute:
 
 **A run that dies on refresh is the same defect as a spinner.** If the work is server-side, the surface reattaches on load; the durable record is whatever the run's own feature persisted — never this window (it is `ephemeral: true`).
 
-**A surviving viewer retains its request.** `LiveRunDisplay` registers a viewer id in `activeRequests`; `removeRequest` and `destroyInstance` defer deletion until the final viewer releases it. A route/query remount may clean up its run owner, but it can never blank a still-open floating window. Closing or rebinding the last viewer completes the deferred cleanup, so retained output does not leak.
+**A surviving viewer retains its request.** EVERY canonical viewer — `StreamAwareChatMarkdown` (the seam under every `MarkdownStream`) and `LiveRunDisplay` — registers a viewer id in `activeRequests` via `useRetainRequestForViewer`; `removeRequest` and `destroyInstance` defer deletion until the final viewer releases it, and `createRequest` never resets an existing row. A route/query remount may clean up its run owner, but it can never blank a still-open surface. **Before touching any reap, adoption, or live-run render path, read [`features/agents/docs/LIVE_RUN_RETENTION.md`](../agents/docs/LIVE_RUN_RETENTION.md)** — the disappearing-run class doctrine; guard test `request-viewer-retention.test.ts`.
 
 ---
 
 ## Change Log
 
+- 2026-08-12 — **Retention widened to every MarkdownStream viewer + doctrine doc.** Retention moved into `StreamAwareChatMarkdown` via `useRetainRequestForViewer` (adopted-stream surfaces like the keyword Research tab were unprotected); `createRequest` made non-destructive for existing rows. Canonical doctrine: `features/agents/docs/LIVE_RUN_RETENTION.md`.
 - 2026-08-12 — **Live-run viewers retain canonical request state.** Authority,
   Keyword Research, and every other floating run survive host/query remounts
   without going blank: owner cleanup defers while `LiveRunDisplay` is mounted,

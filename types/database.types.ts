@@ -28951,6 +28951,158 @@ export type Database = {
           },
         ]
       }
+      node_artifact: {
+        Row: {
+          content: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          kind: string
+          metadata: Json
+          node_id: string
+          organization_id: string
+          produced_by: Json
+          site_id: string
+          step: string
+          summary: string | null
+          updated_at: string
+          updated_by: string | null
+          valid_to: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          content: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          kind: string
+          metadata?: Json
+          node_id: string
+          organization_id: string
+          produced_by?: Json
+          site_id: string
+          step: string
+          summary?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          valid_to?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          kind?: string
+          metadata?: Json
+          node_id?: string
+          organization_id?: string
+          produced_by?: Json
+          site_id?: string
+          step?: string
+          summary?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          valid_to?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "node_artifact_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: false
+            referencedRelation: "node"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      node_step: {
+        Row: {
+          artifact_id: string | null
+          attempts: number
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          error: Json | null
+          finished_at: string | null
+          id: string
+          metadata: Json
+          node_id: string
+          organization_id: string
+          site_id: string
+          started_at: string | null
+          status: string
+          step: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          artifact_id?: string | null
+          attempts?: number
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          error?: Json | null
+          finished_at?: string | null
+          id?: string
+          metadata?: Json
+          node_id: string
+          organization_id: string
+          site_id: string
+          started_at?: string | null
+          status?: string
+          step: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          artifact_id?: string | null
+          attempts?: number
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          error?: Json | null
+          finished_at?: string | null
+          id?: string
+          metadata?: Json
+          node_id?: string
+          organization_id?: string
+          site_id?: string
+          started_at?: string | null
+          status?: string
+          step?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "node_step_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "node_artifact"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "node_step_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: false
+            referencedRelation: "node"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profile: {
         Row: {
           attribute_schemas: Json

@@ -19,15 +19,12 @@
  * `requestId` both empty and `pending` false) — safe to mount unconditionally.
  */
 
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { Loader2, TriangleAlert, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppSelector } from "@/lib/redux/hooks";
 import MarkdownStream from "@/components/MarkdownStream";
-import {
-  releaseRequestForViewer,
-  retainRequestForViewer,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
+import { useRetainRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
 import {
   selectCurrentPhase,
   selectRequestError,
@@ -185,22 +182,15 @@ export function LiveRunDisplay({
   bodyClassName,
   variant = "card",
 }: LiveRunDisplayProps) {
-  const dispatch = useAppDispatch();
-  const viewerId = `live-run-display:${useId()}`;
   const { requestId, isActive, statusText, errorMessage, chunkCount } =
     useLiveRunStatus(conversationId, requestIdProp, pending);
 
   // A floating window deliberately survives the route component that launched
   // it. Retain the canonical request row for exactly as long as this viewer is
   // mounted, so launcher cleanup during a query-driven remount cannot blank
-  // the output. The last viewer release completes any deferred owner cleanup.
-  useEffect(() => {
-    if (!requestId) return;
-    dispatch(retainRequestForViewer({ requestId, viewerId }));
-    return () => {
-      dispatch(releaseRequestForViewer({ requestId, viewerId }));
-    };
-  }, [dispatch, requestId, viewerId]);
+  // the output (THE DISAPPEARING-RUN CLASS — see
+  // features/agents/docs/LIVE_RUN_RETENTION.md).
+  useRetainRequestForViewer(requestId, "live-run-display");
 
   const bodyRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {

@@ -131,18 +131,36 @@ const EMPLOYER_EMBED =
  *   mine → created_by = me · orgs → organization_id ∈ my orgs (or one org) ·
  *   public → visibility = 'public'. Never a bare RLS-filtered read.
  */
-export async function fetchPartyPage(
+/**
+ * The filter methods the party predicates use, structurally — so ONE helper
+ * serves builders parameterized on different select strings (the list page's
+ * embed select and the campaign flow's id-only select). PostgREST builder
+ * methods return `this`, which satisfies the recursive `Q`.
+ */
+type PartyPredicateBuilder<Q> = {
+  is(column: string, value: null): Q;
+  not(column: string, operator: string, value: unknown): Q;
+  eq(column: string, value: unknown): Q;
+  in(column: string, values: readonly unknown[]): Q;
+  ilike(column: string, pattern: string): Q;
+  gte(column: string, value: string): Q;
+  or(filters: string): Q;
+};
+
+/**
+ * Apply the FULL party-list predicate set (canonical, view, scope, kind facet,
+ * column filters, search) to a `crm.party` PostgREST builder. Shared by the
+ * list page AND the campaign "add members from filters" flow, so the records
+ * a filter previews and the records a campaign enrolls can never diverge.
+ */
+export function applyPartyListPredicates<Q extends PartyPredicateBuilder<Q>>(
+  builder: Q,
   query: PartyListQuery,
-  opts: PartySortOpts,
   ctx: CrmQueryContext,
-): Promise<{ rows: PartyListRow[]; total: number }> {
-  let q = supabase
-    .schema("crm")
-    .from("party")
-    .select(EMPLOYER_EMBED, { count: "exact" })
-    // Merge losers stay live on purpose (unmerge needs them); the list shows
-    // only canonical records.
-    .is("canonical_id", null);
+): Q {
+  // Merge losers stay live on purpose (unmerge needs them); lists show only
+  // canonical records.
+  let q = builder.is("canonical_id", null);
   // Trash is the same list over the soft-deleted rows — scope still applies.
   q =
     query.view === "trash"
@@ -190,6 +208,22 @@ export async function fetchPartyPage(
       ].join(","),
     );
   }
+  return q;
+}
+
+export async function fetchPartyPage(
+  query: PartyListQuery,
+  opts: PartySortOpts,
+  ctx: CrmQueryContext,
+): Promise<{ rows: PartyListRow[]; total: number }> {
+  let q = applyPartyListPredicates(
+    supabase
+      .schema("crm")
+      .from("party")
+      .select(EMPLOYER_EMBED, { count: "exact" }),
+    query,
+    ctx,
+  );
 
   // Sort — DB columns only, whitelisted; stale stored keys fall back rather
   // than erroring. EVERY order ends in `id` (total order — rows can never

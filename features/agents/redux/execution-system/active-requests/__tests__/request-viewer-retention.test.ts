@@ -116,3 +116,70 @@ test("requests without viewers are removed immediately", () => {
     store.getState().activeRequests.byRequestId[REQUEST_ID],
   ).toBeUndefined();
 });
+
+test("re-creating an existing request NEVER resets its streamed state", () => {
+  // The disappearing-run class, mechanism #2: a rejoin / second surface
+  // adopting the same server-side pipeline run dispatches createRequest under
+  // the SAME server X-Request-ID. That must continue into the existing row —
+  // a reset would blank every mounted viewer and silently drop all later
+  // events. See features/agents/docs/LIVE_RUN_RETENTION.md.
+  const store = makeStore();
+  createTestRequest(store);
+
+  const before = store.getState().activeRequests.byRequestId[REQUEST_ID];
+  store.dispatch(
+    createRequest({ requestId: REQUEST_ID, conversationId: CONVERSATION_ID }),
+  );
+  const after = store.getState().activeRequests.byRequestId[REQUEST_ID];
+
+  // Same object, not a fresh empty row.
+  expect(after).toBe(before);
+  expect(
+    store.getState().activeRequests.byConversationId[CONVERSATION_ID],
+  ).toEqual([REQUEST_ID]);
+});
+
+test("re-adoption cancels a deferred (viewer-retained) removal", () => {
+  const store = makeStore();
+  createTestRequest(store);
+  store.dispatch(
+    retainRequestForViewer({ requestId: REQUEST_ID, viewerId: "window" }),
+  );
+  store.dispatch(removeRequest(REQUEST_ID));
+  expect(
+    store.getState().activeRequests.pendingRemovalByRequestId[REQUEST_ID],
+  ).toBe(true);
+
+  // A rejoin re-adopts under the same id — the deferred removal must die,
+  // or the row would evaporate on the next viewer release mid-stream.
+  store.dispatch(
+    createRequest({ requestId: REQUEST_ID, conversationId: CONVERSATION_ID }),
+  );
+  expect(
+    store.getState().activeRequests.pendingRemovalByRequestId[REQUEST_ID],
+  ).toBeUndefined();
+
+  store.dispatch(
+    releaseRequestForViewer({ requestId: REQUEST_ID, viewerId: "window" }),
+  );
+  expect(store.getState().activeRequests.byRequestId[REQUEST_ID]).toBeDefined();
+});
+
+test("a viewer can retain BEFORE the row exists (mount/adoption race)", () => {
+  const store = makeStore();
+
+  store.dispatch(
+    retainRequestForViewer({ requestId: REQUEST_ID, viewerId: "early" }),
+  );
+  createTestRequest(store);
+  store.dispatch(removeRequest(REQUEST_ID));
+
+  expect(store.getState().activeRequests.byRequestId[REQUEST_ID]).toBeDefined();
+
+  store.dispatch(
+    releaseRequestForViewer({ requestId: REQUEST_ID, viewerId: "early" }),
+  );
+  expect(
+    store.getState().activeRequests.byRequestId[REQUEST_ID],
+  ).toBeUndefined();
+});
