@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { idMatchesQuery } from "@/utils/search-scoring";
 import {
@@ -74,10 +74,12 @@ import {
   type McpServerDraft,
 } from "@/features/tool-registry/mcp-admin/components/AddMcpServerDialog";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { ADMIN_MCP_SERVERS_SURFACE_NAME } from "@/features/surfaces/manifests/admin-mcp-servers.manifest";
 import {
-  ADMIN_MCP_SERVERS_SURFACE_NAME,
-  createAdminMcpServersScope,
-} from "@/features/surfaces/manifests/admin-mcp-servers.manifest";
+  buildAdminMcpServersScope,
+  type McpDetailTab,
+  type McpServersDetailSnapshot,
+} from "@/features/tool-registry/mcp-admin/mcp-servers-scope";
 import {
   MCP_SERVER_DEEP_LINK_PARAM,
   toolHref,
@@ -191,47 +193,33 @@ export function McpServersAdminPage() {
   const deepLinkUnresolved = Boolean(deepLink) && !selected;
 
   /**
-   * Live scope for `matrx-admin/mcp-servers` — this surface's FIRST emitter.
-   * Read when the user presses ▶, never on mount.
-   *
-   * The per-tab values the manifest declares (`server_tools`,
-   * `server_configs`, `server_connected_user_count`,
-   * `selected_server_active_tab`, `latest_test_result`) are fetched inside
-   * ToolsTab/ConfigsTab/ConnectionsTab and never travel up here, so they are
-   * omitted rather than guessed — all five are `alwaysAvailable: false`, which
-   * is exactly the declared "not loaded" state. Endpoint URLs and OAuth ids
-   * are left out on purpose, matching `serverMeta`'s sanitized posture.
+   * The detail pane's state (active tab, per-tab data, this session's test
+   * probe) lives one level down, and lifting it into page state would remount
+   * the pane mid-fetch. It rides up into this ref instead — `getScope` is
+   * sampled when the user presses ▶, so a ref is exactly as fresh as state and
+   * costs no re-render. `ServerDetail` clears it on unmount, so a deselect can
+   * never leave a stale server in the scope.
+   */
+  const detailRef = useRef<McpServersDetailSnapshot | null>(null);
+  const publishDetail = useCallback(
+    (snapshot: McpServersDetailSnapshot | null) => {
+      detailRef.current = snapshot;
+    },
+    [],
+  );
+
+  /**
+   * Live scope for `matrx-admin/mcp-servers`. Read when the user presses ▶,
+   * never on mount. The row→value derivation lives in `mcp-servers-scope.ts`,
+   * which also drops endpoint URLs and OAuth ids on purpose, matching
+   * `serverMeta`'s sanitized posture.
    */
   const buildSurfaceScope = () =>
-    createAdminMcpServersScope({
-      mcp_search: search,
-      mcp_server_count: servers.length,
-      mcp_servers_list: servers.map((s) => ({
-        slug: s.slug,
-        name: s.name,
-        vendor: s.vendor,
-        status: s.status,
-        transport: s.transport,
-        is_official: s.is_official,
-        sync_state: computeFreshness(s).state,
-      })),
-      new_server_draft: { ...newServerDraft },
-      selected_server_slug: selected?.slug,
-      selected_server: selected
-        ? {
-            name: selected.name,
-            vendor: selected.vendor,
-            category: selected.category,
-            transport: selected.transport,
-            auth_strategy: selected.auth_strategy,
-            status: selected.status,
-            docs_url: selected.docs_url,
-            description: selected.description,
-            is_official: selected.is_official,
-            last_synced_at: selected.last_synced_at,
-            last_sync_error: selected.last_sync_error,
-          }
-        : undefined,
+    buildAdminMcpServersScope({
+      search,
+      servers,
+      newServerDraft,
+      detail: detailRef.current,
     });
 
   /**
@@ -332,7 +320,11 @@ export function McpServersAdminPage() {
       <div className="flex-shrink-0 px-6 py-3 border-b border-border flex items-center gap-3 bg-background">
         <Server className="h-4 w-4 text-muted-foreground" />
         <h1 className="text-sm font-medium">Tool Registry · MCP Servers</h1>
-        <Badge variant="outline" className="text-[10px]">
+        <Badge
+          variant="outline"
+          className="text-[10px]"
+          data-surface-value="mcp_server_count"
+        >
           {servers.length}
         </Badge>
         {loading && (
@@ -419,6 +411,7 @@ export function McpServersAdminPage() {
                 placeholder="Search servers…"
                 className="pl-7 h-8 text-xs"
                 style={{ fontSize: "16px" }}
+                data-surface-value="mcp_search"
               />
             </div>
           </div>
@@ -434,7 +427,7 @@ export function McpServersAdminPage() {
                 No servers match.
               </div>
             )}
-            <ul>
+            <ul data-surface-value="mcp_servers_list">
               {filtered.map((s) => {
                 const fresh = computeFreshness(s);
                 const isSel = s.slug === selected?.slug;
@@ -490,6 +483,7 @@ export function McpServersAdminPage() {
               key={selected.slug}
               server={selected}
               onRefreshed={() => void load()}
+              onScope={publishDetail}
             />
           ) : deepLinkUnresolved ? (
             <div className="h-full flex flex-col items-center justify-center gap-2 p-12 text-center">
@@ -578,15 +572,54 @@ function FreshnessBadge({
 function ServerDetail({
   server,
   onRefreshed,
+  onScope,
 }: {
   server: McpServerRow;
   onRefreshed: () => void;
+  /** Publishes this pane's state to the page's surface emitter. */
+  onScope: (snapshot: McpServersDetailSnapshot | null) => void;
 }) {
   const [refreshing, setRefreshing] = useState(false);
   const [testing, setTesting] = useState(false);
   const [latestTest, setLatestTest] = useState<McpTestResult | null>(null);
   const fresh = computeFreshness(server);
   const testFresh = computeTestFreshness(server);
+
+  // The surface declares `selected_server_active_tab`, so SOMEONE has to hold
+  // the answer — `<Tabs defaultValue>` alone left it uncontrolled and the value
+  // unemittable. The tabs are controlled from here now.
+  const [activeTab, setActiveTab] = useState<McpDetailTab>("tools");
+  // Per-tab data is fetched inside the tab components (which Radix unmounts
+  // when inactive), so each reports what it loaded up here. `null` means "that
+  // tab has not loaded" and stays distinct from an empty array.
+  const [tools, setTools] = useState<ServerToolRow[] | null>(null);
+  const [configs, setConfigs] = useState<McpConfigRow[] | null>(null);
+  const [connectedUserCount, setConnectedUserCount] = useState<number | null>(
+    null,
+  );
+
+  useEffect(() => {
+    onScope({
+      server,
+      activeTab,
+      tools,
+      configs,
+      connectedUserCount,
+      latestTest,
+    });
+  }, [
+    onScope,
+    server,
+    activeTab,
+    tools,
+    configs,
+    connectedUserCount,
+    latestTest,
+  ]);
+
+  // Deselecting (or swapping servers — this pane is keyed by slug) must drop
+  // the snapshot, or the scope would keep describing a server nobody is on.
+  useEffect(() => () => onScope(null), [onScope]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -627,11 +660,14 @@ function ServerDetail({
 
   return (
     <div className="p-6 space-y-5 max-w-4xl">
-      <header className="space-y-2">
+      <header className="space-y-2" data-surface-value="selected_server">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="font-mono text-base font-semibold">
+              <h2
+                className="font-mono text-base font-semibold"
+                data-surface-value="selected_server_slug"
+              >
                 {server.slug}
               </h2>
               <Badge variant="outline" className="text-[10px]">
@@ -728,8 +764,15 @@ function ServerDetail({
         {latestTest && <TestResultPanel result={latestTest} />}
       </header>
 
-      <Tabs defaultValue="tools" className="flex flex-col">
-        <TabsList className="h-9 self-start">
+      <Tabs
+        value={activeTab}
+        onValueChange={(v) => setActiveTab(v as McpDetailTab)}
+        className="flex flex-col"
+      >
+        <TabsList
+          className="h-9 self-start"
+          data-surface-value="selected_server_active_tab"
+        >
           <TabsTrigger value="tools" className="text-xs">
             Tools
           </TabsTrigger>
@@ -744,13 +787,20 @@ function ServerDetail({
           </TabsTrigger>
         </TabsList>
         <TabsContent value="tools" className="m-0 mt-3">
-          <ToolsTab slug={server.slug} />
+          <ToolsTab
+            slug={server.slug}
+            serverId={server.id}
+            onLoaded={setTools}
+          />
         </TabsContent>
         <TabsContent value="configs" className="m-0 mt-3">
-          <ConfigsTab serverId={server.id} />
+          <ConfigsTab serverId={server.id} onLoaded={setConfigs} />
         </TabsContent>
         <TabsContent value="connections" className="m-0 mt-3">
-          <ConnectionsTab serverId={server.id} />
+          <ConnectionsTab
+            serverId={server.id}
+            onLoaded={setConnectedUserCount}
+          />
         </TabsContent>
         <TabsContent value="meta" className="m-0 mt-3">
           <MetaTab server={server} />
@@ -760,7 +810,15 @@ function ServerDetail({
   );
 }
 
-function ToolsTab({ slug }: { slug: string }) {
+function ToolsTab({
+  slug,
+  serverId,
+  onLoaded,
+}: {
+  slug: string;
+  serverId: string;
+  onLoaded: (tools: ServerToolRow[]) => void;
+}) {
   const [tools, setTools] = useState<ServerToolRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -768,13 +826,22 @@ function ToolsTab({ slug }: { slug: string }) {
   useEffect(() => {
     setLoading(true);
     setError(null);
-    void listServerTools(slug)
-      .then(setTools)
+    // `listServerTools` filters `tool.definition.managed_by_server_id` — a
+    // uuid. This passed the SLUG (a leftover from the pre-2026 `${slug}:%`
+    // name-pattern signature), so the tab could only ever error or come back
+    // empty. Caught while wiring `server_tools`: a value that cannot load
+    // cannot be emitted honestly either.
+    void listServerTools(serverId)
+      .then((rows) => {
+        setTools(rows);
+        onLoaded(rows);
+      })
       .catch((e) =>
         setError(e instanceof Error ? e.message : "Failed to load tools"),
       )
       .finally(() => setLoading(false));
-  }, [slug]);
+    // `onLoaded` is a stable setState; the fetch keys off the server.
+  }, [serverId]);
 
   if (loading) return <InlineLoading />;
   if (error) return <ErrorBox msg={error} />;
@@ -813,7 +880,10 @@ function ToolsTab({ slug }: { slug: string }) {
           ]}
         />
       </div>
-      <div className="rounded-md border border-border bg-card overflow-hidden">
+      <div
+        className="rounded-md border border-border bg-card overflow-hidden"
+        data-surface-value="server_tools"
+      >
         <Table>
           <TableHeader>
             <TableRow>
@@ -877,7 +947,13 @@ function ToolsTab({ slug }: { slug: string }) {
   );
 }
 
-function ConfigsTab({ serverId }: { serverId: string }) {
+function ConfigsTab({
+  serverId,
+  onLoaded,
+}: {
+  serverId: string;
+  onLoaded: (configs: McpConfigRow[]) => void;
+}) {
   const [configs, setConfigs] = useState<McpConfigRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -888,7 +964,9 @@ function ConfigsTab({ serverId }: { serverId: string }) {
     setLoading(true);
     setError(null);
     try {
-      setConfigs(await listServerConfigs(serverId));
+      const rows = await listServerConfigs(serverId);
+      setConfigs(rows);
+      onLoaded(rows);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load configs");
     } finally {
@@ -980,7 +1058,7 @@ function ConfigsTab({ serverId }: { serverId: string }) {
           No connection configs defined yet — click "Add config" to create one.
         </EmptyHint>
       )}
-      <div className="space-y-2">
+      <div className="space-y-2" data-surface-value="server_configs">
         {configs.map((c) => (
           <div
             key={c.id}
@@ -1369,7 +1447,13 @@ function ConfigDialog({
   );
 }
 
-function ConnectionsTab({ serverId }: { serverId: string }) {
+function ConnectionsTab({
+  serverId,
+  onLoaded,
+}: {
+  serverId: string;
+  onLoaded: (count: number) => void;
+}) {
   const [count, setCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -1378,11 +1462,15 @@ function ConnectionsTab({ serverId }: { serverId: string }) {
     setLoading(true);
     setError(null);
     void countConnectedUsers(serverId)
-      .then(setCount)
+      .then((n) => {
+        setCount(n);
+        onLoaded(n);
+      })
       .catch((e) =>
         setError(e instanceof Error ? e.message : "Failed to load count"),
       )
       .finally(() => setLoading(false));
+    // `onLoaded` is a stable setState; the fetch keys off the server.
   }, [serverId]);
 
   if (loading) return <InlineLoading />;
@@ -1391,7 +1479,10 @@ function ConnectionsTab({ serverId }: { serverId: string }) {
   return (
     <div className="rounded-md border border-border bg-card p-4 text-sm">
       <div className="flex items-baseline gap-2">
-        <span className="text-3xl font-semibold tabular-nums">
+        <span
+          className="text-3xl font-semibold tabular-nums"
+          data-surface-value="server_connected_user_count"
+        >
           {count ?? 0}
         </span>
         <span className="text-xs text-muted-foreground">
@@ -1518,7 +1609,10 @@ function TestResultPanel({ result }: { result: McpTestResult }) {
     : "border-destructive/40 bg-destructive/5 text-destructive";
   const Icon = result.ok ? CheckCircle2 : XCircle;
   return (
-    <div className={`rounded-md border ${tone} px-3 py-2 space-y-1`}>
+    <div
+      className={`rounded-md border ${tone} px-3 py-2 space-y-1`}
+      data-surface-value="latest_test_result"
+    >
       <div className="flex items-center gap-2 text-xs font-medium">
         <Icon className="h-3.5 w-3.5" />
         {result.ok ? "Reachable" : "Unhealthy"}

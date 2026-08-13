@@ -16,12 +16,43 @@
  * those are the admin's own button clicks.
  *
  * Emitter: `McpServersAdminPage` mounts this surface's `SurfaceRuntimeProvider`
- * (list + search + selection + the Add-server draft). The per-tab values
- * (`server_tools`, `server_configs`, `server_connected_user_count`,
- * `selected_server_active_tab`, `latest_test_result`) are still fetched inside
- * the child tab components with no path up to the provider — see
- * readinessNote. They are all `alwaysAvailable: false`, so their absence is
- * the declared "not loaded" state rather than a lie.
+ * and derives its payload through
+ * `features/tool-registry/mcp-admin/mcp-servers-scope.ts` (the
+ * `marketing-page-scope.ts` pattern — the projections deliberately DROP
+ * `endpoint_url` / `oauth_client_id` / `metadata`, matching the sanitization
+ * posture `format.ts` documents for the copy payloads, because a scope is read
+ * by an LLM).
+ *
+ * The per-tab values (`server_tools`, `server_configs`,
+ * `server_connected_user_count`, `selected_server_active_tab`,
+ * `latest_test_result`) were the emitter's stated gap and are now live
+ * (2026-08-13). They are fetched inside ToolsTab/ConfigsTab/ConnectionsTab,
+ * which Radix unmounts when inactive, so each reports what it loaded UP into a
+ * ref the provider's `getScope` reads at Run time — the
+ * `messages.manifest.ts` `onLoadedMessageCountChange` shape, and for the same
+ * reason: lifting per-tab data into page state would remount the detail pane
+ * mid-fetch, and a ref sampled at Run is exactly as fresh as state. `null`
+ * ("that tab has not loaded") stays distinct from `[]` ("loaded, and there are
+ * none"): the builder OMITS the key rather than emitting an empty array, so an
+ * agent can tell "no tools" from "not looked".
+ *
+ * THREE declared values had to be CORRECTED to be emittable honestly rather
+ * than emitted as something plausible-but-wrong (the precedent is
+ * `messages.manifest.ts` on `current_conversation_message_count` — a read gap
+ * is visible, a wrong value is not):
+ *   - `selected_server_active_tab` had NO holder at all: `<Tabs>` was
+ *     UNCONTROLLED (`defaultValue="tools"`), so the page genuinely did not know
+ *     its own answer. The detail pane controls it now.
+ *   - `selected_server` promised sync status only, while the detail header also
+ *     renders a PERSISTED connection-test badge off `last_test_*`. Those five
+ *     columns (and `website_url`, which the wizard collects and the row
+ *     carries) are now declared; without them an agent reading an absent
+ *     `latest_test_result` would conclude the server was never tested, when the
+ *     page was showing a result from a previous session.
+ *   - `server_configs` gained `env_schema` / `notes` / `min_node_version`,
+ *     which the Configs tab renders and the intro explicitly promises ("only
+ *     the schema describing what a user must supply"). Env var VALUES are never
+ *     emitted — the schema declares KEYS and their required/secret flags.
  *
  * Write half: ONE target, `new_server_draft` — see the block above
  * `writeTargets` for the judgment call and the full exclusion list.
@@ -113,7 +144,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "selected_server",
     label: "Selected server",
     description:
-      "Identity + status of the selected server: name, vendor, category, transport, auth_strategy, status, docs_url, description, is_official, last_synced_at, last_sync_error. Absent when no server is selected.",
+      "Identity + status of the selected server: name, vendor, category, transport, auth_strategy, status, docs_url, website_url, description, is_official, sync state (last_synced_at, last_sync_error) and the PERSISTED result of the last connection test (last_tested_at, last_test_ok, last_test_status_code, last_test_latency_ms, last_test_error) — which is what the header's reachable/unreachable badge shows, and is distinct from latest_test_result (this session's probe only). Never carries the endpoint URL or OAuth client id. Absent when no server is selected.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 600,
@@ -147,7 +178,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "server_configs",
     label: "Server configs",
     description:
-      "Connection configs (tool_mcp_server_config) for the selected server: label, config_type, command, args, is_default, requires_docker, npm/pip package. Bindable rather than auto-context. Absent when no server is selected or the Configs tab has not loaded.",
+      "Connection configs (tool_mcp_server_config) for the selected server: label, config_type, command, args, is_default, requires_docker, npm/pip package, min_node_version, notes, and env_schema. env_schema is the SCHEMA a connecting user must fill (key, label, required, secret) — never the env var values, which this surface does not load. Bindable rather than auto-context. Absent when no server is selected or the Configs tab has not loaded.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 2000,
@@ -285,9 +316,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const adminMcpServersManifest: SurfaceManifest = {
   surfaceName: ADMIN_MCP_SERVERS_SURFACE_NAME,
-  readiness: "partial",
-  readinessNote:
-    "Emitter live on McpServersAdminPage (list, search, selection, new-server draft) and the new_server_draft write target is wired. Still missing: the per-tab values (server_tools, server_configs, server_connected_user_count, selected_server_active_tab, latest_test_result) are fetched inside ToolsTab/ConfigsTab/ConnectionsTab and the Tabs default value, none of which report up to the provider — all are alwaysAvailable: false, so they read as absent rather than wrong.",
+  readiness: "verified",
   label: "MCP Servers Admin",
   urlPattern: "/administration/agents/mcp-servers",
   intro: `<surface_intro>
@@ -298,6 +327,8 @@ An MCP server (tool_mcp_server) is a connectable Model Context Protocol server t
 What you may safely do: help the admin draft a new server's description, diagnose a sync error (selected_server.last_sync_error) or a failed connection test (latest_test_result), and explain a config's transport/env requirements. You never trigger a refresh, test, or save yourself — those are the admin's own button clicks.
 
 The one thing you can WRITE is new_server_draft: it stages a display name, vendor, category and agent-facing description into the Add-server wizard, opening it so the admin can see what you staged. Nothing is created by writing it — the admin still supplies the slug, transport, endpoint and auth strategy and presses Provision server. There is no write path to an EXISTING server on this page at all: its description and metadata are read-only here, so if the admin asks you to rewrite a registered server's description, say plainly that this console cannot edit one and offer to draft the text for them to paste.
+
+Two freshness facts are easy to confuse. selected_server carries the PERSISTED result of the last connection test (last_test_ok and friends) — that is what the header badge shows, and it may be weeks old. latest_test_result is only this session's probe and is absent until the admin clicks Test connection. Never report one as the other.
 
 There are no credentials in this scope beyond what is already visible on the page (e.g. npm/pip package names). Env var VALUES for a config are never emitted here, only the schema describing what a user must supply.
 </surface_intro>`,
@@ -330,10 +361,20 @@ export interface AdminMcpServerDetail {
   auth_strategy: string;
   status: string;
   docs_url: string | null;
+  website_url: string | null;
   description: string | null;
   is_official: boolean;
   last_synced_at: string | null;
   last_sync_error: string | null;
+  /**
+   * The PERSISTED connection test on the row — what the header badge shows,
+   * possibly weeks old. `latest_test_result` is the separate in-session probe.
+   */
+  last_tested_at: string | null;
+  last_test_ok: boolean | null;
+  last_test_status_code: number | null;
+  last_test_latency_ms: number | null;
+  last_test_error: string | null;
 }
 
 /** One tool row for the selected server. */
@@ -342,6 +383,17 @@ export interface AdminMcpServerToolRow {
   name: string;
   description: string;
   is_active: boolean | null;
+}
+
+/**
+ * One env var a connecting user must supply for a config. The SCHEMA only —
+ * `secret: true` marks a field whose value is vault-held and never loaded here.
+ */
+export interface AdminMcpConfigEnvField {
+  key: string;
+  label: string;
+  required: boolean;
+  secret: boolean;
 }
 
 /** One config row for the selected server. */
@@ -354,6 +406,9 @@ export interface AdminMcpServerConfigRow {
   requires_docker: boolean;
   npm_package: string | null;
   pip_package: string | null;
+  min_node_version: string | null;
+  notes: string | null;
+  env_schema: AdminMcpConfigEnvField[];
 }
 
 /**
