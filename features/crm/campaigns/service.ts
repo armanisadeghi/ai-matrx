@@ -36,6 +36,7 @@ import type {
   CampaignMemberWithParty,
   CampaignRow,
   CampaignStatus,
+  CampaignUpdate,
   CallDisposition,
   DialTarget,
   MemberStatus,
@@ -140,7 +141,7 @@ export async function setCampaignStatus(
   campaign: CampaignRow,
   status: CampaignStatus,
 ): Promise<void> {
-  const patch: Record<string, unknown> = { status };
+  const patch: CampaignUpdate = { status };
   if (status === "active" && !campaign.started_at) {
     patch.started_at = new Date().toISOString();
   }

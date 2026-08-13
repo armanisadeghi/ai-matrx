@@ -211,6 +211,10 @@ synonyms) → **dry-run preview** → commit. Engine in `features/crm/import/`
 
 ## Change log
 
+- 2026-08-12 — Restored strict Supabase write typing for campaign status
+  transitions: the dynamic lifecycle patch now uses the generated
+  `campaign.Update` shape instead of `Record<string, unknown>`, keeping status
+  and timestamp writes aligned with the live generated schema.
 - 2026-08-13 — CSV import shipped: `/crm/import` wizard (file or paste →
   auto-mapped columns → dry-run preview → commit), engine + bulk dedup service
   lookups, Import button on `/crm`, admin-map entry. While verifying, found and
