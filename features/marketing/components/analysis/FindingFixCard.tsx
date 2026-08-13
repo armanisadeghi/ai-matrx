@@ -209,7 +209,10 @@ export function FindingFixCard({
   };
 
   return (
-    <section className="overflow-hidden rounded-lg border border-border bg-card">
+    // `shrink-0`: the finding page is a flex column whose table takes the
+    // remaining space. Without it this card is compressed and clips its own
+    // Apply button — the one control the whole feature exists for.
+    <section className="shrink-0 rounded-lg border border-border bg-card">
       <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
         <Wand2 className="h-3.5 w-3.5 shrink-0 text-primary" />
         <h2 className="text-xs font-semibold text-foreground">Fix this page</h2>
