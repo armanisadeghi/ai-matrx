@@ -50,8 +50,8 @@ The Inventory Law is reuse-first's other half: don't build a *poorer* one. Befor
 - 🚨 **ONE dev server, machine-wide** — shared by Arman, Claude, and Codex. Start or reuse it only with `pnpm preview:start` (port 3001, `.next-preview`); stop it with `pnpm preview:stop`. **Named `preview_start` and raw `pnpm dev` are banned** because they create untracked server trees. Install/update the guard with `pnpm setup:agent-harness` ([`scripts/agent-harness/`](./scripts/agent-harness/); machine setup SoR: `/Users/armanisadeghi/code/common-docs/systems/agent-machine-setup/FEATURE.md`).
 - **Use the provider's separate in-app browser** — Claude Browser pane or Codex Browser plugin. Use Chrome only when the task explicitly depends on Arman's existing Chrome state; never commandeer it for routine localhost verification.
 
-- **Form login (canonical — log in once per browser profile):** open `/login`, sign in with `admin@admin.com` / `Password1234#`; the session persists in that browser. This reliably establishes a full client session for testing.
-- Dev auto-login (localhost only, disabled in production): `http://localhost:<port>/api/dev-login?token=${DEV_LOGIN_TOKEN}&next=/<route>` — `next` defaults to `/dashboard`. If a session exists, it redirects without re-login. (Sets a cookie; the form login above is more reliable for hydrating client data pages.)
+- **Canonical admin credentials:** `AI_ADMIN_USERNAME="admin@admin.com"` and `AI_ADMIN_PASSWORD="Password1234#"`. At `/login`, use those values once per browser profile; the session persists and reliably hydrates client data pages.
+- Dev auto-login (localhost only, disabled in production): set those two variables plus `DEV_LOGIN_TOKEN`, then open `http://localhost:<port>/api/dev-login?token=${DEV_LOGIN_TOKEN}&next=/<route>` — `next` defaults to `/dashboard`. If a session exists, it redirects without re-login.
 
 ---
 
