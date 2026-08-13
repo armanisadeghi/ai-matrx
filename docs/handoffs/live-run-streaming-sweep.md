@@ -43,6 +43,10 @@ Fix costs below: **S** ≈ 15 min (the two-line recipe), **M** ≈ 1–3 h, **L*
   thunk-launched run**, and underneath them `useLiveAgentRun`,
   `<LiveRunDisplay>`, `adoptForeignStream`, `useOpenLiveRunWindow()`.
   Recipe + traps: `live-stream-everywhere.md`.
+- **The row must outlive the viewer** — before adding any reap/adoption code
+  in a migration, read `features/agents/docs/LIVE_RUN_RETENTION.md` (the
+  disappearing-run class: retention seam, non-destructive `createRequest`,
+  abort-before-reap; guard test `request-viewer-retention.test.ts`).
 - Reference for a class-B/E migration done whole:
   `features/podcasts/generator/useEpisodeTitleOptions.ts` (2026-08-11) — open
   the window BEFORE the launch, run the slot through `useLiveAgentRun`, and
