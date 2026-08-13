@@ -36,6 +36,7 @@ import { buildContentPlanScope } from "../lib/content-plan-scope";
 import {
   planKeys,
   usePlanEntities,
+  useSiteParties,
   usePlanNodes,
   usePlanProfiles,
   useReparentPlanNode,
@@ -126,6 +127,7 @@ export function ContentPlanWorkbench({
     null;
   const nodes = usePlanNodes(siteId);
   const entities = usePlanEntities(siteId);
+  const siteParties = useSiteParties(siteId);
   const profiles = usePlanProfiles(site?.organization_id ?? null);
   const reparent = useReparentPlanNode(siteId ?? "none");
   const generate = usePlanGenerate(siteId);
@@ -569,6 +571,7 @@ export function ContentPlanWorkbench({
                   node={node}
                   siteId={siteId}
                   entities={entities.data ?? []}
+                  parties={siteParties.data ?? []}
                   profiles={profiles.data ?? []}
                   onDeleted={onDeleted}
                   deepen={deepen}
@@ -632,6 +635,7 @@ export function ContentPlanWorkbench({
                       node={selectedNode}
                       siteId={siteId}
                       entities={entities.data ?? []}
+                      parties={siteParties.data ?? []}
                       profiles={profiles.data ?? []}
                       onDeleted={() => setSelectedNodeId(null)}
                       deepen={deepen}
@@ -681,6 +685,7 @@ export function ContentPlanWorkbench({
               node={selectedNode}
               siteId={siteId}
               entities={entities.data ?? []}
+              parties={siteParties.data ?? []}
               profiles={profiles.data ?? []}
               onDeleted={() => setSelectedNodeId(null)}
               deepen={deepen}

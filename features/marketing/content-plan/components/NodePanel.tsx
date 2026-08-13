@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { PartyRow } from "@/features/crm/types";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
 import { createContentPlanNodeScope } from "@/features/surfaces/manifests/content-plan-node.manifest";
 import {
@@ -82,6 +83,7 @@ export function NodePanel({
   node,
   siteId,
   entities,
+  parties,
   profiles,
   onDeleted,
   deepen,
@@ -93,6 +95,8 @@ export function NodePanel({
   node: PlanNodeRow;
   siteId: string;
   entities: PlanEntityRow[];
+  /** The site's linked crm.party roster (people/companies). */
+  parties: PartyRow[];
   profiles: PlanProfileRow[];
   onDeleted: () => void;
   /** Workbench-owned so an in-flight run survives node switches (the panel
@@ -882,7 +886,11 @@ export function NodePanel({
               onChange={(attributes) => setDraft((d) => ({ ...d, attributes }))}
             />
 
-            <NodeAssociations nodeId={node.id} entities={entities} />
+            <NodeAssociations
+              nodeId={node.id}
+              entities={entities}
+              parties={parties}
+            />
           </div>
         </div>
 

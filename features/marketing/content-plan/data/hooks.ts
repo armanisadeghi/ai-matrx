@@ -28,11 +28,18 @@ import {
   addNodeSecondaryKeyword,
   addNodeTopic,
   attachNodeEntity,
+  attachNodeParty,
   detachNodeEntity,
+  detachNodeParty,
+  linkPartyToSite,
   listPlanNodeEdges,
+  listSitePartyIds,
   removeNodeSecondaryKeyword,
   removeNodeTopic,
+  unlinkPartyFromSite,
 } from "./associations";
+import { fetchPartiesByIds } from "@/features/crm/service";
+import type { PartyRow } from "@/features/crm/types";
 import {
   createPlanEntity,
   createPlanNode,
@@ -56,6 +63,8 @@ export const planKeys = {
   all: ["content-plan"] as const,
   nodes: (siteId: string) => ["content-plan", "nodes", siteId] as const,
   entities: (siteId: string) => ["content-plan", "entities", siteId] as const,
+  siteParties: (siteId: string) =>
+    ["content-plan", "site-parties", siteId] as const,
   profiles: (orgId: string) => ["content-plan", "profiles", orgId] as const,
   nodeEdges: (nodeId: string) =>
     ["content-plan", "node-edges", nodeId] as const,
@@ -249,6 +258,51 @@ export function useDeletePlanEntity(siteId: string) {
   });
 }
 
+// ─── Site people roster (crm.party via party → web_site edges) ───────────
+
+/**
+ * The site's people/companies: crm parties linked with a `writes_for` edge.
+ * Edge ids resolve through the canonical association chokepoint; rows hydrate
+ * through the canonical crm service. A trashed party simply drops out.
+ */
+export function useSiteParties(siteId: string | null) {
+  return useQuery<PartyRow[]>({
+    queryKey: planKeys.siteParties(siteId ?? "none"),
+    enabled: siteId !== null,
+    queryFn: async () => {
+      const ids = await listSitePartyIds(siteId as string);
+      const rows = await fetchPartiesByIds(ids);
+      return rows.sort((a, b) =>
+        a.display_name.localeCompare(b.display_name),
+      );
+    },
+  });
+}
+
+export function useLinkPartyToSite(siteId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (partyId: string) => linkPartyToSite({ partyId, siteId }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: planKeys.siteParties(siteId),
+      });
+    },
+  });
+}
+
+export function useUnlinkPartyFromSite(siteId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (partyId: string) => unlinkPartyFromSite({ partyId, siteId }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: planKeys.siteParties(siteId),
+      });
+    },
+  });
+}
+
 // ─── Association mutations (all invalidate the node's edge list) ─────────
 
 type EdgeAction =
@@ -262,7 +316,14 @@ type EdgeAction =
       role: PlanNodeEntityRole;
       review?: PlanReviewPayload;
     }
-  | { kind: "detach-entity"; entityId: string; role: PlanNodeEntityRole };
+  | { kind: "detach-entity"; entityId: string; role: PlanNodeEntityRole }
+  | {
+      kind: "attach-party";
+      partyId: string;
+      role: PlanNodeEntityRole;
+      review?: PlanReviewPayload;
+    }
+  | { kind: "detach-party"; partyId: string; role: PlanNodeEntityRole };
 
 export function usePlanNodeEdgeMutation(nodeId: string) {
   const queryClient = useQueryClient();
@@ -288,6 +349,19 @@ export function usePlanNodeEdgeMutation(nodeId: string) {
           return detachNodeEntity({
             nodeId,
             entityId: action.entityId,
+            role: action.role,
+          });
+        case "attach-party":
+          return attachNodeParty({
+            nodeId,
+            partyId: action.partyId,
+            role: action.role,
+            review: action.review,
+          });
+        case "detach-party":
+          return detachNodeParty({
+            nodeId,
+            partyId: action.partyId,
             role: action.role,
           });
       }

@@ -22,6 +22,8 @@ import type {
 } from "@/features/scopes/types";
 
 import {
+  PARTY_SITE_ROLE,
+  PARTY_TOKEN,
   PLAN_ENTITY_TOKEN,
   PLAN_NODE_SECONDARY_KEYWORD_ROLE,
   PLAN_NODE_TOKEN,
@@ -29,6 +31,7 @@ import {
   PLAN_REVIEW_PAYLOAD_KIND,
   SEO_KEYWORD_TOKEN,
   SEO_TOPIC_TOKEN,
+  WEB_SITE_TOKEN,
   type PlanNodeEntityRole,
   type PlanReviewPayload,
 } from "../types";
@@ -153,6 +156,100 @@ export async function detachNodeEntity(args: {
       targetType: PLAN_ENTITY_TOKEN,
       targetId: args.entityId,
       role: args.role,
+    }),
+  );
+}
+
+/**
+ * Attach a crm.party (person/company) to a node — authored_by / reviewed_by /
+ * about / cites on the registered plan_node → party pair. `reviewed_by`
+ * carries the same schema-validated `plan_review` payload it always did (the
+ * payload kind moved with the people when plan.entity person rows folded
+ * into crm.party).
+ */
+export async function attachNodeParty(args: {
+  nodeId: string;
+  partyId: string;
+  role: PlanNodeEntityRole;
+  review?: PlanReviewPayload;
+}): Promise<void> {
+  unwrap(
+    await associationsService.add({
+      sourceType: PLAN_NODE_TOKEN,
+      sourceId: args.nodeId,
+      targetType: PARTY_TOKEN,
+      targetId: args.partyId,
+      role: args.role,
+      ...(args.review
+        ? {
+            payloadKind: PLAN_REVIEW_PAYLOAD_KIND,
+            payload: { ...args.review },
+          }
+        : {}),
+    }),
+  );
+}
+
+export async function detachNodeParty(args: {
+  nodeId: string;
+  partyId: string;
+  role: PlanNodeEntityRole;
+}): Promise<void> {
+  unwrap(
+    await associationsService.remove({
+      sourceType: PLAN_NODE_TOKEN,
+      sourceId: args.nodeId,
+      targetType: PARTY_TOKEN,
+      targetId: args.partyId,
+      role: args.role,
+    }),
+  );
+}
+
+/**
+ * The site's people roster = crm parties with a `party → web_site`
+ * `writes_for` edge onto this site. Returns the linked party ids.
+ */
+export async function listSitePartyIds(siteId: string): Promise<string[]> {
+  const data = unwrap(
+    await associationsService.listForEntity(WEB_SITE_TOKEN, siteId),
+  );
+  return data.edges
+    .filter(
+      (edge) =>
+        edge.direction === "incoming" &&
+        edge.otherType === PARTY_TOKEN &&
+        edge.role === PARTY_SITE_ROLE,
+    )
+    .map((edge) => edge.otherId);
+}
+
+export async function linkPartyToSite(args: {
+  partyId: string;
+  siteId: string;
+}): Promise<void> {
+  unwrap(
+    await associationsService.add({
+      sourceType: PARTY_TOKEN,
+      sourceId: args.partyId,
+      targetType: WEB_SITE_TOKEN,
+      targetId: args.siteId,
+      role: PARTY_SITE_ROLE,
+    }),
+  );
+}
+
+export async function unlinkPartyFromSite(args: {
+  partyId: string;
+  siteId: string;
+}): Promise<void> {
+  unwrap(
+    await associationsService.remove({
+      sourceType: PARTY_TOKEN,
+      sourceId: args.partyId,
+      targetType: WEB_SITE_TOKEN,
+      targetId: args.siteId,
+      role: PARTY_SITE_ROLE,
     }),
   );
 }

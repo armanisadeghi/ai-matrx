@@ -2,8 +2,10 @@
  * Surface manifest — Content Plan Entities (`matrx-user/content-plan-entities`).
  *
  * The E-E-A-T entity manager view (`/marketing/content-plan/[siteId]?view=
- * entities`): the people, sources, media, and organizations behind the site's
- * content (`plan.entity`). Its agents reason about the ROSTER — coverage,
+ * entities`): the roster behind the site's content — people/companies
+ * (`crm.party` rows linked via party→web_site `writes_for` edges; person/org
+ * plan.entity rows folded into the CRM 2026-08-12) and sources/media
+ * (`plan.entity` citations). Its agents reason about the ROSTER — coverage,
  * credibility, who should author or review what — a different job from plan
  * architecture or brief writing, which is why it is its own surface.
  *
@@ -42,7 +44,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "entities_detail",
     label: "Entities (full)",
     description:
-      "Every `plan.entity` row for the site in full detail — id, label, entity_type (person | source | media | org), source_type_id, and attributes. Empty while loading or when the site has none yet.",
+      "The site's FULL roster — id, label, entity_type (person | source | media | org), source_type_id, and attributes. person/org entries are crm.party records linked to the site (their id is a party id — the record opens at /crm/[id]; they cannot be opened in the entity editor); source/media entries are plan.entity citations. Empty while loading or when the site has none yet.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 3000,
@@ -53,7 +55,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "entity_counts_by_type",
     label: "Entity counts by type",
     description:
-      "Object mapping each entity_type to its count (person/source/media/org). Empty while the roster loads.",
+      "Object mapping each entity_type to its count (person/org from linked crm parties; source/media from plan.entity). Empty while the roster loads.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 60,
@@ -127,7 +129,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "entity_draft",
     label: "Entity editor draft",
     description:
-      "Stages values into the OPEN entity editor dialog — the same staging buffer the user's own typing fills. NOTHING is saved: the user reviews the dialog and presses Save/Create (or `save_entity_draft`). Object with optional keys `label` (non-empty string — the entity's display name, e.g. \"Dr. Jane Smith, MD, FACC\"), `entity_type` (exactly one of: person | source | media | org), and `source_type_id` (a category UUID from `source_type_options` — match on its name — or null to clear); provide at least one. Read `entity_editor_draft` for what is staged now. Fails when no entity editor is open — open one with `open_entity_editor` first.",
+      "Stages values into the OPEN source editor dialog — the same staging buffer the user's own typing fills. NOTHING is saved: the user reviews the dialog and presses Save/Create (or `save_entity_draft`). The dialog edits SOURCES/MEDIA only (people and organizations are CRM records — create them with add_entities). Object with optional keys `label` (non-empty string — the citation's display name, e.g. \"Mayo Clinic — PRP overview\"), `entity_type` (exactly one of: source | media), and `source_type_id` (a category UUID from `source_type_options` — match on its name — or null to clear); provide at least one. Read `entity_editor_draft` for what is staged now. Fails when no entity editor is open — open one with `open_entity_editor` first.",
     valueType: "object",
     updatesValue: "entity_editor_draft",
     mode: "draft",
@@ -139,7 +141,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "open_entity_editor",
     label: "Open entity editor",
     description:
-      "Opens the New/Edit entity dialog — the same as the user clicking a row's pencil, or New entity. Value is an entity UUID from `entities_detail` to edit that entity, or null to open a blank New entity dialog. UI state only: nothing is written to the plan, and the staged draft it seeds is not saved until the user presses Save/Create (or `save_entity_draft`). Call this before `entity_draft`, which needs an open editor. Opening a different entity REPLACES any draft currently staged, so read `entity_editor_draft` first if one is open.",
+      "Opens the New/Edit source dialog — the same as the user clicking a source row's pencil, or New source. Value is a source/media entity UUID from `entities_detail` to edit it, or null to open a blank New source dialog. person/org ids are CRM records and cannot be opened here. UI state only: nothing is written to the plan, and the staged draft it seeds is not saved until the user presses Save/Create (or `save_entity_draft`). Call this before `entity_draft`, which needs an open editor. Opening a different entity REPLACES any draft currently staged, so read `entity_editor_draft` first if one is open.",
     valueType: "string",
     updatesValue: "entity_editor_draft",
     mode: "ui",
@@ -163,7 +165,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "add_entities",
     label: "Add entities",
     description:
-      "Creates NEW roster entities on this site through the same canonical create path as the dialog's Create button — written to the database immediately. Value: a non-empty array of objects `{ label, entity_type, description?, reason? }`, where `label` is a non-empty string and `entity_type` is exactly one of: person | source | media | org. Optional `description`/`reason` are stored as the entity's research attributes. APPENDS only — existing entities are never modified or removed; read `entities_detail` first and do not repeat a label already on the roster.",
+      "Creates NEW roster entries on this site — written to the database immediately. Value: a non-empty array of objects `{ label, entity_type, description?, reason? }`, where `label` is a non-empty string and `entity_type` is exactly one of: person | source | media | org. person/org become real crm.party records linked to this site (visible in /crm); source/media become plan.entity citations. Optional `description`/`reason` are stored as research attributes on either destination. APPENDS only — existing entries are never modified or removed; read `entities_detail` first and do not repeat a label already on the roster.",
     valueType: "array",
     updatesValue: "entities_detail",
     mode: "entity",
@@ -182,10 +184,10 @@ export const contentPlanEntitiesManifest: SurfaceManifest = {
   urlPattern: "/marketing/content-plan/[siteId]?view=entities",
   inheritsFrom: "matrx-user/content-plan",
   intro: `<surface_intro>
-You are on the E-E-A-T entity manager of the content plan: the people, sources, media, and organizations behind the site's content (plan.entity rows). The user maintains the roster here; nodes elsewhere attach these entities as author/reviewer/citation via association edges.
+You are on the E-E-A-T entity manager of the content plan: the roster behind the site's content. People and organizations are crm.party records linked to this site (each opens at /crm/[id]); sources and media are plan.entity citation rows. The user maintains the roster here; nodes elsewhere attach roster entries as author/reviewer/citation via association edges.
 Read entities_detail for the full roster and entity_counts_by_type for the shape of it. The inherited plan_tree tells you what content exists — useful for spotting coverage gaps (e.g. medical articles with no reviewer-qualified person registered).
 Suggestions belong to the roster: who is missing, whose credentials matter for this vertical, which sources are weak. Node-to-entity attachment happens on the node surfaces, not here.
-You can also ACT on the roster: add_entities creates the missing people/sources outright; open_entity_editor opens the dialog for a given entity (or a blank one); entity_draft stages a label, type, or source type into the dialog the user is looking at; save_entity_draft saves it. Source type ids must come from source_type_options — match on the name and send the id, never invent one. You cannot delete an entity or attach one to a node — the first stays with the user, the second lives on the node surfaces.
+You can also ACT on the roster: add_entities creates the missing people/sources outright (person/org land as CRM records linked to the site; source/media as citations); open_entity_editor opens the source dialog for a given source/media entry (or a blank one); entity_draft stages a label, type, or source type into the dialog the user is looking at; save_entity_draft saves it. Source type ids must come from source_type_options — match on the name and send the id, never invent one. You cannot delete an entity or attach one to a node — the first stays with the user, the second lives on the node surfaces.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(

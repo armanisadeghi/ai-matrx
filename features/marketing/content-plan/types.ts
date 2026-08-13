@@ -91,13 +91,17 @@ export const TECHNICAL_DEPTHS: readonly TechnicalDepth[] = [
   "high",
 ];
 
-export type PlanEntityType = "person" | "source" | "media" | "org";
-export const PLAN_ENTITY_TYPES: readonly PlanEntityType[] = [
-  "person",
-  "source",
-  "media",
-  "org",
-];
+/**
+ * plan.entity holds CITATIONS only. Person/org rows folded into `crm.party`
+ * (2026-08-12; guard trigger `plan._entity_kind_guard` rejects new ones) —
+ * people and organizations on a site's roster are crm parties linked via a
+ * `party → web_site` association edge with role `writes_for`.
+ */
+export type PlanEntityType = "source" | "media";
+export const PLAN_ENTITY_TYPES: readonly PlanEntityType[] = ["source", "media"];
+
+/** The `party → web_site` role that puts a person/company on a site's roster. */
+export const PARTY_SITE_ROLE = "writes_for";
 
 // Category dimensions live in the CANONICAL registry —
 // `CATEGORY_DIMENSIONS.planPageType|planStatus|planPersonRole|planSourceType`
@@ -106,14 +110,18 @@ export const PLAN_ENTITY_TYPES: readonly PlanEntityType[] = [
 /** Association roles registered for plan pairs (platform.association_types). */
 export const PLAN_NODE_TOPIC_ROLE = "topic";
 export const PLAN_NODE_SECONDARY_KEYWORD_ROLE = "secondary_keyword";
-export const PLAN_NODE_ENTITY_ROLES = [
+/** Roles on plan_node → plan_entity edges (source/media citations). */
+export const PLAN_NODE_SOURCE_ROLES = ["about", "cites", "embeds"] as const;
+/** Roles on plan_node → party edges (people/companies; registered pair). */
+export const PLAN_NODE_PARTY_ROLES = [
   "about",
   "cites",
-  "embeds",
   "authored_by",
   "reviewed_by",
 ] as const;
-export type PlanNodeEntityRole = (typeof PLAN_NODE_ENTITY_ROLES)[number];
+export type PlanNodeEntityRole =
+  | (typeof PLAN_NODE_SOURCE_ROLES)[number]
+  | (typeof PLAN_NODE_PARTY_ROLES)[number];
 
 /** Edge payload kind carried on `reviewed_by` edges (platform.edge_payload_kind). */
 export const PLAN_REVIEW_PAYLOAD_KIND = "plan_review";
@@ -125,6 +133,8 @@ export interface PlanReviewPayload {
 /** Entity tokens (platform.association_types source/target types). */
 export const PLAN_NODE_TOKEN = "plan_node";
 export const PLAN_ENTITY_TOKEN = "plan_entity";
+export const PARTY_TOKEN = "party";
+export const WEB_SITE_TOKEN = "web_site";
 export const SEO_TOPIC_TOKEN = "seo_topic";
 export const SEO_KEYWORD_TOKEN = "seo_keyword";
 

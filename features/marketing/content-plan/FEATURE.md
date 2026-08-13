@@ -158,7 +158,12 @@ cms-starter-kit`. Guarded CMS writes (agent_write_policy + activity log live
   "Pipeline" section renders `NodeStepRail`. A missing step row means "never
   run" — pending is a deliberately visible state. Distinct from the editorial
   `plan_status`.
-- `plan.entity` — person/source/media/org per site.
+- `plan.entity` — **source/media citations only** per site. Person/org rows
+  folded into `crm.party` (2026-08-13; DB guard `plan._entity_kind_guard`
+  rejects new live person/org rows, loudly). People/companies on a site's
+  roster are crm parties linked via a `party → web_site` edge with role
+  `writes_for`; the FE reads them with `useSiteParties` and every person row
+  is a door to `/crm/[partyId]`.
 - `plan.profile` — vertical config (attribute schemas, cadences, template
   maps) per org. **No hard site→vertical binding exists yet** (open item in
   the system-of-record doc) — the attributes editor offers an explicit
@@ -168,8 +173,11 @@ cms-starter-kit`. Guarded CMS writes (agent_write_policy + activity log live
   since `plan_seed_categories_public.sql`) via the canonical `useCategories`.
 - Associations (registered pairs): node→topic (`topic`), node→keyword
   (`secondary_keyword` — the PRIMARY keyword is the `primary_keyword_id` FK,
-  never an edge), node→entity (`about`/`cites`/`embeds`/`authored_by`/
-  `reviewed_by`; reviews carry the schema-validated `plan_review` payload).
+  never an edge), node→entity (`about`/`cites`/`embeds` — citations only),
+  node→party (`about`/`cites`/`authored_by`/`reviewed_by`; reviews carry the
+  schema-validated `plan_review` payload, whose binding moved to the
+  (plan_node, party) pair with the fold), party→web_site (`writes_for` — the
+  site roster; client-written via `linkPartyToSite`).
   The `plan_node|plan_entity → web_site` containment edge is written by the
   DB trigger `plan._site_edge` — the client NEVER writes it.
 
@@ -302,7 +310,10 @@ cms-starter-kit`. Guarded CMS writes (agent_write_policy + activity log live
      sent as `cms_site`. A genuinely unlinked plan therefore makes no doomed
      `/cms-pages` request, while a half-linked plan uses the choice it already
      has instead of raising `content_plan_cms_unpaired`.
-4. **Entities** (`EntityManager.tsx`): `plan.entity` CRUD per site.
+4. **Entities** (`EntityManager.tsx`): two halves — People &amp; companies
+   (linked crm parties: create via the canonical `PartyCreateForm`, link
+   existing via CRM name search, unlink, every name a door to `/crm/[id]`)
+   and Sources &amp; media (`plan.entity` CRUD).
 5. **Agent writes** land directly in the DB (chat tools today, aidream
    generator later) and appear on refetch — the header Refresh invalidates
    `planKeys.all`.
@@ -555,6 +566,20 @@ No new server capability was added: `cms-align` always took a node-id array,
 always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
+
+- 2026-08-13 — **plan.entity person/org fold into crm.party (CRM Wave 2).**
+  Ratified split executed: person/org rows migrated to `crm.party` (1 party
+  from 2 duplicate live rows; edges repointed with payloads intact; folded
+  rows soft-deleted with `folded_to_party` stamps), `plan.entity` narrowed to
+  source/media citations with a loud DB guard (`plan._entity_kind_guard`) and
+  matching aidream service validation. `EntityManager` split into People &
+  companies (crm parties on `party→web_site` `writes_for` edges — create via
+  `PartyCreateForm`, link-existing search, unlink, doors to `/crm/[id]`) and
+  Sources & media (plan.entity CRUD). `NodeAssociations` + the setup entity
+  attacher route people to `plan_node→party` edges (`plan_review` payload
+  binding moved to that pair); curator/`add_entities` person/org proposals
+  now create linked CRM records. Migration:
+  `migrations/plan_entity_person_org_fold.sql` (applied + ledgered).
 
 - 2026-08-12 — **Pipeline rail (Website Factory P4).** `plan.node_step` /
   `node_artifact` reads + `NodeStepRail` in the NodePanel (see Data model).
