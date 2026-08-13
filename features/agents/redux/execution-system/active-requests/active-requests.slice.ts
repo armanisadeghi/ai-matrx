@@ -119,7 +119,10 @@ function closeOpenTextRun(request: ActiveRequest, timestamp: number): void {
  * `selectUnifiedSlots` bound its sweep instead of hoovering every later block
  * up to the reasoning position.
  */
-function closeOpenReasoningRun(request: ActiveRequest, timestamp: number): void {
+function closeOpenReasoningRun(
+  request: ActiveRequest,
+  timestamp: number,
+): void {
   if (!request.isReasoningStreaming) return;
   request.timeline.push({
     kind: "reasoning_end",

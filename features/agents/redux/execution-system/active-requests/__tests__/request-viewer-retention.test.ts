@@ -44,7 +44,9 @@ test("owner cleanup keeps a request until its mounted viewer releases it", () =>
     releaseRequestForViewer({ requestId: REQUEST_ID, viewerId: "window" }),
   );
 
-  expect(store.getState().activeRequests.byRequestId[REQUEST_ID]).toBeUndefined();
+  expect(
+    store.getState().activeRequests.byRequestId[REQUEST_ID],
+  ).toBeUndefined();
   expect(
     store.getState().activeRequests.byConversationId[CONVERSATION_ID],
   ).toBeUndefined();
@@ -77,7 +79,9 @@ test("duplicate retain is idempotent and every distinct viewer must release", ()
   store.dispatch(
     releaseRequestForViewer({ requestId: REQUEST_ID, viewerId: "window-b" }),
   );
-  expect(store.getState().activeRequests.byRequestId[REQUEST_ID]).toBeUndefined();
+  expect(
+    store.getState().activeRequests.byRequestId[REQUEST_ID],
+  ).toBeUndefined();
 });
 
 test("destroying an execution instance also defers cleanup for a viewer", () => {
@@ -97,7 +101,9 @@ test("destroying an execution instance also defers cleanup for a viewer", () => 
   store.dispatch(
     releaseRequestForViewer({ requestId: REQUEST_ID, viewerId: "window" }),
   );
-  expect(store.getState().activeRequests.byRequestId[REQUEST_ID]).toBeUndefined();
+  expect(
+    store.getState().activeRequests.byRequestId[REQUEST_ID],
+  ).toBeUndefined();
 });
 
 test("requests without viewers are removed immediately", () => {
@@ -106,5 +112,7 @@ test("requests without viewers are removed immediately", () => {
 
   store.dispatch(removeRequest(REQUEST_ID));
 
-  expect(store.getState().activeRequests.byRequestId[REQUEST_ID]).toBeUndefined();
+  expect(
+    store.getState().activeRequests.byRequestId[REQUEST_ID],
+  ).toBeUndefined();
 });

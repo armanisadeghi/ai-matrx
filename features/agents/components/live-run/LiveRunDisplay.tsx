@@ -54,7 +54,10 @@ const ACTIVE_REQUEST_STATUSES = new Set([
   "awaiting-tools",
 ]);
 
-function phaseLabel(phase: StreamPhase | null, fallbackActive: boolean): string {
+function phaseLabel(
+  phase: StreamPhase | null,
+  fallbackActive: boolean,
+): string {
   switch (phase) {
     case "connecting":
       return "Connecting…";
@@ -135,7 +138,8 @@ export function useLiveRunStatus(
   return {
     requestId,
     isActive,
-    statusText: serverPhase ?? phaseLabel(streamPhase, isActive || pending) ?? null,
+    statusText:
+      serverPhase ?? phaseLabel(streamPhase, isActive || pending) ?? null,
     errorMessage: requestError?.user_message ?? requestError?.message ?? null,
     chunkCount,
   };
