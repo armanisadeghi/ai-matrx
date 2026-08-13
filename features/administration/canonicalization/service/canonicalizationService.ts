@@ -21,6 +21,7 @@ import {
 import type {
   AuditSummaryRow,
   BrokenFunctionRow,
+  BrokenFunctionSeverity,
   CanonicalCertifyRow,
   CanonicalFindingRow,
   CanonicalizationDataset,
@@ -72,6 +73,27 @@ export async function fetchOverview(): Promise<CanonicalizationOverview> {
     runQuery<RefreshLogRow>(DATASET_QUERIES["refresh-log"]),
   ]);
 
+  // The broken-function headline is the REAL count, not the row count. Showing
+  // the row count next to refresh_log.broken_fn (distinct real signatures) is the
+  // "the dashboard's own numbers disagree" defect fixed on 2026-08-13; severity
+  // is assigned once in the DB by audit.classify_broken_function().
+  const brokenFunctionBySeverity: Record<BrokenFunctionSeverity, number> = {
+    real: 0,
+    advisory: 0,
+    style: 0,
+    suppressed: 0,
+    unchecked: 0,
+  };
+  const realSignatures = new Set<string>();
+  for (const row of brokenFns) {
+    if (row.severity && row.severity in brokenFunctionBySeverity) {
+      brokenFunctionBySeverity[row.severity] += 1;
+    }
+    if (row.severity === "real" && row.signature) {
+      realSignatures.add(row.signature);
+    }
+  }
+
   const totalFails = summary.reduce((sum, r) => sum + Number(r.fails ?? 0), 0);
   const totalWarns = summary.reduce((sum, r) => sum + Number(r.warns ?? 0), 0);
   const certifiedTables = summary.filter((r) => r.certified).length;
@@ -88,7 +110,13 @@ export async function fetchOverview(): Promise<CanonicalizationOverview> {
     machineryTables,
     totalFails,
     totalWarns,
-    brokenFunctionCount: brokenFns.length,
+    // DISTINCT functions, deliberately the same definition as
+    // audit.refresh_log.broken_fn (count(distinct signature) where
+    // severity='real') so the tile and the log can never print two numbers for
+    // one thing. Findings-per-severity is separate and labelled as findings.
+    brokenFunctionCount: realSignatures.size,
+    brokenFunctionBySeverity,
+    brokenFunctionRowCount: brokenFns.length,
     m2mCandidateCount: m2m.length,
     unregisteredCandidateCount: unregistered.length,
     staleRegistryCount: stale.length,

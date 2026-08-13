@@ -21,6 +21,34 @@ export function GateStatusBadge({ status }: { status: string | null | undefined 
   );
 }
 
+const SEVERITY_STYLES: Record<string, string> = {
+  real: "border-destructive/30 bg-destructive/10 text-destructive",
+  advisory:
+    "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400",
+  style: "border-border bg-muted text-muted-foreground",
+  suppressed: "border-border bg-muted text-muted-foreground",
+  unchecked: "border-border bg-muted text-muted-foreground",
+};
+
+/**
+ * Colored badge for a `audit.broken_functions` severity. Only `real` reads as a
+ * defect — everything else is deliberately quiet, because that is the whole
+ * point of the classification (see BrokenFunctionSeverity in ../types).
+ */
+export function SeverityBadge({
+  severity,
+}: {
+  severity: string | null | undefined;
+}) {
+  const key = (severity ?? "").toLowerCase();
+  const style = SEVERITY_STYLES[key] ?? "border-border bg-muted text-muted-foreground";
+  return (
+    <Badge variant="outline" className={cn("font-mono text-[10px]", style)}>
+      {severity ?? "unclassified"}
+    </Badge>
+  );
+}
+
 /** Colored badge for a boolean flag, with configurable good/bad polarity. */
 export function BoolBadge({
   value,

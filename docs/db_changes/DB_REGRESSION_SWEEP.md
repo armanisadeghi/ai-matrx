@@ -17,17 +17,33 @@ reported it solved — while every project page in production kept throwing a re
 error. The database is the only source of truth. Before believing any "this is
 fixed", query the live object.
 
-**2. The static checker is ~97% noise, which is how two real bugs hid.**
-`audit.broken_functions` held 101 rows across 79 functions; individually tested,
-nearly all were false alarms — temp tables the checker cannot see, table names
-built from arrays at runtime, shared trigger functions checked against tables
-they do not apply to, and functions checked under a search path they never run
-with. Exactly two were real. A clean dashboard proves nothing and a scary one is
-mostly noise: verify by running the thing. (Being fixed under its own chip.)
+**2. A checker that cries wolf hides real bugs — and ours did, for one reason.**
+`audit.broken_functions` held 101 rows across 79 functions of which exactly two
+were real. The cause was a single line: `audit.refresh_static()` ran
+`plpgsql_check` under `search_path='pg_catalog'`, a path no function ever runs
+with, so every unqualified reference to a perfectly real object was reported
+missing. **Fixed 2026-08-13** — see "The conformance checker now means something"
+below. The part that does not go away: a clean static report still proves nothing.
+Only `audit.function_runtime_probe` proves a function runs.
 
 ---
 
 ## Still open
+
+- **Three live `public.*` RPCs are genuinely broken** — the findings that survived
+  the checker cleanup below, so these are now the entire actionable list:
+  `execute_complex_save` (casts jsonb to `text[]`, and contains a bare `ROLLBACK`
+  inside a function — `2D000` on every call that reaches it),
+  `get_full_table` (missing GROUP BY on `tf.field_order`), and
+  `get_table_info` (declared result type does not match its query). All three are
+  legacy user-data-table (UDT) RPCs with **no frontend callsite** — only
+  `types/database.types.ts` mentions them here — but `get_full_table` is still
+  named in aidream's UDT docs, so "unused" is not proven. Next step: for each,
+  decide *repair or graveyard* (do not guess — check aidream's
+  `docs/udt_user_data_and_lists/` and `packages/matrx-ai/.../content_types/`
+  first), then re-run `audit.refresh()` and confirm the real count returns to 0.
+  Watch them at `/administration/database/canonicalization/broken-functions`
+  (defaults to real breakage only).
 
 - **A 13-million-row table is unreadable to any signed-in user.** The access
   kernel builds a list of every row id you may see, so reads of
@@ -41,6 +57,40 @@ mostly noise: verify by running the thing. (Being fixed under its own chip.)
 ---
 
 ## Fixed and verified live — 2026-08-13
+
+- **The conformance checker now means something: 101 rows → 3 actionable
+  functions.** Two defects, both in the tooling itself.
+  *The counts disagreed:* `audit.refresh_log.broken_fn` said 29 while
+  `audit.broken_functions` held 101 rows — two different measures shown side by
+  side, and the runtime probes wrote their failures *after* the log row existed, so
+  a probe failure could never appear in any count at all. The log row is now
+  **derived from the table** by `audit.refresh_log_recount()` after every phase,
+  with one explicit column per severity; it cannot drift by construction.
+  *The noise:* checking under `search_path='pg_catalog'` invented every "does not
+  exist" error — `public.guest_executions`, `is_system_path`, `get_user_limits`,
+  `calculate_trending_score`, `org_role`, `extensions.gen_random_bytes` and the
+  rest all exist. Each function is now checked under **its own effective search
+  path** (`proconfig`, else the runtime default, always with `pg_temp`). That one
+  change took errors from 40 rows / 29 signatures to 23 / 12 **and unmasked two
+  real bugs the noise had buried** in `execute_complex_save`.
+  Whatever a search path cannot fix is classified with a written reason rather
+  than reported as breakage — self-created temp tables, relation names built from
+  a `text[]` at runtime, shared trigger functions branching on the table they
+  fired for (verified mechanically: suppressed only when the function has >1
+  attachment *and* the field really exists on one of them), and cascades where
+  plpgsql_check could not see into a `FOR` loop's source.
+  **Read `severity`, never `level`** — `level='error'` still covers the artifacts.
+  A fixed sqlstate floor (`42P10`, `42803`, `42804`, `42846`, `2D000`) can only
+  ever be `real`, so the two ON CONFLICT bugs above cannot be classified away if
+  reintroduced; the migrations assert this and RAISE if it stops holding.
+  `audit.table_impact.currently_broken` now keys on `severity='real'` too — it
+  keyed on `level='error'`, so 9 artifact functions were blocking
+  `iam.canonical_certify` for every table they touch.
+  New: **9 privilege-risk functions** flagged as `advisory` — invoker-rights
+  functions that enumerate relations from the catalog and build dynamic SQL with
+  no `has_table_privilege` filter. That is the *shape* of the
+  `get_project_references` outage; no static checker could have caught the outage
+  itself, since it was a runtime privilege error inside dynamic SQL.
 
 - **Every project page threw a red error.** `get_project_references` walks the
   foreign keys pointing at `workspace.projects` and counts rows in each table it
@@ -93,9 +143,12 @@ mostly noise: verify by running the thing. (Being fixed under its own chip.)
 
 - **`context.ensure_slug`, `web.reject_immutable_fact_mutation`,
   `seo.change_record_scope_guard`, `folders_set_is_system`, the guest-execution
-  functions, the education study-data functions** all appear in
-  `audit.broken_functions` and are fine — proven with real writes (rolled back).
-  Checker false positives, per lesson 2.
+  functions, the education study-data functions** are fine — proven with real
+  writes (rolled back). The checker now agrees: the guest-execution and
+  `folders_set_is_system` findings are **gone** (they were pure search-path
+  artifacts), and the trigger-function ones are classified `suppressed` with the
+  reason on the row. They no longer count as breakage anywhere, including in
+  `iam.canonical_certify`.
 
 - **The frontend does not reference any column dropped by the owner-column sweep**
   — `pnpm type-check` is green.

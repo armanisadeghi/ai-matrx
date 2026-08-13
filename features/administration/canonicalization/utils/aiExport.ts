@@ -131,6 +131,11 @@ export function brokenFunctionToHuman(row: BrokenFunctionRow): string {
     `Function: ${row.schema_name ?? "?"}.${row.function_name ?? "?"}`,
     row.signature ? `Signature: ${row.signature}` : null,
     row.lineno != null ? `Line: ${row.lineno}` : null,
+    // Severity leads the level: an agent must not read level='error' as breakage.
+    `Severity: ${row.severity ?? "unclassified"}`,
+    row.suppression_reason
+      ? `Not real because: ${row.suppression_reason} (plpgsql_check limitation, verified 2026-08-13)`
+      : null,
     row.level ? `Level: ${row.level}` : null,
     row.sqlstate ? `SQLSTATE: ${row.sqlstate}` : null,
     row.message ? `Message: ${row.message}` : null,
@@ -149,17 +154,22 @@ export const BROKEN_FUNCTIONS_TABLE_COPY: AuditTableCopyForAi<BrokenFunctionRow>
     ),
     rowKind: "canonicalization-broken-function",
     listKind: "canonicalization-broken-functions",
-    rowDescription: "One plpgsql_check failure from audit.broken_functions.",
-    listDescription: "Broken functions visible after filters.",
+    rowDescription:
+      "One audit.broken_functions row. Act on severity, NOT on level — level='error' also covers checker artifacts (self-created temp tables, runtime-built relation names, shared trigger branches), which carry severity='suppressed' plus a written reason.",
+    listDescription:
+      "audit.broken_functions rows visible after the severity + keyword filters. Only severity='real' is genuine runtime breakage.",
     humanRow: brokenFunctionToHuman,
     rowAttributes: (r) => ({
       schema: r.schema_name,
       function: r.function_name,
+      severity: r.severity,
+      suppression_reason: r.suppression_reason,
       level: r.level,
     }),
     listAttributes: (visible, all) => ({
       count: visible.length,
       total: all.length,
+      real: visible.filter((r) => r.severity === "real").length,
     }),
   };
 
@@ -516,7 +526,12 @@ export function overviewToHuman(data: CanonicalizationOverview): string {
   return [
     `Registered tables: ${data.totalTables} (${data.certifiedTables} certified · ${data.notCertifiedTables} not · ${data.machineryTables} machinery, outside the certification universe)`,
     `Gate totals: ${data.totalFails} FAIL · ${data.totalWarns} WARN`,
-    `Broken functions: ${data.brokenFunctionCount}`,
+    `Broken functions: ${data.brokenFunctionCount} distinct function(s) with genuine runtime breakage (severity=real) — this is the actionable number`,
+    `Function findings: ${data.brokenFunctionRowCount} rows total, by severity: ${(
+      Object.entries(data.brokenFunctionBySeverity) as [string, number][]
+    )
+      .map(([k, v]) => `${k}=${v}`)
+      .join(" · ")}`,
     `M2M candidates: ${data.m2mCandidateCount}`,
     `Unregistered candidates: ${data.unregisteredCandidateCount}`,
     `Stale registry: ${data.staleRegistryCount}`,
@@ -537,7 +552,8 @@ export function overviewToAgentInput(
       certifiedTables: data.certifiedTables,
       totalFails: data.totalFails,
       totalWarns: data.totalWarns,
-      brokenFunctions: data.brokenFunctionCount,
+      brokenFunctionsReal: data.brokenFunctionCount,
+      brokenFunctionRows: data.brokenFunctionRowCount,
     },
     context: {
       "docs-ref": "docs/db_changes/CANONICAL_DATABASE_SYSTEM.md",
