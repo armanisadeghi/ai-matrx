@@ -50,6 +50,9 @@ was therefore recovered in an isolated worktree and recertified below.
   non-layout, and non-theme and its equivalent component/delta proof passed.
 - Released from an isolated `main` checkout through `./scripts/release.sh` as
   `v0.4.550` (`9419ff9bd`). The atomic `origin/main` + tag push succeeded.
+- Production verification: Vercel deployment `dpl_C9bwWNG9fJZqdhzpwnnbFQF61c45`
+  built commit `9419ff9`, reached `READY`, attached the canonical
+  `www.aimatrx.com` aliases, and `/agents/battle` returned HTTP 200.
 - The 22-check post-push advisory suite completed: 17 checks were clean; five
   unrelated repository-wide advisory categories remained loud (agent-sync
   parser/snapshot drift, access guards, visibility vocabulary, docs guards,

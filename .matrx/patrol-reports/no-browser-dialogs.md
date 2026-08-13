@@ -44,6 +44,12 @@
 - A full every-route matrix was not required: this repeated mechanical batch changes only imported callback targets and does not modify a shared primitive, interaction model, responsive layout, or theme behavior.
 - The preview was stopped after proof and its machine-wide lease was released.
 
+## Production delivery
+
+- Shipped in the atomic frontend release **v0.4.550** (`9419ff9bd`), which contains the certified product commit `7737c209a` and report/ledger commit `4c4a39c92`.
+- Vercel deployment `dpl_C9bwWNG9fJZqdhzpwnnbFQF61c45` reached **Ready**. The canonical production endpoint `https://www.aimatrx.com/api/version` returned that exact deployment id, verifying the release is live.
+- No redundant P7 version bump or release was created.
+
 ## Remaining manual route
 
 - `features/administration/hindsight/components/EnrollmentDetailPanel.tsx:242` — one synchronous destructive `window.confirm`; replacement requires async control-flow review.
