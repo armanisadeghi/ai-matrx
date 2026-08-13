@@ -77,5 +77,5 @@ Surrounding responsive/theme classes and the already-tested EntityRef primitive 
 
 ## Delivery state
 
-- Product batch and records are certified for integration.
-- `release.sh` is intentionally waiting for the explicit serialized release-queue signal.
+- Certified batch `893fd01b5` was integrated as `2881a9660` and is an ancestor of release commit `9419ff9bd`.
+- Shipped in **v0.4.550**. Vercel production deployment `dpl_C9bwWNG9fJZqdhzpwnnbFQF61c45` built commit `9419ff9` and reached **READY** on 2026-08-12 (America/Los_Angeles).
