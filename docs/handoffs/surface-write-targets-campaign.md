@@ -105,3 +105,65 @@ snapshot). The remaining pool is now mostly report/derived surfaces — expect t
 ## Decisions needed
 
 *(none)*
+
+---
+
+## 2026-08-13 — Board re-scanned, and the fan-out could not be fired
+
+The `education-learn-authoring` task ended at **lineage depth 8/8**, so `create_session` refused
+outright ("cannot spawn or re-arm further child sessions"). The chips below were scouted and written
+but never launched. **Whoever picks this up: these are ready to assign — do not re-scout them.**
+
+### How the board was scanned (use this method, not a manifest-shaped one)
+
+The productive vein is **routes mapped in `features/surfaces/utils/route-to-surface.ts` to a surface
+with NO manifest and NO `SurfaceRuntimeProvider` mount.** A prefix mapping is not a surface; it is only
+a name lookup, and a manifest-shaped scan sees "mapped route, has a surface" and moves on. Scan the
+mapped names against **any occurrence of the full surface-name string** under
+`features/surfaces/manifests/` — `surfaceName` is frequently a CONSTANT, so a naive
+`grep 'surfaceName: "..."'` reports 45 false positives where the true number is 4.
+
+**Result on `f2e70485`: exactly four mapped routes still lack a manifest.**
+
+### Ready to assign
+
+1. **`matrx-user/agent-shortcuts`** — TWO-JOB (`surface-authoring`, then `surface-write-targets`).
+   Mapped at `route-to-surface.ts:36` (`/agents/shortcuts`) and again by key at line 334; the string
+   appears nowhere under `manifests/`. The authoring component is
+   `features/agent-shortcuts/components/ShortcutForm.tsx` — `Shortcut name` (~570), an
+   `Optional description` Textarea (~632), "Any special instructions?" (~904), and "Extra instructions
+   appended to the template…" (~987). Those four are the YES set. The keybinding is arguable (mechanical,
+   collisions matter); the Auto Run / Allow Chat / Show panel / Hide reasoning toggles are pure-mechanical
+   flags and are NO; delete / promote-to-global / duplicate are never targets. Decide whether the LIST
+   (`/agents/shortcuts`) and the EDITOR (`/agents/shortcuts/edit/[id]`, plus the per-agent tree under
+   `app/(core)/agents/[id]/shortcuts/`) share vocabulary — if not, split with a regex ABOVE the prefix
+   loop, per the `analysis-studio` / `education-flashcard-editor` / `education-learn-authoring` precedent.
+
+2. **`matrx-user/education-audio-study`** — TWO-JOB. Mapped `/education/audio-study`; no manifest.
+   `features/education/media/audio/components/AudioStudyNew.tsx` is a generator setup holding `topic`
+   (free-text Textarea, ~184), `format` (`EduAudioFormat`), `hostCount`, `adaptive`, `sourceKind` and
+   `deckId`. This is the `education-planner` `plan_setup` / `education-fastfire` `drill_config` class:
+   ONE draft target that fills the form and stops, with the human pressing Generate. Note
+   `AudioStudyDetail.tsx` (the `[id]/edit` route) has no Input/Textarea at all — check how rename actually
+   works before promising a target on it.
+
+3. **`matrx-user/education-learn` (the PUBLIC reader half)** — `surface-authoring` ONLY; expect a
+   documented NO on writes. `/education/learn` and `/education/learn/[...slug]` are anonymous,
+   server-rendered reader pages: a published study guide and nothing to edit. The authoring half was split
+   off on 2026-08-13 as `matrx-user/education-learn-authoring` behind a regex above the prefix, and the
+   reader keeps the original `matrx-user/education-learn` mapping — whose `ui_surface` row exists (seeded
+   2026-08-09, `label: null`) but which still has no manifest. Worth authoring for agent CONTEXT ("explain
+   this passage", "what should I read next"); the write half should be rejected in writing, in the
+   manifest docblock, so a future chip does not re-derive it.
+
+### Scouted and NOT worth a chip — do not burn a session
+
+- **`matrx-user/education-progress`** — `/education/progress` renders `StudyAnalyticsDashboard`, a
+  read-only cross-mode analytics report (mastery, accuracy, weak areas, trends). Derived evidence is
+  never a write target, and the skill's bar excludes read-only reports outright.
+- **`matrx-user/education-game`** — `/education/game/host` renders `HostSetupImpl`, whose only authored
+  state is a `source` picker (`{kind: "due"}`); no text inputs anywhere under the game components.
+
+Several exhaustive sweeps of the *manifests-without-`writeTargets`* pool are already recorded in
+`features/surfaces/FEATURE.md`'s Change Log (2026-08-12 onward). They are decision-for-decision NOs.
+Re-deriving them costs a session and returns nothing — read them before scanning that pool again.
