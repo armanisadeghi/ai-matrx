@@ -21,8 +21,14 @@
 --    `resolve_share_token`, minus the view consumption (reading metrics is not
 --    a second view).
 
--- `display_label` is what the SHARE dialog and the access gate call this thing
--- to a human ("Share Kind Instance" was developer jargon in a user's face).
+-- The two labels a HUMAN reads for this token: the share dialog title
+-- (`shareable_resource_registry.display_label`) and the access gate / entity
+-- surfaces (`entity_types.label`). "Kind Instance" was developer jargon in a
+-- non-technical user's face; both now say "Saved Result".
+UPDATE platform.entity_types
+   SET label = 'Saved Result'
+ WHERE token = 'content_ir_kind_instance';
+
 UPDATE platform.shareable_resource_registry
    SET is_link_shareable = true,
        public_columns = ARRAY['id', 'title', 'data', 'created_at'],
