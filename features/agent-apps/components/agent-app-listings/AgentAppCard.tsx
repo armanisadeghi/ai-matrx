@@ -15,6 +15,10 @@
 
 import Link from "next/link";
 import {
+  isPubliclyVisible,
+  visibilityLabelShort,
+} from "@/lib/visibility/labels";
+import {
   AppWindow,
   Code,
   Copy,
@@ -75,7 +79,7 @@ export function AgentAppCard({
   const isDisabled = isDuplicating || isDeleting || isNavigating;
   const isArchived = app.status === "archived";
   const currentUserId = useAppSelector(selectUserId);
-  const isOwner = Boolean(currentUserId && app.user_id === currentUserId);
+  const isOwner = Boolean(currentUserId && app.created_by === currentUserId);
   const manageHref = `/agent-apps/${app.id}`;
   const codeHref = `/agent-apps/${app.id}/code`;
   const versionsHref = `/agent-apps/${app.id}/versions`;
@@ -124,9 +128,9 @@ export function AgentAppCard({
         </span>
         <span
           className="inline-flex items-center justify-center w-5 h-5 rounded text-muted-foreground"
-          title={app.is_public ? "Public" : "Private"}
+          title={visibilityLabelShort(app.visibility)}
         >
-          {app.is_public ? (
+          {isPubliclyVisible(app.visibility) ? (
             <Globe className="h-3 w-3" />
           ) : (
             <Lock className="h-3 w-3" />

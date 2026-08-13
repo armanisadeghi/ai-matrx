@@ -40,10 +40,10 @@ describe("validateAgentAppMetadataWrite", () => {
     "status",
     "is_featured",
     "is_verified",
-    "is_public",
+    "visibility",
     "rate_limit_per_ip",
     "component_code",
-    "user_id",
+    "created_by",
   ])("refuses the non-authored field %s", (field) => {
     expect(() =>
       validateAgentAppMetadataWrite({ description: "ok", [field]: "x" }),

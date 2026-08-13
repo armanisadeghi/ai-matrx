@@ -24,10 +24,10 @@ export default async function NewTemplatePage({ searchParams }: PageProps) {
                 ...(data as MessageTemplateDB),
                 id: "",
                 label: `${(data as MessageTemplateDB).label} (Copy)`,
-                is_public: false,
+                visibility: "internal",
                 created_at: "",
                 updated_at: null,
-                user_id: null,
+                created_by: null,
             };
         }
     }

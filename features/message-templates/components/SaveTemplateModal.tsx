@@ -148,7 +148,7 @@ export function SaveTemplateModal({
                 content: content.trim(),
                 role: role,
                 tags: tags,
-                is_public: isPublic,
+                visibility: isPublic ? "public" : "internal",
                 metadata: {}
             });
 

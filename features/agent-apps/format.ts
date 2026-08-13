@@ -10,6 +10,8 @@
 // Any surface showing an app row/card should import from here rather than
 // hand-rolling its own formatter or summary string.
 
+import { visibilityLabelShort } from "@/lib/visibility/labels";
+
 /** "1.2k" / "3m" style compact number, matching the app's existing style. */
 export function formatNumber(n: number | null | undefined): string {
   if (!n || n <= 0) return "0";
@@ -42,7 +44,7 @@ export interface AppSummaryLike {
   description?: string | null;
   category?: string | null;
   status?: string;
-  is_public?: boolean;
+  visibility?: string | null;
   is_featured?: boolean | null;
   is_verified?: boolean | null;
   total_executions?: number | null;
@@ -57,7 +59,7 @@ export function humanAgentApp(app: AppSummaryLike): string {
     app.tagline || null,
     [
       app.status ? `Status: ${app.status}` : null,
-      app.is_public === false ? "Personal" : app.is_public === true ? "Public" : null,
+      app.visibility ? visibilityLabelShort(app.visibility) : null,
       app.is_featured ? "Featured" : null,
       app.is_verified ? "Verified" : null,
     ]

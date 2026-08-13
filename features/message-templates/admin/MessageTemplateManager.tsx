@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { isPubliclyVisible } from "@/lib/visibility/labels";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -363,7 +364,7 @@ export function MessageTemplateManager({
         content: selectedTemplate.content,
         role: selectedTemplate.role,
         metadata: selectedTemplate.metadata,
-        is_public: selectedTemplate.is_public,
+        visibility: selectedTemplate.visibility,
         tags: selectedTemplate.tags,
       });
       setHasUnsavedChanges(false);
@@ -376,7 +377,7 @@ export function MessageTemplateManager({
       content: "",
       role: "user",
       metadata: {},
-      is_public: false,
+      visibility: "internal",
       tags: [],
     });
     setIsCreateDialogOpen(true);
@@ -397,7 +398,7 @@ export function MessageTemplateManager({
         content: editData.content || "",
         role: editData.role || "user",
         metadata: editData.metadata ?? undefined,
-        is_public: editData.is_public,
+        visibility: editData.visibility,
         tags: editData.tags || [],
       });
 
@@ -467,7 +468,7 @@ export function MessageTemplateManager({
         content: selectedTemplate.content,
         role: selectedTemplate.role,
         metadata: selectedTemplate.metadata,
-        is_public: selectedTemplate.is_public,
+        visibility: selectedTemplate.visibility,
         tags: selectedTemplate.tags,
       });
       setHasUnsavedChanges(false);
@@ -510,9 +511,10 @@ export function MessageTemplateManager({
 
   const handleTogglePublic = async (template: MessageTemplateDB) => {
     try {
+      const nextPublic = !isPubliclyVisible(template.visibility);
       await updateTemplate({
         id: template.id,
-        is_public: !template.is_public,
+        visibility: nextPublic ? "public" : "internal",
       });
 
       clearTemplateCache();
@@ -520,7 +522,7 @@ export function MessageTemplateManager({
 
       toast({
         title: "Success",
-        description: `Template is now ${!template.is_public ? "public" : "private"}`,
+        description: `Template is now ${nextPublic ? "public" : "internal"}`,
         variant: "success",
       });
     } catch (error) {
@@ -688,7 +690,7 @@ export function MessageTemplateManager({
                             </div>
                           )}
                         </div>
-                        {template.is_public ? (
+                        {isPubliclyVisible(template.visibility) ? (
                           <Globe className="w-3 h-3 text-green-500" />
                         ) : (
                           <Lock className="w-3 h-3 text-gray-400" />
@@ -706,7 +708,8 @@ export function MessageTemplateManager({
         <div className="p-4 border-t border-border bg-gray-50 dark:bg-gray-800">
           <div className="text-xs text-gray-600 dark:text-gray-400">
             {filteredTemplates.length} templates (
-            {templates.filter((t) => t.is_public).length} public)
+            {templates.filter((t) => isPubliclyVisible(t.visibility)).length}{" "}
+            public)
           </div>
         </div>
       </div>
@@ -755,13 +758,13 @@ export function MessageTemplateManager({
                     size="sm"
                     onClick={() => handleTogglePublic(selectedTemplate)}
                   >
-                    {selectedTemplate.is_public ? (
+                    {isPubliclyVisible(selectedTemplate.visibility) ? (
                       <Lock className="w-4 h-4" />
                     ) : (
                       <Globe className="w-4 h-4" />
                     )}
-                    {selectedTemplate.is_public
-                      ? "Make Private"
+                    {isPubliclyVisible(selectedTemplate.visibility)
+                      ? "Make Internal"
                       : "Make Public"}
                   </Button>
                   <Button
@@ -821,9 +824,12 @@ export function MessageTemplateManager({
                     <div className="flex items-center space-x-2">
                       <Checkbox
                         id="edit-is-public"
-                        checked={editData.is_public !== false}
+                        checked={isPubliclyVisible(editData.visibility)}
                         onCheckedChange={(checked) =>
-                          handleEditChange("is_public", checked)
+                          handleEditChange(
+                            "visibility",
+                            checked ? "public" : "internal",
+                          )
                         }
                       />
                       <Label htmlFor="edit-is-public">
@@ -1253,11 +1259,11 @@ export function MessageTemplateManager({
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <Checkbox
-                  checked={createFormData.is_public !== false}
+                  checked={isPubliclyVisible(createFormData.visibility)}
                   onCheckedChange={(checked) =>
                     setCreateFormData({
                       ...createFormData,
-                      is_public: checked as boolean,
+                      visibility: checked ? "public" : "internal",
                     })
                   }
                 />

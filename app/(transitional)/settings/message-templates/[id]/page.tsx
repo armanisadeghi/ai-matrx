@@ -25,7 +25,7 @@ export default async function TemplateDetailPage({ params, searchParams }: PageP
 
     const template = templateResult.data as MessageTemplateDB;
     const userId = userResult.data.user?.id;
-    const canEdit = template.user_id === userId;
+    const canEdit = template.created_by === userId;
 
     return (
         <TemplateViewPage

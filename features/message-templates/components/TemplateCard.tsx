@@ -1,6 +1,7 @@
 "use client";
 
 import { MessageTemplateDB } from "@/features/message-templates/types/message-templates-db";
+import { isPubliclyVisible } from "@/lib/visibility/labels";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { FileText, Globe, Lock } from "lucide-react";
@@ -29,7 +30,9 @@ export function TemplateCard({
   isDisabled,
 }: TemplateCardProps) {
   const currentUserId = useAppSelector(selectUserId);
-  const isOwner = Boolean(currentUserId && template.user_id === currentUserId);
+  const isOwner = Boolean(
+    currentUserId && template.created_by === currentUserId,
+  );
   return (
     <Card
       onClick={() => !isDisabled && onClick(template)}
@@ -72,7 +75,7 @@ export function TemplateCard({
             >
               {template.role}
             </span>
-            {template.is_public ? (
+            {isPubliclyVisible(template.visibility) ? (
               <span className="inline-flex items-center gap-0.5 text-[10px] text-green-600 dark:text-green-400">
                 <Globe className="w-2.5 h-2.5" />
                 Public

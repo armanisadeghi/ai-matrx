@@ -9,6 +9,12 @@ import type { Database, Json } from "@/types/database.types";
 
 export type AppStatus = "draft" | "published" | "archived" | "suspended";
 
+/** Canonical platform visibility enum — the single owner of "who can see this".
+ *  Replaced the legacy `is_public` boolean when app.definition was certified
+ *  (2026-08-13). An app IS the public face of an agent, so 'public' is a normal,
+ *  expected value here (unlike agent.definition, which bans it). */
+export type AppVisibility = Database["platform"]["Enums"]["visibility"];
+
 export type AppDisplayMode =
   "form" | "form-to-chat" | "chat" | "centered-input" | "chat-with-history";
 
@@ -219,7 +225,7 @@ export interface AgentAppRecord {
   favicon_url: string | null;
 
   status: AppStatus;
-  is_public: boolean;
+  visibility: AppVisibility;
   is_featured: boolean | null;
   is_verified: boolean | null;
 
@@ -240,7 +246,7 @@ export interface AgentAppRecord {
 
   metadata: Json | null;
 
-  user_id: string | null;
+  created_by: string | null;
   organization_id: string | null;
   project_id: string | null;
   task_id: string | null;
@@ -258,7 +264,7 @@ export type AgentApp = AgentAppRecord;
 // client — same model as shortcuts, no bespoke Next.js proxy.
 export type PublicAgentApp = Omit<
   AgentAppRecord,
-  | "user_id"
+  | "created_by"
   | "organization_id"
   | "project_id"
   | "task_id"
@@ -279,7 +285,7 @@ export type PublicAgentApp = Omit<
   | "avg_execution_time_ms"
   | "last_execution_at"
   | "status"
-  | "is_public"
+  | "visibility"
 >;
 
 export interface VariableSchemaItem {
@@ -517,7 +523,7 @@ export type AgentAppSummary = Pick<
   | "preview_image_url"
   | "favicon_url"
   | "status"
-  | "is_public"
+  | "visibility"
   | "is_featured"
   | "total_executions"
   | "last_execution_at"

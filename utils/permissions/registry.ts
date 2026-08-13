@@ -200,8 +200,9 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   message_template: {
     resourceType: "message_template",
     tableName: "message_template",
+    schemaName: "agent",
     idColumn: "id",
-    ownerColumn: "user_id",
+    ownerColumn: "created_by",
     isPublicColumn: null,
     displayLabel: "Message Template",
     urlPathTemplate: "/settings/message-templates/{id}",

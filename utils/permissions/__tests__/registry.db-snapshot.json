@@ -333,7 +333,7 @@
     "resource_type": "message_template",
     "table_name": "message_template",
     "id_column": "id",
-    "owner_column": "user_id",
+    "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Message Template",
     "url_path_template": "/settings/message-templates/{id}",

@@ -1,6 +1,7 @@
 "use client";
 
 import { useIsMobile } from "@/hooks/use-mobile";
+import { isPubliclyVisible } from "@/lib/visibility/labels";
 import { MessageTemplateDB } from "@/features/message-templates/types/message-templates-db";
 import {
     Dialog,
@@ -52,7 +53,7 @@ function PreviewContent({
                             {template.role}
                         </span>
                         <span className="text-muted-foreground">·</span>
-                        {template.is_public ? (
+                        {isPubliclyVisible(template.visibility) ? (
                             <span className="inline-flex items-center gap-0.5 text-xs text-green-600 dark:text-green-400">
                                 <Globe className="w-3 h-3" />
                                 Public

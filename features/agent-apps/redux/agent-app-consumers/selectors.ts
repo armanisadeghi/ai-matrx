@@ -67,7 +67,7 @@ export interface AgentAppCardModel {
 
   // Status & visibility
   status: AgentApp["status"];
-  is_public: boolean;
+  visibility: AgentApp["visibility"];
   is_featured: boolean | null;
   is_verified: boolean | null;
 
@@ -80,7 +80,7 @@ export interface AgentAppCardModel {
   last_execution_at: string | null;
 
   // Metadata for ownership / scope
-  user_id: string | null;
+  created_by: string | null;
   organization_id: string | null;
   isOwner: boolean;
 
@@ -186,7 +186,7 @@ type FilterPredicate = (
 
 const matchesTab: FilterPredicate = (app, { consumer, currentUserId }) => {
   if (consumer.tab === "all") return true;
-  const ownedByMe = currentUserId != null && app.user_id === currentUserId;
+  const ownedByMe = currentUserId != null && app.created_by === currentUserId;
   if (consumer.tab === "mine") return ownedByMe;
   if (consumer.tab === "shared") return !ownedByMe;
   return true;
@@ -202,8 +202,8 @@ const matchesArchive: FilterPredicate = (app, { consumer }) => {
 
 const matchesVisibility: FilterPredicate = (app, { consumer }) => {
   if (consumer.visibilityFilter === "all") return true;
-  if (consumer.visibilityFilter === "public") return app.is_public === true;
-  if (consumer.visibilityFilter === "personal") return app.is_public === false;
+  if (consumer.visibilityFilter === "public") return app.visibility === "public";
+  if (consumer.visibilityFilter === "personal") return app.visibility !== "public";
   return true;
 };
 
@@ -293,7 +293,7 @@ export const selectAllAppCardModels = createSelector(
         agent_version_id: r.agent_version_id,
         use_latest: r.use_latest,
         status: r.status,
-        is_public: r.is_public,
+        visibility: r.visibility,
         is_featured: r.is_featured,
         is_verified: r.is_verified,
         total_executions: r.total_executions,
@@ -302,10 +302,10 @@ export const selectAllAppCardModels = createSelector(
         total_cost: r.total_cost,
         unique_users_count: r.unique_users_count,
         last_execution_at: r.last_execution_at,
-        user_id: r.user_id,
+        created_by: r.created_by,
         organization_id: r.organization_id,
         isOwner:
-          currentUserId != null && r.user_id === currentUserId ? true : false,
+          currentUserId != null && r.created_by === currentUserId ? true : false,
         created_at: r.created_at,
         updated_at: r.updated_at,
         published_at: r.published_at,

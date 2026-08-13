@@ -147,11 +147,11 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "app_identity",
   },
   {
-    name: "app_is_public",
-    label: "Publicly shared",
+    name: "app_visibility",
+    label: "Visibility",
     description:
-      "True when the open app is publicly reachable at `/p/[slug]` without auth. Absent when no app is open.",
-    valueType: "boolean",
+      "Who can reach the open app: `public` (reachable at `/p/[slug]` without auth), `link`, `internal` (the owning organization), or `personal`. Absent when no app is open.",
+    valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 5,
     sortOrder: 340,
@@ -347,7 +347,7 @@ const surfaceSpecific: SurfaceValue[] = [
  *
  * WHY NOT THE REST. `app_slug` and `app_id` are identity (the public URL is
  * built from the slug — renaming it breaks every existing link).
- * `app_is_public` is a sharing decision and `app_status` (draft → published)
+ * `app_visibility` is a sharing decision and `app_status` (draft → published)
  * is a release decision — both are the human's call, not a copy edit.
  * `agent_id` / `app_version` / `pinned_version` / `use_latest` are structural
  * bindings, `component_code` / `shell_config` / `slot_overrides` belong to
@@ -500,7 +500,7 @@ export function createAgentAppsScope(values: {
   app_status?: string;
   app_category?: string;
   app_tags?: string[];
-  app_is_public?: boolean;
+  app_visibility?: string;
   agent_id?: string;
   app_version?: number;
   pinned_version?: number;

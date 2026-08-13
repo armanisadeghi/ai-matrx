@@ -466,7 +466,7 @@ function LineageCard({
                   href={`/administration/agents/agent-apps/edit/${app.id}`}
                   title={app.name}
                   subtitle={app.slug}
-                  badge={app.user_id === null ? "system" : app.status}
+                  badge={app.created_by === null ? "system" : app.status}
                 />
               ))}
             </Section>

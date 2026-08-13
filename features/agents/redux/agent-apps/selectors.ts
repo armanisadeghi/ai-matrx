@@ -1,6 +1,7 @@
 "use client";
 
 import { createSelector } from "reselect";
+import { isPubliclyVisible } from "@/lib/visibility/labels";
 import type { RootState } from "@/lib/redux/store";
 import type { AgentApp, AgentAppRecord } from "./types";
 import type { FieldFlags } from "../shared/field-flags";
@@ -128,7 +129,7 @@ export const selectAppIsPublished = createSelector(
 
 export const selectAppIsPublic = createSelector(
   [selectAppById],
-  (record): boolean => record?.is_public ?? false,
+  (record): boolean => isPubliclyVisible(record?.visibility),
 );
 
 // ---------------------------------------------------------------------------

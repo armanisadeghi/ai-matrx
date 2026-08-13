@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import { isPubliclyVisible } from "@/lib/visibility/labels";
 import { useRouter } from "next/navigation";
 import {
   MessageTemplateDB,
@@ -232,14 +233,16 @@ export function TemplateViewPage({
   const [label, setLabel] = useState(template.label ?? "");
   const [content, setContent] = useState(template.content ?? "");
   const [role, setRole] = useState<MessageRole>(template.role ?? "user");
-  const [isPublic, setIsPublic] = useState(template.is_public);
+  const [isPublic, setIsPublic] = useState(
+    isPubliclyVisible(template.visibility),
+  );
   const [tagsInput, setTagsInput] = useState((template.tags ?? []).join(", "));
 
   const isDirty =
     label !== (template.label ?? "") ||
     content !== (template.content ?? "") ||
     role !== (template.role ?? "user") ||
-    isPublic !== template.is_public ||
+    isPublic !== isPubliclyVisible(template.visibility) ||
     tagsInput !== (template.tags ?? []).join(", ");
 
   const canSave = label.trim().length > 0 && content.trim().length > 0;
@@ -265,7 +268,7 @@ export function TemplateViewPage({
         label: label.trim(),
         content: content.trim(),
         role,
-        is_public: isPublic,
+        visibility: isPublic ? "public" : "internal",
         tags,
       });
       clearTemplateCache();
@@ -336,7 +339,7 @@ export function TemplateViewPage({
                   >
                     {template.role}
                   </span>
-                  {template.is_public ? (
+                  {isPubliclyVisible(template.visibility) ? (
                     <span className="inline-flex items-center gap-0.5 text-[11px] text-green-600 dark:text-green-400">
                       <Globe className="w-2.5 h-2.5" />
                       Public
