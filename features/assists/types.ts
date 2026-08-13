@@ -22,7 +22,38 @@ export type AssistStatus =
   | "accepted"
   | "dismissed"
   | "expired"
-  | "superseded";
+  | "superseded"
+  /**
+   * The condition stopped reproducing and nobody had to decide anything.
+   * Absorbed from `web.finding`'s analyzer-owned resolve: without it, a chip
+   * for a thing that fixed itself can only exit by accepting something that no
+   * longer applies, or by being dismissed forever.
+   */
+  | "resolved";
+
+/**
+ * What the system actually SAW — the receipt behind the claim, rendered on the
+ * card so a proposal never asks for blind trust.
+ *
+ * Absorbed from kg-suggestions (`context_snippet` + the source-preview panel)
+ * and `web.finding` (the analysis result a finding came from). Deliberately
+ * one small open shape rather than a per-producer union: every producer can
+ * say what it looked at, and the card renders whatever fields are present.
+ */
+export interface AssistEvidence {
+  /** What kind of thing was looked at, e.g. "page", "note", "finding". */
+  kind: string;
+  /** Human label for the thing — a filename, a page title, a check name. */
+  label?: string;
+  /** The verbatim excerpt that triggered the notice. */
+  snippet?: string;
+  /** Where to go and see it (THE DOOR LAW). */
+  href?: string;
+  /** Opaque producer-side reference (row id, url, key). */
+  ref?: string;
+  /** Short list form — the N things counted, when a snippet will not do. */
+  items?: string[];
+}
 
 /**
  * The typed action binding stored in `platform.assists.action`. The registry
@@ -134,6 +165,20 @@ export interface Assist {
   expiresAt: string | null;
   /** The receipt written when the action ran. */
   result: Json | null;
+  /** What the system saw — shown on the card, never asked to be trusted. */
+  evidence: AssistEvidence | null;
+  /** When this dedupe key was FIRST noticed. A re-notice never moves it. */
+  firstSeenAt: string | null;
+  /** How many times the producer has re-noticed this exact thing. */
+  occurrences: number;
+  /** Set with `status='resolved'` — the condition went away on its own. */
+  resolvedAt: string | null;
+  /** The user's own words at decision time; shown when the row resurfaces. */
+  decisionNote: string | null;
+  /** Triage flag — the manager can filter to flagged rows. */
+  isStarred: boolean;
+  /** Stamped when the row was first read in the manager (the unseen dot). */
+  viewedAt: string | null;
 }
 
 /**
@@ -158,6 +203,10 @@ export interface AssistsQuery {
   minConfidence: number | null;
   /** Include rows currently snoozed (`suppressed_until` in the future). */
   includeSnoozed: boolean;
+  /** Only rows the user flagged for triage. */
+  starredOnly: boolean;
+  /** Only rows never yet opened in the manager (the unseen dot). */
+  unseenOnly: boolean;
   sortField: AssistSortField;
   sortAscending: boolean;
   page: number;
@@ -170,7 +219,9 @@ export type AssistSortField =
   | "priority"
   | "confidence"
   | "status"
-  | "source_key";
+  | "source_key"
+  | "first_seen_at"
+  | "occurrences";
 
 export interface AssistsPage {
   rows: Assist[];
@@ -194,6 +245,12 @@ export interface EmitAssistInput {
   dedupeKey: string;
   expiresAt?: string;
   priority?: number;
+  /** What the producer actually saw — rendered as the card's receipt. */
+  evidence?: AssistEvidence;
+  /** 0-1. Below `LOW_CONFIDENCE_THRESHOLD` the chip never interrupts. */
+  confidence?: number;
+  /** The "why", for a producer that can explain itself (agents especially). */
+  reasoning?: string;
 }
 
 const SOURCE_KINDS: readonly AssistSourceKind[] = [
@@ -208,7 +265,25 @@ const STATUSES: readonly AssistStatus[] = [
   "dismissed",
   "expired",
   "superseded",
+  "resolved",
 ];
+
+function narrowEvidence(value: Json): AssistEvidence | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const obj = value as Record<string, Json | undefined>;
+  if (typeof obj.kind !== "string") return null;
+  const items = Array.isArray(obj.items)
+    ? obj.items.filter((i): i is string => typeof i === "string")
+    : undefined;
+  return {
+    kind: obj.kind,
+    label: typeof obj.label === "string" ? obj.label : undefined,
+    snippet: typeof obj.snippet === "string" ? obj.snippet : undefined,
+    href: typeof obj.href === "string" ? obj.href : undefined,
+    ref: typeof obj.ref === "string" ? obj.ref : undefined,
+    items: items && items.length > 0 ? items : undefined,
+  };
+}
 
 function narrowAction(value: Json): AssistAction | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
@@ -240,6 +315,24 @@ function narrowAction(value: Json): AssistAction | null {
       slotKey: typeof obj.slotKey === "string" ? obj.slotKey : undefined,
       agentName: typeof obj.agentName === "string" ? obj.agentName : undefined,
       draftText: typeof obj.draftText === "string" ? obj.draftText : undefined,
+    };
+  }
+  if (
+    kind === "apply_page_meta" &&
+    typeof obj.siteId === "string" &&
+    typeof obj.pageId === "string" &&
+    (typeof obj.metaTitle === "string" ||
+      typeof obj.metaDescription === "string")
+  ) {
+    return {
+      kind,
+      siteId: obj.siteId,
+      pageId: obj.pageId,
+      metaTitle: typeof obj.metaTitle === "string" ? obj.metaTitle : undefined,
+      metaDescription:
+        typeof obj.metaDescription === "string" ? obj.metaDescription : undefined,
+      source: typeof obj.source === "string" ? obj.source : "the page itself",
+      rationale: typeof obj.rationale === "string" ? obj.rationale : "",
     };
   }
   if (kind === "surface_write" && typeof obj.target === "string") {
@@ -286,6 +379,13 @@ export function makeEphemeralAssist(input: {
     suppressedUntil: null,
     expiresAt: null,
     result: null,
+    evidence: null,
+    firstSeenAt: null,
+    occurrences: 1,
+    resolvedAt: null,
+    decisionNote: null,
+    isStarred: false,
+    viewedAt: null,
   };
 }
 
@@ -321,5 +421,12 @@ export function toAssist(row: AssistRow): Assist | null {
     suppressedUntil: row.suppressed_until,
     expiresAt: row.expires_at,
     result: row.result,
+    evidence: narrowEvidence(row.evidence),
+    firstSeenAt: row.first_seen_at,
+    occurrences: row.occurrences,
+    resolvedAt: row.resolved_at,
+    decisionNote: row.decision_note,
+    isStarred: row.is_starred,
+    viewedAt: row.viewed_at,
   };
 }

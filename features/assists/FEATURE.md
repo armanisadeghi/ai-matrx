@@ -45,6 +45,99 @@ This feature owns the primitive; each producer sits beside the domain that notic
 - Both `launch_agent` slots resolve to purpose-built platform agents, FLOATING (`use_latest`) because the client-side resolver refuses a version-pinned client slot: `notes.organizer` → **Notes Organizer** (`4c704248-…`), `tasks.triage_assistant` → **Task Triage Assistant** (`45131175-…`). Each is a conversational agent (system prompt only, zero variables — the chip's `draftText` becomes the user's first message via `setUserInputText`, exactly like General Chat) carrying the `data` + `data_action` tools, so it acts AS the user under RLS. Both are propose-then-apply: no write before the user agrees, the organizer never edits or deletes note content, and the triage agent never closes a task on its own judgment. Slots seeded by `migrations/agent_slots_assist_producers_seed.sql`, bound by `..._bind.sql`; swapping either agent is a slots-console change, no deploy.
 - aidream background producers write rows via the ORM (see the system-of-record's aidream section).
 
+## 🚨 THE CAPABILITY INVENTORY — what may be retired, and what blocks it
+
+> **THE ABSORB-THEN-COLLAPSE METHOD** (Arman, 2026-08-09, doctrine in the
+> cross-repo system-of-record): inventory every capability → judge each one →
+> improve assists past 100% → migrate → **only then** retire. **Losing a
+> feature is a worse outcome than not collapsing.**
+>
+> **A row in the "NOT YET" column BLOCKS retirement of the system it came
+> from.** This table is the gate. Nothing is retired on a feeling that the new
+> thing is nicer; something is retired when its row here says so.
+
+Last taken against live code: **2026-08-13** (growth-loop gap `G-SUGGEST-FORK`).
+Three systems model "here is something you could do": **assists**
+(`platform.assists`), **kg-suggestions** (`scope_association_suggestions` /
+`scope_item_value_suggestions` / `kg_suggestion_ack`), and **`web.finding`**
+(the SEO audit register).
+
+### Judged first: what is NOT a fork
+
+- **`web.finding`'s domain half is not a suggestion system and is not being
+  absorbed.** A finding is the durable identity of a `(site, subject, item)`
+  condition that the analyzer opens, refreshes, reopens and resolves on its
+  own — it exists whether or not anyone is ever offered anything. Its OFFER
+  layer is what moved here (`features/marketing/findings-assists-producer.ts`,
+  gap `G-FINDING-ASSIST`). The doctrine's own words: each system "keeps its
+  domain tables where they carry domain shape".
+- **`extend.wbx_seo_audit` is NOT dead and must not be deleted.** The 2026-08-09
+  gap text called it "a dead `extend.wbx_seo_audit`". It is a registered
+  canonical entity (`types/generated/entity-types.generated.ts`), RLS-applied
+  and schema-moved on purpose, with zero runtime consumers — which under
+  `/policies/unfinished-work-alarm.md` means **a previous agent was
+  interrupted**, not that nobody wants it. Recommending its deletion is
+  forbidden until Arman names it dead in writing. Sounding the alarm: the
+  Chrome-extension SEO audit surface it was built for was never finished.
+
+### kg-suggestions → assists
+
+| Capability | Assists today | Verdict |
+| --- | --- | --- |
+| ONE shared decision card on every surface | `AssistChip` + `AssistCard`, everywhere including the manager | **better** — plus THE INTENTIONAL-ACTION LAW (hover expands, only a verb button runs) |
+| Manager over every status, server-side filter / sort / paginate + stats | `/assists`, `manager/useAssistsQuery.ts` | **equal** |
+| Defer (not now, ask again) | `snoozeAssist` + `SNOOZE_WINDOWS`, deliberately not a decision | **equal** |
+| Defer-with-note, note re-rendered on resurface | `decision_note` + the dismiss-note box on the card | **equal** |
+| Star + unseen dot + restore + bulk triage | manager flag column, unseen dot, `restoreAssist`, bulk snooze / dismiss | **equal** — bulk ACCEPT is refused on purpose (N real actions from one click is the opposite of the law) |
+| Low-confidence floor: never interrupt, fold out of the list, stay reachable | `LOW_CONFIDENCE_THRESHOLD` + `partitionByConfidence`, folded in the dock behind a door | **equal** |
+| Evidence: the snippet the proposal came from | `evidence` jsonb + the "What we saw" block | **equal** for the snippet |
+| **Source preview: open the actual document, snippet highlighted, in a non-blocking panel that never dismisses the inbox** | `evidence.href` link-out only | **NOT YET** |
+| **Per-RECORD chips** (a chip on *this note*, *this task*, *this scope item*) | only `selectAssistsForSurface` (per surface). The ledger has `entity_type` / `entity_id`; no selector or strip reads them | **NOT YET** |
+| **Inline hint shapes — dot beside a field, badge on a table row, banner atop a section** | strip + dock only | **NOT YET** |
+| **Enrichment: opaque id → human path, and the CURRENT value at click time** | producers write human copy at emit time, so no chip renders an id — but the body can go stale and claim a value that has since changed | **NOT YET** (staleness), better for id-rendering |
+| **Overwrite warning + destructive confirm when accepting over an existing value** | `surface_write` is policy-gated but never diffs old vs new | **NOT YET** |
+| **Accepting runs a domain RPC** (`set_context_value`, scope tagging, heavy-hitter create-scope dialog with a type picker) | four action kinds; none calls a Supabase RPC, and none opens a parameter-collecting dialog before acting | **NOT YET** |
+| **Durable global notifier** (one delayed toast for genuinely-new items, two dismissal tiers, `kg_suggestion_ack`) | dock only — it never speaks up | **NOT YET** |
+| **Per-user producer opt-out** (`user_preferences.auto_rag_enabled`) | no user-level off switch for any producer | **NOT YET** |
+| **The queue is agent-FILTERABLE and deliberately not agent-DECIDABLE** (surface manifest + write targets on the manager) | `/assists` declares no surface manifest at all | **NOT YET** |
+
+**Verdict: kg-suggestions CANNOT be retired.** Eight capabilities are missing,
+three of them load-bearing (source preview, per-record chips, domain-RPC
+accept). It also stays mounted in eight live surfaces (notes, tasks, scopes
+hub, scope detail / items / list, orgs, settings) plus the `kgSuggestionsDrawer`
+overlay, so "retire" here means those eight surfaces lose a working feature.
+
+### `web.finding` (offer layer) → assists
+
+| Capability | Assists today | Verdict |
+| --- | --- | --- |
+| Durable identity across re-crawls; first / last detected | `dedupe_key` + `first_seen_at` + `occurrences` | **equal** |
+| Condition stopped reproducing → close it, nobody decided | status `resolved` + `resolveAssistsByDedupeKeys()` | **equal** on the client |
+| Severity ordering | `priority` | **equal** |
+| Bulk verbs | bulk snooze / dismiss | **equal** |
+| Findings become chips at all | `findings-assists-producer.ts`, mounted on three surfaces | **shipped** (`G-FINDING-ASSIST`) |
+| **Reopen: a resolved condition that comes back** | `filterUndecidedKeys` treats `resolved` as answered, so a producer cannot reopen; only a human `restoreAssist` can | **NOT YET** |
+| **Acknowledge ("I've seen this, I haven't done it")** | `viewed_at` is passive; snooze is a timer. No explicit acknowledged state | **NOT YET** |
+| **Suppression orthogonal to status, with a reason — and WHOLE-CHECK suppression ("stop telling me about this check on this site")** | dismissal is per `dedupe_key` only. A user who wants a whole producer quiet must dismiss every chip forever, one at a time | **NOT YET** |
+| **Team-visible: a finding belongs to a site, and any teammate sees it** | an assist is `visibility='personal'`, addressed to one `user_id`. There is no org-addressed assist | **NOT YET** |
+| **A decision here propagates to the domain row** — dismissing a finding chip does not acknowledge or suppress the finding | nothing links the two ledgers back | **NOT YET** |
+| Check catalogue, remedies, resolution reconciliation | domain shape — stays in `web.finding` by doctrine | n/a |
+
+**Verdict: nothing in `web.finding` is retired**, and its offer layer cannot be
+the last word until suppression-by-producer and team-addressed assists exist —
+today a shared SEO register produces chips only the person who swept can see.
+
+### Retired in this pass
+
+**Nothing.** Every candidate has at least one blocking row above. That is the
+correct outcome of the method, not a failure of it — see Arman's ruling. The
+next agent's shortest path to a real collapse, worst-first:
+
+1. **Team-addressed assists** (an assist with an `organization_id` audience) — unblocks the `web.finding` offer layer and is the single widest gap.
+2. **Producer-level suppression** (`source_key` + optional scope), which is also the thing that keeps the ambient layer from nagging.
+3. **Per-record chips** (`entity_type` / `entity_id` selector + strip) — the columns are already there; this is a selector and a mount.
+4. **An `rpc` action kind + a parameter dialog**, which is what kg-suggestions' accept semantics actually need.
+
 ## Producer rules (non-negotiable)
 
 1. Always set a `dedupeKey` and call `filterUndecidedKeys` first — a user's dismissal is durable; re-noticing must not resurrect the chip.
