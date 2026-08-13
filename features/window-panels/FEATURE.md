@@ -52,24 +52,13 @@ Arman's ruling, 2026-08-11. Two halves, both absolute:
 
 **A run that dies on refresh is the same defect as a spinner.** If the work is server-side, the surface reattaches on load; the durable record is whatever the run's own feature persisted — never this window (it is `ephemeral: true`).
 
-**A surviving viewer retains its request.** `LiveRunDisplay` registers a viewer id in `activeRequests`; `removeRequest` and `destroyInstance` defer deletion until the final viewer releases it. A route/query remount may clean up its run owner, but it can never blank a still-open floating window. Closing or rebinding the last viewer completes the deferred cleanup, so retained output does not leak.
+**A surviving viewer retains its request.** EVERY canonical viewer — `StreamAwareChatMarkdown` (the seam under every `MarkdownStream`) and `LiveRunDisplay` — registers a viewer id in `activeRequests` via `useRetainRequestForViewer`; `removeRequest` and `destroyInstance` defer deletion until the final viewer releases it, and `createRequest` never resets an existing row. A route/query remount may clean up its run owner, but it can never blank a still-open surface. **Before touching any reap, adoption, or live-run render path, read [`features/agents/docs/LIVE_RUN_RETENTION.md`](../agents/docs/LIVE_RUN_RETENTION.md)** — the disappearing-run class doctrine; guard test `request-viewer-retention.test.ts`.
 
 ---
 
 ## Change Log
 
-- 2026-08-13 — **`AgentRunHistoryWindow` becomes agent-readable.** The window
-  mounts `<SurfaceRuntimeProvider>` for `matrx-user/agent-run-history` and
-  emits 15 values through `agent-run-history-scope.ts` — the run roster with
-  its version grouping and load state, plus the selected run's row and
-  transcript. Nesting the provider inside the overlay is deliberate: providers
-  resolve by depth, so while the window is open its scope wins over the page
-  behind it. `RunHistorySidebar` owns the roster and publishes a scope FRAGMENT
-  into a ref the window holds rather than mounting a second provider, which
-  would out-depth the window's and replace its scope wholesale. Read-only by
-  design — see the manifest header for why the row menu's rename / favorite /
-  archive were declined as write targets.
-
+- 2026-08-12 — **Retention widened to every MarkdownStream viewer + doctrine doc.** Retention moved into `StreamAwareChatMarkdown` via `useRetainRequestForViewer` (adopted-stream surfaces like the keyword Research tab were unprotected); `createRequest` made non-destructive for existing rows. Canonical doctrine: `features/agents/docs/LIVE_RUN_RETENTION.md`.
 - 2026-08-12 — **Live-run viewers retain canonical request state.** Authority,
   Keyword Research, and every other floating run survive host/query remounts
   without going blank: owner cleanup defers while `LiveRunDisplay` is mounted,
@@ -749,7 +738,6 @@ A re-entry into the viewport resets the dwell timer — a glance outside doesn't
 
 ## Change log
 
-- **2026-08-13** — **`ImageUploaderWindow` emits its surface.** The window now wraps `WindowPanel` in `<SurfaceRuntimeProvider surfaceName="matrx-user/image-uploader">`, taking that manifest from `stub` (8 declared values, nothing mounted — `createImageUploaderScope` had zero call sites, so every agent there resolved an empty bag) to `partial` with 12 live values. The overlay nesting is deliberate: a nested provider out-depths the page's, and `SurfaceAgentsPanelImpl` additionally prefers a runtime whose manifest carries an `overlayId` over the route mapping, so while the window is open its scope wins over whatever route is behind it. `getScope` is **synchronous and allocation-only** — `useLiveSurfaceScope` polls it every 400ms for as long as a Surface Context window is open, so an emitter that fetched would hammer the backend behind a panel that looks idle; everything emitted here is props plus the `result` this window already holds. The completeness pass added `window_instance_id` (the overlay is multi-instance — an agent must be able to say WHICH uploader it is reading), `result_file_id`, `result_variant_urls` and `last_error`; the last needed the previously-unpassed `onError` prop wired to window state, cleared on a later success because `ImageAssetUploader` never calls back to clear its own error. Two `data-surface-value` anchors added for Locate. **Not lifted, and that is why readiness is `partial`:** the in-flight upload status, the uploading file's name and the URL-paste draft all live inside the shared `ImageAssetUploader` official component (17 callers) and are never handed up.
 - **2026-07-26** — **Degenerate-viewport clamp guard.** Root-caused the "restored panel is invisible at `{x:-48, y:0, width:120, height:80}`" persistence bug: every geometry path (hydration, `registerWindow` pending restore, watchdog `revealWindow`, resize `clampAllWindowRects`) trusts a live `window.innerWidth`/`innerHeight` read, and in a hidden/embedded pane (or any pre-layout read) that read is `0` — `clampRectToViewport(rect, {0,0})` then collapses ANY rect to exactly `{-48, 0, 120, 80}` (the floors + `MIN_VISIBLE_PX` arithmetic), which gets rendered, re-saved, and fires the silent-render watchdog. Fix in `utils/rectClamp.ts`: a non-finite or ≤0 viewport dimension means the measurement is degenerate, so the clamp becomes a pass-through (sanitising only non-finite rect values) and warns once — protecting all callsites at the single primitive. Verified live in a 0×0 pane: save + reload now round-trips `{0,0,900,620}` intact.
 - **2026-07-25** — **Added the generic `TextSectionsWindow` primitive** (`windows/text-sections/TextSectionsWindow.tsx`): the "read labeled chunks of text properly" window — section rail with char badges, Everything view, Rendered/Raw/Split, `ContentActionBar` — extracted from the research Context Preview window, which is now a thin wrapper owning only resolution and research-specific chrome. The primitive owns NO overlay id: consumers render it inside their own registered window (close binding is built per the WindowPanel discriminated union). Use it for any "show the user a lot of text" need instead of a `<pre>` in a sidebar.
 - **2026-07-24** — **Declared resize minimums are enforced.** `WindowPanel` now forwards `minWidth` / `minHeight` into `useWindowPanel`, whose pointer-resize math uses those values instead of unconditional 180×80 constants. Action-heavy and sidebar windows can no longer be compressed until their header controls cover every drag-start pixel; windows without explicit minimums retain the existing 180×80 fallback.

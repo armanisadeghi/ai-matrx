@@ -3,8 +3,9 @@
 #
 # Why this exists: Claude's named preview_start and raw shell launches each create
 # an untracked Next.js tree. Codex does not expose preview_start at all. Both agents
-# instead use the provider-neutral `pnpm preview:start`, which registers one shared
-# server for process cleanup and browser reuse.
+# instead use the provider-neutral `pnpm preview:start`, which registers one
+# machine-wide lease. A checkout may reuse only its own server; other worktrees
+# must wait, because a browser pointed at their server would certify the wrong diff.
 #
 # Fingerprint: the shared launcher sets NEXT_DISTDIR=.next-preview, which appears
 # in the Next worker argv. The user's own `pnpm dev` uses .next, so this signature
@@ -126,7 +127,7 @@ case "${1:-}" in
     if [ -n "$running" ]; then
       port=$(printf '%s' "$running" | head -1 | awk '{print $2}')
       owner=$(printf '%s' "$running" | head -1 | awk '{print $3}')
-      reason="A Next.js dev server is already running on this machine (port ${port}, ${owner}). Do NOT start a second: open http://localhost:${port} in your browser. If it is genuinely stale or belongs to the wrong repo, stop it deliberately, then run pnpm preview:start."
+      reason="A Next.js dev server is already running on this machine (port ${port}, ${owner}). Do NOT start a second or certify a different worktree against it. Wait for its explicit release; if it is genuinely stale, stop it deliberately from its owning checkout, then run pnpm preview:start."
       /usr/bin/python3 - "$reason" <<'PY'
 import json, sys
 print(json.dumps({
@@ -173,7 +174,7 @@ PY
     if [ -n "$running" ]; then
       port=$(printf '%s' "$running" | head -1 | awk '{print $2}')
       owner=$(printf '%s' "$running" | head -1 | awk '{print $3}')
-      reason="A Next.js dev server is ALREADY running on this machine (port ${port}, ${owner}). This box has 16GB and a second dev server is a reliable hard crash — the cap is ONE, machine-wide, shared by you, Arman, and Codex. Do NOT launch another: point the Browser pane at http://localhost:${port} instead. Only if that server is genuinely stale, stop it first (preview_stop, or kill its PID) and then start yours."
+      reason="A Next.js dev server is ALREADY running on this machine (port ${port}, ${owner}). This box has 16GB and a second dev server is a reliable hard crash — the cap is ONE, machine-wide. Do NOT launch another or certify a different worktree against it. Wait for explicit release. Only if it is genuinely stale, stop it from its owning checkout and then run pnpm preview:start."
       /usr/bin/python3 - "$reason" <<'PY'
 import json, sys
 print(json.dumps({

@@ -138,7 +138,13 @@ export function normalizeIdentityUrl(url: string): string {
 export function acceptPageUrlInput(raw: string): string {
   const trimmed = (raw ?? "").trim();
   if (!trimmed) throw new Error("Enter a page URL.");
-  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+  // Case-INSENSITIVE scheme check on purpose: the server's `_normalise_url`
+  // (crawler.py → utils/url.normalize_url) accepts `HTTPS://Example.COM` and
+  // lowercases it via urlparse. Rejecting here what the server accepts breaks
+  // parity for input a human plausibly types (D172). The identity layer
+  // lowercases the scheme, so the raw casing is returned untouched.
+  const lowered = trimmed.toLowerCase();
+  if (lowered.startsWith("http://") || lowered.startsWith("https://")) {
     return trimmed;
   }
   if (trimmed.includes("://")) {

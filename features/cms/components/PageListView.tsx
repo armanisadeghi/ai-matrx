@@ -3,6 +3,10 @@
 import React, { useState, useMemo } from "react";
 import { idMatchesQuery } from "@/utils/search-scoring";
 import type { ClientPageSummary } from "@/features/cms/types";
+import {
+  classifyContentVolume,
+  type ContentVolume,
+} from "@/features/cms/utils/contentVolume";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -49,6 +53,21 @@ interface PageListViewProps {
    */
   onFocusPage?: (pageId: string) => void;
 }
+
+// Content-volume indicator (features/cms/utils/contentVolume.ts): the stage
+// word is a conservative guess; the char count beside it is the measurement.
+const VOLUME_DOT: Record<ContentVolume["stage"], string> = {
+  empty: "bg-red-500/80",
+  stub: "bg-amber-500/80",
+  light: "bg-sky-500/80",
+  full: "bg-emerald-500/80",
+};
+const VOLUME_TEXT: Record<ContentVolume["stage"], string> = {
+  empty: "text-red-600 dark:text-red-400",
+  stub: "text-amber-600 dark:text-amber-400",
+  light: "text-sky-600 dark:text-sky-400",
+  full: "text-emerald-600 dark:text-emerald-400",
+};
 
 const CATEGORY_ICONS: Record<string, React.ElementType> = {
   root: Home,
@@ -279,6 +298,9 @@ export default function PageListView({
                   <th className="text-left px-4 py-2.5 font-medium text-muted-foreground hidden sm:table-cell">
                     Status
                   </th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground hidden sm:table-cell">
+                    Content
+                  </th>
                   <th className="text-left px-4 py-2.5 font-medium text-muted-foreground hidden lg:table-cell">
                     <button
                       className="flex items-center gap-1 hover:text-foreground transition-colors cursor-pointer active:scale-[0.92] active:transition-none"
@@ -297,6 +319,7 @@ export default function PageListView({
                 {filtered.map((page) => {
                   const CatIcon = (CATEGORY_ICONS[page.category ?? ""] ??
                     FileCode) as React.FC<{ className?: string }>;
+                  const volume = classifyContentVolume(page.content_stats);
                   const typeColor =
                     PAGE_TYPE_COLORS[page.page_type ?? ""] ??
                     PAGE_TYPE_COLORS.standard;
@@ -326,8 +349,15 @@ export default function PageListView({
                                 <Navigation className="h-3 w-3 text-blue-500 flex-shrink-0" />
                               )}
                             </div>
-                            <span className="text-xs text-muted-foreground">
+                            <span className="text-xs text-muted-foreground inline-flex items-center gap-1.5">
                               /{page.slug}
+                              {volume && (
+                                // Mobile-visible twin of the Content column (that column is hidden below sm).
+                                <span
+                                  className={`sm:hidden inline-block h-2 w-2 rounded-full ${VOLUME_DOT[volume.stage]}`}
+                                  title={`${volume.label} · ${volume.htmlDisplay} chars — ${volume.detail}`}
+                                />
+                              )}
                             </span>
                           </div>
                         </div>
@@ -368,6 +398,33 @@ export default function PageListView({
                             </Badge>
                           )}
                         </div>
+                      </td>
+                      <td className="px-4 py-3 hidden sm:table-cell">
+                        {volume ? (
+                          <span
+                            className="inline-flex items-center gap-1.5"
+                            title={volume.detail}
+                          >
+                            <span
+                              className={`inline-block h-2 w-2 rounded-full ${VOLUME_DOT[volume.stage]}`}
+                            />
+                            <span
+                              className={`text-[11px] font-medium ${VOLUME_TEXT[volume.stage]}`}
+                            >
+                              {volume.label}
+                            </span>
+                            {volume.stage !== "empty" && (
+                              <span className="text-[11px] text-muted-foreground tabular-nums">
+                                {volume.htmlDisplay}
+                                {volume.source === "draft" ? " (draft)" : ""}
+                              </span>
+                            )}
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-muted-foreground">
+                            —
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-3 hidden lg:table-cell">
                         <span className="text-xs text-muted-foreground">

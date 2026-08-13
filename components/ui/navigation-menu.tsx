@@ -6,24 +6,21 @@ import * as NavigationMenuPrimitive from "@radix-ui/react-navigation-menu"
 import { cva } from "class-variance-authority"
 
 import { cn } from "@/styles/themes/utils"
-import { useIsMounted } from "@/hooks/use-is-mounted"
 
 /**
- * Hydration-safe NavigationMenu wrapper.
- * Radix UI generates dynamic IDs for aria-controls that can differ between
- * SSR and client, causing hydration mismatches. This wrapper defers rendering
- * until after hydration to prevent these errors.
+ * THE ROOT RENDERS UNCONDITIONALLY — no mount gate. This wrapper used to defer
+ * rendering until after hydration ("Radix generates dynamic aria-controls ids
+ * that differ between SSR and client"), and that justification was false:
+ * Radix ids come from React's SSR-stable `useId` (verified against
+ * @radix-ui/react-navigation-menu 1.2.16 / react-id 1.1.2). The gate was
+ * actively harmful — it deleted the ENTIRE navigation from SSR and the first
+ * client paint. See components/ui/context-menu/context-menu.tsx (the
+ * precedent fix, D144).
  */
 const NavigationMenu = React.forwardRef<
   React.ComponentRef<typeof NavigationMenuPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof NavigationMenuPrimitive.Root>
 >(({ className, children, ...props }, ref) => {
-  const isMounted = useIsMounted()
-  
-  if (!isMounted) {
-    return null
-  }
-  
   return (
     <NavigationMenuPrimitive.Root
       ref={ref}

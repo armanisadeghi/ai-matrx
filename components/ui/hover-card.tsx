@@ -4,31 +4,18 @@ import * as React from "react"
 import * as HoverCardPrimitive from "@radix-ui/react-hover-card"
 
 import { cn } from "@/lib/utils"
-import { useIsMounted } from "@/hooks/use-is-mounted"
 
 /**
- * Hydration-safe HoverCard wrapper.
- * Radix UI generates dynamic IDs for aria-controls that can differ between
- * SSR and client, causing hydration mismatches. This wrapper defers rendering
- * until after hydration to prevent these errors.
+ * THE ROOT RENDERS UNCONDITIONALLY — no mount gate. This wrapper used to defer
+ * rendering until after hydration ("Radix generates dynamic aria-controls ids
+ * that differ between SSR and client"), and that justification was false:
+ * @radix-ui/react-hover-card 1.1.17 generates no ids of its own at all, and
+ * Radix ids generally come from React's SSR-stable `useId`. The gate was
+ * actively harmful — the Trigger wraps ALWAYS-VISIBLE content, so
+ * `return null` deleted it from SSR and the first client paint. See
+ * components/ui/context-menu/context-menu.tsx (the precedent fix, D144).
  */
-const HoverCard = React.forwardRef<
-  React.ComponentRef<typeof HoverCardPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof HoverCardPrimitive.Root>
->(({ children, ...props }, ref) => {
-  const isMounted = useIsMounted()
-  
-  if (!isMounted) {
-    return null
-  }
-  
-  return (
-    <HoverCardPrimitive.Root {...props}>
-      {children}
-    </HoverCardPrimitive.Root>
-  )
-})
-HoverCard.displayName = "HoverCard"
+const HoverCard = HoverCardPrimitive.Root
 
 const HoverCardTrigger = HoverCardPrimitive.Trigger
 

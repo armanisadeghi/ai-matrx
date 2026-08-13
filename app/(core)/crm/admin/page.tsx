@@ -34,6 +34,38 @@ const CRM_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
+      url: "/crm/duplicates",
+      label: "Duplicates review",
+      description:
+        "Merge review queue: scan (auto-merges identity-key collisions via crm_detect_merge_candidates), side-by-side pair comparison, merge/dismiss, and exact unmerge of recent merges.",
+      filePath: "app/(core)/crm/duplicates/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/crm/campaigns",
+      label: "Campaigns",
+      description:
+        "Campaign console: create list/email/call campaigns, lifecycle controls, member counts.",
+      filePath: "app/(core)/crm/campaigns/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/crm/campaigns/[campaignId]",
+      label: "Campaign workspace",
+      description:
+        "One campaign: status rollup chips, server-paged member roster, enrollment from filters, lifecycle actions.",
+      filePath: "app/(core)/crm/campaigns/[campaignId]/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/crm/campaigns/[campaignId]/dial",
+      label: "Call queue (power dialer)",
+      description:
+        "Claim-locked power dialer: next member, DNC/suppression-checked dial targets, call logging to crm.interaction, dispositions with retry windows.",
+      filePath: "app/(core)/crm/campaigns/[campaignId]/dial/page.tsx",
+      status: "Live",
+    },
+    {
       url: "/crm/admin",
       label: "CRM feature map",
       description:
@@ -76,6 +108,30 @@ const CRM_ADMIN_MAP: FeatureAdminMap = {
       name: "PartyRecordPage",
       filePath: "features/crm/components/record/PartyRecordPage.tsx",
       description: "Person/company detail workspace and relationship history.",
+      tier: "internal",
+      status: "Live",
+    },
+    {
+      name: "DuplicateReviewPage",
+      filePath: "features/crm/components/dedup/DuplicateReviewPage.tsx",
+      description:
+        "Merge review queue over crm.merge_candidate + the crm_merge_parties / crm_unmerge_parties RPCs; CandidatePairCard renders each side-by-side comparison.",
+      tier: "internal",
+      status: "Live",
+    },
+    {
+      name: "MergeStatusCard",
+      filePath: "features/crm/components/dedup/MergeStatusCard.tsx",
+      description:
+        "Record-page dedup surface: merged-into banner, duplicate suggestions, absorbed merges with exact undo.",
+      tier: "internal",
+      status: "Live",
+    },
+    {
+      name: "CampaignListPage / CampaignDetailPage / CallQueuePage",
+      filePath: "features/crm/components/campaigns/",
+      description:
+        "Campaign console, campaign workspace, and the claim-locked power dialer plus the enrollment dialogs (AddMembersDialog by filter, AddToCampaignDialog from list selection). Data layer in features/crm/campaigns/.",
       tier: "internal",
       status: "Live",
     },

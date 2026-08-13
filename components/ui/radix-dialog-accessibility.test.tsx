@@ -28,10 +28,6 @@ import {
 } from "@/components/ui/drawer";
 import { BottomSheet } from "@/components/official/bottom-sheet/BottomSheet";
 
-jest.mock("@/hooks/use-is-mounted", () => ({
-  useIsMounted: () => true,
-}));
-
 jest.mock("@/hooks/use-mobile", () => ({
   useIsMobile: () => false,
 }));

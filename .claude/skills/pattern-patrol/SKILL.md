@@ -55,6 +55,12 @@ system doc). The repo-specific facts it needs:
   symlink `node_modules` from the canonical checkout — Turbopack rejects it.
   Link ignored local env files when preview needs them; never print or track
   their contents.
+- **Exclusive preview lease:** `pnpm preview:start` may reuse only a server
+  owned by this exact checkout. If another worktree owns the machine-wide slot,
+  the command fails and this patrol queues; never certify against the other
+  worktree's URL. `pnpm preview:status` reports the global owner, and only that
+  checkout may stop it. The lifecycle monitor enforces the 8 GB process-group
+  cap and five-minute startup-progress cap without automatic restart.
 - **Certification (Tier M):** a second adversarial agent ("assume this batch
   broke something; find it") compares pre-edit and post-edit type/gate
   diagnostics. New batch-caused failures reject; unchanged baseline debt is
@@ -65,8 +71,13 @@ system doc). The repo-specific facts it needs:
   REJECTED requires a concrete batch defect and is fixed/reverted;
   INFRASTRUCTURE BLOCKED preserves the approved diff for retry. A broken preview
   is never proof that product code broke. Only one managed preview runs
-  machine-wide; concurrent patrols queue. Stop it at 8 GB process-group RSS or
-  five minutes without progress. No independent verdict → invalid run.
+  machine-wide; concurrent patrols queue and never reuse a different
+  worktree's build. No independent verdict → invalid run.
+- **Serialized delivery lane:** integration to `origin/main` and
+  `./scripts/release.sh` are one lane. While another patrol owns it, push only
+  the preservation branch. After explicit release, rebase, integrate, and
+  release. If this patrol's commit is already an ancestor of a newer release,
+  record that version as shipped instead of creating a redundant bump.
 - **Scoping:** structural novelty (new `app/**/page.tsx` leaves, new
   `features/*` dirs, new files matching the patrol's surface signature) + the
   ledger + a full pass every Nth run. NEVER scope by raw git churn.
@@ -116,6 +127,8 @@ patterns.
 - Giving a polished normal-looking summary for a degraded or incomplete run.
 - Rejecting or reverting valid work because an unrelated baseline gate or the
   preview harness failed.
+- Reusing a preview from another worktree or moving `origin/main` while another
+  patrol owns the delivery lane.
 - Stopping after detection because no finding was auto-approved instead of
   routing the safe repairs to Arman.
 - Treating “looks intentional” or “false positive” as approval to suppress it.

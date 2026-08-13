@@ -84,10 +84,10 @@ export function buildRow(
     agentType = agent?.agentType ?? null;
     pinnedVersionNumber = pinned;
     latestVersion = latest;
-    pinLabel =
-      pinned != null ? `pinned v${pinned}` : "pinned (unknown version)";
+    // The column header already says "Pin" — the value is just the version.
+    pinLabel = pinned != null ? `v${pinned}` : "unknown version";
     if (pinned != null && latest != null && latest > pinned)
-      drift = `v${latest} is latest`;
+      drift = `v${pinned} → v${latest}`;
     nonSystem = agent != null && agent.agentType !== "builtin";
     archived = Boolean(agent?.isArchived);
   } else {
@@ -152,6 +152,8 @@ export const HEALTH_CLASS: Record<SlotHealth, string> = {
 
 /** What the admin should do about each unhealthy state — shown, not implied. */
 export const HEALTH_HINT: Partial<Record<SlotHealth, string>> = {
+  "version drift":
+    "A newer saved version of this agent exists — users keep getting the pinned one until the pin is updated.",
   "unresolved pin":
     "This slot's agent could not be read — it may be another user's personal agent, or a deleted record. Repin it to a system agent.",
   "not a system agent":

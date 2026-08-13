@@ -171,6 +171,12 @@ export function useKeywordResearch(organizationId?: string | null) {
   const abortRef = useRef<AbortController | null>(null);
   /** The adopted `activeRequests` row this hook owns, so it can reap it. */
   const adoptedRequestIdRef = useRef<string | null>(null);
+  /** The in-flight research stream's abort controller — the SAME object the
+   * fetch and the adopter watchdog share. Aborted on unmount and before a new
+   * run so an orphaned stream can never keep draining into a reaped row
+   * (events on a missing row are silently dropped — the disappearing-run
+   * class; see features/agents/docs/LIVE_RUN_RETENTION.md). */
+  const streamAbortRef = useRef<AbortController | null>(null);
 
   const reload = useCallback(async (searchValue: string) => {
     abortRef.current?.abort();
@@ -222,6 +228,11 @@ export function useKeywordResearch(organizationId?: string | null) {
   // artifact on return, so the streaming state has nothing left to serve.
   useEffect(
     () => () => {
+      // Stop the client fetch FIRST (the server-side run is durable and keeps
+      // going), then reap the row. With the viewer-retention seam, the reap
+      // defers while any still-mounted MarkdownStream renders this row.
+      streamAbortRef.current?.abort();
+      streamAbortRef.current = null;
       if (adoptedRequestIdRef.current) {
         dispatch(removeRequest(adoptedRequestIdRef.current));
         adoptedRequestIdRef.current = null;
@@ -346,11 +357,13 @@ export function useKeywordResearch(organizationId?: string | null) {
       // sweep it, and each row holds that run's full raw event log, so a long
       // session would accumulate one permanently per run. Read from a ref, not
       // a state updater: an updater must stay pure (React may call it twice).
+      streamAbortRef.current?.abort();
       if (adoptedRequestIdRef.current) {
         dispatch(removeRequest(adoptedRequestIdRef.current));
         adoptedRequestIdRef.current = null;
       }
       const streamAbort = new AbortController();
+      streamAbortRef.current = streamAbort;
       const consumeStream = dispatch(
         adoptForeignStream({
           onAdopted: ({ requestId }) => {

@@ -41,6 +41,7 @@ import {
   type AgentAppAdminView,
 } from "@/lib/services/agent-apps-admin-service";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
 import { humanAgentApp } from "@/features/agent-apps/format";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
@@ -265,7 +266,12 @@ export default function AgentAppsAnalyticsPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-2 flex-wrap">
                             <h4 className="font-semibold text-foreground">
-                              {app.name}
+                              <EntityRef
+                                token="app"
+                                id={app.id}
+                                name={app.name}
+                                showIcon={false}
+                              />
                             </h4>
                             <Badge variant="outline">{app.status}</Badge>
                             {app.is_featured && (
@@ -278,9 +284,16 @@ export default function AgentAppsAnalyticsPage() {
                                 Verified
                               </Badge>
                             )}
-                            <code className="text-xs px-1 py-0.5 bg-muted rounded">
-                              {app.slug}
-                            </code>
+                            <EntityRef
+                              token="app"
+                              id={app.id}
+                              name={app.slug}
+                              showIcon={false}
+                            >
+                              <code className="text-xs px-1 py-0.5 bg-muted rounded">
+                                {app.slug}
+                              </code>
+                            </EntityRef>
                           </div>
 
                           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">

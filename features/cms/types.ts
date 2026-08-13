@@ -175,6 +175,21 @@ export interface PromoteFromHtmlPageResult {
 }
 
 /** Compact listing used in the dashboard table */
+/**
+ * In-database content measurement (CMS migration `0036`, PostgREST computed
+ * field `content_stats`). Four integers per row — the list never transfers
+ * HTML blobs to know how much is there. `*_text_len` is human-visible text
+ * (script/style stripped, tags stripped, whitespace collapsed) — an honest
+ * approximation, not a rendering. Classification lives in
+ * `features/cms/utils/contentVolume.ts`; the DB measures, it never judges.
+ */
+export interface PageContentStats {
+  html_len: number;
+  text_len: number;
+  draft_html_len: number;
+  draft_text_len: number;
+}
+
 export interface ClientPageSummary {
   id: string;
   slug: string;
@@ -198,6 +213,8 @@ export interface ClientPageSummary {
   last_published_at: string | null;
   updated_at: string;
   created_at: string;
+  /** Present on list reads since 0036; optional so older cached rows parse. */
+  content_stats?: PageContentStats | null;
 }
 
 // ─── Entity Version ────────────────────────────────────────────────────

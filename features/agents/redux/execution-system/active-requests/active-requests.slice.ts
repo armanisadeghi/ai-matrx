@@ -285,6 +285,31 @@ const activeRequestsSlice = createSlice({
         parentConversationId = null,
       } = action.payload;
 
+      // 🚨 NEVER RESET AN EXISTING ROW. A request row is the ONLY copy of the
+      // streamed content every mounted MarkdownStream/LiveRunDisplay renders
+      // from — resetting it blanks those surfaces instantly and permanently
+      // (later events on a reset/deleted row are silently dropped). The one
+      // path that can legitimately arrive here with an existing id is
+      // `adoptForeignStream` re-adopting a server-side pipeline run under the
+      // server's own X-Request-ID (a rejoin, or two surfaces adopting the
+      // same durable run). That stream must CONTINUE into the existing row.
+      // Fresh logical runs always mint a fresh client id, so they never hit
+      // this branch. This is THE DISAPPEARING-RUN CLASS — see
+      // features/agents/docs/LIVE_RUN_RETENTION.md before touching.
+      const existing = state.byRequestId[requestId];
+      if (existing) {
+        // A re-adoption supersedes any deferred owner cleanup.
+        delete state.pendingRemovalByRequestId[requestId];
+        const conversationRequests =
+          state.byConversationId[existing.conversationId];
+        if (!conversationRequests?.includes(requestId)) {
+          (state.byConversationId[existing.conversationId] ??= []).push(
+            requestId,
+          );
+        }
+        return;
+      }
+
       const now = new Date().toISOString();
 
       state.byRequestId[requestId] = {
@@ -1184,7 +1209,10 @@ const activeRequestsSlice = createSlice({
       action: PayloadAction<{ requestId: string; viewerId: string }>,
     ) {
       const { requestId, viewerId } = action.payload;
-      if (!state.byRequestId[requestId]) return;
+      // Deliberately NOT gated on the row existing: a canonical viewer can
+      // mount a beat before its row is created (adoption races the first
+      // render). Registering early is harmless — release cleans it up — and
+      // it closes the gap where an early-mounted viewer got no protection.
       const viewers = state.viewerIdsByRequestId[requestId] ?? [];
       if (!viewers.includes(viewerId)) viewers.push(viewerId);
       state.viewerIdsByRequestId[requestId] = viewers;

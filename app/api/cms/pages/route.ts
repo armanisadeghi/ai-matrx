@@ -25,13 +25,19 @@ import {
 } from "@/features/html-pages/utils/promoteConvert";
 import { clientPageRoute } from "@/features/cms/utils/pageUrls";
 
-/** Summary columns for list view (no HTML content blobs) */
+/**
+ * Summary columns for list view (no HTML content blobs). `content_stats` is a
+ * PostgREST computed field (CMS migration 0036) — four integers measuring the
+ * blobs in-database, so the list can say what's actually there without ever
+ * transferring the HTML.
+ */
 const LIST_COLUMNS = `
     id, client_id, slug, route, title, category, page_type,
     is_published, has_draft, is_home_page, show_in_nav,
     sort_order, excerpt, featured_image, author, tags,
     meta_title, meta_description,
-    publish_date, last_published_at, created_at, updated_at
+    publish_date, last_published_at, created_at, updated_at,
+    content_stats
 `
   .replace(/\s+/g, " ")
   .trim();

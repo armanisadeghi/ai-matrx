@@ -673,7 +673,11 @@ function AgentCard({ row }: { row: SlotRow }) {
         variant={row.slot.use_latest ? "secondary" : "outline"}
         className="h-5 text-[10px]"
       >
-        {row.pinLabel}
+        {row.pinnedVersionNumber != null
+          ? `pinned ${row.pinLabel}`
+          : row.slot.use_latest
+            ? "tracks latest"
+            : row.pinLabel}
       </Badge>
       {row.latestVersion != null && !row.slot.use_latest && (
         <Badge variant="outline" className="h-5 text-[10px]">

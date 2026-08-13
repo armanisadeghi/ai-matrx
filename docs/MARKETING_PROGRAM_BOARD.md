@@ -32,11 +32,11 @@ One page that tells any agent (or Arman) what this program is, what's in motion,
 
 ## In motion
 
-- **Claude (marketing consolidation session, 2026-07-28):** merged the access-and-rls handoff into the brand-coverage program doc, groomed the marketing doc family, collapsing the duplicate public-tools index onto `marketing-nav.ts`, shipping `/marketing/ranks` (cross-site rank hub).
+(nothing claimed — add your line when you start)
 
 ## Up next (in order)
 
-1. Component-RLS: RULED 2026-08-08 (THE COMPONENT-ACCESS PRECEDENT, `common-docs/systems/access-architecture/FEATURE.md`) — once-per-query parent membrane via `iam.apply_rls`; implementation chip dispatched. **GSC is UNBLOCKED and synced** (70,945 `gsc_page_stat` rows across 7 sites through 2026-07-26, verified in DB 2026-07-28) — the old GSC-unblock lines here are done.
+1. GSC ambassador sweep onto the page-level surfaces (`PageSearchConsoleCard`, `PageQueriesCard`, `PageTargetPerformanceCard`, `PagesTable`, `SitesPortfolio` still render raw GSC — see marketing-module handoff §4.1). Component-RLS precedent is IMPLEMENTED (2026-08-08, brand-coverage handoff item 1) and GSC is synced — those old lines are done.
 2. Social routes (`brands/[id]/socials/...`) — property rows already created by discovery promotion.
 3. Soft-delete restore-on-upsert sweep server-side (handoff item; the class rule is written there).
 4. `/marketing/campaigns` — the highest-leverage reserved surface (schema design needs Arman; see marketing-module handoff).
@@ -48,7 +48,7 @@ Small, delegatable, not worth stopping the main line. Move to "In motion" when y
 - **Header overlap at 1500–1700px:** Marketing's 13-mode pill renders over the site name. Fix in the shared shell primitive `features/shell/components/header/RouteModeNav.tsx` / `EntityModeHeader.tsx`; test with the marketing site shell (longest mode list).
 - **Access page grantee picker:** `/access` takes raw UUIDs; needs the platform user/org picker instead.
 - **Brand-move human click-through:** SiteEditorDialog's Brand dropdown (`web.move_site_brand`) needs one human test — automation can't drive that Radix Select.
-- **Duplicate test brands/sites** ("Titanium Success" ×2, "AI Matrx" ×2) now visible to everyone via public view — Arman deletes via UI, or an agent with his go-ahead.
+- **Duplicate test brands/sites** ("Titanium Success" ×2, "AI Matrx" ×2) — housekeeping: Arman deletes via UI, or an agent with his go-ahead.
 - **Repo-wide sonner→`@/lib/toast` migration** — separate task chip exists; recipe in `lib/toast.ts` header.
 - ~~Decisions waiting on Arman~~ — all RULED 2026-08-08 (see the handoff's Decisions section): component-RLS precedent set · org-scoped visibility IS the end state (the "everyone views scraped data" line was a retracted misreading) · content-hash dedupe approved (in flight) · analysis workers commissioned (chip).
 
@@ -59,7 +59,7 @@ Small, delegatable, not worth stopping the main line. Move to "In motion" when y
 
 - **Snapshot with invalid artifact reference:** `web.snapshot` 7ab64ab8-b32e-4572-85f1-6a10cdbfb408 fails `snapshot_validate_artifact_files` on ANY update ("invalid canonical crawl artifact file 663f64c1-4ec4-4b74-bc84-9228254edd54") — its body_file_id no longer validates; decide whether to repair the files row or soft-delete the snapshot (it was the one row the metrics backfill could not stamp).
 
-- **Public-by-default creation is broken:** the normal site flow hardcodes `p_visibility: "personal"`, the latest `web.create_site` RPC still defaults personal, and the brand editor defaults new brands personal, so records created after the public-view backfill become locked again; make every creation authority public by default and add a cross-user creation regression test.
+- ~~**Public-by-default creation is broken**~~ — STRUCK 2026-08-12: this bullet described the pre-reversion world. The 2026-08-08 ruling is that org-scoped `internal` IS the correct end state (public-by-default was a retracted misreading); creation paths now inherit `default_visibility='internal'` via `platform.entity_default_visibility()` and FE no longer hardcodes `p_visibility` (brand-coverage handoff, Access model section).
 - ~~**Crawler scope escape**~~ — DONE 2026-08-08 (scraper v0.1.90): `_registrable_domain()` uses tldextract's offline PSL snapshot; co.uk/com.au/github.io separation tested.
 - **No per-site active-run/monotonic-current guard:** MOSTLY DONE 2026-08-08 (scraper v0.1.90–92): `prepare_start` reaps stale sessions then 409s on a live full/list session, with a create-then-re-list loser election as the race backstop; cancel of an orphaned queued session goes terminal instead of extending the block; FE routes to the live run instead of offering a second Start. Still open: timestamp-monotonic current-pointer writes, and an airtight DB partial-unique arbiter if the app-level election ever proves insufficient.
 - ~~**A running crawl is unmanageable after leaving the launch screen**~~ — DONE 2026-08-08 (browser-verified against a live run): `/crawls` running rows tick duration live and carry Cancel, Start becomes "Open live crawl" while one runs, crawl summary has Cancel + Watch live + 5s poll fallback; launch-screen reattach was already live via `useSiteCrawlActivity`.

@@ -8,21 +8,21 @@ import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
- * Hydration-safe Dialog wrapper.
- * Radix UI generates dynamic IDs for aria-controls that can differ between
- * SSR and client, causing hydration mismatches. This wrapper defers rendering
- * until after hydration to prevent these errors.
+ * THE ROOT RENDERS UNCONDITIONALLY — no mount gate. This wrapper used to defer
+ * rendering until after hydration ("Radix generates dynamic aria-controls ids
+ * that differ between SSR and client"), and that justification was false:
+ * Radix ids come from React's SSR-stable `useId` (verified against
+ * @radix-ui/react-dialog 1.1.17 / react-id 1.1.2). The gate was actively
+ * harmful — the Trigger wraps ALWAYS-VISIBLE content, so `return null`
+ * deleted it from SSR and the first client paint. See
+ * components/ui/context-menu/context-menu.tsx (the precedent fix, D144).
+ * The RadixDialogModalProvider wrapper stays — it is unrelated to hydration.
  */
 const Dialog = React.forwardRef<
   React.ComponentRef<typeof DialogPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Root>
 >(({ children, ...props }, ref) => {
-  const isMounted = useIsMounted();
   const modal = props.modal ?? true;
-
-  if (!isMounted) {
-    return null;
-  }
 
   return (
     <RadixDialogModalProvider modal={modal}>
@@ -55,7 +55,6 @@ const DialogPortal = ({
 
 const DialogClose = DialogPrimitive.Close;
 import { Cross2Icon } from "@radix-ui/react-icons";
-import { useIsMounted } from "@/hooks/use-is-mounted";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { treeContainsComponent } from "@/lib/react/treeContainsComponent";
 import { usePopoutContainer } from "@/features/window-panels/popout/usePopoutContainer";

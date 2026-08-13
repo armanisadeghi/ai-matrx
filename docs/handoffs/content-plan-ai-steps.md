@@ -9,9 +9,12 @@ vision:
 
 # Content Plan — an AI at every step, grounded in the resources we already have
 
-Sibling pointers: [`content-plan-client.md`](./content-plan-client.md) and aidream's
-`docs/handoffs/content-plan-server.md` route the plan→CMS→live pipeline work to the
-common-docs work order. **This doc owns one thing they don't: the AI steps and their
+Sibling pointers: the plan→CMS→live pipeline work order lives in
+`common-docs/systems/cms-system/CMS-BUILDOUT-HANDOFF.md` (aidream's
+`docs/handoffs/content-plan-server.md` routes there too), and the pipeline
+architecture spine is [`website-factory-vision.md`](./website-factory-vision.md) —
+its P1/P2 research-artifact wiring converges with items 1 and 3 below; sync with it
+when either lands. **This doc owns one thing they don't: the AI steps and their
 grounding in resources.**
 
 > **Everything in Done is LIVE.** Verified 2026-08-13: matrx-frontend `main` = v0.4.547

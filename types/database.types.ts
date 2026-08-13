@@ -11142,6 +11142,84 @@ export type Database = {
           },
         ]
       }
+      merge_candidate: {
+        Row: {
+          confidence: number
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          detected_at: string
+          dismissed_at: string | null
+          dismissed_by: string | null
+          id: string
+          last_detected_at: string
+          metadata: Json
+          organization_id: string
+          signals: Json
+          source_id: string
+          status: string
+          target_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          detected_at?: string
+          dismissed_at?: string | null
+          dismissed_by?: string | null
+          id?: string
+          last_detected_at?: string
+          metadata?: Json
+          organization_id: string
+          signals?: Json
+          source_id: string
+          status?: string
+          target_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          detected_at?: string
+          dismissed_at?: string | null
+          dismissed_by?: string | null
+          id?: string
+          last_detected_at?: string
+          metadata?: Json
+          organization_id?: string
+          signals?: Json
+          source_id?: string
+          status?: string
+          target_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merge_candidate_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "party"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "merge_candidate_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "party"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       party: {
         Row: {
           aka: string[]
@@ -11543,7 +11621,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      name_key: { Args: { p_name: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never
@@ -28951,6 +29029,158 @@ export type Database = {
           },
         ]
       }
+      node_artifact: {
+        Row: {
+          content: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          kind: string
+          metadata: Json
+          node_id: string
+          organization_id: string
+          produced_by: Json
+          site_id: string
+          step: string
+          summary: string | null
+          updated_at: string
+          updated_by: string | null
+          valid_to: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          content: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          kind: string
+          metadata?: Json
+          node_id: string
+          organization_id: string
+          produced_by?: Json
+          site_id: string
+          step: string
+          summary?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          valid_to?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          kind?: string
+          metadata?: Json
+          node_id?: string
+          organization_id?: string
+          produced_by?: Json
+          site_id?: string
+          step?: string
+          summary?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          valid_to?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "node_artifact_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: false
+            referencedRelation: "node"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      node_step: {
+        Row: {
+          artifact_id: string | null
+          attempts: number
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          error: Json | null
+          finished_at: string | null
+          id: string
+          metadata: Json
+          node_id: string
+          organization_id: string
+          site_id: string
+          started_at: string | null
+          status: string
+          step: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          artifact_id?: string | null
+          attempts?: number
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          error?: Json | null
+          finished_at?: string | null
+          id?: string
+          metadata?: Json
+          node_id: string
+          organization_id: string
+          site_id: string
+          started_at?: string | null
+          status?: string
+          step: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          artifact_id?: string | null
+          attempts?: number
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          error?: Json | null
+          finished_at?: string | null
+          id?: string
+          metadata?: Json
+          node_id?: string
+          organization_id?: string
+          site_id?: string
+          started_at?: string | null
+          status?: string
+          step?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "node_step_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "node_artifact"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "node_step_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: false
+            referencedRelation: "node"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profile: {
         Row: {
           attribute_schemas: Json
@@ -35301,6 +35531,11 @@ export type Database = {
           p_tagline?: string
         }
         Returns: Json
+      }
+      crm_detect_merge_candidates: { Args: { p_org: string }; Returns: Json }
+      crm_dismiss_merge_candidate: {
+        Args: { p_id: string }
+        Returns: undefined
       }
       crm_merge_parties: {
         Args: {

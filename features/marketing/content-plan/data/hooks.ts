@@ -37,6 +37,8 @@ import {
   createPlanEntity,
   createPlanNode,
   listKeywordLabels,
+  listNodeArtifacts,
+  listNodeSteps,
   listPlanEntities,
   listPlanNodes,
   listPlanProfiles,
@@ -65,6 +67,10 @@ export const planKeys = {
     ["content-plan", "site-keyword-values", siteId] as const,
   topics: (search: string) => ["content-plan", "topics", search] as const,
   siteStats: () => ["content-plan", "site-stats"] as const,
+  nodeSteps: (siteId: string) =>
+    ["content-plan", "node-steps", siteId] as const,
+  nodeArtifacts: (nodeId: string) =>
+    ["content-plan", "node-artifacts", nodeId] as const,
   reality: (siteId: string) => ["content-plan", "reality", siteId] as const,
   cmsPages: (siteId: string) => ["content-plan", "cms-pages", siteId] as const,
 };
@@ -100,6 +106,28 @@ export function usePlanProfiles(orgId: string | null) {
     queryKey: planKeys.profiles(orgId ?? "none"),
     queryFn: ({ signal }) => listPlanProfiles(orgId as string, signal),
     enabled: Boolean(orgId),
+  });
+}
+
+/** Site-wide pipeline step state (plan.node_step) — badges + the NodePanel
+ * rail. Server-written; refetched on a modest interval so a running fill
+ * visibly advances without a manual refresh. */
+export function useNodeSteps(siteId: string | null) {
+  return useQuery({
+    queryKey: planKeys.nodeSteps(siteId ?? "none"),
+    queryFn: ({ signal }) => listNodeSteps(siteId as string, signal),
+    enabled: Boolean(siteId),
+    refetchInterval: 30 * 1000,
+    placeholderData: keepPreviousData,
+  });
+}
+
+/** One node's pipeline artifacts, every revision (newest first). */
+export function useNodeArtifacts(nodeId: string | null) {
+  return useQuery({
+    queryKey: planKeys.nodeArtifacts(nodeId ?? "none"),
+    queryFn: ({ signal }) => listNodeArtifacts(nodeId as string, signal),
+    enabled: Boolean(nodeId),
   });
 }
 

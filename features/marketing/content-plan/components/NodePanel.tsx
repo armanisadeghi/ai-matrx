@@ -65,6 +65,7 @@ import { LiveRunWindowController } from "@/features/overlays/openers/liveRunWind
 import type { CmsPageMapEntry } from "../setup/bridge";
 import { useNodeReality } from "../hooks/useNodeReality";
 import { NodeRealityCard } from "./NodeRealityCard";
+import { NodeStepRail } from "./NodeStepRail";
 import { NodeSeoIntentEditor } from "./NodeSeoIntentEditor";
 import { ensureKeywordId } from "@/features/marketing/seo/keyword/data";
 import { useResolvedKeyword } from "@/features/marketing/seo/keyword/hooks";
@@ -799,6 +800,14 @@ export function NodePanel({
                 cmsSiteId={cmsSiteId ?? null}
                 reality={reality}
               />
+            </PanelSection>
+
+            {/* The Website Factory production axis (plan.node_step /
+          node_artifact) — distinct from the editorial plan_status. Pending
+          steps are deliberately visible: the pipeline exists in data even
+          where today's fill still skips it. */}
+            <PanelSection title="Pipeline">
+              <NodeStepRail nodeId={node.id} siteId={siteId} />
             </PanelSection>
 
             <PanelSection title="Targeting">

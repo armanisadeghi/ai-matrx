@@ -23,6 +23,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { usePartyDetail } from "../../hooks/usePartyDetail";
 import { deleteParty } from "../../service";
+import { MergeStatusCard } from "../dedup/MergeStatusCard";
 import { PartyIdentityCard } from "./PartyIdentityCard";
 import { ContactPointsCard } from "./ContactPointsCard";
 import { AddressesCard } from "./AddressesCard";
@@ -133,6 +134,9 @@ export function PartyRecordPage({ partyId }: Props) {
           >
             {/* Identity rail */}
             <div className="space-y-3">
+              {/* Dedup status: merged-into banner, duplicate suggestions,
+                  absorbed merges — renders nothing when clean. */}
+              <MergeStatusCard party={party} onChanged={refresh} />
               <PartyIdentityCard party={party} onChanged={refresh} />
               <ContactPointsCard
                 partyId={party.id}

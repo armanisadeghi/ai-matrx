@@ -4,28 +4,19 @@ import * as React from "react";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 
 import { cn } from "@/lib/utils";
-import { useIsMounted } from "@/hooks/use-is-mounted";
 import { useNestedPortalContainer } from "@/hooks/use-nested-portal-container";
 
 /**
- * Hydration-safe Popover wrapper.
- * Radix UI generates dynamic IDs for aria-controls that can differ between
- * SSR and client, causing hydration mismatches. This wrapper defers rendering
- * until after hydration to prevent these errors.
+ * THE ROOT RENDERS UNCONDITIONALLY — no mount gate. This wrapper used to defer
+ * rendering until after hydration ("Radix generates dynamic aria-controls ids
+ * that differ between SSR and client"), and that justification was false:
+ * Radix ids come from React's SSR-stable `useId` (verified against
+ * @radix-ui/react-popover 1.1.17 / react-id 1.1.2). The gate was actively
+ * harmful — the Trigger wraps ALWAYS-VISIBLE content, so `return null`
+ * deleted it from SSR and the first client paint. See
+ * components/ui/context-menu/context-menu.tsx (the precedent fix, D144).
  */
-const Popover = React.forwardRef<
-  React.ComponentRef<typeof PopoverPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Root>
->(({ children, ...props }, ref) => {
-  const isMounted = useIsMounted();
-
-  if (!isMounted) {
-    return null;
-  }
-
-  return <PopoverPrimitive.Root {...props}>{children}</PopoverPrimitive.Root>;
-});
-Popover.displayName = "Popover";
+const Popover = PopoverPrimitive.Root;
 
 const PopoverTrigger = PopoverPrimitive.Trigger;
 

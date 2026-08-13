@@ -11,9 +11,6 @@
 // overwrite a newer one.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { getUserOrganizations } from "@/features/organizations/service";
 import type { EntityScopeCounts } from "@/lib/entity-list/types";
 import { EMPTY_SCOPE_COUNTS } from "@/lib/entity-list/types";
 import { fetchPartyPage, fetchPartyScopeCounts } from "../service";
@@ -24,6 +21,7 @@ import type {
   PartySortOpts,
 } from "../types";
 import { DEFAULT_PARTY_QUERY } from "../types";
+import { useCrmContext } from "./useCrmContext";
 
 export interface UsePartyListResult {
   query: PartyListQuery;
@@ -43,8 +41,6 @@ export interface UsePartyListResult {
 }
 
 export function usePartyList(opts: PartySortOpts): UsePartyListResult {
-  const userId = useAppSelector(selectUserId);
-
   const [query, setQueryState] = useState<PartyListQuery>(DEFAULT_PARTY_QUERY);
   const [rows, setRows] = useState<PartyListRow[]>([]);
   const [total, setTotal] = useState(0);
@@ -52,34 +48,12 @@ export function usePartyList(opts: PartySortOpts): UsePartyListResult {
   const [isLoading, setIsLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [ctx, setCtx] = useState<CrmQueryContext | null>(null);
   const [generation, setGeneration] = useState(0);
 
   // Resolve the caller's org memberships ONCE — the "orgs" scope predicate
   // and the My Orgs narrowing dropdown both come from this, never from a
   // Redux slice that may not be hydrated on this surface.
-  useEffect(() => {
-    if (!userId) return;
-    let cancelled = false;
-    void (async () => {
-      try {
-        const orgs = await getUserOrganizations();
-        if (cancelled) return;
-        const orgNames: Record<string, string> = {};
-        for (const org of orgs) orgNames[org.id] = org.name;
-        setCtx({ userId, orgIds: orgs.map((o) => o.id), orgNames });
-      } catch (e) {
-        if (!cancelled) {
-          console.error("[crm] failed to load org memberships:", e);
-          // Identity alone still serves "mine" + "public".
-          setCtx({ userId, orgIds: [], orgNames: {} });
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [userId]);
+  const ctx = useCrmContext();
 
   const generationRef = useRef(0);
 
