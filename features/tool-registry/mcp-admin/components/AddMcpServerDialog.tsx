@@ -30,13 +30,40 @@ import {
   type ProvisionMcpServerResult,
 } from "@/features/tool-registry/mcp-admin/services/mcpAdmin.service";
 
+/**
+ * The authored half of the identity step. It lives in `McpServersAdminPage`
+ * rather than here so the `matrx-admin/mcp-servers` surface can read it and
+ * so the `new_server_draft` write target can stage into it — the wizard is
+ * unmounted while closed, and an agent can only write to it while it is (see
+ * the manifest's `writeTargets` block). Everything else — slug, transport,
+ * auth, URLs, the official badge — stays local to the wizard, because none of
+ * it is agent-writable.
+ */
+export interface McpServerDraft {
+  name: string;
+  vendor: string;
+  category: ProvisionMcpServerInput["category"];
+  description: string;
+}
+
 interface Props {
   existingSlugs: Set<string>;
+  /** Page-owned authored fields (see `McpServerDraft`). */
+  draft: McpServerDraft;
+  /** Patch one or more authored fields — the wizard's own inputs call this. */
+  onDraftChange: (patch: Partial<McpServerDraft>) => void;
+  /**
+   * Provisioning in flight. Owned by the page so the `new_server_draft`
+   * handler can refuse a write against a form whose insert is already on its
+   * way.
+   */
+  busy: boolean;
+  onBusyChange: (busy: boolean) => void;
   onClose: () => void;
   onCreated: (slug: string) => void;
 }
 
-const CATEGORY_OPTIONS: { value: ProvisionMcpServerInput["category"]; label: string }[] = [
+export const CATEGORY_OPTIONS: { value: ProvisionMcpServerInput["category"]; label: string }[] = [
   { value: "productivity", label: "Productivity" },
   { value: "communication", label: "Communication" },
   { value: "design", label: "Design & Content" },
@@ -74,15 +101,31 @@ const AUTH_OPTIONS: {
   { value: "none", label: "None", hint: "Public / unauthenticated server" },
 ];
 
+/** The exact category vocabulary — the one source the write handler validates against. */
+export const MCP_SERVER_CATEGORY_VALUES: ProvisionMcpServerInput["category"][] =
+  CATEGORY_OPTIONS.map((c) => c.value);
+
 type Step = "identity" | "transport" | "review";
 
-export function AddMcpServerDialog({ existingSlugs, onClose, onCreated }: Props) {
+export function AddMcpServerDialog({
+  existingSlugs,
+  draft,
+  onDraftChange,
+  busy,
+  onBusyChange,
+  onClose,
+  onCreated,
+}: Props) {
   const [step, setStep] = useState<Step>("identity");
   const [slug, setSlug] = useState("");
-  const [name, setName] = useState("");
-  const [vendor, setVendor] = useState("");
-  const [description, setDescription] = useState("");
-  const [category, setCategory] = useState<ProvisionMcpServerInput["category"]>("productivity");
+  // The authored four are page state (see `McpServerDraft`); read them here
+  // under the same names the wizard already used.
+  const { name, vendor, description, category } = draft;
+  const setName = (v: string) => onDraftChange({ name: v });
+  const setVendor = (v: string) => onDraftChange({ vendor: v });
+  const setDescription = (v: string) => onDraftChange({ description: v });
+  const setCategory = (v: ProvisionMcpServerInput["category"]) =>
+    onDraftChange({ category: v });
   const [transport, setTransport] = useState<ProvisionMcpServerInput["transport"]>("http");
   const [authStrategy, setAuthStrategy] = useState<ProvisionMcpServerInput["authStrategy"]>("oauth_discovery");
   const [endpointUrl, setEndpointUrl] = useState("");
@@ -91,7 +134,7 @@ export function AddMcpServerDialog({ existingSlugs, onClose, onCreated }: Props)
   const [isOfficial, setIsOfficial] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
 
-  const [busy, setBusy] = useState(false);
+  const setBusy = onBusyChange;
   const [refreshing, setRefreshing] = useState(false);
   const [result, setResult] = useState<ProvisionMcpServerResult | null>(null);
   const [refreshError, setRefreshError] = useState<string | null>(null);
