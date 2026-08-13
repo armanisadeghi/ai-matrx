@@ -1381,10 +1381,6 @@
        "default": null,
        "title": "Pre Execution Message"
       },
-      "project_id": {
-       "default": null,
-       "title": "Project Id"
-      },
       "response_density": {
        "default": "comfortable",
        "title": "Response Density"
@@ -1416,10 +1412,6 @@
       "surface_name": {
        "default": null,
        "title": "Surface Name"
-      },
-      "task_id": {
-       "default": null,
-       "title": "Task Id"
       },
       "use_latest": {
        "default": false,
@@ -1554,10 +1546,6 @@
        "default": null,
        "title": "Pre Execution Message"
       },
-      "project_id": {
-       "default": null,
-       "title": "Project Id"
-      },
       "response_density": {
        "default": null,
        "title": "Response Density"
@@ -1589,10 +1577,6 @@
       "surface_name": {
        "default": null,
        "title": "Surface Name"
-      },
-      "task_id": {
-       "default": null,
-       "title": "Task Id"
       },
       "use_latest": {
        "default": null,
@@ -1818,10 +1802,6 @@
        "default": null,
        "title": "Output Schema"
       },
-      "project_id": {
-       "default": null,
-       "title": "Project Id"
-      },
       "settings": {
        "default": {},
        "title": "Settings"
@@ -1833,10 +1813,6 @@
       "tags": {
        "default": [],
        "title": "Tags"
-      },
-      "task_id": {
-       "default": null,
-       "title": "Task Id"
       },
       "tool_config": {
        "default": {},
@@ -1934,10 +1910,6 @@
        "default": null,
        "title": "Output Schema"
       },
-      "project_id": {
-       "default": null,
-       "title": "Project Id"
-      },
       "settings": {
        "default": null,
        "title": "Settings"
@@ -1949,10 +1921,6 @@
       "tags": {
        "default": null,
        "title": "Tags"
-      },
-      "task_id": {
-       "default": null,
-       "title": "Task Id"
       },
       "tool_config": {
        "default": null,
@@ -8452,164 +8420,6 @@
    "view": "no"
   },
   {
-   "create": "planned",
-   "delete": "planned",
-   "family": "Other",
-   "identity_fields": [
-    "id"
-   ],
-   "label": "Applet",
-   "noun": "applet",
-   "reference": "yes",
-   "schemas": {
-    "create": {
-     "additionalProperties": true,
-     "properties": {
-      "compiled_recipe_id": {
-       "default": null,
-       "title": "Compiled Recipe Id"
-      },
-      "creator": {
-       "default": null,
-       "title": "Creator"
-      },
-      "cta_text": {
-       "default": "Get Results",
-       "title": "Cta Text"
-      },
-      "data_source_config": {
-       "default": null,
-       "title": "Data Source Config"
-      },
-      "description": {
-       "default": null,
-       "title": "Description"
-      },
-      "metadata": {
-       "default": {},
-       "title": "Metadata"
-      },
-      "name": {
-       "title": "Name"
-      },
-      "next_step_config": {
-       "default": null,
-       "title": "Next Step Config"
-      },
-      "result_component_config": {
-       "default": null,
-       "title": "Result Component Config"
-      },
-      "slug": {
-       "title": "Slug"
-      },
-      "subcategory_id": {
-       "default": null,
-       "title": "Subcategory Id"
-      },
-      "theme": {
-       "default": "default",
-       "title": "Theme"
-      },
-      "type": {
-       "title": "Type"
-      }
-     },
-     "required": [
-      "name",
-      "type",
-      "slug"
-     ],
-     "title": "CreateAppletItem",
-     "type": "object"
-    },
-    "delete": {
-     "additionalProperties": true,
-     "properties": {
-      "id": {
-       "title": "Id",
-       "type": "string"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "DeleteAppletItem",
-     "type": "object"
-    },
-    "update": {
-     "additionalProperties": true,
-     "properties": {
-      "compiled_recipe_id": {
-       "default": null,
-       "title": "Compiled Recipe Id"
-      },
-      "creator": {
-       "default": null,
-       "title": "Creator"
-      },
-      "cta_text": {
-       "default": null,
-       "title": "Cta Text"
-      },
-      "data_source_config": {
-       "default": null,
-       "title": "Data Source Config"
-      },
-      "description": {
-       "default": null,
-       "title": "Description"
-      },
-      "id": {
-       "title": "Id",
-       "type": "string"
-      },
-      "metadata": {
-       "default": null,
-       "title": "Metadata"
-      },
-      "name": {
-       "default": null,
-       "title": "Name"
-      },
-      "next_step_config": {
-       "default": null,
-       "title": "Next Step Config"
-      },
-      "result_component_config": {
-       "default": null,
-       "title": "Result Component Config"
-      },
-      "slug": {
-       "default": null,
-       "title": "Slug"
-      },
-      "subcategory_id": {
-       "default": null,
-       "title": "Subcategory Id"
-      },
-      "theme": {
-       "default": null,
-       "title": "Theme"
-      },
-      "type": {
-       "default": null,
-       "title": "Type"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "UpdateAppletItem",
-     "type": "object"
-    }
-   },
-   "table": "applet",
-   "title_column": "name",
-   "update": "planned",
-   "view": "yes"
-  },
-  {
    "create": "no",
    "delete": "no",
    "family": "Other",
@@ -12289,426 +12099,6 @@
    "create": "planned",
    "delete": "planned",
    "family": "Other",
-   "identity_fields": [
-    "id"
-   ],
-   "label": "Custom App Config",
-   "noun": "custom_app_config",
-   "reference": "yes",
-   "schemas": {
-    "create": {
-     "additionalProperties": true,
-     "properties": {
-      "accent_color": {
-       "default": "rose",
-       "title": "Accent Color"
-      },
-      "app_data_context": {
-       "default": null,
-       "title": "App Data Context"
-      },
-      "applet_list": {
-       "default": null,
-       "title": "Applet List"
-      },
-      "creator": {
-       "default": null,
-       "title": "Creator"
-      },
-      "description": {
-       "default": null,
-       "title": "Description"
-      },
-      "extra_buttons": {
-       "default": null,
-       "title": "Extra Buttons"
-      },
-      "image_file_id": {
-       "default": null,
-       "title": "Image File Id"
-      },
-      "image_url": {
-       "default": null,
-       "title": "Image Url"
-      },
-      "layout_type": {
-       "default": "open",
-       "title": "Layout Type"
-      },
-      "main_app_icon": {
-       "default": "LayoutTemplate",
-       "title": "Main App Icon"
-      },
-      "main_app_submit_icon": {
-       "default": "Search",
-       "title": "Main App Submit Icon"
-      },
-      "metadata": {
-       "default": {},
-       "title": "Metadata"
-      },
-      "name": {
-       "title": "Name"
-      },
-      "primary_color": {
-       "default": "gray",
-       "title": "Primary Color"
-      },
-      "public_read": {
-       "default": true,
-       "title": "Public Read"
-      },
-      "slug": {
-       "title": "Slug"
-      }
-     },
-     "required": [
-      "name",
-      "slug"
-     ],
-     "title": "CreateCustomAppConfigItem",
-     "type": "object"
-    },
-    "delete": {
-     "additionalProperties": true,
-     "properties": {
-      "id": {
-       "title": "Id",
-       "type": "string"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "DeleteCustomAppConfigItem",
-     "type": "object"
-    },
-    "update": {
-     "additionalProperties": true,
-     "properties": {
-      "accent_color": {
-       "default": null,
-       "title": "Accent Color"
-      },
-      "app_data_context": {
-       "default": null,
-       "title": "App Data Context"
-      },
-      "applet_list": {
-       "default": null,
-       "title": "Applet List"
-      },
-      "creator": {
-       "default": null,
-       "title": "Creator"
-      },
-      "description": {
-       "default": null,
-       "title": "Description"
-      },
-      "extra_buttons": {
-       "default": null,
-       "title": "Extra Buttons"
-      },
-      "id": {
-       "title": "Id",
-       "type": "string"
-      },
-      "image_file_id": {
-       "default": null,
-       "title": "Image File Id"
-      },
-      "image_url": {
-       "default": null,
-       "title": "Image Url"
-      },
-      "layout_type": {
-       "default": null,
-       "title": "Layout Type"
-      },
-      "main_app_icon": {
-       "default": null,
-       "title": "Main App Icon"
-      },
-      "main_app_submit_icon": {
-       "default": null,
-       "title": "Main App Submit Icon"
-      },
-      "metadata": {
-       "default": null,
-       "title": "Metadata"
-      },
-      "name": {
-       "default": null,
-       "title": "Name"
-      },
-      "primary_color": {
-       "default": null,
-       "title": "Primary Color"
-      },
-      "public_read": {
-       "default": null,
-       "title": "Public Read"
-      },
-      "slug": {
-       "default": null,
-       "title": "Slug"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "UpdateCustomAppConfigItem",
-     "type": "object"
-    }
-   },
-   "table": "custom_app_configs",
-   "title_column": "name",
-   "update": "planned",
-   "view": "yes"
-  },
-  {
-   "create": "planned",
-   "delete": "planned",
-   "family": "Other",
-   "identity_fields": [
-    "id"
-   ],
-   "label": "Custom Applet Config",
-   "noun": "custom_applet_config",
-   "reference": "yes",
-   "schemas": {
-    "create": {
-     "additionalProperties": true,
-     "properties": {
-      "accent_color": {
-       "default": null,
-       "title": "Accent Color"
-      },
-      "app_id": {
-       "default": null,
-       "title": "App Id"
-      },
-      "applet_icon": {
-       "default": null,
-       "title": "Applet Icon"
-      },
-      "applet_submit_text": {
-       "default": null,
-       "title": "Applet Submit Text"
-      },
-      "broker_map": {
-       "default": null,
-       "title": "Broker Map"
-      },
-      "compiled_recipe_id": {
-       "default": null,
-       "title": "Compiled Recipe Id"
-      },
-      "containers": {
-       "default": null,
-       "title": "Containers"
-      },
-      "creator": {
-       "default": null,
-       "title": "Creator"
-      },
-      "data_destination_config": {
-       "default": null,
-       "title": "Data Destination Config"
-      },
-      "data_source_config": {
-       "default": null,
-       "title": "Data Source Config"
-      },
-      "description": {
-       "default": null,
-       "title": "Description"
-      },
-      "image_file_id": {
-       "default": null,
-       "title": "Image File Id"
-      },
-      "image_url": {
-       "default": null,
-       "title": "Image Url"
-      },
-      "layout_type": {
-       "default": null,
-       "title": "Layout Type"
-      },
-      "metadata": {
-       "default": {},
-       "title": "Metadata"
-      },
-      "name": {
-       "title": "Name"
-      },
-      "next_step_config": {
-       "default": null,
-       "title": "Next Step Config"
-      },
-      "overview_label": {
-       "default": null,
-       "title": "Overview Label"
-      },
-      "primary_color": {
-       "default": null,
-       "title": "Primary Color"
-      },
-      "public_read": {
-       "default": true,
-       "title": "Public Read"
-      },
-      "result_component_config": {
-       "default": null,
-       "title": "Result Component Config"
-      },
-      "slug": {
-       "title": "Slug"
-      },
-      "subcategory_id": {
-       "default": null,
-       "title": "Subcategory Id"
-      }
-     },
-     "required": [
-      "name",
-      "slug"
-     ],
-     "title": "CreateCustomAppletConfigItem",
-     "type": "object"
-    },
-    "delete": {
-     "additionalProperties": true,
-     "properties": {
-      "id": {
-       "title": "Id",
-       "type": "string"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "DeleteCustomAppletConfigItem",
-     "type": "object"
-    },
-    "update": {
-     "additionalProperties": true,
-     "properties": {
-      "accent_color": {
-       "default": null,
-       "title": "Accent Color"
-      },
-      "app_id": {
-       "default": null,
-       "title": "App Id"
-      },
-      "applet_icon": {
-       "default": null,
-       "title": "Applet Icon"
-      },
-      "applet_submit_text": {
-       "default": null,
-       "title": "Applet Submit Text"
-      },
-      "broker_map": {
-       "default": null,
-       "title": "Broker Map"
-      },
-      "compiled_recipe_id": {
-       "default": null,
-       "title": "Compiled Recipe Id"
-      },
-      "containers": {
-       "default": null,
-       "title": "Containers"
-      },
-      "creator": {
-       "default": null,
-       "title": "Creator"
-      },
-      "data_destination_config": {
-       "default": null,
-       "title": "Data Destination Config"
-      },
-      "data_source_config": {
-       "default": null,
-       "title": "Data Source Config"
-      },
-      "description": {
-       "default": null,
-       "title": "Description"
-      },
-      "id": {
-       "title": "Id",
-       "type": "string"
-      },
-      "image_file_id": {
-       "default": null,
-       "title": "Image File Id"
-      },
-      "image_url": {
-       "default": null,
-       "title": "Image Url"
-      },
-      "layout_type": {
-       "default": null,
-       "title": "Layout Type"
-      },
-      "metadata": {
-       "default": null,
-       "title": "Metadata"
-      },
-      "name": {
-       "default": null,
-       "title": "Name"
-      },
-      "next_step_config": {
-       "default": null,
-       "title": "Next Step Config"
-      },
-      "overview_label": {
-       "default": null,
-       "title": "Overview Label"
-      },
-      "primary_color": {
-       "default": null,
-       "title": "Primary Color"
-      },
-      "public_read": {
-       "default": null,
-       "title": "Public Read"
-      },
-      "result_component_config": {
-       "default": null,
-       "title": "Result Component Config"
-      },
-      "slug": {
-       "default": null,
-       "title": "Slug"
-      },
-      "subcategory_id": {
-       "default": null,
-       "title": "Subcategory Id"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "UpdateCustomAppletConfigItem",
-     "type": "object"
-    }
-   },
-   "table": "custom_applet_configs",
-   "title_column": "name",
-   "update": "planned",
-   "view": "yes"
-  },
-  {
-   "create": "planned",
-   "delete": "planned",
-   "family": "Other",
    "identity_fields": [],
    "label": "Data Store",
    "noun": "data_store",
@@ -13802,7 +13192,7 @@
      "type": "object"
     }
    },
-   "table": "flexible_data",
+   "table": "platform.flexible_data",
    "title_column": "label",
    "update": "planned",
    "view": "yes"
@@ -14520,7 +13910,7 @@
      "type": "object"
     }
    },
-   "table": "heatmap_saves",
+   "table": "workbench.heatmap_saves",
    "title_column": "title",
    "update": "planned",
    "view": "yes"
@@ -15930,12 +15320,8 @@
        "title": "Label"
       },
       "metadata": {
-       "default": null,
+       "default": {},
        "title": "Metadata"
-      },
-      "project_id": {
-       "default": null,
-       "title": "Project Id"
       },
       "role": {
        "default": null,
@@ -15982,10 +15368,6 @@
        "default": null,
        "title": "Metadata"
       },
-      "project_id": {
-       "default": null,
-       "title": "Project Id"
-      },
       "role": {
        "default": null,
        "title": "Role"
@@ -16002,7 +15384,7 @@
      "type": "object"
     }
    },
-   "table": "message_template",
+   "table": "agent.message_template",
    "title_column": "label",
    "update": "planned",
    "view": "yes"

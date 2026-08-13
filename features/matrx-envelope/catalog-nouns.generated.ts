@@ -105,10 +105,6 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
   "table": "ai.setting",
   "title_column": "key"
  },
- "applet": {
-  "table": "applet",
-  "title_column": "name"
- },
  "artifact": {
   "table": "chat.artifact",
   "title_column": "title"
@@ -169,14 +165,6 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
   "table": "crm.campaign",
   "title_column": "name"
  },
- "custom_app_config": {
-  "table": "custom_app_configs",
-  "title_column": "name"
- },
- "custom_applet_config": {
-  "table": "custom_applet_configs",
-  "title_column": "name"
- },
  "dataset": {
   "table": "workbench.udt_datasets",
   "title_column": "description"
@@ -198,7 +186,7 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
   "title_column": "title"
  },
  "flexible_data": {
-  "table": "flexible_data",
+  "table": "platform.flexible_data",
   "title_column": "label"
  },
  "game_result": {
@@ -206,7 +194,7 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
   "title_column": "display_name"
  },
  "heatmap_save": {
-  "table": "heatmap_saves",
+  "table": "workbench.heatmap_saves",
   "title_column": "title"
  },
  "item_mastery": {
@@ -226,7 +214,7 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
   "title_column": null
  },
  "message_template": {
-  "table": "message_template",
+  "table": "agent.message_template",
   "title_column": "label"
  },
  "note_folder": {
