@@ -230,7 +230,7 @@ export const createApp = createAsyncThunk<
 
 /**
  * Delete an app. Mirrors the API route's belt-and-suspenders ownership check:
- * RLS already filters, but `.eq("user_id", ...)` makes accidental admin
+ * RLS already filters, but `.eq("created_by", ...)` makes accidental admin
  * deletes from the wrong session impossible.
  */
 export const deleteApp = createAsyncThunk<void, string, ThunkApi>(
@@ -244,7 +244,7 @@ export const deleteApp = createAsyncThunk<void, string, ThunkApi>(
       .schema("app").from("definition")
       .delete()
       .eq("id", appId)
-      .eq("user_id", userId);
+      .eq("created_by", userId);
 
     if (error) {
       dispatch(agentAppActions.setAppError({ id: appId, error: error.message }));
