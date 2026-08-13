@@ -33,6 +33,7 @@ import {
 import { selectAgentMessages } from "@/features/agents/redux/agent-definition/selectors";
 import { makeSelectAssembledRequest } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import type { AssembledAgentStartRequest } from "@/features/agents/types/request.types";
+import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 
 interface PromptExecutionDebugPanelProps {
   /** Agent execution conversation id (legacy admin debug still stores this as `runId`). */
@@ -120,10 +121,8 @@ export const PromptExecutionDebugPanel: React.FC<
     ? "Turn 1: variables + definition context"
     : "Turn 2+: ongoing conversation";
 
-  const modelId =
-    (assembledRequest?.config_overrides?.model as string | undefined) ??
-    instance.agentId ??
-    "N/A";
+  const modelOverride = assembledRequest?.config_overrides?.model;
+  const modelId = typeof modelOverride === "string" ? modelOverride : null;
 
   const copyToClipboard = async (content: string, section: string) => {
     await navigator.clipboard.writeText(content);
@@ -291,7 +290,13 @@ export const PromptExecutionDebugPanel: React.FC<
                 <span className="text-gray-600 dark:text-gray-400">
                   Model override:
                 </span>
-                <p className="font-medium text-xs">{modelId}</p>
+                <p className="font-medium text-xs">
+                  {modelId ? (
+                    <AiModelRef modelId={modelId} showId showIcon={false} />
+                  ) : (
+                    "None"
+                  )}
+                </p>
               </div>
               <div>
                 <span className="text-gray-600 dark:text-gray-400">
@@ -551,7 +556,12 @@ export const PromptExecutionDebugPanel: React.FC<
                           .length
                       }
                       <br />
-                      <strong>Model override:</strong> {modelId}
+                      <strong>Model override:</strong>{" "}
+                      {modelId ? (
+                        <AiModelRef modelId={modelId} showId showIcon={false} />
+                      ) : (
+                        "None"
+                      )}
                     </p>
                   </div>
 

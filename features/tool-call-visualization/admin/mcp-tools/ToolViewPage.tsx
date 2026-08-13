@@ -31,6 +31,7 @@ import { RegistryTab } from "@/features/tool-registry/tools-admin/components/Reg
 import { Network } from "lucide-react";
 import { SourceKindBadge } from "./source-kind-badge";
 import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { AiToolRef } from "@/components/official/entity-ref/AiIdentityRef";
 import { mcpServerHref } from "@/features/tool-registry/doors";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { toolBrief, toolSummary } from "./format";
@@ -138,10 +139,7 @@ function OverviewTab({ tool }: { tool: ToolRow }) {
       {/* Key metadata grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-3">
-          <InfoRow
-            icon={<Code className="h-3.5 w-3.5" />}
-            label="Source Kind"
-          >
+          <InfoRow icon={<Code className="h-3.5 w-3.5" />} label="Source Kind">
             <SourceKindBadge kind={tool.source_kind} />
           </InfoRow>
           {tool.managed_by_server_id && (
@@ -191,7 +189,13 @@ function OverviewTab({ tool }: { tool: ToolRow }) {
           <InfoRow icon={<FileCode className="h-3.5 w-3.5" />} label="ID">
             {/* The record's own id — copy, no token: a preview of the page you
                 are already standing on is noise, not a door. */}
-            <MatrxUuidCell value={tool.id} label="Tool" />
+            <AiToolRef
+              toolId={tool.id}
+              name={tool.name}
+              showId
+              showIcon={false}
+              disableNavigation
+            />
           </InfoRow>
           <InfoRow icon={<Calendar className="h-3.5 w-3.5" />} label="Created">
             <span className="text-xs">
@@ -472,7 +476,11 @@ export function ToolViewPage({ tool }: Props) {
                   "The full tool definition record currently open in the admin detail page.",
                 data: tool,
                 summary: toolSummary(tool),
-                attributes: { id: tool.id, name: tool.name, active: isActive },
+                  attributes: {
+                    id: tool.id,
+                    name: tool.name,
+                    active: isActive,
+                  },
               })}
               aiVariants={[
                 {
@@ -505,7 +513,9 @@ export function ToolViewPage({ tool }: Props) {
               variant="outline"
               size="sm"
               onClick={() =>
-                navigateTo(`/administration/agents/mcp-tools/${tool.id}/incidents`)
+                  navigateTo(
+                    `/administration/agents/mcp-tools/${tool.id}/incidents`,
+                  )
               }
               disabled={isPending}
               className="h-8 gap-1.5 text-xs"

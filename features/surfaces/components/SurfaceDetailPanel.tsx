@@ -37,6 +37,7 @@ import {
 import { SurfaceValuesTable } from "@/features/surfaces/components/SurfaceValuesTable";
 import { getManifest } from "@/features/surfaces/manifests/registry";
 import type { SurfaceValue } from "@/features/surfaces/types";
+import { AiToolRef } from "@/components/official/entity-ref/AiIdentityRef";
 interface Props {
   surface: SurfaceWithStats;
   onClose: () => void;
@@ -191,12 +192,16 @@ export function SurfaceDetailPanel({
             </Badge>
             {surface.executor_name && (
               <Badge variant="outline" className="text-[10px]">
-                executor: <code className="ml-1 font-mono">{surface.executor_name}</code>
+                executor:{" "}
+                <code className="ml-1 font-mono">{surface.executor_name}</code>
               </Badge>
             )}
             {surface.parent_surface_name && (
               <Badge variant="outline" className="text-[10px]">
-                parent: <code className="ml-1 font-mono">{surface.parent_surface_name}</code>
+                parent:{" "}
+                <code className="ml-1 font-mono">
+                  {surface.parent_surface_name}
+                </code>
               </Badge>
             )}
           </div>
@@ -518,30 +523,23 @@ export function SurfaceDetailPanel({
                   b.arg_defaults &&
                   typeof b.arg_defaults === "object" &&
                   !Array.isArray(b.arg_defaults) &&
-                  Object.keys(b.arg_defaults as Record<string, unknown>).length >
-                    0;
-                const toolHref = `/administration/agents/mcp-tools/${b.tool_id}`;
+                  Object.keys(b.arg_defaults as Record<string, unknown>)
+                    .length > 0;
                 return (
                   <div
                     key={b.tool_id}
                     className="px-2 py-1.5 flex items-center gap-2"
                   >
                     <div className="flex-1 min-w-0 flex flex-col">
-                      <Link
-                        href={toolHref}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[12px] font-medium truncate text-foreground hover:text-primary hover:underline inline-flex items-center gap-1"
-                        title={b.tool_name ?? b.tool_id}
-                      >
-                        <span className="truncate">
-                          {b.tool_name ?? "(unnamed tool)"}
-                        </span>
-                        <ExternalLink className="h-3 w-3 shrink-0 opacity-60" />
-                      </Link>
+                      <AiToolRef
+                        toolId={b.tool_id}
+                        name={b.tool_name}
+                        showId
+                        showIcon={false}
+                        className="text-[12px] text-foreground"
+                      />
                       <span className="font-mono text-[10px] text-muted-foreground truncate">
-                        {b.tool_category ? `${b.tool_category} · ` : ""}
-                        {b.tool_id}
+                        {b.tool_category ?? "Uncategorized"}
                       </span>
                     </div>
                     {b.tool_is_active === false && (

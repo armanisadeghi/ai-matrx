@@ -10,6 +10,7 @@ import {
   AlertTriangle,
   Plus,
 } from "lucide-react";
+import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -252,9 +253,12 @@ export function AnalysisCard({
             {humanizeAgentType(analysis.agent_type)}
           </Badge>
           {analysis.model_id && (
-            <span className="text-xs text-muted-foreground truncate">
-              {analysis.model_id}
-            </span>
+            <AiModelRef
+              modelId={analysis.model_id}
+              showIcon={false}
+              disableNavigation
+              className="max-w-48 text-xs text-muted-foreground"
+            />
           )}
           <span
             className="text-xs text-muted-foreground tabular-nums"

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import AiModelTable from "./AiModelTable";
 import AiModelTabBar from "./AiModelTabBar";
 import AiModelDetailPanel from "./AiModelDetailPanel";
@@ -23,8 +24,13 @@ import {
   ADMIN_AI_MODELS_SURFACE_NAME,
   createAdminAiModelsScope,
 } from "@/features/surfaces/manifests/admin-ai-models.manifest";
+import { AI_MODEL_DEEP_LINK_PARAM, AI_MODEL_NEW_VALUE } from "../doors";
 
 export default function AiModelsContainer() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const deepLinkedModelId = searchParams.get(AI_MODEL_DEEP_LINK_PARAM);
   const [models, setModels] = useState<AiModel[]>([]);
   const [providers, setProviders] = useState<AiProvider[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -64,8 +70,50 @@ export default function AiModelsContainer() {
   }, []);
 
   useEffect(() => {
-    loadData();
+    const timer = setTimeout(() => void loadData(), 0);
+    return () => clearTimeout(timer);
   }, [loadData]);
+
+  const replaceModelDeepLink = useCallback(
+    (modelId: string | null) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (modelId) params.set(AI_MODEL_DEEP_LINK_PARAM, modelId);
+      else params.delete(AI_MODEL_DEEP_LINK_PARAM);
+      const query = params.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, {
+        scroll: false,
+      });
+    },
+    [pathname, router, searchParams],
+  );
+
+  // The URL is the durable selection source for links, Back/Forward, and
+  // references opened from audit/version surfaces.
+  useEffect(() => {
+    if (isLoading) return;
+    const timer = setTimeout(() => {
+      if (!deepLinkedModelId) {
+        setPanelOpen(false);
+        setSelectedModel(null);
+        setIsNewModel(false);
+        return;
+      }
+      if (deepLinkedModelId === AI_MODEL_NEW_VALUE) {
+        setSelectedModel(null);
+        setIsNewModel(true);
+        setPanelOpen(true);
+        return;
+      }
+      const linkedModel = models.find(
+        (model) => model.id === deepLinkedModelId,
+      );
+      if (!linkedModel) return;
+      setSelectedModel(linkedModel);
+      setIsNewModel(false);
+      setPanelOpen(true);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [deepLinkedModelId, isLoading, models]);
 
   // Count badges: how many models match each tab's filters
   const tabCounts = useMemo(() => {
@@ -85,15 +133,18 @@ export default function AiModelsContainer() {
     setSelectedModel(model);
     setIsNewModel(false);
     setPanelOpen(true);
+    replaceModelDeepLink(model.id);
   };
 
   const openNew = () => {
+    replaceModelDeepLink(AI_MODEL_NEW_VALUE);
     setSelectedModel(null);
     setIsNewModel(true);
     setPanelOpen(true);
   };
 
   const closePanel = () => {
+    replaceModelDeepLink(null);
     setPanelOpen(false);
     setSelectedModel(null);
     setIsNewModel(false);
@@ -111,6 +162,7 @@ export default function AiModelsContainer() {
     });
     setSelectedModel(saved);
     setIsNewModel(false);
+    replaceModelDeepLink(saved.id);
   };
 
   const handleDeleted = (id: string) => {
@@ -296,7 +348,9 @@ export default function AiModelsContainer() {
                 isLoading={isLoading}
                 selectedId={selectedModel?.id ?? null}
                 tabState={activeTab}
-                onUpdateTabState={(patch) => updateTabState(activeTabId, patch)}
+                  onUpdateTabState={(patch) =>
+                    updateTabState(activeTabId, patch)
+                  }
                 onSelect={openModel}
                 onEdit={openModel}
                 onDelete={(model) => handleDeleted(model.id)}

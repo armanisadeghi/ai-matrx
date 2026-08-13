@@ -39,6 +39,7 @@ import {
 } from "./agentSettingsDraftRegistry";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 import { selectModelNameById } from "@/features/ai-models/redux/modelRegistrySlice";
+import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 
 interface AgentSettingsFormProps {
   agentId: string;
@@ -316,7 +317,10 @@ export function AgentSettingsForm({
       <div className="flex-1 overflow-y-auto">
         <div className="flex flex-col gap-8 p-3 max-w-4xl mx-auto text-sm">
           <div className="grid grid-cols-1 gap-4">
-            <div className="space-y-2 flex flex-col" data-surface-value="agent_name">
+            <div
+              className="space-y-2 flex flex-col"
+              data-surface-value="agent_name"
+            >
               <Label className="text-sm font-semibold">Name</Label>
               <VoiceTextarea
                 value={draft.name || ""}
@@ -457,9 +461,17 @@ export function AgentSettingsForm({
                     <span className="text-muted-foreground/70 uppercase tracking-widest text-[10px] font-bold">
                       Model
                     </span>
-                    <span className="inline-flex items-center px-2.5 py-1.5 rounded-md text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 truncate max-w-fit">
-                      {modelName || modelId || "Default Selection"}
+                    {modelId ? (
+                      <AiModelRef
+                        modelId={modelId}
+                        name={modelName}
+                        className="max-w-fit rounded-md border border-amber-500/20 bg-amber-500/10 px-2.5 py-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400"
+                      />
+                    ) : (
+                      <span className="text-xs text-muted-foreground">
+                        Default Selection
                     </span>
+                    )}
                   </div>
 
                   <div className="flex flex-col gap-1.5">

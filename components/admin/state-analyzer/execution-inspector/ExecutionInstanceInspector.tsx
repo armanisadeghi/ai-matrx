@@ -71,6 +71,7 @@ import type { ConversationFocusState } from "@/features/agents/redux/execution-s
 import type { AgentDefinitionSliceState } from "@/features/agents/types/agent-definition.types";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import { JsonTreeViewer } from "@/components/official/json-explorer/JsonTreeViewer";
+import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -377,8 +378,8 @@ function AgentTab({
             </KVRow>
           )}
           {agentData.modelId && (
-            <KVRow label="modelId" mono>
-              <IdWithTooltip id={agentData.modelId} />
+            <KVRow label="model">
+              <AiModelRef modelId={agentData.modelId} showId />
             </KVRow>
           )}
         </div>

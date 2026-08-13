@@ -54,6 +54,7 @@ import {
 } from "@/features/agents/redux/tools/tools.selectors";
 import { fetchAvailableTools } from "@/features/agents/redux/tools/tools.thunks";
 import { fetchAgentExecutionFull } from "@/features/agents/redux/agent-definition/thunks";
+import { AiToolRef } from "@/components/official/entity-ref/AiIdentityRef";
 
 interface QuicksetPanelProps {
   conversationId: string;
@@ -135,7 +136,18 @@ function PickerRow({
   );
 }
 
-function SimpleList({ items, empty }: { items: string[]; empty: string }) {
+interface SimpleListItem {
+  key: string;
+  content: ReactNode;
+}
+
+function SimpleList({
+  items,
+  empty,
+}: {
+  items: SimpleListItem[];
+  empty: string;
+}) {
   return (
     <div className="max-h-64 overflow-y-auto p-2">
       {items.length === 0 ? (
@@ -144,10 +156,10 @@ function SimpleList({ items, empty }: { items: string[]; empty: string }) {
         <ul className="space-y-1">
           {items.map((item) => (
             <li
-              key={item}
-              className="truncate rounded-sm bg-muted/50 px-2 py-1 text-xs text-foreground"
+              key={item.key}
+              className="rounded-sm bg-muted/50 px-2 py-1 text-xs text-foreground"
             >
-              {item}
+              {item.content}
             </li>
           ))}
         </ul>
@@ -220,15 +232,32 @@ export function QuicksetPanel({
     }
   }, [agentId, agentReady, dispatch]);
 
-  const catalogNames = new Map(
-    (toolCatalog ?? []).map((tool) => [tool.id, tool.name]),
-  );
   const agentTools = [
     ...(Array.isArray(agentToolIds)
-      ? agentToolIds.map((id) => catalogNames.get(id) ?? id)
+      ? agentToolIds.map((id) => ({
+          key: `built-in:${id}`,
+          content: (
+            <AiToolRef
+              toolId={id}
+              name={toolCatalog.find((tool) => tool.id === id)?.name}
+              showId
+              showIcon={false}
+            />
+          ),
+        }))
       : []),
-    ...(Array.isArray(customTools) ? customTools.map((tool) => tool.name) : []),
-    ...(Array.isArray(mcpServers) ? mcpServers : []),
+    ...(Array.isArray(customTools)
+      ? customTools.map((tool) => ({
+          key: `custom:${tool.name}`,
+          content: tool.name,
+        }))
+      : []),
+    ...(Array.isArray(mcpServers)
+      ? mcpServers.map((server) => ({
+          key: `mcp:${server}`,
+          content: server,
+        }))
+      : []),
   ];
   const addedTools = settings.addedTools ?? [];
   const addedSkills = settings.addedSkills ?? [];
@@ -306,7 +335,10 @@ export function QuicksetPanel({
           summary={`${surfaceTools.length} available`}
         >
           <SimpleList
-            items={surfaceTools}
+            items={surfaceTools.map((toolName) => ({
+              key: toolName,
+              content: toolName,
+            }))}
             empty="No surface tools are active."
           />
         </PickerRow>

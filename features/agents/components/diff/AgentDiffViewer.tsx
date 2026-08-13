@@ -23,6 +23,7 @@ import { VariablesAdapter } from "./adapters/VariablesAdapter";
 import { ContextSlotsAdapter } from "./adapters/ContextSlotsAdapter";
 import { CustomToolsAdapter } from "./adapters/CustomToolsAdapter";
 import { McpServersAdapter } from "./adapters/McpServersAdapter";
+import { ModelTiersAdapter } from "./adapters/ModelTiersAdapter";
 
 interface AgentDiffViewerProps {
   oldAgent: Partial<AgentDefinition>;
@@ -48,19 +49,31 @@ function buildAgentAdapterRegistry() {
 
   // Simple fields
   registry.register("name", { ...TextFieldAdapter, label: "Name" });
-  registry.register("description", { ...TextFieldAdapter, label: "Description" });
+  registry.register("description", {
+    ...TextFieldAdapter,
+    label: "Description",
+  });
   registry.register("category", { ...TextFieldAdapter, label: "Category" });
   registry.register("tags", { ...TagsFieldAdapter, label: "Tags" });
   registry.register("isActive", { ...BooleanFieldAdapter, label: "Active" });
   registry.register("isPublic", { ...BooleanFieldAdapter, label: "Public" });
-  registry.register("isArchived", { ...BooleanFieldAdapter, label: "Archived" });
-  registry.register("isFavorite", { ...BooleanFieldAdapter, label: "Favorite" });
+  registry.register("isArchived", {
+    ...BooleanFieldAdapter,
+    label: "Archived",
+  });
+  registry.register("isFavorite", {
+    ...BooleanFieldAdapter,
+    label: "Favorite",
+  });
   registry.register("autoToolsDisabled", {
     ...BooleanFieldAdapter,
     label: "Automatic Tool Injection Disabled",
   });
   registry.register("version", { ...TextFieldAdapter, label: "Version" });
-  registry.register("changeNote", { ...TextFieldAdapter, label: "Change Note" });
+  registry.register("changeNote", {
+    ...TextFieldAdapter,
+    label: "Change Note",
+  });
   registry.register("defaultRagBoost", {
     ...TextFieldAdapter,
     label: "Default RAG Boost",
@@ -71,8 +84,11 @@ function buildAgentAdapterRegistry() {
   });
 
   // JSON fields
-  registry.register("modelTiers", { ...JsonObjectAdapter, label: "Model Tiers" });
-  registry.register("outputSchema", { ...JsonObjectAdapter, label: "Output Schema" });
+  registry.register("modelTiers", ModelTiersAdapter);
+  registry.register("outputSchema", {
+    ...JsonObjectAdapter,
+    label: "Output Schema",
+  });
   registry.register("skillConfig", {
     ...JsonObjectAdapter,
     label: "Skill Configuration",

@@ -17,6 +17,7 @@ import {
   AlertCircle,
   MinusCircle,
 } from "lucide-react";
+import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -255,9 +256,7 @@ function DetailPanel({
   const [retrying, setRetrying] = useState(false);
 
   const isFailed = analysis.status === "failed";
-  const createdAt = analysis.created_at
-    ? new Date(analysis.created_at)
-    : null;
+  const createdAt = analysis.created_at ? new Date(analysis.created_at) : null;
   const usage = tokenUsageFromJson(analysis.token_usage);
   const tokenCost = usage?.costUsd ?? null;
   const totalTokens = usage?.totalTokens ?? 0;
@@ -318,9 +317,12 @@ function DetailPanel({
                 </span>
               )}
               {analysis.model_id && (
-                <Badge variant="secondary" className="text-[9px] h-4 px-1.5">
-                  {analysis.model_id}
-                </Badge>
+                <AiModelRef
+                  modelId={analysis.model_id}
+                  showIcon={false}
+                  disableNavigation
+                  className="max-w-40 rounded bg-secondary px-1.5 text-[9px]"
+                />
               )}
             </div>
           </div>
@@ -402,8 +404,7 @@ function DetailPanel({
             </p>
             <p className="text-xs text-muted-foreground max-w-sm leading-relaxed">
               This source was processed but produced no summary — usually the
-              page had too little usable text. Re-read it or retry the
-              analysis.
+              page had too little usable text. Re-read it or retry the analysis.
             </p>
           </div>
         )}

@@ -20,6 +20,7 @@ import {
 } from "@/features/agents/components/run-controls/SimpleRunSettings/SimpleRunSettings";
 import { SimpleRunSettingsButton } from "@/features/agents/components/run-controls/SimpleRunSettings/SimpleRunSettingsButton";
 import { ArrowUp, Mic, Paperclip } from "lucide-react";
+import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 
 function Section({
   title,
@@ -56,8 +57,8 @@ function StateBadge({ value }: { value: SimpleRunSettingsValue | null }) {
         <span className="text-foreground">{value.capabilityId}</span>
       </div>
       <div>
-        <span className="text-muted-foreground">model_id: </span>
-        <span className="text-foreground">{value.modelId.slice(0, 8)}…</span>
+        <span className="text-muted-foreground">Model: </span>
+        <AiModelRef modelId={value.modelId} showId showIcon={false} />
       </div>
       <div>
         <span className="text-muted-foreground">reasoning: </span>

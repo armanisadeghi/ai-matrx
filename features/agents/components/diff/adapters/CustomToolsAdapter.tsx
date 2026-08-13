@@ -49,7 +49,10 @@ function CustomToolsDiffRenderer({ node }: FieldDiffProps) {
       {node.children.map((child, i) => {
         const oldTool = child.oldValue as CustomToolLike | undefined;
         const newTool = child.newValue as CustomToolLike | undefined;
-        const toolName = newTool?.name ?? oldTool?.name ?? child.key;
+        const toolName =
+          newTool?.name ??
+          oldTool?.name ??
+          `Unknown custom tool (${child.key ?? "missing id"})`;
 
         // Edited tool → word/line-level diff so only the changed text/schema
         // is tinted instead of the whole definition.

@@ -26,6 +26,7 @@ import {
 } from "@/features/tool-registry/executor-surfaces/services/executor-surfaces.service";
 import { AddToolBindingDialog } from "@/features/tool-registry/executor-surfaces/components/AddToolBindingDialog";
 import { SourceKindBadge } from "@/features/tool-call-visualization/admin/mcp-tools/source-kind-badge";
+import { AiToolRef } from "@/components/official/entity-ref/AiIdentityRef";
 
 interface Props {
   /**
@@ -65,10 +66,7 @@ export function ExecutorSurfaceDetailPanel({
     void load();
   }, [load]);
 
-  const handleToggleActive = async (
-    row: ExecutorBindingRow,
-    next: boolean,
-  ) => {
+  const handleToggleActive = async (row: ExecutorBindingRow, next: boolean) => {
     setBindings((cur) =>
       cur.map((b) =>
         b.tool_id === row.tool_id ? { ...b, is_active: next } : b,
@@ -81,7 +79,7 @@ export function ExecutorSurfaceDetailPanel({
         isActive: next,
       });
       toast.success(
-        `${row.tool_name ?? row.tool_id} ${next ? "active on" : "deactivated on"} ${executor.name}`,
+        `${row.tool_name ?? `Unknown tool (${row.tool_id})`} ${next ? "active on" : "deactivated on"} ${executor.name}`,
       );
       onMutated();
     } catch (e) {
@@ -100,9 +98,15 @@ export function ExecutorSurfaceDetailPanel({
       description: (
         <>
           Unbind{" "}
-          <span className="font-mono">{row.tool_name ?? row.tool_id}</span> from{" "}
-          <span className="font-mono">{executor.name}</span>. The tool stays in
-          the catalog. You can re-add it later.
+          <AiToolRef
+            toolId={row.tool_id}
+            name={row.tool_name}
+            showId
+            showIcon={false}
+            disableNavigation
+          />{" "}
+          from <span className="font-mono">{executor.name}</span>. The tool
+          stays in the catalog. You can re-add it later.
         </>
       ),
       confirmLabel: "Remove",
@@ -115,7 +119,9 @@ export function ExecutorSurfaceDetailPanel({
         executorName: row.executor_name,
       });
       setBindings((cur) => cur.filter((b) => b.tool_id !== row.tool_id));
-      toast.success(`Removed ${row.tool_name ?? row.tool_id}`);
+      toast.success(
+        `Removed ${row.tool_name ?? `Unknown tool (${row.tool_id})`}`,
+      );
       onMutated();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Remove failed");
@@ -144,7 +150,10 @@ export function ExecutorSurfaceDetailPanel({
                   MCP
                 </Badge>
               ) : (
-                <Badge variant="outline" className="text-[10px] h-4 px-1 gap-0.5">
+                <Badge
+                  variant="outline"
+                  className="text-[10px] h-4 px-1 gap-0.5"
+                >
                   <Server className="h-2.5 w-2.5" />
                   executor
                 </Badge>
@@ -347,7 +356,6 @@ function BindingRow({
   onToggleActive: (row: ExecutorBindingRow, next: boolean) => void;
   onRemove: (row: ExecutorBindingRow) => void;
 }) {
-  const toolHref = `/administration/agents/mcp-tools/${row.tool_id}`;
   return (
     <div
       className={`px-3 py-2 min-w-0 ${row.is_active ? "" : "opacity-60"} hover:bg-accent/30`}
@@ -355,18 +363,13 @@ function BindingRow({
       <div className="flex items-start gap-2 min-w-0">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-            <Link
-              href={toolHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs font-medium text-foreground hover:text-primary hover:underline inline-flex items-center gap-1 max-w-full"
-              title={row.tool_name ?? row.tool_id}
-            >
-              <span className="truncate">
-                {row.tool_name ?? "(unnamed tool)"}
-              </span>
-              <ExternalLink className="h-3 w-3 shrink-0 opacity-60" />
-            </Link>
+            <AiToolRef
+              toolId={row.tool_id}
+              name={row.tool_name}
+              showId
+              showIcon={false}
+              className="max-w-full text-xs text-foreground"
+            />
             <SourceKindBadge kind={row.tool_source_kind} />
             {row.tool_is_active === false && (
               <Badge
@@ -379,8 +382,7 @@ function BindingRow({
             )}
           </div>
           <div className="font-mono text-[10px] text-muted-foreground truncate">
-            {row.tool_category ? `${row.tool_category} · ` : ""}
-            {row.tool_id}
+            {row.tool_category ?? "Uncategorized"}
           </div>
           {row.tool_description && (
             <div className="text-[10px] text-muted-foreground truncate mt-0.5">
