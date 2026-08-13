@@ -35,8 +35,20 @@ Code (both repos): grep `<table>` for `.from('<table>')`, `.schema(...).from('<t
 ## Step 2 — Confirm it's truly dead
 If reads remain: repoint or delete those consumers if quick; otherwise graveyard now (reversible) and **track the remaining cleanup** in `docs/db_rebuild/CHANGEOVER_PROGRESS.md`. Do not block the move on a long repoint — but never graveyard a table with live, load-bearing reads you haven't accounted for.
 
-## Step 3 — Resolve inbound FKs
-A cross-schema FK keeps working after the move, so the move won't *break* — but a dead table shouldn't be referenced. Drop or repoint inbound FK constraints that shouldn't exist. If an inbound FK represents real data you can't yet sever, that table isn't dead — reconsider.
+## Step 3 — Resolve FKs in BOTH directions
+
+**Inbound** (tables that point AT this one): a cross-schema FK keeps working after the move, so the move won't *break* — but a dead table shouldn't be referenced. Drop or repoint inbound FK constraints that shouldn't exist. If an inbound FK represents real data you can't yet sever, that table isn't dead — reconsider.
+
+🚨 **Outbound** (this table pointing at LIVE tables) — **the step that gets forgotten, and it breaks live pages.** `SET SCHEMA` carries every outbound FK along, so the retired table keeps advertising itself in `pg_constraint` as a child of live tables. Any catalog-walking function then discovers it and queries it **as the signed-in user**, who has no `USAGE` on `graveyard` → `42501 permission denied for schema graveyard`, and the whole call dies. That is exactly how every `/projects/<id>` page broke on 2026-08-13: `get_project_references` walked the FKs into `workspace.projects` and hit two retired flashcard tables. Always finish the move with the idempotent sweep — **it is safe and expected to re-run**:
+```sql
+do $$ declare r record; begin
+  for r in select conname, conrelid::regclass as from_table from pg_constraint
+    where contype='f' and conrelid::regclass::text like 'graveyard.%'
+      and confrelid::regclass::text not like 'graveyard.%'
+  loop execute format('alter table %s drop constraint %I', r.from_table, r.conname); end loop;
+end $$;
+```
+`migrations/drop_graveyard_to_live_fks.sql` is this sweep. It was run ONCE (2026-07-28) and treated as done; every table retired afterwards re-created the problem — 78 such FKs had accumulated by 2026-08-13. It is not a one-time migration, it is a **post-condition of every graveyard move**.
 
 ## Step 4 — Deactivate the registration FIRST (enforced, 2026-08-12)
 `platform._enforce_entity_is_table` now ERRORs when an ACTIVE `entity_types` row ends up

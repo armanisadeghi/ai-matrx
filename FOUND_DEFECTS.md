@@ -13,6 +13,14 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### Database reorg regressions → tracked in their own working list (2026-08-13)
+
+Breakage caused by the ~160-migration database reorganization of 2026-08-11→13 is
+worked from **[docs/db_changes/DB_REGRESSION_SWEEP.md](docs/db_changes/DB_REGRESSION_SWEEP.md)**,
+not from here. Add new findings of that class there. Two rules learned the hard way
+and written up in that doc: a migration file on disk changes nothing until it is
+applied live, and `audit.broken_functions` is currently ~97% false positives.
+
 ### D182 — Component-RLS remainder: 33 tables still can't `INSERT…RETURNING` as authed (2026-08-13)
 
 Left open by the D181 fix. (1) **21 component tables have `created_by` but no `_stamp_actor` trigger and no default** (`files.file_versions` + 20 `seo.*`: backlink*, serp_snapshot, rank_observation, competitor*, change_event/assessment, page_performance, search_performance_daily, …) — authed `.insert().select()` still 42501s unless the client sends `created_by` explicitly. Fix = attach the canonical trigger trio per table. (2) **12 component `std_select` policies sit on tables with no `created_by` column at all** (`growth.loop_event/loop_stage_run`, `legal.wc_injury/wc_report`, `scheduler.sch_agent_task`, 7 `seo.*` raw-pipeline tables) — needs base-retrofit. All 33 are service_role-written today, so nothing user-facing is known broken. (3) **Product call for Arman:** the component `std_insert` parent-editor arm doesn't force `created_by = auth.uid()`, so a parent-editor can stamp another user as creator, conveying that user owner-read (entity variant does force it).
