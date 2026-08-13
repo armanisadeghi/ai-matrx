@@ -130,6 +130,14 @@ The floating-window posture only kills the spinner for markdown payloads. Watche
 
 No `listAgentRuns` in `features/transcript-studio/service/studioService.ts`, nothing dispatches `runsLoaded` — column status is in-memory only and the live-run door (`<WatchRunButton>` via the run row's `conversationId`) dies with the tab. Fix: add `listAgentRuns(sessionId)`, dispatch `runsLoaded` where segments load, reopen for rows still `running`. **Chip fired 2026-08-12.**
 
+### D185 — `titaniummarketing.com` pins a CMS site nobody can see, so the write-back stops at the page (2026-08-13)
+
+Found live while closing `G-FINDING-FIX`. `web.site 0fdcd5ea-…` carries `settings.cms.site_id = "60bb572e-df72-439b-a81e-0e3fb4a62298"`, which is not a CMS site the caller can read, so `resolveCmsLink` correctly refuses and every fix on that site saves only as desired metadata. Either the CMS site was deleted or the id was hand-set and never valid. Fix: clear or repoint `settings.cms.site_id`, and give the marketing site settings UI a validating picker so a hand-typed id cannot silently disable the whole CMS half of the loop.
+
+### D186 — Nothing the crawler finds problems on overlaps with a CMS page, so the CMS-draft leg is unexercised (2026-08-13)
+
+Also found live while closing `G-FINDING-FIX`. The crawled sites with open metadata findings (cosmeticinjectables.com, titaniummarketing.com, datadestruction.com, www.pbw-law.com) share no route with any page in the CMS project: the CMS sites are skeletons (`/home`, `/about`, `/services/service-1`), the crawled sites are real external WordPress installs. The write-back path is therefore correct-but-idle on its CMS leg — every fix lands as desired metadata and honestly reports that no CMS page exists at the route (THE 301 LAW forbids creating one). Not a code defect; it is the measured-page ↔ CMS-page join being empty in practice. Fix belongs upstream: either bring a real site into the CMS, or finish the page-identity join so a measured page names its CMS twin by id rather than by route string.
+
 ### D164 — `keyword_set` and `keyword_variant_set` are byte-identical kinds (2026-08-11)
 
 Same `emitted_json_schema`, same fingerprint (`9q-183lvc51ku2s37`); `matchKindForSchema` is first-writer-wins so an agent bound to `keyword_variant_set` displays as `keyword_set`. Merge or genuinely differentiate — **Arman's call** (product semantics).
