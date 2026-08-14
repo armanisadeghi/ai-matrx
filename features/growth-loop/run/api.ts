@@ -179,11 +179,15 @@ function stateFromRow(
 ): LoopStateView {
   const currentStage = stageId(row.current_stage, "current_stage");
   const position = STAGES.findIndex((stage) => stage.id === currentStage);
-  const openStage = row.stage_run_id ? stageRuns.get(row.stage_run_id) : null;
-  if (row.stage_run_id && !openStage) {
-    throw new GrowthLoopApiError(
-      `Growth loop ${row.loop_run_id ?? "(unknown)"} is missing its open stage.`,
-    );
+  let openStage: StageRunView | null = null;
+  if (row.stage_run_id) {
+    const stageRun = stageRuns.get(row.stage_run_id);
+    if (!stageRun) {
+      throw new GrowthLoopApiError(
+        `Growth loop ${row.loop_run_id ?? "(unknown)"} is missing its open stage.`,
+      );
+    }
+    openStage = stageRun;
   }
 
   return {
