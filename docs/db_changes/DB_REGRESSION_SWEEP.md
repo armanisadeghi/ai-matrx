@@ -88,6 +88,28 @@ Only `audit.function_runtime_probe` proves a function runs.
   the only thing that proves a function *runs*, which is lesson 2 above.
   The read-RPC choice is documented for callers in aidream's
   `docs/udt_user_data_and_lists/UDT_MIGRATION_FOR_FRONTENDS.md`.
+  **Correction to "nothing needs it":** the RPC had 0 callers, but its
+  *capability* has 8 live consumers, and mapping them found a real performance
+  defect on a primary surface — `UserTableViewer.tsx:485` (the dataset page) calls
+  `get_user_table_complete`, destructures only `{table, fields, row_count}`, never
+  reads `.data`, then round-trips again for the page it renders. Opening any
+  dataset materializes the whole dataset to read three facts. Same shape in
+  `TablesResourcePicker`, `TableDataSource`, `TableSettingsModal`, `getTableDetails`,
+  and two hand-rolled reconstructions (`ExportTableModal.tsx:64` queries
+  `udt_dataset_fields` directly with the comment "the paginated endpoint doesn't
+  include them"; `referenceResolvers.ts:243` runs two parallel queries to rebuild
+  table-name-plus-columns).
+  It was also **unadoptable as shaped**: it stripped `row_ordering_config` from the
+  table (which `UserTableViewer.tsx:509` reads for a dataset's saved default sort —
+  a naive swap would have silently broken saved sort) and `validation_rules` /
+  `default_value` from the columns (exactly what export re-queries). Since it had
+  no callers, correcting the shape was free, and doing it *before* adoption avoids
+  a breaking change later; it now returns the full rows and the probe asserts those
+  keys so it cannot regress to the unusable form. **Converting the 8 consumers is
+  chipped** — it touches a live primary surface and needs per-callsite browser
+  verification (saved sort, pagination totals, export column set), plus the
+  `columns`-vs-`fields` key rename and the fact that `get_full_table` raises rather
+  than returning a `success` envelope.
 
 - **The conformance checker now means something: 101 rows → 3 actionable
   functions, now 0.** Two defects, both in the tooling itself.
