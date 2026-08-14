@@ -5,9 +5,14 @@
 import {
   dedupeGoogleConnectionsForPicker,
   diagnoseGoogleConnection,
+  diagnoseGoogleResourceBinding,
   googleConnectionDiagnostics,
 } from "./health";
-import type { GoogleConnectionSummary } from "./types";
+import { GOOGLE_SCOPE } from "@/lib/googleScopes";
+import type {
+  GoogleConnectionResource,
+  GoogleConnectionSummary,
+} from "./types";
 
 function connection(
   overrides: Partial<GoogleConnectionSummary> = {},
@@ -35,6 +40,70 @@ function connection(
   };
 }
 
+function resource(
+  overrides: Partial<GoogleConnectionResource> = {},
+): GoogleConnectionResource {
+  return {
+    id: "resource-1",
+    connection_id: "7223fed4-7296-4f1e-9126-a83a96a917e9",
+    resource_type: "analytics_property",
+    resource_ref: "properties/290156354",
+    display_name: "AGR - GA4",
+    permission_level: null,
+    discovered_at: "2026-07-25T00:00:00Z",
+    metadata: {},
+    ...overrides,
+  };
+}
+
+describe("diagnoseGoogleResourceBinding", () => {
+  const diagnose = (
+    connections: GoogleConnectionSummary[],
+    resources: GoogleConnectionResource[],
+  ) =>
+    diagnoseGoogleResourceBinding({
+      connectionId: "7223fed4-7296-4f1e-9126-a83a96a917e9",
+      resourceRef: "properties/290156354",
+      resourceType: "analytics_property",
+      requiredScope: GOOGLE_SCOPE.analyticsReadonly,
+      connections,
+      resources,
+    });
+
+  it("accepts only the exact live connection/resource tuple", () => {
+    const ga4Connection = connection({
+      scopes: [GOOGLE_SCOPE.analyticsReadonly],
+    });
+    expect(diagnose([ga4Connection], [resource()]).state).toBe("ready");
+  });
+
+  it("names the live incident: replacement connection has no Analytics scope", () => {
+    const diagnosis = diagnose([connection()], []);
+    expect(diagnosis.state).toBe("scope_missing");
+    expect(diagnosis.reason).toContain("does not grant Analytics read access");
+  });
+
+  it("offers a one-click rebind when the same property is discovered elsewhere", () => {
+    const replacement = connection({
+      id: "replacement-connection",
+      scopes: [GOOGLE_SCOPE.analyticsReadonly],
+    });
+    const diagnosis = diagnose(
+      [replacement],
+      [resource({ connection_id: replacement.id })],
+    );
+    expect(diagnosis.state).toBe("connection_missing");
+    expect(diagnosis.recoverableConnectionId).toBe(replacement.id);
+  });
+
+  it("blocks a property-shaped value that discovery did not return", () => {
+    const ga4Connection = connection({
+      scopes: [GOOGLE_SCOPE.analyticsReadonly],
+    });
+    expect(diagnose([ga4Connection], []).state).toBe("resource_missing");
+  });
+});
+
 describe("diagnoseGoogleConnection", () => {
   it("names the missing vault credential and the fix (the incident row)", () => {
     const diagnosis = diagnoseGoogleConnection(
@@ -54,7 +123,11 @@ describe("diagnoseGoogleConnection", () => {
   it("never reports a stored status of connected as healthy without a credential", () => {
     // The DB row literally said status='connected' during the outage.
     const diagnosis = diagnoseGoogleConnection(
-      connection({ status: "connected", credential_present: false, health: "needs_reauth" }),
+      connection({
+        status: "connected",
+        credential_present: false,
+        health: "needs_reauth",
+      }),
     );
     expect(diagnosis.blocking).toBe(true);
     expect(diagnosis.label).not.toBe("Connected");
@@ -73,7 +146,11 @@ describe("diagnoseGoogleConnection", () => {
 
   it("still explains a flagged connection that recorded no reason", () => {
     const diagnosis = diagnoseGoogleConnection(
-      connection({ status: "needs_attention", health: "needs_reauth", last_error: null }),
+      connection({
+        status: "needs_attention",
+        health: "needs_reauth",
+        last_error: null,
+      }),
     );
     expect(diagnosis.reason).toContain("recorded no reason");
   });

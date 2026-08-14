@@ -1,6 +1,6 @@
 import { connectionResource } from "@/features/marketing/google/service";
 import { GOOGLE_CONNECTION_SCOPES } from "@/features/marketing/google/types";
-import { GOOGLE_SCOPE } from "@/lib/googleScopes";
+import { GOOGLE_ANALYTICS_SCOPES, GOOGLE_SCOPE } from "@/lib/googleScopes";
 
 const baseResource = {
   id: "resource-1",
@@ -62,6 +62,14 @@ describe("Google OAuth connection resources", () => {
     );
     expect(new Set(GOOGLE_CONNECTION_SCOPES).size).toBe(
       GOOGLE_CONNECTION_SCOPES.length,
+    );
+  });
+
+  it("requests Analytics only from the explicit incremental GA4 action", () => {
+    expect(GOOGLE_ANALYTICS_SCOPES).toContain(GOOGLE_SCOPE.analyticsReadonly);
+    expect(GOOGLE_ANALYTICS_SCOPES).toContain(GOOGLE_SCOPE.webmastersReadonly);
+    expect(new Set(GOOGLE_ANALYTICS_SCOPES).size).toBe(
+      GOOGLE_ANALYTICS_SCOPES.length,
     );
   });
 });

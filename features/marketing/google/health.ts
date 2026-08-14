@@ -11,7 +11,11 @@
  * here, so both the connections hub and every per-site binding surface state
  * the same truth in the same words.
  */
-import type { GoogleConnectionSummary } from "@/features/marketing/google/types";
+import { GOOGLE_SCOPE } from "@/lib/googleScopes";
+import type {
+  GoogleConnectionResource,
+  GoogleConnectionSummary,
+} from "@/features/marketing/google/types";
 
 export interface GoogleConnectionDiagnosis {
   /** Short badge label. */
@@ -24,11 +28,101 @@ export interface GoogleConnectionDiagnosis {
   blocking: boolean;
 }
 
+export type GoogleResourceBindingState =
+  "ready" | "connection_missing" | "scope_missing" | "resource_missing";
+
+export interface GoogleResourceBindingDiagnosis {
+  state: GoogleResourceBindingState;
+  blocking: boolean;
+  reason: string;
+  recoverableConnectionId: string | null;
+}
+
+/**
+ * Prove a Google binding from the same live inventory the picker renders.
+ * A UUID + property-shaped string is configuration syntax, not proof that
+ * the selected connection can actually read that resource.
+ */
+export function diagnoseGoogleResourceBinding({
+  connectionId,
+  resourceRef,
+  resourceType,
+  requiredScope,
+  connections,
+  resources,
+}: {
+  connectionId: string;
+  resourceRef: string;
+  resourceType: GoogleConnectionResource["resource_type"];
+  requiredScope: string;
+  connections: GoogleConnectionSummary[];
+  resources: GoogleConnectionResource[];
+}): GoogleResourceBindingDiagnosis {
+  const connection = connections.find((row) => row.id === connectionId);
+  const equivalentResource = resources.find(
+    (resource) =>
+      resource.resource_type === resourceType &&
+      resource.resource_ref === resourceRef &&
+      connections.some(
+        (candidate) =>
+          candidate.id === resource.connection_id &&
+          candidate.health === "connected" &&
+          candidate.scopes.includes(requiredScope),
+      ),
+  );
+  if (!connection) {
+    return {
+      state: "connection_missing",
+      blocking: true,
+      reason:
+        "The Google connection saved on this site is no longer active. Restore Analytics access or choose a currently discovered property.",
+      recoverableConnectionId: equivalentResource?.connection_id ?? null,
+    };
+  }
+  if (
+    connection.health !== "connected" ||
+    !connection.scopes.includes(requiredScope)
+  ) {
+    return {
+      state: "scope_missing",
+      blocking: true,
+      reason:
+        requiredScope === GOOGLE_SCOPE.analyticsReadonly
+          ? "This Google connection does not grant Analytics read access, so it cannot discover or sync GA4 properties."
+          : "This Google connection does not grant the access required for this resource.",
+      recoverableConnectionId: equivalentResource?.connection_id ?? null,
+    };
+  }
+  const exactResource = resources.some(
+    (resource) =>
+      resource.connection_id === connectionId &&
+      resource.resource_type === resourceType &&
+      resource.resource_ref === resourceRef,
+  );
+  if (!exactResource) {
+    return {
+      state: "resource_missing",
+      blocking: true,
+      reason:
+        "The saved property was not returned by discovery for this Google connection. Run discovery again or choose one of the properties that was returned.",
+      recoverableConnectionId: equivalentResource?.connection_id ?? null,
+    };
+  }
+  return {
+    state: "ready",
+    blocking: false,
+    reason: "The connection and discovered resource match.",
+    recoverableConnectionId: null,
+  };
+}
+
 export function diagnoseGoogleConnection(
   connection: GoogleConnectionSummary,
 ): GoogleConnectionDiagnosis {
   const account =
-    connection.account_email || connection.account_name || "this Google account";
+    connection.account_email ||
+    connection.account_name ||
+    "this Google account";
 
   if (connection.health === "revoked") {
     return {
@@ -87,7 +181,10 @@ export function googleConnectionDiagnostics(
   return [
     ["Connection id", connection.id],
     ["Account", connection.account_email || connection.account_name || "—"],
-    ["Owner", connection.owner_type === "organization" ? "Organization" : "Personal"],
+    [
+      "Owner",
+      connection.owner_type === "organization" ? "Organization" : "Personal",
+    ],
     ["Stored status", connection.status],
     ["Derived health", connection.health],
     [

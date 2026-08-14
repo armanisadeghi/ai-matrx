@@ -70,6 +70,8 @@ import {
 import {
   dedupeGoogleConnectionsForPicker,
   diagnoseGoogleConnection,
+  diagnoseGoogleResourceBinding,
+  type GoogleResourceBindingDiagnosis,
 } from "@/features/marketing/google/health";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { cn } from "@/lib/utils";
@@ -82,6 +84,7 @@ import type {
   GoogleConnectionSummary,
 } from "@/features/marketing/google/types";
 import { GOOGLE_CONNECTION_SCOPES } from "@/features/marketing/google/types";
+import { GOOGLE_ANALYTICS_SCOPES, GOOGLE_SCOPE } from "@/lib/googleScopes";
 import type { MarketingSite } from "@/features/marketing/types";
 import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
 import { useGoogleAPI } from "@/providers/google-provider/GoogleApiProvider";
@@ -146,12 +149,45 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
   const [googleConnectionOwner, setGoogleConnectionOwner] = useState<
     "organization" | "user" | null
   >(null);
+  const [recoveringGa4, setRecoveringGa4] = useState(false);
   const initial = useMemo(
     () => parseSiteIntegrations(site.integrations),
     [site],
   );
   const [draft, setDraft] = useState<SiteIntegrationsDraft>(initial);
-  const issues = useMemo(() => validateSiteIntegrations(draft), [draft]);
+  const ga4BindingDiagnosis = useMemo(() => {
+    const binding = draft.googleAnalytics4;
+    if (
+      !binding.enabled ||
+      !binding.credentialRef ||
+      !binding.resourceRef ||
+      !googleInventory.data
+    ) {
+      return null;
+    }
+    return diagnoseGoogleResourceBinding({
+      connectionId: binding.credentialRef,
+      resourceRef: binding.resourceRef,
+      resourceType: "analytics_property",
+      requiredScope: GOOGLE_SCOPE.analyticsReadonly,
+      connections: googleInventory.data.connections,
+      resources: googleInventory.data.resources,
+    });
+  }, [draft.googleAnalytics4, googleInventory.data]);
+  const issues = useMemo(
+    () => [
+      ...validateSiteIntegrations(draft),
+      ...(ga4BindingDiagnosis?.blocking
+        ? [
+            {
+              field: "googleAnalytics4.resourceRef",
+              message: ga4BindingDiagnosis.reason,
+            },
+          ]
+        : []),
+    ],
+    [draft, ga4BindingDiagnosis],
+  );
   const dirty = JSON.stringify(draft) !== JSON.stringify(initial);
   const update = useMutation({
     mutationFn: updateSiteIntegrations,
@@ -319,6 +355,74 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
       });
     } finally {
       setGoogleConnectionOwner(null);
+    }
+  };
+
+  const recoverGoogleAnalytics = async () => {
+    const propertyRef = draft.googleAnalytics4.resourceRef.trim();
+    if (!propertyRef) return;
+    setRecoveringGa4(true);
+    try {
+      let connectionId = ga4BindingDiagnosis?.recoverableConnectionId ?? null;
+      if (!connectionId) {
+        const loginHint =
+          googleInventory.data?.connections.find(
+            (connection) =>
+              connection.id === draft.googleAnalytics4.credentialRef,
+          )?.account_email ??
+          (googleInventory.data?.connections.length === 1
+            ? googleInventory.data.connections[0].account_email
+            : undefined);
+        const code = await google.requestAuthorizationCode(
+          [...GOOGLE_ANALYTICS_SCOPES],
+          loginHint ?? undefined,
+        );
+        const result = await connectGoogle.mutateAsync({
+          code,
+          owner: { type: "user" },
+        });
+        connectionId = result.connectionId;
+      }
+
+      const refreshed = await googleInventory.refetch();
+      const discovered = refreshed.data?.resources.find(
+        (resource) =>
+          resource.connection_id === connectionId &&
+          resource.resource_type === "analytics_property" &&
+          resource.resource_ref === propertyRef,
+      );
+      if (!discovered) {
+        setBuiltIn("googleAnalytics4", {
+          ...draft.googleAnalytics4,
+          credentialAuthority: "external_connection",
+          credentialRef: connectionId,
+          resourceRef: "",
+        });
+        throw new Error(
+          "Google did not return the previously saved GA4 property. Choose one of the properties discovered for this account.",
+        );
+      }
+      await persistBuiltInProvider(
+        "googleAnalytics4",
+        {
+          ...draft.googleAnalytics4,
+          enabled: true,
+          credentialAuthority: "external_connection",
+          credentialRef: connectionId,
+          resourceRef: discovered.resource_ref,
+        },
+        "Google Analytics restored",
+        `${discovered.display_name} is discovered and connected to ${site.domain}.`,
+      );
+    } catch (error) {
+      toast.error("Google Analytics still needs attention", {
+        description:
+          error instanceof Error
+            ? error.message
+            : "Google Analytics authorization did not finish.",
+      });
+    } finally {
+      setRecoveringGa4(false);
     }
   };
 
@@ -592,6 +696,13 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
                         ) ?? null
                       }
                     />
+                  ) : key === "googleAnalytics4" &&
+                    ga4BindingDiagnosis?.blocking ? (
+                    <Ga4BindingRecovery
+                      diagnosis={ga4BindingDiagnosis}
+                      recovering={recoveringGa4}
+                      onRecover={() => void recoverGoogleAnalytics()}
+                    />
                   ) : undefined
                 }
                 value={draft[key]}
@@ -708,6 +819,47 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
         </div>
       </main>
     </SurfaceRuntimeProvider>
+  );
+}
+
+function Ga4BindingRecovery({
+  diagnosis,
+  recovering,
+  onRecover,
+}: {
+  diagnosis: GoogleResourceBindingDiagnosis;
+  recovering: boolean;
+  onRecover: () => void;
+}) {
+  const canRebind = Boolean(diagnosis.recoverableConnectionId);
+  return (
+    <div className="space-y-1.5 rounded-md border border-destructive/40 bg-destructive/5 p-2">
+      <p className="text-[10px] font-medium text-destructive">
+        Analytics is not collecting
+      </p>
+      <p className="text-[10px] leading-4 text-destructive/90">
+        {diagnosis.reason}
+      </p>
+      <Button
+        size="sm"
+        variant="outline"
+        className="h-7 w-full gap-1.5"
+        disabled={recovering}
+        onClick={onRecover}
+      >
+        {recovering ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <RefreshCw className="h-3.5 w-3.5" />
+        )}
+        {canRebind ? "Use discovered property" : "Restore Analytics access"}
+      </Button>
+      <p className="text-[10px] leading-4 text-muted-foreground">
+        {canRebind
+          ? "This rebinds the saved property to the live Google connection."
+          : "Google will ask only for read-only Analytics access, rerun discovery, and reconnect the same property if it is returned."}
+      </p>
+    </div>
   );
 }
 

@@ -48,6 +48,12 @@ export const GOOGLE_SEARCH_CONSOLE_SCOPES = [
   GOOGLE_SCOPE.webmastersReadonly,
 ] as const;
 
+/** Incremental GA4 authorization; Search Console stays granted and usable. */
+export const GOOGLE_ANALYTICS_SCOPES = [
+  ...GOOGLE_SEARCH_CONSOLE_SCOPES,
+  GOOGLE_SCOPE.analyticsReadonly,
+] as const;
+
 /**
  * First verification campaign target in Google Cloud Data Access. Identity
  * aliases are listed as the URLs Google Cloud displays, not GIS shorthand.

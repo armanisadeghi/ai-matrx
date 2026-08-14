@@ -40,7 +40,6 @@ import { extractErrorMessage } from "@/utils/errors";
 import { SiteStrategyCard } from "@/features/marketing/components/settings/SiteStrategyCard";
 import { CollectionStatusPanel } from "@/features/marketing/components/settings/CollectionStatusPanel";
 import { SiteAnalyticsCard } from "@/features/marketing/components/settings/SiteAnalyticsCard";
-import { parseSiteIntegrations } from "@/features/marketing/data/integrations-schema";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingSiteSettingsScope } from "@/features/surfaces/manifests/marketing-site-settings.manifest";
@@ -411,11 +410,7 @@ export function SiteSettingsWorkspace() {
           <CollectionStatusPanel site={site} sitePath={sitePath} />
         </div>
 
-        <SiteAnalyticsCard
-          siteId={site.id}
-          organizationId={site.organization_id}
-          ga4Enabled={parseSiteIntegrations(site.integrations).googleAnalytics4.enabled}
-        />
+        <SiteAnalyticsCard site={site} />
 
         <SiteStrategyCard
           siteId={site.id}

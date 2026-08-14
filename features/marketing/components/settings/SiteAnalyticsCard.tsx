@@ -15,6 +15,7 @@ import { LineChart, Loader2, RefreshCw } from "lucide-react";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { toast } from "@/lib/toast";
@@ -32,6 +33,17 @@ import {
   syncSiteAnalytics,
   type WebAnalyticsDailyRow,
 } from "@/features/marketing/analytics/data";
+import { parseSiteIntegrations } from "@/features/marketing/data/integrations-schema";
+import { updateBuiltInProviderIntegration } from "@/features/marketing/data/integrations-service";
+import {
+  useConnectGoogle,
+  useGoogleConnectionInventory,
+} from "@/features/marketing/google/hooks";
+import { diagnoseGoogleResourceBinding } from "@/features/marketing/google/health";
+import type { MarketingSite } from "@/features/marketing/types";
+import { GOOGLE_ANALYTICS_SCOPES, GOOGLE_SCOPE } from "@/lib/googleScopes";
+import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
+import { useGoogleAPI } from "@/providers/google-provider/GoogleApiProvider";
 
 interface AnalyticsDay {
   date: string;
@@ -44,18 +56,26 @@ function integer(value: number): string {
   return Intl.NumberFormat().format(Math.round(value));
 }
 
-export function SiteAnalyticsCard({
-  siteId,
-  organizationId,
-  ga4Enabled,
-}: {
-  siteId: string;
-  organizationId: string;
-  ga4Enabled: boolean;
-}) {
+export function SiteAnalyticsCard({ site }: { site: MarketingSite }) {
+  return (
+    <LazyGoogleAPIProvider scopes={[...GOOGLE_ANALYTICS_SCOPES]}>
+      <SiteAnalyticsCardContent site={site} />
+    </LazyGoogleAPIProvider>
+  );
+}
+
+function SiteAnalyticsCardContent({ site }: { site: MarketingSite }) {
+  const siteId = site.id;
+  const organizationId = site.organization_id;
+  const ga4Binding = parseSiteIntegrations(site.integrations).googleAnalytics4;
+  const ga4Enabled = ga4Binding.enabled;
   const dispatch = useAppDispatch();
   const queryClient = useQueryClient();
+  const google = useGoogleAPI();
+  const connectGoogle = useConnectGoogle();
+  const googleInventory = useGoogleConnectionInventory();
   const [syncing, setSyncing] = useState(false);
+  const [recovering, setRecovering] = useState(false);
   const [syncFailure, setSyncFailure] =
     useState<BackendFailureExplanation | null>(null);
   const analytics = useQuery({
@@ -75,6 +95,86 @@ export function SiteAnalyticsCard({
     ? describeBackendFailure(analytics.data.latestFailure)
     : null;
   const visibleFailure = syncFailure ?? persistedFailure;
+  const bindingDiagnosis = (() => {
+    if (
+      !ga4Binding.enabled ||
+      !ga4Binding.credentialRef ||
+      !ga4Binding.resourceRef ||
+      !googleInventory.data
+    ) {
+      return null;
+    }
+    return diagnoseGoogleResourceBinding({
+      connectionId: ga4Binding.credentialRef,
+      resourceRef: ga4Binding.resourceRef,
+      resourceType: "analytics_property",
+      requiredScope: GOOGLE_SCOPE.analyticsReadonly,
+      connections: googleInventory.data.connections,
+      resources: googleInventory.data.resources,
+    });
+  })();
+  const ga4Ready = ga4Enabled && !bindingDiagnosis?.blocking;
+
+  const restoreAnalytics = async () => {
+    const propertyRef = ga4Binding.resourceRef.trim();
+    if (!propertyRef) return;
+    setRecovering(true);
+    try {
+      let connectionId = bindingDiagnosis?.recoverableConnectionId ?? null;
+      if (!connectionId) {
+        const loginHint = googleInventory.data?.connections.find(
+          (connection) => connection.id === ga4Binding.credentialRef,
+        )?.account_email;
+        const code = await google.requestAuthorizationCode(
+          [...GOOGLE_ANALYTICS_SCOPES],
+          loginHint ?? undefined,
+        );
+        const result = await connectGoogle.mutateAsync({
+          code,
+          owner: { type: "user" },
+        });
+        connectionId = result.connectionId;
+      }
+      const refreshed = await googleInventory.refetch();
+      const discovered = refreshed.data?.resources.find(
+        (resource) =>
+          resource.connection_id === connectionId &&
+          resource.resource_type === "analytics_property" &&
+          resource.resource_ref === propertyRef,
+      );
+      if (!discovered) {
+        throw new Error(
+          "Google did not return the saved GA4 property. Open Site integrations to choose one of the properties this account returned.",
+        );
+      }
+      const updatedSite = await updateBuiltInProviderIntegration({
+        siteId,
+        provider: "googleAnalytics4",
+        expected: ga4Binding,
+        next: {
+          ...ga4Binding,
+          enabled: true,
+          credentialAuthority: "external_connection",
+          credentialRef: connectionId,
+          resourceRef: discovered.resource_ref,
+        },
+      });
+      queryClient.setQueryData(marketingKeys.site(siteId), updatedSite);
+      await queryClient.invalidateQueries({ queryKey: marketingKeys.root });
+      toast.success("Google Analytics restored", {
+        description: `${discovered.display_name} is discovered and connected.`,
+      });
+    } catch (error) {
+      toast.error("Google Analytics still needs attention", {
+        description:
+          error instanceof Error
+            ? error.message
+            : "Google Analytics authorization did not finish.",
+      });
+    } finally {
+      setRecovering(false);
+    }
+  };
 
   const runSync = async () => {
     setSyncing(true);
@@ -175,8 +275,12 @@ export function SiteAnalyticsCard({
           <h1 className="text-sm font-semibold text-foreground">
             Google Analytics
           </h1>
-          <Badge variant={ga4Enabled ? "success" : "outline"}>
-            {ga4Enabled ? "Connected" : "Not connected"}
+          <Badge variant={ga4Ready ? "success" : "outline"}>
+            {ga4Ready
+              ? "Connected"
+              : ga4Enabled
+                ? "Needs attention"
+                : "Not connected"}
           </Badge>
         </div>
         <div className="flex items-center gap-1">
@@ -186,10 +290,10 @@ export function SiteAnalyticsCard({
           <button
             type="button"
             onClick={() => void runSync()}
-            disabled={syncing || !ga4Enabled}
+            disabled={syncing || !ga4Ready}
             aria-label="Sync Google Analytics"
             title={
-              ga4Enabled
+              ga4Ready
                 ? "Run a GA4 landing-page collection for this site"
                 : "Bind a Google Analytics 4 property to this site first"
             }
@@ -204,6 +308,31 @@ export function SiteAnalyticsCard({
         </div>
       </div>
       <div className="grid gap-2 p-3">
+        {bindingDiagnosis?.blocking ? (
+          <div className="space-y-2 rounded-md border border-destructive/40 bg-destructive/5 p-2.5">
+            <p className="text-xs font-medium text-destructive">
+              Analytics is not collecting
+            </p>
+            <p className="text-xs leading-5 text-destructive/90">
+              {bindingDiagnosis.reason}
+            </p>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={recovering}
+              onClick={() => void restoreAnalytics()}
+            >
+              {recovering ? (
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+              )}
+              {bindingDiagnosis.recoverableConnectionId
+                ? "Use discovered property"
+                : "Restore Analytics access"}
+            </Button>
+          </div>
+        ) : null}
         {error ? <p className="text-xs text-destructive">{error}</p> : null}
         {visibleFailure ? (
           <BackendFailureDetails
