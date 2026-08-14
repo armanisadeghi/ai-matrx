@@ -378,14 +378,55 @@ the `shareable_resource_registry` (both `udt_datasets` and `udt_workbooks` are r
 
 ---
 
+## Column lifecycle — add, format, delete
+
+**Delete is `udt_delete_field` and nothing else.** `deleteField()` in `service.ts` is the ONE
+path; both entry points (Table Settings' per-column trash button and the column header menu's
+"Remove column") use the same confirm copy and the same call, so they cannot diverge. The RPC
+purges the column's key from every row — an orphan JSONB key would otherwise resurrect itself
+the moment a column of the same name is re-added — closes the `field_order` gap, drops a
+`row_ordering_config.default_sort` / `label_field` that pointed at it, and **refuses to remove
+the last remaining column**. Cleared values survive in `udt_dataset_row_versions`.
+
+**Display format is a UI layer, never a storage change.** A column declares an optional format
+in `udt_dataset_fields.metadata.format = {id, options}` — `currency`, `percent`, `email`,
+`url`, `rating`, `duration`, `tags`, … The stored `data_type` and every stored value are
+untouched, so a format can be set, changed, or cleared with zero risk and no confirmation.
+
+- Registry, THE FALLBACK LAW, and how to add a format: **[`lib/field-formats/FEATURE.md`](../../lib/field-formats/FEATURE.md)**.
+- Write with `setFieldFormat()` (→ `udt_set_field_format`); read with
+  `resolveFieldFormat(field.data_type, field.metadata)`. **Never read `metadata.format` by hand.**
+- A column with no declared format renders down `UserTableViewer`'s original code path, so
+  every pre-existing table is byte-identically unchanged.
+- A value that does not fit its format renders as the STORED value in amber with a tooltip —
+  never blank, never an error.
+
+**Row labels in Reorder Rows** come from `row_ordering_config.label_field` (a real column, the
+RPC rejects names that do not exist), falling back to the first text column by `field_order`.
+Never derive a label from `Object.keys(row.data)`: Postgres does not preserve jsonb key order,
+so that picks an arbitrary column and can pick a *different* one per row.
+
+🚨 **`has_permission` takes the entity token `dataset`, NOT the table name `udt_datasets`.**
+A bare table name does not return false — `has_permission_for` RAISES P0001. Owners are not
+safe either: Postgres does not guarantee left-to-right OR short-circuiting inside an RLS
+policy, so `user_id = auth.uid() OR has_permission('udt_datasets', …)` still blows up. This
+shipped broken in 6 RPCs and 9 policies until 2026-08-14 and rendered a hard error on
+`/data/[id]`. Check the token against `platform.entity_types` before writing a guard.
+
+---
+
 ## Known tech debt (audited 2026-05-29)
 
 **Dead RPCs — zero call sites in the repo.** Safe to drop after a final external-consumer audit
 (matrx-extend, aidream backend) — surfaced here so the user can decide:
 - `append_rows_to_user_table` — superseded by `udt_bulk_write` with `op:'insert'`
 - `batch_update_rows_in_user_table` — superseded by `udt_bulk_write` with `op:'update'`
-- `remove_column_from_user_table` — no live UI consumer; column delete goes through the
-  table-config RPC
+- ~~`remove_column_from_user_table`~~ — **this entry was wrong and cost the product a
+  feature.** It claimed "column delete goes through the table-config RPC"; it does not.
+  `update_user_table_config` has no delete verb, so once this RPC was dropped a user could
+  add columns forever and never remove one. Replaced 2026-08-14 by `udt_delete_field`
+  (see Column lifecycle below). Read this as the standing warning: before calling an RPC
+  dead, name the surface that replaces it.
 - `create_new_user_table` — duplicate of `_dynamic` variant (active)
 - `create_new_user_table_wrapper` — duplicate of `_dynamic` variant (active)
 - `create_user_table_with_fields` — duplicate of `_dynamic` variant (active)
@@ -491,6 +532,22 @@ Decide before agent-heavy workloads land.
 
 ## Change log
 
+- 2026-08-14 — claude: **Columns can finally be deleted; reorder-row labels fixed; display
+  formats added.** (1) `udt_delete_field` — there had been NO delete-column path since
+  `remove_column_from_user_table` was dropped; reachable from Table Settings and the column
+  header menu. (2) Reorder Rows chose its label column per row from jsonb key order, so it
+  looked random and could differ between rows — now resolved once from the schema, with a
+  "Label rows by" picker persisted in `row_ordering_config.label_field`. (3) New platform
+  primitive `lib/field-formats/` (22 formats over unchanged storage types, `metadata.format`,
+  THE FALLBACK LAW) wired into the grid, inline edit, both row modals, and column creation.
+  Also fixed, all found while verifying: **6 RPCs and 9 RLS policies guarded on the invalid
+  entity token `udt_datasets`** (rendered a hard error on `/data/[id]`; correct token is
+  `dataset`); `get_user_table_complete` omitted `is_public` and `metadata` from its field
+  payload, so Table Settings' "Pub" checkbox always read false and a save silently cleared it;
+  `update_user_table_row_ordering` rebuilt its config from scratch, discarding `default_sort`,
+  and was owner-only so an editor's reorder was silently refused; `addColumn` always returned
+  `columnId: undefined` (read `column_id`, RPC returns `field_id`); AddColumnModal kept stale
+  state between opens.
 - 2026-08-14 — claude: **Wave A read layer landed; every metadata-only caller moved off the
   no-LIMIT full-dataset RPC.** Added `getTableMetadata` / `listUserTables` / `getTablePage` to
   `service.ts` (+ the shared `parseTableMetadata` in `types.ts`, so `table-utils` can share the
