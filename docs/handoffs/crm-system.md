@@ -9,7 +9,7 @@ repos: [matrx-frontend, aidream]
 **You need nothing outside this document to continue.** It carries the vision in Arman's own
 words, the verified current state, and a prioritized work order.
 
-> **Status 2026-08-14 — the core product is shipped and working; six items remain, each a fired
+> **Status 2026-08-14 — the core product is shipped and working; five items remain, each a fired
 > chip (§4).** A tenant can import contacts, work them from a list, dial a claim-locked queue,
 > log outcomes, and resolve duplicates. What is left is *reach* (the folds, the agent surface,
 > experts) and *depth* (Wave 4, decision-gated). **§1 is the vision — it is settled and must not
@@ -314,20 +314,16 @@ per-item efforts in the cross-repo SoR.
    needs `scripts/dead-relations.json` + `platform.deprecated_relations` BEFORE repointing;
    `plan_entity_person_org_fold.sql` is the worked reference. **Most urgent by decay** — the
    source tables grow every day this waits.
-3. **YouTube channels → party.** *(chip: "YouTube channels → crm.party")* `channel_id` is a
-   stable natural key, so no fuzzy matching. Stored as an `external_id` medium, which makes these
-   the **first records eligible for real auto-merge**. Build social-agnostic — TikTok, Instagram,
-   Facebook and LinkedIn must slot into the same shape, never a YouTube-specific column.
-4. **CRM agent surface, FE half.** *(chip: "Complete the CRM agent surface")* The server half
+3. **CRM agent surface, FE half.** *(chip: "Complete the CRM agent surface")* The server half
    shipped 2026-08-12; this repo still owns `features/crm/agent-context/`, the context-menu
    "Save selection as contact" (routed through the server `resolve_contact` action, never a raw
    insert), and client tools **only if** `resolve_contact` + the generic `data` resource don't
    already cover them.
-5. **Smart views.** *(chip: "CRM smart views")* Saved dynamic filters + bulk actions over the
+4. **Smart views.** *(chip: "CRM smart views")* Saved dynamic filters + bulk actions over the
    existing shared `applyPartyListPredicates` — the list becomes the work queue. Also closes two
    known gaps: enrollment from a *saved view*, and the missing **unsuppress affordance** (today
    "Do not call" scrubs a medium org-wide with no way back, so a mis-click is permanent).
-6. **D182 — the RLS component remainder.** *(chip: "Finish D182")* 33 component tables still
+5. **D182 — the RLS component remainder.** *(chip: "Finish D182")* 33 component tables still
    can't serve an authed insert-with-returning (21 missing the actor-stamp trigger, 12 with no
    `created_by` at all). All service_role-written today, so nothing user-facing is known broken —
    fix it before a user surface lands on one. Carries a product question for Arman (§5.4).
@@ -337,7 +333,16 @@ per-item efforts in the cross-repo SoR.
 **Wave 0** — raw-`database`-tool guard (`WRITE_GOVERNED_SCHEMAS = {"crm"}`) + `DocketParty`
 rename, aidream v0.2.57. **Wave 1 server half** — the party resolver, the `party` `agent_data`
 resource, the governed `resolve_contact` action. **Wave 2** — `plan.entity` person/org fold, CSV
-import. **Wave 3** — outreach lists + claim-locked dialer, dedup automation + merge review.
+import, and (2026-08-14, aidream) the **social fold**: any platform account → its canonical party,
+with the stable platform id as an `external_id` medium — the first records eligible for real
+auto-merge. Platform-agnostic by construction (`aidream/services/crm/social_fold.py`, one
+`SOCIAL_PLATFORMS` line per platform); the YouTube reader
+(`aidream/services/crm/youtube_channels.py`) folds `research.youtube_video` channels hourly and was
+proven live on the real 934-channel library with zero duplicate channel→party rows. Kind is pinned
+from the existing party on every re-run, so a human's `party_kind` correction is never overwritten;
+name-shaped channels are typed `organization` and flagged
+`attributes.kind_inference.possible_person` rather than fabricating humans — **that flag is a
+ready-made FE review queue / assists chip, and nothing renders it yet.** **Wave 3** — outreach lists + claim-locked dialer, dedup automation + merge review.
 Details in §2 and in `features/crm/FEATURE.md`. The two entries below are kept in full because
 they record guards a future agent could undo without realising what they protect.
 
