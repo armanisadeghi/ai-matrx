@@ -10191,7 +10191,69 @@
    "label": "Batch Cost Event",
    "noun": "batch_cost_event",
    "reference": "no",
-   "schemas": null,
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "cost_usd": {
+       "title": "Cost Usd"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "source": {
+       "default": null,
+       "title": "Source"
+      }
+     },
+     "required": [
+      "cost_usd"
+     ],
+     "title": "CreateBatchCostEventItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteBatchCostEventItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "cost_usd": {
+       "default": null,
+       "title": "Cost Usd"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "source": {
+       "default": null,
+       "title": "Source"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateBatchCostEventItem",
+     "type": "object"
+    }
+   },
    "table": "batch.cost_event",
    "title_column": null,
    "update": "planned",
@@ -10205,7 +10267,221 @@
    "label": "Provider Batch",
    "noun": "batch_provider_batch",
    "reference": "no",
-   "schemas": null,
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "batch_id": {
+       "default": null,
+       "title": "Batch Id"
+      },
+      "cache_read_tokens": {
+       "default": null,
+       "title": "Cache Read Tokens"
+      },
+      "cache_write_tokens": {
+       "default": null,
+       "title": "Cache Write Tokens"
+      },
+      "completed_at": {
+       "default": null,
+       "title": "Completed At"
+      },
+      "cost_recorded_at": {
+       "default": null,
+       "title": "Cost Recorded At"
+      },
+      "cost_usd": {
+       "default": null,
+       "title": "Cost Usd"
+      },
+      "error": {
+       "default": null,
+       "title": "Error"
+      },
+      "est_cost_usd": {
+       "default": 0,
+       "title": "Est Cost Usd"
+      },
+      "est_live_cost_usd": {
+       "default": 0,
+       "title": "Est Live Cost Usd"
+      },
+      "last_polled_at": {
+       "default": null,
+       "title": "Last Polled At"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "model": {
+       "default": null,
+       "title": "Model"
+      },
+      "next_poll_at": {
+       "title": "Next Poll At"
+      },
+      "poll_count": {
+       "default": 0,
+       "title": "Poll Count"
+      },
+      "prefix_group_key": {
+       "title": "Prefix Group Key"
+      },
+      "provider": {
+       "title": "Provider"
+      },
+      "purpose": {
+       "title": "Purpose"
+      },
+      "request_count": {
+       "default": 1,
+       "title": "Request Count"
+      },
+      "status": {
+       "default": "pending",
+       "title": "Status"
+      },
+      "submitted_at": {
+       "title": "Submitted At"
+      },
+      "tokens_in": {
+       "default": null,
+       "title": "Tokens In"
+      },
+      "tokens_out": {
+       "default": null,
+       "title": "Tokens Out"
+      }
+     },
+     "required": [
+      "provider",
+      "purpose",
+      "prefix_group_key",
+      "submitted_at",
+      "next_poll_at"
+     ],
+     "title": "CreateBatchProviderBatchItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteBatchProviderBatchItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "batch_id": {
+       "default": null,
+       "title": "Batch Id"
+      },
+      "cache_read_tokens": {
+       "default": null,
+       "title": "Cache Read Tokens"
+      },
+      "cache_write_tokens": {
+       "default": null,
+       "title": "Cache Write Tokens"
+      },
+      "completed_at": {
+       "default": null,
+       "title": "Completed At"
+      },
+      "cost_recorded_at": {
+       "default": null,
+       "title": "Cost Recorded At"
+      },
+      "cost_usd": {
+       "default": null,
+       "title": "Cost Usd"
+      },
+      "error": {
+       "default": null,
+       "title": "Error"
+      },
+      "est_cost_usd": {
+       "default": null,
+       "title": "Est Cost Usd"
+      },
+      "est_live_cost_usd": {
+       "default": null,
+       "title": "Est Live Cost Usd"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "last_polled_at": {
+       "default": null,
+       "title": "Last Polled At"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "model": {
+       "default": null,
+       "title": "Model"
+      },
+      "next_poll_at": {
+       "default": null,
+       "title": "Next Poll At"
+      },
+      "poll_count": {
+       "default": null,
+       "title": "Poll Count"
+      },
+      "prefix_group_key": {
+       "default": null,
+       "title": "Prefix Group Key"
+      },
+      "provider": {
+       "default": null,
+       "title": "Provider"
+      },
+      "purpose": {
+       "default": null,
+       "title": "Purpose"
+      },
+      "request_count": {
+       "default": null,
+       "title": "Request Count"
+      },
+      "status": {
+       "default": null,
+       "title": "Status"
+      },
+      "submitted_at": {
+       "default": null,
+       "title": "Submitted At"
+      },
+      "tokens_in": {
+       "default": null,
+       "title": "Tokens In"
+      },
+      "tokens_out": {
+       "default": null,
+       "title": "Tokens Out"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateBatchProviderBatchItem",
+     "type": "object"
+    }
+   },
    "table": "batch.provider_batch",
    "title_column": null,
    "update": "planned",
@@ -10219,7 +10495,293 @@
    "label": "Batch Work Item",
    "noun": "batch_work_item",
    "reference": "no",
-   "schemas": null,
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "actual_cost_usd": {
+       "default": null,
+       "title": "Actual Cost Usd"
+      },
+      "attempt_count": {
+       "default": 0,
+       "title": "Attempt Count"
+      },
+      "cache_read_tokens": {
+       "default": null,
+       "title": "Cache Read Tokens"
+      },
+      "claimed_at": {
+       "default": null,
+       "title": "Claimed At"
+      },
+      "completed_at": {
+       "default": null,
+       "title": "Completed At"
+      },
+      "custom_id": {
+       "title": "Custom Id"
+      },
+      "dedupe_key": {
+       "default": null,
+       "title": "Dedupe Key"
+      },
+      "error": {
+       "default": null,
+       "title": "Error"
+      },
+      "est_live_cost_usd": {
+       "default": 0,
+       "title": "Est Live Cost Usd"
+      },
+      "est_tokens_in": {
+       "default": 0,
+       "title": "Est Tokens In"
+      },
+      "est_tokens_out": {
+       "default": 0,
+       "title": "Est Tokens Out"
+      },
+      "handler_args": {
+       "default": {},
+       "title": "Handler Args"
+      },
+      "handler_error": {
+       "default": null,
+       "title": "Handler Error"
+      },
+      "handler_status": {
+       "default": null,
+       "title": "Handler Status"
+      },
+      "lease_expires_at": {
+       "default": null,
+       "title": "Lease Expires At"
+      },
+      "link_id": {
+       "default": null,
+       "title": "Link Id"
+      },
+      "link_kind": {
+       "default": null,
+       "title": "Link Kind"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "model": {
+       "title": "Model"
+      },
+      "payload": {
+       "title": "Payload"
+      },
+      "prefix_group_key": {
+       "title": "Prefix Group Key"
+      },
+      "provider": {
+       "title": "Provider"
+      },
+      "provider_batch_row_id": {
+       "default": null,
+       "title": "Provider Batch Row Id"
+      },
+      "purpose": {
+       "title": "Purpose"
+      },
+      "result": {
+       "default": null,
+       "title": "Result"
+      },
+      "result_handler": {
+       "title": "Result Handler"
+      },
+      "status": {
+       "default": "pending",
+       "title": "Status"
+      },
+      "submitted_at": {
+       "default": null,
+       "title": "Submitted At"
+      },
+      "tokens_in": {
+       "default": null,
+       "title": "Tokens In"
+      },
+      "tokens_out": {
+       "default": null,
+       "title": "Tokens Out"
+      },
+      "urgency": {
+       "default": "batch",
+       "title": "Urgency"
+      }
+     },
+     "required": [
+      "custom_id",
+      "purpose",
+      "provider",
+      "model",
+      "prefix_group_key",
+      "payload",
+      "result_handler"
+     ],
+     "title": "CreateBatchWorkItemItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteBatchWorkItemItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "actual_cost_usd": {
+       "default": null,
+       "title": "Actual Cost Usd"
+      },
+      "attempt_count": {
+       "default": null,
+       "title": "Attempt Count"
+      },
+      "cache_read_tokens": {
+       "default": null,
+       "title": "Cache Read Tokens"
+      },
+      "claimed_at": {
+       "default": null,
+       "title": "Claimed At"
+      },
+      "completed_at": {
+       "default": null,
+       "title": "Completed At"
+      },
+      "custom_id": {
+       "default": null,
+       "title": "Custom Id"
+      },
+      "dedupe_key": {
+       "default": null,
+       "title": "Dedupe Key"
+      },
+      "error": {
+       "default": null,
+       "title": "Error"
+      },
+      "est_live_cost_usd": {
+       "default": null,
+       "title": "Est Live Cost Usd"
+      },
+      "est_tokens_in": {
+       "default": null,
+       "title": "Est Tokens In"
+      },
+      "est_tokens_out": {
+       "default": null,
+       "title": "Est Tokens Out"
+      },
+      "handler_args": {
+       "default": null,
+       "title": "Handler Args"
+      },
+      "handler_error": {
+       "default": null,
+       "title": "Handler Error"
+      },
+      "handler_status": {
+       "default": null,
+       "title": "Handler Status"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "lease_expires_at": {
+       "default": null,
+       "title": "Lease Expires At"
+      },
+      "link_id": {
+       "default": null,
+       "title": "Link Id"
+      },
+      "link_kind": {
+       "default": null,
+       "title": "Link Kind"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "model": {
+       "default": null,
+       "title": "Model"
+      },
+      "payload": {
+       "default": null,
+       "title": "Payload"
+      },
+      "prefix_group_key": {
+       "default": null,
+       "title": "Prefix Group Key"
+      },
+      "provider": {
+       "default": null,
+       "title": "Provider"
+      },
+      "provider_batch_row_id": {
+       "default": null,
+       "title": "Provider Batch Row Id"
+      },
+      "purpose": {
+       "default": null,
+       "title": "Purpose"
+      },
+      "result": {
+       "default": null,
+       "title": "Result"
+      },
+      "result_handler": {
+       "default": null,
+       "title": "Result Handler"
+      },
+      "status": {
+       "default": null,
+       "title": "Status"
+      },
+      "submitted_at": {
+       "default": null,
+       "title": "Submitted At"
+      },
+      "tokens_in": {
+       "default": null,
+       "title": "Tokens In"
+      },
+      "tokens_out": {
+       "default": null,
+       "title": "Tokens Out"
+      },
+      "urgency": {
+       "default": null,
+       "title": "Urgency"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateBatchWorkItemItem",
+     "type": "object"
+    }
+   },
    "table": "batch.work_item",
    "title_column": null,
    "update": "planned",
@@ -15267,7 +15829,67 @@
    "label": "Runtime Request",
    "noun": "global_request",
    "reference": "no",
-   "schemas": null,
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "idempotency_key": {
+       "default": null,
+       "title": "Idempotency Key"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "origin_id": {
+       "default": null,
+       "title": "Origin Id"
+      }
+     },
+     "title": "CreateGlobalRequestItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteGlobalRequestItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "idempotency_key": {
+       "default": null,
+       "title": "Idempotency Key"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "origin_id": {
+       "default": null,
+       "title": "Origin Id"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateGlobalRequestItem",
+     "type": "object"
+    }
+   },
    "table": "runtime.global_request",
    "title_column": null,
    "update": "planned",
