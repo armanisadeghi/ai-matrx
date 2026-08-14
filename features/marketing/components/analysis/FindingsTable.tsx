@@ -353,13 +353,10 @@ export function FindingsTable() {
       }}
     >
     <main className="flex h-full flex-col overflow-hidden bg-textured p-3 sm:p-4">
-      {/* This site's finding assists — the analyze -> suggest bridge. The
-          deterministic sweep runs once per site per session; the same chips
-          also live in the global dock. */}
+      {/* This site's scheduled finding groups — the analyze -> suggest bridge.
+          The same ledger rows also live in the global dock. */}
       <FindingsAssistStrip
         siteId={site.id}
-        sitePath={sitePath}
-        siteDomain={site.domain}
         className="mb-2 shrink-0"
       />
       <div className="min-h-0 flex-1">

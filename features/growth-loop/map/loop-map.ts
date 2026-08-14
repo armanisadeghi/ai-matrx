@@ -746,17 +746,17 @@ export const EDGES: LoopEdge[] = [
     pipes: {
       code: {
         state: "partial",
-        note: "THE SECOND BIG BREAK IS CLOSED (G-FINDING-ASSIST, 2026-08-13): web.finding rows now become platform.assists rows — a deterministic per-site sweep emits up to two page chips plus one cross-page rollup, mounted on the register, the priority queue, and the audit rollup. Still partial only because the fork is absorbed but not collapsed: the offer layer is unified on platform.assists and the capability inventory is written, yet thirteen capabilities of kg-suggestions and of web.finding's own offer layer remain uncovered, so nothing may be retired (G-SUGGEST-FORK).",
+        note: "THE SECOND BIG BREAK IS CLOSED (G-FINDING-ASSIST, 2026-08-13): private.sweep_marketing_finding_assists runs every 15 minutes without a page visit, grouping open web.finding rows by site + check and maintaining the top three ranked platform.assists per actionable site. The strip, dock, ledger, and runner remain singular. Still partial because the offer-layer fork is not collapsed and assists are owner-addressed rather than team-addressed (G-SUGGEST-FORK).",
         ref: "features/marketing/findings-assists-producer.ts",
       },
       human: {
         state: "live",
-        note: "A user can act on a finding (acknowledge/resolve/suppress via finding-mutations.ts) AND is now offered the highest-value ones as chips where they stand, instead of having to think to open the register.",
+        note: "The site owner is offered three ranked site/check groups in the ambient dock and findings surfaces. Chip click expands; the explicit Review findings button opens the filtered register, where acknowledge/resolve/suppress and canonical fixes live.",
         ref: "FindingsAssistStrip.tsx",
       },
       ai: {
         state: "partial",
-        note: "The chip's verb button hands the SEO agent a prepared brief for the specific finding (metadata checks run all the way to ApplyMetaToPage). No agent yet proposes across the whole register unprompted.",
+        note: "Individual finding detail can launch the purpose-built fixer; the background grouped sweep is deterministic and spends no tokens. No agent yet proposes across the whole register unprompted.",
         ref: "features/marketing/lib/finding-remedies.ts",
       },
     },
@@ -769,7 +769,7 @@ export const EDGES: LoopEdge[] = [
     pipes: {
       code: {
         state: "live",
-        note: "planDeterministicFix drafts the derivable class free and unattended; the findings assist producer upgrades those chips to apply_page_meta, which lands desired metadata + a CMS DRAFT. Never publishes.",
+        note: "planDeterministicFix drafts the derivable class free on the individual finding path; FindingFixCard applies desired metadata + a CMS DRAFT. Grouped assists navigate to that canonical path rather than adding a batch write. Never publishes.",
         ref: "features/marketing/lib/finding-fix.ts",
       },
       human: {
@@ -909,7 +909,7 @@ export const GAPS: LoopGap[] = [
     at: "analyze->suggest",
     breaks: ["code", "ai"],
     detail:
-      "CLOSED 2026-08-13. The producer existed but nothing mounted it — dead code that compiled. FindingsAssistStrip is now mounted on all three surfaces where findings are read (register, priority queue, audit rollup). PROOF on live Matrx Main: platform.assists went from ZERO finding-sourced rows to three for prpinjectionmd.com — two page chips (seo.finding.meta_description_presence, seo.finding.h1_presence) and one rollup (seo.finding_rollup.meta_description_length, '121+ pages share one problem'), each with a stable dedupe key '<sourceKey>:<siteId>:<pageId|site>'. Dismissal is durable: 'Don't show again' wrote status='dismissed' and three later sweeps (including a hard reload) re-ran filterUndecidedKeys and did not resurrect it. Chips obey THE INTENTIONAL-ACTION LAW — clicking expands the card; only 'Open agent' runs. Fixed in the same pass: isFindingAssist matched 'seo.finding.' so every rollup chip was silently filtered out of the page strip while sitting in the ledger.",
+      "CLOSED 2026-08-13; coverage corrected the same day. The first close proved real ledger writes but only after FindingsAssistStrip rendered: produceFindingAssists lived in useEffect behind a once-per-site/browser-session guard. Live Matrx Main therefore had 5,506 findings and six rows created at page-open times. The canonical producer is now private.sweep_marketing_finding_assists(), scheduled every 15 minutes: group by site + check, rank severity/scope/recency, cap at three undecided groups per site, stable key 'seo.finding_rollup.<check>:<siteId>:site', supersede stale groups. LIVE PROOF: 15 pending sweep rows (five actionable sites x three), 15 distinct keys; five render-era pending rows superseded; the historical dismissal retained; an immediate second sweep inserted zero. The sixth site has acknowledged-only findings and correctly emits none. Clicking still only expands; explicit 'Review findings' navigates. True boundary: rows are personal and addressed to the site owner, so team-wide delivery remains a separate Assists gap.",
     lane: "L2",
     evidence:
       "ai-matrx/features/marketing/components/analysis/FindingsAssistStrip.tsx",

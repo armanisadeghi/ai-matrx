@@ -333,8 +333,6 @@ export function SiteAnalysisTable() {
           not the tab it was noticed on. */}
       <FindingsAssistStrip
         siteId={site.id}
-        sitePath={sitePath}
-        siteDomain={site.domain}
         className="mb-2 shrink-0"
       />
       <div className="min-h-0 flex-1">

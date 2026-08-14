@@ -644,13 +644,9 @@ function AuditBody({
           </div>
         </section>
 
-        {/* This site's finding assists — the audit rollup is where the user
-            first sees how bad it is, so the one-click fixes belong here too. */}
-        <FindingsAssistStrip
-          siteId={siteId}
-          sitePath={sitePath}
-          siteDomain={siteDomain}
-        />
+        {/* Background-produced finding groups, displayed through the same
+            assist strip and ledger as the findings register and global dock. */}
+        <FindingsAssistStrip siteId={siteId} />
 
         <section
           data-surface-value="audit_rollup"
