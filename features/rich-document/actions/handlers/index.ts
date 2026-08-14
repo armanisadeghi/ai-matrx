@@ -10,6 +10,7 @@
 
 import "./copy";
 import "./save";
+import "./contact";
 import "./export";
 import "./print";
 import "./edit";

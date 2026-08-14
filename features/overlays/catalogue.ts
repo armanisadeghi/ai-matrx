@@ -660,6 +660,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  saveContactFromSelection: {
+    label: "Save As Contact",
+    instanceMode: "multi",
+    isWindow: false,
+  },
   saveToCode: {
     label: "Save To Code",
     instanceMode: "multi",

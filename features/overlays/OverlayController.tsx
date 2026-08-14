@@ -833,6 +833,12 @@ const QuickSaveCodeDialog = lazyOverlay(
     })),
   { ssr: false },
 );
+const SaveContactFromSelectionDialog = lazyOverlay(() =>
+  import("@/features/crm/components/SaveContactFromSelectionDialog").then(
+    (m) => ({ default: m.SaveContactFromSelectionDialog }),
+  ),
+);
+
 const QuickNoteSaveOverlay = lazyOverlay(
   () =>
     import("@/features/notes/actions/quick-save/QuickNoteSaveOverlay").then(
@@ -1750,6 +1756,9 @@ export default function OverlayController() {
     ),
     notesWindow: useAppSelector((s) => selectOpenInstances(s, "notesWindow")),
     saveToCode: useAppSelector((s) => selectOpenInstances(s, "saveToCode")),
+    saveContactFromSelection: useAppSelector((s) =>
+      selectOpenInstances(s, "saveContactFromSelection"),
+    ),
     saveToNotes: useAppSelector((s) => selectOpenInstances(s, "saveToNotes")),
     saveToNotesFullscreen: useAppSelector((s) =>
       selectOpenInstances(s, "saveToNotesFullscreen"),
@@ -2633,7 +2642,6 @@ export default function OverlayController() {
           />
         );
       })()}
-
 
       {/* browserFrameWindow */}
       {(() => {
@@ -5266,6 +5274,29 @@ export default function OverlayController() {
                 ? data.defaultFolderId
                 : null
             }
+          />
+        );
+      })}
+
+      {/* saveContactFromSelection — multi-instance */}
+      {instancesById.saveContactFromSelection.map((inst) => {
+        const data = inst.data as Record<string, unknown> | null | undefined;
+        return (
+          <SaveContactFromSelectionDialog
+            key={inst.instanceId}
+            isOpen
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "saveContactFromSelection",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            selection={
+              typeof data?.selection === "string" ? data.selection : ""
+            }
+            origin={typeof data?.origin === "string" ? data.origin : undefined}
           />
         );
       })}

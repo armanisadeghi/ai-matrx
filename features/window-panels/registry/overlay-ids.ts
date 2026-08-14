@@ -144,6 +144,7 @@ export const OVERLAY_IDS = [
   "ragAiCopyWindow",
   "resourcePickerWindow",
   "runControlsWindow",
+  "saveContactFromSelection",
   "saveToCode",
   "saveToNotes",
   "saveToNotesFullscreen",
