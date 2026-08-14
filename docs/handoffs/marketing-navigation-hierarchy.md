@@ -107,34 +107,38 @@ later phase is guesswork until this is declared.
 
 ## Remaining work, in order
 
-1. **Declare the sub-views.** Add a sub-view registry beside
-   `MARKETING_SITE_SECTIONS` in `route-sections.ts`; migrate all twelve onto ONE
-   mechanism (`?view=`, matching the existing `media`/`keywords`/`links` majority
-   and `WorkspaceViewToggle`). Extend `route-sections.test.ts` to fail on an
-   undeclared sub-view the same way it already fails on an undeclared route.
-   Nothing renders differently. **This is the load-bearing phase.**
-2. **Arman rules on the hierarchy** (see Decisions needed). Blocks 3 and 6, not 1.
-3. **Add `group` to `MARKETING_SITE_SECTIONS`** — non-breaking metadata; the
-   header ignores it.
-4. **Build `MarketingSidebarMenu`**, registered at `/^\/marketing(?:\/|$)/`.
-   Outside a site it renders `MARKETING_PILLARS`; inside a site it renders brand
-   + site context above the grouped sections. Model:
-   `AdminRouteSidebarMenu.tsx`. One registry entry.
-5. **Demote the top bar one level.** With the sidebar owning the 26,
+1. **Migrate the twelve components onto the registry.** The sub-views are
+   declared (`lib/site-subviews.ts`) but each component still owns its local copy
+   on one of five mechanisms. Move them all to `?view=` — the majority mechanism
+   and the one `WorkspaceViewToggle` already uses — consuming
+   `listMarketingSubViews(section)` instead of a local const. Drop each entry's
+   `legacyMechanism` / `legacyNotLinkable` as it lands, and delete that section's
+   drift guard in `site-subviews.test.ts`. **Start with the four that have no URL
+   at all** (`access`, `authority`, `changes`, `structure`) — those views cannot
+   be linked, shared, restored on reload, or opened by an agent.
+   `changes` is the deep one: it hides a whole level (tracked/untracked) plus a
+   third below it (six tabs on a selected change set, also not linkable).
+2. **Demote the top bar one level.** With the sidebar owning the 26,
    `EntityModeHeader` renders the CURRENT SECTION's sub-views — 3-7 items, which
-   is where `RouteModeNav` reaches `full` and looks the way Arman wants. The top
-   bar is kept, not deleted, and the five competing sub-nav mechanisms collapse
-   onto it.
-6. **Execute the promotions/demotions** from the ruling in 2.
-7. **Fix two gaps in the shared primitive** (marketing would be the 5th consumer,
-   and both bite it hardest):
-   - `RouteMenuSlot.tsx:68` — `currentView` is plain `useState`, so "Main Menu"
-     is silently undone on the next navigation into a matched route. That
-     directly undercuts the immersion argument for choosing this pattern.
-   - The switch button loses its label when the sidebar is collapsed
-     (`styles/shell.css:1008-1027`) — degrades to an unlabeled rail glyph.
-   - While there: `NAV_ITEM_CLASS` / `ICON_SIZE` / `ICON_STROKE` are copied into
-     each of the four consumer menus. Extract on the fifth.
+   is where `RouteModeNav` reaches its icon+label variant. The top bar is kept,
+   not deleted, and the five competing sub-nav mechanisms collapse onto it.
+   Depends on 1. This also closes the board's parking-lot item "Header overlap at
+   1500-1700px: Marketing's mode pill renders over the site name."
+3. **Execute the promotions/demotions** ruled below: Discovery → brand,
+   Capabilities → marketing level, the Media library/research views → brand,
+   Access + Integrations + Intake folded into Settings, and collapse the
+   duplicate `/marketing/ai-visibility` site-picker route. Each move updates the
+   destination counts in `site-subviews.test.ts` **in the same commit** — that is
+   what makes a deliberate move distinguishable from a lost surface.
+4. **Finish the shared-primitive cleanup.** Two smaller items remain: the switch
+   button loses its label when the sidebar is collapsed
+   (`styles/shell.css:1008-1027`), degrading to an unlabeled rail glyph; and
+   `NAV_ITEM_CLASS` / `ICON_SIZE` / `ICON_STROKE` are now copied into all five
+   consumer menus — extract them.
+5. **Verify in a browser after 1-3.** The sidebar was confirmed live (7 groups,
+   28 links, correct active section); the switch-logic refactor after that is
+   covered by unit tests but has NOT been re-confirmed visually, because this
+   machine's dev server died repeatedly mid-compile.
 
 ## Decisions needed
 
@@ -200,4 +204,7 @@ are client redirect shims; `/marketing/discovery/youtube` is an unrelated featur
 
 ## Done
 
-- Nothing yet — this doc is the work order.
+- The site's second level is declared and guarded — `features/marketing/lib/site-subviews.ts` (39 sub-views) + `site-subviews.test.ts`, which counts every destination (26 sections + 39 = 65) and fails when one disappears.
+- The 26 sections have a parent/child structure — seven groups on `MARKETING_SITE_SECTIONS`, ordered by priority within each, `pendingMoveTo` marking the two that are leaving.
+- Marketing is a sidebar mode — `features/marketing/components/shell/MarketingSidebarMenu.tsx` + one `route-menu-registry` entry; icons shared via `lib/site-section-icons.ts`.
+- The shared mode switch is deterministic and its view is derived, not synced — see `resolveSidebarView` + `route-menu-slot.test.ts`.
