@@ -27,12 +27,13 @@ import {
   isPaginatedDataRow,
   isUserTableFieldRow,
   isUserTableListRow,
-  unwrapGetUserTableComplete,
   unwrapGetUserTableDataPaginatedRows,
   unwrapGetUserTables,
   type UserTableFieldRow,
   type UserTableListRow,
 } from "@/utils/user-tables-rpc";
+import { getTableMetadata } from "@/features/data-tables/service";
+import { isServiceFailure } from "@/features/data-tables/types";
 
 // Types
 type UserTable = UserTableListRow;
@@ -113,15 +114,11 @@ export function TablesResourcePicker({
     try {
       setLoadingDetails(true);
 
-      // Get fields
-      const { data: tableDataRaw, error: tableError } = await supabase.rpc(
-        "get_user_table_complete",
-        { p_table_id: table.id },
-      );
-
-      if (tableError) throw tableError;
-      const tableData = unwrapGetUserTableComplete(tableDataRaw);
-      setFields(tableData.fields.filter(isUserTableFieldRow));
+      // Column schema only — the rows this picker previews are fetched
+      // separately below, so there is no reason to materialize the dataset.
+      const meta = await getTableMetadata({ tableId: table.id });
+      if (isServiceFailure(meta)) throw new Error(meta.error);
+      setFields(meta.data.columns.filter(isUserTableFieldRow));
 
       // Get rows (first 100)
       const { data: rowsDataRaw, error: rowsError } = await supabase.rpc(

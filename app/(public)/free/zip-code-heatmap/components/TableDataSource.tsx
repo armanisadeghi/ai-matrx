@@ -23,21 +23,12 @@ import { supabase } from "@/utils/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ZipCodeData } from "../page";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
+import { getTableMetadata } from "@/features/data-tables/service";
+import { isServiceFailure } from "@/features/data-tables/types";
 
 function isUserTablesRpcResult(
   data: unknown,
 ): data is { success: boolean; error?: string; tables?: UserTable[] } {
-  return (
-    typeof data === "object" &&
-    data !== null &&
-    "success" in data &&
-    typeof (data as { success: unknown }).success === "boolean"
-  );
-}
-
-function isUserTableCompleteRpcResult(
-  data: unknown,
-): data is { success: boolean; error?: string; fields?: TableField[] } {
   return (
     typeof data === "object" &&
     data !== null &&
@@ -139,17 +130,12 @@ export default function TableDataSource({
   const loadTableFields = async (tableId: string) => {
     try {
       setLoadingFields(true);
-      const { data, error } = await supabase.rpc("get_user_table_complete", {
-        p_table_id: tableId,
-      });
+      // Column schema only. The rows are fetched later, and only for the two
+      // columns the heatmap actually plots.
+      const meta = await getTableMetadata({ tableId });
+      if (isServiceFailure(meta)) throw new Error(meta.error);
 
-      if (error) throw error;
-      if (!isUserTableCompleteRpcResult(data)) {
-        throw new Error("Invalid response from get_user_table_complete");
-      }
-      if (!data.success) throw new Error(data.error || "Failed to load table");
-
-      const tableFields = data.fields || [];
+      const tableFields: TableField[] = meta.data.columns;
       setFields(tableFields);
 
       // Attempt fuzzy matching for zip code and count columns

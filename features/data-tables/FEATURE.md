@@ -288,6 +288,22 @@ the `shareable_resource_registry` (both `udt_datasets` and `udt_workbooks` are r
 
 ## Invariants & gotchas
 
+- 🚨 **THE METADATA/ROWS SPLIT — never call `get_user_table_complete` for metadata.** That RPC
+  returns EVERY row of the dataset with **no LIMIT anywhere**, and derives `row_count` from
+  `jsonb_array_length(data)`. Reach for it ONLY when the caller consumes every row (a full-table
+  export). To learn a dataset's name, its columns, its saved sort, or how many rows it has, call
+  **`getTableMetadata()`** (`service.ts` → `public.get_full_table`): the full `udt_datasets` row,
+  the full `udt_dataset_fields` rows in `field_order`, and a real `COUNT(*)` — no row data.
+  Two traps it carries, both absorbed by the service wrapper: its key is **`columns`**, not
+  `fields`; and it has **no `{success:false}` envelope** — it RAISES, so an error from it means
+  the dataset is missing or its name did not match, NEVER that it has no columns. Do not paper a
+  thrown error over as an empty state. Measured 2026-08-14 on a 21-row dataset: 9,204 B → 1,891 B,
+  and the saving is O(rows) — the constant ~1.5 KB it adds on a 0-row dataset is the price of
+  never scaling with the data.
+- **Reads go through `service.ts` like writes do.** `getTableMetadata` / `listUserTables` /
+  `getTablePage` are the canonical read layer. Before this existed, `get_user_tables` was
+  copy-pasted into 8 components and `get_user_table_complete` into 8 more; a ninth hand-rolled
+  fetch is a defect, not a shortcut.
 - **Cell cleanup is NOT owned here.** Every "the agent wrapped this value in backticks / bold /
   HTML" fix goes through the shared engine at [`lib/content-cleanup/`](../../lib/content-cleanup/FEATURE.md)
   (`cleanValue` / `cleanCells`) and the shared `<CellCleanupButton>`. Both the per-cell fixer and
@@ -407,13 +423,23 @@ Concrete, ordered migration of the 21 active RPC call sites (audited 2026-05-29)
 typed service layer (`features/data-tables/service.ts`). Order is "safest → riskiest" — each
 wave should ship and bake before the next.
 
-**Wave A — read paths (no behavior change, only types).** These don't go through the new RPCs
-at all; they just need typed wrappers around the existing reads. Lowest possible risk.
-- `components/user-generated-table-data/UserTableViewer.tsx:278,312,362,725` and the 5 other
-  `get_user_tables` / `get_user_table_complete` / `get_user_table_data_paginated_v2` sites →
-  add `getUserTables()`, `getUserTableComplete(tableId)`, `getUserTableData({ tableId, ... })`
-  to `service.ts` (thin typed wrappers; the body is the same `.rpc()` call). Migrate the 18
-  read call sites one at a time. Verify each: page renders unchanged, no console errors.
+**Wave A — read paths.** ✅ **Landed 2026-08-14** as `getTableMetadata` / `listUserTables` /
+`getTablePage` in `service.ts` — and it turned out to be more than typing. Every metadata-only
+caller was on `get_user_table_complete`, which ships the entire dataset, so the wrappers moved
+them to `public.get_full_table` (schema + `COUNT(*)`, no rows). See THE METADATA/ROWS SPLIT
+under Invariants. Converted: `UserTableViewer` (the primary surface — was materializing the whole
+dataset, then making a second round-trip for the page it renders), `TablesResourcePicker`,
+`TableSettingsModal` (which also fixes a latent bug: `get_user_table_complete` never returned
+`validation_mode`, so the Strict Validation switch read "permissive" for every dataset),
+`app/(public)/free/zip-code-heatmap/.../TableDataSource`, `utils/user-table-utls/table-utils`'s
+`getTableDetails` (feeds `AppendToTableDialog`, `SaveTableModal`, `AddRowModal`),
+`ExportTableModal`'s hand-rolled `udt_dataset_fields` query, and `matrx-envelope`'s
+`table_schema` resolver (two parallel queries → one call).
+- ⏳ Remaining: the other `get_user_tables` copies (`TableCards`, `QuickDataSheet`,
+  `AppendToTableDialog`, `SaveTableModal`) and the other `get_user_table_data_paginated_v2`
+  copies should adopt `listUserTables` / `getTablePage` as those files are next touched.
+- **Deliberately left on `get_user_table_complete`:** `ExportTableModal`'s full-table export and
+  `app/api/export/email-table/route.ts` — both genuinely consume every row.
 
 **Wave B — single-row writes through `udt_upsert_row` / `udt_upsert_cell`.** These already
 work today; the only behavior change is that mutations now go through validation +
@@ -465,6 +491,16 @@ Decide before agent-heavy workloads land.
 
 ## Change log
 
+- 2026-08-14 — claude: **Wave A read layer landed; every metadata-only caller moved off the
+  no-LIMIT full-dataset RPC.** Added `getTableMetadata` / `listUserTables` / `getTablePage` to
+  `service.ts` (+ the shared `parseTableMetadata` in `types.ts`, so `table-utils` can share the
+  parser without importing the browser client) and converted 7 callsites onto
+  `public.get_full_table`. Fixes a latent bug in `TableSettingsModal` — `validation_mode` was
+  never in the old payload, so Strict Validation always displayed as off. Deleted three
+  superseded files with zero importers, all replaced by live equivalents:
+  `features/agents/resources/data-fetcher.ts` (its five table-reference fetches are the
+  `matrx-envelope` resolver registry's job now), `TableReferenceIcon.tsx` and its only child
+  `TableSelectionModal.tsx` (superseded by `TableReferenceOverlay`, which `TableToolbar` mounts).
 - 2026-08-12 — claude: **A THIRD agent was dispatched to make this surface
   agent-writable; again no code changed, and the narrow write posture was
   re-examined and UPHELD.** Recorded because the reasoning is the kind a future

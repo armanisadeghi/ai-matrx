@@ -31,6 +31,10 @@ import {
   CATALOG_NOUNS,
 } from "@/features/matrx-envelope/catalog-nouns.generated";
 import type { ReferenceItem } from "@/features/matrx-envelope/envelope";
+import {
+  parseTableMetadata,
+  type TableMetadata,
+} from "@/features/data-tables/types";
 
 export interface ReferenceResolver {
   /**
@@ -235,29 +239,22 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     openId: (ref) => ref.table_id,
     resolveValue: async (supabase, ref) => {
       if (!ref.table_id) return undefined;
-      const [
-        { data: table, error: tableErr },
-        { data: fields, error: fieldsErr },
-      ] = await Promise.all([
-        supabase
-          .schema("workbench")
-          .from("udt_datasets")
-          .select("table_name")
-          .eq("id", ref.table_id)
-          .maybeSingle(),
-        supabase
-          .schema("workbench")
-          .from("udt_dataset_fields")
-          .select("display_name, field_name, data_type")
-          .eq("table_id", ref.table_id)
-          .order("field_order", { ascending: true }),
-      ]);
-      if (tableErr || fieldsErr) return undefined;
+      // ONE call: get_full_table returns the dataset row plus its columns
+      // already ordered by field_order, and no row data. (This used to be two
+      // parallel queries rebuilding the same thing by hand.)
+      const { data, error } = await supabase.rpc("get_full_table", {
+        ref: { table_id: ref.table_id },
+      });
+      if (error) return undefined;
+      let meta: TableMetadata;
+      try {
+        meta = parseTableMetadata(data);
+      } catch {
+        return undefined;
+      }
       const name =
-        stringify(
-          (table as { table_name?: string | null } | null)?.table_name,
-        ) ?? stringify(ref.table_name);
-      const cols = (fields ?? [])
+        stringify(meta.table.table_name) ?? stringify(ref.table_name);
+      const cols = meta.columns
         .map((f) => {
           const row = f as {
             display_name?: string | null;

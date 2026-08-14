@@ -5,6 +5,8 @@ import {
   unwrapGetUserTableComplete,
   unwrapGetUserTableDataPaginatedRows,
 } from "@/utils/user-tables-rpc";
+import { getTableMetadata } from "@/features/data-tables/service";
+import { isServiceFailure } from "@/features/data-tables/types";
 import {
   Dialog,
   DialogContent,
@@ -61,18 +63,12 @@ export default function ExportTableModal({
 
   // Fetch filtered data using the paginated endpoint with search term
   const fetchFilteredData = async () => {
-    // Fetch fields separately since the paginated endpoint doesn't include them
-    const { data: fieldsData, error: fieldsError } = await supabase
-      .schema("workbench")
-      .from("udt_dataset_fields")
-      .select(
-        "id, field_name, display_name, data_type, field_order, is_required, default_value, validation_rules",
-      )
-      .eq("table_id", tableId)
-      .order("field_order");
-
-    if (fieldsError)
-      throw new Error(fieldsError.message || "Failed to fetch table fields");
+    // The paginated endpoint carries no column schema, so pair it with the
+    // metadata RPC — which returns exactly these columns in field_order and
+    // costs no rows. (This used to hand-roll a udt_dataset_fields query.)
+    const meta = await getTableMetadata({ tableId });
+    if (isServiceFailure(meta)) throw new Error(meta.error);
+    const fieldsData = meta.data.columns;
 
     const { data, error } = await supabase.rpc(
       "get_user_table_data_paginated_v2",

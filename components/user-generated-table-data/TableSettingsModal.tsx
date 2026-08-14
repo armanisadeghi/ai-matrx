@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/utils/supabase/client";
-import { unwrapGetUserTableComplete } from "@/utils/user-tables-rpc";
-import { updateTableMetadata } from "@/features/data-tables/service";
+import {
+  getTableMetadata,
+  updateTableMetadata,
+} from "@/features/data-tables/service";
 import {
   Dialog,
   DialogContent,
@@ -73,19 +75,20 @@ export default function TableSettingsModal({
       try {
         setLoadingInfo(true);
 
-        const { data, error } = await supabase.rpc("get_user_table_complete", {
-          p_table_id: tableId,
-        });
+        // Settings only need the dataset row — never its rows. get_full_table
+        // also returns validation_mode, which get_user_table_complete does not:
+        // this form used to fall back to "permissive" for every dataset.
+        const meta = await getTableMetadata({ tableId });
+        if (isServiceFailure(meta)) throw new Error(meta.error);
 
-        if (error) throw error;
-        const u = unwrapGetUserTableComplete(data ?? null);
-        const info = tableRecordToTableInfo(u.table, tableId);
+        const record = meta.data.table as unknown as Record<string, unknown>;
+        const info = tableRecordToTableInfo(record, tableId);
         setTableInfo(info);
         setTableName(info.table_name);
         setDescription(info.description || "");
         setIsPublic(info.is_public);
         setValidationMode(info.validation_mode);
-        const ar = u.table.authenticated_read;
+        const ar = record.authenticated_read;
         setAuthenticatedRead(typeof ar === "boolean" ? ar : false);
       } catch (err) {
         console.error("Error loading table info:", err);

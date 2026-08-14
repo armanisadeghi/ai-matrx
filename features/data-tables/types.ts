@@ -52,6 +52,52 @@ export type DatasetRowUpdate = T["udt_dataset_rows"]["Update"];
 
 export type RowVersion = T["udt_dataset_row_versions"]["Row"];
 
+/**
+ * The `public.get_full_table(jsonb)` payload — a dataset's schema and size with
+ * NO row data. Note the key is `columns`, not `fields`: the row-loading RPC
+ * (`get_user_table_complete`) calls the same thing `fields`.
+ */
+export type TableMetadata = {
+  /** Complete `udt_datasets` row (carries row_ordering_config, validation_mode). */
+  table: Dataset;
+  /** Complete `udt_dataset_fields` rows, ordered by `field_order`. */
+  columns: DatasetField[];
+  /** Real `COUNT(*)`, not the length of a materialized row array. */
+  row_count: number;
+};
+
+/**
+ * Shape-parse a `get_full_table` payload.
+ *
+ * Lives here rather than in `service.ts` so callers that bring their own
+ * Supabase client (`utils/user-table-utls/table-utils`) can share the one
+ * parser without pulling in the browser client singleton.
+ *
+ * Throws on anything that is not the documented shape — a silently-empty
+ * column list is the exact failure this exists to prevent. Note that
+ * `get_full_table` has no `{success:false}` envelope either: it RAISES, so a
+ * PostgREST error from it means the dataset is missing or its name did not
+ * match, never that it has no columns.
+ */
+export function parseTableMetadata(payload: unknown): TableMetadata {
+  const isRecord = (v: unknown): v is Record<string, unknown> =>
+    typeof v === "object" && v !== null && !Array.isArray(v);
+
+  if (
+    !isRecord(payload) ||
+    !isRecord(payload.table) ||
+    !Array.isArray(payload.columns) ||
+    typeof payload.row_count !== "number"
+  ) {
+    throw new Error("get_full_table: unexpected response shape");
+  }
+  return {
+    table: payload.table as unknown as Dataset,
+    columns: payload.columns as unknown as DatasetField[],
+    row_count: payload.row_count,
+  };
+}
+
 // ─── Enums ───────────────────────────────────────────────────────────────────
 
 export type FieldDataType = E["field_data_type"];
