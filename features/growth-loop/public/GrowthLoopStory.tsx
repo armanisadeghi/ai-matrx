@@ -1,14 +1,9 @@
 import Link from "next/link";
 import { ArrowRight, BrainCircuit, RotateCw, User, Zap, type LucideIcon } from "lucide-react";
 
-import {
-    PUBLIC_CAPABILITY,
-    publicCapabilities,
-    publicStages,
-    publicStanding,
-    type PublicCapability,
-} from "../map/loop-map";
-import { stageIcon } from "./stage-icons";
+import { PUBLIC_CAPABILITY, publicStanding, type PublicCapability } from "../map/loop-map";
+import { GrowthLoopRing } from "./GrowthLoopRing";
+import { STAGE_CARDS, type StageCardModel } from "./stage-cards";
 
 /**
  * THE CUSTOMER-FACING GROWTH LOOP.
@@ -23,8 +18,10 @@ import { stageIcon } from "./stage-icons";
  * in loop-map.ts.
  *
  * Server component on purpose — a prospect's first paint should cost no JS,
- * and the page must be crawlable (we sell SEO). No React Flow here: the admin
- * canvas is a pan/zoom analysis tool, which is the wrong product on a phone.
+ * and the page must be crawlable (we sell SEO). The one client island is
+ * `GrowthLoopRing` (inline SVG, desktop only); every word on the page is in the
+ * server HTML. No React Flow here: the admin canvas is a pan/zoom analysis tool,
+ * which is the wrong product on a phone.
  */
 
 const CAPABILITY_ICON: Record<PublicCapability, LucideIcon> = {
@@ -45,20 +42,6 @@ function CapabilityChip({ capability }: { capability: PublicCapability }) {
         </span>
     );
 }
-
-/**
- * Resolved ONCE at module scope, not per render: the map is static data, and
- * resolving an icon component inside a render body trips the React Compiler's
- * static-components rule.
- */
-const STAGE_CARDS = publicStages().map((stage, index) => ({
-    stage,
-    step: index + 1,
-    Icon: stageIcon(stage.publicInfo.icon),
-    capabilities: publicCapabilities(stage),
-}));
-
-type StageCardModel = (typeof STAGE_CARDS)[number];
 
 function StageCard({ stage, step, Icon, capabilities }: StageCardModel) {
     return (
@@ -135,6 +118,11 @@ export function GrowthLoopStory() {
                         See pricing
                     </Link>
                 </div>
+            </section>
+
+            {/* ── The loop, drawn ──────────────────────────────────────── */}
+            <section className="mt-10 lg:mt-14">
+                <GrowthLoopRing />
             </section>
 
             {/* ── The three ways ───────────────────────────────────────── */}
@@ -219,7 +207,7 @@ export function GrowthLoopStory() {
                     <StandingFigure
                         value={standing.automatic}
                         total={standing.stages}
-                        label="steps that already run on their own, with nobody watching"
+                        label="steps that can run on their own, with no person and no agent needed"
                     />
                 </div>
                 <p className="max-w-2xl text-pretty text-sm leading-relaxed text-muted-foreground">

@@ -308,7 +308,7 @@ export const STAGES: LoopStage[] = [
     publicInfo: {
       title: "Put it live",
       plain:
-        "Nothing becomes public on its own. You look it over, and one click makes it live.",
+        "A page goes live only once it is approved — you click publish yourself, or you allow it to publish on its own.",
       icon: "Send",
     },
     repos: ["ai-matrx", "aidream", "db"],
@@ -1219,9 +1219,13 @@ export const PUBLIC_CAPABILITY: Record<
 > = {
   you: { pipe: "human", label: "You can do it yourself", short: "You" },
   ai: { pipe: "ai", label: "An AI agent can do it for you", short: "AI" },
+  // "CAN run on its own", never "DOES". The code pipe records that a step is
+  // runnable unattended — not that it fires without being asked. Saying "it
+  // happens automatically" contradicted Publish, whose whole point is that
+  // nothing goes live until it is approved.
   automatic: {
     pipe: "code",
-    label: "It happens automatically",
+    label: "It can run on its own",
     short: "Automatic",
   },
 };

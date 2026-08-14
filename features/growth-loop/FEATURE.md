@@ -1,13 +1,14 @@
 # Growth Loop — the map of the pipeline, and the run object that drives it
 
 **Status:** active · **Tier:** 2 · **Routes:** `/administration/knowledge/growth-loop` (admin
-map) · `/marketing/brands/[brandId]/sites/[siteId]/growth-loop` (a site's live loop) ·
+map) · `/how-it-works` (the public, customer-facing view of the same map) ·
+`/marketing/brands/[brandId]/sites/[siteId]/growth-loop` (a site's live loop) ·
 `/marketing/growth-loop/[loopRunId]` (canonical deep link, resolves to the site)
 
-This feature is two halves. `map/` is the **map** — what the pipeline is and where it is
-broken. `run/` is the **run object** — one durable loop for one site, moving through the same
-twelve stages. They share ONE stage vocabulary (`map/loop-map.ts`); the run half never names
-a stage of its own.
+This feature is three halves. `map/` is the **map** — what the pipeline is and where it is
+broken. `public/` is the **customer-facing face of that same map**. `run/` is the **run
+object** — one durable loop for one site, moving through the same twelve stages. They share
+ONE stage vocabulary (`map/loop-map.ts`); no other half ever names a stage of its own.
 
 ## What this is
 
@@ -47,6 +48,11 @@ Rules (also stated at the top of the file):
 | `components/GrowthLoopCanvasImpl.tsx`                       | React Flow canvas + custom stage node + detail rail.                          |
 | `features/canvas/edges/rounded-orthogonal-path.ts`          | Shared rounded waypoint path builder used for collision-free fixed-map lanes. |
 | `app/(admin)/administration/knowledge/growth-loop/page.tsx` | Admin route.                                                                  |
+| `public/GrowthLoopStory.tsx`                                | The public page body. Server component — every word is in the server HTML.    |
+| `public/GrowthLoopRing.tsx`                                 | The loop drawn as a ring. The page's ONE client island; inline SVG, no deps.  |
+| `public/stage-cards.ts`                                     | The resolved public stage model, shared by the ring and the cards.            |
+| `public/stage-icons.ts`                                     | Lucide icon NAME -> component, so `loop-map.ts` stays React-free.             |
+| `app/(public)/how-it-works/page.tsx`                        | Public route (+ metadata / OG).                                               |
 | `run/api.ts`                                                | Direct Supabase reads; contract-bound aidream orchestration actions.          |
 | `run/hooks.ts`                                              | React Query bindings + the delta-poll of the loop's event ledger.             |
 | `run/stage-doors.ts`                                        | Ref-kind → URL, and stage → "where a human does this". THE DOOR LAW.          |
@@ -74,6 +80,27 @@ Rules (also stated at the top of the file):
   reasoning, and links to the referenced artifact. Internal run kinds with no viewer fall
   back to that stage's working surface, so a weak score is never a dead end.
 
+## The public view — rules
+
+`/how-it-works` is the marketing face of the SAME `loop-map.ts`. It is presentation only: it
+selects, renames and derives. It never restates a stage.
+
+- **THE HONESTY GATE.** Capability is derived from `state === "live"` ONLY (`publicCapabilities`
+  / `publicStanding`). `partial` and `missing` render NOTHING — a stage with no live pipe simply
+  shows no chips. The only way to make the marketing page claim a capability is to flip a pipe
+  here, which rule 1 says requires a `ref` an auditor can open. **Never add a fallback.**
+- **`publicInfo` is the show-publicly flag.** A stage without one never renders publicly. Its
+  copy rules (no jargon, no internal stage names, one sentence, never intent) are on the type.
+- **The chips say CAN, never DOES.** The code pipe means "runnable unattended", not "fires by
+  itself" — writing it as "it happens automatically" contradicted Publish, whose selling point
+  is that nothing goes live unapproved.
+- **What never crosses over:** file paths, `ref`s, gap ids, lanes, repo names, maturity, and the
+  words "partial" / "missing".
+- **No React Flow.** A fixed twelve-node ring needs no graph engine, and a pan/zoom canvas is the
+  wrong product on a phone. The ring is inline SVG + real `<button>`s, so it needs no
+  `next/dynamic` boundary at all; it is hidden below `md`, where the numbered cards are the
+  mobile presentation of the same sequence.
+
 ## Doctrine
 
 - **Code-splitting:** React Flow is heavy and browser-only. It is imported **statically inside
@@ -92,6 +119,16 @@ Rules (also stated at the top of the file):
   emphasizes the connected stages, and suppresses unrelated paths.
 
 ## Change log
+
+- 2026-08-14 — claude: **the public view completed.** The loop is now drawn as a ring
+  (`public/GrowthLoopRing.tsx`) instead of only listed as twelve cards — a prospect sees that it
+  is a cycle, not a checklist. The ring and the cards now share ONE resolved model
+  (`public/stage-cards.ts`). Two honesty defects fixed in `loop-map.ts`: the code-pipe chip said
+  "It happens automatically", which flatly contradicted Publish's own sentence ("nothing becomes
+  public on its own") — the chip now says "It can run on its own" and Publish's copy names both
+  routes. The standing figure's label was narrowed from "already run on their own, with nobody
+  watching" to what the code pipe actually records. This section and the Structure table were
+  added; the public half had shipped on 2026-08-11 undocumented here.
 
 - 2026-08-13 — Codex: completed-stage quality judgments are visible in the loop history.
   The direct Supabase read folds current `loop_stage_run.outcome.quality` into its matching
