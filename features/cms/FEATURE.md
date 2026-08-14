@@ -32,7 +32,8 @@ build plan this feature is part of (project P5).
 - `features/cms/collections/validateItem.ts` — the canonical item-validator TWIN (see Doctrine)
 - `app/(core)/cms/[siteId]/pages/[pageId]/page.tsx`, `.../pages/new/page.tsx` — page editor
   (`features/cms/components/PageEditor.tsx`). Tabs: **HTML · CSS · JS · Preview · Plan · SEO ·
-  Settings · History** (Plan and History are hidden while creating an unsaved page). **Plan**
+  Measure · Settings · History** (Plan, Measure and History are hidden while creating an unsaved
+  page). **Plan**
   (`components/PagePlanTab.tsx`, `React.lazy` in-gate) is the page's BEFORE per
   `docs/handoffs/cms-page-hub.md`: with `plan_node_id` set it reads the `plan.node` direct from
   Supabase and shows label/route, status, brief, target keyword, and the canonical `NodeStepRail`
@@ -40,6 +41,14 @@ build plan this feature is part of (project P5).
   stays in the plan workspace's NodePanel. With no node but a paired `web_site_id`, it runs the
   real adopt (`bridgeAdopt` → aidream `cms-align`) behind a confirm and prints the server's
   per-item result verbatim; with no pairing it says so and links `/marketing/content-plan`.
+  **Measure** (`components/measure/CmsPageMeasure.tsx`, `React.lazy` in-gate) is the page's AFTER:
+  with `web_page_id` set it mounts the canonical `features/marketing/components/pages/PageWorkspace`
+  WHOLESALE — Page Analyzer, open findings, snapshots, keyword suggestions, Search Console — by
+  supplying the site context that workspace reads (`MarketingSiteProvider` +
+  `MarketingSiteSurfaceProvider`, resolved from the page's own site/brand via `usePageLocation`).
+  Never rebuild any part of it here (Inventory Law + THE CANONICAL COMPONENT LAW). The editor
+  header carries the matching new-tab door ("Open page workspace"); with no join the tab says so
+  plainly and offers no fake CTA.
 - `app/(core)/cms/html-pages/**` — standalone `html_pages` management (see `features/html-pages/FEATURE.md`... not yet split out; documented in `features/html-pages/README.md`)
 - `app/(admin)/administration/knowledge/cms-agents/page.tsx` — **agent visibility surface** (super-admin gated by the `(admin)` layout): live activity feed, per-site page tree, agent-write-policy editor, validation-exception approvals queue
 
@@ -387,6 +396,20 @@ UI-complete here but only take effect once P1's service layer reads them.
 ---
 
 ## Change log
+
+- `2026-08-14` — **W2 Measure tab: the page editor no longer forgets where the page GOES.**
+  `PageEditor` gains a lazy **Measure** tab that renders the canonical marketing
+  `PageWorkspace` for the measured page named by `client_pages.web_page_id` — the whole
+  workspace, reused as-is, because a tab that reuses a route component is free and a poorer
+  copy would be an Inventory Law violation. Header door "Open page workspace" (new tab, so the
+  editor's unsaved buffers survive) beside "Edit with AI"; unjoined pages get an honest state
+  naming what makes the join (publish + crawl) with a link to the site's measured pages, and no
+  fake CTA. Enabling this made the marketing site context host-agnostic: it moved out of
+  `MarketingSiteLayoutClient` into `components/site/MarketingSiteContext.tsx` and now carries
+  `brandId` (the site surface base read it from `useParams()`, which only resolved under
+  `/marketing/brands/[brandId]/...`), and new `getPageLocation` / `usePageLocation` resolve a bare
+  `web.page` id to its site + brand. `CmsPageEditorTab` and the `cms-page` manifest's `active_tab`
+  prose gained `measure`. Work order: `docs/handoffs/cms-page-hub.md` W2.
 
 - `2026-08-14` — **W1 Plan tab: the page editor no longer forgets where the page came from.**
   `PageEditor` gains a lazy **Plan** tab (`components/PagePlanTab.tsx`) between Preview and SEO.

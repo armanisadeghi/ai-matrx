@@ -82,9 +82,23 @@ Chips fired 2026-08-14 for W1–W3 (each carries its full spec — this list is 
    result shown verbatim, page refetched via the new `onRefetchPage` prop. Unpaired site: says so
    and links `/marketing/content-plan`. `type-check` + `check:surface-drift` clean; browser pass
    still owed (the shared dev server died during compile on three attempts).
-2. **Measure tab** — `<PageWorkspace pageId={web_page_id}/>` reused wholesale (React.lazy
-   in-gate), + "Open page workspace" door; honest empty state when unjoined. *(chip
-   task_66847610)*
+2. ~~**Measure tab** — `<PageWorkspace pageId={web_page_id}/>` reused wholesale + door + honest
+   empty state.~~ **DONE 2026-08-14.** `features/cms/components/measure/CmsPageMeasure.tsx`
+   (`React.lazy` in-gate, mounted only while the tab is active) renders the canonical
+   `PageWorkspace` unchanged; the tab sits between SEO and Settings and is hidden on
+   `/pages/new`. What it took: the marketing site context is now host-agnostic —
+   `components/site/MarketingSiteContext.tsx` (extracted from `MarketingSiteLayoutClient`, which
+   also broke the layout ↔ `site-surface-base` import cycle) carries `brandId`, because
+   `useMarketingSiteSurfaceBase` read it from `useParams()` and therefore only worked under
+   `/marketing/brands/[brandId]/...`; new `getPageLocation` / `usePageLocation` resolve a bare
+   `web.page` id to its site + brand. The host supplies `MarketingSiteProvider` +
+   `MarketingSiteSurfaceProvider` + a live `useSiteCrawlActivity` (the workspace's "Fetch now"
+   rejoins server commands through it). Header door "Open page workspace" opens
+   `marketingRoutes.sitePage(...)` in a new tab (unsaved editor buffers survive); unjoined pages
+   name what makes the join (publish + crawl) and link the site's measured pages, no fake CTA; a
+   site with no brand says so rather than emitting an empty `brand_id` into agent context.
+   `type-check` + `check:surface-drift` clean; **browser pass still owed** — the shared dev
+   server was OOM-killed by its 8 GB guard on three attempts (11–13 GB RSS while compiling).
 3. ~~**Reverse doors** — "Edit in CMS" from PageWorkspace and from every plan tree/table CMS
    badge.~~ **DONE 2026-08-14.** `features/cms/utils/cmsRoutes.ts` (`cmsPageEditorHref`) is
    the one href builder; PageWorkspace's header door resolves off the existing push lane
