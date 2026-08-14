@@ -43675,7 +43675,7 @@ export interface components {
          *     detail and the authority.
          * @enum {string}
          */
-        StageRefKind: "workflow_run" | "runtime_execution" | "sch_run" | "chat_request" | "agent_run" | "research_topic" | "cms_page" | "cms_fill_job" | "seo_collection_run" | "crawl_session" | "analysis_result" | "finding" | "assist" | "agent_usage";
+        StageRefKind: "workflow_run" | "runtime_execution" | "sch_run" | "chat_request" | "agent_run" | "research_topic" | "cms_fill_job" | "crawl_session" | "analysis_result" | "finding" | "assist" | "agent_usage";
         /**
          * StageRunStatus
          * @description Processing outcome of one stage attempt. One meaning per status column.
