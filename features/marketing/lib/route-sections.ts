@@ -1,5 +1,29 @@
 import { resolveActiveRouteMode } from "@/features/shell/components/header/route-mode-match";
 
+/**
+ * The seven parent categories a website's sections fall into, in sidebar order.
+ *
+ * A website had 26 first-level sections and no parent/child relationship at
+ * all, which is why the header could never render more than icons. These groups
+ * are what the marketing sidebar renders; no group holds more than five.
+ *
+ * Names avoid colliding with any section name (a "Changes" group holding a
+ * "Changes" section reads as a bug) and avoid jargon — the person inside this
+ * UI is a world-class expert at their own field and a novice at SEO.
+ */
+export const MARKETING_SITE_SECTION_GROUPS = [
+  "Command",
+  "Content",
+  "Collection",
+  "Health & Fixes",
+  "Search",
+  "Links & Reputation",
+  "Configuration",
+] as const;
+
+export type MarketingSectionGroup =
+  (typeof MARKETING_SITE_SECTION_GROUPS)[number];
+
 export interface MarketingRouteSection {
   /** Empty string denotes the route family's root view. */
   slug: string;
@@ -10,6 +34,21 @@ export interface MarketingRouteSection {
   letter: string;
   /** Root/overview views are exact so missing registrations cannot masquerade as them. */
   exact?: boolean;
+}
+
+/**
+ * A SITE section. Grouping is site-only: a crawl's six modes already fit the
+ * header as icon+label, so they stay a flat list and keep the base shape.
+ */
+export interface MarketingSiteRouteSection extends MarketingRouteSection {
+  /** Parent category in the sidebar. Every site section has one. */
+  group: MarketingSectionGroup;
+  /**
+   * The section's data is not actually site-scoped and it is scheduled to move
+   * (see docs/handoffs/marketing-navigation-hierarchy.md). Recorded here so the
+   * move cannot be forgotten and so nothing builds new site-level work on it.
+   */
+  pendingMoveTo?: "brand" | "marketing";
 }
 
 export interface MarketingRouteMode extends MarketingRouteSection {
@@ -28,6 +67,7 @@ export const MARKETING_SITE_SECTIONS = [
     titlePrefix: "Site Overview",
     description: "Review website identity, health, and recent activity.",
     letter: "So",
+    group: "Command",
     exact: true,
   },
   {
@@ -37,6 +77,7 @@ export const MARKETING_SITE_SECTIONS = [
     description:
       "Run this site end to end — research, plan, write, publish, crawl, measure, improve — and act on whatever the loop is waiting on.",
     letter: "Gl",
+    group: "Command",
   },
   {
     slug: "capabilities",
@@ -45,6 +86,8 @@ export const MARKETING_SITE_SECTIONS = [
     description:
       "See what this site can measure, where each result lives, and which system produces it.",
     letter: "Cp",
+    group: "Command",
+    pendingMoveTo: "marketing",
   },
   {
     slug: "performance",
@@ -53,6 +96,7 @@ export const MARKETING_SITE_SECTIONS = [
     description:
       "See PageSpeed coverage, site-wide score health, trends, and the slowest pages with real search traffic.",
     letter: "Pf",
+    group: "Health & Fixes",
   },
   {
     slug: "discovery",
@@ -60,6 +104,8 @@ export const MARKETING_SITE_SECTIONS = [
     titlePrefix: "Discovery",
     description: "Review discovered brand assets and business facts.",
     letter: "Di",
+    group: "Collection",
+    pendingMoveTo: "brand",
   },
   {
     slug: "sitemaps",
@@ -67,6 +113,7 @@ export const MARKETING_SITE_SECTIONS = [
     titlePrefix: "Sitemaps",
     description: "Inspect sitemap documents and page membership.",
     letter: "Sm",
+    group: "Content",
   },
   {
     slug: "coverage",
@@ -74,6 +121,7 @@ export const MARKETING_SITE_SECTIONS = [
     titlePrefix: "Coverage",
     description: "Compare sitemap, crawl, and search coverage for this site.",
     letter: "Cv",
+    group: "Content",
   },
   {
     slug: "audit",
@@ -82,6 +130,7 @@ export const MARKETING_SITE_SECTIONS = [
     description:
       "Review deterministic site-wide indexability, search metadata, social, heading, and URL-quality checks.",
     letter: "Au",
+    group: "Health & Fixes",
   },
   {
     slug: "pages",
@@ -89,6 +138,7 @@ export const MARKETING_SITE_SECTIONS = [
     titlePrefix: "Pages",
     description: "Manage canonical pages and their observed content.",
     letter: "Pg",
+    group: "Content",
   },
   {
     slug: "structure",
@@ -97,6 +147,7 @@ export const MARKETING_SITE_SECTIONS = [
     description:
       "Explore the site's routing tree with page totals at every level.",
     letter: "Tr",
+    group: "Content",
   },
   {
     slug: "media",
@@ -105,6 +156,7 @@ export const MARKETING_SITE_SECTIONS = [
     description:
       "Inspect crawled media, the brand library, research, generation, and site media standards.",
     letter: "Me",
+    group: "Content",
   },
   {
     slug: "crawls",
@@ -112,6 +164,7 @@ export const MARKETING_SITE_SECTIONS = [
     titlePrefix: "Crawls",
     description: "Inspect and run website crawl sessions.",
     letter: "Cr",
+    group: "Collection",
   },
   {
     slug: "analysis",
@@ -119,6 +172,7 @@ export const MARKETING_SITE_SECTIONS = [
     titlePrefix: "Analysis",
     description: "Review prioritized marketing analysis for this site.",
     letter: "An",
+    group: "Health & Fixes",
   },
   {
     slug: "findings",
@@ -126,6 +180,7 @@ export const MARKETING_SITE_SECTIONS = [
     titlePrefix: "Findings",
     description: "Review durable marketing findings and evidence.",
     letter: "Fi",
+    group: "Health & Fixes",
   },
   {
     slug: "links",
@@ -133,6 +188,7 @@ export const MARKETING_SITE_SECTIONS = [
     titlePrefix: "Links",
     description: "Inspect accepted link evidence for this site.",
     letter: "Ln",
+    group: "Links & Reputation",
   },
   {
     slug: "authority",
@@ -141,6 +197,7 @@ export const MARKETING_SITE_SECTIONS = [
     description:
       "Route backlink and internal authority toward strategically important pages with exact, evidence-grounded link recommendations.",
     letter: "Ar",
+    group: "Links & Reputation",
   },
   {
     slug: "backlinks",
@@ -149,6 +206,7 @@ export const MARKETING_SITE_SECTIONS = [
     description:
       "Inspect persisted backlink authority, referring domains, anchors, linked pages, and competitors.",
     letter: "Bl",
+    group: "Links & Reputation",
   },
   {
     slug: "changes",
@@ -157,6 +215,7 @@ export const MARKETING_SITE_SECTIONS = [
     description:
       "Track site interventions, implementation evidence, and measured outcomes.",
     letter: "Ch",
+    group: "Health & Fixes",
   },
   {
     slug: "reputation",
@@ -165,6 +224,7 @@ export const MARKETING_SITE_SECTIONS = [
     description:
       "Review evidence-backed publication opportunities and reputation handling decisions.",
     letter: "Pr",
+    group: "Links & Reputation",
   },
   {
     slug: "keywords",
@@ -173,6 +233,7 @@ export const MARKETING_SITE_SECTIONS = [
     description:
       "Inspect persisted organic query performance and keyword-market intelligence.",
     letter: "Kw",
+    group: "Search",
   },
   {
     slug: "intake",
@@ -181,6 +242,7 @@ export const MARKETING_SITE_SECTIONS = [
     description:
       "Review and complete the site information needed by marketing systems.",
     letter: "It",
+    group: "Configuration",
   },
   {
     slug: "ranks",
@@ -188,6 +250,7 @@ export const MARKETING_SITE_SECTIONS = [
     titlePrefix: "Site Ranks",
     description: "Track keyword positions and movement for this site.",
     letter: "Rn",
+    group: "Search",
   },
   {
     slug: "ai-visibility",
@@ -196,6 +259,7 @@ export const MARKETING_SITE_SECTIONS = [
     description:
       "See where AI assistants cite this site, which competitors answer instead, and what closes the gap.",
     letter: "Av",
+    group: "Search",
   },
   {
     slug: "integrations",
@@ -203,6 +267,7 @@ export const MARKETING_SITE_SECTIONS = [
     titlePrefix: "Integrations",
     description: "Configure this site's marketing data providers.",
     letter: "In",
+    group: "Configuration",
   },
   {
     slug: "access",
@@ -210,6 +275,7 @@ export const MARKETING_SITE_SECTIONS = [
     titlePrefix: "Access",
     description: "Manage site access and sharing.",
     letter: "Ac",
+    group: "Configuration",
   },
   {
     slug: "settings",
@@ -217,8 +283,9 @@ export const MARKETING_SITE_SECTIONS = [
     titlePrefix: "Settings",
     description: "Configure website identity and crawl behavior.",
     letter: "Se",
+    group: "Configuration",
   },
-] as const satisfies readonly MarketingRouteSection[];
+] as const satisfies readonly MarketingSiteRouteSection[];
 
 /** Every visible mode under one durable crawl session. */
 export const MARKETING_CRAWL_SECTIONS = [
@@ -286,6 +353,26 @@ export function listMarketingSiteModes(sitePath: string): MarketingSiteMode[] {
     ...section,
     href: hrefForSection(sitePath, section.slug),
   }));
+}
+
+export interface MarketingSiteModeGroup {
+  label: MarketingSectionGroup;
+  modes: MarketingSiteMode[];
+}
+
+/**
+ * The site's sections as the sidebar renders them: grouped, in declared group
+ * order, section order preserved inside each group. Groups with no sections are
+ * omitted rather than rendered empty.
+ */
+export function listMarketingSiteModeGroups(
+  sitePath: string,
+): MarketingSiteModeGroup[] {
+  const modes = listMarketingSiteModes(sitePath);
+  return MARKETING_SITE_SECTION_GROUPS.map((label) => ({
+    label,
+    modes: modes.filter((mode) => mode.group === label),
+  })).filter((group) => group.modes.length > 0);
 }
 
 export function listMarketingCrawlModes(

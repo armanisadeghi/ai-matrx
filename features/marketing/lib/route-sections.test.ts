@@ -4,10 +4,12 @@ import { join, resolve } from "node:path";
 import { resolveActiveRouteMode } from "@/features/shell/components/header/route-mode-match";
 import { generateSVGFavicon, svgToDataURI } from "@/utils/favicon-utils";
 import { getMarketingRouteMetadata } from "./route-metadata";
+import type { MarketingSiteRouteSection } from "./route-sections";
 import {
   MARKETING_CRAWL_SECTIONS,
   MARKETING_SITE_SECTIONS,
   listMarketingCrawlModes,
+  listMarketingSiteModeGroups,
   listMarketingSiteModes,
   marketingSiteSectionSuffix,
 } from "./route-sections";
@@ -90,6 +92,46 @@ describe("marketing route section registries", () => {
       );
     },
   );
+
+  it("puts every section in a group, and no group past five", () => {
+    const groups = listMarketingSiteModeGroups(SITE_PATH);
+    const grouped = groups.flatMap((group) => group.modes);
+    // Nothing is dropped and nothing is counted twice by grouping.
+    expect(grouped).toHaveLength(MARKETING_SITE_SECTIONS.length);
+    expect(new Set(grouped.map((mode) => mode.slug)).size).toBe(
+      MARKETING_SITE_SECTIONS.length,
+    );
+    // The whole reason for grouping: a set this size renders as icon+label.
+    for (const group of groups) {
+      expect(group.modes.length).toBeLessThanOrEqual(5);
+    }
+    expect(groups.map((group) => group.label)).toEqual([
+      "Command",
+      "Content",
+      "Collection",
+      "Health & Fixes",
+      "Search",
+      "Links & Reputation",
+      "Configuration",
+    ]);
+  });
+
+  it("keeps the sections that are scheduled to leave the site visible", () => {
+    // These render under a site today and their data is not site-scoped. The
+    // list shrinks to empty as each moves; it must never grow silently.
+    // `as const satisfies` narrows each entry to its literal shape, so the
+    // optional field is absent from the union — read at the declared width.
+    const sections: readonly MarketingSiteRouteSection[] =
+      MARKETING_SITE_SECTIONS;
+    expect(
+      sections
+        .filter((section) => section.pendingMoveTo)
+        .map((section) => [section.slug, section.pendingMoveTo]),
+    ).toEqual([
+      ["capabilities", "marketing"],
+      ["discovery", "brand"],
+    ]);
+  });
 
   it("identifies capabilities instead of falling back to Overview", () => {
     const capabilitiesPath = `${SITE_PATH}/capabilities`;
