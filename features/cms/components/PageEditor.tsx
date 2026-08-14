@@ -639,6 +639,13 @@ export default function PageEditor({
                     )}
                     Save Draft
                   </Button>
+                  <SurfaceRoleAgentButton
+                    surfaceName={CMS_PAGE_CONTEXT_MENU_PROPS.surfaceName}
+                    roleName="publish_reviewer"
+                    label="Review before publish"
+                    size="xs"
+                    className="hidden lg:inline-flex"
+                  />
                   <Button
                     size="sm"
                     onClick={page?.has_draft ? handlePublish : handleSaveLive}
@@ -760,6 +767,23 @@ export default function PageEditor({
               {activeTab === "seo" && (
                 <div className="h-full overflow-auto">
                   <div className="p-6 max-w-2xl mx-auto space-y-5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <h2 className="text-sm font-semibold text-foreground">
+                          Search appearance
+                        </h2>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          Shape how this page appears in search results.
+                        </p>
+                      </div>
+                      <SurfaceRoleAgentButton
+                        surfaceName={CMS_PAGE_CONTEXT_MENU_PROPS.surfaceName}
+                        roleName="seo_editor"
+                        label="Write SEO with AI"
+                        size="xs"
+                        className="shrink-0"
+                      />
+                    </div>
                     <div>
                       <label className="text-sm font-medium text-foreground block mb-1.5">
                         Meta Title
