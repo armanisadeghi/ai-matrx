@@ -1347,6 +1347,174 @@
     },
     {
       "category": "side_effect",
+      "doc": "Create one Contact (person or company) row (crm.party). Payload = the table's writable columns; DB-required columns without defaults must be present. Batch via items.",
+      "item_model": "CreatePartyItem",
+      "kind": "output_directive",
+      "purposes": [],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "properties": {
+                "aka": {
+                  "default": [],
+                  "title": "Aka"
+                },
+                "assigned_to": {
+                  "default": null,
+                  "title": "Assigned To"
+                },
+                "attributes": {
+                  "default": {},
+                  "title": "Attributes"
+                },
+                "avatar_file_id": {
+                  "default": null,
+                  "title": "Avatar File Id"
+                },
+                "bio": {
+                  "default": null,
+                  "title": "Bio"
+                },
+                "date_of_birth": {
+                  "default": null,
+                  "title": "Date Of Birth"
+                },
+                "display_name": {
+                  "title": "Display Name"
+                },
+                "employee_band": {
+                  "default": null,
+                  "title": "Employee Band"
+                },
+                "first_name": {
+                  "default": null,
+                  "title": "First Name"
+                },
+                "founded_year": {
+                  "default": null,
+                  "title": "Founded Year"
+                },
+                "headline": {
+                  "default": null,
+                  "title": "Headline"
+                },
+                "industry_id": {
+                  "default": null,
+                  "title": "Industry Id"
+                },
+                "last_name": {
+                  "default": null,
+                  "title": "Last Name"
+                },
+                "legal_name": {
+                  "default": null,
+                  "title": "Legal Name"
+                },
+                "lifecycle_stage_id": {
+                  "default": null,
+                  "title": "Lifecycle Stage Id"
+                },
+                "locale": {
+                  "default": null,
+                  "title": "Locale"
+                },
+                "metadata": {
+                  "default": {},
+                  "title": "Metadata"
+                },
+                "middle_name": {
+                  "default": null,
+                  "title": "Middle Name"
+                },
+                "name_prefix": {
+                  "default": null,
+                  "title": "Name Prefix"
+                },
+                "name_suffix": {
+                  "default": null,
+                  "title": "Name Suffix"
+                },
+                "party_kind": {
+                  "title": "Party Kind"
+                },
+                "preferred_name": {
+                  "default": null,
+                  "title": "Preferred Name"
+                },
+                "primary_domain": {
+                  "default": null,
+                  "title": "Primary Domain"
+                },
+                "pronouns": {
+                  "default": null,
+                  "title": "Pronouns"
+                },
+                "rating_id": {
+                  "default": null,
+                  "title": "Rating Id"
+                },
+                "registration_number": {
+                  "default": null,
+                  "title": "Registration Number"
+                },
+                "sort_name": {
+                  "default": null,
+                  "title": "Sort Name"
+                },
+                "source": {
+                  "default": null,
+                  "title": "Source"
+                },
+                "source_detail": {
+                  "default": null,
+                  "title": "Source Detail"
+                },
+                "tax_id": {
+                  "default": null,
+                  "title": "Tax Id"
+                },
+                "timezone": {
+                  "default": null,
+                  "title": "Timezone"
+                }
+              },
+              "required": [
+                "party_kind",
+                "display_name"
+              ],
+              "title": "CreatePartyItem",
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "const": "output_directive",
+            "type": "string"
+          },
+          "matrx_version": {
+            "const": 1,
+            "type": "integer"
+          },
+          "type": {
+            "const": "create:party",
+            "type": "string"
+          }
+        },
+        "required": [
+          "matrx_version",
+          "kind",
+          "type",
+          "items"
+        ],
+        "type": "object"
+      },
+      "type": "create:party"
+    },
+    {
+      "category": "side_effect",
       "doc": "Create one Project row (workspace.projects). Payload = the table's writable columns; DB-required columns without defaults must be present. Batch via items.",
       "item_model": "CreateProjectItem",
       "kind": "output_directive",
@@ -2992,6 +3160,55 @@
     },
     {
       "category": "side_effect",
+      "doc": "Soft-delete one Contact (person or company) row (crm.party) by id (never a hard delete).",
+      "item_model": "DeletePartyItem",
+      "kind": "output_directive",
+      "purposes": [],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "properties": {
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "DeletePartyItem",
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "const": "output_directive",
+            "type": "string"
+          },
+          "matrx_version": {
+            "const": 1,
+            "type": "integer"
+          },
+          "type": {
+            "const": "delete:party",
+            "type": "string"
+          }
+        },
+        "required": [
+          "matrx_version",
+          "kind",
+          "type",
+          "items"
+        ],
+        "type": "object"
+      },
+      "type": "delete:party"
+    },
+    {
+      "category": "side_effect",
       "doc": "Soft-delete one Project row (workspace.projects) by id (never a hard delete).",
       "item_model": "DeleteProjectItem",
       "kind": "output_directive",
@@ -4571,6 +4788,179 @@
         "type": "object"
       },
       "type": "update:note"
+    },
+    {
+      "category": "side_effect",
+      "doc": "Update one Contact (person or company) row (crm.party) by id; any writable columns.",
+      "item_model": "UpdatePartyItem",
+      "kind": "output_directive",
+      "purposes": [],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "properties": {
+                "aka": {
+                  "default": null,
+                  "title": "Aka"
+                },
+                "assigned_to": {
+                  "default": null,
+                  "title": "Assigned To"
+                },
+                "attributes": {
+                  "default": null,
+                  "title": "Attributes"
+                },
+                "avatar_file_id": {
+                  "default": null,
+                  "title": "Avatar File Id"
+                },
+                "bio": {
+                  "default": null,
+                  "title": "Bio"
+                },
+                "date_of_birth": {
+                  "default": null,
+                  "title": "Date Of Birth"
+                },
+                "display_name": {
+                  "default": null,
+                  "title": "Display Name"
+                },
+                "employee_band": {
+                  "default": null,
+                  "title": "Employee Band"
+                },
+                "first_name": {
+                  "default": null,
+                  "title": "First Name"
+                },
+                "founded_year": {
+                  "default": null,
+                  "title": "Founded Year"
+                },
+                "headline": {
+                  "default": null,
+                  "title": "Headline"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "industry_id": {
+                  "default": null,
+                  "title": "Industry Id"
+                },
+                "last_name": {
+                  "default": null,
+                  "title": "Last Name"
+                },
+                "legal_name": {
+                  "default": null,
+                  "title": "Legal Name"
+                },
+                "lifecycle_stage_id": {
+                  "default": null,
+                  "title": "Lifecycle Stage Id"
+                },
+                "locale": {
+                  "default": null,
+                  "title": "Locale"
+                },
+                "metadata": {
+                  "default": null,
+                  "title": "Metadata"
+                },
+                "middle_name": {
+                  "default": null,
+                  "title": "Middle Name"
+                },
+                "name_prefix": {
+                  "default": null,
+                  "title": "Name Prefix"
+                },
+                "name_suffix": {
+                  "default": null,
+                  "title": "Name Suffix"
+                },
+                "party_kind": {
+                  "default": null,
+                  "title": "Party Kind"
+                },
+                "preferred_name": {
+                  "default": null,
+                  "title": "Preferred Name"
+                },
+                "primary_domain": {
+                  "default": null,
+                  "title": "Primary Domain"
+                },
+                "pronouns": {
+                  "default": null,
+                  "title": "Pronouns"
+                },
+                "rating_id": {
+                  "default": null,
+                  "title": "Rating Id"
+                },
+                "registration_number": {
+                  "default": null,
+                  "title": "Registration Number"
+                },
+                "sort_name": {
+                  "default": null,
+                  "title": "Sort Name"
+                },
+                "source": {
+                  "default": null,
+                  "title": "Source"
+                },
+                "source_detail": {
+                  "default": null,
+                  "title": "Source Detail"
+                },
+                "tax_id": {
+                  "default": null,
+                  "title": "Tax Id"
+                },
+                "timezone": {
+                  "default": null,
+                  "title": "Timezone"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "UpdatePartyItem",
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "const": "output_directive",
+            "type": "string"
+          },
+          "matrx_version": {
+            "const": 1,
+            "type": "integer"
+          },
+          "type": {
+            "const": "update:party",
+            "type": "string"
+          }
+        },
+        "required": [
+          "matrx_version",
+          "kind",
+          "type",
+          "items"
+        ],
+        "type": "object"
+      },
+      "type": "update:party"
     },
     {
       "category": "side_effect",
@@ -8985,6 +9375,102 @@
     },
     {
       "category": "pure",
+      "doc": "Pointer to one Data Store (rag.data_stores) row by id (RLS-scoped, read-only).",
+      "item_model": "RecordRef",
+      "kind": "reference",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "RecordRef",
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "const": "reference",
+            "type": "string"
+          },
+          "matrx_version": {
+            "const": 1,
+            "type": "integer"
+          },
+          "type": {
+            "const": "data_store",
+            "type": "string"
+          }
+        },
+        "required": [
+          "matrx_version",
+          "kind",
+          "type",
+          "items"
+        ],
+        "type": "object"
+      },
+      "type": "data_store"
+    },
+    {
+      "category": "pure",
       "doc": "Legacy alias of `dataset` (canonical entity_types.token).",
       "item_model": "RecordRef",
       "kind": "reference",
@@ -10385,6 +10871,102 @@
     },
     {
       "category": "pure",
+      "doc": "Pointer to one Folder (files.folders) row by id (RLS-scoped, read-only).",
+      "item_model": "RecordRef",
+      "kind": "reference",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "RecordRef",
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "const": "reference",
+            "type": "string"
+          },
+          "matrx_version": {
+            "const": 1,
+            "type": "integer"
+          },
+          "type": {
+            "const": "folder",
+            "type": "string"
+          }
+        },
+        "required": [
+          "matrx_version",
+          "kind",
+          "type",
+          "items"
+        ],
+        "type": "object"
+      },
+      "type": "folder"
+    },
+    {
+      "category": "pure",
       "doc": "Pointer to one Game Result (education.game_result) row by id (RLS-scoped, read-only).",
       "item_model": "RecordRef",
       "kind": "reference",
@@ -11633,7 +12215,7 @@
     },
     {
       "category": "pure",
-      "doc": "Pointer to one Entity (crm.party) row by id (RLS-scoped, read-only).",
+      "doc": "Pointer to one Contact (person or company) (crm.party) row by id (RLS-scoped, read-only).",
       "item_model": "RecordRef",
       "kind": "reference",
       "purposes": [
@@ -14232,6 +14814,102 @@
         "type": "object"
       },
       "type": "scope_type"
+    },
+    {
+      "category": "pure",
+      "doc": "Pointer to one SEO Topic (seo.topic) row by id (RLS-scoped, read-only).",
+      "item_model": "RecordRef",
+      "kind": "reference",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "RecordRef",
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "const": "reference",
+            "type": "string"
+          },
+          "matrx_version": {
+            "const": 1,
+            "type": "integer"
+          },
+          "type": {
+            "const": "seo_topic",
+            "type": "string"
+          }
+        },
+        "required": [
+          "matrx_version",
+          "kind",
+          "type",
+          "items"
+        ],
+        "type": "object"
+      },
+      "type": "seo_topic"
     },
     {
       "category": "pure",
@@ -17819,6 +18497,390 @@
         "type": "object"
       },
       "type": "wc_claim"
+    },
+    {
+      "category": "pure",
+      "doc": "Pointer to one Analysis Item (web.analysis_item) row by id (RLS-scoped, read-only).",
+      "item_model": "RecordRef",
+      "kind": "reference",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "RecordRef",
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "const": "reference",
+            "type": "string"
+          },
+          "matrx_version": {
+            "const": 1,
+            "type": "integer"
+          },
+          "type": {
+            "const": "web_analysis_item",
+            "type": "string"
+          }
+        },
+        "required": [
+          "matrx_version",
+          "kind",
+          "type",
+          "items"
+        ],
+        "type": "object"
+      },
+      "type": "web_analysis_item"
+    },
+    {
+      "category": "pure",
+      "doc": "Pointer to one Brand (web.brand) row by id (RLS-scoped, read-only).",
+      "item_model": "RecordRef",
+      "kind": "reference",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "RecordRef",
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "const": "reference",
+            "type": "string"
+          },
+          "matrx_version": {
+            "const": 1,
+            "type": "integer"
+          },
+          "type": {
+            "const": "web_brand",
+            "type": "string"
+          }
+        },
+        "required": [
+          "matrx_version",
+          "kind",
+          "type",
+          "items"
+        ],
+        "type": "object"
+      },
+      "type": "web_brand"
+    },
+    {
+      "category": "pure",
+      "doc": "Pointer to one Provider (web.provider) row by id (RLS-scoped, read-only).",
+      "item_model": "RecordRef",
+      "kind": "reference",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "RecordRef",
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "const": "reference",
+            "type": "string"
+          },
+          "matrx_version": {
+            "const": 1,
+            "type": "integer"
+          },
+          "type": {
+            "const": "web_provider",
+            "type": "string"
+          }
+        },
+        "required": [
+          "matrx_version",
+          "kind",
+          "type",
+          "items"
+        ],
+        "type": "object"
+      },
+      "type": "web_provider"
+    },
+    {
+      "category": "pure",
+      "doc": "Pointer to one Site (web.site) row by id (RLS-scoped, read-only).",
+      "item_model": "RecordRef",
+      "kind": "reference",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "RecordRef",
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "const": "reference",
+            "type": "string"
+          },
+          "matrx_version": {
+            "const": 1,
+            "type": "integer"
+          },
+          "type": {
+            "const": "web_site",
+            "type": "string"
+          }
+        },
+        "required": [
+          "matrx_version",
+          "kind",
+          "type",
+          "items"
+        ],
+        "type": "object"
+      },
+      "type": "web_site"
     },
     {
       "category": "pure",

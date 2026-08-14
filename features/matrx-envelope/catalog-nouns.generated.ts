@@ -57,6 +57,10 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
   "table": "skill.render_definition",
   "title_column": "label"
  },
+ "folder": {
+  "table": "files.folders",
+  "title_column": "folder_name"
+ },
  "transcript": {
   "table": "transcripts.transcripts",
   "title_column": "title"
@@ -84,6 +88,10 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
  "feature_doc": {
   "table": "admin.feature_docs",
   "title_column": "title"
+ },
+ "seo_topic": {
+  "table": "seo.topic",
+  "title_column": "name"
  },
  "ai_api": {
   "table": "ai.api",
@@ -163,6 +171,10 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
  },
  "crm_campaign": {
   "table": "crm.campaign",
+  "title_column": "name"
+ },
+ "data_store": {
+  "table": "rag.data_stores",
   "title_column": "name"
  },
  "dataset": {
@@ -380,6 +392,22 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
  "wc_claim": {
   "table": "legal.wc_claim",
   "title_column": null
+ },
+ "web_analysis_item": {
+  "table": "web.analysis_item",
+  "title_column": "label"
+ },
+ "web_brand": {
+  "table": "web.brand",
+  "title_column": "name"
+ },
+ "web_provider": {
+  "table": "web.provider",
+  "title_column": "label"
+ },
+ "web_site": {
+  "table": "web.site",
+  "title_column": "name"
  },
  "workbook": {
   "table": "workbench.udt_workbooks",
