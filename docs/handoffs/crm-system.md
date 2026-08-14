@@ -212,7 +212,7 @@ A newcomer will otherwise be tempted to undo these. Don't.
   exposure, constraint/merge round-trip tested. Contract: `features/crm/FEATURE.md`.
 - `/crm` list + `/crm/[partyId]` record page + Trash + classification pickers + create windows +
   manager window + `/crm/admin` map + main-nav entries + three UI surfaces — all browser-verified.
-- Registry wiring: `party` + `crm_campaign` in `ENTITY_OVERLAY` / `ASSOCIATION_TARGET_TYPES`;
+- Registry wiring: `party` + `crm_outreach_list` in `ENTITY_OVERLAY` / `ASSOCIATION_TARGET_TYPES`;
   `party` passes `curatedTokens()` and appears in the universal picker; envelope catalog noun.
 - Types both repos: `database.types.ts` (`--schema crm`), entity-types, aidream `db/models/crm.py`
   + `db/managers/crm/`.
@@ -221,7 +221,7 @@ A newcomer will otherwise be tempted to undo these. Don't.
 
 - **Zero changes since the feature landed** (`features/crm` has exactly one commit ever —
   `ed868172`, 2026-07-29, the full feature riding in a messages-titled commit) and near-zero usage:
-  4 parties, 1 interaction, 0 campaigns. ~~Nothing server-side consumes the CRM ORM~~
+  4 parties, 1 interaction, 0 outreach lists. ~~Nothing server-side consumes the CRM ORM~~
   **Server consumption started 2026-08-12:** the party resolver (`aidream/services/crm/`),
   the `party` `agent_data` resource, and the `resolve_contact` operation (see Wave 1).
 - **The fold debt is compounding:** `public.contact_submissions`
@@ -230,7 +230,7 @@ A newcomer will otherwise be tempted to undo these. Don't.
 - ~~content-plan's `EntityManager.tsx` person/org CRUD beside `/crm`~~ **FIXED 2026-08-13**:
   people/companies there are now crm parties (create via `PartyCreateForm`, doors to `/crm/[id]`);
   only source/media citations remain plan.entity CRUD. (Universal-picker hygiene is already correct: only `party`
-  and `crm_campaign` are curated tokens; the duplicate tables have `contentRole: null`.)
+  and `crm_outreach_list` are curated tokens; the duplicate tables have `contentRole: null`.)
 - **`party.expert_status` has no producer and no reader anywhere.** The research pipeline extracts
   the exact promotion signals (`NotableQuote.speaker`, `has_author_credentials`, `expert_opinion`
   findings, per-page `EntitiesMentioned.people/organizations`) and buries them in
@@ -285,7 +285,7 @@ raw-`database`-tool guard (`WRITE_GOVERNED_SCHEMAS = {"crm"}` in
 `_resolve_write_target` and refuses `crm` with a governed-path message; reads and
 schema discovery deliberately untouched, unlike `_NON_APP_SCHEMAS`. Wave 1 landed and
 **deliberately KEPT the guard** — a raw INSERT still skips the resolver, and the other
-crm tables (interaction, campaign…) have no governed server path yet. Guard:
+crm tables (interaction, outreach_list…) have no governed server path yet. Guard:
 `packages/matrx-ai/tests/test_write_governed_schemas.py`; doc:
 `aidream/services/agent_data/FEATURE.md`) · `matrx_legal...docket.Party` →
 **`DocketParty`** (all consumers + `__all__` updated, package tests green).
@@ -324,13 +324,13 @@ function; `channel_id` is a stable key, no fuzzy matching).
 
 **Wave 3 — a working outreach tool (~2–3 weeks).**
 Smart views (saved dynamic filters + bulk actions — the list IS the work queue) ·
-~~campaign builder + call-queue UI~~ **DONE 2026-08-13** (`/crm/campaigns` console + campaign
-workspace + claim-locked power dialer at `/crm/campaigns/[id]/dial`; enrollment from `/crm` row
+~~outreach-list builder + call-queue UI~~ **DONE 2026-08-13** (`/crm/outreach-lists` console + list
+workspace + claim-locked power dialer at `/crm/outreach-lists/[id]/dial`; enrollment from `/crm` row
 selection and from filters over the shared `applyPartyListPredicates`; DNC/suppression enforced
 before any dial (party DNC / point opt-out / medium `is_contactable`), "Do not call" scrubs the
 medium org-wide; dispositions log `crm.interaction` first then advance the member behind a
 claim-guarded update; data layer live-DB verified 15/15 incl. the claim race. Data
-`features/crm/campaigns/`, UI `features/crm/components/campaigns/`. Known gaps: `tel:` handoff
+`features/crm/outreach-lists/`, UI `features/crm/components/outreach-lists/`. Known gaps: `tel:` handoff
 only — real telephony is Wave 4; no unsuppress affordance; enrollment from a *saved* view awaits
 smart views) ·
 ~~dedup automation + merge review UI~~ **DONE 2026-08-13** (`crm_03_dedup.sql`:
