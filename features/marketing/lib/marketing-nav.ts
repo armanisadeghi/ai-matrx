@@ -379,12 +379,12 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
     key: "planning",
     label: "Strategy & Planning",
     description:
-      "What you intend to publish and promote — plans, campaigns, calendar, and who it is for.",
+      "What you intend to publish and promote — plans, initiatives, calendar, and who it is for.",
     iconName: "ListTree",
     landingItems: [
       "Content plan tree",
       "Briefs + keywords",
-      "Campaigns + calendar",
+      "Initiatives + calendar",
       "Audience + personas",
     ],
     entries: [
@@ -396,13 +396,13 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
         iconName: "ListTree",
       },
       {
-        label: "Campaigns",
-        href: marketingRoutes.campaigns(),
+        label: "Initiatives",
+        href: marketingRoutes.initiatives(),
         description:
           "The container above channels — goal, budget, timeline, assets, and shared attribution.",
         iconName: "Target",
         status: "coming-soon",
-        comingSoonId: "marketing.campaigns",
+        comingSoonId: "marketing.initiatives",
       },
       {
         label: "Calendar",

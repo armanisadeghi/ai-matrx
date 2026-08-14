@@ -52,11 +52,11 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
-      url: "/marketing/campaigns",
-      label: "Campaigns",
+      url: "/marketing/initiatives",
+      label: "Initiatives",
       description:
-        "RESERVED — renders <MarketingComingSoon>. Declared in features/marketing/lib/marketing-nav.ts and tracked in lib/coming-soon/registry.ts. The URL is permanent; it will not move when the feature ships.",
-      filePath: "app/(core)/marketing/campaigns/page.tsx",
+        "RESERVED — renders <MarketingComingSoon>. Declared in features/marketing/lib/marketing-nav.ts and tracked in lib/coming-soon/registry.ts. Renamed from /marketing/campaigns 2026-08-13 (the word is retired platform-wide — db-rules §1a); the old path 308s here and this URL is now permanent.",
+      filePath: "app/(core)/marketing/initiatives/page.tsx",
       status: "Coming soon",
     },
     {

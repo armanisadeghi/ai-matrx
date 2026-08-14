@@ -34,7 +34,7 @@ const RESERVED_LETTERS: Readonly<Record<string, string>> = {
   "/marketing/audience": "Au",
   "/marketing/automations": "At",
   "/marketing/calendar": "Cl",
-  "/marketing/campaigns": "Cm",
+  "/marketing/initiatives": "In",
   "/marketing/competitors": "Cp",
   "/marketing/content-studio": "Cs",
   "/marketing/email": "Em",

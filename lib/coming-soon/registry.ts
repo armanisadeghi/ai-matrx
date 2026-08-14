@@ -92,14 +92,14 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
       "aidream has five video providers (Veo/Sora/Kling/Wan/grok-imagine) reachable only via an agent pinned to a video model or the ai.generate_video workflow node — video runs take minutes and the marketing headless-agent shell (5-min client deadline, dies on navigation) needs a durable job path before the order UX is honest.",
     surfaces: ["/marketing/brands/[brandId]/sites/[siteId]/media?view=videos"],
   },
-  "marketing.campaigns": {
-    id: "marketing.campaigns",
-    label: "Campaigns",
+  "marketing.initiatives": {
+    id: "marketing.initiatives",
+    label: "Initiatives",
     owner: "marketing",
     promise:
       "Group content, social, email, ads, and outreach under one goal with shared budget, timeline, and attribution — the container every channel reports into.",
     stage: "planned",
-    surfaces: ["/marketing/campaigns hub card", "/marketing/campaigns route"],
+    surfaces: ["/marketing/initiatives hub card", "/marketing/initiatives route"],
   },
   "marketing.calendar": {
     id: "marketing.calendar",

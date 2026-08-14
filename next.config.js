@@ -351,6 +351,13 @@ const nextConfig = {
             { source: '/content-plan', destination: '/marketing/content-plan', permanent: true },
             { source: '/content-plan/:path*', destination: '/marketing/content-plan/:path*', permanent: true },
             { source: '/seo/keyword-research', destination: '/marketing/keyword-research', permanent: true },
+            // 2026-08-13: "campaign" retired as a name platform-wide (db-rules
+            // §1a — a table name repeats across schemas ONLY for the same role,
+            // and `crm.campaign` is a worked outreach list, not this). Marketing's
+            // channel container is an INITIATIVE: goal, budget, timeline,
+            // attribution. Renamed before it shipped, so no live destination is
+            // lost — this redirect is what keeps that true.
+            { source: '/marketing/campaigns', destination: '/marketing/initiatives', permanent: true },
             // 2026-07-13: Relationships hub consolidation. /administration/sharing
             // (link policy) and /administration/action-catalog moved into the
             // route-tabbed hub at /administration/database/relationships/*.

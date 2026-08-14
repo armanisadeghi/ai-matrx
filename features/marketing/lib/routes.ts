@@ -44,7 +44,7 @@ export const marketingRoutes = {
   // visible to users and to the next agent. When one ships, delete its
   // registry row and drop `status: "coming-soon"` from its nav entry — the
   // href never changes.
-  campaigns: () => "/marketing/campaigns",
+  initiatives: () => "/marketing/initiatives",
   calendar: () => "/marketing/calendar",
   audience: () => "/marketing/audience",
   local: () => "/marketing/local",

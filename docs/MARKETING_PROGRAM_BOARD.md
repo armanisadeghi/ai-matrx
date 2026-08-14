@@ -40,7 +40,7 @@ One page that tells any agent (or Arman) what this program is, what's in motion,
 1. GSC ambassador sweep onto the page-level surfaces (`PageSearchConsoleCard`, `PageQueriesCard`, `PageTargetPerformanceCard`, `PagesTable`, `SitesPortfolio` still render raw GSC — see marketing-module handoff §4.1). Component-RLS precedent is IMPLEMENTED (2026-08-08, brand-coverage handoff item 1) and GSC is synced — those old lines are done.
 2. Social routes (`brands/[id]/socials/...`) — property rows already created by discovery promotion.
 3. Soft-delete restore-on-upsert sweep server-side (handoff item; the class rule is written there).
-4. `/marketing/campaigns` — the highest-leverage reserved surface (schema design needs Arman; see marketing-module handoff).
+4. `/marketing/initiatives` — the highest-leverage reserved surface (renamed from `/marketing/campaigns` 2026-08-13; the entity name is ruled, the SCHEMA it lands in still needs Arman — see marketing-module handoff).
 
 ## Parking lot — grab one, note your name, go
 
