@@ -317,7 +317,7 @@ export function SiteGrowthLoopWorkspace() {
 
           <SectionCard title="What has happened">
             <div className="p-3">
-              <LoopHistoryFeed events={history.events} />
+              <LoopHistoryFeed events={history.events} subject={subject} />
             </div>
           </SectionCard>
         </>

@@ -68,6 +68,11 @@ Rules (also stated at the top of the file):
 - **Every ref kind is a compile-time obligation.** `Record<StageRefKind, …>` in
   `run/stage-doors.ts` means a kind added on the server fails the build here rather than
   rendering an id nobody can open. A kind with no viewer shows its label and no id.
+- **Quality is history, never a gate.** Completed attempts are re-read alongside the
+  gap-free event delta because aidream scores only after it advances. The completion line
+  updates in place from `Scoring…` to `<score>/100` (or a loud failure), shows the judge's
+  reasoning, and links to the referenced artifact. Internal run kinds with no viewer fall
+  back to that stage's working surface, so a weak score is never a dead end.
 
 ## Doctrine
 
@@ -87,6 +92,11 @@ Rules (also stated at the top of the file):
   emphasizes the connected stages, and suppresses unrelated paths.
 
 ## Change log
+
+- 2026-08-13 — Codex: completed-stage quality judgments are visible in the loop history.
+  The direct Supabase read folds current `loop_stage_run.outcome.quality` into its matching
+  completion event, merges by event id as the asynchronous score arrives, explains why the
+  output earned its score, and opens the output or its canonical stage surface.
 
 - 2026-08-13 — Codex: **post-brief server recording wired.** Realize, fill,
   publish, crawl, measure, and analyze now record themselves against their own

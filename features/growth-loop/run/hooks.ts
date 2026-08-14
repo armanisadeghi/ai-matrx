@@ -87,6 +87,20 @@ export function useLoopState(loopRunId: string | null) {
   });
 }
 
+function hasPendingQuality(event: LoopEventView): boolean {
+  const outcome = event.payload.outcome;
+  if (outcome === null || typeof outcome !== "object" || Array.isArray(outcome)) {
+    return false;
+  }
+  const quality = (outcome as Record<string, unknown>).quality;
+  return (
+    quality !== null &&
+    typeof quality === "object" &&
+    !Array.isArray(quality) &&
+    (quality as Record<string, unknown>).status === "pending"
+  );
+}
+
 /**
  * The loop's own ledger, accumulated by delta. `after_seq` is assigned by a DB
  * trigger under the parent row lock, so it is gap-free and commit-ordered —
@@ -105,7 +119,11 @@ export function useLoopHistory(loopRunId: string | null, live: boolean) {
   const query = useQuery({
     queryKey: [...growthLoopKeys.run(loopRunId ?? "none"), "history"] as const,
     enabled: Boolean(loopRunId),
-    refetchInterval: live ? LIVE_POLL_MS : false,
+    refetchInterval:
+      live ||
+      (ledger.loopRunId === loopRunId && ledger.events.some(hasPendingQuality))
+        ? LIVE_POLL_MS
+        : false,
     queryFn: async ({ signal }) => {
       if (!loopRunId) {
         throw new Error("A loop id is required to load its history.");
@@ -115,10 +133,15 @@ export function useLoopHistory(loopRunId: string | null, live: boolean) {
       const page = await getLoopHistory(id, from, signal);
       setLedger((prev) => {
         const base = prev.loopRunId === id ? prev.events : [];
+        const merged = new Map(base.map((event) => [event.id, event] as const));
+        for (const event of page.events) merged.set(event.id, event);
         return {
           loopRunId: id,
-          cursor: page.next_after_seq,
-          events: [...base, ...page.events],
+          cursor: Math.max(
+            prev.loopRunId === id ? prev.cursor : 0,
+            page.next_after_seq,
+          ),
+          events: [...merged.values()].sort((left, right) => left.seq - right.seq),
         };
       });
       return page.next_after_seq;

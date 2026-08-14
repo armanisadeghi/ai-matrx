@@ -327,20 +327,83 @@ export async function getLoopHistory(
     );
   }
 
-  const events: LoopEventView[] = (response.data ?? []).map((row) => ({
+  // Quality arrives after completion by design, because no judge may delay or
+  // gate advancement. Re-read completed attempt outcomes and fold their latest
+  // judgment into the corresponding completion event. The hook merges by event
+  // id, so a pending line becomes scored without abandoning the gap-free seq
+  // cursor for genuinely new events.
+  const stageResponse = await (
+    await growthDb()
+  )
+    .from("loop_stage_run")
+    .select("id, outcome, ref_kind, ref_id")
+    .eq("loop_run_id", loopRunId)
+    .eq("status", "completed")
+    .abortSignal(signal ?? new AbortController().signal);
+  if (stageResponse.error) {
+    throw new GrowthLoopApiError(
+      `Growth loop quality history could not be loaded: ${stageResponse.error.message}`,
+    );
+  }
+
+  const completedById = new Map(
+    (stageResponse.data ?? []).map((row) => [row.id, row] as const),
+  );
+  let completionRows: typeof response.data = [];
+  if (completedById.size > 0) {
+    const completionResponse = await (
+      await growthDb()
+    )
+      .from("loop_event")
+      .select(
+        "id, seq, event_type, cycle, stage, stage_run_id, payload, created_at",
+      )
+      .eq("loop_run_id", loopRunId)
+      .eq("event_type", "stage_completed")
+      .in("stage_run_id", [...completedById.keys()])
+      .abortSignal(signal ?? new AbortController().signal);
+    if (completionResponse.error) {
+      throw new GrowthLoopApiError(
+        `Growth loop quality events could not be loaded: ${completionResponse.error.message}`,
+      );
+    }
+    completionRows = completionResponse.data ?? [];
+  }
+
+  const rowsById = new Map(
+    [...(response.data ?? []), ...completionRows].map((row) => [row.id, row] as const),
+  );
+  const events: LoopEventView[] = [...rowsById.values()].map((row) => {
+    const completed = row.stage_run_id
+      ? completedById.get(row.stage_run_id)
+      : undefined;
+    const payload = jsonObject(row.payload, "event payload");
+    if (completed) {
+      payload.outcome = nullableJsonObject(
+        completed.outcome,
+        "completed stage outcome",
+      );
+      payload.stage_ref =
+        completed.ref_kind && completed.ref_id
+          ? { kind: completed.ref_kind, id: completed.ref_id }
+          : null;
+    }
+    return {
     id: row.id,
     seq: row.seq,
     event_type: row.event_type as LoopEventView["event_type"],
     cycle: row.cycle,
     stage: row.stage ? stageId(row.stage, "event stage") : null,
     stage_run_id: row.stage_run_id,
-    payload: jsonObject(row.payload, "event payload"),
+    payload,
     created_at: row.created_at,
-  }));
+    };
+  });
+  events.sort((left, right) => left.seq - right.seq);
   return {
     loop_run_id: loopRunId,
     events,
-    next_after_seq: events.at(-1)?.seq ?? afterSeq,
+    next_after_seq: Math.max(afterSeq, ...events.map((event) => event.seq)),
   };
 }
 
