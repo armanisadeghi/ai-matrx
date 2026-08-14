@@ -74,6 +74,25 @@ Secondary, same incident, filed here so they are not lost:
   and nothing dispatches a resume on it — against the repo's own
   `detach_on_disconnect` doctrine.
 
+### D183 — The page-template system shipped but is INERT in production (2026-08-13)
+
+aidream `services/content_plan/templates.py` (916 lines) resolves a per-node HTML
+scaffold from `plan.profile.template_map.templates`, and `cms_reconciler`
+realize writes it into the page body. **Verified live: not one `plan.profile`
+row has a `templates` key** (all six carry only `archetypes` / `concepts`), and
+nothing in either repo seeds one — `BUILTIN_TEMPLATES` (18 templates) is
+referenced only by its own definition and `__all__`. So realize still creates
+empty page bodies and `cms_fill`'s scaffold branch never fires. The capability
+is paid for and switched off, which is the silent-inert class CLAUDE.md's env-var
+rule was written about.
+
+Also undocumented: no `FEATURE.md` section, no Change Log entry, no `/templates`
+route in the registration map, and **no test file** for `templates.py`.
+
+Fix: seed the library from `BUILTIN_TEMPLATES` via a migration, verify one
+realize writes a scaffold (`data-matrx-scaffold` markers present), then document
+it. Owner: whoever owns the CMS realize path.
+
 ### D179 — Keyword Research workbench: remaining UI debt (2026-08-13, Arman review)
 
 Arman reviewed `/marketing/keyword-research` during the sharing pilot and named
