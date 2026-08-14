@@ -214,7 +214,9 @@ export function useKeywordResearch(
   const runEpochRef = useRef(0);
   /** Latest options without threading them through callback deps. */
   const optionsRef = useRef(options);
-  optionsRef.current = options;
+  useEffect(() => {
+    optionsRef.current = options;
+  }, [options]);
 
   const reload = useCallback(async (searchValue: string) => {
     abortRef.current?.abort();
@@ -499,7 +501,7 @@ export function useKeywordResearch(
   );
 
   const runResearch = useCallback(
-    async (primaryKeyword: string) => {
+    async (primaryKeyword: string, runOptions?: { forceRefresh?: boolean }) => {
       const phrase = primaryKeyword.trim();
       if (!phrase) return;
       runEpochRef.current += 1;
@@ -514,7 +516,10 @@ export function useKeywordResearch(
       });
       await consumeResearchStream(phrase, {
         path: "/seo/keywords/research",
-        body: { primary_keyword: phrase },
+        body: {
+          primary_keyword: phrase,
+          force_refresh: runOptions?.forceRefresh === true,
+        },
       });
     },
     [consumeResearchStream, dispatch],

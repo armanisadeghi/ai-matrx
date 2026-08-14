@@ -7,13 +7,13 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { History, Target } from "lucide-react";
+import { ChevronRight, FolderSearch, Target } from "lucide-react";
 
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { KeywordIntelPanel } from "@/features/marketing/seo/keyword/KeywordIntelPanel";
 import { normalizeKeywordPhrase } from "@/features/marketing/seo/keyword/data";
 import {
-  isKeywordIntelTab,
+  normalizeKeywordIntelTab,
   type KeywordIntelTab,
 } from "@/features/marketing/seo/keyword/types";
 import { cn } from "@/lib/utils";
@@ -29,6 +29,12 @@ import { cn } from "@/lib/utils";
  * tabs light up when a site binding is supplied. The window contributes zero
  * business logic — the body is `KeywordIntelPanel`
  * (features/marketing/seo/keyword/).
+ *
+ * The WindowPanel sidebar is the keyword workspace rail. The opening phrase
+ * stays pinned as the target; related keywords opened from the dossier are
+ * deduplicated into drill-down entries. Selecting an entry swaps the entire
+ * dossier while preserving the window's site/page/brand scope. Persistence
+ * keeps the established `targetPhrase` + `history` data contract.
  */
 export interface KeywordWindowProps {
   isOpen: boolean;
@@ -64,12 +70,12 @@ function KeywordWindowInner({
     activeTab: KeywordIntelTab;
   }>({
     phrase: initialPhrase ?? "",
-    activeTab: isKeywordIntelTab(initialTab) ? initialTab : "overview",
+    activeTab: normalizeKeywordIntelTab(initialTab),
   });
-  const [targetPhrase] = useState(
+  const [targetPhrase, setTargetPhrase] = useState(
     () => initialTargetPhrase?.trim() || initialPhrase?.trim() || "",
   );
-  const [history, setHistory] = useState<string[]>(() => {
+  const [drilledKeywords, setDrilledKeywords] = useState<string[]>(() => {
     const targetKey = normalizeKeywordPhrase(
       initialTargetPhrase?.trim() || initialPhrase?.trim() || "",
     );
@@ -94,9 +100,9 @@ function KeywordWindowInner({
     history: string[];
   }>({
     phrase: initialPhrase ?? "",
-    activeTab: isKeywordIntelTab(initialTab) ? initialTab : "overview",
+    activeTab: normalizeKeywordIntelTab(initialTab),
     targetPhrase,
-    history,
+    history: drilledKeywords,
   });
   const stateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -107,11 +113,11 @@ function KeywordWindowInner({
         setPersistedState({
           ...panelState,
           targetPhrase,
-          history,
+          history: drilledKeywords,
         }),
       400,
     );
-  }, [panelState, targetPhrase, history]);
+  }, [panelState, targetPhrase, drilledKeywords]);
 
   useEffect(
     () => () => {
@@ -143,8 +149,13 @@ function KeywordWindowInner({
   const recordVisitedKeyword = (nextPhrase: string) => {
     const trimmed = nextPhrase.trim();
     const key = normalizeKeywordPhrase(trimmed);
-    if (!key || key === normalizeKeywordPhrase(targetPhrase)) return;
-    setHistory((current) => {
+    if (!key) return;
+    if (!normalizeKeywordPhrase(targetPhrase)) {
+      setTargetPhrase(trimmed);
+      return;
+    }
+    if (key === normalizeKeywordPhrase(targetPhrase)) return;
+    setDrilledKeywords((current) => {
       if (current.some((entry) => normalizeKeywordPhrase(entry) === key)) {
         return current;
       }
@@ -159,8 +170,8 @@ function KeywordWindowInner({
     setPanelState({ phrase: trimmed, activeTab: "overview" });
   };
 
-  const selectHistoryKeyword = (nextPhrase: string) => {
-    setPanelState((current) => ({ ...current, phrase: nextPhrase }));
+  const selectWorkspaceKeyword = (nextPhrase: string) => {
+    setPanelState({ phrase: nextPhrase, activeTab: "overview" });
   };
 
   return (
@@ -178,11 +189,11 @@ function KeywordWindowInner({
       onCollectData={collectData}
       bodyClassName="flex min-h-0 flex-1 flex-col"
       sidebar={
-        <KeywordHistorySidebar
+        <KeywordWorkspaceRail
           targetPhrase={targetPhrase}
-          history={history}
+          drilledKeywords={drilledKeywords}
           currentPhrase={panelState.phrase}
-          onSelect={selectHistoryKeyword}
+          onSelect={selectWorkspaceKeyword}
         />
       }
       sidebarDefaultSize={220}
@@ -198,9 +209,10 @@ function KeywordWindowInner({
           pageId: initialPageId || undefined,
           brandId: initialBrandId || undefined,
         }}
-        onPhraseChange={(phrase) =>
-          setPanelState((current) => ({ ...current, phrase }))
-        }
+        onPhraseChange={(phrase) => {
+          recordVisitedKeyword(phrase);
+          setPanelState((current) => ({ ...current, phrase }));
+        }}
         onTabChange={(activeTab) =>
           setPanelState((current) => ({ ...current, activeTab }))
         }
@@ -211,79 +223,91 @@ function KeywordWindowInner({
   );
 }
 
-function KeywordHistorySidebar({
+function KeywordWorkspaceRail({
   targetPhrase,
-  history,
+  drilledKeywords,
   currentPhrase,
   onSelect,
 }: {
   targetPhrase: string;
-  history: string[];
+  drilledKeywords: string[];
   currentPhrase: string;
   onSelect: (phrase: string) => void;
 }) {
   const currentKey = normalizeKeywordPhrase(currentPhrase);
 
   return (
-    <div className="flex min-h-full flex-col px-2 py-3">
-      <div className="px-2">
-        <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
-          <History className="h-3.5 w-3.5 text-muted-foreground" />
-          Research history
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="shrink-0 border-b border-border px-3 py-2.5">
+        <div className="flex items-center gap-1.5 text-[clamp(0.7rem,0.67rem+0.12vw,0.78rem)] font-semibold text-foreground">
+          <FolderSearch className="h-3.5 w-3.5 text-primary" />
+          Keyword workspace
         </div>
-        <p className="mt-1 text-[10px] leading-4 text-muted-foreground">
-          The original target stays pinned while you explore related keywords.
+        <p className="mt-0.5 text-[clamp(0.62rem,0.59rem+0.1vw,0.69rem)] leading-4 text-muted-foreground">
+          Each item opens its complete dossier.
         </p>
       </div>
 
-      <nav aria-label="Keyword research history" className="mt-3 grid gap-1">
-        {targetPhrase ? (
-          <HistoryItem
-            phrase={targetPhrase}
-            label="Target"
-            active={currentKey === normalizeKeywordPhrase(targetPhrase)}
-            icon={<Target className="h-3.5 w-3.5" />}
-            onSelect={onSelect}
-          />
-        ) : (
-          <div className="rounded-md px-2 py-2 text-[11px] text-muted-foreground">
-            Open the window from a target keyword to pin it here.
-          </div>
-        )}
-
-        {history.length > 0 ? (
-          <>
-            <p className="px-2 pb-0.5 pt-2 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Explored
-            </p>
-            {history.map((phrase) => (
-              <HistoryItem
-                key={normalizeKeywordPhrase(phrase)}
-                phrase={phrase}
-                active={currentKey === normalizeKeywordPhrase(phrase)}
-                onSelect={onSelect}
-              />
-            ))}
-          </>
-        ) : (
-          <p className="px-2 pt-3 text-[10px] leading-4 text-muted-foreground">
-            Related keywords you open or research will appear here.
+      <nav
+        aria-label="Keyword workspace"
+        className="flex min-h-0 flex-1 flex-col gap-3 px-2 py-2.5"
+      >
+        <div>
+          <p className="px-2 pb-1 text-[clamp(0.56rem,0.53rem+0.08vw,0.62rem)] font-semibold uppercase tracking-wider text-muted-foreground">
+            Pinned target
           </p>
-        )}
+          {targetPhrase ? (
+            <WorkspaceKeywordItem
+              phrase={targetPhrase}
+              active={currentKey === normalizeKeywordPhrase(targetPhrase)}
+              icon={<Target className="h-3.5 w-3.5" />}
+              onSelect={onSelect}
+            />
+          ) : (
+            <div className="px-2 py-1.5 text-[clamp(0.62rem,0.59rem+0.1vw,0.69rem)] leading-4 text-muted-foreground">
+              Enter a keyword to pin the first dossier.
+            </div>
+          )}
+        </div>
+
+        <div className="min-h-0">
+          <p className="flex items-center justify-between px-2 pb-1 text-[clamp(0.56rem,0.53rem+0.08vw,0.62rem)] font-semibold uppercase tracking-wider text-muted-foreground">
+            <span>Drill-downs</span>
+            {drilledKeywords.length > 0 ? (
+              <span aria-label={`${drilledKeywords.length} drilled keywords`}>
+                {drilledKeywords.length}
+              </span>
+            ) : null}
+          </p>
+          {drilledKeywords.length > 0 ? (
+            <div className="grid gap-0.5">
+              {drilledKeywords.map((phrase) => (
+                <WorkspaceKeywordItem
+                  key={normalizeKeywordPhrase(phrase)}
+                  phrase={phrase}
+                  active={currentKey === normalizeKeywordPhrase(phrase)}
+                  onSelect={onSelect}
+                />
+              ))}
+            </div>
+          ) : (
+            <p className="px-2 py-1.5 text-[clamp(0.62rem,0.59rem+0.1vw,0.69rem)] leading-4 text-muted-foreground">
+              Open a related keyword to add its dossier here.
+            </p>
+          )}
+        </div>
       </nav>
     </div>
   );
 }
 
-function HistoryItem({
+function WorkspaceKeywordItem({
   phrase,
-  label,
   active,
   icon,
   onSelect,
 }: {
   phrase: string;
-  label?: string;
   active: boolean;
   icon?: ReactNode;
   onSelect: (phrase: string) => void;
@@ -292,26 +316,37 @@ function HistoryItem({
     <button
       type="button"
       onClick={() => onSelect(phrase)}
-      title={`Open “${phrase}”`}
+      title={`Open the complete dossier for “${phrase}”`}
+      aria-label={`Open keyword dossier for ${phrase}`}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "w-full rounded-md px-2 py-2 text-left transition-colors",
+        "group flex w-full min-w-0 items-center gap-1.5 border-l-2 px-2 py-1.5 text-left transition-colors",
         active
-          ? "bg-accent text-accent-foreground"
-          : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
+          ? "border-primary bg-primary/10 text-primary"
+          : "border-transparent text-muted-foreground hover:bg-accent/60 hover:text-foreground",
       )}
     >
-      <span className="flex items-center gap-1.5">
-        {icon}
-        <span className="min-w-0 flex-1 truncate text-xs font-medium">
-          {phrase}
-        </span>
-        {label ? (
-          <span className="shrink-0 rounded bg-primary/10 px-1 py-0.5 text-[8px] font-semibold uppercase tracking-wide text-primary">
-            {label}
-          </span>
-        ) : null}
+      <span
+        className={cn(
+          "shrink-0",
+          active ? "text-primary" : "text-muted-foreground",
+        )}
+      >
+        {icon ?? <FolderSearch className="h-3.5 w-3.5" />}
       </span>
+      <span className="min-w-0 flex-1 truncate text-[clamp(0.68rem,0.64rem+0.12vw,0.75rem)] font-medium">
+        {phrase}
+      </span>
+      <ChevronRight
+        aria-hidden="true"
+        className={cn(
+          "h-3.5 w-3.5 shrink-0 transition-opacity",
+          active
+            ? "opacity-100"
+            : "opacity-0 group-hover:opacity-70 group-focus-visible:opacity-70",
+        )}
+      />
+      {active ? <span className="sr-only">Active dossier</span> : null}
     </button>
   );
 }

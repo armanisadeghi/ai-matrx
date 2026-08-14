@@ -18,7 +18,7 @@ export interface OpenKeywordWindowOptions {
   siteId?: string;
   pageId?: string;
   brandId?: string;
-  /** Land on a specific tab (overview | relationships | site | rankings | serp | research). */
+  /** Land on a specific dossier tab. Old rankings/serp values migrate to visibility. */
   tab?: string;
 }
 

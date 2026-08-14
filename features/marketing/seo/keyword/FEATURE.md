@@ -1,6 +1,7 @@
 # Canonical Keyword Primitive — KeywordInput + Keyword Intelligence window
 
-Status: **live (2026-07-26).** Home: `features/marketing/seo/keyword/`.
+Status: **live primitive; dossier convergence in progress (2026-08-14).** Home:
+`features/marketing/seo/keyword/`.
 
 **THE RULE:** a keyword is never a bare string. Wherever one is entered,
 displayed, or handed to an agent, it travels with everything the platform
@@ -14,12 +15,143 @@ keyword payload for AI — call `buildKeywordBrief`.**
 | Part                    | File                                                                                                   | What it is                                                                                                                                                                                                                                                                                                                                            |
 | ----------------------- | ------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `KeywordInput`          | `KeywordInput.tsx`                                                                                     | THE canonical keyword input: live library resolution, data chips underneath, contextual + library suggestion dropdown (source-tagged: GSC / Analyzer / Library), Keyword Intelligence launcher. Controlled; callers own save. Repeat-entry surfaces use `onSubmit` + `showDetails={false}` for type→Enter batching without a second-line lookup jump. |
-| `KeywordIntelPanel`     | `KeywordIntelPanel.tsx`                                                                                | The full dossier: Overview (market + 13-column classification), Relationships (edge navigation re-targets the panel), Site (v_site_keyword_performance), Rankings (rank targets + live check + track), SERP (stored landscape as a Google-style results page, own site highlighted), Research (full pipeline, live kind components).                  |
+| `KeywordIntelPanel`     | `KeywordIntelPanel.tsx`                                                                                | **THE canonical per-keyword dossier.** It owns pipeline status, first-run/rerun UX, result tabs, provider evidence, and drill-down navigation. The live six-tab build is transitional; the contract below is authoritative.                                                                                                                           |
 | `keywordWindow` overlay | `features/window-panels/windows/seo/KeywordWindow.tsx` + `features/overlays/openers/keywordWindow.tsx` | The panel as a floating window. Open from anywhere: `useOpenKeywordWindow({ phrase, organizationId, siteId, pageId, brandId, tab })`. A site binding always travels with its owning organization; site-scoped compute tabs stay off without both. `?panels=keyword`.                                                                                  |
 | `buildKeywordBrief`     | `keyword-brief.ts`                                                                                     | The condensed keyword+data payload (`{ data, lines }`) for Copy-for-AI envelopes and agent payloads.                                                                                                                                                                                                                                                  |
 | `KeywordDataChips`      | `KeywordDataChips.tsx`                                                                                 | Inline condensed data row (volume, trend, competition, CPC, site position).                                                                                                                                                                                                                                                                           |
 | `KeywordUsageChips`     | `KeywordUsageChips.tsx` + `keywordUsedIn`                                                              | Presence checks of a phrase across observed fields (title/description/H1/URL).                                                                                                                                                                                                                                                                        |
 | Reads + identity        | `data.ts`, `hooks.ts`                                                                                  | Direct-Supabase `seo` reads. `ensureKeywordId` is the canonical explicit-entry path: it upserts an arbitrary phrase through `seo.fn_upsert_keyword` and restores archived matches. `useKeywordVolumeRefresh` enriches the saved phrase through aidream; it is not required before selection. Query keys: `seoKeywordKeys`.                            |
+
+## Canonical dossier contract
+
+**Keyword Intelligence is the only floating dossier for one keyword.** It
+orchestrates the canonical research, market, classification, site-performance,
+rank, and SERP systems; it never forks their storage, fetchers, streams, or
+shape renderers. `KeywordResearchWindow` is transitional: consolidate its
+launcher/live-run capability into Keyword Intelligence's Run Details result and
+retire the competing per-keyword window after consumer migration. The
+Keyword Research Workbench remains the batch/library surface.
+
+### Pipeline stages are not result tabs
+
+A persistent pipeline strip reports `not_started`, `running`, `complete`,
+`stale`, or `failed`, plus last completion, evidence count, and the exact next
+action. Tabs expose results; tab order never implies execution order. The
+canonical result inventory is:
+
+1. **Summary** — true highlights, freshness, and pipeline status; no unique data
+   marooned here.
+2. **Keywords** — every discovered phrase, relationship type, market metrics,
+   classification status, provenance, and a drill-down door.
+3. **Classification** — the ONE registered keyword-classification component.
+4. **Site Performance** — an explicit row for each supported source, with
+   `not configured | needs sync | observed zero | has data | failed` and its
+   Connect/Sync/Retry/Open action.
+5. **Search Visibility** — Positions and Result Pages are two views of the same
+   persisted Google/Brave evidence, never competing tabs.
+6. **Pipeline** — canonical live Redux stream, saved provenance, failures,
+   and completed-run history.
+
+Optional provider capabilities join this inventory as visible capability tabs;
+an unavailable tab names its missing prerequisite and action instead of showing
+blank data or disappearing.
+
+### First run, rerun, and baseline
+
+- **A never-researched keyword gets an honest first-run state, not an empty
+  dossier.** Pipeline becomes a focused, full-body baseline invitation and
+  Summary routes the user there. The
+  submit/click is the spend-authorizing gesture and starts every missing
+  automatic stage.
+- **The run stays live across tabs.** Summary narrates stage progress; Pipeline
+  Details renders the exact adopted Redux stream already received. Switching
+  tabs never restarts a stage or loses partial output.
+- **Opening an existing keyword never spends.** Restore durable results and
+  freshness first.
+- **Rerunning a completed baseline is deliberate.** Use a clearly secondary
+  “Rerun entire baseline” action plus confirmation that the active dossier
+  results will be replaced. Preserve provenance/history where the platform
+  retains it; never claim physical deletion unless the pipeline performs it.
+- **Baseline sequence:** keyword identity → Keyword Relationship Researcher
+  (parents, children, natural LSIs, related phrases) → deterministic artifact
+  storage and relationship ingestion → batched keyword market metrics → two
+  independent automatic branches: intrinsic classification and primary-keyword
+  Google+Brave search visibility → completed summary.
+- **Automatic scope:** Google and Brave SERP/rank collection runs for the
+  primary keyword only. Expanded phrases receive relationships, market metrics,
+  and intrinsic classification. The user may explicitly opt additional phrases
+  into search visibility.
+- **Explicit-cost actions remain explicit:** rerun a completed baseline, refresh
+  fresh evidence, track extra phrases/providers/locations, optional expansion
+  capabilities, and SERP-informed reclassification. Every action states what it
+  will run; tab activation alone never spends.
+
+### Persistent drill-down sidebar
+
+**Every keyword identity is a door into a complete dossier.** Clicking the
+keyword name or its explicit Drill down action adds that phrase to the existing
+WindowPanel sidebar, deduplicated, and selects it. Double-click or right-click
+may be accelerators, never the only door. The opening keyword stays pinned;
+subsequent discoveries retain their order and their per-keyword dossier state.
+Selecting a sidebar item swaps the entire inner dossier—including first-run,
+scope, tabs, stream, freshness, and failures—without opening a second window.
+A secondary/recommended phrase starts from its own evidence; it never borrows
+the parent keyword's completion state.
+
+### Optional expansion and enhanced classification
+
+DataForSEO Labs exposes more than volume. Add these user-facing capability tabs
+without exposing the provider name:
+
+- **Keyword Ideas** — broad provider-derived discovery.
+- **Keyword Suggestions** — close query suggestions for the selected phrase.
+- **Related Searches** — adjacent measured query relationships.
+
+These are **future explicit-click capabilities**, not baseline work. Each tab is
+visible but locked until its prerequisites exist. Before wiring one, normalize
+its provider payload into the canonical keyword/market/edge plane with durable
+provenance and freshness; never render raw provider rows or create a parallel
+keyword store.
+
+**SERP-informed reclassification is a separate future action.** Once persisted
+Google and Brave results exist, offer “Enhance classification from search
+results.” It sends both SERPs plus the intrinsic classification to a new agent
+slot/contract, returns a versioned canonical artifact, and records which facts
+changed, confidence deltas, reasoning/evidence, and source snapshot IDs. It does
+not silently overwrite the intrinsic universal classification. No canonical
+agent or persistence contract performs this today.
+
+## Current agent inventory
+
+All agent execution resolves through DB-managed slots; IDs in code are
+first-sync seeds, never direct runtime calls. Live defaults verified 2026-08-14
+match the seeds, use the live agent definition, and have no enabled overrides:
+
+| Stage                    | Slot                     | Live agent                                                                                                                                                                   | Batch behavior                                                                                                   |
+| ------------------------ | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Relationship research    | `seo.keyword_researcher` | [Keyword Relationship Researcher](https://www.aimatrx.com/administration/system-agents/agents/c4b999a2-629d-4a00-a23f-25c63b2054d9) — `c4b999a2-629d-4a00-a23f-25c63b2054d9` | One call per fresh baseline; four lists × the default 10 phrases.                                                |
+| Intrinsic classification | `seo.keyword_classifier` | [Keyword Classifier](https://www.aimatrx.com/administration/system-agents/agents/5ca54dd9-6de6-4364-842f-2ec4a0274ce0) — `5ca54dd9-6de6-4364-842f-2ec4a0274ce0`              | Only stale/unclassified rows, chunks of at most 40; a full 40-related-plus-primary result may require two calls. |
+
+Artifact storage, `fn_ingest_keyword_research`, keyword-market provider calls,
+Google/Brave collection, and Supabase reads/writes are **deterministic non-agent
+stages**. Topic Assigner, Page Analyzer, Site Strategist, Page-Keyword Mapper,
+and Site Intake agents are not invoked by the per-keyword baseline.
+
+## Deferred convergence work
+
+- Replace artifact-exists heuristics with one durable per-stage dossier status
+  facade; an artifact stored before metrics/classification finish is not a
+  completed baseline.
+- Add primary-only automatic visibility and explicit extra-keyword tracking.
+- Preserve each sidebar keyword's transient selected tab and live-stage UI when
+  moving among several dossiers; durable results and Redux execution state are
+  already phrase/request keyed.
+- Build normalized persistence for Ideas/Suggestions/Related Searches before
+  exposing their optional actions.
+- Define and build the SERP-informed classification agent slot, versioned shape,
+  writer, confidence-delta model, and review UI before enabling its button.
+- Consolidate and remove the standalone `KeywordResearchWindow` only after all
+  launchers and preserved-state consumers use Keyword Intelligence.
 
 ## The window IS a surface
 
@@ -38,11 +170,11 @@ the manifest, emit in `getScope`, re-sync (surface-authoring skill).
 - **Reads direct to Supabase, compute to aidream** (two-lane rule). Research
   streaming REUSES `useKeywordResearch` and renders through the ONE canonical
   pipeline (`<MarkdownStream requestId />` over the adopted pipeline stream).
+  Reuse it rather than forking it; never add a parallel research surface or
+  model a new surface on it.
   Selection travels the surface seams, not props: this tab publishes
   `keyword_selection` UI state and registers the `keyword_selection` write
-  handler its manifest declares.
-  rather than forking it, add nothing to it, and never model a new surface on it.
-  Rank data REUSES
+  handler its manifest declares. Rank data REUSES
   `features/marketing/components/ranks/useRanks.ts`; display atoms REUSE
   `keyword-research/components/KeywordMetrics.tsx`. No forked fetchers or
   visuals.
@@ -81,6 +213,11 @@ the manifest, emit in `getScope`, re-sync (surface-authoring skill).
 
 ## Change Log
 
+- 2026-08-14 — Codex: ratified the canonical dossier contract—honest first-run
+  baseline, stage strip vs result tabs, persistent keyword drill-down, explicit
+  spend rules, primary-only Google+Brave automation, optional normalized
+  expansion tabs, future SERP-enhanced classification, exact live agent
+  inventory, standalone-window consolidation, and deferred convergence work.
 - 2026-08-12 — Codex: consolidated content-plan primary/supporting selection,
   ranks, research launch, and SEO change-target entry onto `KeywordInput`;
   promoted arbitrary phrase persistence to `data.ts#ensureKeywordId`; added

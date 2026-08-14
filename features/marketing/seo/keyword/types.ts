@@ -64,19 +64,19 @@ export interface PageQueryStat {
 /** Panel tabs — also the persisted `activeTab` vocabulary. */
 export type KeywordIntelTab =
   | "overview"
+  | "research"
   | "relationships"
+  | "classification"
   | "site"
-  | "rankings"
-  | "serp"
-  | "research";
+  | "visibility";
 
 export const KEYWORD_INTEL_TABS: KeywordIntelTab[] = [
   "overview",
-  "relationships",
-  "site",
-  "rankings",
-  "serp",
   "research",
+  "relationships",
+  "classification",
+  "site",
+  "visibility",
 ];
 
 export function isKeywordIntelTab(value: unknown): value is KeywordIntelTab {
@@ -84,4 +84,10 @@ export function isKeywordIntelTab(value: unknown): value is KeywordIntelTab {
     typeof value === "string" &&
     (KEYWORD_INTEL_TABS as string[]).includes(value)
   );
+}
+
+/** Preserve old saved/opened windows while collapsing Rankings + SERP. */
+export function normalizeKeywordIntelTab(value: unknown): KeywordIntelTab {
+  if (value === "rankings" || value === "serp") return "visibility";
+  return isKeywordIntelTab(value) ? value : "overview";
 }

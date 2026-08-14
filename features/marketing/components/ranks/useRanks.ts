@@ -10,18 +10,19 @@
  * command surfaces.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 import { callApi } from "@/lib/api/call-api";
 import type { TypedStreamEvent } from "@/lib/api/types";
+import type { components } from "@/types/python-generated/api-types";
+import { isJsonObject } from "@/types/json";
 import { extractErrorMessage } from "@/utils/errors";
 import type {
   AddRankTargetInput,
   RankPortfolioItem,
-  RankTargetHistoryPoint,
-  SerpLandscape,
   UpdateRankTargetInput,
 } from "./types";
 
@@ -31,16 +32,133 @@ const RANK_TARGET_HISTORY_PATH = "/seo/rank-targets/{target_id}/history";
 const RANK_TARGET_LANDSCAPE_PATH = "/seo/rank-targets/{target_id}/landscape";
 const RANK_TARGET_CHECK_PATH = "/seo/rank-targets/{target_id}/check";
 
+type ApiRankPortfolioItem = components["schemas"]["RankPortfolioItem"];
+type ApiRankTargetHistoryPoint =
+  components["schemas"]["RankTargetHistoryPoint"];
+type ApiSerpLandscape = components["schemas"]["SerpLandscape"];
+type ApiSerpLandscapeResult = components["schemas"]["SerpLandscapeResult"];
+
+export const rankTrackingKeys = {
+  all: ["marketing", "rank-tracking"] as const,
+  portfolio: (siteId: string, organizationId: string) =>
+    [...rankTrackingKeys.all, "portfolio", siteId, organizationId] as const,
+  target: (targetId: string | null) =>
+    [...rankTrackingKeys.all, "target", targetId] as const,
+};
+
+function isNullableString(value: unknown): value is string | null {
+  return value === null || typeof value === "string";
+}
+
+function isNullableNumber(value: unknown): value is number | null {
+  return value === null || typeof value === "number";
+}
+
+function isRankPortfolioItem(value: unknown): value is ApiRankPortfolioItem {
+  if (!isJsonObject(value)) return false;
+  return (
+    typeof value.target_id === "string" &&
+    typeof value.site_id === "string" &&
+    typeof value.keyword_id === "string" &&
+    typeof value.keyword === "string" &&
+    typeof value.provider === "string" &&
+    typeof value.engine === "string" &&
+    typeof value.language === "string" &&
+    typeof value.device === "string" &&
+    typeof value.search_type === "string" &&
+    isNullableString(value.location_name) &&
+    isNullableString(value.target_domain) &&
+    isNullableString(value.target_page_id) &&
+    isNullableString(value.group) &&
+    Array.isArray(value.tags) &&
+    value.tags.every((tag) => typeof tag === "string") &&
+    isNullableString(value.notes) &&
+    typeof value.cadence_days === "number" &&
+    typeof value.is_active === "boolean" &&
+    typeof value.created_at === "string" &&
+    isNullableNumber(value.latest_position) &&
+    isNullableNumber(value.latest_absolute_position) &&
+    isNullableNumber(value.previous_position) &&
+    isNullableNumber(value.movement) &&
+    isNullableNumber(value.best_position) &&
+    isNullableString(value.last_checked_at)
+  );
+}
+
+function readRankPortfolio(value: unknown): ApiRankPortfolioItem[] {
+  if (!Array.isArray(value) || !value.every(isRankPortfolioItem)) {
+    throw new Error("The rank portfolio response had an invalid shape.");
+  }
+  return value;
+}
+
+function readRankPortfolioItem(value: unknown): ApiRankPortfolioItem {
+  if (!isRankPortfolioItem(value)) {
+    throw new Error("The rank target response had an invalid shape.");
+  }
+  return value;
+}
+
+function isRankTargetHistoryPoint(
+  value: unknown,
+): value is ApiRankTargetHistoryPoint {
+  if (!isJsonObject(value)) return false;
+  return (
+    typeof value.observed_at === "string" &&
+    isNullableNumber(value.organic_rank) &&
+    isNullableNumber(value.absolute_rank) &&
+    isNullableString(value.matched_url) &&
+    isNullableString(value.matched_domain) &&
+    typeof value.result_type === "string"
+  );
+}
+
+function readRankTargetHistory(value: unknown): ApiRankTargetHistoryPoint[] {
+  if (!Array.isArray(value) || !value.every(isRankTargetHistoryPoint)) {
+    throw new Error("The rank history response had an invalid shape.");
+  }
+  return value;
+}
+
+function isSerpLandscapeResult(
+  value: unknown,
+): value is ApiSerpLandscapeResult {
+  if (!isJsonObject(value)) return false;
+  return (
+    typeof value.absolute_rank === "number" &&
+    isNullableNumber(value.organic_rank) &&
+    typeof value.result_type === "string" &&
+    isNullableString(value.url) &&
+    isNullableString(value.domain) &&
+    isNullableString(value.title) &&
+    isNullableString(value.snippet)
+  );
+}
+
+function readSerpLandscape(value: unknown): ApiSerpLandscape {
+  if (
+    !isJsonObject(value) ||
+    !isNullableString(value.snapshot_id) ||
+    !isNullableString(value.observed_at) ||
+    !Array.isArray(value.results) ||
+    !value.results.every(isSerpLandscapeResult)
+  ) {
+    throw new Error("The stored result-page response had an invalid shape.");
+  }
+  return {
+    snapshot_id: value.snapshot_id,
+    observed_at: value.observed_at,
+    results: value.results,
+  };
+}
+
 export function usePortfolio(siteId: string, organizationId: string) {
   const dispatch = useAppDispatch();
-  const [items, setItems] = useState<RankPortfolioItem[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const reload = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
+  const queryClient = useQueryClient();
+  const queryKey = rankTrackingKeys.portfolio(siteId, organizationId);
+  const portfolio = useQuery({
+    queryKey,
+    queryFn: async () => {
       const response = await dispatch(
         callApi({
           path: RANK_TARGETS_PATH,
@@ -49,126 +167,129 @@ export function usePortfolio(siteId: string, organizationId: string) {
         }),
       );
       if (response.error) throw new Error(response.error.message);
-      setItems((response.data as unknown as RankPortfolioItem[]) ?? []);
-    } catch (err) {
-      setError(extractErrorMessage(err));
-    } finally {
-      setLoading(false);
-    }
-  }, [dispatch, siteId]);
-
-  useEffect(() => {
-    void Promise.resolve().then(reload);
-  }, [reload]);
-
-  const addTarget = useCallback(
-    async (input: AddRankTargetInput) => {
-      const response = await dispatch(
-        callApi({
-          path: RANK_TARGETS_PATH,
-          method: "POST",
-          pathParams: { site_id: siteId },
-          body: input,
-          scopeOverrides: { organization_id: organizationId },
-        }),
-      );
-      if (response.error) throw new Error(response.error.message);
-      await reload();
-      return response.data as unknown as RankPortfolioItem;
+      return readRankPortfolio(response.data);
     },
-    [dispatch, siteId, organizationId, reload],
-  );
+    enabled: Boolean(siteId && organizationId),
+    staleTime: 5 * 60_000,
+  });
 
-  const updateTarget = useCallback(
-    async (targetId: string, patch: UpdateRankTargetInput) => {
-      const response = await dispatch(
-        callApi({
-          path: RANK_TARGET_PATH,
-          method: "PATCH",
-          pathParams: { target_id: targetId },
-          body: patch,
-          scopeOverrides: { organization_id: organizationId },
-        }),
-      );
-      if (response.error) throw new Error(response.error.message);
-      await reload();
-      return response.data as unknown as RankPortfolioItem;
-    },
-    [dispatch, organizationId, reload],
-  );
+  const addTarget = async (input: AddRankTargetInput) => {
+    const response = await dispatch(
+      callApi({
+        path: RANK_TARGETS_PATH,
+        method: "POST",
+        pathParams: { site_id: siteId },
+        body: input,
+        scopeOverrides: { organization_id: organizationId },
+      }),
+    );
+    if (response.error) throw new Error(response.error.message);
+    const item = readRankPortfolioItem(response.data);
+    queryClient.setQueryData<ApiRankPortfolioItem[]>(
+      queryKey,
+      (current = []) => [
+        ...current.filter(
+          (candidate) => candidate.target_id !== item.target_id,
+        ),
+        item,
+      ],
+    );
+    return item;
+  };
 
-  const removeTarget = useCallback(
-    async (targetId: string) => {
-      const response = await dispatch(
-        callApi({
-          path: RANK_TARGET_PATH,
-          method: "DELETE",
-          pathParams: { target_id: targetId },
-        }),
-      );
-      if (response.error) throw new Error(response.error.message);
-      await reload();
-    },
-    [dispatch, reload],
-  );
+  const updateTarget = async (
+    targetId: string,
+    patch: UpdateRankTargetInput,
+  ) => {
+    const response = await dispatch(
+      callApi({
+        path: RANK_TARGET_PATH,
+        method: "PATCH",
+        pathParams: { target_id: targetId },
+        body: patch,
+        scopeOverrides: { organization_id: organizationId },
+      }),
+    );
+    if (response.error) throw new Error(response.error.message);
+    const item = readRankPortfolioItem(response.data);
+    queryClient.setQueryData<ApiRankPortfolioItem[]>(queryKey, (current = []) =>
+      current.map((candidate) =>
+        candidate.target_id === item.target_id ? item : candidate,
+      ),
+    );
+    return item;
+  };
 
-  return { items, loading, error, reload, addTarget, updateTarget, removeTarget };
+  const removeTarget = async (targetId: string) => {
+    const response = await dispatch(
+      callApi({
+        path: RANK_TARGET_PATH,
+        method: "DELETE",
+        pathParams: { target_id: targetId },
+      }),
+    );
+    if (response.error) throw new Error(response.error.message);
+    queryClient.setQueryData<ApiRankPortfolioItem[]>(queryKey, (current = []) =>
+      current.filter((candidate) => candidate.target_id !== targetId),
+    );
+  };
+
+  return {
+    items: portfolio.data ?? [],
+    loading: portfolio.isPending || portfolio.isFetching,
+    error: portfolio.error ? extractErrorMessage(portfolio.error) : null,
+    reload: portfolio.refetch,
+    addTarget,
+    updateTarget,
+    removeTarget,
+  };
 }
 
 export function useRankTargetHistory(targetId: string | null) {
   const dispatch = useAppDispatch();
-  const [points, setPoints] = useState<RankTargetHistoryPoint[]>([]);
-  const [landscape, setLandscape] = useState<SerpLandscape | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!targetId) {
-      void Promise.resolve().then(() => {
-        setPoints([]);
-        setLandscape(null);
-      });
-      return;
-    }
-    let cancelled = false;
-    void Promise.resolve().then(async () => {
-      if (cancelled) return;
-      setLoading(true);
-      setError(null);
-      try {
-        const [historyResponse, landscapeResponse] = await Promise.all([
-          dispatch(
-            callApi({
-              path: RANK_TARGET_HISTORY_PATH,
-              method: "GET",
-              pathParams: { target_id: targetId },
-            }),
-          ),
-          dispatch(
-            callApi({
-              path: RANK_TARGET_LANDSCAPE_PATH,
-              method: "GET",
-              pathParams: { target_id: targetId },
-            }),
-          ),
-        ]);
-        if (cancelled) return;
-        if (historyResponse.error) throw new Error(historyResponse.error.message);
-        if (landscapeResponse.error) throw new Error(landscapeResponse.error.message);
-        setPoints((historyResponse.data as unknown as RankTargetHistoryPoint[]) ?? []);
-        setLandscape((landscapeResponse.data as unknown as SerpLandscape) ?? null);
-      } catch (err) {
-        if (!cancelled) setError(extractErrorMessage(err));
-      } finally {
-        if (!cancelled) setLoading(false);
+  const history = useQuery({
+    queryKey: rankTrackingKeys.target(targetId),
+    queryFn: async () => {
+      if (!targetId) {
+        return { points: [], landscape: null };
       }
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [dispatch, targetId]);
+      const [historyResponse, landscapeResponse] = await Promise.all([
+        dispatch(
+          callApi({
+            path: RANK_TARGET_HISTORY_PATH,
+            method: "GET",
+            pathParams: { target_id: targetId },
+          }),
+        ),
+        dispatch(
+          callApi({
+            path: RANK_TARGET_LANDSCAPE_PATH,
+            method: "GET",
+            pathParams: { target_id: targetId },
+          }),
+        ),
+      ]);
+      if (historyResponse.error) {
+        throw new Error(historyResponse.error.message);
+      }
+      if (landscapeResponse.error) {
+        throw new Error(landscapeResponse.error.message);
+      }
+      return {
+        points: readRankTargetHistory(historyResponse.data),
+        landscape: readSerpLandscape(landscapeResponse.data),
+      };
+    },
+    enabled: Boolean(targetId),
+    staleTime: 5 * 60_000,
+  });
 
-  return { points, landscape, loading, error };
+  return {
+    points: history.data?.points ?? [],
+    landscape: history.data?.landscape ?? null,
+    loading: Boolean(targetId) && history.isPending,
+    error: history.error ? extractErrorMessage(history.error) : null,
+  };
 }
 
 export interface RankCheckState {
@@ -178,7 +299,8 @@ export interface RankCheckState {
 }
 
 function streamData(event: TypedStreamEvent): Record<string, unknown> | null {
-  return event.event === "data" ? (event.data as Record<string, unknown>) : null;
+  if (event.event !== "data" || !isJsonObject(event.data)) return null;
+  return event.data;
 }
 
 /** M-36: fires `POST /seo/rank-targets/{id}/check` (a real, live provider
@@ -186,6 +308,7 @@ function streamData(event: TypedStreamEvent): Record<string, unknown> | null {
  * portfolio row when the run lands. */
 export function useRunRankCheck(onComplete: (item: RankPortfolioItem) => void) {
   const dispatch = useAppDispatch();
+  const queryClient = useQueryClient();
   const [checking, setChecking] = useState<Record<string, RankCheckState>>({});
 
   const run = useCallback(
@@ -215,8 +338,9 @@ export function useRunRankCheck(onComplete: (item: RankPortfolioItem) => void) {
             const kind = typeof data.kind === "string" ? data.kind : null;
             if (!kind) return;
             if (kind === "seo.rank_check_completed") {
-              const item = data.portfolio_item as RankPortfolioItem | null;
-              if (item) doneItem = item;
+              if (isRankPortfolioItem(data.portfolio_item)) {
+                doneItem = data.portfolio_item;
+              }
               return;
             }
             setChecking((current) => ({
@@ -234,6 +358,9 @@ export function useRunRankCheck(onComplete: (item: RankPortfolioItem) => void) {
           ...current,
           [targetId]: { status: "done", stage: "Check complete" },
         }));
+        void queryClient.invalidateQueries({
+          queryKey: rankTrackingKeys.target(targetId),
+        });
         onComplete(doneItem);
         return;
       }
@@ -247,7 +374,7 @@ export function useRunRankCheck(onComplete: (item: RankPortfolioItem) => void) {
       }));
       toast.error("Rank check failed", { description: message });
     },
-    [dispatch, onComplete],
+    [dispatch, onComplete, queryClient],
   );
 
   return { checking, run };

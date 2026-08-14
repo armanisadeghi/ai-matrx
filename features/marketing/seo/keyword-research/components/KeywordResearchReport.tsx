@@ -20,8 +20,10 @@
  * the shared `KeywordMetrics` primitives.
  */
 
+"use client";
+
 import Link from "next/link";
-import { ArrowUpRight, Sparkles } from "lucide-react";
+import { ArrowUpRight, SearchCheck } from "lucide-react";
 import type { ReactNode } from "react";
 
 import KeywordClassificationBatchBlock from "@/components/mardown-display/blocks/keyword-research/KeywordClassificationBatchBlock";
@@ -68,7 +70,17 @@ export interface KeywordResearchReportProps {
   generatedAt?: string | null;
   /** Header-right slot: the owner's ShareButton, an "Open workbench" link… */
   actions?: ReactNode;
+  /**
+   * Select the canonical report sections a host needs. The report remains the
+   * one owner of these renderers; dossier tabs are lenses, not copies.
+   */
+  sections?: readonly KeywordResearchReportSection[];
+  /** Opens a phrase in the host's canonical keyword dossier when available. */
+  onKeywordNavigate?: (phrase: string) => void;
 }
+
+export type KeywordResearchReportSection =
+  "clusters" | "metrics" | "classification";
 
 function StatTile({
   label,
@@ -103,22 +115,32 @@ export default function KeywordResearchReport({
   ctaLabel = "Research your own keywords",
   generatedAt,
   actions,
+  sections,
+  onKeywordNavigate,
 }: KeywordResearchReportProps) {
   const researchData = buildResearchBlockData(artifact);
   const classificationData = buildClassificationBlockData(keywords);
   const metricRows = buildMetricRows(keywords);
   const summary = summarizeKeywordReport(artifact, metricRows);
   const measuredRows = metricRows.filter((row) => row.searchVolume !== null);
+  const visibleSections = new Set(
+    sections ??
+      (variant === "page"
+        ? ["clusters", "metrics", "classification"]
+        : ["clusters", "classification"]),
+  );
 
   const body = (
     <>
       {/* Clusters — the registered kind component, read-only wherever no
           surface publishes `keyword_selection`. */}
-      <div id="keyword-clusters" className="scroll-mt-4">
-        <KeywordResearchBlock serverData={researchData} />
-      </div>
+      {visibleSections.has("clusters") ? (
+        <div id="keyword-clusters" className="scroll-mt-4">
+          <KeywordResearchBlock serverData={researchData} />
+        </div>
+      ) : null}
 
-      {measuredRows.length > 0 && variant === "page" ? (
+      {measuredRows.length > 0 && visibleSections.has("metrics") ? (
         <section className="rounded-xl border border-border bg-card">
           <header className="flex items-baseline justify-between gap-3 border-b border-border px-4 py-3">
             <h2 className="text-sm font-semibold text-foreground">
@@ -150,7 +172,18 @@ export default function KeywordResearchReport({
                     className="border-b border-border/60 last:border-0"
                   >
                     <td className="px-4 py-2 font-medium text-foreground">
-                      {row.phrase}
+                      {onKeywordNavigate ? (
+                        <button
+                          type="button"
+                          onClick={() => onKeywordNavigate(row.phrase)}
+                          className="text-left underline-offset-2 hover:text-primary hover:underline"
+                          title={`Drill into “${row.phrase}”`}
+                        >
+                          {row.phrase}
+                        </button>
+                      ) : (
+                        row.phrase
+                      )}
                     </td>
                     <td className="px-3 py-2">
                       <KeywordIntentChip
@@ -187,7 +220,8 @@ export default function KeywordResearchReport({
       ) : null}
 
       {/* Intent classification — the registered kind component again. */}
-      {classificationData.results.length > 0 ? (
+      {classificationData.results.length > 0 &&
+      visibleSections.has("classification") ? (
         <KeywordClassificationBatchBlock serverData={classificationData} />
       ) : null}
     </>
@@ -264,7 +298,7 @@ export default function KeywordResearchReport({
 
       {acquisition ? (
         <section className="rounded-xl border border-primary/30 bg-primary/5 p-5 text-center">
-          <Sparkles className="mx-auto h-5 w-5 text-primary" />
+          <SearchCheck className="mx-auto h-5 w-5 text-primary" />
           <h2 className="mt-2 text-base font-semibold text-foreground">
             Research any keyword like this in minutes
           </h2>

@@ -20,9 +20,17 @@
 
 import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { FlaskConical, Loader2, Plus, Play } from "lucide-react";
+import {
+  CheckCircle2,
+  FlaskConical,
+  Loader2,
+  Plus,
+  Play,
+  RotateCcw,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { seoKeywordKeys } from "./hooks";
 import { useKeywordResearch } from "@/features/marketing/seo/keyword-research/useKeywordResearch";
 import {
@@ -59,11 +67,15 @@ export function KeywordResearchTab({
   organizationId,
   pageId,
   onResearchStart,
+  onKeywordNavigate,
+  onRunStateChange,
 }: {
   phrase: string;
   organizationId?: string | null;
   pageId?: string | null;
   onResearchStart?: (phrase: string) => void;
+  onKeywordNavigate?: (phrase: string) => void;
+  onRunStateChange?: (state: KeywordResearchPanelState) => void;
 }) {
   // The run set is the REMOUNT-PROOF home of this surface's live output:
   // registered runs live in Redux under this key, so a tab switch, a
@@ -79,12 +91,24 @@ export function KeywordResearchTab({
   const runSet = useRunSet(runSetKey);
   const running = run.status === "running";
   const queryClient = useQueryClient();
-  const [selectedByKey, setSelectedByKey] = useState<Record<string, string>>({});
+  const [selectedByKey, setSelectedByKey] = useState<Record<string, string>>(
+    {},
+  );
   const selectedPhrases = new Set(Object.keys(selectedByKey));
   const disabledPhrases = new Set([normalizeKeywordPhrase(phrase)]);
   const saved = useSavedKeywordResearch(phrase, organizationId);
   const visibleArtifact = run.result?.artifact ?? saved.data?.artifact ?? null;
   const hasLiveOutput = runSet.entries.length > 0;
+
+  useEffect(() => {
+    onRunStateChange?.({
+      status: run.status,
+      stage: run.stage ?? null,
+      error: run.error ?? null,
+      hasSavedResearch: Boolean(saved.data),
+      savedAt: saved.data?.createdAt ?? null,
+    });
+  }, [run.status, run.stage, run.error, saved.data, onRunStateChange]);
 
   // ── The 360 loop, this surface's half ────────────────────────────────────
   // PUBLISH what the blocks need to read, REGISTER the handler for the target
@@ -203,39 +227,86 @@ export function KeywordResearchTab({
     }
   }, [run.status, queryClient, saved.organizationId, phrase]);
 
+  const startResearch = async () => {
+    const replacingCurrent = Boolean(saved.data);
+    if (replacingCurrent) {
+      const approved = await confirm({
+        title: `Run the full research pipeline again for “${phrase}”?`,
+        description:
+          "This deliberately starts a fresh research run, refreshes provider metrics, and makes the new results the current dossier. Existing saved reports remain available in report history.",
+        confirmLabel: "Run full pipeline again",
+        variant: "destructive",
+      });
+      if (!approved) return;
+    }
+    onResearchStart?.(phrase);
+    await research.runResearch(phrase, {
+      forceRefresh: replacingCurrent,
+    });
+  };
+
   return (
     <div className="grid gap-3">
-      <div className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
+      <div
+        className={
+          saved.data || running
+            ? "flex items-center justify-between gap-3 rounded-lg border border-border p-3"
+            : "bg-glass flex min-h-64 flex-col items-center justify-center gap-4 rounded-xl border border-glass-edge p-6 text-center shadow-glass"
+        }
+      >
         <div className="flex min-w-0 items-center gap-2.5">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <FlaskConical className="h-4 w-4" />
+          <span
+            className={
+              saved.data || running
+                ? "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"
+                : "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"
+            }
+          >
+            <FlaskConical
+              className={saved.data || running ? "h-4 w-4" : "h-6 w-6"}
+            />
           </span>
-          <div className="min-w-0">
-            <p className="text-xs font-medium text-foreground">
-              Full keyword research
+          <div className={saved.data || running ? "min-w-0" : "max-w-xl"}>
+            <p
+              className={
+                saved.data || running
+                  ? "text-xs font-medium text-foreground"
+                  : "text-[clamp(1rem,0.94rem+0.3vw,1.2rem)] font-semibold text-foreground"
+              }
+            >
+              {running
+                ? "Research pipeline in progress"
+                : saved.data
+                  ? "Full keyword research"
+                  : `Build the complete dossier for “${phrase}”`}
             </p>
-            <p className="text-[11px] text-muted-foreground">
-              Discovers related keywords and relationships, fetches provider
-              volume, and classifies intent — persisted to the keyword library.
+            <p
+              className={
+                saved.data || running
+                  ? "text-[11px] text-muted-foreground"
+                  : "mt-1 text-sm leading-5 text-muted-foreground"
+              }
+            >
+              Discover parent, child, semantic, and related keywords; collect
+              their real market facts; then classify intent and funnel fit.
             </p>
           </div>
         </div>
         <Button
           size="sm"
-          className="h-8 shrink-0"
+          className={saved.data || running ? "h-8 shrink-0" : "h-10 px-5"}
           disabled={running || saved.isLoading || !phrase.trim()}
           title={
             saved.data
               ? "Saved results are shown below. Run again only when you need refreshed research."
               : undefined
           }
-          onClick={() => {
-            onResearchStart?.(phrase);
-            void research.runResearch(phrase);
-          }}
+          onClick={() => void startResearch()}
         >
           {running || saved.isLoading ? (
             <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+          ) : saved.data ? (
+            <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
           ) : (
             <Play className="mr-1.5 h-3.5 w-3.5" />
           )}
@@ -244,10 +315,16 @@ export function KeywordResearchTab({
             : saved.isLoading
               ? "Loading saved"
               : saved.data
-                ? "Run again"
-                : "Run research"}
+                ? "Run full pipeline again"
+                : "Start full research"}
         </Button>
       </div>
+
+      <PipelineSteps
+        stage={run.stage ?? null}
+        running={running}
+        done={run.status === "done" || Boolean(saved.data)}
+      />
 
       {saved.data && run.status === "idle" ? (
         <p className="text-[11px] text-muted-foreground">
@@ -300,6 +377,8 @@ export function KeywordResearchTab({
       {!running && visibleArtifact ? (
         <SavedResearchFeed
           artifact={visibleArtifact}
+          sections={["clusters"]}
+          onKeywordNavigate={onKeywordNavigate}
           // Only the SAVED artifact is an addressable, shareable record; a
           // just-completed run's in-memory result is not (until the saved
           // query refetches it).
@@ -316,5 +395,77 @@ export function KeywordResearchTab({
         </p>
       ) : null}
     </div>
+  );
+}
+
+export interface KeywordResearchPanelState {
+  status: "idle" | "running" | "done" | "error";
+  stage: string | null;
+  error: string | null;
+  hasSavedResearch: boolean;
+  savedAt: string | null;
+}
+
+const PIPELINE_STEPS = [
+  "Discover relationships",
+  "Save keyword set",
+  "Collect market facts",
+  "Classify intent",
+] as const;
+
+function pipelineStepIndex(stage: string | null): number {
+  const normalized = stage ? stage.toLowerCase() : "";
+  if (normalized.includes("classif")) return 3;
+  if (
+    normalized.includes("volume") ||
+    normalized.includes("provider") ||
+    normalized.includes("market")
+  ) {
+    return 2;
+  }
+  if (
+    normalized.includes("persist") ||
+    normalized.includes("relationship") ||
+    normalized.includes("artifact")
+  ) {
+    return 1;
+  }
+  return 0;
+}
+
+function PipelineSteps({
+  stage,
+  running,
+  done,
+}: {
+  stage: string | null;
+  running: boolean;
+  done: boolean;
+}) {
+  const activeIndex = done ? PIPELINE_STEPS.length : pipelineStepIndex(stage);
+  return (
+    <ol className="grid gap-1.5 sm:grid-cols-4" aria-label="Research pipeline">
+      {PIPELINE_STEPS.map((label, index) => {
+        const complete = done || index < activeIndex;
+        const active = running && index === activeIndex;
+        return (
+          <li
+            key={label}
+            className="flex min-w-0 items-center gap-2 rounded-md border border-border px-2.5 py-2"
+          >
+            {complete ? (
+              <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-success" />
+            ) : active ? (
+              <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-primary" />
+            ) : (
+              <span className="h-3.5 w-3.5 shrink-0 rounded-full border border-border" />
+            )}
+            <span className="truncate text-[10px] text-muted-foreground">
+              {label}
+            </span>
+          </li>
+        );
+      })}
+    </ol>
   );
 }

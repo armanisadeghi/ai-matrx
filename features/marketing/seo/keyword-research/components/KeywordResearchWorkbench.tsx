@@ -717,7 +717,11 @@ export default function KeywordResearchWorkbench() {
             <p className="px-4 py-6 text-sm text-destructive">{loadError}</p>
           ) : (
             <MatrxDataTable
-              urlState={{ id: "keyword-research", selection: true }}
+              urlState={{
+                id: "keyword-research",
+                selection: true,
+                windowRow: false,
+              }}
               data={sorted}
               columns={columns}
               getRowId={(row) => row.id}
@@ -758,6 +762,10 @@ export default function KeywordResearchWorkbench() {
                   <KeywordDetail row={row} loadEdges={loadEdges} />
                 ),
               }}
+              // A keyword already has one canonical WindowPanel: Keyword
+              // Intelligence. Suppress the table's generic record window so
+              // the phrase and menu action cannot disagree about the door.
+              window={{ enabled: false }}
               rowActions={(row) => {
                 const menuConfig = (): ItemMenuConfig => ({
                   header: { title: row.phrase },

@@ -22,6 +22,7 @@ import { keywordResearchPhrases } from "@/features/marketing/seo/keyword-researc
 import type { KeywordResearchArtifact } from "@/types/python-generated/stream-events";
 
 import KeywordResearchReport from "./KeywordResearchReport";
+import type { KeywordResearchReportSection } from "./KeywordResearchReport";
 
 export interface SavedResearchFeedProps {
   artifact: KeywordResearchArtifact;
@@ -32,11 +33,15 @@ export interface SavedResearchFeedProps {
    * a live run result and has no permalink yet.
    */
   instanceId?: string | null;
+  sections?: readonly KeywordResearchReportSection[];
+  onKeywordNavigate?: (phrase: string) => void;
 }
 
 export default function SavedResearchFeed({
   artifact,
   instanceId,
+  sections,
+  onKeywordNavigate,
 }: SavedResearchFeedProps) {
   const phrases = keywordResearchPhrases(artifact);
   const classifications = useQuery({
@@ -71,6 +76,8 @@ export default function SavedResearchFeed({
         artifact={artifact}
         keywords={classifications.data ?? []}
         variant="embedded"
+        sections={sections}
+        onKeywordNavigate={onKeywordNavigate}
       />
     </div>
   );
