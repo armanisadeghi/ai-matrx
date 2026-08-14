@@ -68,6 +68,7 @@ More than you would expect. The parts that exist are good; they are simply not c
 | Reputation cases with verdict, priority, confidence, evidence, **`pitch_angle`**, `backlink_id` | `seo.reputation_case`; UI `features/marketing/components/reputation/` | Live |
 | Canonical contact records + dedup + merge lineage | `crm.party` (+ resolver, aidream `services/crm/`) | Live |
 | **Domain is already a resolver natural key** | `party.primary_domain`; `resolve_party` | Live — this IS the domain→org bridge |
+| **SEO domain → party fold (G1)** | aidream `services/crm/seo_domains.py`; `POST /api/seo/sites/{id}/crm/{referring-domains,reputation-outlets}` | **Live 2026-08-14** — no frontend caller yet |
 | Suppression / DNC / opt-out per channel value | `crm.contact_medium`, `party_contact_point` | Live, enforced by the dialer |
 | Activity log | `crm.interaction` | Live |
 | **Sequence data model** — `current_step`, `next_attempt_at`, `contact_point_id`, `attempt_count`, claim lock | `crm.outreach_list_member` | **Live and UNUSED — built for cadences, only the manual dialer consumes it** |
@@ -87,12 +88,22 @@ genuinely new primitives (§4).
 
 Each gap is stated as: what breaks without it, and what it actually is.
 
-### G1 — Domain → party. *The bridge.*
-Nothing in SEO ever calls the party resolver. A referring domain, an outlet, a prospect site is a
-string in `seo.*` and an organization in `crm.party`, and the two never meet. Without this there is
-no one to write to, and every later gap is unreachable.
-**It is small:** the resolver already accepts domain as a natural key. This is a call site plus a
-source stamp, not a new system. Do it first; it unlocks everything below.
+### G1 — Domain → party. *The bridge.* ✅ **DONE (server) 2026-08-14 — deployed**
+Server-side: `aidream/aidream/services/crm/seo_domains.py` folds
+`seo.referring_domain_profile` (link prospects) and `seo.reputation_case` (media outlets)
+into canonical `crm.party` organizations through `resolve_party` — domain was already one of
+its natural keys, so it is a call site, not a new system. Routes (site-scoped, canonical
+editor gate, org from the SITE):
+`POST /api/seo/sites/{site_id}/crm/referring-domains` · `POST /api/seo/sites/{site_id}/crm/reputation-outlets`.
+Every folded org carries a provenance edge (`link_prospect` / `outreach_target`) whose payload
+holds the verdict, priority, source URL and pitch angle — the answer to "why is this org in my
+CRM". Idempotent on the domain key (refold creates nothing); a domain already in the CRM is
+enriched, never duplicated. Toxic link farms, watch-list verdicts and the brand's own domain are
+skipped WITH the reason. Contract + earned traps: `aidream/aidream/services/crm/FEATURE.md`
+§ "SEO domains".
+**Remaining (frontend, belongs with G9):** nothing calls these routes yet — a "Find these
+domains in my CRM" action on the backlink-prospect and reputation-case surfaces, and the
+provenance edge rendered on the party record page.
 
 ### G2 — Contact discovery. *Who at that domain?*
 An organization is not an inbox. We need the editor, the author, the webmaster — and we already
@@ -199,9 +210,11 @@ generic, and wanted by several features that are already built.
 
 # 6. Build order
 
-**Phase 1 — the bridge (small, unblocks everything).** G1 domain→party, from both backlink
-prospects and reputation cases. Verifiable immediately: a referring domain resolves to a party you
-can open at `/crm/[id]`.
+**Phase 1 — the bridge (small, unblocks everything).** ✅ **Server DONE and deployed
+2026-08-14.** G1 domain→party, from both backlink prospects and reputation cases; proven live
+against All Green Recycling (a referring domain and a TechCrunch reputation case both resolve to
+parties that open at `/crm/[partyId]`). The only Phase-1 remainder is the frontend trigger, which
+is Phase 6 / G9 work.
 
 **Phase 2 — targets worth writing to.** G2 contact discovery from data we already crawl,
 suggestion-gated, through the same resolver the experts work uses.
