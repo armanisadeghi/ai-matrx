@@ -18,9 +18,9 @@ import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindow";
 import { callApi } from "@/lib/api/call-api";
 import type { Json } from "@/types/database.types";
-import { decideAssist, snoozeAssist } from "../service";
+import { decideAssist, snoozeAssist, suppressAssistSource } from "../service";
 import { snoozeUntilIso, type SnoozeWindowKey } from "../constants";
-import { assistDecided } from "../redux/assistsSlice";
+import { assistDecided, assistsSourceSuppressed } from "../redux/assistsSlice";
 import {
   getAssistAction,
   type AssistActionContext,
@@ -53,6 +53,8 @@ export interface AssistRunnerApi {
    * kill it forever.
    */
   snoozeAssist: (assist: Assist, window?: SnoozeWindowKey) => Promise<void>;
+  /** Silence every current and future assist from this producer/check. */
+  suppressSource: (assist: Assist, reason: string) => Promise<number | null>;
 }
 
 export function useAssistRunner(): AssistRunnerApi {
@@ -180,5 +182,35 @@ export function useAssistRunner(): AssistRunnerApi {
     [dispatch],
   );
 
-  return { acceptAssist, dismissAssist, snoozeAssist: snooze };
+  const suppressSource = useCallback(
+    async (assist: Assist, reason: string): Promise<number | null> => {
+      if (!assist.id || !userId) return null;
+      try {
+        const count = await suppressAssistSource(
+          userId,
+          assist.id,
+          assist.sourceKey,
+          reason,
+        );
+        dispatch(assistsSourceSuppressed(assist.sourceKey));
+        return count;
+      } catch (error) {
+        toast.error("Could not silence this kind — try again");
+        captureError({
+          source: "assists",
+          message: `Assist source ${assist.sourceKey} suppression failed`,
+          details: error instanceof Error ? error.message : String(error),
+        });
+        return null;
+      }
+    },
+    [dispatch, userId],
+  );
+
+  return {
+    acceptAssist,
+    dismissAssist,
+    snoozeAssist: snooze,
+    suppressSource,
+  };
 }

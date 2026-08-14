@@ -22,12 +22,14 @@ import {
   bulkDismissAssists,
   bulkSnoozeAssists,
   fetchAssistStats,
+  listMySourceSuppressions,
   markAssistsViewed,
   queryAssists,
   restoreAssist,
   setAssistStarred,
+  unsuppressAssistSource,
 } from "../service";
-import { assistDecided } from "../redux/assistsSlice";
+import { assistDecided, fetchMyAssists } from "../redux/assistsSlice";
 import { snoozeUntilIso, type SnoozeWindowKey } from "../constants";
 import type {
   Assist,
@@ -35,6 +37,7 @@ import type {
   AssistStats,
   AssistStatus,
 } from "../types";
+import type { AssistSourceSuppression } from "../source-suppression";
 
 const SORT_FIELDS: readonly AssistSortField[] = [
   "created_at",
@@ -72,6 +75,7 @@ export interface AssistsManagerApi {
   rows: Assist[];
   total: number;
   stats: AssistStats;
+  sourceSuppressions: AssistSourceSuppression[];
   loading: boolean;
   error: string | null;
   refresh: () => void;
@@ -79,6 +83,7 @@ export interface AssistsManagerApi {
   dismissAll: (ids: string[]) => Promise<number>;
   snoozeAll: (ids: string[], window: SnoozeWindowKey) => Promise<number>;
   setStarred: (id: string, starred: boolean) => Promise<void>;
+  unsuppressSource: (sourceKey: string) => Promise<number>;
 }
 
 export function useAssistsQuery(
@@ -95,6 +100,9 @@ export function useAssistsQuery(
   const [rows, setRows] = useState<Assist[]>([]);
   const [total, setTotal] = useState(0);
   const [stats, setStats] = useState<AssistStats>(EMPTY_STATS);
+  const [sourceSuppressions, setSourceSuppressions] = useState<
+    AssistSourceSuppression[]
+  >([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
@@ -110,8 +118,8 @@ export function useAssistsQuery(
     return {
       statuses,
       sourceKey: selectFilter(tableState, "sourceKey"),
-      sourceKind: (selectFilter(tableState, "sourceKind") ??
-        null) as Assist["sourceKind"] | null,
+      sourceKind: (selectFilter(tableState, "sourceKind") ?? null) as
+        Assist["sourceKind"] | null,
       surfaceName: selectFilter(tableState, "surfaceName"),
       search: tableState.search,
       maxConfidence: null,
@@ -135,14 +143,16 @@ export function useAssistsQuery(
     setError(null);
     void (async () => {
       try {
-        const [page, nextStats] = await Promise.all([
+        const [page, nextStats, nextSourceSuppressions] = await Promise.all([
           queryAssists(userId, query),
           fetchAssistStats(userId),
+          listMySourceSuppressions(userId),
         ]);
         if (requestId.current !== id) return;
         setRows(page.rows);
         setTotal(page.total);
         setStats(nextStats);
+        setSourceSuppressions(nextSourceSuppressions);
         // Reading the row IS seeing it — stamp the ones that were unseen so
         // the dot means "new since you last looked", not "never clicked".
         void markAssistsViewed(
@@ -194,7 +204,9 @@ export function useAssistsQuery(
   const setStarred = useCallback(async (id: string, starred: boolean) => {
     // Optimistic: a triage flag must feel instant, and a failure is loud.
     setRows((current) =>
-      current.map((row) => (row.id === id ? { ...row, isStarred: starred } : row)),
+      current.map((row) =>
+        row.id === id ? { ...row, isStarred: starred } : row,
+      ),
     );
     try {
       await setAssistStarred(id, starred);
@@ -213,10 +225,22 @@ export function useAssistsQuery(
     }
   }, []);
 
+  const unsuppressSource = useCallback(
+    async (sourceKey: string) => {
+      if (!userId) return 0;
+      const count = await unsuppressAssistSource(userId, sourceKey);
+      await dispatch(fetchMyAssists({ userId }));
+      refresh();
+      return count;
+    },
+    [dispatch, refresh, userId],
+  );
+
   return {
     rows,
     total,
     stats,
+    sourceSuppressions,
     loading,
     error,
     refresh,
@@ -224,5 +248,6 @@ export function useAssistsQuery(
     dismissAll,
     snoozeAll,
     setStarred,
+    unsuppressSource,
   };
 }

@@ -13,6 +13,15 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D188 — `platform.assists` fails the canonical entity gate (2026-08-13)
+
+Found while shipping producer-level suppression; unrelated to that lifecycle change.
+Live `platform.verify_canonical('platform', 'assists')` reports `organization_id`
+nullable with no organization FK, missing `created_by` / `updated_by` user FKs, and
+the legacy-owner `user_id` warning. Fix this as one focused base-entity retrofit after
+auditing every current producer; do not fold it into suppression or change the personal
+addressee contract while doing so.
+
 ### Database reorg regressions → tracked in their own working list (2026-08-13)
 
 Breakage caused by the ~160-migration database reorganization of 2026-08-11→13 is

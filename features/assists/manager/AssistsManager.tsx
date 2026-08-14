@@ -17,7 +17,7 @@
  */
 
 import { useMemo, useState } from "react";
-import { RefreshCw, RotateCcw, Star } from "lucide-react";
+import { RefreshCw, RotateCcw, Star, Volume2, VolumeX } from "lucide-react";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +34,7 @@ import { useTableUrlState } from "@/lib/data-table/useTableUrlState";
 import { AssistChip } from "../components/AssistChip";
 import { SNOOZE_WINDOWS, isLowConfidence } from "../constants";
 import { useAssistsQuery } from "./useAssistsQuery";
+import { isSourceSuppressedUntil } from "../source-suppression";
 import type { Assist, AssistStatus } from "../types";
 
 const STATUS_TABS: Array<{
@@ -68,8 +69,7 @@ const STATUS_TONE: Record<AssistStatus, string> = {
   dismissed: "bg-muted text-muted-foreground border-border",
   expired: "bg-muted text-muted-foreground border-border",
   superseded: "bg-muted text-muted-foreground border-border",
-  resolved:
-    "bg-sky-500/10 text-sky-700 dark:text-sky-400 border-sky-500/20",
+  resolved: "bg-sky-500/10 text-sky-700 dark:text-sky-400 border-sky-500/20",
 };
 
 const SOURCE_KIND_OPTIONS = [
@@ -93,6 +93,7 @@ export function AssistsManager() {
   const [includeSnoozed, setIncludeSnoozed] = useState(false);
   const [starredOnly, setStarredOnly] = useState(false);
   const [unseenOnly, setUnseenOnly] = useState(false);
+  const [showSilenced, setShowSilenced] = useState(false);
   const [confirmDismissAll, setConfirmDismissAll] = useState(false);
   const [bulkBusy, setBulkBusy] = useState(false);
 
@@ -111,6 +112,7 @@ export function AssistsManager() {
     rows,
     total,
     stats,
+    sourceSuppressions,
     loading,
     error,
     refresh,
@@ -118,6 +120,7 @@ export function AssistsManager() {
     dismissAll,
     snoozeAll,
     setStarred,
+    unsuppressSource,
   } = useAssistsQuery(table.queryState, {
     statuses,
     includeSnoozed,
@@ -138,7 +141,9 @@ export function AssistsManager() {
           <Button
             size="sm"
             variant="ghost"
-            aria-label={row.isStarred ? "Unflag this assist" : "Flag this assist"}
+            aria-label={
+              row.isStarred ? "Unflag this assist" : "Flag this assist"
+            }
             className="h-7 w-7 p-0"
             onClick={() => {
               void setStarred(row.id, !row.isStarred).catch(() =>
@@ -231,10 +236,13 @@ export function AssistsManager() {
           >
             {row.status}
             {row.status === "pending" &&
-            row.suppressedUntil &&
-            new Date(row.suppressedUntil) > new Date()
-              ? " · snoozed"
-              : ""}
+            isSourceSuppressedUntil(row.suppressedUntil)
+              ? " · source silenced"
+              : row.status === "pending" &&
+                  row.suppressedUntil &&
+                  new Date(row.suppressedUntil) > new Date()
+                ? " · snoozed"
+                : ""}
           </Badge>
         ),
       },
@@ -250,8 +258,7 @@ export function AssistsManager() {
         header: "Seen",
         accessorFn: (row) => row.occurrences,
         filter: false,
-        cell: (row) =>
-          row.occurrences > 1 ? `${row.occurrences}×` : "once",
+        cell: (row) => (row.occurrences > 1 ? `${row.occurrences}×` : "once"),
       },
       {
         id: "decided_at",
@@ -346,6 +353,18 @@ export function AssistsManager() {
         >
           Unseen
         </Button>
+        <Button
+          size="sm"
+          variant={showSilenced ? "secondary" : "ghost"}
+          className="h-7 gap-1 px-2.5 text-xs"
+          onClick={() => setShowSilenced((value) => !value)}
+        >
+          <VolumeX className="h-3 w-3" />
+          Silenced
+          <span className="text-[11px] text-muted-foreground">
+            {sourceSuppressions.length}
+          </span>
+        </Button>
         <div className="ml-auto flex items-center gap-1.5">
           {shownIds.length > 0 && (
             <>
@@ -402,6 +421,65 @@ export function AssistsManager() {
           </Button>
         </div>
       </div>
+
+      {showSilenced && (
+        <div className="border-b border-border bg-muted/20 px-3 py-2">
+          <div className="mb-1.5 flex items-center gap-2">
+            <VolumeX className="h-3.5 w-3.5 text-muted-foreground" />
+            <h2 className="text-xs font-semibold text-foreground">
+              Silenced assist kinds
+            </h2>
+            <span className="text-[11px] text-muted-foreground">
+              These stay quiet until you turn them back on.
+            </span>
+          </div>
+          {sourceSuppressions.length === 0 ? (
+            <p className="text-xs text-muted-foreground">
+              Nothing is silenced.
+            </p>
+          ) : (
+            <div className="grid gap-1.5 lg:grid-cols-2">
+              {sourceSuppressions.map((suppression) => (
+                <div
+                  key={suppression.sourceKey}
+                  className="flex min-w-0 items-center gap-2 rounded-md border border-border bg-card px-2 py-1.5"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-xs font-medium text-foreground">
+                      {suppression.label}
+                    </div>
+                    <div className="truncate text-[11px] text-muted-foreground">
+                      {suppression.reason} · {suppression.affectedRows} record
+                      {suppression.affectedRows === 1 ? "" : "s"} covered
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 shrink-0 gap-1 px-2 text-xs"
+                    onClick={() => {
+                      void unsuppressSource(suppression.sourceKey)
+                        .then((count) =>
+                          toast.success(
+                            `${suppression.label} is back on for ${count} assist${count === 1 ? "" : "s"}`,
+                          ),
+                        )
+                        .catch(() =>
+                          toast.error(
+                            "Could not turn this kind back on — try again",
+                          ),
+                        );
+                    }}
+                  >
+                    <Volume2 className="h-3 w-3" />
+                    Turn back on
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {error && (
         <p className="border-b border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">

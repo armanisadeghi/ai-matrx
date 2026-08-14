@@ -9,7 +9,14 @@
  */
 
 import { lazy, Suspense, useState } from "react";
-import { Clock, ExternalLink, Lightbulb, Loader2, Quote } from "lucide-react";
+import {
+  Clock,
+  ExternalLink,
+  Lightbulb,
+  Loader2,
+  Quote,
+  VolumeX,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -23,11 +30,13 @@ import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useAssistRunner } from "../runtime/useAssistRunner";
 import { describeAssistAction } from "../runtime/action-descriptors";
+import { formatAssistSourceLabel } from "../source-suppression";
 import type { Assist } from "../types";
 
 // Markdown loads only when a card actually opens — chips stay feather-light.
 const BasicMarkdownContent = lazy(
-  () => import("@/components/mardown-display/chat-markdown/BasicMarkdownContent"),
+  () =>
+    import("@/components/mardown-display/chat-markdown/BasicMarkdownContent"),
 );
 
 const SOURCE_LABEL: Record<Assist["sourceKind"], string> = {
@@ -57,7 +66,11 @@ function firstSeenLine(assist: Assist): string | null {
  * a triaged inbox and an ignored one; `href` keeps THE DOOR LAW (the thing the
  * evidence names is reachable).
  */
-function EvidenceBlock({ evidence }: { evidence: NonNullable<Assist["evidence"]> }) {
+function EvidenceBlock({
+  evidence,
+}: {
+  evidence: NonNullable<Assist["evidence"]>;
+}) {
   return (
     <div className="mt-2 rounded-md border border-border/60 bg-muted/30 px-2 py-1.5 text-xs">
       <div className="flex items-center gap-1.5 text-[11px] font-medium text-foreground">
@@ -107,12 +120,18 @@ export function AssistCard({
   /** Close the containing popover (after an action, or "Not now"). */
   onClose: () => void;
 }) {
-  const { acceptAssist, dismissAssist, snoozeAssist } = useAssistRunner();
-  const [busy, setBusy] = useState<"run" | "dismiss" | "snooze" | null>(null);
+  const { acceptAssist, dismissAssist, snoozeAssist, suppressSource } =
+    useAssistRunner();
+  const [busy, setBusy] = useState<
+    "run" | "dismiss" | "snooze" | "silence" | null
+  >(null);
   const [noteOpen, setNoteOpen] = useState(false);
   const [note, setNote] = useState("");
+  const [silenceOpen, setSilenceOpen] = useState(false);
+  const [silenceReason, setSilenceReason] = useState("");
   const descriptor = describeAssistAction(assist.action);
   const history = firstSeenLine(assist);
+  const sourceLabel = formatAssistSourceLabel(assist.sourceKey);
 
   const run = async () => {
     if (busy) return;
@@ -153,6 +172,22 @@ export function AssistCard({
     }
   };
 
+  const silence = async () => {
+    if (busy || !silenceReason.trim()) return;
+    setBusy("silence");
+    try {
+      const count = await suppressSource(assist, silenceReason);
+      if (count !== null) {
+        toast.success(
+          `${sourceLabel} is quiet — turn it back on from All assists`,
+        );
+        onClose();
+      }
+    } finally {
+      setBusy(null);
+    }
+  };
+
   return (
     <div className="flex w-full flex-col">
       <div className="flex items-start gap-2 border-b border-border/60 px-3 py-2.5">
@@ -179,7 +214,10 @@ export function AssistCard({
         </div>
       </div>
 
-      {(assist.body || assist.reasoning || assist.evidence || assist.decisionNote) && (
+      {(assist.body ||
+        assist.reasoning ||
+        assist.evidence ||
+        assist.decisionNote) && (
         <div className="max-h-64 overflow-y-auto px-3 py-2 text-sm">
           {assist.body && (
             <Suspense
@@ -275,18 +313,45 @@ export function AssistCard({
             </DropdownMenu>
           )}
           {assist.id && (
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => (noteOpen ? void dismiss() : setNoteOpen(true))}
-              disabled={busy !== null}
-              className="ml-auto h-7 px-2 text-xs text-muted-foreground hover:text-destructive"
-            >
-              {busy === "dismiss" && (
-                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-              )}
-              Don't show again
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={busy !== null}
+                  className="ml-auto h-7 px-2 text-xs text-muted-foreground hover:text-destructive"
+                >
+                  {busy === "dismiss" || busy === "silence" ? (
+                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                  ) : (
+                    <VolumeX className="mr-1 h-3 w-3" />
+                  )}
+                  Stop showing
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  className="text-xs"
+                  onSelect={() => {
+                    setSilenceOpen(false);
+                    setSilenceReason("");
+                    setNoteOpen(true);
+                  }}
+                >
+                  Just this assist
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-xs"
+                  onSelect={() => {
+                    setNoteOpen(false);
+                    setNote("");
+                    setSilenceOpen(true);
+                  }}
+                >
+                  Every assist like this
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
         {noteOpen && assist.id && (
@@ -320,6 +385,49 @@ export function AssistCard({
                 onClick={() => {
                   setNoteOpen(false);
                   setNote("");
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+        {silenceOpen && assist.id && (
+          <div className="mt-2 rounded-md border border-border bg-muted/20 p-2">
+            <p className="text-xs text-foreground">
+              Hide every current and future <strong>{sourceLabel}</strong>{" "}
+              assist. This stays visible in All assists, where you can turn it
+              back on.
+            </p>
+            <Textarea
+              value={silenceReason}
+              onChange={(event) => setSilenceReason(event.target.value)}
+              placeholder="Why should this kind stay quiet?"
+              rows={2}
+              autoFocus
+              className="mt-2 min-h-0 text-xs"
+            />
+            <div className="mt-1 flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="destructive"
+                className="h-7 px-2 text-xs"
+                disabled={busy !== null || !silenceReason.trim()}
+                onClick={() => void silence()}
+              >
+                {busy === "silence" && (
+                  <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                )}
+                Silence this kind
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 px-2 text-xs text-muted-foreground"
+                disabled={busy !== null}
+                onClick={() => {
+                  setSilenceOpen(false);
+                  setSilenceReason("");
                 }}
               >
                 Cancel

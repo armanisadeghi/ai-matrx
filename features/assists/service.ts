@@ -23,6 +23,12 @@ import {
   type AssistStatus,
   type EmitAssistInput,
 } from "./types";
+import {
+  groupAssistSourceSuppressions,
+  SOURCE_SUPPRESSED_UNTIL,
+  sourceSuppressionMetadata,
+  type AssistSourceSuppression,
+} from "./source-suppression";
 
 const TABLE = "assists" as const;
 
@@ -246,7 +252,8 @@ export async function queryAssists(
 
   if (query.sourceKey) request = request.eq("source_key", query.sourceKey);
   if (query.sourceKind) request = request.eq("source_kind", query.sourceKind);
-  if (query.surfaceName) request = request.eq("surface_name", query.surfaceName);
+  if (query.surfaceName)
+    request = request.eq("surface_name", query.surfaceName);
   if (typeof query.maxConfidence === "number") {
     request = request.lt("confidence", query.maxConfidence);
   }
@@ -327,6 +334,162 @@ export async function snoozeAssist(id: string, until: string): Promise<void> {
   if (error) {
     throw new Error(`[assists] snooze failed: ${error.message}`);
   }
+}
+
+function requireSuppressionReason(reason: string): string {
+  const trimmed = reason.trim();
+  if (!trimmed) {
+    throw new Error(
+      "Say why this should stay quiet — the reason is the record.",
+    );
+  }
+  return trimmed;
+}
+
+/**
+ * Every producer/check the user has silenced, collapsed to one visible record.
+ *
+ * Exactly one affected row carries the required reason in metadata; every row
+ * carries `suppressed_until='infinity'`. That keeps this read proportional to
+ * the number of silenced sources rather than the number of assists they cover.
+ */
+export async function listMySourceSuppressions(
+  userId: string,
+): Promise<AssistSourceSuppression[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .schema("platform")
+    .from(TABLE)
+    .select("source_key, metadata, updated_at")
+    .eq("user_id", userId)
+    .eq("suppressed_until", SOURCE_SUPPRESSED_UNTIL)
+    .order("updated_at", { ascending: false });
+  if (error) {
+    throw new Error(
+      `[assists] source suppression list failed: ${error.message}`,
+    );
+  }
+  const suppressions = groupAssistSourceSuppressions(data ?? []);
+  return Promise.all(
+    suppressions.map(async (suppression) => {
+      const { count, error: countError } = await supabase
+        .schema("platform")
+        .from(TABLE)
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .eq("source_key", suppression.sourceKey)
+        .eq("suppressed_until", SOURCE_SUPPRESSED_UNTIL);
+      if (countError) {
+        throw new Error(
+          `[assists] source suppression count failed: ${countError.message}`,
+        );
+      }
+      return { ...suppression, affectedRows: count ?? 0 };
+    }),
+  );
+}
+
+/**
+ * Silence one producer/check as a class — every current pending row and every
+ * future row (the DB insert trigger inherits the source suppression).
+ *
+ * The reason is required, matching whole-check finding suppression. The first
+ * write makes the clicked assist the ONE visible record; if the class update
+ * fails, its metadata is rolled back so the manager never advertises a mute
+ * that did not land. Decision notes remain untouched.
+ */
+export async function suppressAssistSource(
+  userId: string,
+  assistId: string,
+  sourceKey: string,
+  reason: string,
+): Promise<number> {
+  const supabase = createClient();
+  const suppressionReason = requireSuppressionReason(reason);
+  const { data: record, error: recordError } = await supabase
+    .schema("platform")
+    .from(TABLE)
+    .select("id, metadata")
+    .eq("id", assistId)
+    .eq("user_id", userId)
+    .eq("source_key", sourceKey)
+    .eq("status", "pending")
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (recordError) {
+    throw new Error(
+      `[assists] source suppression record failed: ${recordError.message}`,
+    );
+  }
+  if (!record) {
+    throw new Error("[assists] source suppression record was not writable");
+  }
+  const { error: metadataError } = await supabase
+    .schema("platform")
+    .from(TABLE)
+    .update({
+      metadata: sourceSuppressionMetadata(
+        record.metadata,
+        suppressionReason,
+        nowIso(),
+      ),
+    })
+    .eq("id", record.id)
+    .eq("user_id", userId);
+  if (metadataError) {
+    throw new Error(
+      `[assists] source suppression record failed: ${metadataError.message}`,
+    );
+  }
+
+  const { data, error } = await supabase
+    .schema("platform")
+    .from(TABLE)
+    .update({ suppressed_until: SOURCE_SUPPRESSED_UNTIL })
+    .eq("user_id", userId)
+    .eq("source_key", sourceKey)
+    .eq("status", "pending")
+    .is("deleted_at", null)
+    .select("id");
+  if (error) {
+    const rollback = await supabase
+      .schema("platform")
+      .from(TABLE)
+      .update({ metadata: record.metadata })
+      .eq("id", assistId)
+      .eq("user_id", userId);
+    if (rollback.error) {
+      console.error(
+        `[assists] source suppression note rollback failed: ${rollback.error.message}`,
+      );
+    }
+    throw new Error(`[assists] source suppression failed: ${error.message}`);
+  }
+  const count = data?.length ?? 0;
+  if (count === 0) {
+    throw new Error("[assists] source suppression changed no rows");
+  }
+  return count;
+}
+
+/** Reverse a producer/check suppression. Finite per-assist snoozes stay put. */
+export async function unsuppressAssistSource(
+  userId: string,
+  sourceKey: string,
+): Promise<number> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .schema("platform")
+    .from(TABLE)
+    .update({ suppressed_until: null })
+    .eq("user_id", userId)
+    .eq("source_key", sourceKey)
+    .eq("suppressed_until", SOURCE_SUPPRESSED_UNTIL)
+    .select("id");
+  if (error) {
+    throw new Error(`[assists] source unsuppression failed: ${error.message}`);
+  }
+  return data?.length ?? 0;
 }
 
 /**
@@ -492,4 +655,3 @@ export async function resolveAssistsByDedupeKeys(
   }
   return (data ?? []).length;
 }
-

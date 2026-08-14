@@ -45,6 +45,12 @@ const assistsSlice = createSlice({
     assistDecided(state, action: PayloadAction<string>) {
       state.pending = state.pending.filter((a) => a.id !== action.payload);
     },
+    /** A whole producer/check was silenced — remove every matching chip. */
+    assistsSourceSuppressed(state, action: PayloadAction<string>) {
+      state.pending = state.pending.filter(
+        (assist) => assist.sourceKey !== action.payload,
+      );
+    },
     /** A client-side producer emitted (or refreshed) an assist. */
     assistEmitted(state, action: PayloadAction<Assist>) {
       const idx = state.pending.findIndex((a) => a.id === action.payload.id);
@@ -73,7 +79,8 @@ const assistsSlice = createSlice({
   },
 });
 
-export const { assistDecided, assistEmitted } = assistsSlice.actions;
+export const { assistDecided, assistEmitted, assistsSourceSuppressed } =
+  assistsSlice.actions;
 
 const selectAssistsState = (state: RootState) => state.assists;
 
@@ -91,7 +98,10 @@ export const selectPendingAssistCount = createSelector(
 );
 /** Pending assists addressed to one surface (`<client>/<surface>`). */
 export const selectAssistsForSurface = createSelector(
-  [selectPendingAssists, (_state: RootState, surfaceName: string) => surfaceName],
+  [
+    selectPendingAssists,
+    (_state: RootState, surfaceName: string) => surfaceName,
+  ],
   (pending, surfaceName) =>
     pending.filter((a) => a.surfaceName === surfaceName),
 );
