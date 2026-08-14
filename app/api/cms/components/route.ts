@@ -8,10 +8,27 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createMainSupabaseClient } from "@/utils/supabase/server";
-import { getCmsClient, verifySiteOwnership, verifyComponentOwnership } from "../_lib/cmsDb";
+import {
+  getCmsClient,
+  verifySiteOwnership,
+  verifyComponentOwnership,
+} from "../_lib/cmsDb";
 import { logCmsActivity } from "../_lib/activityLog";
+import {
+  cmsContentBlockedResponse,
+  mergeCmsContentValidationResults,
+  validateContent,
+  withCmsValidationHeader,
+  type CmsContentValidationResult,
+} from "../_lib/validateContent";
 
 export async function POST(request: NextRequest) {
+  let contentValidation: CmsContentValidationResult | null = null;
+  const respond = <T extends Response>(response: T): T =>
+    contentValidation
+      ? withCmsValidationHeader(response, contentValidation)
+      : response;
+
   try {
     const mainSupabase = await createMainSupabaseClient();
     const {
@@ -22,6 +39,10 @@ export async function POST(request: NextRequest) {
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const {
+      data: { session },
+    } = await mainSupabase.auth.getSession();
+    const accessToken = session?.access_token ?? null;
 
     const body = await request.json();
     const { action, ...params } = body;
@@ -104,6 +125,14 @@ export async function POST(request: NextRequest) {
           );
         }
 
+        contentValidation = await validateContent({
+          content: { html: htmlContent, css: cssContent },
+          siteId,
+          accessToken,
+        });
+        const blockedResponse = cmsContentBlockedResponse(contentValidation);
+        if (blockedResponse) return blockedResponse;
+
         const { data, error } = await db
           .from("client_components")
           .insert({
@@ -118,7 +147,9 @@ export async function POST(request: NextRequest) {
 
         if (error) {
           console.error("[cms/components] create error:", error);
-          return NextResponse.json({ error: error.message }, { status: 500 });
+          return respond(
+            NextResponse.json({ error: error.message }, { status: 500 }),
+          );
         }
 
         await logCmsActivity(db, {
@@ -131,7 +162,7 @@ export async function POST(request: NextRequest) {
           userEmail: user.email,
         });
 
-        return NextResponse.json({ success: true, component: data });
+        return respond(NextResponse.json({ success: true, component: data }));
       }
 
       case "update": {
@@ -143,9 +174,16 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        const { ok, clientId } = await verifyComponentOwnership(db, componentId, user.id);
+        const { ok, clientId } = await verifyComponentOwnership(
+          db,
+          componentId,
+          user.id,
+        );
         if (!ok) {
-          return NextResponse.json({ error: "Component not found or access denied" }, { status: 403 });
+          return NextResponse.json(
+            { error: "Component not found or access denied" },
+            { status: 403 },
+          );
         }
 
         const fieldMap: Record<string, string> = {
@@ -166,6 +204,29 @@ export async function POST(request: NextRequest) {
           }
         }
 
+        contentValidation = mergeCmsContentValidationResults(
+          await Promise.all([
+            validateContent({
+              content: {
+                html: updateFields.htmlContent,
+                css: updateFields.cssContent,
+              },
+              siteId: clientId,
+              accessToken,
+            }),
+            validateContent({
+              content: {
+                html: updateFields.htmlContentDraft,
+                css: updateFields.cssContentDraft,
+              },
+              siteId: clientId,
+              accessToken,
+            }),
+          ]),
+        );
+        const blockedResponse = cmsContentBlockedResponse(contentValidation);
+        if (blockedResponse) return blockedResponse;
+
         const { data, error } = await db
           .from("client_components")
           .update(updateData)
@@ -175,7 +236,9 @@ export async function POST(request: NextRequest) {
 
         if (error) {
           console.error("[cms/components] update error:", error);
-          return NextResponse.json({ error: error.message }, { status: 500 });
+          return respond(
+            NextResponse.json({ error: error.message }, { status: 500 }),
+          );
         }
 
         await logCmsActivity(db, {
@@ -189,7 +252,7 @@ export async function POST(request: NextRequest) {
           changes: { fields: Object.keys(updateData) },
         });
 
-        return NextResponse.json({ success: true, component: data });
+        return respond(NextResponse.json({ success: true, component: data }));
       }
 
       // ── Delete component (was missing — live 400 bug) ─────────────
@@ -209,7 +272,10 @@ export async function POST(request: NextRequest) {
           .single();
 
         if (!comp) {
-          return NextResponse.json({ error: "Component not found" }, { status: 404 });
+          return NextResponse.json(
+            { error: "Component not found" },
+            { status: 404 },
+          );
         }
 
         if (!(await verifySiteOwnership(db, comp.client_id, user.id))) {
@@ -247,10 +313,8 @@ export async function POST(request: NextRequest) {
     }
   } catch (err: unknown) {
     console.error("[cms/components] Unexpected error:", err);
-    const message = err instanceof Error ? err.message : "Internal server error";
-    return NextResponse.json(
-      { error: message },
-      { status: 500 },
-    );
+    const message =
+      err instanceof Error ? err.message : "Internal server error";
+    return respond(NextResponse.json({ error: message }, { status: 500 }));
   }
 }

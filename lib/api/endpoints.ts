@@ -139,6 +139,12 @@ export const ENDPOINTS = {
       `/cx/conversations/${conversationId}/context-state` as const,
   },
 
+  /** CMS server work — authenticated. CMS row CRUD stays direct-to-Supabase. */
+  cms: {
+    /** POST — Canonical matrx-content-guard validation before CMS writes. */
+    validate: "/cms/validate" as const,
+  },
+
   /** Tool testing endpoints — Authenticated */
   tools: {
     /** GET — List available tools (?category=) */
