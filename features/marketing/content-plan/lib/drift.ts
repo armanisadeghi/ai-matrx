@@ -140,12 +140,15 @@ const SEVERITY_ORDER: Record<DriftSeverity, number> = {
   low: 2,
 };
 
-/** The CMS page's public path — `route` is the DB-derived identity; a home
- * page with no route serves "/" (mirrors cms_reconciler.cms_page_route). */
+/** The CMS page's public path. Home wins over the stored route because the
+ * renderer serves the designated home page at "/" even when its row still
+ * carries a slug-derived route such as "/home". Mirrors
+ * cms_reconciler.cms_page_route exactly. */
 function cmsPageRoute(page: CmsPageMapEntry): string | null {
+  if (page.isHomePage) return "/";
   const normalized = normalizeRoute(page.route);
   if (normalized) return normalized;
-  return page.isHomePage ? "/" : null;
+  return null;
 }
 
 export function computePlanDrift(input: {

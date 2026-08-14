@@ -581,6 +581,9 @@ always took `page_ids`. The defect was a surface ignoring what it had.
   repairs preview before apply. `usePlanReality` auto-runs once on workspace
   open (cached; no focus/reconnect refetch), and the table gained a visible,
   sortable/filterable Alignment verdict from the same drift model (prefs v3).
+  Browser verification caught and fixed a false Home conflict: the client now
+  mirrors the server rule that `is_home_page` serves `/` even when the stored
+  row route is `/home`; the bridge preview and the displayed verdict agree.
 
 - 2026-08-13 — **plan.entity person/org fold into crm.party (CRM Wave 2).**
   Ratified split executed: person/org rows migrated to `crm.party` (1 party
