@@ -88,9 +88,35 @@ function SiteSections({
   // section low in the list showed the top of the menu and no sign of where you
   // were. `nearest` moves the menu's own scroller the minimum needed and leaves
   // the page scroll alone.
+  //
+  // It has to WAIT for the switch, though: this menu is portaled in while the
+  // sidebar is still showing the main nav, so on first paint it sits inside a
+  // `display: none` subtree where scrollIntoView silently does nothing and every
+  // measurement reads 0. Observing the shell's own view attribute scrolls
+  // exactly once, when there is something to scroll.
   const activeRef = useRef<HTMLAnchorElement | null>(null);
   useEffect(() => {
-    activeRef.current?.scrollIntoView({ block: "nearest" });
+    const scrollToActive = () => {
+      const el = activeRef.current;
+      // Zero height means the menu is still inside the hidden half of the
+      // sidebar. Watching the container's SIZE rather than the shell's view
+      // attribute covers both ways that resolves — the attribute flipping, and
+      // the menu simply being laid out on a later frame when the shell was
+      // already showing the route view.
+      if (!el || el.clientHeight === 0) return false;
+      el.scrollIntoView({ block: "nearest" });
+      return true;
+    };
+    if (scrollToActive()) return;
+    const container = document.querySelector<HTMLElement>(
+      ".shell-sidebar-route-nav",
+    );
+    if (!container) return;
+    const observer = new ResizeObserver(() => {
+      if (scrollToActive()) observer.disconnect();
+    });
+    observer.observe(container);
+    return () => observer.disconnect();
   }, [active?.href]);
 
   return (
