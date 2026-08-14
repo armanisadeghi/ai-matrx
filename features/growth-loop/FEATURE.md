@@ -47,18 +47,17 @@ Rules (also stated at the top of the file):
 | `components/GrowthLoopCanvasImpl.tsx`                       | React Flow canvas + custom stage node + detail rail.                          |
 | `features/canvas/edges/rounded-orthogonal-path.ts`          | Shared rounded waypoint path builder used for collision-free fixed-map lanes. |
 | `app/(admin)/administration/knowledge/growth-loop/page.tsx` | Admin route.                                                                  |
-| `run/api.ts`                                                | Contract-bound wrappers over aidream's `/growth-loop/*`. The ONLY read path.   |
-| `run/hooks.ts`                                              | React Query bindings + the delta-poll of the loop's event ledger.              |
+| `run/api.ts`                                                | Direct Supabase reads; contract-bound aidream orchestration actions.          |
+| `run/hooks.ts`                                              | React Query bindings + the delta-poll of the loop's event ledger.             |
 | `run/stage-doors.ts`                                        | Ref-kind → URL, and stage → "where a human does this". THE DOOR LAW.          |
-| `run/components/`                                           | Workspace, stage rail, blocker card, ledger.                                   |
+| `run/components/`                                           | Workspace, stage rail, blocker card, ledger.                                  |
 
 ## The run object — rules
 
-- **Reads go through aidream, on purpose.** The `growth` schema is not in this project's
-  PostgREST exposure list, so `supabase.schema("growth")` returns `PGRST106` and there is
-  exactly ONE reachable path. Do not add a second candidate. The conditions for moving reads
-  direct — and the two security holes that must be fixed in the same change — are written in
-  `G-ORCHESTRATOR-READ` in `map/loop-map.ts`.
+- **Reads go direct to Supabase.** `run/api.ts` reads the invoker-safe
+  `growth.v_loop_state`, `growth.loop_stage_run`, and `growth.loop_event` under the caller's
+  JWT. Actions go to aidream because they orchestrate work. Never add a fallback ladder or
+  route a plain read back through Python.
 - **Starting is explicit and idempotent.** One live loop per site is a DB partial unique
   index, so the button needs no guard: a second click returns the same loop.
 - **The pipe defaults are aidream's, never the client's.** `pipe_policy` is omitted on start
@@ -89,6 +88,12 @@ Rules (also stated at the top of the file):
 
 ## Change log
 
+- 2026-08-13 — Codex: **`G-ORCHESTRATOR-READ` CLOSED.** Canonical RLS now gives stage/event
+  components their parent loop's access, `v_loop_state` is `security_invoker`, anonymous
+  schema access is revoked, and `growth` is safely exposed to PostgREST. Real-user proof: the
+  creator sees 1 run / 3 stages / 7 events; an unrelated non-admin with no target-org
+  membership sees 0 / 0 / 0. Loop state and history now read direct from Supabase; actions
+  remain on aidream.
 - 2026-08-13 — claude: **`G-FINDING-FIX` CLOSED — the write-back half of the loop connects on
   all three pipes.** AI: `scripts/seed_finding_fixer.py` (aidream) creates the purpose-built
   system agent `seo_finding_fixer_v1`, seeds + activates its two Content-IR kinds, and pins the

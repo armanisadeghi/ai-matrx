@@ -1070,7 +1070,7 @@ export const GAPS: LoopGap[] = [
     detail:
       "CLOSED 2026-08-13 — growth is in PostgREST only after the safety gate landed: v_loop_state runs as security_invoker, canonical component RLS makes stage/event reads follow the parent loop, svc_all is service_role-only, and anon has no growth-schema access. A real creator sees their run (1 loop / 3 stages / 7 events); a real unrelated non-admin with no target-org membership sees 0 / 0 / 0. The live REST API stayed healthy after the config reload, and run/api.ts now reads state/history direct from Supabase while orchestration actions remain on aidream.",
     lane: "L6",
-    evidence: "ai-matrx/features/growth-loop/run/api.ts",
+    evidence: "ai-matrx/migrations/growth_orchestrator_read.sql",
   },
   {
     id: "G-SUPERVISOR",

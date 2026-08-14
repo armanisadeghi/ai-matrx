@@ -54,10 +54,9 @@ const LIVE_POLL_MS = 5_000;
  * never have to re-derive that rule.
  */
 export function useSiteLoops(siteId: string) {
-  const dispatch = useAppDispatch();
   const query = useQuery({
     queryKey: growthLoopKeys.site(siteId),
-    queryFn: ({ signal }) => listSiteLoops(dispatch, siteId, signal),
+    queryFn: ({ signal }) => listSiteLoops(siteId, signal),
     staleTime: 10_000,
     refetchInterval: (q) =>
       (q.state.data ?? []).some(isLoopLive) ? LIVE_POLL_MS : false,
@@ -76,11 +75,14 @@ export function useSiteLoops(siteId: string) {
 }
 
 export function useLoopState(loopRunId: string | null) {
-  const dispatch = useAppDispatch();
   return useQuery({
     queryKey: growthLoopKeys.run(loopRunId ?? "none"),
     enabled: Boolean(loopRunId),
-    queryFn: ({ signal }) => getLoopState(dispatch, loopRunId!, signal),
+    queryFn: ({ signal }) => {
+      if (!loopRunId)
+        throw new Error("A loop id is required to load its state.");
+      return getLoopState(loopRunId, signal);
+    },
     refetchInterval: (q) => (isLoopLive(q.state.data) ? LIVE_POLL_MS : false),
   });
 }
@@ -91,7 +93,6 @@ export function useLoopState(loopRunId: string | null) {
  * this poll can neither miss an event nor read one twice.
  */
 export function useLoopHistory(loopRunId: string | null, live: boolean) {
-  const dispatch = useAppDispatch();
   // The ledger carries the loop it belongs to, so switching loops can never
   // show the previous loop's events while the first delta is in flight — and
   // no state is written during render to achieve it.
@@ -106,9 +107,12 @@ export function useLoopHistory(loopRunId: string | null, live: boolean) {
     enabled: Boolean(loopRunId),
     refetchInterval: live ? LIVE_POLL_MS : false,
     queryFn: async ({ signal }) => {
-      const id = loopRunId!;
+      if (!loopRunId) {
+        throw new Error("A loop id is required to load its history.");
+      }
+      const id = loopRunId;
       const from = ledger.loopRunId === id ? ledger.cursor : 0;
-      const page = await getLoopHistory(dispatch, id, from, signal);
+      const page = await getLoopHistory(id, from, signal);
       setLedger((prev) => {
         const base = prev.loopRunId === id ? prev.events : [];
         return {
@@ -190,7 +194,11 @@ export function useLoopActions(siteId: string) {
       loopRunId: string;
       stageRunId: string;
       reason: string;
-    }) => skipStage(dispatch, { stageRunId: input.stageRunId, reason: input.reason }),
+    }) =>
+      skipStage(dispatch, {
+        stageRunId: input.stageRunId,
+        reason: input.reason,
+      }),
     onSuccess: (state) => refresh(state.loop_run_id),
   });
 
