@@ -3,7 +3,14 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/utils/supabase/client";
 import { unwrapUserTableMutation } from "@/utils/user-tables-rpc";
-import { changeFieldType } from "@/features/data-tables/service";
+import {
+  changeFieldType,
+  deleteField,
+  setFieldFormat,
+} from "@/features/data-tables/service";
+import { FieldFormatPicker } from "@/lib/field-formats/FieldFormatPicker";
+import { resolveFieldFormat } from "@/lib/field-formats/format";
+import type { FieldFormatConfig } from "@/lib/field-formats/types";
 import {
   isServiceFailure,
   type FieldDataType,
@@ -39,7 +46,9 @@ import {
   Eye,
   EyeOff,
   AlertTriangle,
+  Loader2,
   Save,
+  Trash2,
   X,
 } from "lucide-react";
 import {
@@ -57,6 +66,7 @@ interface TableField {
   is_public: boolean;
   default_value?: any;
   validation_rules?: any;
+  metadata?: Record<string, unknown> | null;
 }
 
 interface TableInfo {
@@ -119,6 +129,11 @@ export default function TableConfigModal({
   const [dataTypeChanges, setDataTypeChanges] = useState<
     Record<string, string>
   >({});
+  /** fieldId → format the user picked this session (saved on Save Changes). */
+  const [formatChanges, setFormatChanges] = useState<
+    Record<string, FieldFormatConfig>
+  >({});
+  const [deletingFieldId, setDeletingFieldId] = useState<string | null>(null);
 
   // Initialize fields when modal opens
   useEffect(() => {
@@ -130,9 +145,62 @@ export default function TableConfigModal({
       setTableInfo(initialTableInfo);
       setHasChanges(false);
       setDataTypeChanges({});
+      setFormatChanges({});
       setError(null);
     }
   }, [isOpen, initialFields, initialTableInfo]);
+
+  /**
+   * Remove a column. THE ONLY delete-column path in the product — before this
+   * existed a user could add columns forever and never remove one.
+   *
+   * Applies immediately (not on Save Changes) because it is a destructive
+   * server-side operation the user has explicitly confirmed; batching it behind
+   * an unrelated Save button is how people delete things by accident.
+   */
+  const handleDeleteField = async (field: TableField) => {
+    if (fields.length <= 1) {
+      toast({
+        title: "Cannot remove the last column",
+        description: "Add another column first, then remove this one.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const ok = await confirm({
+      title: `Remove "${field.display_name}"?`,
+      description:
+        "This column and its values are removed from every row in the table. Row history keeps a record, but there is no undo in the app.",
+      confirmLabel: "Remove column",
+      variant: "destructive",
+    });
+    if (!ok) return;
+
+    setDeletingFieldId(field.id);
+    const result = await deleteField({ tableId, fieldId: field.id });
+    setDeletingFieldId(null);
+
+    if (isServiceFailure(result)) {
+      toast({
+        title: "Could not remove the column",
+        description: result.error,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setFields((prev) => prev.filter((f) => f.id !== field.id));
+    toast({
+      title: `Removed "${result.data.display_name}"`,
+      description:
+        result.data.rows_cleared > 0
+          ? `Cleared its value from ${result.data.rows_cleared} row${result.data.rows_cleared === 1 ? "" : "s"}.`
+          : "No rows carried a value for it.",
+      variant: "success",
+    });
+    onSuccess();
+  };
 
   // Handle table info changes
   const handleTableInfoChange = (key: keyof TableInfo, value: any) => {
@@ -154,6 +222,14 @@ export default function TableConfigModal({
 
     // Track data type changes specifically
     if (key === "data_type") {
+      // A format is only valid over certain storage types, so changing the
+      // storage type resets the column to its plain format rather than leaving
+      // a Currency format sitting on a boolean.
+      setFormatChanges((prev) => {
+        const next = { ...prev };
+        delete next[fieldId];
+        return next;
+      });
       const originalField = initialFields.find((f) => f.id === fieldId);
       if (originalField && originalField.data_type !== value) {
         setDataTypeChanges((prev) => ({ ...prev, [fieldId]: value }));
@@ -430,6 +506,25 @@ export default function TableConfigModal({
         }
       }
 
+      // Display formats are a pure UI layer over the stored type — no data is
+      // touched, so they save unconditionally and need no confirmation.
+      const formatFailures: string[] = [];
+      for (const [fieldId, format] of Object.entries(formatChanges)) {
+        const res = await setFieldFormat({ tableId, fieldId, format });
+        if (isServiceFailure(res)) {
+          const label =
+            fields.find((f) => f.id === fieldId)?.display_name ?? fieldId;
+          formatFailures.push(`${label}: ${res.error}`);
+        }
+      }
+      if (formatFailures.length > 0) {
+        toast({
+          title: "Some formats could not be saved",
+          description: formatFailures.join("\n"),
+          variant: "destructive",
+        });
+      }
+
       if (typeChanges.length > 0) {
         if (typeFailures.length > 0) {
           toast({
@@ -638,6 +733,59 @@ export default function TableConfigModal({
                             Will convert
                           </Badge>
                         )}
+
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void handleDeleteField(field);
+                          }}
+                          disabled={
+                            loading ||
+                            fields.length <= 1 ||
+                            deletingFieldId === field.id
+                          }
+                          title={
+                            fields.length <= 1
+                              ? "A table must keep at least one column"
+                              : `Remove ${field.display_name}`
+                          }
+                        >
+                          {deletingFieldId === field.id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3.5 w-3.5" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Display format — how the column LOOKS. Purely a UI
+                        layer over the storage type above: the data is never
+                        rewritten, so this is safe to change at any time. */}
+                    <div className="border-t px-3 py-2">
+                      <div className="flex items-start gap-2">
+                        <Label className="mt-1.5 w-20 shrink-0 text-[11px] text-muted-foreground">
+                          Shows as
+                        </Label>
+                        <FieldFormatPicker
+                          className="min-w-0 flex-1"
+                          triggerClassName="w-56"
+                          dataType={field.data_type}
+                          value={
+                            formatChanges[field.id] ??
+                            resolveFieldFormat(field.data_type, field.metadata)
+                          }
+                          onChange={(next) => {
+                            setFormatChanges((prev) => ({
+                              ...prev,
+                              [field.id]: next,
+                            }));
+                            setHasChanges(true);
+                          }}
+                        />
                       </div>
                     </div>
                   </Card>

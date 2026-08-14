@@ -39118,6 +39118,14 @@ export type Database = {
         Returns: Json
       }
       udt_dataset_row_versions_trim: { Args: never; Returns: Json }
+      udt_delete_field: {
+        Args: { p_field_id: string; p_table_id: string }
+        Returns: Json
+      }
+      udt_set_field_format: {
+        Args: { p_field_id: string; p_format?: Json; p_table_id: string }
+        Returns: Json
+      }
       udt_upsert_cell: {
         Args: {
           p_field_name: string
@@ -39272,7 +39280,12 @@ export type Database = {
         Returns: Json
       }
       update_user_table_row_ordering: {
-        Args: { p_enabled: boolean; p_order?: Json; p_table_id: string }
+        Args: {
+          p_enabled: boolean
+          p_label_field?: string
+          p_order?: Json
+          p_table_id: string
+        }
         Returns: Json
       }
       upsert_display_option: {

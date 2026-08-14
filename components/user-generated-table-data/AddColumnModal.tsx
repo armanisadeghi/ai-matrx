@@ -21,6 +21,11 @@ import { Switch } from "@/components/ui/switch";
 import { supabase } from '@/utils/supabase/client';
 import { addColumn, VALID_DATA_TYPES } from '@/utils/user-table-utls/table-utils';
 import { sanitizeFieldName } from '@/utils/user-table-utls/field-name-sanitizer';
+import { setFieldFormat } from '@/features/data-tables/service';
+import { isServiceFailure } from '@/features/data-tables/types';
+import { FieldFormatPicker } from '@/lib/field-formats/FieldFormatPicker';
+import { defaultFormatForBase } from '@/lib/field-formats/registry';
+import type { FieldFormatConfig } from '@/lib/field-formats/types';
 
 interface AddColumnModalProps {
   tableId: string;
@@ -33,6 +38,7 @@ export default function AddColumnModal({ tableId, isOpen, onClose, onSuccess }: 
   const [displayName, setDisplayName] = useState('');
   const [fieldName, setFieldName] = useState('');
   const [dataType, setDataType] = useState('string');
+  const [format, setFormat] = useState<FieldFormatConfig>({ id: 'text' });
   const [isRequired, setIsRequired] = useState(false);
   const [defaultValue, setDefaultValue] = useState('');
   const [loading, setLoading] = useState(false);
@@ -70,11 +76,30 @@ export default function AddColumnModal({ tableId, isOpen, onClose, onSuccess }: 
       if (!result.success) {
         throw new Error(result.error);
       }
-      
+
+      // Attach the display format if the user picked a non-plain one. This is a
+      // second call rather than an argument to add_column because the format is
+      // a UI layer over the stored type — the column is fully created and valid
+      // either way, so a failure here never leaves a half-made column.
+      if (
+        result.columnId &&
+        format.id !== defaultFormatForBase(dataType)
+      ) {
+        const formatResult = await setFieldFormat({
+          tableId,
+          fieldId: result.columnId,
+          format,
+        });
+        if (isServiceFailure(formatResult)) {
+          console.warn('Column created, but its format was not saved:', formatResult.error);
+        }
+      }
+
       // Reset form and close modal
       setDisplayName('');
       setFieldName('');
       setDataType('string');
+      setFormat({ id: 'text' });
       setIsRequired(false);
       setDefaultValue('');
       
@@ -125,7 +150,14 @@ export default function AddColumnModal({ tableId, isOpen, onClose, onSuccess }: 
           
           <div className="space-y-2">
             <Label htmlFor="dataType">Data Type</Label>
-            <Select value={dataType} onValueChange={setDataType}>
+            <Select
+              value={dataType}
+              onValueChange={(next) => {
+                setDataType(next);
+                // A format only fits certain storage types — reset to plain.
+                setFormat({ id: defaultFormatForBase(next) });
+              }}
+            >
               <SelectTrigger id="dataType">
                 <SelectValue placeholder="Select data type" />
               </SelectTrigger>
@@ -138,7 +170,20 @@ export default function AddColumnModal({ tableId, isOpen, onClose, onSuccess }: 
               </SelectContent>
             </Select>
           </div>
-          
+
+          <div className="space-y-2">
+            <Label>Shows as</Label>
+            <FieldFormatPicker
+              dataType={dataType}
+              value={format}
+              onChange={setFormat}
+              triggerClassName="h-9 w-full text-sm"
+            />
+            <p className="text-xs text-muted-foreground">
+              How this column is displayed and edited. The stored data type stays exactly as chosen above.
+            </p>
+          </div>
+
           <div className="flex items-center space-x-2">
             <Switch
               id="isRequired"

@@ -4,7 +4,7 @@ import React from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ArrowDown, ArrowUp, Filter, ListX, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Filter, ListX, Settings2, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ColumnHeaderMenuProps {
@@ -18,6 +18,17 @@ interface ColumnHeaderMenuProps {
   onSortDesc: () => void;
   onClearSort: () => void;
   onFilterChange: (value: string) => void;
+  /**
+   * Open the table's column settings focused on this column. Omitted on
+   * read-only mounts.
+   */
+  onConfigure?: () => void;
+  /**
+   * Remove this column. Omitted on read-only mounts and on the last remaining
+   * column. Goes through the same confirm + RPC as the settings dialog — there
+   * is exactly one delete-column path.
+   */
+  onDelete?: () => void;
 }
 
 /**
@@ -35,6 +46,8 @@ const ColumnHeaderMenu = ({
   onSortDesc,
   onClearSort,
   onFilterChange,
+  onConfigure,
+  onDelete,
 }: ColumnHeaderMenuProps) => {
   const hasFilter = filterValue.trim().length > 0;
 
@@ -124,6 +137,36 @@ const ColumnHeaderMenu = ({
             )}
           </div>
         </div>
+
+        {(onConfigure || onDelete) && (
+          <>
+            <div className="my-2 h-px bg-border" />
+            <div className="flex flex-col gap-1">
+              {onConfigure && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 justify-start gap-2 px-2 text-xs font-normal"
+                  onClick={onConfigure}
+                >
+                  <Settings2 className="h-3.5 w-3.5" />
+                  Column settings
+                </Button>
+              )}
+              {onDelete && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 justify-start gap-2 px-2 text-xs font-normal text-destructive hover:text-destructive"
+                  onClick={onDelete}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Remove column
+                </Button>
+              )}
+            </div>
+          </>
+        )}
       </PopoverContent>
     </Popover>
   );

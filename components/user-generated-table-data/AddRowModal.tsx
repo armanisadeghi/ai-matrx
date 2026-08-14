@@ -19,6 +19,11 @@ import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { supabase } from '@/utils/supabase/client';
 import { getTableDetails, addRow, type TableField } from '@/utils/user-table-utls/table-utils';
+import {
+  FormatAwareInput,
+  formatHasOwnInput,
+} from '@/features/data-tables/components/FormatAwareInput';
+import { resolveFieldFormat } from '@/lib/field-formats/format';
 
 interface AddRowModalProps {
   tableId: string;
@@ -127,7 +132,24 @@ export default function AddRowModal({ tableId, isOpen, onClose, onSuccess }: Add
   // Render different input based on data type
   const renderFieldInput = (field: TableField) => {
     const value = rowData[field.field_name];
-    
+
+    // A declared display format gets first refusal on the input (email
+    // keyboard, color swatch, big box). It returns null when it has no
+    // opinion, and the storage-type switch below takes over unchanged.
+    const fieldFormat = resolveFieldFormat(field.data_type, field.metadata);
+    if (formatHasOwnInput(fieldFormat)) {
+      return (
+        <FormatAwareInput
+          id={field.field_name}
+          format={fieldFormat}
+          dataType={field.data_type}
+          value={value}
+          placeholder={`Enter ${field.display_name.toLowerCase()}`}
+          onChange={(next) => handleValueChange(field.field_name, next)}
+        />
+      );
+    }
+
     switch (field.data_type) {
       case 'boolean':
         return (

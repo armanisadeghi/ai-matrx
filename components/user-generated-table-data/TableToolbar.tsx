@@ -505,6 +505,7 @@ export default function TableToolbar({
             onClose={() => setShowRowOrderingModal(false)}
             tableId={tableId}
             tableInfo={tableInfo}
+            fields={fields}
             onSuccess={onRowOrderingSuccess || (() => loadTableData(true))}
           />
         </>

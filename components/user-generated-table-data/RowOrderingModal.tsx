@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -9,6 +9,14 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { confirm as confirmDialog } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { GripVertical, ArrowUp, ArrowDown, Save, X } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
@@ -16,19 +24,53 @@ import {
   unwrapGetUserTableDataPaginatedRows,
   unwrapUserTableMutation,
 } from "@/utils/user-tables-rpc";
+import type { TableField } from "@/utils/user-table-utls/table-utils";
+import { formatFieldValue, resolveFieldFormat } from "@/lib/field-formats/format";
 
 interface RowOrderingModalProps {
   isOpen: boolean;
   onClose: () => void;
   tableId: string;
   tableInfo: any;
+  /**
+   * The table's columns in `field_order`. Required — the row label is chosen
+   * from the SCHEMA, never from a row's own JSONB key order (see below).
+   */
+  fields: TableField[];
   onSuccess: () => void;
 }
 
 interface RowItem {
   id: string;
-  displayText: string;
+  data: Record<string, unknown>;
   originalIndex: number;
+}
+
+/**
+ * Pick the column whose value labels each row in the reorder list.
+ *
+ * THE BUG THIS REPLACES: the old code did `Object.keys(row.data)` and took the
+ * first string value — PER ROW. Postgres does not preserve jsonb key insertion
+ * order (it sorts by key length then bytes), so "first key" had nothing to do
+ * with the user's column order, and because the choice was made inside the row
+ * loop, different rows could label themselves with different columns. That is
+ * the "it's picking a random column" symptom.
+ *
+ * Now: the user's saved choice wins; otherwise the first text column by
+ * `field_order`; otherwise the first column by `field_order`. One column, for
+ * every row, chosen from the schema.
+ */
+function resolveLabelField(
+  fields: TableField[],
+  saved: string | null | undefined,
+): TableField | null {
+  if (!fields.length) return null;
+  const ordered = [...fields].sort((a, b) => a.field_order - b.field_order);
+  if (saved) {
+    const match = ordered.find((f) => f.field_name === saved);
+    if (match) return match;
+  }
+  return ordered.find((f) => f.data_type === "string") ?? ordered[0];
 }
 
 export default function RowOrderingModal({
@@ -36,28 +78,35 @@ export default function RowOrderingModal({
   onClose,
   tableId,
   tableInfo,
+  fields,
   onSuccess,
 }: RowOrderingModalProps) {
   const [rows, setRows] = useState<RowItem[]>([]);
+  const [labelFieldName, setLabelFieldName] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
 
-  // Load all rows when modal opens
+  // Resolve the label column whenever the modal opens or the schema changes.
   useEffect(() => {
-    if (isOpen && tableId) {
-      loadAllRows();
-    }
-  }, [isOpen, tableId]);
+    if (!isOpen) return;
+    const resolved = resolveLabelField(
+      fields,
+      tableInfo?.row_ordering_config?.label_field,
+    );
+    setLabelFieldName(resolved?.field_name ?? null);
+  }, [isOpen, fields, tableInfo?.row_ordering_config?.label_field]);
 
-  const loadAllRows = async () => {
+  const loadAllRows = useCallback(async () => {
     setLoading(true);
     try {
-      // Get all rows without pagination
+      // Get all rows without pagination. v2 is the same RPC the grid itself
+      // reads through — the v1 variant this used to call can disagree with the
+      // grid about which rows exist.
       const { data: allData, error } = await supabase.rpc(
-        "get_user_table_data_paginated",
+        "get_user_table_data_paginated_v2",
         {
           p_table_id: tableId,
           p_limit: 10000, // Large limit to get all rows
@@ -71,35 +120,13 @@ export default function RowOrderingModal({
       if (error) throw error;
       const rowList = unwrapGetUserTableDataPaginatedRows(allData ?? null);
 
-      // Convert rows to simple display format
-      const rowItems: RowItem[] = rowList.map((row: any, index: number) => {
-        // Find the best field to display (first string field or first field)
-        const fields = Object.keys(row.data);
-        let displayField =
-          fields.find(
-            (field) => row.data[field] && typeof row.data[field] === "string",
-          ) || fields[0];
-
-        let displayText = row.data[displayField];
-        if (typeof displayText === "object") {
-          displayText = JSON.stringify(displayText);
-        } else if (displayText === null || displayText === undefined) {
-          displayText = "(empty)";
-        } else {
-          displayText = String(displayText);
-        }
-
-        // Truncate long text
-        if (displayText.length > 80) {
-          displayText = displayText.substring(0, 77) + "...";
-        }
-
-        return {
-          id: row.id,
-          displayText,
-          originalIndex: index,
-        };
-      });
+      // Keep the raw row data — the label is derived at render time from the
+      // schema-resolved label column, so switching columns needs no refetch.
+      const rowItems: RowItem[] = rowList.map((row: any, index: number) => ({
+        id: row.id,
+        data: (row.data ?? {}) as Record<string, unknown>,
+        originalIndex: index,
+      }));
 
       // Apply existing row ordering if it exists
       if (
@@ -127,6 +154,28 @@ export default function RowOrderingModal({
     } finally {
       setLoading(false);
     }
+  }, [tableId, tableInfo?.row_ordering_config]);
+
+  // Load all rows when modal opens
+  useEffect(() => {
+    if (isOpen && tableId) {
+      void loadAllRows();
+    }
+  }, [isOpen, tableId, loadAllRows]);
+
+  const labelField = fields.find((f) => f.field_name === labelFieldName) ?? null;
+
+  /** One column, every row — formatted exactly as the grid would show it. */
+  const labelFor = (row: RowItem): string => {
+    if (!labelField) return "(no columns)";
+    const raw = row.data[labelField.field_name];
+    const result = formatFieldValue(
+      raw,
+      resolveFieldFormat(labelField.data_type, labelField.metadata),
+      labelField.data_type,
+    );
+    const text = result.empty ? "(empty)" : result.text;
+    return text.length > 80 ? `${text.slice(0, 77)}...` : text;
   };
 
   // Handle drag start
@@ -216,6 +265,9 @@ export default function RowOrderingModal({
           p_table_id: tableId,
           p_enabled: true,
           p_order: newOrder,
+          // Persist the label column alongside the order so the next open shows
+          // the same column instead of re-guessing.
+          ...(labelFieldName ? { p_label_field: labelFieldName } : {}),
         },
       );
 
@@ -264,6 +316,32 @@ export default function RowOrderingModal({
           </DialogTitle>
         </DialogHeader>
 
+        {/* Which column labels each row. Without this the dialog has to guess,
+            and any guess is wrong for someone — a table whose first column is
+            an id shows a list of ids. */}
+        <div className="flex flex-shrink-0 items-center gap-2">
+          <Label className="text-xs text-muted-foreground whitespace-nowrap">
+            Label rows by
+          </Label>
+          <Select
+            value={labelFieldName ?? ""}
+            onValueChange={(v) => setLabelFieldName(v)}
+          >
+            <SelectTrigger className="h-7 w-56 text-xs">
+              <SelectValue placeholder="Choose a column" />
+            </SelectTrigger>
+            <SelectContent>
+              {[...fields]
+                .sort((a, b) => a.field_order - b.field_order)
+                .map((f) => (
+                  <SelectItem key={f.id} value={f.field_name}>
+                    {f.display_name}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         <div className="flex-1 overflow-y-auto border rounded-lg">
           {loading ? (
             <div className="flex items-center justify-center h-32">
@@ -304,7 +382,7 @@ export default function RowOrderingModal({
 
                   {/* Row content */}
                   <div className="flex-1 min-w-0">
-                    <div className="truncate text-xs">{row.displayText}</div>
+                    <div className="truncate text-xs">{labelFor(row)}</div>
                   </div>
 
                   {/* Move buttons */}

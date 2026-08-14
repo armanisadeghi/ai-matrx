@@ -41,8 +41,18 @@ import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamic
 import { VersionHistoryViewer } from "@/features/data-tables/components/VersionHistoryViewer";
 import { EditableCell } from "@/features/data-tables/components/EditableCell";
 import { InlineMarkdownWithLinks } from "@/components/mardown-display/blocks/links/InlineMarkdownWithLinks";
+import { FormattedFieldValue } from "@/lib/field-formats/FormattedFieldValue";
+import { resolveFieldFormat } from "@/lib/field-formats/format";
+import { defaultFormatForBase } from "@/lib/field-formats/registry";
 import { useTableRealtime } from "@/features/data-tables/hooks/useTableRealtime";
-import { bulkWrite, upsertCell } from "@/features/data-tables/service";
+import {
+  bulkWrite,
+  deleteField,
+  getTableMetadata,
+  listUserTables,
+  upsertCell,
+} from "@/features/data-tables/service";
+import { confirm as confirmDialog } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import {
   isServiceFailure,
   type BulkMergeOp,
@@ -440,16 +450,9 @@ const UserTableViewer = ({
     if (!onTablesChange) return;
 
     try {
-      const { data, error } = await supabase.rpc("get_user_tables");
-
-      if (error) throw error;
-      assertRpcSuccessEnvelope(data);
-      if (!data.success) throw new Error(data.error || "Failed to load tables");
-
-      const listUnknown = (data as { tables?: unknown }).tables;
-      onTablesChange(
-        Array.isArray(listUnknown) ? (listUnknown as UserTable[]) : [],
-      );
+      const result = await listUserTables();
+      if (isServiceFailure(result)) throw new Error(result.error);
+      onTablesChange(result.data as unknown as UserTable[]);
     } catch (err) {
       console.error("Error fetching tables:", err);
     }
@@ -482,28 +485,20 @@ const UserTableViewer = ({
       let effectiveDirection = direction;
 
       if (!tableInfo || !fields.length || forceReload) {
-        const { data: tableData, error: tableError } = await supabase.rpc(
-          "get_user_table_complete",
-          { p_table_id: tableId },
-        );
+        // Metadata only — schema + a real COUNT(*), no rows. The page of rows
+        // this surface actually renders is fetched below. (Until 2026-08-14
+        // this called get_user_table_complete, which has no LIMIT: opening any
+        // dataset shipped every row to the browser to read three facts.)
+        const meta = await getTableMetadata({ tableId });
+        if (isServiceFailure(meta)) throw new Error(meta.error);
 
-        if (tableError) throw tableError;
-        assertRpcSuccessEnvelope(tableData);
-        if (!tableData.success)
-          throw new Error(tableData.error || "Failed to load table");
+        currentTableInfo = meta.data.table as unknown as TableInfo;
+        currentFields = asTableFields(meta.data.columns);
 
-        const complete = tableData as typeof tableData & {
-          table: unknown;
-          fields: unknown[];
-          row_count: number;
-        };
-        currentTableInfo = complete.table as TableInfo;
-        currentFields = asTableFields(complete.fields);
-
-        setTableInfo(complete.table as TableInfo);
+        setTableInfo(currentTableInfo);
         setFields(currentFields);
-        setTotalCount(complete.row_count);
-        setTotalPages(Math.ceil(complete.row_count / pageLimit));
+        setTotalCount(meta.data.row_count);
+        setTotalPages(Math.ceil(meta.data.row_count / pageLimit));
 
         // Apply saved default sort on initial load (when no sort is specified)
         if (!sort && currentTableInfo?.row_ordering_config?.default_sort) {
@@ -1327,6 +1322,46 @@ const UserTableViewer = ({
     setShowReferenceModal(true);
   };
 
+  /**
+   * Remove a column from the grid header menu.
+   *
+   * Deliberately the SAME confirm copy and the SAME RPC as TableConfigModal —
+   * one delete-column path, so the header shortcut and the settings dialog can
+   * never diverge on what deletion means or what it warns about.
+   */
+  const handleDeleteColumn = async (field: TableField) => {
+    const ok = await confirmDialog({
+      title: `Remove "${field.display_name}"?`,
+      description:
+        "This column and its values are removed from every row in the table. Row history keeps a record, but there is no undo in the app.",
+      confirmLabel: "Remove column",
+      variant: "destructive",
+    });
+    if (!ok) return;
+
+    const result = await deleteField({ tableId, fieldId: field.id });
+    if (isServiceFailure(result)) {
+      toast({
+        title: "Could not remove the column",
+        description: result.error,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: `Removed "${result.data.display_name}"`,
+      description:
+        result.data.rows_cleared > 0
+          ? `Cleared its value from ${result.data.rows_cleared} row${result.data.rows_cleared === 1 ? "" : "s"}.`
+          : "No rows carried a value for it.",
+      variant: "success",
+    });
+
+    setAllSortedData(null);
+    await loadTableData(currentPage, limit, sortField, sortDirection, searchTerm, true);
+  };
+
   // Add this helper function somewhere in the component, before the return statement
   const formatCellValue = (value: any, dataType: string) => {
     if (value === null || value === undefined)
@@ -1818,6 +1853,16 @@ const UserTableViewer = ({
                         onFilterChange={(value) =>
                           handleColumnFilterChange(field.field_name, value)
                         }
+                        onConfigure={
+                          isReadOnly
+                            ? undefined
+                            : () => setShowTableSettingsModal(true)
+                        }
+                        onDelete={
+                          isReadOnly || fields.length <= 1
+                            ? undefined
+                            : () => void handleDeleteColumn(field)
+                        }
                       />
                     </div>
                   </TableHead>
@@ -1893,7 +1938,25 @@ const UserTableViewer = ({
                       rawValue !== null
                         ? formatCellValue(rawValue, field.data_type)
                         : null;
-                    const display = cellData ? (
+                    // A column with a declared display format renders through
+                    // the shared format layer (currency, percent, link, chips,
+                    // amber mismatch fallback). Columns with no format take the
+                    // original path unchanged, so nothing that worked before
+                    // can shift.
+                    const fieldFormat = resolveFieldFormat(
+                      field.data_type,
+                      field.metadata,
+                    );
+                    const hasCustomFormat =
+                      fieldFormat.id !== defaultFormatForBase(field.data_type);
+                    const display = hasCustomFormat ? (
+                      <FormattedFieldValue
+                        value={rawValue}
+                        format={fieldFormat}
+                        dataType={field.data_type}
+                        className="truncate text-left"
+                      />
+                    ) : cellData ? (
                       <div className="flex items-center justify-between group min-w-0">
                         <div className="flex-1 min-w-0">
                           <div
@@ -1936,6 +1999,7 @@ const UserTableViewer = ({
                               fieldName={field.field_name}
                               fieldDisplayName={field.display_name}
                               dataType={field.data_type as FieldDataType}
+                              format={fieldFormat}
                               value={rawValue}
                               display={display}
                               editable={!isReadOnly}

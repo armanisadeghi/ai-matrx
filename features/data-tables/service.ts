@@ -23,6 +23,9 @@
  */
 import { supabase } from "@/utils/supabase/client";
 
+import type { FieldFormatConfig } from "@/lib/field-formats/types";
+
+import { parseTableMetadata } from "./types";
 import type {
   BulkOp,
   BulkWriteResponse,
@@ -31,7 +34,178 @@ import type {
   DatasetRow,
   FieldDataType,
   ServiceResult,
+  TableMetadata,
 } from "./types";
+
+// ─── READS ───────────────────────────────────────────────────────────────────
+//
+// THE METADATA/ROWS SPLIT — read this before adding another dataset fetch.
+//
+// `get_user_table_complete` returns EVERY ROW of a dataset with no LIMIT
+// anywhere, and derives `row_count` from `jsonb_array_length(data)`. It is the
+// right call ONLY when the caller genuinely consumes every row (a full-table
+// export). Calling it to learn a dataset's name, its columns, or how many rows
+// it has materializes the whole dataset server-side and ships it to the browser
+// so three facts can be read off the top of it.
+//
+// `get_full_table` is the metadata twin: full `udt_datasets` row, full
+// `udt_dataset_fields` rows in `field_order`, and a real `COUNT(*)` — and no
+// row data at all. Every "I only need the schema/size" caller belongs here.
+//
+// Two traps it carries, both handled by `getTableMetadata` below:
+//   - the key is `columns`, not `fields` (its sibling RPC's name for the same
+//     thing);
+//   - it has NO `{success:false}` envelope. It RAISES ('Table not found or name
+//     mismatch'), which arrives as a PostgREST error. Never translate that into
+//     an empty state — a thrown error means the dataset is missing or the name
+//     did not match, not that the dataset has no columns.
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
+export type GetTableMetadataArgs = {
+  tableId: string;
+  /** Optional guard — the RPC raises if it does not match the stored name. */
+  tableName?: string;
+};
+
+/**
+ * A dataset's identity, column schema and row COUNT — without loading a single
+ * row. This is the default read for any surface that renders a picker, a
+ * column list, a settings form, a header, or a pagination total.
+ *
+ * `table` is the complete `udt_datasets` row, so `row_ordering_config`
+ * (saved default sort) and `validation_mode` are both present — neither is
+ * available from `get_user_table_complete`.
+ */
+export async function getTableMetadata(
+  args: GetTableMetadataArgs,
+): Promise<ServiceResult<TableMetadata>> {
+  const ref: Record<string, string> = { table_id: args.tableId };
+  if (args.tableName) ref.table_name = args.tableName;
+
+  const { data, error } = await supabase.rpc("get_full_table", {
+    ref: ref as never,
+  });
+  if (error) return { success: false, error: error.message };
+  try {
+    return { success: true, data: parseTableMetadata(data) };
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Failed to load table",
+    };
+  }
+}
+
+/** One row per dataset the user can reach, as returned by `get_user_tables`. */
+export type UserTableListItem = {
+  id: string;
+  table_name: string;
+  description: string | null;
+  row_count: number;
+  field_count: number;
+  user_id?: string;
+  is_public?: boolean;
+  created_at?: string;
+  updated_at?: string;
+};
+
+/**
+ * The user's dataset list. `get_user_tables` was copy-pasted into eight
+ * components before this existed; call this instead of adding a ninth.
+ */
+export async function listUserTables(): Promise<
+  ServiceResult<UserTableListItem[]>
+> {
+  const { data, error } = await supabase.rpc("get_user_tables");
+  if (error) return { success: false, error: error.message };
+  if (!isRecord(data) || typeof data.success !== "boolean") {
+    return { success: false, error: "Invalid response from get_user_tables" };
+  }
+  if (!data.success) {
+    return {
+      success: false,
+      error: typeof data.error === "string" ? data.error : "Failed to load tables",
+    };
+  }
+  return {
+    success: true,
+    data: Array.isArray(data.tables)
+      ? (data.tables as unknown as UserTableListItem[])
+      : [],
+  };
+}
+
+export type GetTablePageArgs = {
+  tableId: string;
+  limit: number;
+  offset: number;
+  sortField?: string | null;
+  sortDirection?: "asc" | "desc";
+  searchTerm?: string | null;
+};
+
+export type TablePage = {
+  rows: { id: string; data: Record<string, unknown> }[];
+  pagination: {
+    total_count: number;
+    page_count: number;
+    current_page: number;
+  };
+};
+
+/**
+ * One page of rows. Pair with `getTableMetadata` for the column schema —
+ * the paginated RPC deliberately does not carry it.
+ */
+export async function getTablePage(
+  args: GetTablePageArgs,
+): Promise<ServiceResult<TablePage>> {
+  const { data, error } = await supabase.rpc(
+    "get_user_table_data_paginated_v2",
+    {
+      p_table_id: args.tableId,
+      p_limit: args.limit,
+      p_offset: args.offset,
+      p_sort_field: args.sortField ?? undefined,
+      p_sort_direction: args.sortDirection ?? "asc",
+      p_search_term: args.searchTerm ? args.searchTerm : undefined,
+    },
+  );
+  if (error) return { success: false, error: error.message };
+  if (!isRecord(data) || typeof data.success !== "boolean") {
+    return { success: false, error: "Invalid response from table page RPC" };
+  }
+  if (!data.success) {
+    return {
+      success: false,
+      error: typeof data.error === "string" ? data.error : "Failed to load data",
+    };
+  }
+  const pagination = isRecord(data.pagination) ? data.pagination : {};
+  return {
+    success: true,
+    data: {
+      rows: Array.isArray(data.data)
+        ? (data.data as unknown as TablePage["rows"])
+        : [],
+      pagination: {
+        total_count:
+          typeof pagination.total_count === "number"
+            ? pagination.total_count
+            : 0,
+        page_count:
+          typeof pagination.page_count === "number" ? pagination.page_count : 0,
+        current_page:
+          typeof pagination.current_page === "number"
+            ? pagination.current_page
+            : 1,
+      },
+    },
+  };
+}
 
 // ─── udt_upsert_row ──────────────────────────────────────────────────────────
 
@@ -138,6 +312,90 @@ export async function changeFieldType(
   });
   if (error) return { success: false, error: error.message };
   return { success: true, data: data as unknown as ChangeFieldTypeResponse };
+}
+
+// ─── udt_delete_field ────────────────────────────────────────────────────────
+
+export type DeleteFieldArgs = {
+  tableId: string;
+  fieldId: string;
+};
+
+export type DeleteFieldResponse = {
+  table_id: string;
+  field_id: string;
+  field_name: string;
+  display_name: string;
+  /** How many rows carried a value for this column and were rewritten. */
+  rows_cleared: number;
+};
+
+/**
+ * Removes a column and purges its key from every row.
+ *
+ * THE ONE delete-column path. Before this existed a user could add columns
+ * forever and never remove one — the original `remove_column_from_user_table`
+ * was dropped without a replacement. Every surface that lets a user manage
+ * columns (TableConfigModal, the column header menu) must call this rather
+ * than deleting the field row directly, because the orphaned JSONB key would
+ * otherwise resurrect itself the moment a column of the same name is re-added.
+ *
+ * Refuses to remove the last remaining column. Cleared values remain in
+ * `udt_dataset_row_versions` history.
+ */
+export async function deleteField(
+  args: DeleteFieldArgs,
+): Promise<ServiceResult<DeleteFieldResponse>> {
+  const { data, error } = await supabase.rpc("udt_delete_field", {
+    p_table_id: args.tableId,
+    p_field_id: args.fieldId,
+  });
+  if (error) return { success: false, error: error.message };
+
+  const envelope = data as unknown as
+    | ({ success?: boolean; error?: string } & Partial<DeleteFieldResponse>)
+    | null;
+  if (!envelope || envelope.success !== true) {
+    return { success: false, error: envelope?.error ?? "Failed to delete column" };
+  }
+  return { success: true, data: envelope as DeleteFieldResponse };
+}
+
+// ─── udt_set_field_format ────────────────────────────────────────────────────
+
+export type SetFieldFormatArgs = {
+  tableId: string;
+  fieldId: string;
+  /** Pass `null` to clear the format and fall back to the storage type. */
+  format: FieldFormatConfig | null;
+};
+
+/**
+ * Writes a column's display format to `udt_dataset_fields.metadata.format`.
+ *
+ * Purely additive: `data_type` and every stored value are untouched, so a
+ * format can be set, changed, or cleared with zero risk to the data. See
+ * `lib/field-formats/FEATURE.md`.
+ */
+export async function setFieldFormat(
+  args: SetFieldFormatArgs,
+): Promise<ServiceResult<{ field_id: string }>> {
+  const { data, error } = await supabase.rpc("udt_set_field_format", {
+    p_table_id: args.tableId,
+    p_field_id: args.fieldId,
+    p_format: (args.format ?? null) as never,
+  });
+  if (error) return { success: false, error: error.message };
+
+  const envelope = data as unknown as {
+    success?: boolean;
+    error?: string;
+    field_id?: string;
+  } | null;
+  if (!envelope || envelope.success !== true) {
+    return { success: false, error: envelope?.error ?? "Failed to save format" };
+  }
+  return { success: true, data: { field_id: envelope.field_id ?? args.fieldId } };
 }
 
 // ─── update_user_table_metadata ──────────────────────────────────────────────

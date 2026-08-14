@@ -26,6 +26,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
 
+import { parseFieldInput } from "@/lib/field-formats/format";
+import { getFieldFormat } from "@/lib/field-formats/registry";
+import type { FieldFormatConfig } from "@/lib/field-formats/types";
+
 import { upsertCell } from "../service";
 import { isServiceFailure, type FieldDataType } from "../types";
 
@@ -35,6 +39,12 @@ type Props = {
   fieldName: string;
   fieldDisplayName: string;
   dataType: FieldDataType | string;
+  /**
+   * The column's declared display format. Decides which input the user gets
+   * (email keyboard, color swatch, star picker) and how their typing is
+   * coerced before it is stored. Omit for a plain storage-type editor.
+   */
+  format?: FieldFormatConfig | null;
   value: unknown;
   /** What the parent already renders for the read-only state. */
   display: ReactNode;
@@ -50,6 +60,7 @@ export function EditableCell({
   fieldName,
   fieldDisplayName,
   dataType,
+  format,
   value,
   display,
   editable = true,
@@ -87,7 +98,11 @@ export function EditableCell({
   const commitEdit = useCallback(async () => {
     if (saving) return;
 
-    const normalized = normalizeCellValue(draft, dataType);
+    // A declared format owns the coercion (currency strips "$", tags split on
+    // commas); without one this falls back to the storage-type normalizer.
+    const normalized = format
+      ? parseFieldInput(draft, format, dataType)
+      : normalizeCellValue(draft, dataType);
 
     // Skip the write if nothing actually changed.
     if (valuesEqual(normalized, value)) {
@@ -118,6 +133,7 @@ export function EditableCell({
     onSaved?.(normalized);
   }, [
     dataType,
+    format,
     draft,
     fieldDisplayName,
     fieldName,
@@ -159,6 +175,78 @@ export function EditableCell({
   }
 
   // ─── edit mode ────────────────────────────────────────────────────────────
+  //
+  // The declared format picks the input when it has an opinion (email keyboard,
+  // color swatch, big box for long text); otherwise the storage type does, so
+  // an unformatted column edits exactly as it always has.
+
+  const editorKind = format ? getFieldFormat(format.id)?.editor : undefined;
+
+  if (
+    editorKind === "email" ||
+    editorKind === "url" ||
+    editorKind === "tel" ||
+    editorKind === "color"
+  ) {
+    return (
+      <Input
+        ref={inputRef as React.RefObject<HTMLInputElement>}
+        type={
+          editorKind === "tel"
+            ? "tel"
+            : editorKind === "color"
+              ? "text"
+              : editorKind
+        }
+        inputMode={editorKind === "tel" ? "tel" : undefined}
+        value={draft === null || draft === undefined ? "" : String(draft)}
+        onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={handleKey}
+        onBlur={() => void commitEdit()}
+        onClick={(e) => e.stopPropagation()}
+        disabled={saving}
+        className="h-8 text-sm"
+      />
+    );
+  }
+
+  if (editorKind === "textarea") {
+    return (
+      <Textarea
+        ref={inputRef as React.RefObject<HTMLTextAreaElement>}
+        value={draft === null || draft === undefined ? "" : String(draft)}
+        onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={handleKey}
+        onBlur={() => void commitEdit()}
+        onClick={(e) => e.stopPropagation()}
+        disabled={saving}
+        rows={4}
+        className="min-h-8 text-sm"
+      />
+    );
+  }
+
+  if (editorKind === "number" || editorKind === "rating") {
+    return (
+      <Input
+        ref={inputRef as React.RefObject<HTMLInputElement>}
+        type="number"
+        step={
+          editorKind === "rating" || dataType === "integer" ? 1 : "any"
+        }
+        {...(editorKind === "rating"
+          ? { min: 0, max: format?.options?.ratingMax ?? 5 }
+          : {})}
+        value={draft === null || draft === undefined ? "" : String(draft)}
+        onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={handleKey}
+        onBlur={() => void commitEdit()}
+        onClick={(e) => e.stopPropagation()}
+        disabled={saving}
+        className="h-8 text-sm"
+      />
+    );
+  }
 
   if (dataType === "boolean") {
     return (

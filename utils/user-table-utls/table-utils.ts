@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { sanitizeFieldName, validateFieldName } from "./field-name-sanitizer";
+import { parseTableMetadata } from "@/features/data-tables/types";
 
 // Valid data types according to the backend schema
 export const VALID_DATA_TYPES = [
@@ -65,6 +66,13 @@ export interface FieldDefinition {
 
 export interface TableField extends FieldDefinition {
   id: string;
+  is_public?: boolean;
+  /**
+   * Free-form per-column config. `metadata.format` holds the column's display
+   * format ({id, options}) — read it with `resolveFieldFormat` from
+   * `@/lib/field-formats/format`, never by hand. See `lib/field-formats/FEATURE.md`.
+   */
+  metadata?: Record<string, unknown> | null;
 }
 
 export interface CreateTableParams {
@@ -315,15 +323,21 @@ export async function addColumn(
 }
 
 /**
- * Get table details including fields
+ * Get table details — the dataset row and its column schema.
+ *
+ * Every consumer of this reads `fields` only, so it goes through
+ * `get_full_table` (metadata + a real COUNT(*), no rows) rather than
+ * `get_user_table_complete`, which returns every row of the dataset with no
+ * LIMIT. The RPC RAISES instead of returning a `{success:false}` envelope, so
+ * a PostgREST error here means "no such dataset", never "no columns".
  */
 export async function getTableDetails(
   supabase: SupabaseClient,
   tableId: string,
 ): Promise<GetTableResult> {
   try {
-    const { data, error } = await supabase.rpc("get_user_table_complete", {
-      p_table_id: tableId,
+    const { data, error } = await supabase.rpc("get_full_table", {
+      ref: { table_id: tableId },
     });
 
     if (error) {
@@ -331,18 +345,17 @@ export async function getTableDetails(
       return { success: false, error: error.message };
     }
 
-    if (!data || !data.success) {
-      console.error("API response error:", data);
-      return {
-        success: false,
-        error: data?.error || "Failed to load table details",
-      };
-    }
+    const meta = parseTableMetadata(data ?? null);
 
     return {
       success: true,
-      table: data.table,
-      fields: data.fields,
+      table: {
+        id: meta.table.id,
+        name: meta.table.table_name,
+        description: meta.table.description ?? "",
+        is_public: meta.table.is_public,
+      },
+      fields: meta.columns as unknown as TableField[],
     };
   } catch (err) {
     console.error("Error loading table details:", err);

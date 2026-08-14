@@ -36,6 +36,11 @@ import {
   MoreHorizontal
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
+import {
+  FormatAwareInput,
+  formatHasOwnInput,
+} from "@/features/data-tables/components/FormatAwareInput";
+import { resolveFieldFormat } from "@/lib/field-formats/format";
 
 interface TableField {
   id: string;
@@ -44,6 +49,7 @@ interface TableField {
   data_type: string;
   field_order: number;
   is_required: boolean;
+  metadata?: Record<string, unknown> | null;
 }
 
 interface EditRowModalProps {
@@ -150,6 +156,22 @@ export default function EditRowModal({
   // Render different input based on data type
   const renderFieldInput = (field: TableField) => {
     const value = rowData[field.field_name];
+
+    // A declared display format gets first refusal on the input; when it has
+    // no opinion the storage-type switch below runs unchanged.
+    const fieldFormat = resolveFieldFormat(field.data_type, field.metadata);
+    if (formatHasOwnInput(fieldFormat)) {
+      return (
+        <FormatAwareInput
+          id={field.field_name}
+          format={fieldFormat}
+          dataType={field.data_type}
+          value={value}
+          placeholder={`Enter ${field.display_name.toLowerCase()}`}
+          onChange={(next) => handleValueChange(field.field_name, next)}
+        />
+      );
+    }
 
     switch (field.data_type) {
       case "boolean":
