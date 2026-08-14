@@ -60,56 +60,12 @@ function pgError(error: { message?: string; code?: string }): Error {
   );
 }
 
-// ── Value normalization (mirrors the live CHECK constraints) ────────────────
-
-/**
- * Normalize a raw value into the medium's `value_key`. The DB enforces:
- * email → lowercase; phone → E.164 (`^\+[1-9][0-9]{6,14}$`). Throws a
- * human-readable error when the value cannot be normalized — surfacing it
- * beats letting the CHECK constraint produce a cryptic 23514.
- */
-export function normalizeMediumValue(
-  channel: ContactChannel,
-  raw: string,
-): { valueKey: string; valueRaw: string; displayValue: string } {
-  const trimmed = raw.trim();
-  if (!trimmed) throw new Error("Value is required");
-
-  if (channel === "email") {
-    const key = trimmed.toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(key)) {
-      throw new Error(`"${trimmed}" is not a valid email address`);
-    }
-    return { valueKey: key, valueRaw: trimmed, displayValue: key };
-  }
-
-  if (channel === "phone") {
-    const digits = trimmed.replace(/[^\d+]/g, "");
-    let key: string;
-    if (digits.startsWith("+")) {
-      key = `+${digits.slice(1).replace(/\D/g, "")}`;
-    } else {
-      const bare = digits.replace(/\D/g, "");
-      // Bare 10-digit numbers are assumed US/CA; 11 digits starting with 1 too.
-      if (bare.length === 10) key = `+1${bare}`;
-      else if (bare.length === 11 && bare.startsWith("1")) key = `+${bare}`;
-      else key = `+${bare}`;
-    }
-    if (!/^\+[1-9][0-9]{6,14}$/.test(key)) {
-      throw new Error(
-        `"${trimmed}" is not a valid phone number — use international format, e.g. +13105551234`,
-      );
-    }
-    return { valueKey: key, valueRaw: trimmed, displayValue: key };
-  }
-
-  // social / messaging / url / external_id: case-insensitive identity key.
-  return {
-    valueKey: trimmed.toLowerCase(),
-    valueRaw: trimmed,
-    displayValue: trimmed,
-  };
-}
+// ── Value normalization ─────────────────────────────────────────────────────
+// Lives in `./normalize` so pure consumers (the selection parser) can use it
+// without importing this module's Supabase client. Re-exported here because
+// this is where every existing caller reaches for it.
+import { normalizeMediumValue } from "./normalize";
+export { normalizeMediumValue };
 
 // ── List page ───────────────────────────────────────────────────────────────
 

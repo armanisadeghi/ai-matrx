@@ -14,8 +14,10 @@ import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
 import type { Database } from "@/types/database.types";
 import { isJsonObject } from "@/types/json";
+import { fetchTopicExperts } from "@/features/crm/service";
 import { parseManifest } from "../resources/manifest";
 import type {
+  ManifestExpert,
   BundleBinding,
   BundleBudget,
   ContextBundle,
@@ -45,12 +47,58 @@ const ENTITY_TYPE = "research_topic";
 export async function getResourceManifest(
   topicId: string,
 ): Promise<ResourceManifest> {
-  const { data, error } = await supabase.rpc(
-    "research_topic_resource_manifest",
-    { p_topic_id: topicId },
-  );
-  if (error) throw error;
-  return parseManifest(data, topicId);
+  // The experts read is a SECOND round trip on purpose: they live in `crm`,
+  // and the manifest RPC is a research-schema function. It is two small reads
+  // (edges + parties) and only for what a topic actually promoted, so the
+  // manifest keeps its "one payload, no bodies" character.
+  const [manifest, experts] = await Promise.all([
+    supabase.rpc("research_topic_resource_manifest", { p_topic_id: topicId }),
+    loadTopicExperts(topicId),
+  ]);
+  if (manifest.error) throw manifest.error;
+  return parseManifest(manifest.data, topicId, experts);
+}
+
+/**
+ * The topic's promoted experts, flattened for the `topic.experts` resource.
+ *
+ * A failure here must NOT take the whole Context Builder down — the experts
+ * resource simply renders empty and every other kind still resolves. It is
+ * reported loudly rather than swallowed silently.
+ */
+async function loadTopicExperts(topicId: string): Promise<ManifestExpert[]> {
+  try {
+    const links = await fetchTopicExperts(topicId);
+    return links.map(({ party }) => {
+      const attrs = isJsonObject(party.attributes)
+        ? party.attributes.research_expert
+        : null;
+      const research = isJsonObject(attrs) ? attrs : null;
+      const strings = (value: unknown): string[] =>
+        Array.isArray(value)
+          ? value.filter((v): v is string => typeof v === "string")
+          : [];
+      return {
+        partyId: party.id,
+        displayName: party.display_name,
+        expertStatus: party.expert_status,
+        headline: party.headline,
+        jobTitle: party.job_title,
+        confidence:
+          research && typeof research.confidence === "number"
+            ? research.confidence
+            : null,
+        credentials: strings(research?.credentials),
+        affiliationHints: strings(research?.affiliation_hints),
+      };
+    });
+  } catch (e) {
+    console.error(
+      "[research] could not load this topic's experts for the resource manifest — the Experts resource will render empty:",
+      e,
+    );
+    return [];
+  }
 }
 
 // ──────────────────────────────────────────────────────────────── bundles ────

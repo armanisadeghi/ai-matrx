@@ -54,6 +54,7 @@ export type ResourceKey =
   | "synthesis.topic"
   | "document.report"
   // Derived tables
+  | "topic.experts"
   | "source.authority"
   | "source.importance"
   | "tag.map"
@@ -176,6 +177,28 @@ export interface ResourceManifest {
   rollups: Map<ResourceKey, KindRollup>;
   /** Unrecognized kinds returned by the RPC — loud, never silently dropped. */
   unknownKinds: string[];
+  /**
+   * The experts this topic promoted into the CRM (`party -> research_topic`
+   * `expert_for` edges, hydrated to real rows).
+   *
+   * Loaded ALONGSIDE the RPC rather than inside it: experts live in `crm`, not
+   * `research`, and the manifest RPC is a research-schema function. Empty when
+   * nothing has been promoted — which is the common case and not an error.
+   */
+  experts: ManifestExpert[];
+}
+
+/** One promoted expert, flattened to what the derived resource renders. */
+export interface ManifestExpert {
+  partyId: string;
+  displayName: string;
+  expertStatus: string | null;
+  headline: string | null;
+  jobTitle: string | null;
+  /** What the extractor scored, off `party.attributes.research_expert`. */
+  confidence: number | null;
+  credentials: string[];
+  affiliationHints: string[];
 }
 
 // ────────────────────────────────────────────────────────────── selector ─────

@@ -22,6 +22,8 @@ import type {
   VerdictRequest,
   IntentApplyRequest,
   IntentApplyResponse,
+  ExpertExtraction,
+  ExpertPromotionResult,
 } from "../types";
 
 /**
@@ -120,6 +122,36 @@ export function useResearchApi() {
       ): Promise<IntentApplyResponse> => {
         const res = await api.post(endpoints(topicId).intent, body);
         return (await res.json()) as IntentApplyResponse;
+      },
+
+      // --- Experts (research → crm.party) ---
+
+      /**
+       * Rank the people this topic's analyzed pages name. **Reads only** —
+       * deterministic extraction over `rs_source.page_analysis`, no model call
+       * and no writes. GET → JSON.
+       */
+      extractExperts: async (
+        topicId: string,
+        signal?: AbortSignal,
+      ): Promise<ExpertExtraction> => {
+        const res = await api.get(endpoints(topicId).experts, signal);
+        return (await res.json()) as ExpertExtraction;
+      },
+
+      /**
+       * Write accepted candidates into `crm.party` through the SERVER party
+       * resolver — the one governed path (source-stamped, merge-lineage aware,
+       * `expert_status='registered'`, `expert_for` + observation edges). The
+       * server refuses any key its current extraction does not produce, and
+       * refuses weak candidates unless `accept_weak` is set.
+       */
+      promoteExperts: async (
+        topicId: string,
+        body: { keys: string[]; accept_weak?: boolean },
+      ): Promise<ExpertPromotionResult> => {
+        const res = await api.post(endpoints(topicId).promoteExperts, body);
+        return (await res.json()) as ExpertPromotionResult;
       },
 
       // --- Cross-cutting tags ---

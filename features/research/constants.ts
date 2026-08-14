@@ -345,6 +345,16 @@ export const RESEARCH_NAV_ITEMS: ResearchNavItem[] = [
     group: "primary",
     mobileVisible: true,
   },
+  {
+    // The people this research found — promoted into the CRM, where they stop
+    // being a name in a JSON blob and become a record you can reach.
+    key: "experts",
+    label: "Experts",
+    icon: "GraduationCap",
+    href: (id) => `/research/topics/${id}/experts`,
+    group: "primary",
+    mobileVisible: false,
+  },
   // ── Secondary utility tabs ───────────────────────────────────────────────
   {
     key: "tasks",

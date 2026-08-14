@@ -5,12 +5,24 @@
 // render at all. Sorting is on the DB column, never the rendered cell —
 // which is why Employer (an embed) deliberately declares neither.
 
-import { Building2, ChevronRight, Globe, PhoneOff, User } from "lucide-react";
+import {
+  BadgeCheck,
+  Building2,
+  ChevronRight,
+  Globe,
+  PhoneOff,
+  ShieldCheck,
+  User,
+} from "lucide-react";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { formatRelativeTime } from "@/utils/datetime";
 import { cn } from "@/lib/utils";
-import type { PartyListRow } from "../types";
-import { DATE_BUCKETS } from "../types";
+import type { ExpertStatus, PartyListRow } from "../types";
+import {
+  DATE_BUCKETS,
+  EXPERT_STATUSES,
+  EXPERT_STATUS_LABEL,
+} from "../types";
 
 const DATE_BUCKET_OPTIONS = DATE_BUCKETS.map((b) => ({
   value: b.value,
@@ -31,6 +43,30 @@ function kindBadge(row: PartyListRow) {
     >
       <Icon className="h-3 w-3" />
       {isPerson ? "Person" : "Company"}
+    </span>
+  );
+}
+
+function isExpertStatus(value: string | null): value is ExpertStatus {
+  return (EXPERT_STATUSES as readonly string[]).includes(value ?? "");
+}
+
+/** One renderer for a tier, everywhere — never a second hand-rolled pill. */
+export function expertBadge(status: ExpertStatus) {
+  const Icon = status === "registered" ? BadgeCheck : ShieldCheck;
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium leading-none",
+        status === "vetted"
+          ? "border-emerald-500/20 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+          : status === "approved"
+            ? "border-primary/20 bg-primary/15 text-primary"
+            : "border-border bg-muted text-muted-foreground",
+      )}
+    >
+      <Icon className="h-3 w-3" />
+      {EXPERT_STATUS_LABEL[status]}
     </span>
   );
 }
@@ -149,6 +185,31 @@ export const PARTY_COLUMNS: MatrxColumnDef<PartyListRow>[] = [
         )}
       />
     ),
+  },
+  {
+    // Nullable by design: most parties are not experts. The filter's "any" /
+    // "none" options are the two questions a user actually asks of a nullable
+    // tier, and both are real server predicates (`not is null` / `is null`).
+    id: "expert_status",
+    accessorKey: "expert_status",
+    header: "Expert",
+    sortable: true,
+    filter: "select",
+    filterOptions: [
+      { value: "any", label: "Any expert" },
+      ...EXPERT_STATUSES.map((s) => ({
+        value: s,
+        label: EXPERT_STATUS_LABEL[s],
+      })),
+      { value: "none", label: "Not an expert" },
+    ],
+    width: 110,
+    cell: (row) =>
+      isExpertStatus(row.expert_status) ? (
+        expertBadge(row.expert_status)
+      ) : (
+        <span className="text-xs text-muted-foreground">—</span>
+      ),
   },
   {
     id: "updated_at",

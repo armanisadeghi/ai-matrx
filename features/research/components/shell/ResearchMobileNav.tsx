@@ -18,6 +18,7 @@ import {
   ListTree,
   Sparkles,
   Video,
+  GraduationCap,
   type LucideIcon,
 } from "lucide-react";
 import { RESEARCH_NAV_ITEMS } from "../../constants";
@@ -40,6 +41,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   ListTree,
   Sparkles,
   Video,
+  GraduationCap,
 };
 
 interface ResearchMobileNavProps {

@@ -31,6 +31,7 @@ import { usePartyDetail } from "../../hooks/usePartyDetail";
 import { deleteParty } from "../../service";
 import { MergeStatusCard } from "../dedup/MergeStatusCard";
 import { PartyIdentityCard } from "./PartyIdentityCard";
+import { ExpertStatusCard } from "./ExpertStatusCard";
 import { ContactPointsCard } from "./ContactPointsCard";
 import { AddressesCard } from "./AddressesCard";
 import { EmploymentCard } from "./EmploymentCard";
@@ -180,6 +181,9 @@ export function PartyRecordPage({ partyId }: Props) {
                   absorbed merges — renders nothing when clean. */}
                 <MergeStatusCard party={party} onChanged={refresh} />
                 <PartyIdentityCard party={party} onChanged={refresh} />
+                {/* Renders nothing unless this person is (or was proposed as)
+                    an expert — see ExpertStatusCard. */}
+                <ExpertStatusCard party={party} onChanged={refresh} />
                 <ContactPointsCard
                   partyId={party.id}
                   orgId={party.organization_id}

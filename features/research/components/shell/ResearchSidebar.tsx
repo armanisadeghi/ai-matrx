@@ -25,6 +25,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Video,
+  GraduationCap,
 } from "lucide-react";
 import { RESEARCH_NAV_ITEMS } from "../../constants";
 import { Badge } from "@/components/ui/badge";
@@ -52,6 +53,7 @@ const ICON_MAP: Record<string, typeof LayoutDashboard> = {
   ListTree,
   Sparkles,
   Video,
+  GraduationCap,
 };
 
 const COLLAPSE_STORAGE_KEY = "research:sidebar-collapsed";

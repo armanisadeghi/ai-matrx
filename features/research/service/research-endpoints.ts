@@ -33,6 +33,8 @@ export const RESEARCH_ENDPOINTS = {
     tagInputExport: `${BASE}/topics/${topicId}/tag-input-export`,
     synthesize: `${BASE}/topics/${topicId}/synthesize`,
     links: `${BASE}/topics/${topicId}/links`,
+    experts: `${BASE}/topics/${topicId}/experts`,
+    promoteExperts: `${BASE}/topics/${topicId}/experts/promote`,
 
     keywords: {
       add: `${BASE}/topics/${topicId}/keywords`,

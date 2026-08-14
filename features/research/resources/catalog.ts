@@ -26,6 +26,7 @@
 import {
   FileText,
   Globe,
+  GraduationCap,
   Braces,
   ScrollText,
   Sparkles,
@@ -309,6 +310,34 @@ function deriveTagMap(manifest: ResourceManifest, ctx: RenderContext): string {
     );
   });
   return sections.join("\n\n");
+}
+
+/**
+ * The people this research identified, as an agent-readable roster.
+ *
+ * Derived from the promoted CRM records (not from raw page analyses) on
+ * purpose: a promoted expert is one a human accepted, so this resource carries
+ * judgment, not just extraction. Nothing here is a second store — it reads the
+ * same `crm.party` rows `/crm` shows.
+ */
+function deriveExperts(manifest: ResourceManifest): string {
+  if (manifest.experts.length === 0) return "";
+  const rows = manifest.experts.map((expert) => [
+    expert.displayName,
+    expert.credentials.join(", "),
+    expert.expertStatus ?? "",
+    expert.jobTitle ?? expert.headline ?? "",
+    expert.affiliationHints.slice(0, 3).join(", "),
+    expert.confidence ?? "",
+  ]);
+  return block(
+    "Experts identified by this research",
+    [["Experts", manifest.experts.length]],
+    table(
+      ["Name", "Credentials", "Status", "Role", "Named alongside", "Confidence"],
+      rows,
+    ),
+  );
 }
 
 // ────────────────────────────────────────────────────────────── the catalog ──
@@ -776,6 +805,22 @@ export const CATALOG: ResourceKindDef[] = [
   },
 
   // ── Derived tables ────────────────────────────────────────────────────────
+  {
+    // The one resource that is about PEOPLE rather than pages. An agent
+    // writing outreach, a report's "who to talk to", or an interview plan
+    // needs the roster, and nothing else in the catalog carries it.
+    key: "topic.experts",
+    label: "Experts",
+    description:
+      "The people this research identified and a human promoted into the CRM — name, credentials, status, and who they were named alongside. Empty until experts are promoted on the Experts tab.",
+    icon: GraduationCap,
+    group: "meta",
+    granularity: "topic",
+    heavy: false,
+    shape: "structured",
+    defaultVariable: "experts",
+    derive: deriveExperts,
+  },
   {
     key: "source.authority",
     label: "Authority table",

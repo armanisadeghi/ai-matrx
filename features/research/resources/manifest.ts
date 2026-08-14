@@ -23,6 +23,7 @@ import { isJsonObject, type JsonObject } from "@/types/json";
 import { summarizeImportance, type KeywordRank } from "../ranking";
 import type {
   KindRollup,
+  ManifestExpert,
   ManifestItemRaw,
   ManifestKeyword,
   ManifestTag,
@@ -247,7 +248,11 @@ function asTopic(v: unknown, topicId: string): ManifestTopic {
  * Parse the RPC payload. Rollups come from the RPC's own `kinds` aggregate so
  * the totals a user sees are the database's numbers, not a client re-sum.
  */
-export function parseManifest(raw: unknown, topicId: string): ResourceManifest {
+export function parseManifest(
+  raw: unknown,
+  topicId: string,
+  experts: ManifestExpert[] = [],
+): ResourceManifest {
   const root = isJsonObject(raw) ? raw : {};
 
   const keywords = Array.isArray(root.keywords)
@@ -304,6 +309,7 @@ export function parseManifest(raw: unknown, topicId: string): ResourceManifest {
     itemsByKind,
     rollups,
     unknownKinds: Array.from(unknown),
+    experts,
   };
 }
 

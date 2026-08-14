@@ -1294,6 +1294,72 @@ export interface TagInputExportResponse {
   search_results_text: string;
 }
 
+// ── Expert extraction + promotion (aidream services/crm/expert_promotion.py) ─
+//
+// The wire contract for the two endpoints that turn buried page-analysis
+// signals into real `crm.party` experts. Snake_case throughout: these are the
+// server's field names, not UI copy.
+
+/** Why a candidate is on the list — always traceable to one analyzed page. */
+export interface ExpertEvidence {
+  source_id: string;
+  url: string;
+  title: string | null;
+  kind: "quote" | "expert_opinion" | "authored" | "mention";
+  detail: string;
+}
+
+export type ExpertCandidateTier = "strong" | "probable" | "weak";
+
+/** One person the research names, with the confidence the evidence supports. */
+export interface ExpertCandidate {
+  /** Canonical identity key — what the promote call names. Stable per person. */
+  key: string;
+  display_name: string;
+  confidence: number;
+  tier: ExpertCandidateTier;
+  credentials: string[];
+  headline: string | null;
+  affiliation_hints: string[];
+  source_ids: string[];
+  evidence: ExpertEvidence[];
+  /** Already a `crm.party` in this org — the UI shows the door, not a re-add. */
+  existing_party_id: string | null;
+  existing_expert_status: string | null;
+  /** One line per scoring rule that fired, in the words the user reads. */
+  why: string[];
+}
+
+/** GET /research/topics/{id}/experts — a preview. Writes nothing, ever. */
+export interface ExpertExtraction {
+  topic_id: string;
+  organization_id: string;
+  sources_analyzed: number;
+  sources_with_signals: number;
+  candidates: ExpertCandidate[];
+  rejected: { value: string; reason: string }[];
+}
+
+export interface PromotedExpert {
+  key: string;
+  display_name: string;
+  party_id: string;
+  created: boolean;
+  matched_by: string;
+  expert_status: string | null;
+  topic_edge: boolean;
+  source_edges: number;
+}
+
+/** POST /research/topics/{id}/experts/promote — the governed write receipt. */
+export interface ExpertPromotionResult {
+  topic_id: string;
+  organization_id: string;
+  promoted: PromotedExpert[];
+  /** Requested but NOT written, each with the reason (weak, stale key…). */
+  skipped: { key: string; display_name?: string; reason: string }[];
+}
+
 /**
  * Narrow the loose Supabase `Json` from `rs_topic.tag_suggestions` into the
  * typed bundle, dropping anything malformed. Returns null when absent/invalid.

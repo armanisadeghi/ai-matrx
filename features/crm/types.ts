@@ -9,6 +9,7 @@
 
 import type { Database } from "@/types/database.types";
 import type { ListScopeKind } from "@/lib/list-scope/types";
+import type { AssociationTargetEdge } from "@/features/scopes/types";
 
 // ── Generated row aliases ───────────────────────────────────────────────────
 
@@ -138,6 +139,61 @@ export const CONTACT_CHANNELS = [
 ] as const;
 export type ContactChannel = (typeof CONTACT_CHANNELS)[number];
 
+/**
+ * The expert tier ladder (the live CHECK on `crm.party.expert_status`).
+ *
+ * A party with NO status is simply not an expert — the column is nullable and
+ * absence is the norm. `registered` is the only tier a producer may propose
+ * (research promotion stamps it through the server resolver); the two above it
+ * are human verdicts made on the record page. Kept in lockstep with aidream's
+ * `EXPERT_STATUSES` in `services/crm/party_resolver.py`.
+ *
+ * The expert directory is PUBLIC by design: experts charge for what they sell,
+ * never for being looked at. Nothing here gates viewing.
+ */
+export const EXPERT_STATUSES = ["registered", "approved", "vetted"] as const;
+export type ExpertStatus = (typeof EXPERT_STATUSES)[number];
+
+export const EXPERT_STATUS_LABEL: Record<ExpertStatus, string> = {
+  registered: "Registered",
+  approved: "Approved",
+  vetted: "Vetted",
+};
+
+export const EXPERT_STATUS_DESCRIPTION: Record<ExpertStatus, string> = {
+  registered: "Identified and recorded — nobody has reviewed them yet.",
+  approved: "A human checked the evidence and accepted them as an expert.",
+  vetted: "Credentials verified — the highest tier we assert.",
+};
+
+/**
+ * The association role that makes a party an expert ON a research topic —
+ * `party -> research_topic`, registered in `migrations/crm_02_core.sql`. The
+ * server writes it during promotion; this constant is how the client reads it
+ * back. There is no column anywhere that says "expert of topic X".
+ */
+export const EXPERT_EDGE_ROLE = "expert_for";
+
+/** One promoted expert on a topic: the party plus the edge that linked it. */
+export interface TopicExpertLink {
+  party: PartyRow;
+  edge: AssociationTargetEdge;
+}
+
+/** A research topic a party is an expert for. `name` null = unreadable/gone. */
+export interface ExpertTopicRef {
+  id: string;
+  name: string | null;
+}
+
+/** The list's expert facet: any tier, one tier, or explicitly not an expert. */
+export const EXPERT_STATUS_FILTERS = [
+  "any",
+  ...EXPERT_STATUSES,
+  "none",
+] as const;
+export type ExpertStatusFilter = (typeof EXPERT_STATUS_FILTERS)[number];
+
 export const CONTACT_PURPOSES = [
   "work",
   "personal",
@@ -204,6 +260,8 @@ export interface PartyListFilters {
   primary_domain?: string;
   party_kind?: PartyKind[];
   do_not_contact?: boolean;
+  /** "any" = any tier at all; "none" = explicitly not an expert. */
+  expert_status?: ExpertStatusFilter;
   updated_at?: DateBucket;
   created_at?: DateBucket;
 }
@@ -239,6 +297,7 @@ export const PARTY_SORT_KEYS = [
   "primary_domain",
   "created_at",
   "updated_at",
+  "expert_status",
 ] as const;
 export type PartySortKey = (typeof PARTY_SORT_KEYS)[number];
 
@@ -274,6 +333,7 @@ export const PARTY_COLUMN_FILTER_KEYS = [
   "primary_domain",
   "party_kind",
   "do_not_contact",
+  "expert_status",
   "updated_at",
   "created_at",
 ] as const;
@@ -291,6 +351,16 @@ export type PartyTextFilterKey = (typeof PARTY_TEXT_FILTER_KEYS)[number];
 export const DATE_BUCKET_VALUES: readonly DateBucket[] = DATE_BUCKETS.map(
   (b) => b.value,
 );
+
+export const EXPERT_STATUS_ENUM_TEXT = EXPERT_STATUSES.join(" | ");
+/** Filter vocabulary WITH meaning — "any"/"none" are not tiers. */
+export const EXPERT_STATUS_FILTER_ENUM_TEXT = EXPERT_STATUS_FILTERS.map((v) =>
+  v === "any"
+    ? '"any" (an expert at any tier)'
+    : v === "none"
+      ? '"none" (explicitly not an expert)'
+      : `"${v}"`,
+).join(" | ");
 
 export const PARTY_KIND_ENUM_TEXT = PARTY_KINDS.join(" | ");
 export const PARTY_KIND_FILTER_ENUM_TEXT = PARTY_KIND_FILTERS.join(" | ");
