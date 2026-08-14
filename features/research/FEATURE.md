@@ -19,6 +19,7 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 - `/research` — landing.
 - `/research/topics` · `/research/topics/new` — list + creation wizard.
 - `/research/topics/[topicId]` — live-run overview (the orchestra). Sub-routes: `sources`, `sources/[sourceId]`, `content`, `curate` (curation workbench — filter/sort/group + batch include/exclude), `keywords`, `youtube` (topic-aware discovery + permanent video library + batch Gemini processing), `keywords/[keywordId]` (per-keyword home: its synthesis + ranked search results), `analysis`, `synthesis`, `document`, `documents`, `tags`, `tags/[tagId]`, `context` (**Context Builder** — the resource catalog: pick what an agent reads, see the token cost, save it as a bundle, run any agent), `outputs` (**Outputs Studio** — publishing formats from the report + the domain-report launchpad), `media`, `costs`, `settings`, `agents`, `tasks`.
+- `/research/topics/[topicId]/experts` — **Experts**: the people this research names, scored from the analyses already paid for, promoted into `crm.party` through the SERVER party resolver. Reads via `useResearchApi().extractExperts` (zero writes) and writes via `promoteExperts`; the roster reads `features/crm` directly. See `features/crm/FEATURE.md` § Experts for the tier + edge contract.
 - `/research/topics/[topicId]/context?bundle=<slug>` — Context Builder with a saved bundle preloaded (and its agent preselected). How Outputs Studio hands over a domain report.
 - `/research/topics/new?mode=ai&topic=...` — AI-assisted creation with the subject prefilled; used by `/demos/matrx-entry` for the new workflow entryway handoff.
 - Admin surface: `app/(admin)/administration/knowledge/research-system/` (super-admin). Standardized `/research/admin` `FeatureAdminMap` not yet built — TODO.
@@ -197,6 +198,14 @@ bundle points at its own `agent.definition` row, and those agents declare real
 variables (`scraped_pages`, `page_analyses`, `source_quality`, …) whose names
 match the catalog's `defaultVariable` values.
 
+**`topic.experts` is a DERIVED kind fed from OUTSIDE the manifest RPC.** Every
+other derived kind computes from the RPC payload; experts live in `crm`, so
+`getResourceManifest` loads them in a parallel second read
+(`service/resources.ts#loadTopicExperts` → `crm.fetchTopicExperts`) and hands
+them to `parseManifest` as `manifest.experts`. That read failing must never
+take the Context Builder down — it logs loudly and the resource renders empty.
+It carries the PROMOTED roster (a human accepted them), not raw extraction.
+
 **Adding a domain output is DATA:** create the agent (declaring variables named
 after catalog kinds), insert a bundle row selecting the resources it needs, add
 one entry to `DOMAIN_OUTPUTS`. No new component, no new resolver branch. If you
@@ -289,6 +298,18 @@ find yourself writing code to add an output, something above is wrong.
 ---
 
 ## Change log
+
+- 2026-08-14 — **Experts leave the JSONB and become records.** Every analyzed
+  page already carried the promotion signals (`NotableQuote.speaker`,
+  `expert_opinion` findings, `EntitiesMentioned.people`, author credentials)
+  and they had nowhere to go. New `/research/topics/[id]/experts` scans them
+  deterministically (no model call — the analysis agent already produced the
+  structure), shows each candidate with the evidence that scored it, and
+  promotes the accepted ones into `crm.party` through the server resolver with
+  `expert_status='registered'`, an `expert_for` topic edge, and a
+  `party_observation` edge per evidencing page. Strong candidates are
+  pre-selected; weak ones require an explicit opt-in and the server refuses
+  them without it. `topic.experts` joins the resource catalog.
 
 - 2026-08-14 — **Research topics and tags now retain downstream site/page lineage.** Registered six semantic association pairs to `web_site`, `plan_node`, and `web_page`, all non-conveying; exposed them across the content-plan and CMS attachment surfaces and agent contexts; and added the flat research-tag resolver door so every tag reference remains navigable even when the caller only knows the tag id.
 - 2026-08-13 — **YouTube publish dates are visible across every research video
