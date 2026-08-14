@@ -13,6 +13,21 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D191 — the orphan-trigger retirement migration blocks the SHARED migration applier (2026-08-14)
+
+`migrations/retire_orphan_updated_at_trigger_helpers.sql` (committed def64df95, unapplied) asserts
+*"expected exactly 1 deliberately-kept unchecked finding (`platform.dead_relation_write()`), found
+2: `platform.dead_relation_write()`, `workflow.plan_touch_row()`"* and RAISEs. `workflow.plan_touch_row()`
+is legitimate new work that landed after the migration was written, so the assertion is stale, not
+the database.
+
+Why it matters beyond its own repo: `aidream/db/apply_migrations.py` walks the SHARED ledger across
+all three repos and **stops at the first failure** — so this one file blocks every other repo's
+pending migrations from being applied (hit while applying aidream's 0350 on 2026-08-14).
+
+Fix: allow the kept-set to include `workflow.plan_touch_row()` (or assert on the named set rather
+than a count), then apply it. Owner: whoever landed def64df95.
+
 ### D190 — PostgREST's 1000-row cap is read as "absence" wherever a list is fetched unpaginated (2026-08-14)
 
 `scripts/check-migrations.ts` fetched the whole `_schema_migrations` ledger in ONE unpaginated
