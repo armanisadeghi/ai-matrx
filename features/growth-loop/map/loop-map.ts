@@ -597,8 +597,8 @@ export const EDGES: LoopEdge[] = [
     gaps: ["G-TEMPLATE"],
     pipes: {
       code: {
-        state: "partial",
-        note: "realize creates the page at the right route but produces an EMPTY draft — plan.profile.template_map is never read.",
+        state: "live",
+        note: "realize creates the page at the right route AND scaffolds it: cms_reconciler imports scaffold_for/node_facts from content_plan/templates.py and resolves plan.profile.template_map, with an unknown explicit pin raising rather than silently defaulting (G-TEMPLATE, closed).",
         ref: "cms_reconciler.py#_realize_batch",
       },
       human: {
