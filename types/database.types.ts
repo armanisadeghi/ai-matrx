@@ -27300,14 +27300,24 @@ export type Database = {
           user_id: string
         }[]
       }
-      accessible_entity_ids: {
-        Args: {
-          p_depth?: number
-          p_required?: Database["public"]["Enums"]["permission_level"]
-          p_type: string
-        }
-        Returns: string[]
-      }
+      accessible_entity_ids:
+        | {
+            Args: {
+              p_depth?: number
+              p_required?: Database["public"]["Enums"]["permission_level"]
+              p_type: string
+            }
+            Returns: string[]
+          }
+        | {
+            Args: {
+              p_depth: number
+              p_include_public: boolean
+              p_required: Database["public"]["Enums"]["permission_level"]
+              p_type: string
+            }
+            Returns: string[]
+          }
       apply_config_rls: {
         Args: { p_schema: string; p_table: string }
         Returns: undefined
@@ -27360,15 +27370,26 @@ export type Database = {
         Args: { p_is_personal?: boolean; p_name: string }
         Returns: string
       }
-      discoverable_ids: {
-        Args: {
-          p_depth?: number
-          p_required?: Database["public"]["Enums"]["permission_level"]
-          p_type: string
-          p_user_id: string
-        }
-        Returns: string[]
-      }
+      discoverable_ids:
+        | {
+            Args: {
+              p_depth?: number
+              p_required?: Database["public"]["Enums"]["permission_level"]
+              p_type: string
+              p_user_id: string
+            }
+            Returns: string[]
+          }
+        | {
+            Args: {
+              p_depth: number
+              p_include_public: boolean
+              p_required: Database["public"]["Enums"]["permission_level"]
+              p_type: string
+              p_user_id: string
+            }
+            Returns: string[]
+          }
       fn_grant_resource_permission: {
         Args: {
           p_expires_at?: string
@@ -27419,15 +27440,26 @@ export type Database = {
         }
         Returns: boolean
       }
-      has_access_for_base: {
-        Args: {
-          p_id: string
-          p_required?: Database["public"]["Enums"]["permission_level"]
-          p_type: string
-          p_user_id: string
-        }
-        Returns: boolean
-      }
+      has_access_for_base:
+        | {
+            Args: {
+              p_id: string
+              p_required?: Database["public"]["Enums"]["permission_level"]
+              p_type: string
+              p_user_id: string
+            }
+            Returns: boolean
+          }
+        | {
+            Args: {
+              p_id: string
+              p_include_public: boolean
+              p_required: Database["public"]["Enums"]["permission_level"]
+              p_type: string
+              p_user_id: string
+            }
+            Returns: boolean
+          }
       has_org_access: { Args: { p_org: string }; Returns: boolean }
       has_org_access_for: {
         Args: { p_org: string; p_user_id: string }
@@ -27444,15 +27476,26 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_discoverable_base: {
-        Args: {
-          p_id: string
-          p_required?: Database["public"]["Enums"]["permission_level"]
-          p_type: string
-          p_user_id: string
-        }
-        Returns: boolean
-      }
+      is_discoverable_base:
+        | {
+            Args: {
+              p_id: string
+              p_required?: Database["public"]["Enums"]["permission_level"]
+              p_type: string
+              p_user_id: string
+            }
+            Returns: boolean
+          }
+        | {
+            Args: {
+              p_id: string
+              p_include_public: boolean
+              p_required: Database["public"]["Enums"]["permission_level"]
+              p_type: string
+              p_user_id: string
+            }
+            Returns: boolean
+          }
       is_org_member: {
         Args: { p_org: string; p_user: string }
         Returns: boolean

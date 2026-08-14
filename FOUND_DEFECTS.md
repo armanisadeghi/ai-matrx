@@ -445,6 +445,7 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 
 One line per fix — title, date, pointer. History lives in git. Entries older than ~2 weeks get deleted.
 
+- **D187** — platform-wide public-ancestor → internal-descendant cross-tenant read closed in all four IAM kernels (`iam_public_visibility_boundary`); stranger growth loop/stage/view = `0/0/0`, creators and explicit descendant shares preserved. 2026-08-13.
 - **D144** — 14 Radix Root wrappers ungated (false SSR-id premise disproven against node_modules; `05d6d53d5`); type-check green. 2026-08-12.
 - **D143** — upload-ban lint message points at the real `uploadGuardOpeners` path; internals stay banned (`460ff2dcc`). 2026-08-12.
 - **D67 (dialogs)** — last browser dialogs replaced; ban rules promoted to error with proven-zero scan (`460ff2dcc`). 2026-08-12.
