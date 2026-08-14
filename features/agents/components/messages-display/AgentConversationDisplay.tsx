@@ -63,6 +63,7 @@ import {
 import { AssistantTurnGroup } from "./assistant/AssistantTurnGroup";
 import { AgentAssistantMessage } from "./assistant/AgentAssistantMessage";
 import { AgentEmptyMessageDisplay } from "./assistant/AgentEmptyMessageDisplay";
+import { ErrorBoundaryWithCapture } from "@/lib/error-boundary/ErrorBoundaryWithCapture";
 
 const COLD_MARKDOWN_ANCHOR_WINDOW_MS = 4200;
 
@@ -314,14 +315,21 @@ export function AgentConversationDisplay({
           if (group.kind === "user") {
             const isLastUser = group.key === lastUserKey;
             return (
-              <div key={group.key} ref={isLastUser ? lastUserRef : undefined}>
-                <AgentUserMessage
-                  conversationId={conversationId}
-                  messageId={group.messageId}
-                  surfaceKey={surfaceKey}
-                  compact={compact}
-                />
-              </div>
+              <ErrorBoundaryWithCapture
+                key={group.key}
+                boundary="AgentConversationDisplayGroup"
+                relation={group.key}
+                resetKeys={[group.key]}
+              >
+                <div ref={isLastUser ? lastUserRef : undefined}>
+                  <AgentUserMessage
+                    conversationId={conversationId}
+                    messageId={group.messageId}
+                    surfaceKey={surfaceKey}
+                    compact={compact}
+                  />
+                </div>
+              </ErrorBoundaryWithCapture>
             );
           }
 
@@ -329,12 +337,18 @@ export function AgentConversationDisplay({
             // A delivered agent-collaboration note (inbox drain, user-role
             // row the user did NOT type) — info-styled, never a user bubble.
             return (
-              <CollabNoteMessage
+              <ErrorBoundaryWithCapture
                 key={group.key}
-                conversationId={conversationId}
-                messageId={group.messageId}
-                compact={compact}
-              />
+                boundary="AgentConversationDisplayGroup"
+                relation={group.key}
+                resetKeys={[group.key]}
+              >
+                <CollabNoteMessage
+                  conversationId={conversationId}
+                  messageId={group.messageId}
+                  compact={compact}
+                />
+              </ErrorBoundaryWithCapture>
             );
           }
 
@@ -344,29 +358,41 @@ export function AgentConversationDisplay({
             // appended BELOW it (error-only when nothing streamed), and never
             // mounts an action bar — nothing for a turn group to coordinate.
             return (
-              <AgentAssistantMessage
+              <ErrorBoundaryWithCapture
                 key={group.key}
-                conversationId={conversationId}
-                requestId={group.requestId ?? undefined}
-                messageId={group.messageId ?? undefined}
-                isStreamActive={group.isStreamActive}
-                surfaceKey={surfaceKey}
-                compact={compact}
-                canRetry={group.canRetry}
-                deferColdMarkdown={deferColdMarkdown}
-              />
+                boundary="AgentConversationDisplayGroup"
+                relation={group.key}
+                resetKeys={[group.key]}
+              >
+                <AgentAssistantMessage
+                  conversationId={conversationId}
+                  requestId={group.requestId ?? undefined}
+                  messageId={group.messageId ?? undefined}
+                  isStreamActive={group.isStreamActive}
+                  surfaceKey={surfaceKey}
+                  compact={compact}
+                  canRetry={group.canRetry}
+                  deferColdMarkdown={deferColdMarkdown}
+                />
+              </ErrorBoundaryWithCapture>
             );
           }
 
           return (
-            <AssistantTurnGroup
+            <ErrorBoundaryWithCapture
               key={group.key}
-              conversationId={conversationId}
-              surfaceKey={surfaceKey}
-              compact={compact}
-              members={group.members}
-              deferColdMarkdown={deferColdMarkdown}
-            />
+              boundary="AgentConversationDisplayGroup"
+              relation={group.key}
+              resetKeys={[group.key]}
+            >
+              <AssistantTurnGroup
+                conversationId={conversationId}
+                surfaceKey={surfaceKey}
+                compact={compact}
+                members={group.members}
+                deferColdMarkdown={deferColdMarkdown}
+              />
+            </ErrorBoundaryWithCapture>
           );
         })}
       </div>

@@ -231,7 +231,7 @@ blocks/                   # canonical message-block renderers (one shape per typ
     │   ├── from-render-block.ts            # markdown render_block:image → UnifiedImageBlock
     │   ├── from-cx-media-part.ts           # DB cx_message media part → UnifiedImageBlock
     │   ├── from-cld-files-row.ts           # raw cld_files row → MatrxImageBlock (fallback)
-    │   └── to-cx-media-part.ts             # UnifiedImageBlock → CxMediaContent (persistence)
+    │   └── to-cx-media-part.ts             # UnifiedImageBlock → generated ImageMediaPart (persistence)
     └── UNIFIED_IMAGE_BLOCK.md              # Python-team handoff doc + phase plan
 ```
 
@@ -486,6 +486,7 @@ See [migration/MASTER-PLAN.md](migration/MASTER-PLAN.md) for the phase-ordered p
 
 ## Change log
 
+- **2026-08-13 — Image stream commits obey the generated message contract.** `toCxMediaPart` returns `ImageMediaPart`, keeps `base64_data` inside extensible metadata, omits absent optional keys instead of emitting `undefined`, and emits durable top-level identity/dimensions. `CxMediaContent` now aliases the generated media union, so a transient preview cannot add an unknown top-level key that makes the strict `chat.message.content[]` reader crash before the server's valid final row hydrates.
 - **2026-08-13 — Canonical file picker supports create-or-select, bulk files, and folders.** `FilePickerWindow` accepts an optional `onUpload` callback and composes the existing `InlineUploadArea` above `FilesResourcePicker`, so association/resource hosts can offer local creation and stored-file selection in one surface without forking either system. `InlineUploadArea` now accepts folder selection and recursively traverses dropped directories; nested relative paths are preserved under `My Files/prompt-attachments`, every created file remains on the one `useFileUpload` path, and the host callback fires only with durable file ids. Rich WindowPanel titles are constrained to one line with ellipsis; the file window uses compact 12px title chrome.
 - **2026-08-13 — Canonical video publish-date treatment.**
   `features/files/blocks/video/VideoPublishDate.tsx` is the one compact
