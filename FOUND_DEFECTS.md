@@ -13,6 +13,20 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D189 — dataset Strict Validation + Authenticated Access have NO live UI (2026-08-14)
+
+Found while converting dataset reads off `get_user_table_complete`; unrelated to that change.
+`components/user-generated-table-data/TableSettingsModal.tsx` is the only surface carrying the
+**Strict Validation** toggle (`udt_datasets.validation_mode`) and the Authenticated Access
+switch — and nothing mounts it. `TableToolbar.tsx:495` renders `TableConfigModal` for the gear
+instead, and that modal's own "Table Settings" tab has no `validation_mode` control at all
+(`grep validation_mode TableConfigModal.tsx` → nothing). So P1's strict-mode enforcement can be
+reached only by an agent write or raw SQL; a user cannot turn it on. `pnpm check:unwired`
+already flags the file (`scripts/unwired/report.json`). Decide which modal owns table settings,
+then port the two controls into it and delete the loser — do not leave two settings modals.
+`TableSettingsModal`'s own read path is current (it was moved onto `getTableMetadata` in the
+same change, which also fixed its switch reading "permissive" for every dataset).
+
 ### D158 remainder — persisted DataRef and legacy dynamic-table contracts still use bare names (2026-08-13)
 
 Two contracts cannot be re-keyed safely without data/API migration. (1) `features/scopes/registry/entityRegistry.ts#UNIQUE_TABLE_NAME_TO_TOKEN` and `DataRefHoverPreview.tsx` consume `DataRef.table`; aidream's `packages/matrx-ai/matrx_ai/db/content_types/data_ref.py` persists the values `notes/tasks/projects/organizations`. Switching one side would break historical message blocks and generated API types; migrate the wire values to entity tokens or `schema.table` across DB rows, Python, generated types, and frontend together. (2) `workbench.udt_datasets.table_name` is a user-facing dataset label keyed by `(user_id, table_name)`, not a physical relation, but its column/API name makes it indistinguishable from one; rename it to `dataset_key`/`label` only with the workbench RPC, data, and generated-type migration. The contained 33-function legacy `p_table_name` family remains D123 and must be removed as already decided, not re-signatured piecemeal.
