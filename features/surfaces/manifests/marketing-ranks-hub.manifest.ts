@@ -3,12 +3,13 @@
  *
  * Drives `/marketing/ranks` — the CROSS-SITE rank hub (`CrossSiteRanksHub`):
  * every rank target the caller can see, across every brand and site, in one
- * table. Read-only portfolio view: data comes from bounded direct Supabase
- * reads (`cross-site-data.ts`, seo.rank_target + seo.rank_observation +
- * web.site under the caller's JWT); adding targets and firing checks stays on
- * the per-site Ranks workspace (`matrx-user/marketing-ranks`), which every row
- * links to. Standalone — deliberately NOT inheriting marketing-site: no single
- * brand or site is in focus here.
+ * table. Read-only portfolio view: the canonical `EntityListPage` calls the
+ * scoped, server-paged `seo_rank_target_list_*` RPC family directly through
+ * Supabase (Mine / My Orgs / Shared / Public, exact counts, server filters and
+ * sorts); adding targets and firing checks stays on the per-site Ranks
+ * workspace (`matrx-user/marketing-ranks`), which every row links to.
+ * Standalone — deliberately NOT inheriting marketing-site: no single brand or
+ * site is in focus here.
  *
  * Runtime emitter: `CrossSiteRanksHub.tsx` mounts `<SurfaceRuntimeProvider>`
  * and assembles `createMarketingRanksHubScope(...)` from the live query state
@@ -39,7 +40,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "portfolio_summary",
     label: "Portfolio summary",
     description:
-      "Rollup over the loaded cross-site portfolio: { targets, sites, improved, declined } — improved/declined count ACTIVE targets whose latest position moved vs the previous observation. Always present; all counts are zero before the portfolio loads or when nothing is tracked anywhere.",
+      "The declared scope, its true server total, and page-local rollup: { scope, total_targets, loaded_targets, loaded_sites, improved_on_page, declined_on_page }. Improved/declined count ACTIVE targets on the loaded page whose latest position moved vs the previous observation. Always present; all counts are zero before the list loads or when the scope is empty.",
     valueType: "object",
     alwaysAvailable: true,
     typicalCharCount: 70,
@@ -50,7 +51,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "rank_portfolio",
     label: "Cross-site tracked keywords",
     description:
-      "Every loaded rank target across all brands and sites, one row each: keyword, site (id, name, domain, brand id), tracking mode (engine / device / search_type / user-facing label), active flag, derived latest position, previous position, movement, best position, last-checked timestamp, and the observation history inside the sparkline window (oldest first). Always an array — empty before the portfolio loads or when nothing is tracked. A row's site name/domain can be null when the target is readable but its site row is not.",
+      "The current server-paged rows inside the selected Mine / My Orgs / Shared / Public destination, one row per target: keyword, site (id, name, domain, brand id), tracking mode, active flag, derived latest/previous/movement/best positions, last-checked timestamp, and observation history inside the lookback window (oldest first). Always an array — empty before the page loads or when this page has no rows. Use portfolio_summary.total_targets for the complete matching count; never treat this page array as the entire portfolio.",
     valueType: "array",
     alwaysAvailable: true,
     typicalCharCount: 9000,
