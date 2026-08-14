@@ -22,7 +22,8 @@ files, with a live-streaming studio, resumable runs, and public share pages.
 ## Data flow
 
 1. `GeneratorForm` collects a `PodcastGenerateRequest` (`generator/types.ts`) —
-   incl. `host_count` (1–20), `format`, `theme`, and optional `speakers[]`.
+   incl. `host_count` (1–10 — `MAX_HOST_COUNT`, the ElevenLabs distinct-voice
+   ceiling), `format`, `theme`, and optional `speakers[]`.
    Before customization it fetches `GET {base}/podcast/cast-preview`; the
    generation server returns the exact provider and default cast. The form only
    overlays user edits, so it never reimplements provider routing or voice
@@ -38,8 +39,8 @@ files, with a live-streaming studio, resumable runs, and public share pages.
    milestones to `pc_studio_runs`. Resume →
    `{base}/podcast/resume/{backend_run_id}` through the same transport.
 4. Backend (aidream `podcast_generator`) routes the script agent by host count
-   (1 → solo · 2 → proven pinned agents · 2–4 custom → multihost · 5–20 →
-   roundtable) and audio by provider band (≤2 → Gemini TTS, 3–20 → ElevenLabs
+   (1 → solo · 2 → proven pinned agents · 2–4 custom → multihost · 5–10 →
+   roundtable) and audio by provider band (≤2 → Gemini TTS, 3–10 → ElevenLabs
    dialogue), then: prepare/research → script → audio + (metadata → images +
    videos) → official video. `_persist_episode` writes a `pc_episodes` row
    (durable media — see Invariants) incl. `host_count` + `speakers`.
@@ -86,7 +87,8 @@ files, with a live-streaming studio, resumable runs, and public share pages.
 - `docs/LIVE_INTERACTIVE_PODCAST.md` — flagship: chunked-streamed, hot-mic,
   script-rewrites-the-unplayed-tail interactive podcast.
 - `docs/DYNAMIC_HOSTS_AND_THEMES.md` — N-host / formats / themes. **Wired
-  2026-06-10** (1–20 hosts, all formats, per-host names/voices). Since
+  2026-06-10** (1–10 hosts, all formats, per-host names/voices; the ceiling
+  came down from 20 on 2026-08-09 — see the change log). Since
   2026-08-08 every pipeline agent routes through a `podcast.*` agent slot
   (DB-managed; admin console `/administration/agents/slots`) — adding or
   swapping an agent is a repin, not a code change.
@@ -103,6 +105,15 @@ Much of the above is scaffolded in the UI as **"Coming soon"** (reusable
 is easy to fill in.
 
 ## Change log
+
+- 2026-08-09 — **Host count capped at 10, and that is final.** ElevenLabs
+  `text_to_dialogue` accepts at most 10 DISTINCT voices per request and every
+  speaker gets their own voice, so 10 is the largest renderable cast. Arman's
+  ruling: cap it rather than build multi-request render + stitch. Server
+  `_MAX_SPEAKER_COUNT` 20 → 10 (the API request model now imports it instead of
+  a hardcoded `le=20`), the interim voice-SHARING workaround was deleted (two
+  speakers never share a voice again, unconditionally), the roundtable agent +
+  slot advertise 5–10, and `MAX_HOST_COUNT` here stops promising a return to 20.
 
 - 2026-08-11 — **Blog post + show notes stream in the floating window (THE FLOATING
   LAW), and the payload turned out NOT to be markdown.** `useEpisodeArticles` ran
@@ -364,7 +375,9 @@ is easy to fill in.
   pre-script transform). (3) `MAX_HOST_COUNT` 20 → 10: ElevenLabs
   `text_to_dialogue` hard-rejects >10 distinct voices (verified live —
   10-host e2e passed, 14/20 rejected at the provider); server fails fast too.
-  Restore 11–20 when chunked dialogue audio ships (handoff). (4) Server now
+  **10 is now FINAL** (Arman, 2026-08-09) — capping beat building
+  multi-request render + stitch; the server's `_MAX_SPEAKER_COUNT` matches and
+  the interim voice-sharing workaround was deleted. (4) Server now
   persists only the canonical script (dialogue + speaker_settings; 36 rows
   backfilled) and suggests rotated default cast names to script agents when a
   request names nobody. (5) Duplicate server slots `podcast.blog_writer` /
@@ -377,11 +390,11 @@ is easy to fill in.
   `roundtable_10/14/20`. Live prod runs hit the exact GATE 2 count at all
   three sizes with matching declarations. The same-day typed-LLMParams
   regression (broke all 3–20 host audio) is fixed AND deployed, as is the
-  ElevenLabs 10-DISTINCT-voice cap found at 14/20 (speakers beyond 10 now share
-  gender-matched voices; labels stay distinct). **10/14/20-host episodes all
-  render end-to-end on prod** (runs `afd2d558`/`25031425`/`966bfb95`). Open
-  product call: all-distinct voices at 11–20 would need multi-request render +
-  stitch. Details: `docs/HANDOFF_PODCAST_SYSTEM.md` §5.1/§5.2.
+  ElevenLabs 10-DISTINCT-voice cap found at 14/20. **10/14/20-host episodes all
+  rendered end-to-end on prod** (runs `afd2d558`/`25031425`/`966bfb95`).
+  **Superseded 2026-08-09:** `host_count` is now capped at 10 and the interim
+  voice-sharing workaround is gone — see that day's entry.
+  Details: `docs/HANDOFF_PODCAST_SYSTEM.md` §5.1/§5.2.
 
 - 2026-08-08 — **Chapter markers + pre-script processing went live (Coming
   Soon retired on both).** Run page: the Chapter markers ComingSoonCard is now

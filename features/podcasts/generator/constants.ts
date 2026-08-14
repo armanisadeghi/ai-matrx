@@ -386,9 +386,9 @@ export const POST_SCRIPT_PROCESSING_OPTIONS: ProcessingOption[] = [
 
 // ── Hosts ───────────────────────────────────────────────────────────────────
 //
-// 1–20 hosts, all wired (2026-06-10): 1 → solo script + single voice;
-// 2 → the proven two-host path; 3-4 → multihost script (Gemini caps at 2
-// voices, so 3+ audio runs ElevenLabs dialogue); 5-20 → roundtable script.
+// 1–10 hosts, all wired: 1 → solo script + single voice; 2 → the proven
+// two-host path; 3-4 → multihost script (Gemini caps at 2 voices, so 3+ audio
+// runs ElevenLabs dialogue); 5-10 → roundtable script.
 // The "5+" tile opens an exact-count select.
 
 export interface HostCountOption {
@@ -406,10 +406,12 @@ export const HOST_COUNT_OPTIONS: HostCountOption[] = [
   { value: "5+", label: "5+", helper: "Up to 10", enabled: true },
 ];
 
-// ElevenLabs text_to_dialogue rejects >10 distinct voices per request
-// ('max_voices_exceeded', verified live 2026-08-08) and the server fails fast
-// above 10. Restore 20 when chunked multi-call dialogue audio ships
-// (docs/handoffs/podcast-system.md).
+// 🚨 TEN IS FINAL — not a placeholder. ElevenLabs text_to_dialogue accepts at
+// most 10 DISTINCT voices per request ('max_voices_exceeded', verified live
+// 2026-08-08 at 14 and 20 hosts), every speaker gets their own voice, and the
+// server caps host_count at the same number (_MAX_SPEAKER_COUNT). Arman's
+// ruling 2026-08-09: cap here rather than build multi-request render + stitch.
+// Raising this only produces a server 422.
 export const MAX_HOST_COUNT = 10;
 
 /**
