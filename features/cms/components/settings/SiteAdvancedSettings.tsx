@@ -39,6 +39,7 @@
 
 import React, { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { SurfaceRoleAgentButton } from "@/features/surfaces/components/chrome/SurfaceRoleAgentButton";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Plus, Save, Trash2, ArrowUp, ArrowDown } from "lucide-react";
@@ -136,6 +137,8 @@ function SectionCard({
   dirty,
   saving,
   onSave,
+  aiRole,
+  aiLabel,
   children,
 }: {
   title: string;
@@ -143,6 +146,11 @@ function SectionCard({
   dirty: boolean;
   saving: boolean;
   onSave: () => void;
+  /** cms-site surface agent role launched by this section's AI button —
+   * every settings card gets one; the agent stages into THIS editor via
+   * apply_surface_write and the human still presses Save. */
+  aiRole?: string;
+  aiLabel?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -152,6 +160,14 @@ function SectionCard({
           <h3 className="text-sm font-semibold text-foreground">{title}</h3>
           <p className="text-xs text-muted-foreground mt-0.5">{hint}</p>
         </div>
+        {aiRole ? (
+          <SurfaceRoleAgentButton
+            surfaceName="matrx-user/cms-site"
+            roleName={aiRole}
+            label={aiLabel ?? "Do it with AI"}
+            className="shrink-0"
+          />
+        ) : null}
         <Button
           size="sm"
           variant={dirty ? "default" : "outline"}
@@ -361,6 +377,8 @@ function ThemeSection({ site, onSaved }: SectionProps) {
   return (
     <SectionCard
       title="Theme Tokens"
+      aiRole="theme_designer"
+      aiLabel="Design with AI"
       hint="Each row becomes a CSS custom property on the live site (colors.primary → --color-primary). Values that fail the render-time safety allowlist are dropped at render, never served."
       dirty={dirty}
       saving={saving}
@@ -469,6 +487,8 @@ function NavigationSection({ site, onSaved }: SectionProps) {
   return (
     <SectionCard
       title="Navigation"
+      aiRole="site_editor"
+      aiLabel="Build with AI"
       hint="Explicit menu links, rendered in order. Leave EMPTY to auto-derive the menu from pages marked 'Show in navigation' (sorted by sort order). Hrefs are used verbatim."
       dirty={dirty}
       saving={saving}
@@ -631,6 +651,8 @@ function FooterSection({ site, onSaved }: SectionProps) {
   return (
     <SectionCard
       title="Footer"
+      aiRole="site_editor"
+      aiLabel="Build with AI"
       hint="Layout only — renders where a footer component carries the <!--matrx:footer--> token. Contact and social CONTENT comes from the sections below; the footer only toggles whether they appear. Site-relative hrefs (/services) are prefixed automatically on every serving surface."
       dirty={dirty}
       saving={saving}
@@ -791,6 +813,8 @@ function ContactSection({ site, onSaved }: SectionProps) {
   return (
     <SectionCard
       title="Contact Info"
+      aiRole="site_editor"
+      aiLabel="Fill with AI"
       hint="The single source of truth for the site's contact facts — the footer's contact block (and any component reading contact tokens) renders these."
       dirty={dirty}
       saving={saving}
@@ -904,6 +928,8 @@ function SocialSection({ site, onSaved }: SectionProps) {
   return (
     <SectionCard
       title="Social Links"
+      aiRole="site_editor"
+      aiLabel="Fill with AI"
       hint="Platform → profile URL. The footer's social block renders these; platform keys become the labels (instagram → Instagram)."
       dirty={dirty}
       saving={saving}

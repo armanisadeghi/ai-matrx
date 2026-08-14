@@ -99,6 +99,18 @@ a matching `use<Surface>SurfaceScope` hook under `features/cms/hooks/` /
 `features/html-pages/hooks/` returning `() => SurfaceScopePayload` so menus read live editor state at
 click time, not a stale snapshot.
 
+**In-place AI buttons (Arman ruling 2026-08-13 — "everything needs to be agent driven"):** every
+CMS editing surface offers its agent IN PLACE via
+`features/surfaces/components/chrome/SurfaceRoleAgentButton.tsx` (launches the surface role's
+effective agent with the live runtime scope — the exact header-panel launch path, never a second
+seam; renders nothing while a role is unbound). Roles are bound to real platform agents in both
+the manifests and `ui.ui_surface_agent_role` (Site Editor / Color Concepts / Website Content
+Writer; `cms-site` gained `site_editor`/`theme_designer`/`content_writer`). Mounted: all five
+`SiteAdvancedSettings` sections + the Global CSS card, the Pages toolbar (`PageListView`), the
+Components tab, the Collections tab, and the PageEditor toolbar. A new human-editable control on
+any CMS surface MUST ship with its role button — the header Agents chrome is the overflow, never
+the only door. History + remaining spread: `docs/handoffs/website-factory-vision.md` § AI-everywhere.
+
 **Agent skill:** `skill.definition` row `cms-authoring` (migration `migrations/cms_surfaces_seed.sql`)
 teaches CMS-bound agents the two-content-system model, draft/publish twins, `site_structure`/
 `html_pages_structure`, URL rules, `agent_write_policy`, and the aidream CMS tool map. Opt-in via
@@ -344,6 +356,9 @@ UI-complete here but only take effect once P1's service layer reads them.
 
 ## Change log
 
+- `2026-08-13` — **AI-everywhere: every CMS editing surface got its in-place agent
+  button** (`SurfaceRoleAgentButton`), and the dormant CMS surface roles were bound to real
+  platform agents (manifests + `ui.ui_surface_agent_role` in lockstep). See § Agent surfaces.
 - `2026-08-13` — **A CMS page now knows WHICH measured page it serves (CMS
   migration `0037`, closes growth-loop gap `G-CMS-IDENTITY`).**
   `client_pages.web_page_id` carries the MAIN-project `web.page` id — the

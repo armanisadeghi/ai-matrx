@@ -8,6 +8,7 @@ import {
   type ContentVolume,
 } from "@/features/cms/utils/contentVolume";
 import { Button } from "@/components/ui/button";
+import { SurfaceRoleAgentButton } from "@/features/surfaces/components/chrome/SurfaceRoleAgentButton";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -244,6 +245,13 @@ export default function PageListView({
             </Button>
           ))}
         </div>
+
+        <SurfaceRoleAgentButton
+          surfaceName="matrx-user/cms-site"
+          roleName="site_editor"
+          label="Site editor AI"
+          className="h-8 flex-shrink-0"
+        />
 
         {/* Refresh */}
         <Button

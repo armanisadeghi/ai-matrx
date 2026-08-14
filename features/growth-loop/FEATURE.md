@@ -88,6 +88,11 @@ Rules (also stated at the top of the file):
 
 ## Change log
 
+- 2026-08-13 — Codex: **post-brief server recording wired.** Realize, fill,
+  publish, crawl, measure, and analyze now record themselves against their own
+  durable pointers. `cms_page` and `seo_collection_run` are compile-time door
+  obligations. Serve has no aidream event; suggest and actual write-back remain
+  direct client-side producers and are named as such rather than recorded early.
 - 2026-08-13 — Codex: **`G-ORCHESTRATOR-READ` CLOSED.** Canonical RLS now gives stage/event
   components their parent loop's access, `v_loop_state` is `security_invoker`, anonymous
   schema access is revoked, and `growth` is safely exposed to PostgREST. Real-user proof: the

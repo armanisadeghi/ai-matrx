@@ -12,8 +12,9 @@ import { useCmsVersions } from "@/features/cms/hooks/useCmsVersions";
 import { useCmsPageSurfaceScope } from "@/features/cms/hooks/useCmsPageSurfaceScope";
 import { CMS_PAGE_CONTEXT_MENU_PROPS } from "@/features/cms/agent-context/cmsPageContextMenuProps";
 import { createCmsPageExtraSections } from "@/features/cms/agent-context/cmsPageExtraSections";
-import { clientPageUrl, sitePreviewToken } from "@/features/cms/utils/pageUrls";
+import { activeSiteDomain, clientPageUrl, sitePreviewToken } from "@/features/cms/utils/pageUrls";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRoleAgentButton } from "@/features/surfaces/components/chrome/SurfaceRoleAgentButton";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
@@ -468,7 +469,7 @@ export default function PageEditor({
         slug: page.slug,
         route: page.route,
         category: page.category,
-        domain: site.domain,
+        domain: activeSiteDomain(site),
       })
     : undefined;
   const previewUrl = page
@@ -608,6 +609,11 @@ export default function PageEditor({
                 </Button>
               ) : (
                 <>
+                  <SurfaceRoleAgentButton
+                    surfaceName={CMS_PAGE_CONTEXT_MENU_PROPS.surfaceName}
+                    roleName="page_editor"
+                    label="Edit with AI"
+                  />
                   {page?.has_draft && (
                     <Button
                       variant="ghost"

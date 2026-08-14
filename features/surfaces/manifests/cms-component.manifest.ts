@@ -401,7 +401,8 @@ You can also WRITE here, through apply_surface_write: the targets stage the open
       description:
         "Default agent offered for HTML/CSS edits to a shared header/footer/sidebar/CTA component.",
       kind: "single",
-      defaultAgentId: null,
+      // Platform agent "Site Editor" (bound 2026-08-13; dormant since declared).
+      defaultAgentId: "d188520f-b7ba-421e-bb5f-48a49cd82ce2",
       sortOrder: 100,
     },
   ],

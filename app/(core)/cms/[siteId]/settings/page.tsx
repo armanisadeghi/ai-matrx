@@ -12,12 +12,14 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { SurfaceRoleAgentButton } from "@/features/surfaces/components/chrome/SurfaceRoleAgentButton";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { Save, Loader2, Trash2, ExternalLink, Check } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { normalizeDomainInput } from "@/features/cms/utils/pageUrls";
 import { SiteAdvancedSettings } from "@/features/cms/components/settings/SiteAdvancedSettings";
+import { SiteDomainSettings } from "@/features/cms/components/settings/SiteDomainSettings";
 import {
   installStarterKit,
   StarterKitNotEmptyError,
@@ -312,12 +314,22 @@ export default function SiteSettingsPage() {
           </div>
         </div>
 
+        <SiteDomainSettings site={site} onRefresh={refreshSite} />
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
           {/* Global CSS */}
           <div className="rounded-lg border border-border bg-card p-5 space-y-3">
-            <h3 className="text-sm font-semibold text-foreground">
-              Global CSS
-            </h3>
+            <div className="flex items-start justify-between gap-3">
+              <h3 className="text-sm font-semibold text-foreground">
+                Global CSS
+              </h3>
+              <SurfaceRoleAgentButton
+                surfaceName="matrx-user/cms-site"
+                roleName="site_editor"
+                label="Write with AI"
+                className="shrink-0"
+              />
+            </div>
             <p className="text-xs text-muted-foreground">
               CSS applied to all pages. Use this for base styles, typography,
               and layout.

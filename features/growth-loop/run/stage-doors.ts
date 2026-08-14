@@ -51,7 +51,10 @@ const REF_HREF: Record<StageRefKind, RefResolver> = {
     marketingRoutes.site(s.brandId, s.siteId, `/findings/${id}`),
   analysis_result: (_id, s) =>
     marketingRoutes.site(s.brandId, s.siteId, "/analysis"),
+  cms_page: (_id, s) => marketingRoutes.contentPlanSite(s.siteId, "table"),
   cms_fill_job: (_id, s) => marketingRoutes.contentPlanSite(s.siteId),
+  seo_collection_run: (_id, s) =>
+    marketingRoutes.site(s.brandId, s.siteId, "/performance"),
   chat_request: () => null,
   agent_run: () => null,
   workflow_run: () => null,
@@ -67,7 +70,9 @@ const REF_LABEL: Record<StageRefKind, string> = {
   crawl_session: "Crawl session",
   finding: "Finding",
   analysis_result: "Analysis result",
+  cms_page: "CMS page",
   cms_fill_job: "Page-fill job",
+  seo_collection_run: "SEO collection run",
   chat_request: "Conversation request",
   agent_run: "Agent run",
   workflow_run: "Workflow run",

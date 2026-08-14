@@ -12,6 +12,7 @@ import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextM
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRoleAgentButton } from "@/features/surfaces/components/chrome/SurfaceRoleAgentButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -260,7 +261,12 @@ export default function ComponentsPage() {
     >
       <div className="h-full overflow-auto">
         <div className="px-4 sm:px-6 py-6 space-y-4">
-          <div className="flex items-center justify-end">
+          <div className="flex items-center justify-end gap-2">
+            <SurfaceRoleAgentButton
+              surfaceName={CMS_COMPONENT_CONTEXT_MENU_PROPS.surfaceName}
+              roleName="component_editor"
+              label="Build with AI"
+            />
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-1.5 text-xs">

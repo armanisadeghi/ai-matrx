@@ -90,7 +90,7 @@ Per PAGE (× 25 pages ⇒ the 200–300 calls):
 | P1. Keyword research for this page | ⚠️ site-level exists, per-node link is a bare FK | `seo.*` schema + `/marketing/keyword-research` work; `plan.node.primary_keyword_id` + `secondary_keyword` edges exist; no per-node research ARTIFACT is stored |
 | P2. Content research (web/competitor/brand facts) | ❌ not persisted | `deepen_node` (generator.py:501) does research but discards evidence, keeping only brief bullets + `cites` edges; research pipeline exists in `features/research/` + aidream `research/` but isn't wired to plan nodes |
 | P3. Family comparison (what goes on THIS page vs its siblings) | ❌ none | New step; sibling context partially assembled today inside `cms_fill._build_site_context()` — extract into its own persisted step |
-| P4. Write the content (structured content, NOT HTML) | ❌ none | **Biggest schema gap: there is no per-node content record anywhere** — plan has `brief text[]`, CMS has finished `html_content`, nothing between. New: content/draft store keyed to `plan.node` |
+| P4. Write the content (structured content, NOT HTML) | ✅ record layer BUILT 2026-08-12 (see § P4 below) | `plan.node_artifact` + `plan.node_step` live; the p4_write specialist step itself is still unwired (steps p2/p6/p7 record today) |
 | P5. Improve → fact-check → optimize (review loop, revisions) | ❌ none | Operates on the P4 content record; each pass = its own agent + persisted revision |
 | P6. Build the page from final content, using the site's template + blocks | ⚠️ conflated | Today `cms_fill._author_page()` does P1–P6 in ONE fixed-prompt LLM call. Becomes: template + blocks + final content → HTML into `client_pages.*_draft` via existing guarded `page_service` |
 | P7. Verify / publish | ✅ mostly | `cms_verify/` (browser verification), `publish_many`, plan↔CMS link `client_pages.plan_node_id`, `cms_align` status writeback — built, barely exercised (0 fill jobs ever run) |
@@ -203,6 +203,36 @@ pipeline is just "run every non-done step in order".
 - SEO: `packages/matrx-seo/`, `aidream/services/seo/`, FE `features/marketing/seo/`
 - Cross-repo SoRs (common-docs repo): `systems/content-planning/FEATURE.md`, `systems/cms-system/FEATURE.md` — update when steps land
 - Test login: `/login` `admin@admin.com` / `Password1234#`; plan UI at `/marketing/content-plan`
+
+## AI-everywhere in the CMS admin — Arman's ruling (2026-08-13)
+
+> "The CMS section of our application is the least AI integrated system we have, and that just
+> makes no sense… navigation, the footer, the contact information and social links… for the theme
+> tokens, I know we have an agent who does that — so why isn't there a button to engage with the
+> agent? … the same can be said for collections, components, and pages… It just seems like someone
+> forgot that we do AI for a living, and everything needs to be agent driven."
+
+**Why it happened (audited 2026-08-13 — it did NOT fall through the cracks, it stopped one step
+short):** the deep plumbing was all built — the `matrx-user/cms-site|cms-page|cms-component`
+surfaces carry a rich 360 read context AND staged `apply_surface_write` targets (theme tokens,
+navigation, footer, global CSS, page body/SEO, add_page), and the roles were even declared —
+but every CMS role had `defaultAgentId: null` (cms-site had none at all), and the ONLY launch
+affordance was the tiny header robot icon. Declared-but-unbound roles render nothing, so the
+whole system was invisible.
+
+**Fixed 2026-08-13:** roles bound to real platform agents (Site Editor `d188520f`, Color
+Concepts `ab003d53`, Website Content Writer `9061c874`) in both the manifests and
+`ui.ui_surface_agent_role`; new in-place primitive
+`features/surfaces/components/chrome/SurfaceRoleAgentButton.tsx` (same launch path as the
+header panel — never a second execution seam); buttons mounted on every settings section
+(theme / navigation / footer / contact / social / global CSS), the Pages toolbar, the
+Components tab, the Collections tab, and the PageEditor toolbar.
+
+**The standing rule this encodes:** a CMS surface (and by extension ANY surface) that lets a
+human edit something must offer the agent that does the same job, in place — the header chrome
+is the overflow, never the only door. Remaining spread (chipped/tracked): SEO tab +
+publish-review buttons in PageEditor, a collections data agent, wiring the brand→theme agent
+output into `theme_config`, per-page bulk AI actions on the pages list.
 
 ## Remaining work (priority order)
 

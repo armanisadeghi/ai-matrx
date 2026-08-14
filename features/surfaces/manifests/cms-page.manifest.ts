@@ -710,7 +710,10 @@ active_tab says where the user is and therefore what content and selection conta
       description:
         "Default agent offered for general HTML/CSS/JS edits on a page.",
       kind: "single",
-      defaultAgentId: null,
+      // Platform agent "Site Editor" — authors, edits, verifies, and publishes
+      // client-site pages through the guarded CMS tools (bound 2026-08-13; the
+      // role sat dormant with no default agent since it was declared).
+      defaultAgentId: "d188520f-b7ba-421e-bb5f-48a49cd82ce2",
       sortOrder: 100,
     },
     {
@@ -719,7 +722,8 @@ active_tab says where the user is and therefore what content and selection conta
       description:
         "Default agent offered for meta title/description/keywords work on the SEO tab.",
       kind: "single",
-      defaultAgentId: null,
+      // Platform agent "Website Content Writer".
+      defaultAgentId: "9061c874-11f0-442b-be82-c5d0250806f1",
       sortOrder: 110,
     },
     {
@@ -728,7 +732,8 @@ active_tab says where the user is and therefore what content and selection conta
       description:
         "Default agent offered to review a draft before a human publishes it.",
       kind: "single",
-      defaultAgentId: null,
+      // Platform agent "Site Editor" (verification is half its job).
+      defaultAgentId: "d188520f-b7ba-421e-bb5f-48a49cd82ce2",
       sortOrder: 120,
     },
   ],

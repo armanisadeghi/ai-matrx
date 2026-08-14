@@ -37,6 +37,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRoleAgentButton } from "@/features/surfaces/components/chrome/SurfaceRoleAgentButton";
 import { useCmsSiteSurfaceScope } from "@/features/cms/hooks/useCmsSiteSurfaceScope";
 import { CMS_SITE_CONTEXT_MENU_PROPS } from "@/features/cms/agent-context/cmsSiteContextMenuProps";
 
@@ -305,18 +306,25 @@ export default function CollectionsPage() {
                 : `${collections.length} collection${collections.length === 1 ? "" : "s"} on this site`}
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5 text-xs"
-            onClick={() => {
-              setEditing(null);
-              setEditorOpen(true);
-            }}
-          >
-            <Plus className="h-3.5 w-3.5" />
-            New Collection
-          </Button>
+          <div className="flex items-center gap-2">
+            <SurfaceRoleAgentButton
+              surfaceName={CMS_SITE_CONTEXT_MENU_PROPS.surfaceName}
+              roleName="site_editor"
+              label="Ask AI"
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-xs"
+              onClick={() => {
+                setEditing(null);
+                setEditorOpen(true);
+              }}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              New Collection
+            </Button>
+          </div>
         </div>
 
         <SiteDataKeyCard />
