@@ -3829,7 +3829,181 @@
    "label": "File",
    "noun": "file",
    "reference": "yes",
-   "schemas": null,
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "canonical_processed_document_id": {
+       "default": null,
+       "title": "Canonical Processed Document Id"
+      },
+      "checksum": {
+       "default": null,
+       "title": "Checksum"
+      },
+      "current_version": {
+       "default": 1,
+       "title": "Current Version"
+      },
+      "derivation_kind": {
+       "default": null,
+       "title": "Derivation Kind"
+      },
+      "derivation_metadata": {
+       "default": {},
+       "title": "Derivation Metadata"
+      },
+      "duplicate_of_file_id": {
+       "default": null,
+       "title": "Duplicate Of File Id"
+      },
+      "duration_ms": {
+       "default": null,
+       "title": "Duration Ms"
+      },
+      "file_name": {
+       "title": "File Name"
+      },
+      "file_path": {
+       "title": "File Path"
+      },
+      "height": {
+       "default": null,
+       "title": "Height"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "mime_type": {
+       "default": null,
+       "title": "Mime Type"
+      },
+      "parent_file_id": {
+       "default": null,
+       "title": "Parent File Id"
+      },
+      "parent_folder_id": {
+       "default": null,
+       "title": "Parent Folder Id"
+      },
+      "size_bytes": {
+       "default": null,
+       "title": "Size Bytes"
+      },
+      "storage_uri": {
+       "title": "Storage Uri"
+      },
+      "width": {
+       "default": null,
+       "title": "Width"
+      }
+     },
+     "required": [
+      "file_path",
+      "file_name",
+      "storage_uri"
+     ],
+     "title": "CreateFileItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteFileItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "canonical_processed_document_id": {
+       "default": null,
+       "title": "Canonical Processed Document Id"
+      },
+      "checksum": {
+       "default": null,
+       "title": "Checksum"
+      },
+      "current_version": {
+       "default": null,
+       "title": "Current Version"
+      },
+      "derivation_kind": {
+       "default": null,
+       "title": "Derivation Kind"
+      },
+      "derivation_metadata": {
+       "default": null,
+       "title": "Derivation Metadata"
+      },
+      "duplicate_of_file_id": {
+       "default": null,
+       "title": "Duplicate Of File Id"
+      },
+      "duration_ms": {
+       "default": null,
+       "title": "Duration Ms"
+      },
+      "file_name": {
+       "default": null,
+       "title": "File Name"
+      },
+      "file_path": {
+       "default": null,
+       "title": "File Path"
+      },
+      "height": {
+       "default": null,
+       "title": "Height"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "mime_type": {
+       "default": null,
+       "title": "Mime Type"
+      },
+      "parent_file_id": {
+       "default": null,
+       "title": "Parent File Id"
+      },
+      "parent_folder_id": {
+       "default": null,
+       "title": "Parent Folder Id"
+      },
+      "size_bytes": {
+       "default": null,
+       "title": "Size Bytes"
+      },
+      "storage_uri": {
+       "default": null,
+       "title": "Storage Uri"
+      },
+      "width": {
+       "default": null,
+       "title": "Width"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateFileItem",
+     "type": "object"
+    }
+   },
    "table": "files.files",
    "title_column": "file_name",
    "update": "planned",
@@ -3853,15 +4027,95 @@
    "create": "planned",
    "delete": "planned",
    "family": "Sources",
-   "identity_fields": [],
+   "identity_fields": [
+    "id"
+   ],
    "label": "Folder",
    "noun": "folder",
-   "reference": "planned",
-   "schemas": null,
+   "reference": "yes",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "folder_name": {
+       "title": "Folder Name"
+      },
+      "folder_path": {
+       "title": "Folder Path"
+      },
+      "is_system": {
+       "default": false,
+       "title": "Is System"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "parent_id": {
+       "default": null,
+       "title": "Parent Id"
+      }
+     },
+     "required": [
+      "folder_path",
+      "folder_name"
+     ],
+     "title": "CreateFolderItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteFolderItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "folder_name": {
+       "default": null,
+       "title": "Folder Name"
+      },
+      "folder_path": {
+       "default": null,
+       "title": "Folder Path"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "is_system": {
+       "default": null,
+       "title": "Is System"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "parent_id": {
+       "default": null,
+       "title": "Parent Id"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateFolderItem",
+     "type": "object"
+    }
+   },
    "table": "files.folders",
    "title_column": "folder_name",
    "update": "planned",
-   "view": "planned"
+   "view": "yes"
   },
   {
    "create": "yes",
@@ -6049,7 +6303,285 @@
    "label": "SEO Collection Run",
    "noun": "seo_collection_run",
    "reference": "no",
-   "schemas": null,
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "attempt_count": {
+       "default": 1,
+       "title": "Attempt Count"
+      },
+      "capability": {
+       "title": "Capability"
+      },
+      "completed_at": {
+       "default": null,
+       "title": "Completed At"
+      },
+      "credential_reference_id": {
+       "default": null,
+       "title": "Credential Reference Id"
+      },
+      "credential_reference_kind": {
+       "default": null,
+       "title": "Credential Reference Kind"
+      },
+      "currency": {
+       "default": "USD",
+       "title": "Currency"
+      },
+      "error": {
+       "default": null,
+       "title": "Error"
+      },
+      "estimated_cost": {
+       "default": null,
+       "title": "Estimated Cost"
+      },
+      "execution_id": {
+       "default": null,
+       "title": "Execution Id"
+      },
+      "idempotency_key": {
+       "title": "Idempotency Key"
+      },
+      "lease_expires_at": {
+       "default": null,
+       "title": "Lease Expires At"
+      },
+      "lease_owner": {
+       "default": null,
+       "title": "Lease Owner"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "observation_period": {
+       "title": "Observation Period"
+      },
+      "operation": {
+       "title": "Operation"
+      },
+      "page_id": {
+       "default": null,
+       "title": "Page Id"
+      },
+      "provider": {
+       "title": "Provider"
+      },
+      "reported_cost": {
+       "default": null,
+       "title": "Reported Cost"
+      },
+      "request_count": {
+       "default": 0,
+       "title": "Request Count"
+      },
+      "request_id": {
+       "default": null,
+       "title": "Request Id"
+      },
+      "requested_at": {
+       "title": "Requested At"
+      },
+      "result": {
+       "default": null,
+       "title": "Result"
+      },
+      "settings": {
+       "default": {},
+       "title": "Settings"
+      },
+      "settings_hash": {
+       "title": "Settings Hash"
+      },
+      "site_id": {
+       "default": null,
+       "title": "Site Id"
+      },
+      "source_crawl_session_id": {
+       "default": null,
+       "title": "Source Crawl Session Id"
+      },
+      "started_at": {
+       "default": null,
+       "title": "Started At"
+      },
+      "status": {
+       "default": "pending",
+       "title": "Status"
+      },
+      "target_ref": {
+       "title": "Target Ref"
+      },
+      "trigger": {
+       "default": "on_demand",
+       "title": "Trigger"
+      }
+     },
+     "required": [
+      "provider",
+      "capability",
+      "operation",
+      "target_ref",
+      "observation_period",
+      "settings_hash",
+      "idempotency_key",
+      "requested_at"
+     ],
+     "title": "CreateSeoCollectionRunItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteSeoCollectionRunItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "attempt_count": {
+       "default": null,
+       "title": "Attempt Count"
+      },
+      "capability": {
+       "default": null,
+       "title": "Capability"
+      },
+      "completed_at": {
+       "default": null,
+       "title": "Completed At"
+      },
+      "credential_reference_id": {
+       "default": null,
+       "title": "Credential Reference Id"
+      },
+      "credential_reference_kind": {
+       "default": null,
+       "title": "Credential Reference Kind"
+      },
+      "currency": {
+       "default": null,
+       "title": "Currency"
+      },
+      "error": {
+       "default": null,
+       "title": "Error"
+      },
+      "estimated_cost": {
+       "default": null,
+       "title": "Estimated Cost"
+      },
+      "execution_id": {
+       "default": null,
+       "title": "Execution Id"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "idempotency_key": {
+       "default": null,
+       "title": "Idempotency Key"
+      },
+      "lease_expires_at": {
+       "default": null,
+       "title": "Lease Expires At"
+      },
+      "lease_owner": {
+       "default": null,
+       "title": "Lease Owner"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "observation_period": {
+       "default": null,
+       "title": "Observation Period"
+      },
+      "operation": {
+       "default": null,
+       "title": "Operation"
+      },
+      "page_id": {
+       "default": null,
+       "title": "Page Id"
+      },
+      "provider": {
+       "default": null,
+       "title": "Provider"
+      },
+      "reported_cost": {
+       "default": null,
+       "title": "Reported Cost"
+      },
+      "request_count": {
+       "default": null,
+       "title": "Request Count"
+      },
+      "request_id": {
+       "default": null,
+       "title": "Request Id"
+      },
+      "requested_at": {
+       "default": null,
+       "title": "Requested At"
+      },
+      "result": {
+       "default": null,
+       "title": "Result"
+      },
+      "settings": {
+       "default": null,
+       "title": "Settings"
+      },
+      "settings_hash": {
+       "default": null,
+       "title": "Settings Hash"
+      },
+      "site_id": {
+       "default": null,
+       "title": "Site Id"
+      },
+      "source_crawl_session_id": {
+       "default": null,
+       "title": "Source Crawl Session Id"
+      },
+      "started_at": {
+       "default": null,
+       "title": "Started At"
+      },
+      "status": {
+       "default": null,
+       "title": "Status"
+      },
+      "target_ref": {
+       "default": null,
+       "title": "Target Ref"
+      },
+      "trigger": {
+       "default": null,
+       "title": "Trigger"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateSeoCollectionRunItem",
+     "type": "object"
+    }
+   },
    "table": "seo.collection_run",
    "title_column": null,
    "update": "planned",
@@ -6063,7 +6595,213 @@
    "label": "SEO Keyword",
    "noun": "seo_keyword",
    "reference": "no",
-   "schemas": null,
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "audience_type": {
+       "default": null,
+       "title": "Audience Type"
+      },
+      "brand_presence": {
+       "default": null,
+       "title": "Brand Presence"
+      },
+      "classification_confidence": {
+       "default": null,
+       "title": "Classification Confidence"
+      },
+      "classification_detail": {
+       "default": {},
+       "title": "Classification Detail"
+      },
+      "classified_at": {
+       "default": null,
+       "title": "Classified At"
+      },
+      "classifier_version": {
+       "default": null,
+       "title": "Classifier Version"
+      },
+      "comparison_intent": {
+       "default": null,
+       "title": "Comparison Intent"
+      },
+      "compliance_framing": {
+       "default": null,
+       "title": "Compliance Framing"
+      },
+      "fulfillment_mode": {
+       "default": null,
+       "title": "Fulfillment Mode"
+      },
+      "funnel_stage": {
+       "default": null,
+       "title": "Funnel Stage"
+      },
+      "intent_class": {
+       "default": null,
+       "title": "Intent Class"
+      },
+      "language": {
+       "default": "en",
+       "title": "Language"
+      },
+      "local_intent": {
+       "default": null,
+       "title": "Local Intent"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "normalized_phrase": {
+       "title": "Normalized Phrase"
+      },
+      "phrase": {
+       "title": "Phrase"
+      },
+      "price_sensitivity": {
+       "default": null,
+       "title": "Price Sensitivity"
+      },
+      "query_form": {
+       "default": null,
+       "title": "Query Form"
+      },
+      "specificity": {
+       "default": null,
+       "title": "Specificity"
+      },
+      "transaction_direction": {
+       "default": null,
+       "title": "Transaction Direction"
+      },
+      "urgency": {
+       "default": null,
+       "title": "Urgency"
+      }
+     },
+     "required": [
+      "phrase",
+      "normalized_phrase"
+     ],
+     "title": "CreateSeoKeywordItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteSeoKeywordItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "audience_type": {
+       "default": null,
+       "title": "Audience Type"
+      },
+      "brand_presence": {
+       "default": null,
+       "title": "Brand Presence"
+      },
+      "classification_confidence": {
+       "default": null,
+       "title": "Classification Confidence"
+      },
+      "classification_detail": {
+       "default": null,
+       "title": "Classification Detail"
+      },
+      "classified_at": {
+       "default": null,
+       "title": "Classified At"
+      },
+      "classifier_version": {
+       "default": null,
+       "title": "Classifier Version"
+      },
+      "comparison_intent": {
+       "default": null,
+       "title": "Comparison Intent"
+      },
+      "compliance_framing": {
+       "default": null,
+       "title": "Compliance Framing"
+      },
+      "fulfillment_mode": {
+       "default": null,
+       "title": "Fulfillment Mode"
+      },
+      "funnel_stage": {
+       "default": null,
+       "title": "Funnel Stage"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "intent_class": {
+       "default": null,
+       "title": "Intent Class"
+      },
+      "language": {
+       "default": null,
+       "title": "Language"
+      },
+      "local_intent": {
+       "default": null,
+       "title": "Local Intent"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "normalized_phrase": {
+       "default": null,
+       "title": "Normalized Phrase"
+      },
+      "phrase": {
+       "default": null,
+       "title": "Phrase"
+      },
+      "price_sensitivity": {
+       "default": null,
+       "title": "Price Sensitivity"
+      },
+      "query_form": {
+       "default": null,
+       "title": "Query Form"
+      },
+      "specificity": {
+       "default": null,
+       "title": "Specificity"
+      },
+      "transaction_direction": {
+       "default": null,
+       "title": "Transaction Direction"
+      },
+      "urgency": {
+       "default": null,
+       "title": "Urgency"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateSeoKeywordItem",
+     "type": "object"
+    }
+   },
    "table": "seo.keyword",
    "title_column": "phrase",
    "update": "planned",
@@ -6077,7 +6815,117 @@
    "label": "Keyword Edge",
    "noun": "seo_keyword_edge",
    "reference": "no",
-   "schemas": null,
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "confidence": {
+       "default": null,
+       "title": "Confidence"
+      },
+      "detail": {
+       "default": {},
+       "title": "Detail"
+      },
+      "edge_type": {
+       "title": "Edge Type"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "origin": {
+       "default": "ai_research",
+       "title": "Origin"
+      },
+      "serp_overlap": {
+       "default": null,
+       "title": "Serp Overlap"
+      },
+      "source_keyword_id": {
+       "title": "Source Keyword Id"
+      },
+      "status": {
+       "default": "proposed",
+       "title": "Status"
+      },
+      "target_keyword_id": {
+       "title": "Target Keyword Id"
+      }
+     },
+     "required": [
+      "source_keyword_id",
+      "target_keyword_id",
+      "edge_type"
+     ],
+     "title": "CreateSeoKeywordEdgeItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteSeoKeywordEdgeItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "confidence": {
+       "default": null,
+       "title": "Confidence"
+      },
+      "detail": {
+       "default": null,
+       "title": "Detail"
+      },
+      "edge_type": {
+       "default": null,
+       "title": "Edge Type"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "origin": {
+       "default": null,
+       "title": "Origin"
+      },
+      "serp_overlap": {
+       "default": null,
+       "title": "Serp Overlap"
+      },
+      "source_keyword_id": {
+       "default": null,
+       "title": "Source Keyword Id"
+      },
+      "status": {
+       "default": null,
+       "title": "Status"
+      },
+      "target_keyword_id": {
+       "default": null,
+       "title": "Target Keyword Id"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateSeoKeywordEdgeItem",
+     "type": "object"
+    }
+   },
    "table": "seo.keyword_edge",
    "title_column": null,
    "update": "planned",
@@ -6091,7 +6939,205 @@
    "label": "Keyword Market Data",
    "noun": "seo_keyword_market",
    "reference": "no",
-   "schemas": null,
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "competition": {
+       "default": null,
+       "title": "Competition"
+      },
+      "competition_index": {
+       "default": null,
+       "title": "Competition Index"
+      },
+      "cpc": {
+       "default": null,
+       "title": "Cpc"
+      },
+      "data_months": {
+       "default": null,
+       "title": "Data Months"
+      },
+      "demand_trajectory": {
+       "default": null,
+       "title": "Demand Trajectory"
+      },
+      "growth_rate": {
+       "default": null,
+       "title": "Growth Rate"
+      },
+      "high_top_of_page_bid": {
+       "default": null,
+       "title": "High Top Of Page Bid"
+      },
+      "keyword_id": {
+       "title": "Keyword Id"
+      },
+      "last_observed_at": {
+       "default": null,
+       "title": "Last Observed At"
+      },
+      "location_code": {
+       "default": 2840,
+       "title": "Location Code"
+      },
+      "low_top_of_page_bid": {
+       "default": null,
+       "title": "Low Top Of Page Bid"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "metrics_fetched_at": {
+       "default": null,
+       "title": "Metrics Fetched At"
+      },
+      "metrics_task_id": {
+       "default": null,
+       "title": "Metrics Task Id"
+      },
+      "monthly_searches": {
+       "default": [],
+       "title": "Monthly Searches"
+      },
+      "raw": {
+       "default": null,
+       "title": "Raw"
+      },
+      "search_volume": {
+       "default": null,
+       "title": "Search Volume"
+      },
+      "seasonality_index": {
+       "default": null,
+       "title": "Seasonality Index"
+      },
+      "source_observation_id": {
+       "default": null,
+       "title": "Source Observation Id"
+      },
+      "source_provider": {
+       "default": null,
+       "title": "Source Provider"
+      }
+     },
+     "required": [
+      "keyword_id"
+     ],
+     "title": "CreateSeoKeywordMarketItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteSeoKeywordMarketItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "competition": {
+       "default": null,
+       "title": "Competition"
+      },
+      "competition_index": {
+       "default": null,
+       "title": "Competition Index"
+      },
+      "cpc": {
+       "default": null,
+       "title": "Cpc"
+      },
+      "data_months": {
+       "default": null,
+       "title": "Data Months"
+      },
+      "demand_trajectory": {
+       "default": null,
+       "title": "Demand Trajectory"
+      },
+      "growth_rate": {
+       "default": null,
+       "title": "Growth Rate"
+      },
+      "high_top_of_page_bid": {
+       "default": null,
+       "title": "High Top Of Page Bid"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "keyword_id": {
+       "default": null,
+       "title": "Keyword Id"
+      },
+      "last_observed_at": {
+       "default": null,
+       "title": "Last Observed At"
+      },
+      "location_code": {
+       "default": null,
+       "title": "Location Code"
+      },
+      "low_top_of_page_bid": {
+       "default": null,
+       "title": "Low Top Of Page Bid"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "metrics_fetched_at": {
+       "default": null,
+       "title": "Metrics Fetched At"
+      },
+      "metrics_task_id": {
+       "default": null,
+       "title": "Metrics Task Id"
+      },
+      "monthly_searches": {
+       "default": null,
+       "title": "Monthly Searches"
+      },
+      "raw": {
+       "default": null,
+       "title": "Raw"
+      },
+      "search_volume": {
+       "default": null,
+       "title": "Search Volume"
+      },
+      "seasonality_index": {
+       "default": null,
+       "title": "Seasonality Index"
+      },
+      "source_observation_id": {
+       "default": null,
+       "title": "Source Observation Id"
+      },
+      "source_provider": {
+       "default": null,
+       "title": "Source Provider"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateSeoKeywordMarketItem",
+     "type": "object"
+    }
+   },
    "table": "seo.keyword_market",
    "title_column": null,
    "update": "planned",
@@ -6105,7 +7151,93 @@
    "label": "Keyword Topic Assignment",
    "noun": "seo_keyword_topic",
    "reference": "no",
-   "schemas": null,
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "assigned_by": {
+       "default": null,
+       "title": "Assigned By"
+      },
+      "confidence": {
+       "default": null,
+       "title": "Confidence"
+      },
+      "is_primary": {
+       "default": false,
+       "title": "Is Primary"
+      },
+      "keyword_id": {
+       "title": "Keyword Id"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "topic_id": {
+       "title": "Topic Id"
+      }
+     },
+     "required": [
+      "keyword_id",
+      "topic_id"
+     ],
+     "title": "CreateSeoKeywordTopicItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteSeoKeywordTopicItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "assigned_by": {
+       "default": null,
+       "title": "Assigned By"
+      },
+      "confidence": {
+       "default": null,
+       "title": "Confidence"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "is_primary": {
+       "default": null,
+       "title": "Is Primary"
+      },
+      "keyword_id": {
+       "default": null,
+       "title": "Keyword Id"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "topic_id": {
+       "default": null,
+       "title": "Topic Id"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateSeoKeywordTopicItem",
+     "type": "object"
+    }
+   },
    "table": "seo.keyword_topic",
    "title_column": null,
    "update": "planned",
@@ -6119,7 +7251,141 @@
    "label": "SEO Rank Target",
    "noun": "seo_rank_target",
    "reference": "no",
-   "schemas": null,
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "device": {
+       "default": "desktop",
+       "title": "Device"
+      },
+      "engine": {
+       "title": "Engine"
+      },
+      "is_active": {
+       "default": true,
+       "title": "Is Active"
+      },
+      "keyword_id": {
+       "title": "Keyword Id"
+      },
+      "language": {
+       "default": "en",
+       "title": "Language"
+      },
+      "location_id": {
+       "default": null,
+       "title": "Location Id"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "search_type": {
+       "default": "organic",
+       "title": "Search Type"
+      },
+      "settings": {
+       "default": {},
+       "title": "Settings"
+      },
+      "site_id": {
+       "default": null,
+       "title": "Site Id"
+      },
+      "target_domain": {
+       "default": null,
+       "title": "Target Domain"
+      },
+      "target_page_id": {
+       "default": null,
+       "title": "Target Page Id"
+      }
+     },
+     "required": [
+      "keyword_id",
+      "engine"
+     ],
+     "title": "CreateSeoRankTargetItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteSeoRankTargetItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "device": {
+       "default": null,
+       "title": "Device"
+      },
+      "engine": {
+       "default": null,
+       "title": "Engine"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "is_active": {
+       "default": null,
+       "title": "Is Active"
+      },
+      "keyword_id": {
+       "default": null,
+       "title": "Keyword Id"
+      },
+      "language": {
+       "default": null,
+       "title": "Language"
+      },
+      "location_id": {
+       "default": null,
+       "title": "Location Id"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "search_type": {
+       "default": null,
+       "title": "Search Type"
+      },
+      "settings": {
+       "default": null,
+       "title": "Settings"
+      },
+      "site_id": {
+       "default": null,
+       "title": "Site Id"
+      },
+      "target_domain": {
+       "default": null,
+       "title": "Target Domain"
+      },
+      "target_page_id": {
+       "default": null,
+       "title": "Target Page Id"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateSeoRankTargetItem",
+     "type": "object"
+    }
+   },
    "table": "seo.rank_target",
    "title_column": null,
    "update": "planned",
@@ -6157,15 +7423,127 @@
    "create": "planned",
    "delete": "planned",
    "family": "seo",
-   "identity_fields": [],
+   "identity_fields": [
+    "id"
+   ],
    "label": "SEO Topic",
    "noun": "seo_topic",
-   "reference": "planned",
-   "schemas": null,
+   "reference": "yes",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "aliases": {
+       "default": [],
+       "title": "Aliases"
+      },
+      "description": {
+       "default": null,
+       "title": "Description"
+      },
+      "is_builtin": {
+       "default": true,
+       "title": "Is Builtin"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "name": {
+       "title": "Name"
+      },
+      "node_type": {
+       "title": "Node Type"
+      },
+      "parent_id": {
+       "default": null,
+       "title": "Parent Id"
+      },
+      "slug": {
+       "title": "Slug"
+      },
+      "volatility": {
+       "default": "moderate",
+       "title": "Volatility"
+      }
+     },
+     "required": [
+      "name",
+      "slug",
+      "node_type"
+     ],
+     "title": "CreateSeoTopicItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteSeoTopicItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "aliases": {
+       "default": null,
+       "title": "Aliases"
+      },
+      "description": {
+       "default": null,
+       "title": "Description"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "is_builtin": {
+       "default": null,
+       "title": "Is Builtin"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "name": {
+       "default": null,
+       "title": "Name"
+      },
+      "node_type": {
+       "default": null,
+       "title": "Node Type"
+      },
+      "parent_id": {
+       "default": null,
+       "title": "Parent Id"
+      },
+      "slug": {
+       "default": null,
+       "title": "Slug"
+      },
+      "volatility": {
+       "default": null,
+       "title": "Volatility"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateSeoTopicItem",
+     "type": "object"
+    }
+   },
    "table": "seo.topic",
    "title_column": "name",
    "update": "planned",
-   "view": "planned"
+   "view": "yes"
   },
   {
    "create": "planned",
@@ -6749,20 +8127,6 @@
     }
    },
    "table": "agent.slot_exemplar",
-   "title_column": null,
-   "update": "planned",
-   "view": "no"
-  },
-  {
-   "create": "planned",
-   "delete": "planned",
-   "family": "Other",
-   "identity_fields": [],
-   "label": "Agent User KV",
-   "noun": "agent_user_kv",
-   "reference": "no",
-   "schemas": null,
-   "table": "agent_user_kv",
    "title_column": null,
    "update": "planned",
    "view": "no"
@@ -10790,20 +12154,6 @@
    "view": "yes"
   },
   {
-   "create": "no",
-   "delete": "no",
-   "family": "Other",
-   "identity_fields": [],
-   "label": "Component Group",
-   "noun": "component_group",
-   "reference": "no",
-   "schemas": null,
-   "table": "component_groups",
-   "title_column": null,
-   "update": "no",
-   "view": "no"
-  },
-  {
    "create": "planned",
    "delete": "planned",
    "family": "Other",
@@ -11885,7 +13235,157 @@
    "label": "Context Item Suggestion",
    "noun": "context_item_suggestion",
    "reference": "no",
-   "schemas": null,
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "confidence": {
+       "default": 0.5,
+       "title": "Confidence"
+      },
+      "decided_at": {
+       "default": null,
+       "title": "Decided At"
+      },
+      "decided_by": {
+       "default": null,
+       "title": "Decided By"
+      },
+      "display_name": {
+       "title": "Display Name"
+      },
+      "example_source_id": {
+       "default": null,
+       "title": "Example Source Id"
+      },
+      "example_source_kind": {
+       "default": null,
+       "title": "Example Source Kind"
+      },
+      "example_value": {
+       "default": null,
+       "title": "Example Value"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "rationale": {
+       "default": null,
+       "title": "Rationale"
+      },
+      "scope_type_id": {
+       "title": "Scope Type Id"
+      },
+      "status": {
+       "default": "pending",
+       "title": "Status"
+      },
+      "suggested_key": {
+       "title": "Suggested Key"
+      },
+      "suppressed_until": {
+       "default": null,
+       "title": "Suppressed Until"
+      },
+      "sweep_run_id": {
+       "default": null,
+       "title": "Sweep Run Id"
+      }
+     },
+     "required": [
+      "scope_type_id",
+      "suggested_key",
+      "display_name"
+     ],
+     "title": "CreateContextItemSuggestionItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteContextItemSuggestionItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "confidence": {
+       "default": null,
+       "title": "Confidence"
+      },
+      "decided_at": {
+       "default": null,
+       "title": "Decided At"
+      },
+      "decided_by": {
+       "default": null,
+       "title": "Decided By"
+      },
+      "display_name": {
+       "default": null,
+       "title": "Display Name"
+      },
+      "example_source_id": {
+       "default": null,
+       "title": "Example Source Id"
+      },
+      "example_source_kind": {
+       "default": null,
+       "title": "Example Source Kind"
+      },
+      "example_value": {
+       "default": null,
+       "title": "Example Value"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "rationale": {
+       "default": null,
+       "title": "Rationale"
+      },
+      "scope_type_id": {
+       "default": null,
+       "title": "Scope Type Id"
+      },
+      "status": {
+       "default": null,
+       "title": "Status"
+      },
+      "suggested_key": {
+       "default": null,
+       "title": "Suggested Key"
+      },
+      "suppressed_until": {
+       "default": null,
+       "title": "Suppressed Until"
+      },
+      "sweep_run_id": {
+       "default": null,
+       "title": "Sweep Run Id"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateContextItemSuggestionItem",
+     "type": "object"
+    }
+   },
    "table": "rag.context_item_suggestions",
    "title_column": null,
    "update": "planned",
@@ -12086,6 +13586,20 @@
    "delete": "no",
    "family": "Other",
    "identity_fields": [],
+   "label": "Merge Candidate",
+   "noun": "crm_merge_candidate",
+   "reference": "no",
+   "schemas": null,
+   "table": "crm.merge_candidate",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
    "label": "Party Merge",
    "noun": "crm_party_merge",
    "reference": "no",
@@ -12099,15 +13613,119 @@
    "create": "planned",
    "delete": "planned",
    "family": "Other",
-   "identity_fields": [],
+   "identity_fields": [
+    "id"
+   ],
    "label": "Data Store",
    "noun": "data_store",
-   "reference": "planned",
-   "schemas": null,
+   "reference": "yes",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "description": {
+       "default": null,
+       "title": "Description"
+      },
+      "discoverable": {
+       "default": false,
+       "title": "Discoverable"
+      },
+      "is_active": {
+       "default": true,
+       "title": "Is Active"
+      },
+      "kind": {
+       "default": "general",
+       "title": "Kind"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "name": {
+       "title": "Name"
+      },
+      "settings": {
+       "default": {},
+       "title": "Settings"
+      },
+      "short_code": {
+       "default": null,
+       "title": "Short Code"
+      }
+     },
+     "required": [
+      "name"
+     ],
+     "title": "CreateDataStoreItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteDataStoreItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "description": {
+       "default": null,
+       "title": "Description"
+      },
+      "discoverable": {
+       "default": null,
+       "title": "Discoverable"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "is_active": {
+       "default": null,
+       "title": "Is Active"
+      },
+      "kind": {
+       "default": null,
+       "title": "Kind"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "name": {
+       "default": null,
+       "title": "Name"
+      },
+      "settings": {
+       "default": null,
+       "title": "Settings"
+      },
+      "short_code": {
+       "default": null,
+       "title": "Short Code"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateDataStoreItem",
+     "type": "object"
+    }
+   },
    "table": "rag.data_stores",
    "title_column": "name",
    "update": "planned",
-   "view": "planned"
+   "view": "yes"
   },
   {
    "create": "yes",
@@ -12802,20 +14420,6 @@
    "title_column": "name",
    "update": "yes",
    "view": "yes"
-  },
-  {
-   "create": "no",
-   "delete": "no",
-   "family": "Other",
-   "identity_fields": [],
-   "label": "Field Component",
-   "noun": "field_component",
-   "reference": "no",
-   "schemas": null,
-   "table": "field_components",
-   "title_column": null,
-   "update": "no",
-   "view": "no"
   },
   {
    "create": "no",
@@ -14861,7 +16465,165 @@
    "label": "KG Alert",
    "noun": "kg_alert",
    "reference": "no",
-   "schemas": null,
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "confidence": {
+       "default": 0.5,
+       "title": "Confidence"
+      },
+      "decided_at": {
+       "default": null,
+       "title": "Decided At"
+      },
+      "decided_by": {
+       "default": null,
+       "title": "Decided By"
+      },
+      "description": {
+       "title": "Description"
+      },
+      "evidence": {
+       "default": null,
+       "title": "Evidence"
+      },
+      "kind": {
+       "title": "Kind"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "severity": {
+       "default": "fyi",
+       "title": "Severity"
+      },
+      "source_id": {
+       "title": "Source Id"
+      },
+      "source_kind": {
+       "title": "Source Kind"
+      },
+      "status": {
+       "default": "pending",
+       "title": "Status"
+      },
+      "suggested_action": {
+       "default": null,
+       "title": "Suggested Action"
+      },
+      "target_scope_id": {
+       "title": "Target Scope Id"
+      },
+      "target_slot_key": {
+       "default": null,
+       "title": "Target Slot Key"
+      },
+      "viewed_at": {
+       "default": null,
+       "title": "Viewed At"
+      }
+     },
+     "required": [
+      "source_kind",
+      "source_id",
+      "target_scope_id",
+      "kind",
+      "description"
+     ],
+     "title": "CreateKgAlertItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteKgAlertItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "confidence": {
+       "default": null,
+       "title": "Confidence"
+      },
+      "decided_at": {
+       "default": null,
+       "title": "Decided At"
+      },
+      "decided_by": {
+       "default": null,
+       "title": "Decided By"
+      },
+      "description": {
+       "default": null,
+       "title": "Description"
+      },
+      "evidence": {
+       "default": null,
+       "title": "Evidence"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "kind": {
+       "default": null,
+       "title": "Kind"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "severity": {
+       "default": null,
+       "title": "Severity"
+      },
+      "source_id": {
+       "default": null,
+       "title": "Source Id"
+      },
+      "source_kind": {
+       "default": null,
+       "title": "Source Kind"
+      },
+      "status": {
+       "default": null,
+       "title": "Status"
+      },
+      "suggested_action": {
+       "default": null,
+       "title": "Suggested Action"
+      },
+      "target_scope_id": {
+       "default": null,
+       "title": "Target Scope Id"
+      },
+      "target_slot_key": {
+       "default": null,
+       "title": "Target Slot Key"
+      },
+      "viewed_at": {
+       "default": null,
+       "title": "Viewed At"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateKgAlertItem",
+     "type": "object"
+    }
+   },
    "table": "rag.kg_alerts",
    "title_column": null,
    "update": "planned",
@@ -14875,7 +16637,51 @@
    "label": "KG Suggestion Ack",
    "noun": "kg_suggestion_ack",
    "reference": "no",
-   "schemas": null,
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      }
+     },
+     "title": "CreateKgSuggestionAckItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteKgSuggestionAckItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateKgSuggestionAckItem",
+     "type": "object"
+    }
+   },
    "table": "rag.kg_suggestion_ack",
    "title_column": null,
    "update": "planned",
@@ -14889,7 +16695,117 @@
    "label": "KG Sweep Queue",
    "noun": "kg_sweep_queue",
    "reference": "no",
-   "schemas": null,
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "change_type": {
+       "title": "Change Type"
+      },
+      "claim_at": {
+       "title": "Claim At"
+      },
+      "claimed_at": {
+       "default": null,
+       "title": "Claimed At"
+      },
+      "enqueued_at": {
+       "title": "Enqueued At"
+      },
+      "entity_id": {
+       "title": "Entity Id"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "scope_type_id": {
+       "default": null,
+       "title": "Scope Type Id"
+      },
+      "status": {
+       "default": "pending",
+       "title": "Status"
+      },
+      "sweep_run_id": {
+       "default": null,
+       "title": "Sweep Run Id"
+      }
+     },
+     "required": [
+      "change_type",
+      "entity_id",
+      "enqueued_at",
+      "claim_at"
+     ],
+     "title": "CreateKgSweepQueueItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteKgSweepQueueItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "change_type": {
+       "default": null,
+       "title": "Change Type"
+      },
+      "claim_at": {
+       "default": null,
+       "title": "Claim At"
+      },
+      "claimed_at": {
+       "default": null,
+       "title": "Claimed At"
+      },
+      "enqueued_at": {
+       "default": null,
+       "title": "Enqueued At"
+      },
+      "entity_id": {
+       "default": null,
+       "title": "Entity Id"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "scope_type_id": {
+       "default": null,
+       "title": "Scope Type Id"
+      },
+      "status": {
+       "default": null,
+       "title": "Status"
+      },
+      "sweep_run_id": {
+       "default": null,
+       "title": "Sweep Run Id"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateKgSweepQueueItem",
+     "type": "object"
+    }
+   },
    "table": "rag.kg_sweep_queue",
    "title_column": null,
    "update": "planned",
@@ -14903,7 +16819,221 @@
    "label": "KG Sweep Run",
    "noun": "kg_sweep_run",
    "reference": "no",
-   "schemas": null,
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "batches": {
+       "default": 0,
+       "title": "Batches"
+      },
+      "change_count": {
+       "default": 0,
+       "title": "Change Count"
+      },
+      "completed_at": {
+       "default": null,
+       "title": "Completed At"
+      },
+      "cost_usd": {
+       "default": 0,
+       "title": "Cost Usd"
+      },
+      "documents_considered": {
+       "default": 0,
+       "title": "Documents Considered"
+      },
+      "entities_after_dedup": {
+       "default": 0,
+       "title": "Entities After Dedup"
+      },
+      "entities_deferred": {
+       "default": 0,
+       "title": "Entities Deferred"
+      },
+      "entities_enumerated": {
+       "default": 0,
+       "title": "Entities Enumerated"
+      },
+      "entities_excluded_resolved": {
+       "default": 0,
+       "title": "Entities Excluded Resolved"
+      },
+      "entities_selected": {
+       "default": 0,
+       "title": "Entities Selected"
+      },
+      "error": {
+       "default": null,
+       "title": "Error"
+      },
+      "llm_calls": {
+       "default": 0,
+       "title": "Llm Calls"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "run_id": {
+       "title": "Run Id"
+      },
+      "scope_type_id": {
+       "default": null,
+       "title": "Scope Type Id"
+      },
+      "started_at": {
+       "title": "Started At"
+      },
+      "status": {
+       "default": "pending",
+       "title": "Status"
+      },
+      "suggestions_created": {
+       "default": 0,
+       "title": "Suggestions Created"
+      },
+      "tokens_in": {
+       "default": 0,
+       "title": "Tokens In"
+      },
+      "tokens_out": {
+       "default": 0,
+       "title": "Tokens Out"
+      },
+      "trigger_entity_id": {
+       "default": null,
+       "title": "Trigger Entity Id"
+      },
+      "trigger_type": {
+       "title": "Trigger Type"
+      }
+     },
+     "required": [
+      "run_id",
+      "trigger_type",
+      "started_at"
+     ],
+     "title": "CreateKgSweepRunItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteKgSweepRunItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "batches": {
+       "default": null,
+       "title": "Batches"
+      },
+      "change_count": {
+       "default": null,
+       "title": "Change Count"
+      },
+      "completed_at": {
+       "default": null,
+       "title": "Completed At"
+      },
+      "cost_usd": {
+       "default": null,
+       "title": "Cost Usd"
+      },
+      "documents_considered": {
+       "default": null,
+       "title": "Documents Considered"
+      },
+      "entities_after_dedup": {
+       "default": null,
+       "title": "Entities After Dedup"
+      },
+      "entities_deferred": {
+       "default": null,
+       "title": "Entities Deferred"
+      },
+      "entities_enumerated": {
+       "default": null,
+       "title": "Entities Enumerated"
+      },
+      "entities_excluded_resolved": {
+       "default": null,
+       "title": "Entities Excluded Resolved"
+      },
+      "entities_selected": {
+       "default": null,
+       "title": "Entities Selected"
+      },
+      "error": {
+       "default": null,
+       "title": "Error"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "llm_calls": {
+       "default": null,
+       "title": "Llm Calls"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "run_id": {
+       "default": null,
+       "title": "Run Id"
+      },
+      "scope_type_id": {
+       "default": null,
+       "title": "Scope Type Id"
+      },
+      "started_at": {
+       "default": null,
+       "title": "Started At"
+      },
+      "status": {
+       "default": null,
+       "title": "Status"
+      },
+      "suggestions_created": {
+       "default": null,
+       "title": "Suggestions Created"
+      },
+      "tokens_in": {
+       "default": null,
+       "title": "Tokens In"
+      },
+      "tokens_out": {
+       "default": null,
+       "title": "Tokens Out"
+      },
+      "trigger_entity_id": {
+       "default": null,
+       "title": "Trigger Entity Id"
+      },
+      "trigger_type": {
+       "default": null,
+       "title": "Trigger Type"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateKgSweepRunItem",
+     "type": "object"
+    }
+   },
    "table": "rag.kg_sweep_run",
    "title_column": null,
    "update": "planned",
@@ -14931,7 +17061,141 @@
    "label": "KG Value Match",
    "noun": "kg_value_match",
    "reference": "no",
-   "schemas": null,
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "confidence": {
+       "default": 1.0,
+       "title": "Confidence"
+      },
+      "current_value_snapshot": {
+       "default": null,
+       "title": "Current Value Snapshot"
+      },
+      "evidence_chunk_id": {
+       "default": null,
+       "title": "Evidence Chunk Id"
+      },
+      "kg_entity_id": {
+       "default": null,
+       "title": "Kg Entity Id"
+      },
+      "matched_value": {
+       "title": "Matched Value"
+      },
+      "mention_count": {
+       "default": 1,
+       "title": "Mention Count"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "source_id": {
+       "title": "Source Id"
+      },
+      "source_kind": {
+       "title": "Source Kind"
+      },
+      "target_context_item_id": {
+       "title": "Target Context Item Id"
+      },
+      "target_scope_id": {
+       "title": "Target Scope Id"
+      },
+      "target_slot_key": {
+       "title": "Target Slot Key"
+      }
+     },
+     "required": [
+      "source_kind",
+      "source_id",
+      "target_scope_id",
+      "target_context_item_id",
+      "target_slot_key",
+      "matched_value"
+     ],
+     "title": "CreateKgValueMatchItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteKgValueMatchItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "confidence": {
+       "default": null,
+       "title": "Confidence"
+      },
+      "current_value_snapshot": {
+       "default": null,
+       "title": "Current Value Snapshot"
+      },
+      "evidence_chunk_id": {
+       "default": null,
+       "title": "Evidence Chunk Id"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "kg_entity_id": {
+       "default": null,
+       "title": "Kg Entity Id"
+      },
+      "matched_value": {
+       "default": null,
+       "title": "Matched Value"
+      },
+      "mention_count": {
+       "default": null,
+       "title": "Mention Count"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "source_id": {
+       "default": null,
+       "title": "Source Id"
+      },
+      "source_kind": {
+       "default": null,
+       "title": "Source Kind"
+      },
+      "target_context_item_id": {
+       "default": null,
+       "title": "Target Context Item Id"
+      },
+      "target_scope_id": {
+       "default": null,
+       "title": "Target Scope Id"
+      },
+      "target_slot_key": {
+       "default": null,
+       "title": "Target Slot Key"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateKgValueMatchItem",
+     "type": "object"
+    }
+   },
    "table": "rag.kg_value_matches",
    "title_column": null,
    "update": "planned",
@@ -15397,7 +17661,197 @@
    "label": "NER Shadow",
    "noun": "ner_shadow",
    "reference": "no",
-   "schemas": null,
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "agent_cost_usd": {
+       "default": null,
+       "title": "Agent Cost Usd"
+      },
+      "agent_elapsed_ms": {
+       "default": null,
+       "title": "Agent Elapsed Ms"
+      },
+      "agent_error": {
+       "default": null,
+       "title": "Agent Error"
+      },
+      "agent_input_json": {
+       "default": null,
+       "title": "Agent Input Json"
+      },
+      "agent_merge_group_count": {
+       "default": 0,
+       "title": "Agent Merge Group Count"
+      },
+      "agent_model": {
+       "default": null,
+       "title": "Agent Model"
+      },
+      "agent_only_merge_surface_count": {
+       "default": 0,
+       "title": "Agent Only Merge Surface Count"
+      },
+      "agent_output_json": {
+       "default": null,
+       "title": "Agent Output Json"
+      },
+      "agreed_merge_surface_count": {
+       "default": 0,
+       "title": "Agreed Merge Surface Count"
+      },
+      "comparison_json": {
+       "default": null,
+       "title": "Comparison Json"
+      },
+      "deterministic_groups_json": {
+       "default": null,
+       "title": "Deterministic Groups Json"
+      },
+      "deterministic_merge_group_count": {
+       "default": 0,
+       "title": "Deterministic Merge Group Count"
+      },
+      "deterministic_only_merge_surface_count": {
+       "default": 0,
+       "title": "Deterministic Only Merge Surface Count"
+      },
+      "input_pair_count": {
+       "default": 0,
+       "title": "Input Pair Count"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "run_id": {
+       "default": null,
+       "title": "Run Id"
+      },
+      "source_id": {
+       "title": "Source Id"
+      },
+      "source_kind": {
+       "title": "Source Kind"
+      },
+      "status": {
+       "default": "completed",
+       "title": "Status"
+      }
+     },
+     "required": [
+      "source_kind",
+      "source_id"
+     ],
+     "title": "CreateNerShadowItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteNerShadowItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "agent_cost_usd": {
+       "default": null,
+       "title": "Agent Cost Usd"
+      },
+      "agent_elapsed_ms": {
+       "default": null,
+       "title": "Agent Elapsed Ms"
+      },
+      "agent_error": {
+       "default": null,
+       "title": "Agent Error"
+      },
+      "agent_input_json": {
+       "default": null,
+       "title": "Agent Input Json"
+      },
+      "agent_merge_group_count": {
+       "default": null,
+       "title": "Agent Merge Group Count"
+      },
+      "agent_model": {
+       "default": null,
+       "title": "Agent Model"
+      },
+      "agent_only_merge_surface_count": {
+       "default": null,
+       "title": "Agent Only Merge Surface Count"
+      },
+      "agent_output_json": {
+       "default": null,
+       "title": "Agent Output Json"
+      },
+      "agreed_merge_surface_count": {
+       "default": null,
+       "title": "Agreed Merge Surface Count"
+      },
+      "comparison_json": {
+       "default": null,
+       "title": "Comparison Json"
+      },
+      "deterministic_groups_json": {
+       "default": null,
+       "title": "Deterministic Groups Json"
+      },
+      "deterministic_merge_group_count": {
+       "default": null,
+       "title": "Deterministic Merge Group Count"
+      },
+      "deterministic_only_merge_surface_count": {
+       "default": null,
+       "title": "Deterministic Only Merge Surface Count"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "input_pair_count": {
+       "default": null,
+       "title": "Input Pair Count"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "run_id": {
+       "default": null,
+       "title": "Run Id"
+      },
+      "source_id": {
+       "default": null,
+       "title": "Source Id"
+      },
+      "source_kind": {
+       "default": null,
+       "title": "Source Kind"
+      },
+      "status": {
+       "default": null,
+       "title": "Status"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateNerShadowItem",
+     "type": "object"
+    }
+   },
    "table": "rag.ner_canonicalizer_shadow",
    "title_column": null,
    "update": "planned",
@@ -16008,8 +18462,8 @@
    "view": "no"
   },
   {
-   "create": "planned",
-   "delete": "planned",
+   "create": "yes",
+   "delete": "yes",
    "family": "Other",
    "identity_fields": [
     "id"
@@ -16037,25 +18491,9 @@
        "default": null,
        "title": "Avatar File Id"
       },
-      "became_customer_at": {
-       "default": null,
-       "title": "Became Customer At"
-      },
       "bio": {
        "default": null,
        "title": "Bio"
-      },
-      "canonical_id": {
-       "default": null,
-       "title": "Canonical Id"
-      },
-      "claimed_at": {
-       "default": null,
-       "title": "Claimed At"
-      },
-      "claimed_by": {
-       "default": null,
-       "title": "Claimed By"
       },
       "date_of_birth": {
        "default": null,
@@ -16064,21 +18502,9 @@
       "display_name": {
        "title": "Display Name"
       },
-      "do_not_contact": {
-       "default": false,
-       "title": "Do Not Contact"
-      },
-      "do_not_contact_reason": {
-       "default": null,
-       "title": "Do Not Contact Reason"
-      },
       "employee_band": {
        "default": null,
        "title": "Employee Band"
-      },
-      "expert_status": {
-       "default": null,
-       "title": "Expert Status"
       },
       "first_name": {
        "default": null,
@@ -16096,10 +18522,6 @@
        "default": null,
        "title": "Industry Id"
       },
-      "job_title": {
-       "default": null,
-       "title": "Job Title"
-      },
       "last_name": {
        "default": null,
        "title": "Last Name"
@@ -16108,25 +18530,13 @@
        "default": null,
        "title": "Legal Name"
       },
-      "lifecycle_stage_changed_at": {
-       "default": null,
-       "title": "Lifecycle Stage Changed At"
-      },
       "lifecycle_stage_id": {
        "default": null,
        "title": "Lifecycle Stage Id"
       },
-      "linked_organization_id": {
-       "default": null,
-       "title": "Linked Organization Id"
-      },
       "locale": {
        "default": null,
        "title": "Locale"
-      },
-      "locked_fields": {
-       "default": [],
-       "title": "Locked Fields"
       },
       "metadata": {
        "default": {},
@@ -16135,10 +18545,6 @@
       "middle_name": {
        "default": null,
        "title": "Middle Name"
-      },
-      "name_key": {
-       "default": null,
-       "title": "Name Key"
       },
       "name_prefix": {
        "default": null,
@@ -16158,10 +18564,6 @@
       "primary_domain": {
        "default": null,
        "title": "Primary Domain"
-      },
-      "primary_employer_party_id": {
-       "default": null,
-       "title": "Primary Employer Party Id"
       },
       "pronouns": {
        "default": null,
@@ -16186,14 +18588,6 @@
       "source_detail": {
        "default": null,
        "title": "Source Detail"
-      },
-      "source_party_id": {
-       "default": null,
-       "title": "Source Party Id"
-      },
-      "source_synced_at": {
-       "default": null,
-       "title": "Source Synced At"
       },
       "tax_id": {
        "default": null,
@@ -16244,25 +18638,9 @@
        "default": null,
        "title": "Avatar File Id"
       },
-      "became_customer_at": {
-       "default": null,
-       "title": "Became Customer At"
-      },
       "bio": {
        "default": null,
        "title": "Bio"
-      },
-      "canonical_id": {
-       "default": null,
-       "title": "Canonical Id"
-      },
-      "claimed_at": {
-       "default": null,
-       "title": "Claimed At"
-      },
-      "claimed_by": {
-       "default": null,
-       "title": "Claimed By"
       },
       "date_of_birth": {
        "default": null,
@@ -16272,21 +18650,9 @@
        "default": null,
        "title": "Display Name"
       },
-      "do_not_contact": {
-       "default": null,
-       "title": "Do Not Contact"
-      },
-      "do_not_contact_reason": {
-       "default": null,
-       "title": "Do Not Contact Reason"
-      },
       "employee_band": {
        "default": null,
        "title": "Employee Band"
-      },
-      "expert_status": {
-       "default": null,
-       "title": "Expert Status"
       },
       "first_name": {
        "default": null,
@@ -16308,10 +18674,6 @@
        "default": null,
        "title": "Industry Id"
       },
-      "job_title": {
-       "default": null,
-       "title": "Job Title"
-      },
       "last_name": {
        "default": null,
        "title": "Last Name"
@@ -16320,25 +18682,13 @@
        "default": null,
        "title": "Legal Name"
       },
-      "lifecycle_stage_changed_at": {
-       "default": null,
-       "title": "Lifecycle Stage Changed At"
-      },
       "lifecycle_stage_id": {
        "default": null,
        "title": "Lifecycle Stage Id"
       },
-      "linked_organization_id": {
-       "default": null,
-       "title": "Linked Organization Id"
-      },
       "locale": {
        "default": null,
        "title": "Locale"
-      },
-      "locked_fields": {
-       "default": null,
-       "title": "Locked Fields"
       },
       "metadata": {
        "default": null,
@@ -16347,10 +18697,6 @@
       "middle_name": {
        "default": null,
        "title": "Middle Name"
-      },
-      "name_key": {
-       "default": null,
-       "title": "Name Key"
       },
       "name_prefix": {
        "default": null,
@@ -16371,10 +18717,6 @@
       "primary_domain": {
        "default": null,
        "title": "Primary Domain"
-      },
-      "primary_employer_party_id": {
-       "default": null,
-       "title": "Primary Employer Party Id"
       },
       "pronouns": {
        "default": null,
@@ -16400,14 +18742,6 @@
        "default": null,
        "title": "Source Detail"
       },
-      "source_party_id": {
-       "default": null,
-       "title": "Source Party Id"
-      },
-      "source_synced_at": {
-       "default": null,
-       "title": "Source Synced At"
-      },
       "tax_id": {
        "default": null,
        "title": "Tax Id"
@@ -16426,7 +18760,7 @@
    },
    "table": "crm.party",
    "title_column": "display_name",
-   "update": "planned",
+   "update": "yes",
    "view": "yes"
   },
   {
@@ -17582,6 +19916,34 @@
    "view": "no"
   },
   {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Plan Node Artifact",
+   "noun": "plan_node_artifact",
+   "reference": "no",
+   "schemas": null,
+   "table": "plan.node_artifact",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Plan Node Step",
+   "noun": "plan_node_step",
+   "reference": "no",
+   "schemas": null,
+   "table": "plan.node_step",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
    "create": "planned",
    "delete": "planned",
    "family": "Other",
@@ -17709,20 +20071,6 @@
    "table": "docproc.processed_document_pages",
    "title_column": null,
    "update": "no",
-   "view": "no"
-  },
-  {
-   "create": "planned",
-   "delete": "planned",
-   "family": "Other",
-   "identity_fields": [],
-   "label": "Prompt",
-   "noun": "prompt",
-   "reference": "no",
-   "schemas": null,
-   "table": "prompts",
-   "title_column": null,
-   "update": "planned",
    "view": "no"
   },
   {
@@ -19447,7 +21795,205 @@
    "label": "Scope Association Suggestion",
    "noun": "scope_association_suggestion",
    "reference": "no",
-   "schemas": null,
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "confidence": {
+       "title": "Confidence"
+      },
+      "context_snippet": {
+       "default": null,
+       "title": "Context Snippet"
+      },
+      "decided_at": {
+       "default": null,
+       "title": "Decided At"
+      },
+      "decided_by": {
+       "default": null,
+       "title": "Decided By"
+      },
+      "decision_note": {
+       "default": null,
+       "title": "Decision Note"
+      },
+      "is_starred": {
+       "default": false,
+       "title": "Is Starred"
+      },
+      "kg_chunk_entity_id": {
+       "default": null,
+       "title": "Kg Chunk Entity Id"
+      },
+      "kg_entity_id": {
+       "default": null,
+       "title": "Kg Entity Id"
+      },
+      "match_kind": {
+       "title": "Match Kind"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "source_id": {
+       "title": "Source Id"
+      },
+      "source_kind": {
+       "title": "Source Kind"
+      },
+      "status": {
+       "default": "pending",
+       "title": "Status"
+      },
+      "suggested_value": {
+       "default": null,
+       "title": "Suggested Value"
+      },
+      "suppressed_until": {
+       "default": null,
+       "title": "Suppressed Until"
+      },
+      "sweep_run_id": {
+       "default": null,
+       "title": "Sweep Run Id"
+      },
+      "target_scope_id": {
+       "default": null,
+       "title": "Target Scope Id"
+      },
+      "target_scope_item_id": {
+       "default": null,
+       "title": "Target Scope Item Id"
+      },
+      "target_slot_name": {
+       "default": null,
+       "title": "Target Slot Name"
+      },
+      "viewed_at": {
+       "default": null,
+       "title": "Viewed At"
+      }
+     },
+     "required": [
+      "source_kind",
+      "source_id",
+      "match_kind",
+      "confidence"
+     ],
+     "title": "CreateScopeAssociationSuggestionItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteScopeAssociationSuggestionItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "confidence": {
+       "default": null,
+       "title": "Confidence"
+      },
+      "context_snippet": {
+       "default": null,
+       "title": "Context Snippet"
+      },
+      "decided_at": {
+       "default": null,
+       "title": "Decided At"
+      },
+      "decided_by": {
+       "default": null,
+       "title": "Decided By"
+      },
+      "decision_note": {
+       "default": null,
+       "title": "Decision Note"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "is_starred": {
+       "default": null,
+       "title": "Is Starred"
+      },
+      "kg_chunk_entity_id": {
+       "default": null,
+       "title": "Kg Chunk Entity Id"
+      },
+      "kg_entity_id": {
+       "default": null,
+       "title": "Kg Entity Id"
+      },
+      "match_kind": {
+       "default": null,
+       "title": "Match Kind"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "source_id": {
+       "default": null,
+       "title": "Source Id"
+      },
+      "source_kind": {
+       "default": null,
+       "title": "Source Kind"
+      },
+      "status": {
+       "default": null,
+       "title": "Status"
+      },
+      "suggested_value": {
+       "default": null,
+       "title": "Suggested Value"
+      },
+      "suppressed_until": {
+       "default": null,
+       "title": "Suppressed Until"
+      },
+      "sweep_run_id": {
+       "default": null,
+       "title": "Sweep Run Id"
+      },
+      "target_scope_id": {
+       "default": null,
+       "title": "Target Scope Id"
+      },
+      "target_scope_item_id": {
+       "default": null,
+       "title": "Target Scope Item Id"
+      },
+      "target_slot_name": {
+       "default": null,
+       "title": "Target Slot Name"
+      },
+      "viewed_at": {
+       "default": null,
+       "title": "Viewed At"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateScopeAssociationSuggestionItem",
+     "type": "object"
+    }
+   },
    "table": "rag.scope_association_suggestions",
    "title_column": null,
    "update": "planned",
@@ -19461,7 +22007,213 @@
    "label": "Scope Item Value Suggestion",
    "noun": "scope_item_value_suggestion",
    "reference": "no",
-   "schemas": null,
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "confidence": {
+       "title": "Confidence"
+      },
+      "context_snippet": {
+       "default": null,
+       "title": "Context Snippet"
+      },
+      "current_value_snapshot": {
+       "default": null,
+       "title": "Current Value Snapshot"
+      },
+      "decided_at": {
+       "default": null,
+       "title": "Decided At"
+      },
+      "decided_by": {
+       "default": null,
+       "title": "Decided By"
+      },
+      "decision_note": {
+       "default": null,
+       "title": "Decision Note"
+      },
+      "evidence_chunk_id": {
+       "default": null,
+       "title": "Evidence Chunk Id"
+      },
+      "is_starred": {
+       "default": false,
+       "title": "Is Starred"
+      },
+      "kg_entity_id": {
+       "default": null,
+       "title": "Kg Entity Id"
+      },
+      "match_kind": {
+       "title": "Match Kind"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "source_id": {
+       "title": "Source Id"
+      },
+      "source_kind": {
+       "title": "Source Kind"
+      },
+      "status": {
+       "default": "pending",
+       "title": "Status"
+      },
+      "suggested_value": {
+       "title": "Suggested Value"
+      },
+      "suppressed_until": {
+       "default": null,
+       "title": "Suppressed Until"
+      },
+      "sweep_run_id": {
+       "default": null,
+       "title": "Sweep Run Id"
+      },
+      "target_context_item_id": {
+       "title": "Target Context Item Id"
+      },
+      "target_scope_id": {
+       "title": "Target Scope Id"
+      },
+      "target_slot_key": {
+       "title": "Target Slot Key"
+      },
+      "viewed_at": {
+       "default": null,
+       "title": "Viewed At"
+      }
+     },
+     "required": [
+      "source_kind",
+      "source_id",
+      "target_scope_id",
+      "target_context_item_id",
+      "target_slot_key",
+      "suggested_value",
+      "match_kind",
+      "confidence"
+     ],
+     "title": "CreateScopeItemValueSuggestionItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteScopeItemValueSuggestionItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "confidence": {
+       "default": null,
+       "title": "Confidence"
+      },
+      "context_snippet": {
+       "default": null,
+       "title": "Context Snippet"
+      },
+      "current_value_snapshot": {
+       "default": null,
+       "title": "Current Value Snapshot"
+      },
+      "decided_at": {
+       "default": null,
+       "title": "Decided At"
+      },
+      "decided_by": {
+       "default": null,
+       "title": "Decided By"
+      },
+      "decision_note": {
+       "default": null,
+       "title": "Decision Note"
+      },
+      "evidence_chunk_id": {
+       "default": null,
+       "title": "Evidence Chunk Id"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "is_starred": {
+       "default": null,
+       "title": "Is Starred"
+      },
+      "kg_entity_id": {
+       "default": null,
+       "title": "Kg Entity Id"
+      },
+      "match_kind": {
+       "default": null,
+       "title": "Match Kind"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "source_id": {
+       "default": null,
+       "title": "Source Id"
+      },
+      "source_kind": {
+       "default": null,
+       "title": "Source Kind"
+      },
+      "status": {
+       "default": null,
+       "title": "Status"
+      },
+      "suggested_value": {
+       "default": null,
+       "title": "Suggested Value"
+      },
+      "suppressed_until": {
+       "default": null,
+       "title": "Suppressed Until"
+      },
+      "sweep_run_id": {
+       "default": null,
+       "title": "Sweep Run Id"
+      },
+      "target_context_item_id": {
+       "default": null,
+       "title": "Target Context Item Id"
+      },
+      "target_scope_id": {
+       "default": null,
+       "title": "Target Scope Id"
+      },
+      "target_slot_key": {
+       "default": null,
+       "title": "Target Slot Key"
+      },
+      "viewed_at": {
+       "default": null,
+       "title": "Viewed At"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateScopeItemValueSuggestionItem",
+     "type": "object"
+    }
+   },
    "table": "rag.scope_item_value_suggestions",
    "title_column": null,
    "update": "planned",
@@ -19475,7 +22227,157 @@
    "label": "Scope Suggestion",
    "noun": "scope_suggestion",
    "reference": "no",
-   "schemas": null,
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "confidence": {
+       "default": 0.5,
+       "title": "Confidence"
+      },
+      "decided_at": {
+       "default": null,
+       "title": "Decided At"
+      },
+      "decided_by": {
+       "default": null,
+       "title": "Decided By"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "reasoning": {
+       "default": null,
+       "title": "Reasoning"
+      },
+      "scope_type_id": {
+       "default": null,
+       "title": "Scope Type Id"
+      },
+      "scope_type_label": {
+       "title": "Scope Type Label"
+      },
+      "source_id": {
+       "title": "Source Id"
+      },
+      "source_kind": {
+       "title": "Source Kind"
+      },
+      "status": {
+       "default": "pending",
+       "title": "Status"
+      },
+      "suggested_name": {
+       "title": "Suggested Name"
+      },
+      "suggested_slot_values": {
+       "default": {},
+       "title": "Suggested Slot Values"
+      },
+      "suppressed_until": {
+       "default": null,
+       "title": "Suppressed Until"
+      },
+      "sweep_run_id": {
+       "default": null,
+       "title": "Sweep Run Id"
+      }
+     },
+     "required": [
+      "source_kind",
+      "source_id",
+      "scope_type_label",
+      "suggested_name"
+     ],
+     "title": "CreateScopeSuggestionItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteScopeSuggestionItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "confidence": {
+       "default": null,
+       "title": "Confidence"
+      },
+      "decided_at": {
+       "default": null,
+       "title": "Decided At"
+      },
+      "decided_by": {
+       "default": null,
+       "title": "Decided By"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "reasoning": {
+       "default": null,
+       "title": "Reasoning"
+      },
+      "scope_type_id": {
+       "default": null,
+       "title": "Scope Type Id"
+      },
+      "scope_type_label": {
+       "default": null,
+       "title": "Scope Type Label"
+      },
+      "source_id": {
+       "default": null,
+       "title": "Source Id"
+      },
+      "source_kind": {
+       "default": null,
+       "title": "Source Kind"
+      },
+      "status": {
+       "default": null,
+       "title": "Status"
+      },
+      "suggested_name": {
+       "default": null,
+       "title": "Suggested Name"
+      },
+      "suggested_slot_values": {
+       "default": null,
+       "title": "Suggested Slot Values"
+      },
+      "suppressed_until": {
+       "default": null,
+       "title": "Suppressed Until"
+      },
+      "sweep_run_id": {
+       "default": null,
+       "title": "Sweep Run Id"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateScopeSuggestionItem",
+     "type": "object"
+    }
+   },
    "table": "rag.scope_suggestions",
    "title_column": null,
    "update": "planned",
@@ -19496,6 +22398,20 @@
    "title_column": "slug",
    "update": "planned",
    "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Page Measurement Health",
+   "noun": "seo_page_measurement_health",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.page_measurement_health",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
   },
   {
    "create": "planned",
@@ -26105,29 +29021,301 @@
    "create": "planned",
    "delete": "planned",
    "family": "Other",
-   "identity_fields": [],
+   "identity_fields": [
+    "id"
+   ],
    "label": "Analysis Item",
    "noun": "web_analysis_item",
-   "reference": "planned",
-   "schemas": null,
+   "reference": "yes",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "category": {
+       "title": "Category"
+      },
+      "default_provider_id": {
+       "default": null,
+       "title": "Default Provider Id"
+      },
+      "description": {
+       "default": null,
+       "title": "Description"
+      },
+      "is_builtin": {
+       "default": false,
+       "title": "Is Builtin"
+      },
+      "key": {
+       "title": "Key"
+      },
+      "kind_definition_id": {
+       "title": "Kind Definition Id"
+      },
+      "label": {
+       "title": "Label"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "score_contract": {
+       "default": {},
+       "title": "Score Contract"
+      },
+      "severity_map": {
+       "default": {},
+       "title": "Severity Map"
+      },
+      "subcategory": {
+       "title": "Subcategory"
+      },
+      "weight": {
+       "default": 1,
+       "title": "Weight"
+      }
+     },
+     "required": [
+      "key",
+      "label",
+      "category",
+      "subcategory",
+      "kind_definition_id"
+     ],
+     "title": "CreateWebAnalysisItemItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteWebAnalysisItemItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "category": {
+       "default": null,
+       "title": "Category"
+      },
+      "default_provider_id": {
+       "default": null,
+       "title": "Default Provider Id"
+      },
+      "description": {
+       "default": null,
+       "title": "Description"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "is_builtin": {
+       "default": null,
+       "title": "Is Builtin"
+      },
+      "key": {
+       "default": null,
+       "title": "Key"
+      },
+      "kind_definition_id": {
+       "default": null,
+       "title": "Kind Definition Id"
+      },
+      "label": {
+       "default": null,
+       "title": "Label"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "score_contract": {
+       "default": null,
+       "title": "Score Contract"
+      },
+      "severity_map": {
+       "default": null,
+       "title": "Severity Map"
+      },
+      "subcategory": {
+       "default": null,
+       "title": "Subcategory"
+      },
+      "weight": {
+       "default": null,
+       "title": "Weight"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateWebAnalysisItemItem",
+     "type": "object"
+    }
+   },
    "table": "web.analysis_item",
    "title_column": "label",
    "update": "planned",
-   "view": "planned"
+   "view": "yes"
   },
   {
    "create": "planned",
    "delete": "planned",
    "family": "Other",
-   "identity_fields": [],
+   "identity_fields": [
+    "id"
+   ],
    "label": "Brand",
    "noun": "web_brand",
-   "reference": "planned",
-   "schemas": null,
+   "reference": "yes",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "description": {
+       "default": null,
+       "title": "Description"
+      },
+      "favicon_url": {
+       "default": null,
+       "title": "Favicon Url"
+      },
+      "industry": {
+       "default": null,
+       "title": "Industry"
+      },
+      "logo_url": {
+       "default": null,
+       "title": "Logo Url"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "name": {
+       "title": "Name"
+      },
+      "notes": {
+       "default": null,
+       "title": "Notes"
+      },
+      "og_image_url": {
+       "default": null,
+       "title": "Og Image Url"
+      },
+      "profile": {
+       "default": {},
+       "title": "Profile"
+      },
+      "settings": {
+       "default": {},
+       "title": "Settings"
+      },
+      "status": {
+       "default": "active",
+       "title": "Status"
+      },
+      "website_url": {
+       "default": null,
+       "title": "Website Url"
+      }
+     },
+     "required": [
+      "name"
+     ],
+     "title": "CreateWebBrandItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteWebBrandItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "description": {
+       "default": null,
+       "title": "Description"
+      },
+      "favicon_url": {
+       "default": null,
+       "title": "Favicon Url"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "industry": {
+       "default": null,
+       "title": "Industry"
+      },
+      "logo_url": {
+       "default": null,
+       "title": "Logo Url"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "name": {
+       "default": null,
+       "title": "Name"
+      },
+      "notes": {
+       "default": null,
+       "title": "Notes"
+      },
+      "og_image_url": {
+       "default": null,
+       "title": "Og Image Url"
+      },
+      "profile": {
+       "default": null,
+       "title": "Profile"
+      },
+      "settings": {
+       "default": null,
+       "title": "Settings"
+      },
+      "status": {
+       "default": null,
+       "title": "Status"
+      },
+      "website_url": {
+       "default": null,
+       "title": "Website Url"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateWebBrandItem",
+     "type": "object"
+    }
+   },
    "table": "web.brand",
    "title_column": "name",
    "update": "planned",
-   "view": "planned"
+   "view": "yes"
   },
   {
    "create": "no",
@@ -26357,15 +29545,103 @@
    "create": "planned",
    "delete": "planned",
    "family": "Other",
-   "identity_fields": [],
+   "identity_fields": [
+    "id"
+   ],
    "label": "Provider",
    "noun": "web_provider",
-   "reference": "planned",
-   "schemas": null,
+   "reference": "yes",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "config": {
+       "default": {},
+       "title": "Config"
+      },
+      "is_builtin": {
+       "default": false,
+       "title": "Is Builtin"
+      },
+      "key": {
+       "title": "Key"
+      },
+      "kind": {
+       "title": "Kind"
+      },
+      "label": {
+       "title": "Label"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      }
+     },
+     "required": [
+      "key",
+      "label",
+      "kind"
+     ],
+     "title": "CreateWebProviderItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteWebProviderItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "config": {
+       "default": null,
+       "title": "Config"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "is_builtin": {
+       "default": null,
+       "title": "Is Builtin"
+      },
+      "key": {
+       "default": null,
+       "title": "Key"
+      },
+      "kind": {
+       "default": null,
+       "title": "Kind"
+      },
+      "label": {
+       "default": null,
+       "title": "Label"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateWebProviderItem",
+     "type": "object"
+    }
+   },
    "table": "web.provider",
    "title_column": "label",
    "update": "planned",
-   "view": "planned"
+   "view": "yes"
   },
   {
    "create": "no",
@@ -26399,15 +29675,191 @@
    "create": "planned",
    "delete": "planned",
    "family": "Other",
-   "identity_fields": [],
+   "identity_fields": [
+    "id"
+   ],
    "label": "Site",
    "noun": "web_site",
-   "reference": "planned",
-   "schemas": null,
+   "reference": "yes",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "brand_id": {
+       "default": null,
+       "title": "Brand Id"
+      },
+      "description": {
+       "default": null,
+       "title": "Description"
+      },
+      "domain": {
+       "title": "Domain"
+      },
+      "favicon_url": {
+       "default": null,
+       "title": "Favicon Url"
+      },
+      "gsc_sync": {
+       "default": {},
+       "title": "Gsc Sync"
+      },
+      "gsc_synced_at": {
+       "default": null,
+       "title": "Gsc Synced At"
+      },
+      "homepage_screenshot_id": {
+       "default": null,
+       "title": "Homepage Screenshot Id"
+      },
+      "initialization": {
+       "default": {},
+       "title": "Initialization"
+      },
+      "initialized_at": {
+       "default": null,
+       "title": "Initialized At"
+      },
+      "integrations": {
+       "default": {},
+       "title": "Integrations"
+      },
+      "logo_url": {
+       "default": null,
+       "title": "Logo Url"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "name": {
+       "title": "Name"
+      },
+      "og_image_url": {
+       "default": null,
+       "title": "Og Image Url"
+      },
+      "root_url": {
+       "title": "Root Url"
+      },
+      "settings": {
+       "default": {},
+       "title": "Settings"
+      },
+      "status": {
+       "default": "active",
+       "title": "Status"
+      }
+     },
+     "required": [
+      "name",
+      "root_url",
+      "domain"
+     ],
+     "title": "CreateWebSiteItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteWebSiteItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "brand_id": {
+       "default": null,
+       "title": "Brand Id"
+      },
+      "description": {
+       "default": null,
+       "title": "Description"
+      },
+      "domain": {
+       "default": null,
+       "title": "Domain"
+      },
+      "favicon_url": {
+       "default": null,
+       "title": "Favicon Url"
+      },
+      "gsc_sync": {
+       "default": null,
+       "title": "Gsc Sync"
+      },
+      "gsc_synced_at": {
+       "default": null,
+       "title": "Gsc Synced At"
+      },
+      "homepage_screenshot_id": {
+       "default": null,
+       "title": "Homepage Screenshot Id"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "initialization": {
+       "default": null,
+       "title": "Initialization"
+      },
+      "initialized_at": {
+       "default": null,
+       "title": "Initialized At"
+      },
+      "integrations": {
+       "default": null,
+       "title": "Integrations"
+      },
+      "logo_url": {
+       "default": null,
+       "title": "Logo Url"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "name": {
+       "default": null,
+       "title": "Name"
+      },
+      "og_image_url": {
+       "default": null,
+       "title": "Og Image Url"
+      },
+      "root_url": {
+       "default": null,
+       "title": "Root Url"
+      },
+      "settings": {
+       "default": null,
+       "title": "Settings"
+      },
+      "status": {
+       "default": null,
+       "title": "Status"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateWebSiteItem",
+     "type": "object"
+    }
+   },
    "table": "web.site",
    "title_column": "name",
    "update": "planned",
-   "view": "planned"
+   "view": "yes"
   },
   {
    "create": "no",

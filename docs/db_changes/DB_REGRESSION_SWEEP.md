@@ -67,6 +67,27 @@ Only `audit.function_runtime_probe` proves a function runs.
   un-exposes them from PostgREST, so no client can reach a function that cannot
   succeed. `pnpm db-types` regenerated; both now sit under `graveyard` in
   `types/database.types.ts`.
+  **Why `get_full_table` was kept rather than retired with the other two:** it is
+  the only RPC that returns a single dataset's schema + size *without* loading the
+  dataset. `get_user_table_complete` fetches ALL rows with no `LIMIT` and derives
+  `row_count` from that array's length, so using it to learn a dataset's size
+  materializes the whole thing; `list_table_columns` has no count;
+  `get_user_tables` is the list-all view. That capability is real, so it stays —
+  and its access model needed no change: SECURITY INVOKER + RLS (verified live:
+  RLS enabled with policies on all three `workbench.udt_*` tables), deliberately
+  not converted to the sibling's SECURITY DEFINER + hand-rolled permission check,
+  which duplicates authorization outside the policy system.
+  **The root cause is closed, not just the bug.** It broke on every call and
+  nobody noticed because nothing executes it. It now has a registered
+  `audit.function_runtime_probe`, so every `audit.refresh()` *runs* it against the
+  live dataset with the most fields and asserts the envelope shape — a regression
+  becomes a `severity='real'` row immediately. The probe was verified in both
+  directions before registering: green on the fixed function, and it raises the
+  original `42803` when pointed at a twin carrying the pre-fix body. Three probes
+  are now registered (this one + the two `get_project_references` ones); a probe is
+  the only thing that proves a function *runs*, which is lesson 2 above.
+  The read-RPC choice is documented for callers in aidream's
+  `docs/udt_user_data_and_lists/UDT_MIGRATION_FOR_FRONTENDS.md`.
 
 - **The conformance checker now means something: 101 rows → 3 actionable
   functions, now 0.** Two defects, both in the tooling itself.
@@ -96,12 +117,6 @@ Only `audit.function_runtime_probe` proves a function runs.
   `audit.table_impact.currently_broken` now keys on `severity='real'` too — it
   keyed on `level='error'`, so 9 artifact functions were blocking
   `iam.canonical_certify` for every table they touch.
-  New: **9 privilege-risk functions** flagged as `advisory` — invoker-rights
-  functions that enumerate relations from the catalog and build dynamic SQL with
-  no `has_table_privilege` filter. That is the *shape* of the
-  `get_project_references` outage; no static checker could have caught the outage
-  itself, since it was a runtime privilege error inside dynamic SQL.
-
 - **Every project page threw a red error.** `get_project_references` walks the
   foreign keys pointing at `workspace.projects` and counts rows in each table it
   finds, as the signed-in user. Retiring a table into `graveyard` *carries its

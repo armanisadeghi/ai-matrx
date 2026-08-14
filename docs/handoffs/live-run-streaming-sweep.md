@@ -46,7 +46,10 @@ Fix costs below: **S** ≈ 15 min (the two-line recipe), **M** ≈ 1–3 h, **L*
 - **The row must outlive the viewer** — before adding any reap/adoption code
   in a migration, read `features/agents/docs/LIVE_RUN_RETENTION.md` (the
   disappearing-run class: retention seam, non-destructive `createRequest`,
-  abort-before-reap; guard test `request-viewer-retention.test.ts`).
+  abort-before-reap; guard test `request-viewer-retention.test.ts`). A surface
+  with MORE THAN ONE run (or runs beside API data) uses the `runSets` slice +
+  `RunSetDisplay` (2026-08-13, keyword research is the exemplar) — never a
+  hook-local run list.
 - Reference for a class-B/E migration done whole:
   `features/podcasts/generator/useEpisodeTitleOptions.ts` (2026-08-11) — open
   the window BEFORE the launch, run the slot through `useLiveAgentRun`, and

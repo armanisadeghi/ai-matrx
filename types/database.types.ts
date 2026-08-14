@@ -24596,8 +24596,55 @@ export type Database = {
       }
     }
     Functions: {
+      add_one_entry: {
+        Args: {
+          p_create_function?: string
+          p_payload: Json
+          p_table_name: string
+        }
+        Returns: Json
+      }
       execute_complex_save: {
         Args: { operations: Json; options?: Json }
+        Returns: Json
+      }
+      fetch_all_fk_ifk_with_list: {
+        Args: { p_id: string; p_table_name: string }
+        Returns: Json
+      }
+      fetch_custom_rels: {
+        Args: { p_id: string; p_table_list: string[]; p_table_name: string }
+        Returns: Json
+      }
+      fetch_filtered_with_fk_ifk:
+        | { Args: { p_filters: Json; p_table_name: string }; Returns: Json }
+        | {
+            Args: {
+              p_filters: Json
+              p_include_fk?: boolean
+              p_include_ifk?: boolean
+              p_table_name: string
+            }
+            Returns: Json
+          }
+      fetch_paginated_with_all_ids: {
+        Args: {
+          p_conversion_function?: string
+          p_include_all_ids?: boolean
+          p_page: number
+          p_page_size: number
+          p_table_name: string
+        }
+        Returns: Json
+      }
+      fetch_paginated_with_ids_names: {
+        Args: {
+          p_conversion_function?: string
+          p_include_all_ids?: boolean
+          p_page: number
+          p_page_size: number
+          p_table_name: string
+        }
         Returns: Json
       }
       get_table_info: {
@@ -24609,6 +24656,14 @@ export type Database = {
           foreign_table: string
           is_nullable: string
         }[]
+      }
+      update_by_id: {
+        Args: {
+          p_payload: Json
+          p_table_name: string
+          p_update_function?: string
+        }
+        Returns: Json
       }
     }
     Enums: {
@@ -33711,14 +33766,6 @@ export type Database = {
           name: string
         }[]
       }
-      add_one_entry: {
-        Args: {
-          p_create_function?: string
-          p_payload: Json
-          p_table_name: string
-        }
-        Returns: Json
-      }
       admin_access_planner_snapshot: {
         Args: { p_schema?: string }
         Returns: Json
@@ -36364,10 +36411,6 @@ export type Database = {
         Args: { p_primary_key_values: Json; p_table_name: string }
         Returns: Json
       }
-      fetch_all_fk_ifk_with_list: {
-        Args: { p_id: string; p_table_name: string }
-        Returns: Json
-      }
       fetch_all_with_children: { Args: { p_table_name: string }; Returns: Json }
       fetch_by_id_display_option: {
         Args: { record_id: string }
@@ -36379,25 +36422,10 @@ export type Database = {
           name: string
         }[]
       }
-      fetch_custom_rels: {
-        Args: { p_id: string; p_table_list: string[]; p_table_name: string }
-        Returns: Json
-      }
       fetch_filtered: {
         Args: { p_filters: Json; p_table_name: string }
         Returns: Json
       }
-      fetch_filtered_with_fk_ifk:
-        | { Args: { p_filters: Json; p_table_name: string }; Returns: Json }
-        | {
-            Args: {
-              p_filters: Json
-              p_include_fk?: boolean
-              p_include_ifk?: boolean
-              p_table_name: string
-            }
-            Returns: Json
-          }
       fetch_foreign_key_info: {
         Args: never
         Returns: {
@@ -36411,26 +36439,6 @@ export type Database = {
       fetch_paginated: {
         Args: { p_page: number; p_page_size: number; p_table_name: string }
         Returns: Json[]
-      }
-      fetch_paginated_with_all_ids: {
-        Args: {
-          p_conversion_function?: string
-          p_include_all_ids?: boolean
-          p_page: number
-          p_page_size: number
-          p_table_name: string
-        }
-        Returns: Json
-      }
-      fetch_paginated_with_ids_names: {
-        Args: {
-          p_conversion_function?: string
-          p_include_all_ids?: boolean
-          p_page: number
-          p_page_size: number
-          p_table_name: string
-        }
-        Returns: Json
       }
       fetch_with_all_fk_and_ifk_children: {
         Args: { p_id: string; p_table_name: string }
@@ -39164,14 +39172,6 @@ export type Database = {
         Returns: undefined
       }
       update_all_trending_scores: { Args: never; Returns: undefined }
-      update_by_id: {
-        Args: {
-          p_payload: Json
-          p_table_name: string
-          p_update_function?: string
-        }
-        Returns: Json
-      }
       update_data_row_in_user_table: {
         Args: { p_data: Json; p_row_id: string }
         Returns: Json
