@@ -120,11 +120,25 @@ features/code/editor/
 
 ```
 features/code/terminal/
-  BottomPanel.tsx          ← persistent mount of TerminalTab (hidden by CSS when collapsed)
-  TerminalTab.tsx          ← xterm.js + per‑command exec via SandboxProcessAdapter
+  BottomPanel.tsx          ← persistent mount of SessionsHost (hidden by CSS when collapsed)
+  SessionsHost.tsx         ← one SimpleTerminal + SandboxLogsView per session, all kept mounted
+  SimpleTerminal.tsx       ← <input> + buffered /exec (the live terminal)
+  TerminalTab.tsx          ← xterm.js + SandboxProcessAdapter — NOT MOUNTED, see below
 ```
 
-`TerminalTab` is **always mounted** so the user never loses scrollback / cursor state when the panel collapses. We previously had a hydration warning when xterm tried to set the background colour during SSR — the fix is `bg-white dark:bg-[#1e1e1e]` in the wrapping `<div>`.
+Every session stays mounted so the user never loses scrollback when the panel
+collapses; only the active one is visible (`display:none` toggling in
+`SessionsHost`).
+
+> 🚨 **`TerminalTab.tsx` (625 lines) is built but has no mounter.** `SimpleTerminal`
+> replaced it deliberately — its own docblock records that the xterm/PTY/SSE path
+> silently produced no output when the stream completed with zero events, and that
+> the buffered `/exec` endpoint is the battle‑tested one. This paragraph used to
+> claim `TerminalTab` was "always mounted", which was false and cost a later reader
+> a full hunt. Per the unfinished‑work alarm the module is **not** to be deleted on
+> an agent's authority: it is either finished (reattach it behind the adapter once
+> PTY upgrade works end‑to‑end) or named dead by Arman in writing. Tracked by
+> `pnpm check:unwired`.
 
 ### 1.6 Adapters (the data plane)
 

@@ -9,14 +9,16 @@ import type {
 } from "./types";
 
 const FRONTEND_ROOTS = ["app", "components", "features", "hooks", "lib", "providers", "utils"];
-const SKIP_PARTS = new Set([
-  "__tests__",
-  "fixtures",
-  "generated",
-  "node_modules",
-  "test",
-  "tests",
-]);
+// Directory names skipped wholesale. Only unambiguous ones belong here: this
+// repo keeps 159 real demo route files under `app/(dev)/demos/tests/` and live
+// product routes at `app/(core)/shapes/[kind]/test/` and
+// `app/(core)/education/flashcards/[setId]/test/`. Skipping bare `test` /
+// `tests` made every one of those invisible BOTH as a reportable artifact and,
+// far worse, as a mounter — components they render were reported unfinished.
+// Actual test/story/spec files are excluded by filename via TEST_FILE_RE, and
+// `fixtures` / `generated` directories in this tree only ever sit inside
+// `__tests__`, so they are still covered by the parent skip.
+const SKIP_PARTS = new Set(["__tests__", "node_modules"]);
 const ENTRY_FILE_RE = /\/(?:page|layout|loading|error|global-error|not-found|template|default|route)(?:\.dev)?\.[cm]?[jt]sx?$/;
 const TEST_FILE_RE = /(?:^|\/)(?:test_|[^/]+\.(?:test|spec|stories))\.[cm]?[jt]sx?$/;
 const SERVICE_PATH_RE = /(?:^|\/)(?:services?|producers?)(?:\/|\.|$)/i;
@@ -49,9 +51,23 @@ interface ModuleFacts {
     named: Array<{ imported: string; local: string }>;
   }>;
   jsxNames: Set<string>;
+  /**
+   * Capitalized identifiers handed to an object property as a value —
+   * `OverlayComponent: UserListsOverlay`, `component: Foo`, `columns: Bar`.
+   * A registry that stores a component and renders it dynamically is a real
+   * mounter; 43 tool-call renderers alone were reported unfinished without it.
+   */
+  valueRefs: Set<string>;
   calledNames: Set<string>;
   dynamicImports: string[];
   dynamicDirectories: string[];
+  /**
+   * Intra-module edges `referencerKey -> referencedKey`. A singleton factory
+   * that IS imported (`getMessagingService`) is the runtime consumer of the
+   * class beside it (`MessagingService`); without these edges the class reads
+   * as unfinished while its only sanctioned entry point is fully wired.
+   */
+  localEdges: Array<{ from: string; to: string }>;
 }
 
 export interface ScanResult {
@@ -143,6 +159,10 @@ function classifyExport(file: string, name: string, node: ts.Node): Candidate["k
   if (/^use[A-Z0-9]/.test(name)) return "hook";
   if (/Producer$/.test(name) || /producer/i.test(file)) return "producer";
   if (/Service$/.test(name) || SERVICE_PATH_RE.test(file)) return "service";
+  // SCREAMING_SNAKE_CASE is a constant, never a component. Thirteen imported
+  // registries (`BROWSE_COLUMNS`, `TRANSCRIPT_COLUMNS`, `PARTY_COLUMNS`, …)
+  // were reported unfinished purely because their cell renderers contain JSX.
+  if (/^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+$/.test(name)) return null;
   if (/^[A-Z]/.test(name) && containsJsx(node)) return "component";
   return null;
 }
@@ -185,9 +205,11 @@ function factsFor(root: string, path: string, candidates: Candidate[]): ModuleFa
     starReexports: [],
     imports: [],
     jsxNames: new Set(),
+    valueRefs: new Set(),
     calledNames: new Set(),
     dynamicImports: [],
     dynamicDirectories: [],
+    localEdges: [],
   };
   const rel = posix(relative(root, path));
 
@@ -253,6 +275,9 @@ function factsFor(root: string, path: string, candidates: Candidate[]): ModuleFa
     const rootName = (match[1] ?? "").split(/[.$]/)[0];
     if (rootName) facts.jsxNames.add(rootName);
   }
+  for (const match of text.matchAll(/[A-Za-z_$][\w$]*\s*:\s*([A-Z][A-Za-z0-9_$]*)\s*(?=[,}\n)])/g)) {
+    if (match[1]) facts.valueRefs.add(match[1]);
+  }
   for (const match of text.matchAll(/\b([A-Za-z_$][\w$]*)\s*\(/g)) {
     if (match[1]) facts.calledNames.add(match[1]);
   }
@@ -266,10 +291,17 @@ function factsFor(root: string, path: string, candidates: Candidate[]): ModuleFa
       true,
       path.endsWith("x") ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
     );
+    const spans: Array<{ key: string; localName: string; start: number; end: number }> = [];
     const addCandidate = (name: string, exportName: string, node: ts.Node): void => {
       const kind = classifyExport(rel, name, node);
       if (!kind || (kind === "component" && ENTRY_FILE_RE.test(`/${rel}`))) return;
       const where = location(source, node);
+      spans.push({
+        key: `${path}#${exportName}`,
+        localName: name,
+        start: node.getStart(source),
+        end: node.getEnd(),
+      });
       const candidate: Candidate = {
         key: `${path}#${exportName}`,
         file: rel,
@@ -303,6 +335,28 @@ function factsFor(root: string, path: string, candidates: Candidate[]): ModuleFa
         );
         if (existing) facts.directExports.set("default", existing.key);
       }
+    }
+
+    if (spans.length > 1) {
+      const byName = new Map(spans.map((span) => [span.localName, span] as const));
+      const visit = (node: ts.Node): void => {
+        if (ts.isIdentifier(node)) {
+          const target = byName.get(node.text);
+          if (target) {
+            const position = node.getStart(source);
+            // Innermost enclosing candidate that is not the target itself.
+            let owner: (typeof spans)[number] | null = null;
+            for (const span of spans) {
+              if (span.key === target.key) continue;
+              if (position < span.start || position >= span.end) continue;
+              if (!owner || span.end - span.start < owner.end - owner.start) owner = span;
+            }
+            if (owner) facts.localEdges.push({ from: owner.key, to: target.key });
+          }
+        }
+        ts.forEachChild(node, visit);
+      };
+      ts.forEachChild(source, visit);
     }
   }
   return facts;
@@ -406,12 +460,28 @@ export function scanFrontendUnwired(root: string): { findings: UnwiredFinding[];
         }
       }
     }
-    for (const jsxName of fact.jsxNames) {
-      const imported = localToCandidate.get(jsxName);
+    for (const name of [...fact.jsxNames, ...fact.valueRefs]) {
+      const imported = localToCandidate.get(name);
       if (imported) mark(mountedBy, imported, fact.path);
-      const local = localCandidates.get(`${posix(relative(root, fact.path))}#${jsxName}`);
+      const local = localCandidates.get(`${posix(relative(root, fact.path))}#${name}`);
       if (local) mark(mountedBy, local.key, fact.path);
     }
+  }
+
+  // A wired export carries its intra-module dependencies with it. Applied to
+  // `importedBy` only: component mounting already resolves same-file JSX tags.
+  const localEdges = facts.flatMap((fact) => fact.localEdges);
+  for (let pass = 0; pass < 12; pass += 1) {
+    let changed = false;
+    for (const edge of localEdges) {
+      const consumers = importedBy.get(edge.from);
+      if (!consumers?.size) continue;
+      const existing = importedBy.get(edge.to);
+      if (existing?.size) continue;
+      mark(importedBy, edge.to, `${edge.from} (same module)`);
+      changed = true;
+    }
+    if (!changed) break;
   }
 
   const findings: UnwiredFinding[] = [];
@@ -423,6 +493,16 @@ export function scanFrontendUnwired(root: string): { findings: UnwiredFinding[];
           ? calledBy
           : importedBy;
     if ((consumers.get(candidate.key)?.size ?? 0) > 0) continue;
+    // A PascalCase JSX-returning function is not always mounted as a tag.
+    // `GalleryWindow` calls `GalleryFloatingWorkspace()` directly to own its
+    // state; that call IS the runtime consumer, so a tag search alone reads a
+    // fully wired surface as unfinished.
+    if (
+      candidate.detector === "react-component-unmounted" &&
+      (calledBy.get(candidate.key)?.size ?? 0) > 0
+    ) {
+      continue;
+    }
     const evidence =
       candidate.detector === "react-component-unmounted"
         ? "no JSX tag in the runtime TypeScript graph resolves to this exported component"

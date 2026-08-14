@@ -13,7 +13,7 @@ import {
 } from "@/lib/redux/preferences/adminDebugSlice";
 import { DebugIndicator } from "./DebugIndicator";
 import { ResourceDebugIndicator } from "./ResourceDebugIndicator";
-import { PromptExecutionDebugPanel } from "./PromptExecutionDebugPanel";
+import { AgentExecutionDebugPanel } from "./AgentExecutionDebugPanel";
 
 /**
  * Centralized manager for all debug indicators
@@ -47,10 +47,15 @@ export function DebugIndicatorManager() {
         />
       )}
 
-      {/* Execution State Debug Panel */}
+      {/* Execution State Debug Panel.
+          `AgentExecutionDebugPanel` is the built-but-never-mounted successor to
+          `PromptExecutionDebugPanel`: same execution-system selectors, same
+          close contract, and a strict superset of sections (streaming,
+          model-settings, assembled-request, ui-state). `instanceId` is the same
+          value the slice still stores as `runId`. */}
       {executionStateDebug?.isOpen && executionStateDebug.runId && (
-        <PromptExecutionDebugPanel
-          conversationId={executionStateDebug.runId}
+        <AgentExecutionDebugPanel
+          instanceId={executionStateDebug.runId}
           onClose={() => dispatch(hideExecutionStateDebug())}
         />
       )}

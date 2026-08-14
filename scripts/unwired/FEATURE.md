@@ -46,9 +46,20 @@ The terminal and scoreboard use the same vocabulary:
 
 An exported PascalCase TypeScript declaration contains JSX, but no runtime JSX tag resolves to it. Relative imports, `@/` imports, aliases, and re-export barrels resolve back to the original declaration. A barrel is not a mounter. App Router entry files (`page`, `layout`, `loading`, `error`, `not-found`, `template`, `default`, `route`) are framework-mounted and excluded.
 
+Four consumer shapes count as mounting, because each is a real runtime path a tag search misses:
+
+1. **A JSX tag** resolving to the export.
+2. **A direct call** — `GalleryWindow` calls `GalleryFloatingWorkspace()` to own its state.
+3. **An object-property value** — `OverlayComponent: UserListsOverlay`, `component: Foo`. A registry that stores a component and renders it dynamically is the mounter.
+4. **A dynamic import** of the owning module.
+
+A **SCREAMING_SNAKE** export is a constant, never a component, even when its members contain JSX.
+
 ### `export-unimported`
 
 An exported hook (`useX`), service, or producer has no runtime importer. Tests, stories, fixtures, generated code, and type-only imports do not count. Re-exporting without a runtime importer does not count. A dynamic import of the owning module counts conservatively.
+
+**Intra-module edges propagate.** A wired export carries what it consumes beside it: `getMessagingService` is imported, so the `MessagingService` class it constructs in the same module is wired too. Only candidate-to-candidate references inside one file count, resolved by AST, so a mention in a docblock is not a consumer.
 
 ### `router-unmounted`
 
@@ -95,7 +106,10 @@ A one-repository symbol search is not the hunt.
 **A clean report is never proof that all work is wired.** The static pass deliberately favors precision and can under-report.
 
 - React component detection requires an exported PascalCase declaration containing JSX. Components returned indirectly, created by factories, or exported through shapes the TypeScript syntax pass does not recognize can be invisible.
-- A component passed as a value to a registry (`component: Foo`) is not a JSX mounter and can be reported even when the registry renders it dynamically. Record that verified dynamic path in the reason-required allowlist.
+- A component handed to an object property now counts as mounted. That deliberately trades precision for it: a component parked in a registry **nothing iterates** is hidden rather than reported. The same trade already applied to dynamic imports.
+- Directory names are no longer used to exclude code. Only `__tests__` and `node_modules` are skipped wholesale; everything else is filtered by filename (`*.test.*`, `*.spec.*`, `*.stories.*`, `test_*`). Excluding bare `test` / `tests` directories hid 159 real demo route files and two live `(core)` product routes, both as artifacts and — the damaging half — as mounters.
+- Reference/sample source (`features/agent-apps/sample-code/apps/`) has no runtime mounter by design: the runtime compiles the equivalent source from the database. Those live in the allowlist with that reason.
+- The aidream `python-module-unreached` detector reaches only from **server** entry points. An operator CLI harness under `aidream/scripts/` is a real consumer that this rule cannot see — `services/runtime/workflow_ab.py` has two documented script consumers and full test coverage, and is still reported.
 - Runtime import detection is syntactic. String registries, plugin discovery, code generation, framework conventions beyond the named App Router entries, and imports assembled at runtime can be invisible.
 - A dynamic import marks every tracked export of that module as conservatively consumed. This can hide a sibling export that remains unwired.
 - Service/producer classification is name- and path-based. Purpose-built exported functions with generic names outside a `service` or `producer` path are not detected.
@@ -106,5 +120,7 @@ A one-repository symbol search is not the hunt.
 - The scan covers the configured frontend runtime roots plus `aidream` / `packages`. Satellites are outside this report unless their canonical checker is added explicitly.
 
 ## Change Log
+
+- **2026-08-14** — claude: **Four category-level false-positive classes fixed; 1,270 → 981 findings (−289, −23%) with no artifact reclassified as unwanted.** (1) Directory-name exclusions cut to `__tests__` / `node_modules` — `app/(dev)/demos/tests/` (159 files), `app/(core)/shapes/[kind]/test/` and `app/(core)/education/flashcards/[setId]/test/` were invisible as mounters, so components they render read as unfinished. (2) Intra-module edges: a wired export carries the siblings it consumes (`getMessagingService` → `MessagingService`). (3) A direct call and an object-property value both count as mounting a component (`GalleryWindow` calls `GalleryFloatingWorkspace()`; `registry.tsx` stores `OverlayComponent: UserListsOverlay` — 43 tool-call renderers alone). (4) SCREAMING_SNAKE exports are constants, never components (13 imported column registries). Four new fixture tests cover each. **Wired in the same pass:** `AgentExecutionDebugPanel` (777 lines, ten sections, built and never mounted) now renders from `DebugIndicatorManager` in place of its 589-line predecessor `PromptExecutionDebugPanel` — same selectors, same close contract, `instanceId` is the value the slice stores as `runId`. `features/code/SYSTEM_STATE.md` corrected: it claimed `TerminalTab` was "always mounted" when `SimpleTerminal` had deliberately replaced it.
 
 - **2026-08-13** — Shipped the cross-repo detector, reason-required suppressions, size-ranked committed snapshot, advisory release gate, and `/administration/reporting/unwired` finish-the-wiring scoreboard.

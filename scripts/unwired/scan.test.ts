@@ -78,6 +78,51 @@ describe("scanFrontendUnwired", () => {
     ]);
   });
 
+  it("counts a component mounted from a route inside a directory named tests", () => {
+    const root = fixture({
+      "components/DemoCard.tsx": "export default function DemoCard() { return <section />; }\n",
+      "app/(dev)/demos/tests/oauth/page.dev.tsx":
+        'import DemoCard from "@/components/DemoCard"; export default function Page() { return <DemoCard />; }\n',
+    });
+    roots.push(root);
+
+    expect(scanFrontendUnwired(root).findings).toEqual([]);
+  });
+
+  it("carries a wired export to the sibling it consumes in the same module", () => {
+    const root = fixture({
+      "lib/messaging.ts":
+        "export class MessagingService { ping() { return 1; } }\nexport function getMessagingService() { return new MessagingService(); }\n",
+      "app/page.tsx":
+        'import { getMessagingService } from "@/lib/messaging"; export default function Page() { getMessagingService(); return <main />; }\n',
+    });
+    roots.push(root);
+
+    expect(scanFrontendUnwired(root).findings).toEqual([]);
+  });
+
+  it("counts a component handed to a registry as an object-property value", () => {
+    const root = fixture({
+      "features/renderers/ListOverlay.tsx": "export const ListOverlay = () => <section />;\n",
+      "features/registry.tsx":
+        'import { ListOverlay } from "./renderers/ListOverlay"; export const REGISTRY = { lists: { OverlayComponent: ListOverlay } };\n',
+      "app/page.tsx":
+        'import { REGISTRY } from "@/features/registry"; export default function Page() { const C = REGISTRY.lists.OverlayComponent; return <C />; }\n',
+    });
+    roots.push(root);
+
+    expect(scanFrontendUnwired(root).findings).toEqual([]);
+  });
+
+  it("never classifies a SCREAMING_SNAKE constant as a component", () => {
+    const root = fixture({
+      "features/columns.tsx": "export const TABLE_COLUMNS = [{ cell: () => <span /> }];\n",
+    });
+    roots.push(root);
+
+    expect(scanFrontendUnwired(root).findings).toEqual([]);
+  });
+
   it("treats file-pattern dynamic imports as framework mounters", () => {
     const root = fixture({
       "components/displays/ChartDisplay.tsx": "export default function ChartDisplay() { return <section />; }\n",

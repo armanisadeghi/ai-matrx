@@ -4,5 +4,41 @@
     "An entry means the artifact IS wired through a static shape the detector cannot see.",
     "It never means the artifact is unwanted. Unmatched entries are reported as stale."
   ],
-  "entries": []
+  "entries": [
+    {
+      "repository": "matrx-frontend",
+      "detector": "react-component-unmounted",
+      "file": "features/agent-apps/sample-code/apps/lsi-generator.tsx",
+      "symbol": "LSIMarkdownGenerator",
+      "reason": "Reference source for user-authored agent apps. features/agent-apps/FEATURE.md names sample-code/apps/ as the idiomatic examples an app author copies; the runtime compiles the equivalent source from the DB user_content JSONB through utils/compile-slot.ts, never this module."
+    },
+    {
+      "repository": "matrx-frontend",
+      "detector": "react-component-unmounted",
+      "file": "features/agent-apps/sample-code/apps/lasi-generator-3.tsx",
+      "symbol": "LSIKeywordGenerator",
+      "reason": "Reference source for user-authored agent apps (see lsi-generator.tsx entry). Consumed by app authors and the Babel sandbox path, not by a JSX mount."
+    },
+    {
+      "repository": "matrx-frontend",
+      "detector": "react-component-unmounted",
+      "file": "features/agent-apps/sample-code/apps/flashcard-generator.tsx",
+      "symbol": "FlashcardGenerator",
+      "reason": "Reference source for user-authored agent apps (see lsi-generator.tsx entry). Consumed by app authors and the Babel sandbox path, not by a JSX mount."
+    },
+    {
+      "repository": "matrx-frontend",
+      "detector": "react-component-unmounted",
+      "file": "features/agent-apps/sample-code/apps/fact-checker.tsx",
+      "symbol": "FactCheckerApp",
+      "reason": "Reference source for user-authored agent apps (see lsi-generator.tsx entry). Consumed by app authors and the Babel sandbox path, not by a JSX mount."
+    },
+    {
+      "repository": "matrx-frontend",
+      "detector": "react-component-unmounted",
+      "file": "features/agent-apps/sample-code/apps/fact-checker-hooked.tsx",
+      "symbol": "FactCheckerHooked",
+      "reason": "Reference source for user-authored agent apps; features/agent-apps/FEATURE.md 2026-05-09 names it the idiomatic Tier-3 reference for useAgentApp(). Consumed by app authors and the Babel sandbox path, not by a JSX mount."
+    }
+  ]
 }
