@@ -90,22 +90,21 @@ export const MARKETING_SITE_SECTIONS = [
     pendingMoveTo: "marketing",
   },
   {
-    slug: "performance",
-    name: "Performance",
-    titlePrefix: "Site Performance",
-    description:
-      "See PageSpeed coverage, site-wide score health, trends, and the slowest pages with real search traffic.",
-    letter: "Pf",
-    group: "Health & Fixes",
+    slug: "pages",
+    name: "Pages",
+    titlePrefix: "Pages",
+    description: "Manage canonical pages and their observed content.",
+    letter: "Pg",
+    group: "Content",
   },
   {
-    slug: "discovery",
-    name: "Discovery",
-    titlePrefix: "Discovery",
-    description: "Review discovered brand assets and business facts.",
-    letter: "Di",
-    group: "Collection",
-    pendingMoveTo: "brand",
+    slug: "structure",
+    name: "Structure",
+    titlePrefix: "Structure",
+    description:
+      "Explore the site's routing tree with page totals at every level.",
+    letter: "Tr",
+    group: "Content",
   },
   {
     slug: "sitemaps",
@@ -121,32 +120,6 @@ export const MARKETING_SITE_SECTIONS = [
     titlePrefix: "Coverage",
     description: "Compare sitemap, crawl, and search coverage for this site.",
     letter: "Cv",
-    group: "Content",
-  },
-  {
-    slug: "audit",
-    name: "Audit",
-    titlePrefix: "Site Audit",
-    description:
-      "Review deterministic site-wide indexability, search metadata, social, heading, and URL-quality checks.",
-    letter: "Au",
-    group: "Health & Fixes",
-  },
-  {
-    slug: "pages",
-    name: "Pages",
-    titlePrefix: "Pages",
-    description: "Manage canonical pages and their observed content.",
-    letter: "Pg",
-    group: "Content",
-  },
-  {
-    slug: "structure",
-    name: "Structure",
-    titlePrefix: "Structure",
-    description:
-      "Explore the site's routing tree with page totals at every level.",
-    letter: "Tr",
     group: "Content",
   },
   {
@@ -167,11 +140,21 @@ export const MARKETING_SITE_SECTIONS = [
     group: "Collection",
   },
   {
-    slug: "analysis",
-    name: "Analysis",
-    titlePrefix: "Analysis",
-    description: "Review prioritized marketing analysis for this site.",
-    letter: "An",
+    slug: "discovery",
+    name: "Discovery",
+    titlePrefix: "Discovery",
+    description: "Review discovered brand assets and business facts.",
+    letter: "Di",
+    group: "Collection",
+    pendingMoveTo: "brand",
+  },
+  {
+    slug: "audit",
+    name: "Audit",
+    titlePrefix: "Site Audit",
+    description:
+      "Review deterministic site-wide indexability, search metadata, social, heading, and URL-quality checks.",
+    letter: "Au",
     group: "Health & Fixes",
   },
   {
@@ -183,30 +166,21 @@ export const MARKETING_SITE_SECTIONS = [
     group: "Health & Fixes",
   },
   {
-    slug: "links",
-    name: "Links",
-    titlePrefix: "Links",
-    description: "Inspect accepted link evidence for this site.",
-    letter: "Ln",
-    group: "Links & Reputation",
+    slug: "analysis",
+    name: "Analysis",
+    titlePrefix: "Analysis",
+    description: "Review prioritized marketing analysis for this site.",
+    letter: "An",
+    group: "Health & Fixes",
   },
   {
-    slug: "authority",
-    name: "Authority",
-    titlePrefix: "Authority Router",
+    slug: "performance",
+    name: "Performance",
+    titlePrefix: "Site Performance",
     description:
-      "Route backlink and internal authority toward strategically important pages with exact, evidence-grounded link recommendations.",
-    letter: "Ar",
-    group: "Links & Reputation",
-  },
-  {
-    slug: "backlinks",
-    name: "Backlinks",
-    titlePrefix: "Backlinks",
-    description:
-      "Inspect persisted backlink authority, referring domains, anchors, linked pages, and competitors.",
-    letter: "Bl",
-    group: "Links & Reputation",
+      "See PageSpeed coverage, site-wide score health, trends, and the slowest pages with real search traffic.",
+    letter: "Pf",
+    group: "Health & Fixes",
   },
   {
     slug: "changes",
@@ -218,15 +192,6 @@ export const MARKETING_SITE_SECTIONS = [
     group: "Health & Fixes",
   },
   {
-    slug: "reputation",
-    name: "Reputation",
-    titlePrefix: "Digital PR & Reputation",
-    description:
-      "Review evidence-backed publication opportunities and reputation handling decisions.",
-    letter: "Pr",
-    group: "Links & Reputation",
-  },
-  {
     slug: "keywords",
     name: "Keywords",
     titlePrefix: "Keywords",
@@ -234,15 +199,6 @@ export const MARKETING_SITE_SECTIONS = [
       "Inspect persisted organic query performance and keyword-market intelligence.",
     letter: "Kw",
     group: "Search",
-  },
-  {
-    slug: "intake",
-    name: "Intake",
-    titlePrefix: "Site Intake",
-    description:
-      "Review and complete the site information needed by marketing systems.",
-    letter: "It",
-    group: "Configuration",
   },
   {
     slug: "ranks",
@@ -262,6 +218,49 @@ export const MARKETING_SITE_SECTIONS = [
     group: "Search",
   },
   {
+    slug: "backlinks",
+    name: "Backlinks",
+    titlePrefix: "Backlinks",
+    description:
+      "Inspect persisted backlink authority, referring domains, anchors, linked pages, and competitors.",
+    letter: "Bl",
+    group: "Links & Reputation",
+  },
+  {
+    slug: "links",
+    name: "Links",
+    titlePrefix: "Links",
+    description: "Inspect accepted link evidence for this site.",
+    letter: "Ln",
+    group: "Links & Reputation",
+  },
+  {
+    slug: "authority",
+    name: "Authority",
+    titlePrefix: "Authority Router",
+    description:
+      "Route backlink and internal authority toward strategically important pages with exact, evidence-grounded link recommendations.",
+    letter: "Ar",
+    group: "Links & Reputation",
+  },
+  {
+    slug: "reputation",
+    name: "Reputation",
+    titlePrefix: "Digital PR & Reputation",
+    description:
+      "Review evidence-backed publication opportunities and reputation handling decisions.",
+    letter: "Pr",
+    group: "Links & Reputation",
+  },
+  {
+    slug: "settings",
+    name: "Settings",
+    titlePrefix: "Settings",
+    description: "Configure website identity and crawl behavior.",
+    letter: "Se",
+    group: "Configuration",
+  },
+  {
     slug: "integrations",
     name: "Integrations",
     titlePrefix: "Integrations",
@@ -278,11 +277,12 @@ export const MARKETING_SITE_SECTIONS = [
     group: "Configuration",
   },
   {
-    slug: "settings",
-    name: "Settings",
-    titlePrefix: "Settings",
-    description: "Configure website identity and crawl behavior.",
-    letter: "Se",
+    slug: "intake",
+    name: "Intake",
+    titlePrefix: "Site Intake",
+    description:
+      "Review and complete the site information needed by marketing systems.",
+    letter: "It",
     group: "Configuration",
   },
 ] as const satisfies readonly MarketingSiteRouteSection[];

@@ -20,6 +20,7 @@
  * reversible Main Menu control. This component only renders registry data.
  */
 
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronLeft, Globe, TrendingUp } from "lucide-react";
@@ -83,6 +84,15 @@ function SiteSections({
     pathname,
   );
 
+  // Twenty-six rows in seven groups do not fit the sidebar, so landing on a
+  // section low in the list showed the top of the menu and no sign of where you
+  // were. `nearest` moves the menu's own scroller the minimum needed and leaves
+  // the page scroll alone.
+  const activeRef = useRef<HTMLAnchorElement | null>(null);
+  useEffect(() => {
+    activeRef.current?.scrollIntoView({ block: "nearest" });
+  }, [active?.href]);
+
   return (
     <>
       <Link
@@ -120,6 +130,7 @@ function SiteSections({
             return (
               <Link
                 key={mode.href}
+                ref={isActive ? activeRef : undefined}
                 href={mode.href}
                 title={mode.name}
                 aria-label={mode.name}
