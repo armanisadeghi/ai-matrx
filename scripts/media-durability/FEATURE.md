@@ -249,7 +249,8 @@ three anon-facing**: `app.definition.preview_image_url`, `app.definition.favicon
 A guard that reports nothing is indistinguishable from a guard that finds nothing. The
 key is now `(schema_name, table_name)` — bare names like `definition` and `template`
 exist in several schemas, so renaming the rows alone would have left the guard able to
-fire on the wrong table. `schema_name IS NULL` still matches any schema (back-compat).
+fire on the wrong table. `schema_name` is required; there is no wildcard or legacy NULL
+match. The heal queue and its pending uniqueness key carry the same exact identity.
 Migration: `migrations/mtx_public_url_guard_schema_aware.sql`.
 
 ## Related
@@ -264,6 +265,7 @@ Migration: `migrations/mtx_public_url_guard_schema_aware.sql`.
 
 ## Change Log
 
+- **2026-08-13** — D158 follow-up removed the NULL-schema wildcard from the guard and heal queue, backfilled every queued row, made both schema columns required, and widened pending-job uniqueness plus trigger conflicts to exact `schema.table`.
 - **2026-08-11** — Created. Platform-wide inventory (734 tables in Matrx Main + all 11
   tables of the CMS project `viyklljfdhtidwecakwx`, which was clean); 61 columns
   classified; the schema-blind guard defect found and fixed with a proven live test

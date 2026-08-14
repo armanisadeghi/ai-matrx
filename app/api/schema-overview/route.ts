@@ -23,11 +23,13 @@ const CACHE_TTL_MS = 60 * 60 * 1000;
 let cached: { payload: string; expiresAt: number } | null = null;
 
 interface InformationSchemaTableRow {
+    table_schema: string;
     table_name: string;
     table_type: "BASE TABLE" | "VIEW";
 }
 
 interface InformationSchemaColumnRow {
+    table_schema: string;
     table_name: string;
     column_name: string;
     data_type: string;
@@ -37,14 +39,17 @@ interface InformationSchemaColumnRow {
 }
 
 interface ForeignKeyRow {
+    table_schema: string;
     table_name: string;
     column_name: string;
     foreign_table_name: string;
+    foreign_table_schema: string;
     foreign_column_name: string;
     constraint_name: string;
 }
 
 interface PrimaryKeyRow {
+    table_schema: string;
     table_name: string;
     column_name: string;
     ordinal_position: number;
@@ -55,7 +60,7 @@ async function loadOverview(): Promise<SchemaOverview> {
 
     // 1. List public tables and views.
     const tablesQuery = `
-        SELECT table_name, table_type
+        SELECT table_schema, table_name, table_type
         FROM information_schema.tables
         WHERE table_schema = 'public'
           AND table_type IN ('BASE TABLE', 'VIEW')
@@ -64,7 +69,7 @@ async function loadOverview(): Promise<SchemaOverview> {
 
     // 2. Pull all columns for public tables/views in one shot.
     const columnsQuery = `
-        SELECT table_name, column_name, data_type, is_nullable, column_default, ordinal_position
+        SELECT table_schema, table_name, column_name, data_type, is_nullable, column_default, ordinal_position
         FROM information_schema.columns
         WHERE table_schema = 'public'
         ORDER BY table_name, ordinal_position;
@@ -74,8 +79,10 @@ async function loadOverview(): Promise<SchemaOverview> {
     const foreignKeysQuery = `
         SELECT
             tc.table_name,
+            tc.table_schema,
             kcu.column_name,
             ccu.table_name AS foreign_table_name,
+            ccu.table_schema AS foreign_table_schema,
             ccu.column_name AS foreign_column_name,
             tc.constraint_name
         FROM information_schema.table_constraints AS tc
@@ -93,6 +100,7 @@ async function loadOverview(): Promise<SchemaOverview> {
     const primaryKeysQuery = `
         SELECT
             tc.table_name,
+            tc.table_schema,
             kcu.column_name,
             kcu.ordinal_position
         FROM information_schema.table_constraints AS tc
@@ -121,13 +129,16 @@ async function loadOverview(): Promise<SchemaOverview> {
     const fkRows = (fkResult.data ?? []) as unknown as ForeignKeyRow[];
     const pkRows = (pkResult.data ?? []) as unknown as PrimaryKeyRow[];
 
+    const relationKey = (schema: string, table: string) => `${schema}.${table}`;
+
     // ---- Build columns map per table ----
     const columnsByTable = new Map<string, Record<string, SchemaColumn>>();
     for (const row of columnRows) {
-        if (!columnsByTable.has(row.table_name)) {
-            columnsByTable.set(row.table_name, {});
+        const key = relationKey(row.table_schema, row.table_name);
+        if (!columnsByTable.has(key)) {
+            columnsByTable.set(key, {});
         }
-        const map = columnsByTable.get(row.table_name)!;
+        const map = columnsByTable.get(key)!;
         map[row.column_name] = {
             column_name: row.column_name,
             data_type: row.data_type,
@@ -140,10 +151,11 @@ async function loadOverview(): Promise<SchemaOverview> {
     // ---- Build primary key map per table ----
     const primaryKeysByTable = new Map<string, string[]>();
     for (const row of pkRows) {
-        if (!primaryKeysByTable.has(row.table_name)) {
-            primaryKeysByTable.set(row.table_name, []);
+        const key = relationKey(row.table_schema, row.table_name);
+        if (!primaryKeysByTable.has(key)) {
+            primaryKeysByTable.set(key, []);
         }
-        primaryKeysByTable.get(row.table_name)!.push(row.column_name);
+        primaryKeysByTable.get(key)!.push(row.column_name);
     }
 
     // ---- Build relationships per table ----
@@ -159,20 +171,22 @@ async function loadOverview(): Promise<SchemaOverview> {
     };
 
     for (const row of fkRows) {
+        const sourceKey = relationKey(row.table_schema, row.table_name);
+        const targetKey = relationKey(row.foreign_table_schema, row.foreign_table_name);
         // Forward foreign key on the source table.
-        ensureBucket(row.table_name).push({
+        ensureBucket(sourceKey).push({
             relationshipType: "foreignKey",
             column: row.column_name,
-            relatedTable: row.foreign_table_name,
+            relatedTable: targetKey,
             relatedColumn: row.foreign_column_name,
             junctionTable: null,
         });
 
         // Inverse on the target table.
-        ensureBucket(row.foreign_table_name).push({
+        ensureBucket(targetKey).push({
             relationshipType: "inverseForeignKey",
             column: row.foreign_column_name,
-            relatedTable: row.table_name,
+            relatedTable: sourceKey,
             relatedColumn: row.column_name,
             junctionTable: null,
         });
@@ -184,8 +198,9 @@ async function loadOverview(): Promise<SchemaOverview> {
     // both endpoints.
     const fksBySourceTable = new Map<string, ForeignKeyRow[]>();
     for (const row of fkRows) {
-        if (!fksBySourceTable.has(row.table_name)) fksBySourceTable.set(row.table_name, []);
-        fksBySourceTable.get(row.table_name)!.push(row);
+        const key = relationKey(row.table_schema, row.table_name);
+        if (!fksBySourceTable.has(key)) fksBySourceTable.set(key, []);
+        fksBySourceTable.get(key)!.push(row);
     }
 
     for (const [tableName, fks] of fksBySourceTable.entries()) {
@@ -195,17 +210,19 @@ async function loadOverview(): Promise<SchemaOverview> {
         if (!allFkColsArePk) continue;
 
         const [a, b] = fks;
-        ensureBucket(a.foreign_table_name).push({
+        const aTarget = relationKey(a.foreign_table_schema, a.foreign_table_name);
+        const bTarget = relationKey(b.foreign_table_schema, b.foreign_table_name);
+        ensureBucket(aTarget).push({
             relationshipType: "manyToMany",
             column: a.foreign_column_name,
-            relatedTable: b.foreign_table_name,
+            relatedTable: bTarget,
             relatedColumn: b.foreign_column_name,
             junctionTable: tableName,
         });
-        ensureBucket(b.foreign_table_name).push({
+        ensureBucket(bTarget).push({
             relationshipType: "manyToMany",
             column: b.foreign_column_name,
-            relatedTable: a.foreign_table_name,
+            relatedTable: aTarget,
             relatedColumn: a.foreign_column_name,
             junctionTable: tableName,
         });
@@ -214,20 +231,21 @@ async function loadOverview(): Promise<SchemaOverview> {
     // ---- Assemble the final tables object ----
     const tables: Record<string, SchemaTable> = {};
     for (const tableRow of tableRows) {
-        const columns = columnsByTable.get(tableRow.table_name) ?? {};
-        const pkArr = primaryKeysByTable.get(tableRow.table_name) ?? [];
+        const key = relationKey(tableRow.table_schema, tableRow.table_name);
+        const columns = columnsByTable.get(key) ?? {};
+        const pkArr = primaryKeysByTable.get(key) ?? [];
         const primaryKey: string | string[] =
             pkArr.length === 0 ? "" : pkArr.length === 1 ? pkArr[0] : pkArr;
 
         const schemaType: SchemaTable["schemaType"] =
             tableRow.table_type === "VIEW" ? "view" : "table";
 
-        tables[tableRow.table_name] = {
-            table_name: tableRow.table_name,
+        tables[key] = {
+            table_name: key,
             table_type: tableRow.table_type,
             schemaType,
             columns,
-            relationships: relationshipsByTable.get(tableRow.table_name) ?? [],
+            relationships: relationshipsByTable.get(key) ?? [],
             primaryKey,
         };
     }

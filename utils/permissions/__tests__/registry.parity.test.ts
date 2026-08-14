@@ -40,6 +40,7 @@ import { join } from "node:path";
 import {
   SHAREABLE_RESOURCE_REGISTRY,
   RESOURCE_TYPES,
+  getShareableResource,
   type ShareableResourceEntry,
 } from "../registry";
 
@@ -171,5 +172,10 @@ describe("shareable_resource_registry: TS ↔ DB parity", () => {
       }
       seen.set(qualified, entry.resourceType);
     }
+  });
+
+  it("never resolves a bare physical table name as a registry key", () => {
+    expect(getShareableResource("definition")).toBeUndefined();
+    expect(getShareableResource("conversation")).toBeDefined();
   });
 });

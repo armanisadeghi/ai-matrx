@@ -13,6 +13,10 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D158 remainder — persisted DataRef and legacy dynamic-table contracts still use bare names (2026-08-13)
+
+Two contracts cannot be re-keyed safely without data/API migration. (1) `features/scopes/registry/entityRegistry.ts#UNIQUE_TABLE_NAME_TO_TOKEN` and `DataRefHoverPreview.tsx` consume `DataRef.table`; aidream's `packages/matrx-ai/matrx_ai/db/content_types/data_ref.py` persists the values `notes/tasks/projects/organizations`. Switching one side would break historical message blocks and generated API types; migrate the wire values to entity tokens or `schema.table` across DB rows, Python, generated types, and frontend together. (2) `workbench.udt_datasets.table_name` is a user-facing dataset label keyed by `(user_id, table_name)`, not a physical relation, but its column/API name makes it indistinguishable from one; rename it to `dataset_key`/`label` only with the workbench RPC, data, and generated-type migration. The contained 33-function legacy `p_table_name` family remains D123 and must be removed as already decided, not re-signatured piecemeal.
+
 ### D188 — `platform.assists` fails the canonical entity gate (2026-08-13)
 
 Found while shipping producer-level suppression; unrelated to that lifecycle change.
@@ -294,7 +298,7 @@ The canonical thunk (`execute-builtin-with-extraction.thunks.ts`) has ONE consum
 
 ### D123 — legacy `p_table_name` RPCs: CONFIRMED anonymous RLS bypass (contained 2026-08-04)
 
-`public.dynamic_search` (SECURITY DEFINER, anon-EXECUTE) returned arbitrary `public` rows with only the publishable key — confirmed live. Contained: `REVOKE EXECUTE FROM anon, PUBLIC` on all 33 `p_table_name` functions + `FROM authenticated` on the 5 ungated definer ones; verified 42501. Open: (1) **audit for prior abuse** — nobody has checked; (2) **drop the whole family** (containment is a grant change; brief 8 of `docs/upgrades/type-debt/2026-07-01-fleet-briefs.md` already decided the tear-out); (3) the `relation "ai_model" does not exist` caller (~5,400 failed round-trips/day, every ~16s) is STILL unidentified and holds service_role or a direct connection — not this repo, not aidream; (4) watch for `42501 permission denied for function` regressions from the revokes. **Decides: Arman** (abuse audit + drop schedule).
+`public.dynamic_search` (SECURITY DEFINER, anon-EXECUTE) returned arbitrary `public` rows with only the publishable key — confirmed live. Contained: `REVOKE EXECUTE FROM anon, PUBLIC` on all 33 `p_table_name` functions + `FROM authenticated` on the 5 ungated definer ones; verified 42501. These functions are also the largest remaining D158 cluster: their bare relation argument feeds `to_regclass`/dynamic SQL, so a duplicate or schema move can select the wrong relation or miss silently. Open: (1) **audit for prior abuse** — nobody has checked; (2) **drop the whole family** (containment is a grant change; brief 8 of `docs/upgrades/type-debt/2026-07-01-fleet-briefs.md` already decided the tear-out; do not create a second canonicalized version); (3) the `relation "ai_model" does not exist` caller (~5,400 failed round-trips/day, every ~16s) is STILL unidentified and holds service_role or a direct connection — not this repo, not aidream; (4) watch for `42501 permission denied for function` regressions from the revokes. **Decides: Arman** (abuse audit + drop schedule).
 
 ### D122 (residuals) — partition exhaustion class guards (2026-08-04)
 
