@@ -379,6 +379,11 @@ UI-complete here but only take effect once P1's service layer reads them.
 
 ## Change log
 
+- `2026-08-14` — **THE PAGE-HUB RULING (Arman): everything that makes a page is PART of the
+  page.** The page editor becomes the page's hub — Plan / Measure tabs reusing the canonical
+  plan-node and PageWorkspace components via the `plan_node_id` / `web_page_id` joins, plus
+  reverse doors from workspace and plan. Work order + before/during/after doctrine:
+  `docs/handoffs/cms-page-hub.md`. New PageEditor tabs MUST follow its tab-governance rules.
 - `2026-08-14` — **Research lineage now survives research → plan → CMS at site and page granularity.** Six non-access-conveying MAIN-project association pairs make `research_topic` and `research_tag` attachable to `web_site`, `plan_node`, and `web_page`. Site/page settings reuse the canonical `AssociationList`; linked titles are real doors, including new flat resolver routes for `research_tag` and `plan_node`. Site-wide links are inherited at read time; plan-node links are copied by a symmetric database trigger whenever either the lineage edge or the `plan_node → web_page (realizes)` edge arrives. Because CMS rows live in a separate Supabase project, migration `0038` adds typed UUID-array scratch bridges on `client_sites` / `client_pages`; the UI writes canonical associations whenever a MAIN anchor exists and offers one-click promotion of scratch links once pairing becomes possible. Both CMS surface manifests require `research_lineage`, and the site/page context builders emit titles, ids, direct/inherited origin, anchor status, and loud load errors so an agent never mistakes unavailable lineage for an empty set.
 - `2026-08-13` — **WF-3 closed: frontend page/component writes now pass through
   aidream's canonical content guard.** New `_lib/validateContent.ts` forwards the

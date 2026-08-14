@@ -235,6 +235,11 @@ is the overflow, never the only door. Remaining spread (chipped/tracked): SEO ta
 publish-review buttons in PageEditor, a collections data agent, wiring the brand→theme agent
 output into `theme_config`, per-page bulk AI actions on the pages list.
 
+**Companion ruling (2026-08-14) — the CMS page editor is the page's HUB:** everything that made
+the page (plan, keywords, research) and everything the live page produces (GSC, analysis,
+findings) is associated and reachable as tabs that REUSE the existing canonical components;
+before/during/after all captured. Work order: [cms-page-hub.md](./cms-page-hub.md).
+
 ## Remaining work (priority order)
 
 1. **Prove the current loop once end-to-end.** Test site → starter kit → cms-fill (~10 nodes) → publish → view on mymatrx.com/c/{slug}. `plan.cms_fill_job` has 0 rows ever; nothing downstream should be designed on an unexercised pipeline. Surface every failure found.
