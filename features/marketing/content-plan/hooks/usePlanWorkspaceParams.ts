@@ -15,12 +15,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 
 export type PlanView =
-  | "tree"
-  | "table"
-  | "map"
-  | "entities"
-  | "setup"
-  | "ai-runs";
+  "tree" | "table" | "map" | "entities" | "setup" | "ai-runs";
 
 /**
  * THE view vocabulary. Exported so runtime validators — the surface
@@ -43,6 +38,7 @@ export function usePlanWorkspaceParams() {
 
   const siteId = params.siteId ?? null;
   const viewParam = searchParams.get("view");
+  const nodeId = searchParams.get("node");
   const view: PlanView = PLAN_VIEWS.includes(viewParam as PlanView)
     ? (viewParam as PlanView)
     : "tree";
@@ -67,5 +63,5 @@ export function usePlanWorkspaceParams() {
     [router, siteId],
   );
 
-  return { siteId, view, setSiteId, setView };
+  return { siteId, view, nodeId, setSiteId, setView };
 }

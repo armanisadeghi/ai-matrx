@@ -84,6 +84,7 @@ export interface UseContainerLinksReturn {
   detach: (
     token: EntityTypeToken,
     resourceId: string,
+    role?: string,
   ) => Promise<AssociationWriteResult>;
 }
 
@@ -177,7 +178,9 @@ export function useContainerLinks(
   const conversationFiles =
     conversationResult?.key === conversationKey ? conversationResult.files : [];
   const conversationFileError =
-    conversationResult?.key === conversationKey ? conversationResult.error : null;
+    conversationResult?.key === conversationKey
+      ? conversationResult.error
+      : null;
   const conversationFileStatus =
     containerType !== "conversation"
       ? "idle"
@@ -185,9 +188,9 @@ export function useContainerLinks(
         ? "loading"
         : conversationResult.loading
           ? "loading"
-        : conversationFileError
-          ? "error"
-          : "ready";
+          : conversationFileError
+            ? "error"
+            : "ready";
 
   // A container's attached resources are the edges pointing AT it (incoming).
   // Suppress the generic conversation-file copy because its org-filtered read
@@ -196,10 +199,7 @@ export function useContainerLinks(
     .filter(
       (edge: AssociationEdge) =>
         edge.direction === "incoming" &&
-        !(
-          containerType === "conversation" &&
-          edge.otherType === "file"
-        ),
+        !(containerType === "conversation" && edge.otherType === "file"),
     )
     .map((edge) => ({
       edgeId: edge.id,
@@ -248,11 +248,7 @@ export function useContainerLinks(
         replaceMetadata: options?.replaceMetadata,
       }),
     );
-    if (
-      result.ok &&
-      containerType === "conversation" &&
-      token === "file"
-    ) {
+    if (result.ok && containerType === "conversation" && token === "file") {
       await loadConversationFiles();
     }
     return result;
@@ -261,6 +257,7 @@ export function useContainerLinks(
   const detach = async (
     token: EntityTypeToken,
     resourceId: string,
+    role?: string,
   ): Promise<AssociationWriteResult> => {
     if (!containerId) return { ok: false, error: "Missing container id" };
     const result = await dispatch(
@@ -269,13 +266,10 @@ export function useContainerLinks(
         sourceId: resourceId,
         targetType: containerType,
         targetId: containerId,
+        role,
       }),
     );
-    if (
-      result.ok &&
-      containerType === "conversation" &&
-      token === "file"
-    ) {
+    if (result.ok && containerType === "conversation" && token === "file") {
       await loadConversationFiles();
     }
     return result;
@@ -290,16 +284,15 @@ export function useContainerLinks(
     ]);
   };
 
-  const status =
-    !containerId
-      ? genericStatus
-      : conversationFileStatus === "error"
-        ? "error"
-        : containerType === "conversation" &&
-            (conversationFileStatus === "idle" ||
-              conversationFileStatus === "loading")
-          ? "loading"
-          : genericStatus;
+  const status = !containerId
+    ? genericStatus
+    : conversationFileStatus === "error"
+      ? "error"
+      : containerType === "conversation" &&
+          (conversationFileStatus === "idle" ||
+            conversationFileStatus === "loading")
+        ? "loading"
+        : genericStatus;
   const error = conversationFileError ?? genericError;
 
   return {

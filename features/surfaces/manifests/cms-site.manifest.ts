@@ -108,6 +108,10 @@ export interface CmsSitePageEntry {
   meta_description: string | null;
   last_published_at: string | null;
   updated_at: string;
+  plan_node_id: string | null;
+  web_page_id: string | null;
+  research_topic_ids: string[];
+  research_tag_ids: string[];
 }
 
 /** One entry of the `components_summary` surface value. */
@@ -160,6 +164,18 @@ const surfaceSpecific: SurfaceValue[] = [
     typicalCharCount: 24,
     sortOrder: 305,
     group: "site_identity",
+  },
+  {
+    name: "web_site_id",
+    label: "Canonical site ID",
+    description:
+      "Main-project web.site UUID realized by this CMS site. This is the durable plan-to-CMS bridge and the canonical anchor for site research lineage. Empty only for a CMS site built from scratch before pairing.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 36,
+    sortOrder: 302,
+    group: "site_identity",
+    autoContext: false,
   },
   {
     name: "site_name",
@@ -251,6 +267,17 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 345,
     group: "site_identity",
   },
+  {
+    name: "research_lineage",
+    label: "Research lineage",
+    description:
+      "The research topics and research tags grounding this site, merged from its canonical web.site associations and any CMS-only bridge ids. Object: { status, error, items[] }; each item has token, id, resolved title, and every origin. Always emitted, including loading/error state, so an agent never mistakes an unavailable read for no research.",
+    valueType: "object",
+    alwaysAvailable: true,
+    typicalCharCount: 1200,
+    sortOrder: 347,
+    group: "site_identity",
+  },
 
   // ── Site content ─────────────────────────────────────────────────────
   {
@@ -268,7 +295,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "pages_summary",
     label: "Pages summary",
     description:
-      "Structured twin of the page list the workspace renders: per page `{ id, slug, title, category, page_type, is_published, has_draft, is_home_page, show_in_nav, sort_order, meta_title, meta_description, last_published_at, updated_at }`. No HTML/CSS/JS bodies. Always populated — empty array on a site with no pages, or while the layout's page cache is still loading.",
+      "Structured twin of the page list the workspace renders: per page identity, route, publish state, metadata, plan_node_id, web_page_id, and CMS-draft research_topic_ids/research_tag_ids. No HTML/CSS/JS bodies. Always populated — empty array on a site with no pages, or while the layout's page cache is still loading.",
     valueType: "array",
     alwaysAvailable: true,
     typicalCharCount: 3000,
@@ -828,12 +855,14 @@ export function createCmsSiteScope(values: {
   site_profile: Record<string, unknown>;
   agent_write_policy: AgentWritePolicy;
   has_data_api_key: boolean;
+  research_lineage: Record<string, unknown>;
   current_mode: string;
   // alwaysAvailable: false → optional
   selected_site_id?: string;
   selected_site?: CmsHubSiteSummaryEntry;
   site_domain?: string;
   site_owner_user_id?: string;
+  web_site_id?: string;
   home_page_id?: string;
   site_global_css?: string;
   site_favicon?: string;

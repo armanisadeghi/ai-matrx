@@ -34,6 +34,7 @@ import type {
   ClientPageSummary,
   ClientSite,
 } from "../types";
+import type { ResearchLineageEntry } from "./useCmsResearchLineage";
 
 export interface UseCmsPageSurfaceScopeParams {
   site: ClientSite;
@@ -65,6 +66,9 @@ export interface UseCmsPageSurfaceScopeParams {
   versions: readonly ClientEntityVersion[];
   /** Ref to whichever of the HTML/CSS/JS textareas is currently mounted (only one at a time). */
   textareaRef: RefObject<HTMLTextAreaElement | null>;
+  researchLineage: readonly ResearchLineageEntry[];
+  researchLineageStatus: "idle" | "loading" | "ready" | "error";
+  researchLineageError?: string | null;
 }
 
 export function useCmsPageSurfaceScope(
@@ -95,6 +99,9 @@ export function useCmsPageSurfaceScope(
     editorError,
     versions,
     textareaRef,
+    researchLineage,
+    researchLineageStatus,
+    researchLineageError,
   } = params;
 
   return useCallback(() => {
@@ -128,6 +135,9 @@ export function useCmsPageSurfaceScope(
       versions,
       selectionStart,
       selectionEnd,
+      researchLineage,
+      researchLineageStatus,
+      researchLineageError,
     }) as SurfaceScopePayload;
   }, [
     site,
@@ -154,5 +164,8 @@ export function useCmsPageSurfaceScope(
     editorError,
     versions,
     textareaRef,
+    researchLineage,
+    researchLineageStatus,
+    researchLineageError,
   ]);
 }

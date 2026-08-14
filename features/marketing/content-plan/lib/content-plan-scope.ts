@@ -40,6 +40,12 @@ export interface ContentPlanScopeInput {
   selectedNode: PlanNodeRow | null;
   /** Edges already cached for the selected node — undefined when not loaded. */
   selectedNodeEdges: readonly AssociationEdge[] | undefined;
+  /** Site-level research inherited by every node and downstream CMS page. */
+  siteResearchLineage: {
+    status: "idle" | "loading" | "ready" | "error";
+    error: string | null;
+    items: readonly { token: string; id: string; title: string }[];
+  };
 }
 
 /** One compact `plan_tree` record — the manifest's declared shape. */
@@ -105,6 +111,7 @@ export function buildContentPlanScope(
     statusCategories,
     selectedNode,
     selectedNodeEdges,
+    siteResearchLineage,
   } = input;
 
   const statusSlugById = new Map<string, string>();
@@ -165,6 +172,7 @@ export function buildContentPlanScope(
       other_id: edge.otherId,
       direction: edge.direction,
     })),
+    site_research_lineage: siteResearchLineage,
     entity_total: entities?.length,
     entities_summary:
       entities && entities.length > 0

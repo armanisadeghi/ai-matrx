@@ -9,7 +9,10 @@
  * identical values.
  */
 
-import type { AgentWritePolicy, ClientEntityVersion } from "@/features/cms/types";
+import type {
+  AgentWritePolicy,
+  ClientEntityVersion,
+} from "@/features/cms/types";
 import {
   createCmsPageScope,
   type CmsPageVersionEntry,
@@ -21,8 +24,14 @@ import type {
   ClientPageSummary,
   ClientSite,
 } from "../types";
-import { activeSiteDomain, clientPageRoute, clientPageUrl, sitePreviewToken } from "../utils/pageUrls";
+import {
+  activeSiteDomain,
+  clientPageRoute,
+  clientPageUrl,
+  sitePreviewToken,
+} from "../utils/pageUrls";
 import { buildSiteStructureXml } from "../utils/buildSiteStructureXml";
+import type { ResearchLineageEntry } from "../hooks/useCmsResearchLineage";
 
 export type CmsPageEditorTab =
   "html" | "css" | "js" | "preview" | "seo" | "settings" | "versions";
@@ -61,6 +70,10 @@ export interface BuildCmsPageContextDataArgs {
   /** Selection within whichever of html/css/js is the active tab's textarea. */
   selectionStart: number;
   selectionEnd: number;
+  /** Site + plan-node + canonical-page + CMS-bridge research lineage. */
+  researchLineage: readonly ResearchLineageEntry[];
+  researchLineageStatus: "idle" | "loading" | "ready" | "error";
+  researchLineageError?: string | null;
 }
 
 function activeTabContent(
@@ -109,6 +122,9 @@ export function buildCmsPageContextData(
     versions,
     selectionStart,
     selectionEnd,
+    researchLineage,
+    researchLineageStatus,
+    researchLineageError,
   } = args;
 
   const activeContent = activeTabContent(
@@ -268,8 +284,15 @@ export function buildCmsPageContextData(
           source_artifact_id: page.source_artifact_id,
           source_message_id: page.source_message_id,
           source_conv_id: page.source_conv_id,
+          plan_node_id: page.plan_node_id,
+          web_page_id: page.web_page_id,
         }
       : undefined,
+    research_lineage: {
+      status: researchLineageStatus,
+      error: researchLineageError ?? null,
+      items: researchLineage,
+    },
     content: activeContent || undefined,
     editor_error: editorError || undefined,
     meta_title: metaTitle || undefined,
@@ -280,7 +303,8 @@ export function buildCmsPageContextData(
     excerpt: excerpt || undefined,
     featured_image: page?.featured_image ?? undefined,
     version_history: versionEntries.length > 0 ? versionEntries : undefined,
-    version_count: versionEntries.length > 0 ? versionEntries.length : undefined,
+    version_count:
+      versionEntries.length > 0 ? versionEntries.length : undefined,
     latest_restorable_version: latestRestorable,
     selection: selectedText || undefined,
     text_before: textBefore || undefined,

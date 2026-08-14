@@ -30,6 +30,10 @@ import {
   withCmsValidationHeader,
   type CmsContentValidationResult,
 } from "../_lib/validateContent";
+import {
+  ResearchLineageValidationError,
+  validateResearchLineageIds,
+} from "../_lib/researchLineage";
 
 /**
  * Summary columns for list view (no HTML content blobs). `content_stats` is a
@@ -43,7 +47,7 @@ const LIST_COLUMNS = `
     sort_order, excerpt, featured_image, author, tags,
     meta_title, meta_description,
     publish_date, last_published_at, created_at, updated_at,
-    plan_node_id, web_page_id,
+    plan_node_id, web_page_id, research_topic_ids, research_tag_ids,
     content_stats
 `
   .replace(/\s+/g, " ")
@@ -687,6 +691,61 @@ export async function POST(request: NextRequest) {
         });
 
         return NextResponse.json({ success: true, page: data });
+      }
+
+      // Cross-project research ids for a CMS page with no canonical Main
+      // anchor yet. Guarded separately from ordinary content updates so the
+      // ids are validated under the caller's Main-project RLS.
+      case "set-research-lineage": {
+        const { pageId, researchTopicIds, researchTagIds } = params;
+        if (!pageId) {
+          return NextResponse.json(
+            { error: "pageId is required" },
+            { status: 400 },
+          );
+        }
+        if (!(await verifyPageOwnership(db, pageId, user.id))) {
+          return NextResponse.json(
+            { error: "Page not found or access denied" },
+            { status: 403 },
+          );
+        }
+        try {
+          const { topicIds, tagIds } = await validateResearchLineageIds(
+            mainSupabase,
+            researchTopicIds,
+            researchTagIds,
+          );
+          const { data, error } = await db
+            .from("client_pages")
+            .update({ research_topic_ids: topicIds, research_tag_ids: tagIds })
+            .eq("id", pageId)
+            .select()
+            .single();
+          if (error) throw error;
+          await logCmsActivity(db, {
+            siteId: data.client_id,
+            activityType: "page.research_lineage",
+            entityType: "page",
+            entityId: pageId,
+            description: `Updated research lineage for page "${data.title}"`,
+            userId: user.id,
+            userEmail: user.email,
+            changes: {
+              research_topic_ids: topicIds,
+              research_tag_ids: tagIds,
+            },
+          });
+          return NextResponse.json({ success: true, page: data });
+        } catch (lineageError) {
+          if (lineageError instanceof ResearchLineageValidationError) {
+            return NextResponse.json(
+              { error: lineageError.message },
+              { status: 400 },
+            );
+          }
+          throw lineageError;
+        }
       }
 
       // ── Save draft ───────────────────────────────────────────────

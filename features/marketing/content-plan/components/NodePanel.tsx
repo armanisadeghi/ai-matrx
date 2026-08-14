@@ -71,6 +71,9 @@ import { NodeSeoIntentEditor } from "./NodeSeoIntentEditor";
 import { ensureKeywordId } from "@/features/marketing/seo/keyword/data";
 import { useResolvedKeyword } from "@/features/marketing/seo/keyword/hooks";
 import { buildKeywordBrief } from "@/features/marketing/seo/keyword/keyword-brief";
+import { AssociationList } from "@/features/scopes/components/associations/AssociationList";
+import { useEntityTitles } from "@/features/scopes/hooks/useEntityTitles";
+import { RESEARCH_LINEAGE_TOKENS } from "@/features/cms/hooks/useCmsResearchLineage";
 
 /** Stable empty map — a fresh `new Map()` per render would churn the card. */
 const EMPTY_CMS_PAGES: ReadonlyMap<string, CmsPageMapEntry> = new Map();
@@ -172,6 +175,19 @@ export function NodePanel({
   const dirty = Object.keys(draft).length > 0;
 
   const nodeEdges = usePlanNodeEdges(node.id);
+  const researchEdges = (nodeEdges.data ?? []).filter(
+    (edge) =>
+      edge.direction === "incoming" &&
+      (edge.otherType === "research_topic" ||
+        edge.otherType === "research_tag"),
+  );
+  const researchTitles = useEntityTitles(
+    researchEdges.map((edge) => ({
+      token: edge.otherType,
+      id: edge.otherId,
+      label: edge.label,
+    })),
+  );
   const edgeMutation = usePlanNodeEdgeMutation(node.id);
   const supportingEdges = (nodeEdges.data ?? []).filter(
     (edge) =>
@@ -300,6 +316,24 @@ export function NodePanel({
       node_page_next_step: reality.verdict.action ?? "none",
       node_page_id: cmsPage?.pageId ?? undefined,
       node_page_live_url: cmsPage?.liveUrl ?? undefined,
+      node_research_lineage: {
+        status:
+          nodeEdges.status === "pending"
+            ? "loading"
+            : nodeEdges.status === "success"
+              ? "ready"
+              : "error",
+        error: nodeEdges.error?.message ?? null,
+        items: researchEdges.map((edge) => ({
+          token: edge.otherType,
+          id: edge.otherId,
+          title: researchTitles.titleFor({
+            token: edge.otherType,
+            id: edge.otherId,
+            label: edge.label,
+          }),
+        })),
+      },
     });
 
   const stage = (patch: PlanNodeUpdate) =>
@@ -869,6 +903,19 @@ export function NodePanel({
                   </p>
                 ) : null}
               </div>
+            </PanelSection>
+
+            <PanelSection title="Research lineage">
+              <AssociationList
+                container={{
+                  type: "plan_node",
+                  id: node.id,
+                  orgId: node.organization_id,
+                  label: current.label,
+                }}
+                tokens={[...RESEARCH_LINEAGE_TOKENS]}
+                variant="compact"
+              />
             </PanelSection>
 
             <PanelSection title="Brief">

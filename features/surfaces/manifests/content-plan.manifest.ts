@@ -126,6 +126,17 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "plan_site",
     autoContext: false,
   },
+  {
+    name: "site_research_lineage",
+    label: "Site research lineage",
+    description:
+      "Every research topic and research tag associated with this site as {status, error, items:[{token,id,title}]}. This grounding is inherited by every planned and realized page unless a more specific page link supplements it.",
+    valueType: "object",
+    alwaysAvailable: true,
+    typicalCharCount: 900,
+    sortOrder: 345,
+    group: "plan_site",
+  },
 
   // ── Workspace state (350-399) ─────────────────────────────────────────
   {
@@ -429,6 +440,7 @@ Empty values mean the workspace is still loading, no site is selected, or the da
 export function createContentPlanScope(values: {
   // alwaysAvailable: true → required
   view: "tree" | "table" | "map" | "entities" | "setup" | "ai-runs";
+  site_research_lineage: Record<string, unknown>;
   // alwaysAvailable: false → optional
   site_id?: string;
   site_domain?: string;

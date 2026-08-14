@@ -182,6 +182,15 @@ cms-starter-kit`. Guarded CMS writes (agent_write_policy + activity log live
   site roster; client-written via `linkPartyToSite`).
   The `plan_node|plan_entity → web_site` containment edge is written by the
   DB trigger `plan._site_edge` — the client NEVER writes it.
+- Research lineage is separate from SEO taxonomy: `research_topic|research_tag →
+  web_site|plan_node|web_page`, all `container_side='none'` so the relationship
+  conveys no access. Setup exposes site-level topic/tag attachments; NodePanel
+  exposes page-specific attachments. A database trigger copies node lineage to
+  every `web_page` realized by that node in either insert order, with role
+  `inherited_from_plan` and origin metadata; site lineage is inherited at read
+  time rather than fanned out into duplicate page edges. Both plan surface
+  contexts require and emit the resolved lineage with ids, titles, origins, and
+  truthful loading/error state.
 
 ## Key flows
 
@@ -579,6 +588,7 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
 
+- 2026-08-14 — **Research grounding is now durable lineage, not a single setup hint.** The former `settings.content_plan.research_topic_id` remains readable for compatibility, but saving it also creates the canonical `research_topic → web_site` edge (`primary_grounding`) and never deletes prior research. Setup now manages many research topics and research tags at the site level; NodePanel manages the same two source types per plan node. The `matrx-user/content-plan` and `content-plan-node` manifests require their lineage values, and `?node=<uuid>` plus the flat plan-node resolver route makes every inherited-origin chip a real door. MAIN-project propagation carries node-specific lineage to realized `web_page` rows regardless of whether the lineage or realization edge was written first.
 - 2026-08-13 — Codex: **Pipeline progress now appears in every plan
   projection.** `ContentPlanWorkbench` owns the one site-wide `useNodeSteps`
   read and projects it through tested `lib/pipeline-progress.ts`; the tree

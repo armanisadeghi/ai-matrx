@@ -48,6 +48,8 @@ import { CmsSiteService } from "@/features/cms/services/cmsService";
 import type { ClientSite } from "@/features/cms/types";
 import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { CMS_SITE_CONTEXT_MENU_PROPS } from "@/features/cms/agent-context/cmsSiteContextMenuProps";
+import { useCmsResearchLineage } from "@/features/cms/hooks/useCmsResearchLineage";
+import { ResearchLineagePanel } from "@/features/cms/components/ResearchLineagePanel";
 
 const SURFACE_NAME = CMS_SITE_CONTEXT_MENU_PROPS.surfaceName;
 
@@ -76,7 +78,9 @@ interface LinkRow {
 function toLinkRows(value: unknown): LinkRow[] {
   if (!Array.isArray(value)) return [];
   return value
-    .filter((row): row is Record<string, unknown> => !!row && typeof row === "object")
+    .filter(
+      (row): row is Record<string, unknown> => !!row && typeof row === "object",
+    )
     .map((row) => ({ label: str(row.label), href: str(row.href) }));
 }
 
@@ -216,7 +220,11 @@ function LinkListEditor({
           <Input
             value={row.label}
             onChange={(e) =>
-              onChange(rows.map((r, j) => (j === i ? { ...r, label: e.target.value } : r)))
+              onChange(
+                rows.map((r, j) =>
+                  j === i ? { ...r, label: e.target.value } : r,
+                ),
+              )
             }
             placeholder={labelPlaceholder}
             className="text-sm h-8 flex-1"
@@ -224,7 +232,11 @@ function LinkListEditor({
           <Input
             value={row.href}
             onChange={(e) =>
-              onChange(rows.map((r, j) => (j === i ? { ...r, href: e.target.value } : r)))
+              onChange(
+                rows.map((r, j) =>
+                  j === i ? { ...r, href: e.target.value } : r,
+                ),
+              )
             }
             placeholder={hrefPlaceholder}
             className="text-sm h-8 flex-[1.4] font-mono"
@@ -318,7 +330,11 @@ function rowsToTheme(rows: ThemeRow[]): Record<string, unknown> {
 const COLOR_VALUE = /^(#|rgb|hsl)/i;
 
 function cssVarName(row: ThemeRow): string {
-  const clean = (s: string) => s.trim().toLowerCase().replace(/[\s_]+/g, "-");
+  const clean = (s: string) =>
+    s
+      .trim()
+      .toLowerCase()
+      .replace(/[\s_]+/g, "-");
   if (!row.group.trim()) return `--${clean(row.key)}`;
   const group = clean(row.group);
   const prefix = group.endsWith("s") ? group.slice(0, -1) : group;
@@ -326,7 +342,10 @@ function cssVarName(row: ThemeRow): string {
 }
 
 function ThemeSection({ site, onSaved }: SectionProps) {
-  const initial = useMemo(() => themeToRows(site.theme_config), [site.theme_config]);
+  const initial = useMemo(
+    () => themeToRows(site.theme_config),
+    [site.theme_config],
+  );
   const [rows, setRows] = useState<ThemeRow[]>(initial);
   const [saving, setSaving] = useState(false);
   const dirty = JSON.stringify(rows) !== JSON.stringify(initial);
@@ -341,7 +360,10 @@ function ThemeSection({ site, onSaved }: SectionProps) {
         if (typeof groupValue === "string" || typeof groupValue === "number") {
           continue;
         }
-        const bucket = requireRecord(groupValue, `site_theme_config.${groupKey}`);
+        const bucket = requireRecord(
+          groupValue,
+          `site_theme_config.${groupKey}`,
+        );
         for (const [key, leaf] of Object.entries(bucket)) {
           if (typeof leaf !== "string" && typeof leaf !== "number") {
             throw new Error(
@@ -364,7 +386,9 @@ function ThemeSection({ site, onSaved }: SectionProps) {
   const save = async () => {
     setSaving(true);
     try {
-      await CmsSiteService.updateSite(site.id, { themeConfig: rowsToTheme(rows) });
+      await CmsSiteService.updateSite(site.id, {
+        themeConfig: rowsToTheme(rows),
+      });
       await onSaved();
       toast.success("Theme tokens saved");
     } catch (err) {
@@ -390,7 +414,11 @@ function ThemeSection({ site, onSaved }: SectionProps) {
             <Input
               value={row.group}
               onChange={(e) =>
-                setRows(rows.map((r, j) => (j === i ? { ...r, group: e.target.value } : r)))
+                setRows(
+                  rows.map((r, j) =>
+                    j === i ? { ...r, group: e.target.value } : r,
+                  ),
+                )
               }
               placeholder="group (colors)"
               className="text-sm h-8 w-32 font-mono"
@@ -398,7 +426,11 @@ function ThemeSection({ site, onSaved }: SectionProps) {
             <Input
               value={row.key}
               onChange={(e) =>
-                setRows(rows.map((r, j) => (j === i ? { ...r, key: e.target.value } : r)))
+                setRows(
+                  rows.map((r, j) =>
+                    j === i ? { ...r, key: e.target.value } : r,
+                  ),
+                )
               }
               placeholder="key (primary)"
               className="text-sm h-8 w-36 font-mono"
@@ -407,7 +439,11 @@ function ThemeSection({ site, onSaved }: SectionProps) {
               <Input
                 value={row.value}
                 onChange={(e) =>
-                  setRows(rows.map((r, j) => (j === i ? { ...r, value: e.target.value } : r)))
+                  setRows(
+                    rows.map((r, j) =>
+                      j === i ? { ...r, value: e.target.value } : r,
+                    ),
+                  )
                 }
                 placeholder="value (#0f766e, 1.5rem, 'Inter', sans-serif)"
                 className={`text-sm h-8 font-mono ${COLOR_VALUE.test(row.value.trim()) ? "pl-8" : ""}`}
@@ -440,7 +476,11 @@ function ThemeSection({ site, onSaved }: SectionProps) {
           onClick={() =>
             setRows([
               ...rows,
-              { group: rows[rows.length - 1]?.group ?? "colors", key: "", value: "" },
+              {
+                group: rows[rows.length - 1]?.group ?? "colors",
+                key: "",
+                value: "",
+              },
             ])
           }
         >
@@ -478,7 +518,9 @@ function NavigationSection({ site, onSaved }: SectionProps) {
       await onSaved();
       toast.success("Navigation saved");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to save navigation");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to save navigation",
+      );
     } finally {
       setSaving(false);
     }
@@ -512,23 +554,37 @@ interface FooterColumn {
 }
 
 function FooterSection({ site, onSaved }: SectionProps) {
-  const config = useMemo(() => asRecord(site.footer_config), [site.footer_config]);
+  const config = useMemo(
+    () => asRecord(site.footer_config),
+    [site.footer_config],
+  );
   const initialColumns = useMemo<FooterColumn[]>(
     () =>
       Array.isArray(config.columns)
         ? config.columns
-            .filter((c): c is Record<string, unknown> => !!c && typeof c === "object")
-            .map((c) => ({ heading: str(c.heading), links: toLinkRows(c.links) }))
+            .filter(
+              (c): c is Record<string, unknown> => !!c && typeof c === "object",
+            )
+            .map((c) => ({
+              heading: str(c.heading),
+              links: toLinkRows(c.links),
+            }))
         : [],
     [config],
   );
   const [columns, setColumns] = useState<FooterColumn[]>(initialColumns);
   const [showContact, setShowContact] = useState(config.show_contact === true);
-  const [contactHeading, setContactHeading] = useState(str(config.contact_heading));
+  const [contactHeading, setContactHeading] = useState(
+    str(config.contact_heading),
+  );
   const [showSocial, setShowSocial] = useState(config.show_social === true);
-  const [socialHeading, setSocialHeading] = useState(str(config.social_heading));
+  const [socialHeading, setSocialHeading] = useState(
+    str(config.social_heading),
+  );
   const [copyright, setCopyright] = useState(str(config.copyright));
-  const [legalLinks, setLegalLinks] = useState<LinkRow[]>(toLinkRows(config.legal_links));
+  const [legalLinks, setLegalLinks] = useState<LinkRow[]>(
+    toLinkRows(config.legal_links),
+  );
   const [saving, setSaving] = useState(false);
 
   const draft = useMemo(() => {
@@ -551,7 +607,16 @@ function FooterSection({ site, onSaved }: SectionProps) {
     if (legal.length) next.legal_links = legal;
     else delete next.legal_links;
     return next;
-  }, [config, columns, showContact, showSocial, contactHeading, socialHeading, copyright, legalLinks]);
+  }, [
+    config,
+    columns,
+    showContact,
+    showSocial,
+    contactHeading,
+    socialHeading,
+    copyright,
+    legalLinks,
+  ]);
 
   const dirty = JSON.stringify(draft) !== JSON.stringify(config);
 
@@ -661,13 +726,18 @@ function FooterSection({ site, onSaved }: SectionProps) {
       <div className="space-y-4">
         <div className="space-y-3">
           {columns.map((column, i) => (
-            <div key={i} className="rounded-md border border-border/60 p-3 space-y-2">
+            <div
+              key={i}
+              className="rounded-md border border-border/60 p-3 space-y-2"
+            >
               <div className="flex items-center gap-1.5">
                 <Input
                   value={column.heading}
                   onChange={(e) =>
                     setColumns(
-                      columns.map((c, j) => (j === i ? { ...c, heading: e.target.value } : c)),
+                      columns.map((c, j) =>
+                        j === i ? { ...c, heading: e.target.value } : c,
+                      ),
                     )
                   }
                   placeholder="Column heading (Services)"
@@ -686,7 +756,9 @@ function FooterSection({ site, onSaved }: SectionProps) {
               <LinkListEditor
                 rows={column.links}
                 onChange={(links) =>
-                  setColumns(columns.map((c, j) => (j === i ? { ...c, links } : c)))
+                  setColumns(
+                    columns.map((c, j) => (j === i ? { ...c, links } : c)),
+                  )
                 }
               />
             </div>
@@ -740,7 +812,9 @@ function FooterSection({ site, onSaved }: SectionProps) {
         </div>
 
         <div>
-          <label className="text-sm font-medium block mb-1.5">Copyright line</label>
+          <label className="text-sm font-medium block mb-1.5">
+            Copyright line
+          </label>
           <Input
             value={copyright}
             onChange={(e) => setCopyright(e.target.value)}
@@ -750,8 +824,14 @@ function FooterSection({ site, onSaved }: SectionProps) {
         </div>
 
         <div>
-          <label className="text-sm font-medium block mb-1.5">Legal links</label>
-          <LinkListEditor rows={legalLinks} onChange={setLegalLinks} addLabel="Add legal link" />
+          <label className="text-sm font-medium block mb-1.5">
+            Legal links
+          </label>
+          <LinkListEditor
+            rows={legalLinks}
+            onChange={setLegalLinks}
+            addLabel="Add legal link"
+          />
         </div>
       </div>
     </SectionCard>
@@ -804,7 +884,9 @@ function ContactSection({ site, onSaved }: SectionProps) {
       await onSaved();
       toast.success("Contact info saved");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to save contact info");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to save contact info",
+      );
     } finally {
       setSaving(false);
     }
@@ -822,7 +904,9 @@ function ContactSection({ site, onSaved }: SectionProps) {
     >
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div>
-          <label className="text-sm font-medium block mb-1.5">Phone (display)</label>
+          <label className="text-sm font-medium block mb-1.5">
+            Phone (display)
+          </label>
           <Input
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
@@ -831,7 +915,9 @@ function ContactSection({ site, onSaved }: SectionProps) {
           />
         </div>
         <div>
-          <label className="text-sm font-medium block mb-1.5">Phone (dial string)</label>
+          <label className="text-sm font-medium block mb-1.5">
+            Phone (dial string)
+          </label>
           <Input
             value={phoneRaw}
             onChange={(e) => setPhoneRaw(e.target.value)}
@@ -860,7 +946,11 @@ function ContactSection({ site, onSaved }: SectionProps) {
         </div>
         <div>
           <label className="text-sm font-medium block mb-1.5">City</label>
-          <Input value={city} onChange={(e) => setCity(e.target.value)} className="text-sm h-8" />
+          <Input
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+            className="text-sm h-8"
+          />
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
@@ -873,7 +963,11 @@ function ContactSection({ site, onSaved }: SectionProps) {
           </div>
           <div>
             <label className="text-sm font-medium block mb-1.5">ZIP</label>
-            <Input value={zip} onChange={(e) => setZip(e.target.value)} className="text-sm h-8" />
+            <Input
+              value={zip}
+              onChange={(e) => setZip(e.target.value)}
+              className="text-sm h-8"
+            />
           </div>
         </div>
       </div>
@@ -891,7 +985,10 @@ interface SocialRow {
 function socialToRows(value: unknown): SocialRow[] {
   if (Array.isArray(value)) {
     return value
-      .filter((row): row is Record<string, unknown> => !!row && typeof row === "object")
+      .filter(
+        (row): row is Record<string, unknown> =>
+          !!row && typeof row === "object",
+      )
       .map((row) => ({
         platform: str(row.platform) || str(row.label),
         url: str(row.url) || str(row.href),
@@ -903,7 +1000,10 @@ function socialToRows(value: unknown): SocialRow[] {
 }
 
 function SocialSection({ site, onSaved }: SectionProps) {
-  const initial = useMemo(() => socialToRows(site.social_links), [site.social_links]);
+  const initial = useMemo(
+    () => socialToRows(site.social_links),
+    [site.social_links],
+  );
   const [rows, setRows] = useState<SocialRow[]>(initial);
   const [saving, setSaving] = useState(false);
   const dirty = JSON.stringify(rows) !== JSON.stringify(initial);
@@ -913,13 +1013,16 @@ function SocialSection({ site, onSaved }: SectionProps) {
     try {
       const map: Record<string, string> = {};
       for (const row of rows) {
-        if (row.platform.trim() && row.url.trim()) map[row.platform.trim()] = row.url.trim();
+        if (row.platform.trim() && row.url.trim())
+          map[row.platform.trim()] = row.url.trim();
       }
       await CmsSiteService.updateSite(site.id, { socialLinks: map });
       await onSaved();
       toast.success("Social links saved");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to save social links");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to save social links",
+      );
     } finally {
       setSaving(false);
     }
@@ -941,7 +1044,11 @@ function SocialSection({ site, onSaved }: SectionProps) {
             <Input
               value={row.platform}
               onChange={(e) =>
-                setRows(rows.map((r, j) => (j === i ? { ...r, platform: e.target.value } : r)))
+                setRows(
+                  rows.map((r, j) =>
+                    j === i ? { ...r, platform: e.target.value } : r,
+                  ),
+                )
               }
               placeholder="instagram"
               className="text-sm h-8 w-40 font-mono"
@@ -949,7 +1056,11 @@ function SocialSection({ site, onSaved }: SectionProps) {
             <Input
               value={row.url}
               onChange={(e) =>
-                setRows(rows.map((r, j) => (j === i ? { ...r, url: e.target.value } : r)))
+                setRows(
+                  rows.map((r, j) =>
+                    j === i ? { ...r, url: e.target.value } : r,
+                  ),
+                )
               }
               placeholder="https://instagram.com/…"
               className="text-sm h-8 flex-1 font-mono"
@@ -989,8 +1100,25 @@ function SocialSection({ site, onSaved }: SectionProps) {
 export function SiteAdvancedSettings({ site, onSaved }: SectionProps) {
   // Remount sections when the saved row changes so drafts re-seed from truth.
   const key = `${site.id}:${site.updated_at ?? ""}`;
+  const researchLineage = useCmsResearchLineage({
+    scope: "site",
+    cmsEntityId: site.id,
+    webSiteId: site.web_site_id,
+    researchTopicIds: site.research_topic_ids,
+    researchTagIds: site.research_tag_ids,
+    persistScratch: async (topicIds, tagIds) => {
+      await CmsSiteService.setResearchLineage(site.id, topicIds, tagIds);
+      await onSaved();
+    },
+  });
   return (
     <div className="space-y-6" key={key}>
+      <ResearchLineagePanel
+        adapter={researchLineage.adapter}
+        entries={researchLineage.entries}
+        canPromoteScratch={researchLineage.canPromoteScratch}
+        promoteScratch={researchLineage.promoteScratch}
+      />
       <ThemeSection site={site} onSaved={onSaved} />
       <NavigationSection site={site} onSaved={onSaved} />
       <FooterSection site={site} onSaved={onSaved} />

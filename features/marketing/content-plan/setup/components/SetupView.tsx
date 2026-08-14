@@ -33,6 +33,8 @@ import { useLatestSuccessfulResearchDocument } from "@/features/research/hooks/u
 import { getLatestSuccessfulDocument } from "@/features/research/service";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
 import { useCategories } from "@/features/scopes/hooks/useCategories";
+import { AssociationList } from "@/features/scopes/components/associations/AssociationList";
+import { RESEARCH_LINEAGE_TOKENS } from "@/features/cms/hooks/useCmsResearchLineage";
 import { createContentPlanSetupScope } from "@/features/surfaces/manifests/content-plan-setup.manifest";
 import {
   SurfaceRuntimeProvider,
@@ -79,7 +81,10 @@ import {
   type ShapePlanResult,
 } from "../ai";
 import { applyEntityAttachments } from "../entity-attach";
-import { applyKeywordStrategy, readNodeKeywordStrategy } from "../keyword-strategy";
+import {
+  applyKeywordStrategy,
+  readNodeKeywordStrategy,
+} from "../keyword-strategy";
 import {
   clearSetupDraft,
   fetchFreshSite,
@@ -153,7 +158,12 @@ function expandSafely(
   if (!archetype) return { expanded: null, error: null };
   try {
     return {
-      expanded: expandArchetype(archetype, { counts, names, catalog, conceptNames }),
+      expanded: expandArchetype(archetype, {
+        counts,
+        names,
+        catalog,
+        conceptNames,
+      }),
       error: null,
     };
   } catch (error) {
@@ -222,7 +232,9 @@ export function SetupView() {
   const library = useArchetypeLibrary(site?.organization_id ?? null);
   const nodes = usePlanNodes(siteId);
   const cms = useCmsFacts(site);
-  const pageTypes = useCategories({ dimension: CATEGORY_DIMENSIONS.planPageType });
+  const pageTypes = useCategories({
+    dimension: CATEGORY_DIMENSIONS.planPageType,
+  });
   const statuses = useCategories({ dimension: CATEGORY_DIMENSIONS.planStatus });
 
   const committed = readCommittedArchetype(site?.settings);
@@ -269,9 +281,10 @@ export function SetupView() {
     Record<string, Record<string, string[]>>
   >({});
   const [committing, setCommitting] = useState(false);
-  const [progress, setProgress] = useState<{ done: number; total: number } | null>(
-    null,
-  );
+  const [progress, setProgress] = useState<{
+    done: number;
+    total: number;
+  } | null>(null);
   const [result, setResult] = useState<CommitResult | null>(null);
 
   // ── AI grounding + step agents ──────────────────────────────────────────
@@ -299,20 +312,28 @@ export function SetupView() {
   const [reviewError, setReviewError] = useState<string | null>(null);
   const [addingRoute, setAddingRoute] = useState<string | null>(null);
   const [addedRoutes, setAddedRoutes] = useState<Set<string>>(new Set());
-  const [applyingTopicsKey, setApplyingTopicsKey] = useState<string | null>(null);
+  const [applyingTopicsKey, setApplyingTopicsKey] = useState<string | null>(
+    null,
+  );
   const [keywordStrategy, setKeywordStrategy] =
     useState<KeywordStrategyResult | null>(null);
   const [keywordError, setKeywordError] = useState<string | null>(null);
   const [applyingKeywords, setApplyingKeywords] = useState(false);
-  const [keywordsAppliedAt, setKeywordsAppliedAt] = useState<string | null>(null);
+  const [keywordsAppliedAt, setKeywordsAppliedAt] = useState<string | null>(
+    null,
+  );
   const [entityPlan, setEntityPlan] = useState<EntityAttachPlan | null>(null);
   const [attachError, setAttachError] = useState<string | null>(null);
   const [applyingEntities, setApplyingEntities] = useState(false);
-  const [entitiesAppliedAt, setEntitiesAppliedAt] = useState<string | null>(null);
+  const [entitiesAppliedAt, setEntitiesAppliedAt] = useState<string | null>(
+    null,
+  );
   const planEntities = usePlanEntities(siteId);
   // Newest SUCCESSFUL report — matches aidream's `_load_research_report`, so
   // a failed re-assembly never hides a perfectly good older report.
-  const researchDoc = useLatestSuccessfulResearchDocument(researchTopicId ?? "");
+  const researchDoc = useLatestSuccessfulResearchDocument(
+    researchTopicId ?? "",
+  );
   const quickResearch = useCompanyQuickResearch();
   const agents = useSetupAgents(siteId);
   // The three WHOLE-PLAN passes run on the SERVER (aidream), which records the
@@ -345,7 +366,9 @@ export function SetupView() {
     /** Serialization of the stored draft, null when none existed. */
     serialized: string | null;
   } | null>(null);
-  const lastSavedRef = useRef<{ siteId: string; serialized: string } | null>(null);
+  const lastSavedRef = useRef<{ siteId: string; serialized: string } | null>(
+    null,
+  );
   const pendingRef = useRef<{
     siteId: string;
     draft: SetupDraft;
@@ -442,7 +465,9 @@ export function SetupView() {
   }, [siteId]);
 
   const invalidateSiteOptions = () =>
-    void queryClient.invalidateQueries({ queryKey: marketingKeys.siteOptions() });
+    void queryClient.invalidateQueries({
+      queryKey: marketingKeys.siteOptions(),
+    });
 
   useEffect(() => {
     if (!siteId || seed?.siteId !== siteId) return;
@@ -465,7 +490,10 @@ export function SetupView() {
     if (lastSavedRef.current?.siteId !== siteId) {
       // First pass after mount — the baseline is the stored draft when one
       // seeded, else the current (default) state. Only a CHANGE writes.
-      lastSavedRef.current = { siteId, serialized: seed.serialized ?? serialized };
+      lastSavedRef.current = {
+        siteId,
+        serialized: seed.serialized ?? serialized,
+      };
     }
     if (lastSavedRef.current.serialized === serialized) {
       pendingRef.current = null;
@@ -538,7 +566,10 @@ export function SetupView() {
   // summary AND gives the selected shape its family SET, which a selection-form
   // archetype only has after its concepts resolve against the catalog.
   const baseline = new Map<string, ExpandedArchetype | null>(
-    archetypes.map((item) => [item.key, expandSafely(item, {}, {}, catalog).expanded]),
+    archetypes.map((item) => [
+      item.key,
+      expandSafely(item, {}, {}, catalog).expanded,
+    ]),
   );
   const selectedKey =
     pickedKey ??
@@ -552,13 +583,16 @@ export function SetupView() {
   // shows the work order that was actually promised (by this view OR the chat
   // tool: both write the same `web.site.settings.content_plan.archetype`).
   const localCounts = selected ? countsByArchetype[selected.key] : undefined;
-  const baseFamilies = (selectedKey ? baseline.get(selectedKey) : null)?.families ?? [];
+  const baseFamilies =
+    (selectedKey ? baseline.get(selectedKey) : null)?.families ?? [];
   const counts: Record<string, number> =
     localCounts ??
     (selected && committed && committed.key === selected.key
       ? Object.fromEntries(
           baseFamilies
-            .filter((family) => typeof committed.counts[family.key] === "number")
+            .filter(
+              (family) => typeof committed.counts[family.key] === "number",
+            )
             .map((family) => [family.key, committed.counts[family.key]]),
         )
       : {});
@@ -586,7 +620,13 @@ export function SetupView() {
     if (value.trim()) conceptNames[key] = value;
   }
 
-  const expansion = expandSafely(selected, counts, names, catalog, conceptNames);
+  const expansion = expandSafely(
+    selected,
+    counts,
+    names,
+    catalog,
+    conceptNames,
+  );
   const expanded = expansion.expanded;
 
   const readiness = expanded
@@ -599,7 +639,11 @@ export function SetupView() {
       })
     : null;
   const preview = expanded
-    ? buildPreview({ roots: expanded.roots, liveNodes: nodeRows, lastRun: result?.rows ?? null })
+    ? buildPreview({
+        roots: expanded.roots,
+        liveNodes: nodeRows,
+        lastRun: result?.rows ?? null,
+      })
     : null;
 
   const pageTypeIdBySlug = new Map<string, string>();
@@ -610,8 +654,9 @@ export function SetupView() {
     pageTypeNameBySlug.set(category.slug, category.name);
   }
   const statusId =
-    statuses.categories.find((category) => category.slug === DEFAULT_STATUS_SLUG)
-      ?.id ?? null;
+    statuses.categories.find(
+      (category) => category.slug === DEFAULT_STATUS_SLUG,
+    )?.id ?? null;
   // Real per-node status for the reviewer's `current_plan` — a page that is
   // already published must not be audited as still-to-build.
   const statusSlugById = new Map<string, string>();
@@ -635,7 +680,10 @@ export function SetupView() {
     if (!selected) return;
     setCountsByArchetype((current) => ({
       ...current,
-      [selected.key]: { ...(current[selected.key] ?? counts), [familyKey]: next },
+      [selected.key]: {
+        ...(current[selected.key] ?? counts),
+        [familyKey]: next,
+      },
     }));
   };
 
@@ -851,7 +899,8 @@ export function SetupView() {
     {
       announce({
         kind: "shape",
-        headline: "Drafting the work order — reading the report, picking the shape…",
+        headline:
+          "Drafting the work order — reading the report, picking the shape…",
       });
       const plan = await agents.recommendShape(
         shapePlannerVariables(report, guidance, targetPageCount),
@@ -980,7 +1029,9 @@ export function SetupView() {
       // for a new pipeline. New research runs ONLY when the selected topic
       // truly has no successful report, or no topic is selected at all.
       if (!report && researchTopicId) {
-        pushBuildProgress("Checking the selected research topic for a finished report…");
+        pushBuildProgress(
+          "Checking the selected research topic for a finished report…",
+        );
         const existing = await getLatestSuccessfulDocument(researchTopicId);
         report = existing?.content?.trim() || null;
         // Sync the hook copy so the bar + every aiReady control light up too.
@@ -1043,8 +1094,7 @@ export function SetupView() {
         kind: "names",
         headline: `Named ${outcome.names.length} ${family.label.toLowerCase()} page(s) from the report — staged, you commit.`,
         detail:
-          outcome.notes ||
-          outcome.names.map((item) => item.label).join(", "),
+          outcome.notes || outcome.names.map((item) => item.label).join(", "),
       });
     } catch (error) {
       setAiError(extractErrorMessage(error));
@@ -1106,7 +1156,9 @@ export function SetupView() {
         toast.error(`${family.label}: ${result.failures[0]}`);
       } else {
         toast.success(`Recorded ${staged.length} topic(s) on ${family.route}.`);
-        await queryClient.invalidateQueries({ queryKey: planKeys.nodes(siteId) });
+        await queryClient.invalidateQueries({
+          queryKey: planKeys.nodes(siteId),
+        });
       }
     } catch (error) {
       toast.error(
@@ -1539,7 +1591,10 @@ export function SetupView() {
       let topicsFullyApplied = true;
       if (topicOrders.length > 0) {
         try {
-          const topicResult = await applyFamilyTopics({ siteId, orders: topicOrders });
+          const topicResult = await applyFamilyTopics({
+            siteId,
+            orders: topicOrders,
+          });
           topicsFullyApplied =
             topicResult.failures.length === 0 &&
             topicResult.missing.length === 0 &&
@@ -1779,282 +1834,302 @@ export function SetupView() {
       getScope={getSetupScope}
       getWriteHandlers={getSetupWriteHandlers}
     >
-    <div className="flex h-full flex-col">
-      {library.data && library.data.problems.length > 0 ? (
-        <div className="border-b border-warning/40 bg-warning/10 px-3 py-1.5 text-xs text-foreground">
-          {library.data.problems.length} site shape definition(s) had a problem:{" "}
-          {library.data.problems[0]}
-        </div>
-      ) : null}
+      <div className="flex h-full flex-col">
+        {library.data && library.data.problems.length > 0 ? (
+          <div className="border-b border-warning/40 bg-warning/10 px-3 py-1.5 text-xs text-foreground">
+            {library.data.problems.length} site shape definition(s) had a
+            problem: {library.data.problems[0]}
+          </div>
+        ) : null}
 
-      {siblingWithPlan ? (
-        <div className="flex flex-wrap items-center gap-2 border-b border-warning/40 bg-warning/10 px-3 py-1.5 text-xs text-foreground">
-          <span>
-            <span className="font-medium">
-              This company may already have a plan elsewhere:
-            </span>{" "}
-            &quot;{siblingWithPlan.site.name}&quot; (
-            {siblingWithPlan.site.domain ?? "no domain"}) is a separate site
-            record with {siblingWithPlan.planNodes} planned page
-            {siblingWithPlan.planNodes === 1 ? "" : "s"}
-            {nodeRows.length === 0 ? " — this one has none" : ""}
-            .
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-6 px-2 text-xs"
-            onClick={() => setSiteId(siblingWithPlan.site.id)}
-          >
-            Open that plan instead
-          </Button>
-        </div>
-      ) : null}
+        {siblingWithPlan ? (
+          <div className="flex flex-wrap items-center gap-2 border-b border-warning/40 bg-warning/10 px-3 py-1.5 text-xs text-foreground">
+            <span>
+              <span className="font-medium">
+                This company may already have a plan elsewhere:
+              </span>{" "}
+              &quot;{siblingWithPlan.site.name}&quot; (
+              {siblingWithPlan.site.domain ?? "no domain"}) is a separate site
+              record with {siblingWithPlan.planNodes} planned page
+              {siblingWithPlan.planNodes === 1 ? "" : "s"}
+              {nodeRows.length === 0 ? " — this one has none" : ""}.
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-6 px-2 text-xs"
+              onClick={() => setSiteId(siblingWithPlan.site.id)}
+            >
+              Open that plan instead
+            </Button>
+          </div>
+        ) : null}
 
-      <SetupAiBar
-        selectedTopicId={researchTopicId}
-        onSelectTopic={selectTopic}
-        onCreateResearch={() => void handleCreateResearch()}
-        researchStage={quickResearch.stage}
-        document={researchDoc.data ?? null}
-        documentLoading={Boolean(researchTopicId) && researchDoc.isLoading}
-        onRecommendShape={() => void handleRecommendShape()}
-        shapeBusy={agents.shapeBusy}
-        onBuildWithAi={() => {
-          // Re-opening for a NEW run clears the finished/failed feed so the
-          // intake questions come back; an in-flight run keeps its live feed.
-          if (!draftingWorkOrder) {
-            setBuildLog([]);
-            setBuildFailed(false);
-          }
-          setBuildDialogOpen(true);
-        }}
-        draftBusy={draftingWorkOrder}
-        anyAgentBusy={anyAgentBusy}
-        lastRun={lastAiRun}
-        error={aiError}
-        onDismissError={() => setAiError(null)}
-      />
-
-      {/* Live AI output for every Setup agent run (shape, names, keywords,
-          entities, review, brief) — the model's stream renders as it arrives,
-          never a bare spinner. */}
-      {agents.live.hasLiveRun ? (
-        <div className="border-b border-border px-3 py-2">
-          <LiveRunDisplay
-            conversationId={agents.live.conversationId}
-            label={agents.live.label ?? "Running the Setup agent"}
-            pending={agents.live.isRunning}
-            onDismiss={agents.live.dismiss}
-          />
-        </div>
-      ) : null}
-
-      {/* The three SERVER passes stream on aidream's own wire; the adopted
-          request id renders through the same ONE live pipeline. */}
-      {passes.live.requestId || passes.live.isRunning ? (
-        <div className="border-b border-border px-3 py-2">
-          <LiveRunDisplay
-            requestId={passes.live.requestId ?? undefined}
-            label={passes.live.label ?? "Running a whole-plan pass"}
-            pending={passes.live.isRunning}
-            onDismiss={passes.live.dismiss}
-          />
-          {passes.live.stage ? (
-            <p className="mt-1 text-xs text-muted-foreground">
-              {passes.live.stage}
-            </p>
-          ) : null}
-        </div>
-      ) : null}
-
-      {site ? (
-        <BuildWithAiDialog
-          open={buildDialogOpen}
-          onOpenChange={setBuildDialogOpen}
-          siteName={site.name}
-          reportReady={Boolean(researchReport)}
-          reportPending={Boolean(researchTopicId) && !researchReport}
+        <SetupAiBar
           selectedTopicId={researchTopicId}
           onSelectTopic={selectTopic}
-          log={buildLog}
-          failed={buildFailed}
-          onReset={() => {
-            setBuildLog([]);
-            setBuildFailed(false);
-            setAiError(null);
+          onCreateResearch={() => void handleCreateResearch()}
+          researchStage={quickResearch.stage}
+          document={researchDoc.data ?? null}
+          documentLoading={Boolean(researchTopicId) && researchDoc.isLoading}
+          onRecommendShape={() => void handleRecommendShape()}
+          shapeBusy={agents.shapeBusy}
+          onBuildWithAi={() => {
+            // Re-opening for a NEW run clears the finished/failed feed so the
+            // intake questions come back; an in-flight run keeps its live feed.
+            if (!draftingWorkOrder) {
+              setBuildLog([]);
+              setBuildFailed(false);
+            }
+            setBuildDialogOpen(true);
           }}
-          busy={draftingWorkOrder}
-          onSubmit={(hints) => void handleBuildWithAi(hints)}
+          draftBusy={draftingWorkOrder}
+          anyAgentBusy={anyAgentBusy}
+          lastRun={lastAiRun}
+          error={aiError}
+          onDismissError={() => setAiError(null)}
         />
-      ) : null}
 
-      {/* Mobile: ONE page scroll, panels stacked at natural height. md+: a
-        fixed grid where each column owns its own scroll. */}
-      <div
-        className={
-          "flex min-h-0 flex-1 flex-col gap-px overflow-y-auto bg-border " +
-          "md:grid md:grid-cols-[16rem_minmax(0,1fr)] md:grid-rows-[minmax(0,auto)_minmax(0,1fr)] md:overflow-hidden " +
-          "xl:grid-cols-[17rem_minmax(0,1fr)_25rem] xl:grid-rows-1"
-        }
-      >
-        <div className="bg-card md:row-span-2 md:min-h-0 xl:row-span-1">
-          {loading ? (
-            <ColumnSkeleton rows={4} />
-          ) : (
-            <SetupShapeColumn
-              archetypes={archetypes}
-              baseline={baseline}
-              loading={false}
-              selectedKey={selectedKey}
-              committedKey={committed?.key ?? null}
-              shadowed={library.data?.shadowed ?? []}
-              onSelect={(key) => {
-                setPickedKey(key);
-                setResult(null);
+        {site ? (
+          <div className="border-b border-border/50 bg-card px-3 py-2">
+            <AssociationList
+              container={{
+                type: "web_site",
+                id: site.id,
+                orgId: site.organization_id,
+                label: site.name,
               }}
+              tokens={[...RESEARCH_LINEAGE_TOKENS]}
+              variant="compact"
             />
-          )}
-        </div>
+          </div>
+        ) : null}
 
-        <div className="bg-card md:min-h-0">
-          {loading ? (
-            <ColumnSkeleton rows={6} />
-          ) : expansion.error ? (
-            <div className="p-4 text-sm text-destructive">
-              This site shape is malformed and cannot be expanded:{" "}
-              {expansion.error}
-            </div>
-          ) : expanded && readiness && preview ? (
-            <SetupWorkOrderColumn
-              expanded={expanded}
-              readiness={readiness}
-              counts={counts}
-              names={names}
-              userNamedKeys={new Set(Object.keys(userNames))}
-              dirtyKeys={dirtyKeys}
-              catalog={catalog}
-              conceptNames={conceptNames}
-              onCountChange={setCount}
-              onNamesChange={setNames}
-              onConceptNameChange={setConceptName}
-              onReset={resetOverrides}
-              aiReady={Boolean(researchReport)}
-              aiNamingKey={agents.namingFamilyKey}
-              aiBusy={anyAgentBusy}
-              onAiNames={(familyKey) => void handleNameFamily(familyKey)}
-              topics={topics}
-              onAiTopics={(familyKey) => void handleTopicsForFamily(familyKey)}
-              onClearTopics={(familyKey) => setTopics(familyKey, null)}
-              onApplyTopics={(familyKey) => void handleApplyTopics(familyKey)}
-              onPromoteTopics={(familyKey) => void handlePromoteTopics(familyKey)}
-              applyingTopicsKey={applyingTopicsKey}
-              plannedRoutes={plannedRoutes}
-              newCount={preview.counts.new}
-              pageTypeName={(slug) =>
-                slug ? (pageTypeNameBySlug.get(slug) ?? slug) : "No page type"
-              }
-              lintSlot={
-                <>
-                  <PlanLintSection nodes={nodes.data ?? []} />
-                  <KeywordStrategySection
-                    strategy={keywordStrategy}
-                    busy={passes.keywordsBusy}
-                    anyBusy={anyAgentBusy}
-                    aiReady={Boolean(researchReport)}
-                    planEmpty={nodeRows.length === 0}
-                    error={keywordError}
-                    onDismissError={() => setKeywordError(null)}
-                    onRun={() => void handlePlanKeywords()}
-                    onApply={() => void handleApplyKeywords()}
-                    onDismiss={() => {
-                      setKeywordStrategy(null);
-                      setKeywordsAppliedAt(null);
-                      setKeywordError(null);
-                    }}
-                    applying={applyingKeywords}
-                    appliedAt={keywordsAppliedAt}
-                  />
-                  <EntityAttachSection
-                    plan={entityPlan}
-                    busy={passes.entitiesBusy}
-                    anyBusy={anyAgentBusy}
-                    aiReady={Boolean(researchReport)}
-                    rosterEmpty={(planEntities.data ?? []).length === 0}
-                    planEmpty={nodeRows.length === 0}
-                    error={attachError}
-                    onDismissError={() => setAttachError(null)}
-                    onRun={() => void handleAttachEntities()}
-                    onApply={() => void handleApplyEntityAttachments()}
-                    onDismiss={() => {
-                      setEntityPlan(null);
-                      setEntitiesAppliedAt(null);
-                      setAttachError(null);
-                    }}
-                    applying={applyingEntities}
-                    appliedAt={entitiesAppliedAt}
-                  />
-                  <PlanReviewSection
-                    nodes={nodeRows}
-                    review={review}
-                    busy={passes.reviewBusy}
-                    anyBusy={anyAgentBusy}
-                    aiReady={Boolean(researchReport)}
-                    error={reviewError}
-                    onDismissError={() => setReviewError(null)}
-                    onRun={() => void handleReviewPlan()}
-                    onDismiss={() => {
-                      setReview(null);
-                      setAddedRoutes(new Set());
-                      setReviewError(null);
-                    }}
-                    onAddPage={(finding) => void handleAddSuggestedPage(finding)}
-                    addingRoute={addingRoute}
-                    addedRoutes={addedRoutes}
-                  />
-                </>
-              }
-              bridgeSlot={
-                site ? (
-                  <SetupBridgeSection
-                    site={site}
-                    cms={cms.data ?? null}
-                    planNodeIds={nodeRows.map((node) => node.id)}
-                  />
-                ) : null
-              }
+        {/* Live AI output for every Setup agent run (shape, names, keywords,
+          entities, review, brief) — the model's stream renders as it arrives,
+          never a bare spinner. */}
+        {agents.live.hasLiveRun ? (
+          <div className="border-b border-border px-3 py-2">
+            <LiveRunDisplay
+              conversationId={agents.live.conversationId}
+              label={agents.live.label ?? "Running the Setup agent"}
+              pending={agents.live.isRunning}
+              onDismiss={agents.live.dismiss}
             />
-          ) : (
-            <EmptyState
-              title="No shape selected"
-              body="Pick a site shape on the left to see its work order."
-            />
-          )}
-        </div>
+          </div>
+        ) : null}
 
-        <div className="bg-card md:col-start-2 md:min-h-0 xl:col-start-3 xl:row-start-1">
-          {loading ? (
-            <ColumnSkeleton rows={8} />
-          ) : expanded && preview ? (
-            <SetupPreviewColumn
-              expanded={expanded}
-              preview={preview}
-              disabledReason={disabledReason}
-              committing={committing}
-              progress={progress}
-              result={result}
-              onCommit={() => void handleCommit()}
-              onOpenPlan={() => setView("tree")}
+        {/* The three SERVER passes stream on aidream's own wire; the adopted
+          request id renders through the same ONE live pipeline. */}
+        {passes.live.requestId || passes.live.isRunning ? (
+          <div className="border-b border-border px-3 py-2">
+            <LiveRunDisplay
+              requestId={passes.live.requestId ?? undefined}
+              label={passes.live.label ?? "Running a whole-plan pass"}
+              pending={passes.live.isRunning}
+              onDismiss={passes.live.dismiss}
             />
-          ) : (
-            <EmptyState
-              title="Nothing to preview"
-              body="The routes this shape creates appear here before anything is written."
-            />
-          )}
+            {passes.live.stage ? (
+              <p className="mt-1 text-xs text-muted-foreground">
+                {passes.live.stage}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+
+        {site ? (
+          <BuildWithAiDialog
+            open={buildDialogOpen}
+            onOpenChange={setBuildDialogOpen}
+            siteName={site.name}
+            reportReady={Boolean(researchReport)}
+            reportPending={Boolean(researchTopicId) && !researchReport}
+            selectedTopicId={researchTopicId}
+            onSelectTopic={selectTopic}
+            log={buildLog}
+            failed={buildFailed}
+            onReset={() => {
+              setBuildLog([]);
+              setBuildFailed(false);
+              setAiError(null);
+            }}
+            busy={draftingWorkOrder}
+            onSubmit={(hints) => void handleBuildWithAi(hints)}
+          />
+        ) : null}
+
+        {/* Mobile: ONE page scroll, panels stacked at natural height. md+: a
+        fixed grid where each column owns its own scroll. */}
+        <div
+          className={
+            "flex min-h-0 flex-1 flex-col gap-px overflow-y-auto bg-border " +
+            "md:grid md:grid-cols-[16rem_minmax(0,1fr)] md:grid-rows-[minmax(0,auto)_minmax(0,1fr)] md:overflow-hidden " +
+            "xl:grid-cols-[17rem_minmax(0,1fr)_25rem] xl:grid-rows-1"
+          }
+        >
+          <div className="bg-card md:row-span-2 md:min-h-0 xl:row-span-1">
+            {loading ? (
+              <ColumnSkeleton rows={4} />
+            ) : (
+              <SetupShapeColumn
+                archetypes={archetypes}
+                baseline={baseline}
+                loading={false}
+                selectedKey={selectedKey}
+                committedKey={committed?.key ?? null}
+                shadowed={library.data?.shadowed ?? []}
+                onSelect={(key) => {
+                  setPickedKey(key);
+                  setResult(null);
+                }}
+              />
+            )}
+          </div>
+
+          <div className="bg-card md:min-h-0">
+            {loading ? (
+              <ColumnSkeleton rows={6} />
+            ) : expansion.error ? (
+              <div className="p-4 text-sm text-destructive">
+                This site shape is malformed and cannot be expanded:{" "}
+                {expansion.error}
+              </div>
+            ) : expanded && readiness && preview ? (
+              <SetupWorkOrderColumn
+                expanded={expanded}
+                readiness={readiness}
+                counts={counts}
+                names={names}
+                userNamedKeys={new Set(Object.keys(userNames))}
+                dirtyKeys={dirtyKeys}
+                catalog={catalog}
+                conceptNames={conceptNames}
+                onCountChange={setCount}
+                onNamesChange={setNames}
+                onConceptNameChange={setConceptName}
+                onReset={resetOverrides}
+                aiReady={Boolean(researchReport)}
+                aiNamingKey={agents.namingFamilyKey}
+                aiBusy={anyAgentBusy}
+                onAiNames={(familyKey) => void handleNameFamily(familyKey)}
+                topics={topics}
+                onAiTopics={(familyKey) =>
+                  void handleTopicsForFamily(familyKey)
+                }
+                onClearTopics={(familyKey) => setTopics(familyKey, null)}
+                onApplyTopics={(familyKey) => void handleApplyTopics(familyKey)}
+                onPromoteTopics={(familyKey) =>
+                  void handlePromoteTopics(familyKey)
+                }
+                applyingTopicsKey={applyingTopicsKey}
+                plannedRoutes={plannedRoutes}
+                newCount={preview.counts.new}
+                pageTypeName={(slug) =>
+                  slug ? (pageTypeNameBySlug.get(slug) ?? slug) : "No page type"
+                }
+                lintSlot={
+                  <>
+                    <PlanLintSection nodes={nodes.data ?? []} />
+                    <KeywordStrategySection
+                      strategy={keywordStrategy}
+                      busy={passes.keywordsBusy}
+                      anyBusy={anyAgentBusy}
+                      aiReady={Boolean(researchReport)}
+                      planEmpty={nodeRows.length === 0}
+                      error={keywordError}
+                      onDismissError={() => setKeywordError(null)}
+                      onRun={() => void handlePlanKeywords()}
+                      onApply={() => void handleApplyKeywords()}
+                      onDismiss={() => {
+                        setKeywordStrategy(null);
+                        setKeywordsAppliedAt(null);
+                        setKeywordError(null);
+                      }}
+                      applying={applyingKeywords}
+                      appliedAt={keywordsAppliedAt}
+                    />
+                    <EntityAttachSection
+                      plan={entityPlan}
+                      busy={passes.entitiesBusy}
+                      anyBusy={anyAgentBusy}
+                      aiReady={Boolean(researchReport)}
+                      rosterEmpty={(planEntities.data ?? []).length === 0}
+                      planEmpty={nodeRows.length === 0}
+                      error={attachError}
+                      onDismissError={() => setAttachError(null)}
+                      onRun={() => void handleAttachEntities()}
+                      onApply={() => void handleApplyEntityAttachments()}
+                      onDismiss={() => {
+                        setEntityPlan(null);
+                        setEntitiesAppliedAt(null);
+                        setAttachError(null);
+                      }}
+                      applying={applyingEntities}
+                      appliedAt={entitiesAppliedAt}
+                    />
+                    <PlanReviewSection
+                      nodes={nodeRows}
+                      review={review}
+                      busy={passes.reviewBusy}
+                      anyBusy={anyAgentBusy}
+                      aiReady={Boolean(researchReport)}
+                      error={reviewError}
+                      onDismissError={() => setReviewError(null)}
+                      onRun={() => void handleReviewPlan()}
+                      onDismiss={() => {
+                        setReview(null);
+                        setAddedRoutes(new Set());
+                        setReviewError(null);
+                      }}
+                      onAddPage={(finding) =>
+                        void handleAddSuggestedPage(finding)
+                      }
+                      addingRoute={addingRoute}
+                      addedRoutes={addedRoutes}
+                    />
+                  </>
+                }
+                bridgeSlot={
+                  site ? (
+                    <SetupBridgeSection
+                      site={site}
+                      cms={cms.data ?? null}
+                      planNodeIds={nodeRows.map((node) => node.id)}
+                    />
+                  ) : null
+                }
+              />
+            ) : (
+              <EmptyState
+                title="No shape selected"
+                body="Pick a site shape on the left to see its work order."
+              />
+            )}
+          </div>
+
+          <div className="bg-card md:col-start-2 md:min-h-0 xl:col-start-3 xl:row-start-1">
+            {loading ? (
+              <ColumnSkeleton rows={8} />
+            ) : expanded && preview ? (
+              <SetupPreviewColumn
+                expanded={expanded}
+                preview={preview}
+                disabledReason={disabledReason}
+                committing={committing}
+                progress={progress}
+                result={result}
+                onCommit={() => void handleCommit()}
+                onOpenPlan={() => setView("tree")}
+              />
+            ) : (
+              <EmptyState
+                title="Nothing to preview"
+                body="The routes this shape creates appear here before anything is written."
+              />
+            )}
+          </div>
         </div>
       </div>
-    </div>
     </SurfaceRuntimeProvider>
   );
 }
@@ -2078,7 +2153,9 @@ function EmptyState({ title, body }: { title: string; body: string }) {
     <div className="flex h-full items-center justify-center p-6">
       <div className="max-w-sm text-center">
         <p className="text-sm font-medium text-foreground">{title}</p>
-        <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{body}</p>
+        <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+          {body}
+        </p>
       </div>
     </div>
   );
@@ -2097,7 +2174,9 @@ function ErrorState({
     <div className="flex h-full items-center justify-center p-6">
       <div className="max-w-md text-center">
         <p className="text-sm font-medium text-destructive">{title}</p>
-        <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{message}</p>
+        <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+          {message}
+        </p>
         <Button variant="outline" size="sm" className="mt-3" onClick={onRetry}>
           Try again
         </Button>

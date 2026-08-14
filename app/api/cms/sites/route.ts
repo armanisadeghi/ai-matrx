@@ -18,6 +18,10 @@ import { createClient as createMainSupabaseClient } from "@/utils/supabase/serve
 import { requireSuperAdmin } from "@/utils/auth/adminUtils";
 import { getCmsClient } from "../_lib/cmsDb";
 import { logCmsActivity } from "../_lib/activityLog";
+import {
+  ResearchLineageValidationError,
+  validateResearchLineageIds,
+} from "../_lib/researchLineage";
 
 const AGENT_WRITE_POLICIES = ["blocked", "draft_only", "full"] as const;
 type AgentWritePolicy = (typeof AGENT_WRITE_POLICIES)[number];
@@ -45,7 +49,8 @@ function isPublicAddress(address: string): boolean {
     );
   }
   const octets = address.split(".").map(Number);
-  if (octets.length !== 4 || octets.some((part) => !Number.isInteger(part))) return false;
+  if (octets.length !== 4 || octets.some((part) => !Number.isInteger(part)))
+    return false;
   const [a, b] = octets;
   return !(
     a === 0 ||
@@ -62,7 +67,10 @@ function isPublicAddress(address: string): boolean {
 async function assertPublicDns(domain: string): Promise<void> {
   if (isIP(domain)) throw new Error("Enter a domain name, not an IP address.");
   const addresses = await lookup(domain, { all: true, verbatim: true });
-  if (addresses.length === 0 || addresses.some(({ address }) => !isPublicAddress(address))) {
+  if (
+    addresses.length === 0 ||
+    addresses.some(({ address }) => !isPublicAddress(address))
+  ) {
     throw new Error("The domain does not resolve to a public website.");
   }
 }
@@ -73,7 +81,8 @@ function providerFromNameservers(nameservers: string[]): string | null {
   if (joined.includes("domaincontrol")) return "godaddy";
   if (joined.includes("registrar-servers")) return "namecheap";
   if (joined.includes("vercel-dns")) return "vercel";
-  if (joined.includes("googledomains") || joined.includes("squarespacedns")) return "squarespace";
+  if (joined.includes("googledomains") || joined.includes("squarespacedns"))
+    return "squarespace";
   if (joined.includes("ui-dns")) return "ionos";
   if (joined.includes("awsdns")) return "route53";
   if (joined.includes("wixdns")) return "wix";
@@ -299,11 +308,14 @@ export async function POST(request: NextRequest) {
 
         if (Object.prototype.hasOwnProperty.call(updateData, "domain")) {
           const currentDomain = existing.domain ?? null;
-          const nextDomain = typeof updateData.domain === "string" && updateData.domain
-            ? updateData.domain
-            : null;
+          const nextDomain =
+            typeof updateData.domain === "string" && updateData.domain
+              ? updateData.domain
+              : null;
           if (nextDomain !== currentDomain) {
-            const nextSettings = asSettings(updateData.settings ?? existing.settings);
+            const nextSettings = asSettings(
+              updateData.settings ?? existing.settings,
+            );
             nextSettings.domain_traffic = {
               mode: "platform",
               verified_domain: null,
@@ -344,16 +356,86 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: true, site: data });
       }
 
+      // Cross-project research ids for an unpaired CMS site. Once web_site_id
+      // exists, canonical platform.associations are the preferred writer; the
+      // arrays remain readable so no draft lineage can disappear mid-pairing.
+      case "set-research-lineage": {
+        const { siteId, researchTopicIds, researchTagIds } = params;
+        if (!siteId) {
+          return NextResponse.json(
+            { error: "siteId is required" },
+            { status: 400 },
+          );
+        }
+        const { data: existing } = await db
+          .from("client_sites")
+          .select("id")
+          .eq("id", siteId)
+          .eq("owner_user_id", user.id)
+          .single();
+        if (!existing) {
+          return NextResponse.json(
+            { error: "Site not found or access denied" },
+            { status: 403 },
+          );
+        }
+        try {
+          const { topicIds, tagIds } = await validateResearchLineageIds(
+            mainSupabase,
+            researchTopicIds,
+            researchTagIds,
+          );
+          const { data, error } = await db
+            .from("client_sites")
+            .update({ research_topic_ids: topicIds, research_tag_ids: tagIds })
+            .eq("id", siteId)
+            .eq("owner_user_id", user.id)
+            .select()
+            .single();
+          if (error) throw error;
+          await logCmsActivity(db, {
+            siteId,
+            activityType: "site.research_lineage",
+            entityType: "site",
+            entityId: siteId,
+            description: "Updated site research lineage",
+            userId: user.id,
+            userEmail: user.email,
+            changes: {
+              research_topic_ids: topicIds,
+              research_tag_ids: tagIds,
+            },
+          });
+          return NextResponse.json({ success: true, site: data });
+        } catch (lineageError) {
+          if (lineageError instanceof ResearchLineageValidationError) {
+            return NextResponse.json(
+              { error: lineageError.message },
+              { status: 400 },
+            );
+          }
+          throw lineageError;
+        }
+      }
+
       case "use_platform_domain": {
         const { siteId } = params;
-        if (!siteId) return NextResponse.json({ error: "siteId is required" }, { status: 400 });
+        if (!siteId)
+          return NextResponse.json(
+            { error: "siteId is required" },
+            { status: 400 },
+          );
         const { data: site } = await db
           .from("client_sites")
           .select("id, slug, domain, settings")
           .eq("id", siteId)
           .eq("owner_user_id", user.id)
           .single();
-        if (!site) return NextResponse.json({ error: "Site not found or access denied" }, { status: 403 });
+        if (!site)
+          return NextResponse.json(
+            { error: "Site not found or access denied" },
+            { status: 403 },
+          );
         const settings = asSettings(site.settings);
         const prior = asSettings(settings.domain_traffic);
         settings.domain_traffic = { ...prior, mode: "platform" };
@@ -364,7 +446,8 @@ export async function POST(request: NextRequest) {
           .eq("owner_user_id", user.id)
           .select()
           .single();
-        if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+        if (error)
+          return NextResponse.json({ error: error.message }, { status: 500 });
         await logCmsActivity(db, {
           siteId,
           activityType: "site.domain_platform",
@@ -379,17 +462,28 @@ export async function POST(request: NextRequest) {
 
       case "verify_domain": {
         const { siteId } = params;
-        if (!siteId) return NextResponse.json({ error: "siteId is required" }, { status: 400 });
+        if (!siteId)
+          return NextResponse.json(
+            { error: "siteId is required" },
+            { status: 400 },
+          );
         const { data: site } = await db
           .from("client_sites")
           .select("id, slug, domain, settings")
           .eq("id", siteId)
           .eq("owner_user_id", user.id)
           .single();
-        if (!site) return NextResponse.json({ error: "Site not found or access denied" }, { status: 403 });
+        if (!site)
+          return NextResponse.json(
+            { error: "Site not found or access denied" },
+            { status: 403 },
+          );
         const domain = typeof site.domain === "string" ? site.domain : "";
         if (!domain) {
-          return NextResponse.json({ error: "Save the desired domain before checking it." }, { status: 400 });
+          return NextResponse.json(
+            { error: "Save the desired domain before checking it." },
+            { status: 400 },
+          );
         }
         const checkedAt = new Date().toISOString();
         const provider = await detectDnsProvider(domain);
@@ -397,14 +491,19 @@ export async function POST(request: NextRequest) {
         let verificationError: string | null = null;
         try {
           await assertPublicDns(domain);
-          const response = await fetch(`https://${domain}/__matrx-domain-verification`, {
-            cache: "no-store",
-            redirect: "manual",
-            signal: AbortSignal.timeout(8_000),
-            headers: { Accept: "application/json" },
-          });
+          const response = await fetch(
+            `https://${domain}/__matrx-domain-verification`,
+            {
+              cache: "no-store",
+              redirect: "manual",
+              signal: AbortSignal.timeout(8_000),
+              headers: { Accept: "application/json" },
+            },
+          );
           if (!response.ok) {
-            throw new Error(`The verification page returned HTTP ${response.status}.`);
+            throw new Error(
+              `The verification page returned HTTP ${response.status}.`,
+            );
           }
           const marker = (await response.json()) as Record<string, unknown>;
           if (
@@ -412,11 +511,16 @@ export async function POST(request: NextRequest) {
             marker.siteSlug !== site.slug ||
             marker.domain !== domain
           ) {
-            throw new Error("The domain reached a website, but not this Matrx site.");
+            throw new Error(
+              "The domain reached a website, but not this Matrx site.",
+            );
           }
           verified = true;
         } catch (error) {
-          verificationError = error instanceof Error ? error.message : "The domain could not be verified.";
+          verificationError =
+            error instanceof Error
+              ? error.message
+              : "The domain could not be verified.";
         }
 
         const settings = asSettings(site.settings);
@@ -435,10 +539,13 @@ export async function POST(request: NextRequest) {
           .eq("owner_user_id", user.id)
           .select()
           .single();
-        if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+        if (error)
+          return NextResponse.json({ error: error.message }, { status: 500 });
         await logCmsActivity(db, {
           siteId,
-          activityType: verified ? "site.domain_verified" : "site.domain_check_failed",
+          activityType: verified
+            ? "site.domain_verified"
+            : "site.domain_check_failed",
           entityType: "site",
           entityId: siteId,
           description: verified
@@ -502,7 +609,10 @@ export async function POST(request: NextRequest) {
         // viyklljfdhtidwecakwx (2026-07-10). Page history in
         // `history.row_versions` has no FK and is deliberately NOT cascaded:
         // the append-only log outlives the rows it describes.
-        const { error } = await db.from("client_sites").delete().eq("id", siteId);
+        const { error } = await db
+          .from("client_sites")
+          .delete()
+          .eq("id", siteId);
 
         if (error) {
           console.error("[cms/sites] delete error:", error);
@@ -520,7 +630,11 @@ export async function POST(request: NextRequest) {
           description: `Deleted site "${site.name}" (${site.slug})${force && (pageCount ?? 0) > 0 ? ` — forced, ${pageCount} page(s)` : ""}`,
           userId: user.id,
           userEmail: user.email,
-          changes: { slug: site.slug, forced: !!force, pageCount: pageCount ?? 0 },
+          changes: {
+            slug: site.slug,
+            forced: !!force,
+            pageCount: pageCount ?? 0,
+          },
         });
 
         return NextResponse.json({ success: true });
@@ -566,7 +680,9 @@ export async function POST(request: NextRequest) {
           !AGENT_WRITE_POLICIES.includes(agentWritePolicy as AgentWritePolicy)
         ) {
           return NextResponse.json(
-            { error: `agentWritePolicy must be one of: ${AGENT_WRITE_POLICIES.join(", ")}` },
+            {
+              error: `agentWritePolicy must be one of: ${AGENT_WRITE_POLICIES.join(", ")}`,
+            },
             { status: 400 },
           );
         }
@@ -578,13 +694,20 @@ export async function POST(request: NextRequest) {
           .single();
 
         if (fetchError || !existing) {
-          return NextResponse.json({ error: "Site not found" }, { status: 404 });
+          return NextResponse.json(
+            { error: "Site not found" },
+            { status: 404 },
+          );
         }
 
         const nextSettings = {
           ...(existing.settings ?? {}),
-          ...(agentWritePolicy !== undefined ? { agent_write_policy: agentWritePolicy } : {}),
-          ...(policyOverrides !== undefined ? { policy_overrides: policyOverrides } : {}),
+          ...(agentWritePolicy !== undefined
+            ? { agent_write_policy: agentWritePolicy }
+            : {}),
+          ...(policyOverrides !== undefined
+            ? { policy_overrides: policyOverrides }
+            : {}),
         };
 
         const { data, error } = await db
@@ -637,7 +760,10 @@ export async function POST(request: NextRequest) {
 
         // `actor` lives inside the `changes` jsonb (C6) — filter in app code.
         const rows = actor
-          ? (data ?? []).filter((row) => (row.changes as { actor?: string } | null)?.actor === actor)
+          ? (data ?? []).filter(
+              (row) =>
+                (row.changes as { actor?: string } | null)?.actor === actor,
+            )
           : (data ?? []);
 
         return NextResponse.json({ activity: rows });
@@ -651,11 +777,13 @@ export async function POST(request: NextRequest) {
     }
   } catch (err: unknown) {
     console.error("[cms/sites] Unexpected error:", err);
-    const message = err instanceof Error ? err.message : "Internal server error";
-    const status = message.startsWith("Forbidden") ? 403 : message.startsWith("Unauthorized") ? 401 : 500;
-    return NextResponse.json(
-      { error: message },
-      { status },
-    );
+    const message =
+      err instanceof Error ? err.message : "Internal server error";
+    const status = message.startsWith("Forbidden")
+      ? 403
+      : message.startsWith("Unauthorized")
+        ? 401
+        : 500;
+    return NextResponse.json({ error: message }, { status });
   }
 }

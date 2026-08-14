@@ -136,8 +136,8 @@ Supabase MCP at the wrong project for this feature.
 
 **Tables**
 
-- `client_sites` — one row per site. `settings` jsonb holds `agent_write_policy` (`blocked | draft_only | full`, F4) and `policy_overrides` — no dedicated columns.
-- `client_pages` — draft/publish twin columns (`*_draft`), `has_draft`, `is_published`, category/slug routing fields.
+- `client_sites` — one row per site. `settings` jsonb holds `agent_write_policy` (`blocked | draft_only | full`, F4) and `policy_overrides` — no dedicated columns. `web_site_id` is the durable MAIN-project anchor; `research_topic_ids[]` / `research_tag_ids[]` are a typed scratch bridge used only while that anchor is absent.
+- `client_pages` — draft/publish twin columns (`*_draft`), `has_draft`, `is_published`, category/slug routing fields. `plan_node_id` and `web_page_id` are the durable MAIN-project anchors; `research_topic_ids[]` / `research_tag_ids[]` preserve page-specific lineage before either anchor exists.
 - `client_components` — header/footer/etc., same draft-twin pattern.
 - `history.row_versions` — the canonical append-only version log (aidream CMS migrations `0002` +
   `0005`). EVERY change to a versioned row is captured by its `_history` trigger with a full jsonb
@@ -379,6 +379,7 @@ UI-complete here but only take effect once P1's service layer reads them.
 
 ## Change log
 
+- `2026-08-14` — **Research lineage now survives research → plan → CMS at site and page granularity.** Six non-access-conveying MAIN-project association pairs make `research_topic` and `research_tag` attachable to `web_site`, `plan_node`, and `web_page`. Site/page settings reuse the canonical `AssociationList`; linked titles are real doors, including new flat resolver routes for `research_tag` and `plan_node`. Site-wide links are inherited at read time; plan-node links are copied by a symmetric database trigger whenever either the lineage edge or the `plan_node → web_page (realizes)` edge arrives. Because CMS rows live in a separate Supabase project, migration `0038` adds typed UUID-array scratch bridges on `client_sites` / `client_pages`; the UI writes canonical associations whenever a MAIN anchor exists and offers one-click promotion of scratch links once pairing becomes possible. Both CMS surface manifests require `research_lineage`, and the site/page context builders emit titles, ids, direct/inherited origin, anchor status, and loud load errors so an agent never mistakes unavailable lineage for an empty set.
 - `2026-08-13` — **WF-3 closed: frontend page/component writes now pass through
   aidream's canonical content guard.** New `_lib/validateContent.ts` forwards the
   user's Supabase JWT to authenticated `POST /cms/validate`; page

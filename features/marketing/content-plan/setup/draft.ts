@@ -29,6 +29,7 @@ import {
 } from "./ai";
 import { SITE_SETTINGS_KEY } from "./archetypes";
 import { assertFound } from "@/features/marketing/data/service";
+import { associationsService } from "@/features/scopes/service/associationsService";
 
 export const SETUP_DRAFT_KEY = "setup_draft";
 
@@ -131,7 +132,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  * does, and there is no second shape to drift. A section that no longer
  * parses degrades to null (the user re-runs), never throws away the draft.
  */
-function planReviewToStorage(review: PlanReviewResult): Record<string, unknown> {
+function planReviewToStorage(
+  review: PlanReviewResult,
+): Record<string, unknown> {
   return {
     summary: review.summary,
     findings: review.findings.map((finding) => ({
@@ -209,17 +212,26 @@ export function readSetupDraft(settings: unknown): SetupDraft | null {
   if (typeof raw.archetype_key === "string" && raw.archetype_key.trim()) {
     draft.archetypeKey = raw.archetype_key;
   }
-  if (typeof raw.research_topic_id === "string" && raw.research_topic_id.trim()) {
+  if (
+    typeof raw.research_topic_id === "string" &&
+    raw.research_topic_id.trim()
+  ) {
     draft.researchTopicId = raw.research_topic_id;
   }
   if (typeof raw.updated_at === "string") draft.updatedAt = raw.updated_at;
 
   if (isRecord(raw.counts_by_archetype)) {
-    for (const [archetype, families] of Object.entries(raw.counts_by_archetype)) {
+    for (const [archetype, families] of Object.entries(
+      raw.counts_by_archetype,
+    )) {
       if (!isRecord(families)) continue;
       const out: Record<string, number> = {};
       for (const [key, value] of Object.entries(families)) {
-        if (typeof value === "number" && Number.isInteger(value) && value >= 0) {
+        if (
+          typeof value === "number" &&
+          Number.isInteger(value) &&
+          value >= 0
+        ) {
           out[key] = value;
         }
       }
@@ -246,10 +258,14 @@ export function readSetupDraft(settings: unknown): SetupDraft | null {
   draft.review = readStaged(raw.plan_review, coercePlanReview);
   if (Array.isArray(raw.plan_review_added_routes)) {
     draft.reviewAddedRoutes = raw.plan_review_added_routes.filter(
-      (route): route is string => typeof route === "string" && Boolean(route.trim()),
+      (route): route is string =>
+        typeof route === "string" && Boolean(route.trim()),
     );
   }
-  draft.keywordStrategy = readStaged(raw.keyword_strategy, coerceKeywordStrategy);
+  draft.keywordStrategy = readStaged(
+    raw.keyword_strategy,
+    coerceKeywordStrategy,
+  );
   draft.keywordsAppliedAt = draft.keywordStrategy
     ? readIsoString(raw.keywords_applied_at)
     : null;
@@ -264,14 +280,14 @@ export function readSetupDraft(settings: unknown): SetupDraft | null {
 export function draftHasContent(draft: SetupDraft): boolean {
   return Boolean(
     draft.archetypeKey ||
-      draft.researchTopicId ||
-      Object.keys(draft.countsByArchetype).length > 0 ||
-      Object.keys(draft.namesByArchetype).length > 0 ||
-      Object.keys(draft.conceptNamesByArchetype).length > 0 ||
-      Object.keys(draft.topicsByArchetype).length > 0 ||
-      draft.review ||
-      draft.keywordStrategy ||
-      draft.entityPlan,
+    draft.researchTopicId ||
+    Object.keys(draft.countsByArchetype).length > 0 ||
+    Object.keys(draft.namesByArchetype).length > 0 ||
+    Object.keys(draft.conceptNamesByArchetype).length > 0 ||
+    Object.keys(draft.topicsByArchetype).length > 0 ||
+    draft.review ||
+    draft.keywordStrategy ||
+    draft.entityPlan,
   );
 }
 
@@ -302,11 +318,13 @@ export function draftToStorage(draft: SetupDraft): Record<string, unknown> {
   }
   if (draft.keywordStrategy) {
     out.keyword_strategy = keywordStrategyToStorage(draft.keywordStrategy);
-    if (draft.keywordsAppliedAt) out.keywords_applied_at = draft.keywordsAppliedAt;
+    if (draft.keywordsAppliedAt)
+      out.keywords_applied_at = draft.keywordsAppliedAt;
   }
   if (draft.entityPlan) {
     out.entity_attach_plan = entityPlanToStorage(draft.entityPlan);
-    if (draft.entitiesAppliedAt) out.entities_applied_at = draft.entitiesAppliedAt;
+    if (draft.entitiesAppliedAt)
+      out.entities_applied_at = draft.entitiesAppliedAt;
   }
   return out;
 }
@@ -324,7 +342,9 @@ export interface FreshSiteRow {
  * `recordSiteArchetype`) must re-read instead of trusting a stale query cache.
  */
 export async function fetchFreshSite(siteId: string): Promise<FreshSiteRow> {
-  const response = await (await authenticatedWebDb(supabase))
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
     .from("site")
     .select("settings, version, domain, name")
     .eq("id", siteId)
@@ -361,7 +381,9 @@ async function writeDraftOnce(
   mutate(block);
   settings[SITE_SETTINGS_KEY] = block;
 
-  const response = await (await authenticatedWebDb(supabase))
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
     .from("site")
     .update({ settings })
     .eq("id", siteId)
@@ -401,7 +423,9 @@ export async function clearSetupDraft(siteId: string): Promise<void> {
   };
   if (await writeDraftOnce(siteId, mutate)) return;
   if (await writeDraftOnce(siteId, mutate)) return;
-  throw new Error("Could not clear the setup draft — the site record kept changing.");
+  throw new Error(
+    "Could not clear the setup draft — the site record kept changing.",
+  );
 }
 
 /**
@@ -508,12 +532,16 @@ export function readAppliedEntityAttachments(
   if (Array.isArray(raw.missing_entities)) {
     for (const item of raw.missing_entities) {
       if (!isRecord(item)) continue;
-      if (typeof item.suggested_label !== "string" || !item.suggested_label.trim()) {
+      if (
+        typeof item.suggested_label !== "string" ||
+        !item.suggested_label.trim()
+      ) {
         continue;
       }
       gaps.push({
         suggestedLabel: item.suggested_label,
-        entityType: typeof item.entity_type === "string" ? item.entity_type : "source",
+        entityType:
+          typeof item.entity_type === "string" ? item.entity_type : "source",
         whyNeeded: typeof item.why_needed === "string" ? item.why_needed : "",
       });
     }
@@ -559,9 +587,27 @@ export async function recordSiteResearchTopic(
     if (topicId) block[SITE_RESEARCH_TOPIC_KEY] = topicId;
     else delete block[SITE_RESEARCH_TOPIC_KEY];
   };
-  if (await writeDraftOnce(siteId, mutate)) return;
-  if (await writeDraftOnce(siteId, mutate)) return;
-  throw new Error(
-    "Could not record the research link — the site record kept changing.",
-  );
+  const wrote =
+    (await writeDraftOnce(siteId, mutate)) ||
+    (await writeDraftOnce(siteId, mutate));
+  if (!wrote) {
+    throw new Error(
+      "Could not record the research link — the site record kept changing.",
+    );
+  }
+
+  if (topicId) {
+    const association = await associationsService.add({
+      sourceType: "research_topic",
+      sourceId: topicId,
+      targetType: "web_site",
+      targetId: siteId,
+      role: "primary_grounding",
+    });
+    if (!association.ok) {
+      throw new Error(
+        `The primary research setting was saved, but its canonical lineage link failed: ${association.error.message}`,
+      );
+    }
+  }
 }

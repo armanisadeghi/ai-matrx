@@ -10,9 +10,16 @@ import type {
 } from "@/features/cms/types";
 import { useCmsVersions } from "@/features/cms/hooks/useCmsVersions";
 import { useCmsPageSurfaceScope } from "@/features/cms/hooks/useCmsPageSurfaceScope";
+import { useCmsResearchLineage } from "@/features/cms/hooks/useCmsResearchLineage";
+import { ResearchLineagePanel } from "@/features/cms/components/ResearchLineagePanel";
+import { CmsPageService } from "@/features/cms/services/cmsService";
 import { CMS_PAGE_CONTEXT_MENU_PROPS } from "@/features/cms/agent-context/cmsPageContextMenuProps";
 import { createCmsPageExtraSections } from "@/features/cms/agent-context/cmsPageExtraSections";
-import { activeSiteDomain, clientPageUrl, sitePreviewToken } from "@/features/cms/utils/pageUrls";
+import {
+  activeSiteDomain,
+  clientPageUrl,
+  sitePreviewToken,
+} from "@/features/cms/utils/pageUrls";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { SurfaceRoleAgentButton } from "@/features/surfaces/components/chrome/SurfaceRoleAgentButton";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
@@ -170,6 +177,20 @@ export default function PageEditor({
   const [tags, setTags] = useState("");
   const [useClientHeader, setUseClientHeader] = useState(true);
   const [useClientFooter, setUseClientFooter] = useState(true);
+
+  const researchLineage = useCmsResearchLineage({
+    scope: "page",
+    cmsEntityId: page?.id ?? `new:${siteId}`,
+    webSiteId: site.web_site_id,
+    planNodeId: page?.plan_node_id,
+    webPageId: page?.web_page_id,
+    researchTopicIds: page?.research_topic_ids ?? [],
+    researchTagIds: page?.research_tag_ids ?? [],
+    persistScratch: async (topicIds, tagIds) => {
+      if (!page) throw new Error("Create the page before attaching research.");
+      await CmsPageService.setResearchLineage(page.id, topicIds, tagIds);
+    },
+  });
 
   // ── Sync from page prop ──────────────────────────────────────────────
   useEffect(() => {
@@ -370,6 +391,9 @@ export default function PageEditor({
     editorError: error,
     versions: versions.versions,
     textareaRef,
+    researchLineage: researchLineage.entries,
+    researchLineageStatus: researchLineage.adapter.status,
+    researchLineageError: researchLineage.adapter.error,
   });
 
   // ── Write half of the surface (manifest `writeTargets`) ──────────────
@@ -996,6 +1020,18 @@ export default function PageEditor({
                         </label>
                       </div>
                     </div>
+                    {page ? (
+                      <ResearchLineagePanel
+                        adapter={researchLineage.adapter}
+                        entries={researchLineage.entries}
+                        canPromoteScratch={researchLineage.canPromoteScratch}
+                        promoteScratch={researchLineage.promoteScratch}
+                      />
+                    ) : (
+                      <div className="rounded-lg border border-dashed p-4 text-xs text-muted-foreground">
+                        Create this page to attach research topics and tags.
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

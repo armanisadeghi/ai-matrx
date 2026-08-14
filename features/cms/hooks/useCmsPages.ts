@@ -87,6 +87,8 @@ export function useCmsPages(siteId: string | null) {
             // A freshly created page is never linked yet — the push stamps it
             // immediately after, and the next list read carries the truth.
             web_page_id: page.web_page_id ?? null,
+            research_topic_ids: page.research_topic_ids ?? [],
+            research_tag_ids: page.research_tag_ids ?? [],
           },
           ...prev,
         ]);

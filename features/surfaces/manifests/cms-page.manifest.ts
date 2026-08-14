@@ -186,6 +186,17 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 170,
     group: "site_framing",
   },
+  {
+    name: "research_lineage",
+    label: "Research lineage",
+    description:
+      "The research topics and tags available to this page, merged from site, originating plan node, canonical web.page, and CMS-only draft links. Object: { status, error, items[] }; each item has token, id, resolved title, and origins. Read this before changing claims or strategy. Always emitted, including loading/error state.",
+    valueType: "object",
+    alwaysAvailable: true,
+    typicalCharCount: 1600,
+    sortOrder: 175,
+    group: "site_framing",
+  },
 
   // ── Page identity ─────────────────────────────────────────────────────
   {
@@ -339,7 +350,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "page_provenance",
     label: "Page provenance",
     description:
-      "Set only on pages promoted from a standalone `html_pages` quick-publish row: { source_html_page_id, source_artifact_id, source_message_id, source_conv_id }. Members are null on a natively-authored page; empty for a brand-new unsaved page.",
+      "Durable source identities for this page: { source_html_page_id, source_artifact_id, source_message_id, source_conv_id, plan_node_id, web_page_id }. The first four retain quick-publish provenance; plan_node_id retains the planned page and web_page_id retains the canonical measured page. Members are null when that source does not apply; empty for a brand-new unsaved page.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 200,
@@ -766,6 +777,7 @@ export function createCmsPageScope(values: {
   tags: string[];
   show_in_nav: boolean;
   sort_order: number;
+  research_lineage: Record<string, unknown>;
   // alwaysAvailable: false → optional
   site_domain?: string;
   site_global_css?: string;

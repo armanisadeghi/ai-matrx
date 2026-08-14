@@ -281,6 +281,17 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "node_targeting",
   },
   {
+    name: "node_research_lineage",
+    label: "Page research lineage",
+    description:
+      "Research topics and tags attached directly to this planned page as {status, error, items:[{token,id,title}]}. Read this together with inherited site_research_lineage before drafting or revising the page.",
+    valueType: "object",
+    alwaysAvailable: true,
+    typicalCharCount: 900,
+    sortOrder: 364,
+    group: "node_targeting",
+  },
+  {
     name: "node_meta_title",
     label: "Planned meta title",
     description:
@@ -718,6 +729,11 @@ export function createContentPlanNodeScope(values: {
   node_primary_keyword?: string;
   node_primary_keyword_data?: Record<string, unknown>;
   node_supporting_keywords: { id: string; phrase: string | null }[];
+  node_research_lineage: {
+    status: "idle" | "loading" | "ready" | "error";
+    error: string | null;
+    items: { token: string; id: string; title: string }[];
+  };
   node_meta_title?: string;
   node_meta_description?: string;
   node_meta_tags: {

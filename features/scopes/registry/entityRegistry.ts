@@ -353,6 +353,12 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     labelPlural: "Research Topics",
     hrefFor: (id) => `/research/topics/${id}`,
   },
+  research_tag: {
+    Icon: Tag,
+    labelPlural: "Research Tags",
+    // A tag's owning topic is resolved by the flat redirect route.
+    hrefFor: (id) => `/research/tags/${id}`,
+  },
   flashcard_set: {
     Icon: Layers,
     labelPlural: "Flashcard Sets",
@@ -434,6 +440,12 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     labelPlural: "Canonical Pages",
     // hrefFor resolves the nested brand/site route via a tiny server redirect.
     hrefFor: (id) => `/marketing/pages/${id}`,
+  },
+  plan_node: {
+    Icon: ListOrdered,
+    labelPlural: "Plan Pages",
+    // The flat route resolves the node's site and opens that exact node.
+    hrefFor: (id) => `/marketing/content-plan/nodes/${id}`,
   },
   web_property: {
     Icon: Globe,

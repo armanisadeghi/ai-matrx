@@ -18,14 +18,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import {
-  Link2,
-  Loader2,
-  Pin,
-  Plus,
-  RefreshCw,
-  X,
-} from "lucide-react";
+import { Link2, Loader2, Pin, Plus, RefreshCw, X } from "lucide-react";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/utils/cn";
@@ -56,12 +49,20 @@ export interface ContainerResourceRow {
   token: string;
   resourceId: string;
   label: string | null;
+  /** Exact semantic edge role; null means the canonical role-less edge. */
+  role?: string | null;
   /** Pinned rows sort first inside their token group. */
   pinned?: boolean;
   /** False for inherited rows (e.g. via a thread's anchor) — no detach. */
   removable: boolean;
   /** Small annotation for non-removable rows ("via anchor"). */
   originNote?: string | null;
+  /** Resolvable records that contributed an inherited row. */
+  originRefs?: readonly {
+    token: EntityTypeToken;
+    id: string;
+    label: string;
+  }[];
 }
 
 export interface ContainerResourcesAdapter {
@@ -77,6 +78,7 @@ export interface ContainerResourcesAdapter {
   detach: (
     token: EntityTypeToken,
     resourceId: string,
+    role?: string,
   ) => Promise<{ ok: boolean; error?: string }>;
   /**
    * Optional pin capability (edge `metadata.pinned`) — pinned resources stay
@@ -92,6 +94,7 @@ export interface ContainerResourcesAdapter {
 /** Default adapter — wraps `useContainerLinks` (org/scope/project pages). */
 export function useContainerLinksAdapter(
   container: PrimaryEntity | null,
+  tokens?: readonly EntityTypeToken[],
 ): ContainerResourcesAdapter {
   const links = useContainerLinks({
     containerType: container?.type ?? "organization",
@@ -99,12 +102,13 @@ export function useContainerLinksAdapter(
     orgId: container?.orgId ?? null,
   });
   const rows: ContainerResourceRow[] = container
-    ? curatedTokens().flatMap((token) =>
+    ? (tokens ?? curatedTokens()).flatMap((token) =>
         links.linksFor(token).map((l) => ({
           key: l.edgeId,
           token: l.token,
           resourceId: l.resourceId,
           label: l.label,
+          role: l.role,
           removable: true,
         })),
       )
@@ -115,7 +119,7 @@ export function useContainerLinksAdapter(
     reload: links.reload,
     rows,
     attach: async (token, id, title) => links.attach(token, id, title),
-    detach: async (token, id) => links.detach(token, id),
+    detach: async (token, id, role) => links.detach(token, id, role),
   };
 }
 
@@ -157,6 +161,7 @@ export function AssociationList(props: AssociationListProps) {
   const container = props.container ?? ctxEntity ?? null;
   const defaultAdapter = useContainerLinksAdapter(
     props.adapter ? null : container,
+    props.tokens,
   );
   const adapter = props.adapter ?? defaultAdapter;
   const variant = props.variant ?? "full";
@@ -167,14 +172,16 @@ export function AssociationList(props: AssociationListProps) {
   const [removingKeys, setRemovingKeys] = useState<Set<string>>(new Set());
 
   const rows = tokenFilter
-    ? adapter.rows.filter((r) =>
-        (tokenFilter as string[]).includes(r.token),
-      )
+    ? adapter.rows.filter((r) => (tokenFilter as string[]).includes(r.token))
     : adapter.rows;
   const visibleRows = rows.filter((r) => !removingKeys.has(r.key));
 
   const { titleFor } = useEntityTitles(
-    visibleRows.map((r) => ({ token: r.token, id: r.resourceId, label: r.label })),
+    visibleRows.map((r) => ({
+      token: r.token,
+      id: r.resourceId,
+      label: r.label,
+    })),
   );
 
   const attachedKeys = new Set(
@@ -185,7 +192,7 @@ export function AssociationList(props: AssociationListProps) {
     setRemovingKeys((prev) => new Set(prev).add(row.key));
     const info = tryGetEntityInfo(row.token);
     const res = info
-      ? await adapter.detach(info.token, row.resourceId)
+      ? await adapter.detach(info.token, row.resourceId, row.role ?? undefined)
       : { ok: false };
     setRemovingKeys((prev) => {
       const next = new Set(prev);
@@ -304,7 +311,10 @@ export function AssociationList(props: AssociationListProps) {
                 {variant === "full" && (
                   <div className="flex items-center gap-1.5 px-1">
                     <span
-                      className={cn("h-3 w-0.5 rounded-full", roleMeta.accentBar)}
+                      className={cn(
+                        "h-3 w-0.5 rounded-full",
+                        roleMeta.accentBar,
+                      )}
                     />
                     <p
                       className={cn(
@@ -320,9 +330,7 @@ export function AssociationList(props: AssociationListProps) {
                   <div key={token} className="space-y-0.5">
                     <div className="flex items-center justify-between gap-1 px-1">
                       <p className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground/80">
-                        {info ? (
-                          <info.Icon className="h-3 w-3" />
-                        ) : null}
+                        {info ? <info.Icon className="h-3 w-3" /> : null}
                         {info?.labelPlural ?? titleize(token)}
                         <span className="text-muted-foreground/50">
                           {tokenRows.length}
@@ -403,11 +411,26 @@ export function AssociationList(props: AssociationListProps) {
                                 fill
                                 className="min-w-0 flex-1 text-foreground"
                               />
-                              {row.originNote && (
+                              {row.originRefs && row.originRefs.length > 0 ? (
+                                <span className="flex shrink-0 items-center gap-1 text-[10px] text-muted-foreground/60">
+                                  via
+                                  {row.originRefs.map((origin) => (
+                                    <EntityRef
+                                      key={`${origin.token}:${origin.id}`}
+                                      token={origin.token}
+                                      id={origin.id}
+                                      name={origin.label}
+                                      showIcon={false}
+                                      openInNewTab
+                                      className="max-w-24 text-[10px] text-muted-foreground underline-offset-2"
+                                    />
+                                  ))}
+                                </span>
+                              ) : row.originNote ? (
                                 <span className="shrink-0 text-[10px] text-muted-foreground/60">
                                   {row.originNote}
                                 </span>
-                              )}
+                              ) : null}
                               {adapter.setPinned && info && row.removable && (
                                 <button
                                   type="button"
@@ -520,7 +543,9 @@ function groupRows(rows: ContainerResourceRow[]): RoleGroup[] {
   for (const [token, tokenRows] of byToken) {
     const info = tryGetEntityInfo(token);
     const role: ContentRole = info?.contentRole ?? "destination";
-    tokenRows.sort((a, b) => Number(b.pinned ?? false) - Number(a.pinned ?? false));
+    tokenRows.sort(
+      (a, b) => Number(b.pinned ?? false) - Number(a.pinned ?? false),
+    );
     const groups = roleBuckets.get(role) ?? [];
     groups.push({ token, info, rows: tokenRows });
     roleBuckets.set(role, groups);

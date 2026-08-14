@@ -6,10 +6,10 @@
 // blocked: agents cannot write at all. draft_only: agents may save drafts but
 // never publish (publish requires a human). full: agents may publish directly.
 // Default is `blocked` for existing sites, `full` for `dev-website` (F4).
-export type AgentWritePolicy = 'blocked' | 'draft_only' | 'full';
+export type AgentWritePolicy = "blocked" | "draft_only" | "full";
 
 export interface DomainTrafficSettings {
-  mode: 'platform' | 'custom';
+  mode: "platform" | "custom";
   verified_domain?: string | null;
   verified_at?: string | null;
   last_checked_at?: string | null;
@@ -55,6 +55,9 @@ export interface ClientSite {
    * for cross-links, never writes it.
    */
   web_site_id: string | null;
+  /** Main-project research ids used before this CMS site has a web_site anchor. */
+  research_topic_ids: string[];
+  research_tag_ids: string[];
   created_at: string;
   updated_at: string;
 }
@@ -180,6 +183,9 @@ export interface ClientPage {
    * `page_service.set_web_page_link`; the generic page update cannot touch it.
    */
   web_page_id: string | null;
+  /** Main-project research ids used before this page has a canonical anchor. */
+  research_topic_ids: string[];
+  research_tag_ids: string[];
 }
 
 /** Result of the `promote` action on /api/cms/pages (html_page → draft page). */
@@ -241,6 +247,8 @@ export interface ClientPageSummary {
    * null. THE durable join used by `resolvePushTarget` — see `ClientPage`.
    */
   web_page_id: string | null;
+  research_topic_ids: string[];
+  research_tag_ids: string[];
 }
 
 // ─── Entity Version ────────────────────────────────────────────────────
@@ -332,7 +340,7 @@ export interface ClientComponent {
 // (aidream `packages/matrx-content-guard`). The store (`client_content_exceptions`)
 // had not been created by P1 as of 2026-07-09 — `/api/cms/approvals` degrades
 // gracefully (returns `available: false`) until it exists.
-export type ContentExceptionStatus = 'pending' | 'approved' | 'rejected';
+export type ContentExceptionStatus = "pending" | "approved" | "rejected";
 
 export interface ContentException {
   id: string;
@@ -347,7 +355,7 @@ export interface ContentException {
   node_path?: string | null;
   excerpt?: string | null;
   fix_hint?: string | null;
-  severity?: 'warning' | 'block' | null;
+  severity?: "warning" | "block" | null;
   created_by?: string | null;
   created_at: string;
   reviewed_by?: string | null;
@@ -411,7 +419,7 @@ export interface AssetUsage {
 // "human") plus an optional `metadata` bag — e.g. P4 writes
 // `metadata.capture_media_refs[]` for verification screenshots.
 export interface ClientActivityChanges {
-  actor: 'agent' | 'human' | 'system';
+  actor: "agent" | "human" | "system";
   metadata?: {
     capture_media_refs?: string[];
     [key: string]: unknown;
@@ -427,15 +435,15 @@ export interface ClientActivityChanges {
 // file (the CMS project has no generated types).
 
 export type CollectionFieldType =
-  | 'text'
-  | 'richtext'
-  | 'number'
-  | 'boolean'
-  | 'email'
-  | 'url'
-  | 'datetime'
-  | 'select'
-  | 'json';
+  | "text"
+  | "richtext"
+  | "number"
+  | "boolean"
+  | "email"
+  | "url"
+  | "datetime"
+  | "select"
+  | "json";
 
 /** One entry of `site_collections.field_schema` (array of these). */
 export interface CollectionFieldDef {
@@ -464,8 +472,8 @@ export interface SiteCollectionSettings {
   [key: string]: unknown;
 }
 
-export type CollectionValidationMode = 'advisory' | 'strict';
-export type CollectionStatus = 'active' | 'archived';
+export type CollectionValidationMode = "advisory" | "strict";
+export type CollectionStatus = "active" | "archived";
 
 export interface SiteCollection {
   id: string;
@@ -522,11 +530,11 @@ export interface SiteCollectionItem {
  */
 export type CollectionExportRow = Pick<
   SiteCollectionItem,
-  'id' | 'data' | 'created_at' | 'status' | 'is_spam' | 'seen_at' | 'source_url'
+  "id" | "data" | "created_at" | "status" | "is_spam" | "seen_at" | "source_url"
 >;
 
 /** Items-viewer filter vocabulary (maps to is_spam / seen_at / status). */
-export type CollectionItemFilter = 'all' | 'unread' | 'spam' | 'archived';
+export type CollectionItemFilter = "all" | "unread" | "spam" | "archived";
 
 export interface ClientActivityLog {
   id: string;

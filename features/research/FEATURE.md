@@ -51,6 +51,8 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 
 **The junction tables are GONE.** `rs_keyword_source` and `rs_source_tag` no longer exist — source⇄keyword and source⇄tag are canonical `platform.associations` edges (`research_source → research_keyword` / `research_source → research_tag`), with the per-keyword search rank carried on the edge's `position`. `research.rs_source_keywords` is a **view** over that join and is the only place the old shape survives. Anything reading these relationships joins `platform.associations` (see `migrations/research_overview_readiness_ledger.sql` for the canonical predicate) — never a junction table.
 
+**Downstream lineage (2026-08-14).** Research topics and the existing research tags are first-class inputs to sites and individual pages through canonical, non-access-conveying associations: `research_topic|research_tag → web_site|plan_node|web_page`. A tag therefore remains the precise cross-cutting lens the research feature already models: it may ground an entire site, one planned page, or one measured page without inventing a second taxonomy. `research_tag` now has a flat `/research/tags/{id}` resolver door that RLS-resolves its owning topic and redirects to the canonical nested tag page. Plan-node lineage is propagated to realized web pages by the database; site lineage is inherited by consumers at read time.
+
 **YouTube library (2026-07-28).** `research.youtube_video` is a canonical
 system entity with one row per YouTube ID, shared across every topic/user so
 the analysis engine never processes the same immutable video twice. The Research YouTube
@@ -288,6 +290,7 @@ find yourself writing code to add an output, something above is wrong.
 
 ## Change log
 
+- 2026-08-14 — **Research topics and tags now retain downstream site/page lineage.** Registered six semantic association pairs to `web_site`, `plan_node`, and `web_page`, all non-conveying; exposed them across the content-plan and CMS attachment surfaces and agent contexts; and added the flat research-tag resolver door so every tag reference remains navigable even when the caller only knows the tag id.
 - 2026-08-13 — **YouTube publish dates are visible across every research video
   surface.** The existing batch identity read from `research.youtube_video` now
   feeds one compact `MM/DD/YY` / `No Date` treatment through the shared

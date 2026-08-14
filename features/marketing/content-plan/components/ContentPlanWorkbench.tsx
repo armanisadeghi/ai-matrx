@@ -23,6 +23,8 @@ import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface"
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
 import { useCategories } from "@/features/scopes/hooks/useCategories";
+import { useContainerLinks } from "@/features/scopes/hooks/useContainerLinks";
+import { useEntityTitles } from "@/features/scopes/hooks/useEntityTitles";
 import type { AssociationEdge } from "@/features/scopes/types";
 import {
   SurfaceRuntimeProvider,
@@ -114,15 +116,23 @@ export function ContentPlanWorkbench({
   defaultLayout?: Layout;
   layoutCookieName: string;
 }) {
-  const { siteId, view, setView } = usePlanWorkspaceParams();
+  const { siteId, view, nodeId, setView } = usePlanWorkspaceParams();
   const { sites, orgSites } = useContentPlanSites();
   const isMobile = useIsMobile();
 
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(nodeId);
+  const [lastNodeParam, setLastNodeParam] = useState<string | null>(nodeId);
   const [newNodeParentId, setNewNodeParentId] = useState<string | null>(null);
   const [newNodeOpen, setNewNodeOpen] = useState(false);
   const [driftOpen, setDriftOpen] = useState(false);
   const [driftFilter, setDriftFilter] = useState<DriftFilter>("all");
+
+  // Flat entity doors land with `?node=`. React's render-time prop adjustment
+  // keeps browser navigation synchronized without a cascading effect render.
+  if (nodeId !== lastNodeParam) {
+    setLastNodeParam(nodeId);
+    if (nodeId) setSelectedNodeId(nodeId);
+  }
 
   // Resolve the selected site against EVERYTHING visible, not just the
   // org-scoped picker list — a shared ?site= link (or an org switch with a
@@ -131,6 +141,22 @@ export function ContentPlanWorkbench({
     (sites.data ?? []).find((row) => row.id === siteId) ??
     orgSites.find((row) => row.id === siteId) ??
     null;
+  const siteResearchLinks = useContainerLinks({
+    containerType: "web_site",
+    containerId: siteId,
+    orgId: site?.organization_id,
+  });
+  const siteResearchEdges = [
+    ...siteResearchLinks.linksFor("research_topic"),
+    ...siteResearchLinks.linksFor("research_tag"),
+  ];
+  const siteResearchTitles = useEntityTitles(
+    siteResearchEdges.map((edge) => ({
+      token: edge.token,
+      id: edge.resourceId,
+      label: edge.label,
+    })),
+  );
   const nodes = usePlanNodes(siteId);
   const nodeSteps = useNodeSteps(siteId);
   const entities = usePlanEntities(siteId);
@@ -255,6 +281,19 @@ export function ContentPlanWorkbench({
               planKeys.nodeEdges(selectedNode.id),
             )
           : undefined,
+        siteResearchLineage: {
+          status: siteId ? siteResearchLinks.status : "ready",
+          error: siteResearchLinks.error,
+          items: siteResearchEdges.map((edge) => ({
+            token: edge.token,
+            id: edge.resourceId,
+            title: siteResearchTitles.titleFor({
+              token: edge.token,
+              id: edge.resourceId,
+              label: edge.label,
+            }),
+          })),
+        },
       }),
     [
       view,
@@ -267,6 +306,10 @@ export function ContentPlanWorkbench({
       statusCategories.categories,
       selectedNode,
       queryClient,
+      siteResearchLinks.status,
+      siteResearchLinks.error,
+      siteResearchEdges,
+      siteResearchTitles,
     ],
   );
 

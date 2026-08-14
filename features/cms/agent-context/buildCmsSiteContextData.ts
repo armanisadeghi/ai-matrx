@@ -36,6 +36,7 @@ import type {
 import { buildSiteStructureXml } from "../utils/buildSiteStructureXml";
 import { clientSiteRootUrl, sitePreviewToken } from "../utils/pageUrls";
 import { cmsSiteSummaryEntry } from "./buildCmsHubContextData";
+import type { ResearchLineageEntry } from "../hooks/useCmsResearchLineage";
 
 /** Which tab of the site workspace the user is on. */
 export type CmsSiteMode =
@@ -71,6 +72,10 @@ export interface BuildCmsSiteContextDataArgs {
   collections?: readonly SiteCollectionSummary[];
   /** Settings tab only. */
   settingsDraft?: CmsSiteSettingsDraft;
+  /** Canonical + CMS-bridge research available to the site. */
+  researchLineage: readonly ResearchLineageEntry[];
+  researchLineageStatus: "idle" | "loading" | "ready" | "error";
+  researchLineageError?: string | null;
 }
 
 function toPageEntry(page: ClientPageSummary): CmsSitePageEntry {
@@ -90,6 +95,10 @@ function toPageEntry(page: ClientPageSummary): CmsSitePageEntry {
     meta_description: page.meta_description,
     last_published_at: page.last_published_at,
     updated_at: page.updated_at,
+    plan_node_id: page.plan_node_id,
+    web_page_id: page.web_page_id,
+    research_topic_ids: page.research_topic_ids,
+    research_tag_ids: page.research_tag_ids,
   };
 }
 
@@ -142,6 +151,9 @@ export function buildCmsSiteContextData(
     selectedPageId,
     collections,
     settingsDraft,
+    researchLineage,
+    researchLineageStatus,
+    researchLineageError,
   } = args;
 
   const policy: AgentWritePolicy =
@@ -184,10 +196,16 @@ export function buildCmsSiteContextData(
     site_domain: site.domain ?? undefined,
     site_is_active: site.is_active,
     live_url: clientSiteRootUrl(site.slug),
-    preview_url: clientSiteRootUrl(site.slug, true, null, sitePreviewToken(site)),
+    preview_url: clientSiteRootUrl(
+      site.slug,
+      true,
+      null,
+      sitePreviewToken(site),
+    ),
     site_created_at: site.created_at,
     site_updated_at: site.updated_at,
     site_owner_user_id: site.owner_user_id ?? undefined,
+    web_site_id: site.web_site_id ?? undefined,
 
     // ── content ──────────────────────────────────────────────────────
     site_structure: siteStructure,
@@ -222,6 +240,11 @@ export function buildCmsSiteContextData(
     agent_write_policy: policy,
     policy_overrides: site.settings?.policy_overrides,
     has_data_api_key: Boolean(site.data_api_key),
+    research_lineage: {
+      status: researchLineageStatus,
+      error: researchLineageError ?? null,
+      items: researchLineage,
+    },
 
     // ── collections (Collections tab only) ───────────────────────────
     collections_summary: collectionEntries,

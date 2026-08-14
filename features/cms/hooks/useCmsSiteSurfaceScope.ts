@@ -29,6 +29,7 @@ import type {
   ClientSiteSummary,
   SiteCollectionSummary,
 } from "../types";
+import { useCmsResearchLineage } from "./useCmsResearchLineage";
 
 export interface UseCmsSiteSurfaceScopeParams {
   site: ClientSite;
@@ -56,6 +57,16 @@ export function useCmsSiteSurfaceScope(
     collections,
     settingsDraft,
   } = params;
+  const researchLineage = useCmsResearchLineage({
+    scope: "site",
+    cmsEntityId: site.id,
+    webSiteId: site.web_site_id,
+    researchTopicIds: site.research_topic_ids,
+    researchTagIds: site.research_tag_ids,
+    persistScratch: async () => {
+      throw new Error("Research links are edited from Site Settings.");
+    },
+  });
 
   return useCallback(
     () =>
@@ -68,6 +79,9 @@ export function useCmsSiteSurfaceScope(
         selectedPageId,
         collections,
         settingsDraft,
+        researchLineage: researchLineage.entries,
+        researchLineageStatus: researchLineage.adapter.status,
+        researchLineageError: researchLineage.adapter.error,
       }) as SurfaceScopePayload,
     [
       site,
@@ -78,6 +92,9 @@ export function useCmsSiteSurfaceScope(
       selectedPageId,
       collections,
       settingsDraft,
+      researchLineage.entries,
+      researchLineage.adapter.status,
+      researchLineage.adapter.error,
     ],
   );
 }
