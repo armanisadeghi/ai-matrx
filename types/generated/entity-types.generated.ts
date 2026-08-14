@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 348 active entity tokens. A token here is FK-valid for
+// 351 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -385,6 +385,9 @@ export type EntityTypeToken =
   | "workflow_job"
   | "workflow_node_events"
   | "workflow_node_outcome"
+  | "workflow_plan"
+  | "workflow_plan_event"
+  | "workflow_plan_sample"
   | "workflow_recovery_audit"
   | "workflow_run"
   | "workflow_template"
@@ -481,6 +484,7 @@ export type ReferencePickableEntityToken =
   | "web_site"
   | "workbook"
   | "workflow"
+  | "workflow_plan"
   | "workflow_template"
   | "workflow_trigger"
   | "working_document";
@@ -644,6 +648,9 @@ export type ComponentEntityToken =
   | "workflow_job"
   | "workflow_node_events"
   | "workflow_node_outcome"
+  | "workflow_plan"
+  | "workflow_plan_event"
+  | "workflow_plan_sample"
   | "workflow_recovery_audit"
   | "workflow_trigger_fire";
 
@@ -1360,6 +1367,9 @@ export const ENTITY_TYPE_METADATA = {
   "workflow_job": { token: "workflow_job", schema: "workflow", table: "job", label: "Workflow Job", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "workflow_node_events": { token: "workflow_node_events", schema: "workflow", table: "node_events", label: "Workflow Node Events", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "workflow_node_outcome": { token: "workflow_node_outcome", schema: "workflow", table: "node_outcome", label: "Workflow Node Outcome", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "workflow_plan": { token: "workflow_plan", schema: "workflow", table: "plan", label: "Workflow Plan", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: false, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
+  "workflow_plan_event": { token: "workflow_plan_event", schema: "workflow", table: "plan_event", label: "Workflow Plan Event", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: false, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "workflow_plan_sample": { token: "workflow_plan_sample", schema: "workflow", table: "plan_sample", label: "Workflow Plan Sample", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: false, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "workflow_recovery_audit": { token: "workflow_recovery_audit", schema: "workflow", table: "recovery_audit", label: "Workflow Recovery Audit", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "workflow_run": { token: "workflow_run", schema: "workflow", table: "run", label: "Workflow Run", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "workflow_template": { token: "workflow_template", schema: "workflow", table: "template", label: "Workflow Template", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
@@ -1712,6 +1722,9 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "workflow_job",
   "workflow_node_events",
   "workflow_node_outcome",
+  "workflow_plan",
+  "workflow_plan_event",
+  "workflow_plan_sample",
   "workflow_recovery_audit",
   "workflow_run",
   "workflow_template",
