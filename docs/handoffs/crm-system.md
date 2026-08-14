@@ -373,25 +373,28 @@ graveyard `communication.emails`.
 
 ---
 
-# 5. Decisions needed (Arman)
+# 5. Decisions — ALL FOUR RULED 2026-08-14 (Arman)
 
-1. **Deals/opportunities scheduling.** Situation: v1 deliberately excluded deals. A 2026-08-06
-   benchmark of Salesforce/HubSpot/Attio/Pipedrive/Close/Folk ranks deals + kanban pipelines as
-   the single biggest competitiveness gap — it is the unit of money and the prerequisite for
-   reporting, forecasting, and most automation. Decide: schedule deals into Wave 4 as its lead
-   item, or hold until the outreach core (Waves 1–3) is proven with real users.
-2. **One suppression authority for SMS.** Situation: `communication.sms_consent` tracks phone
-   opt-outs independently of `crm.contact_medium` (which owns DNC/suppression for the CRM). Two
-   authorities means an SMS STOP might not stop a CRM cold-call campaign dialing the same number.
-   Decide: `contact_medium` becomes the single suppression authority (SMS consent writes through
-   to it), or SMS stays tenant-user-only and CRM campaigns must check both.
-3. **Email provider.** Situation: cold email campaigns (a named day-one requirement) need a send
-   path + bounce/complaint webhooks; nothing exists. `MAILGUN_API_KEY` is already declared in
-   aidream's env registry but unused. Decide: confirm Mailgun (or name the provider) so Wave 4
-   email work can start without a second round-trip.
-4. **Who owns a component row a parent-editor creates?** *(surfaced by D182, 2026-08-13 — not
-   CRM-specific, platform-wide.)* Situation: the component `std_insert` policy's parent-editor arm
-   does not force `created_by = auth.uid()`, so anyone with editor rights on a parent can stamp
-   **another user** as the creator of a child row — and `created_by` conveys owner-read, so that
-   silently grants the named user access. The entity variant DOES force it. Decide: make component
-   match entity (force the stamp), or keep the freedom deliberately for server-side backfills.
+These are settled. Build to them; do not re-open.
+
+1. **Deals/opportunities — BUILD THEM.** Arman: *"We need to push and build everything so we need
+   to build this!"* Deals + kanban pipelines lead Wave 4 (the 2026-08-06 benchmark ranks them the
+   single biggest competitiveness gap — the unit of money, and the prerequisite for reporting,
+   forecasting, and most automation). Do not hold for proof-of-adoption.
+2. **One suppression authority — COMPLIANCE DECIDES.** Arman: *"We need to follow the law and
+   regulations… however that works."* That answer forces the design: a legal opt-out (SMS STOP,
+   email unsubscribe, a spoken "do not call") must stop **every** channel and every campaign, so
+   two authorities is not an option. `crm.contact_medium` becomes the ONE authority;
+   `communication.sms_consent` writes through to it and stops being consulted independently.
+   Suppression is checked inside the send/dial primitive, never by each caller.
+3. **Email provider — the canonical one.** Arman: *"Yes. whatever is our current/canonical."* Our
+   only path with a real consumer is `send_reviewed_gmail` (aidream
+   `services/google_workspace/service.py`, per-user OAuth); `MAILGUN_API_KEY` is declared with zero
+   consumers. **These serve different jobs and the distinction is load-bearing —** see
+   `docs/handoffs/outreach-system.md` §Sending identity: connected-mailbox for 1:1/warm outreach,
+   a dedicated bulk domain for volume. Sending cold volume through a user's Gmail gets their real
+   mailbox banned.
+4. **Component `created_by` — MATCH ENTITY.** Arman: *"Yes. Should be the same."* The component
+   `std_insert` parent-editor arm must force `created_by = auth.uid()`, exactly as the entity
+   variant does — a parent-editor may no longer stamp another user as creator (which silently
+   conveyed that user owner-read). Fold into the D182 chip.
