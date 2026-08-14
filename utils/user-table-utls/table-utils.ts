@@ -313,7 +313,12 @@ export async function addColumn(
       return { success: false, error: data?.error || "Failed to add column" };
     }
 
-    return { success: true, columnId: data.column_id };
+    // The RPC's key is `field_id`. This read `column_id` and therefore always
+    // returned `columnId: undefined` — harmless while nobody used the id, but
+    // it silently skipped the follow-up format write when AddColumnModal
+    // started needing the new column's id. `column_id` is kept as a fallback
+    // in case an older deployment of the RPC is still answering.
+    return { success: true, columnId: data.field_id ?? data.column_id };
   } catch (err) {
     console.error("Error adding column:", err);
     const errorMessage =
