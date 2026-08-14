@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-08-12
+updated: 2026-08-13
 repos: [matrx-frontend, aidream, my-matrx]
 ---
 
@@ -40,7 +40,7 @@ when `plan_node_id` is set (respecting the forward-only rule in
 
 ## WF-3 — Frontend CMS writes bypass content validation
 
-**Status:** UNASSIGNED · **Repo:** matrx-frontend · **Severity:** HIGH
+**Status:** DONE (2026-08-13 — authenticated aidream `/api/cms/validate` over the canonical guard + FE page/component write wiring; blocked 422, loud fail-open header) · **Repo:** matrx-frontend + aidream · **Severity:** HIGH
 
 `packages/matrx-content-guard` (validates, blocks bad/dangerous content) runs only on the
 aidream write path. Every `/app/api/cms/*` route and the `promote` flow in matrx-frontend write
@@ -139,5 +139,4 @@ the paired `web.site`/brand on `/cms/[siteId]/settings`, using the existing brid
 
 ---
 
-**Assignment tips:** the only remaining open items are WF-3 (HIGH) and WF-10 (LOW) —
-independent and parallelizable. Everything else is DONE.
+**Assignment tips:** the only remaining open item is WF-10 (LOW). Everything else is DONE.

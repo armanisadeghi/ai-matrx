@@ -24,6 +24,12 @@ import {
   MAX_PROMOTE_HTML_BYTES,
 } from "@/features/html-pages/utils/promoteConvert";
 import { clientPageRoute } from "@/features/cms/utils/pageUrls";
+import {
+  cmsContentBlockedResponse,
+  validateContent,
+  withCmsValidationHeader,
+  type CmsContentValidationResult,
+} from "../_lib/validateContent";
 
 /**
  * Summary columns for list view (no HTML content blobs). `content_stats` is a
@@ -57,6 +63,12 @@ function asProvenance(value: unknown): Record<string, unknown> | undefined {
 }
 
 export async function POST(request: NextRequest) {
+  let contentValidation: CmsContentValidationResult | null = null;
+  const respond = <T extends Response>(response: T): T =>
+    contentValidation
+      ? withCmsValidationHeader(response, contentValidation)
+      : response;
+
   try {
     const mainSupabase = await createMainSupabaseClient();
     const {
@@ -67,6 +79,10 @@ export async function POST(request: NextRequest) {
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const {
+      data: { session },
+    } = await mainSupabase.auth.getSession();
+    const accessToken = session?.access_token ?? null;
 
     const body = await request.json();
     const { action, ...params } = body;
@@ -192,6 +208,14 @@ export async function POST(request: NextRequest) {
           );
         }
 
+        contentValidation = await validateContent({
+          content: { html: htmlContent, css: cssContent, js: jsContent },
+          siteId,
+          accessToken,
+        });
+        const blockedResponse = cmsContentBlockedResponse(contentValidation);
+        if (blockedResponse) return blockedResponse;
+
         // `route` is NEVER written here: it is trigger-computed from
         // slug + category + the parent's route (CMS migration 0028). Adding it
         // to this row would fight the trigger and desync the live URL.
@@ -231,7 +255,9 @@ export async function POST(request: NextRequest) {
 
         if (error) {
           console.error("[cms/pages] create error:", error);
-          return NextResponse.json({ error: error.message }, { status: 500 });
+          return respond(
+            NextResponse.json({ error: error.message }, { status: 500 }),
+          );
         }
 
         await logCmsActivity(db, {
@@ -245,7 +271,7 @@ export async function POST(request: NextRequest) {
           metadata: asProvenance(provenance),
         });
 
-        return NextResponse.json({ success: true, page: data });
+        return respond(NextResponse.json({ success: true, page: data }));
       }
 
       // ── Promote an html_page → NEW draft page on a site (W2-A) ──────
@@ -324,6 +350,18 @@ export async function POST(request: NextRequest) {
         }
 
         const conversion = splitHtmlDocument(source.html_content ?? "");
+
+        contentValidation = await validateContent({
+          content: {
+            html: conversion.body,
+            css: conversion.css,
+            js: conversion.js,
+          },
+          siteId,
+          accessToken,
+        });
+        const blockedResponse = cmsContentBlockedResponse(contentValidation);
+        if (blockedResponse) return blockedResponse;
 
         // DB values ALWAYS win over extracted ones (the /p/ renderer's rule).
         const metaTitle = source.meta_title || conversion.extractedTitle;
@@ -411,9 +449,8 @@ export async function POST(request: NextRequest) {
           .single();
         if (createError) {
           console.error("[cms/pages] promote error:", createError);
-          return NextResponse.json(
-            { error: createError.message },
-            { status: 500 },
+          return respond(
+            NextResponse.json({ error: createError.message }, { status: 500 }),
           );
         }
 
@@ -469,13 +506,15 @@ export async function POST(request: NextRequest) {
           changes: { client_page_id: created.id },
         });
 
-        return NextResponse.json({
-          success: true,
-          reused: false,
-          page: created,
-          conversionWarnings: conversion.warnings,
-          wasFullDocument: conversion.wasFullDocument,
-        });
+        return respond(
+          NextResponse.json({
+            success: true,
+            reused: false,
+            page: created,
+            conversionWarnings: conversion.warnings,
+            wasFullDocument: conversion.wasFullDocument,
+          }),
+        );
       }
 
       // ── Update page ──────────────────────────────────────────────
@@ -540,6 +579,18 @@ export async function POST(request: NextRequest) {
           );
         }
 
+        contentValidation = await validateContent({
+          content: {
+            html: updateFields.htmlContent,
+            css: updateFields.cssContent,
+            js: updateFields.jsContent,
+          },
+          pageId,
+          accessToken,
+        });
+        const blockedResponse = cmsContentBlockedResponse(contentValidation);
+        if (blockedResponse) return blockedResponse;
+
         const { data, error } = await db
           .from("client_pages")
           .update(updateData)
@@ -549,7 +600,9 @@ export async function POST(request: NextRequest) {
 
         if (error) {
           console.error("[cms/pages] update error:", error);
-          return NextResponse.json({ error: error.message }, { status: 500 });
+          return respond(
+            NextResponse.json({ error: error.message }, { status: 500 }),
+          );
         }
 
         await logCmsActivity(db, {
@@ -563,7 +616,7 @@ export async function POST(request: NextRequest) {
           changes: { fields: Object.keys(updateData) },
         });
 
-        return NextResponse.json({ success: true, page: data });
+        return respond(NextResponse.json({ success: true, page: data }));
       }
 
       // ── Link this page to the web.page it serves ──────────────────
@@ -664,6 +717,14 @@ export async function POST(request: NextRequest) {
           );
         }
 
+        contentValidation = await validateContent({
+          content: { html: htmlContent, css: cssContent, js: jsContent },
+          pageId,
+          accessToken,
+        });
+        const blockedResponse = cmsContentBlockedResponse(contentValidation);
+        if (blockedResponse) return blockedResponse;
+
         const draftData: Record<string, unknown> = { has_draft: true };
         if (htmlContent !== undefined)
           draftData.html_content_draft = htmlContent;
@@ -687,7 +748,9 @@ export async function POST(request: NextRequest) {
 
         if (error) {
           console.error("[cms/pages] save-draft error:", error);
-          return NextResponse.json({ error: error.message }, { status: 500 });
+          return respond(
+            NextResponse.json({ error: error.message }, { status: 500 }),
+          );
         }
 
         await logCmsActivity(db, {
@@ -702,7 +765,7 @@ export async function POST(request: NextRequest) {
           metadata: asProvenance(provenance),
         });
 
-        return NextResponse.json({ success: true, page: data });
+        return respond(NextResponse.json({ success: true, page: data }));
       }
 
       // ── Publish draft (RPC) ──────────────────────────────────────
@@ -924,11 +987,13 @@ export async function POST(request: NextRequest) {
     }
   } catch (err: unknown) {
     console.error("[cms/pages] Unexpected error:", err);
-    const message = err instanceof Error ? err.message : "Internal server error";
-    const status = message.startsWith("Forbidden") ? 403 : message.startsWith("Unauthorized") ? 401 : 500;
-    return NextResponse.json(
-      { error: message },
-      { status },
-    );
+    const message =
+      err instanceof Error ? err.message : "Internal server error";
+    const status = message.startsWith("Forbidden")
+      ? 403
+      : message.startsWith("Unauthorized")
+        ? 401
+        : 500;
+    return respond(NextResponse.json({ error: message }, { status }));
   }
 }

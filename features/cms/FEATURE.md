@@ -46,8 +46,8 @@ build plan this feature is part of (project P5).
 **API endpoints** (all single-POST `{action, ...}` dispatch, secret key `SUPABASE_HTML_SECRET_KEY` bypasses RLS — ownership enforced in app code)
 
 - `POST /api/cms/sites` — `list/get/create/update/delete` (owner-scoped) + `admin_list_sites/admin_update_policy/admin_list_activity` (requireSuperAdmin)
-- `POST /api/cms/pages` — `list/get/create/promote/update/save-draft/publish/discard-draft/rollback/delete` (owner-scoped) + `admin_list` (requireSuperAdmin). `promote` (W2-A) copies an owned `html_pages` row onto an owned site as a NEW draft page: converter split per the my-matrx `/p/[id]` renderer via `features/html-pages/utils/promoteConvert.ts` (TS twin of aidream `services/cms/convert.py`; both test byte-identically against the shared `promote-convert-fixtures.json` — change semantics ⇒ change both), content lands ONLY in `_draft` twins (never auto-published), provenance both directions (`client_pages.source_*` cols, CMS migration 0008 / `html_pages.context_metadata.promotions[]`), idempotent per `(client_id, source_html_page_id)` unless `forceNew`.
-- `POST /api/cms/components` — `list/get/create/update/delete` (owner-scoped)
+- `POST /api/cms/pages` — `list/get/create/promote/update/save-draft/publish/discard-draft/rollback/delete` (owner-scoped) + `admin_list` (requireSuperAdmin). Every content-bearing `create/promote/update/save-draft` calls aidream's canonical `POST /cms/validate` before the Supabase write; a block returns structured 422 `cms_content_blocked`. `promote` (W2-A) copies an owned `html_pages` row onto an owned site as a NEW draft page: converter split per the my-matrx `/p/[id]` renderer via `features/html-pages/utils/promoteConvert.ts` (TS twin of aidream `services/cms/convert.py`; both test byte-identically against the shared `promote-convert-fixtures.json` — change semantics ⇒ change both), content lands ONLY in `_draft` twins (never auto-published), provenance both directions (`client_pages.source_*` cols, CMS migration 0008 / `html_pages.context_metadata.promotions[]`), idempotent per `(client_id, source_html_page_id)` unless `forceNew`.
+- `POST /api/cms/components` — `list/get/create/update/delete` (owner-scoped). Content-bearing `create/update` uses the same aidream validation boundary before writing live or draft HTML/CSS.
 - `POST /api/cms/versions` — `list/get` (read-only, owner-scoped)
 - `POST /api/cms/approvals` — `list/approve/reject` (requireSuperAdmin) — F3 exception queue over `client_content_exceptions` (CMS migration 0011; approve flow live-verified 2026-07-14)
 - `POST /api/cms/assets` — `list/get/create/update/usage/delete` (owner-scoped) + `admin_list` (requireSuperAdmin). W2-B asset library over `client_assets`. **Bytes never pass through this route** — the client uploads through the canonical `fileHandler.upload({preset:'web', visibility:'public'})` → aidream `POST /assets` (durable public CDN URL), then `create` registers the metadata row. `create` re-enforces the durability doctrine (second layer): refuses a `file_path` that isn't absolute https or that carries a signed/expiring-link signature (`isSignedExpiringUrl`, mirrors aidream's validator). `delete` LIVE-scans pages+components (live + draft columns) and returns 409 `asset_in_use` with the exact reference list unless `force`; `usage` returns the same scan and re-syncs `used_in_pages`. aidream twin: `services/cms_assets/`.
@@ -61,6 +61,7 @@ build plan this feature is part of (project P5).
 
 - `app/api/cms/_lib/cmsDb.ts` — `getCmsClient()`, `verifySiteOwnership`, `verifyPageOwnership`, `verifyComponentOwnership`, `verifyAssetOwnership`, `verifyCollectionOwnership`
 - `app/api/cms/_lib/activityLog.ts` — `logCmsActivity()`, the C6 contract writer
+- `app/api/cms/_lib/validateContent.ts` — authenticated aidream validation client + canonical 422/fail-open response helpers; contains no validation rules
 
 **Redux slice(s)**
 
@@ -329,6 +330,13 @@ logged. **This route only edits the setting — enforcement is P1's service-laye
   `requireSuperAdmin()` — never reachable by a normal owner, even for their own sites.
 - **Activity log `actor` lives inside `changes` jsonb**, not a column — filter/read via
   `row.changes?.actor`, never add an `actor` column.
+- **CMS HTML/CSS/JS validation has ONE authority: `matrx-content-guard` in
+  aidream.** `validateContent.ts` calls `POST /cms/validate`; never port a rule
+  to TypeScript. A blocked report stops the Supabase write with 422
+  `{error:{code:"cms_content_blocked",findings:[...]}}`. An unavailable or
+  malformed aidream response follows the pre-launch availability ruling: fail
+  open, `console.error` without content bytes, and stamp the eventual route
+  response `X-Cms-Validation: skipped` — never silently claim validation ran.
 - **Polling, not Realtime, for the activity feed** — deliberate (browser has no Supabase client for
   this project; Realtime needs one). Do not "upgrade" this to Postgres Changes without first solving
   the anon-key/RLS story for this project.
@@ -346,12 +354,14 @@ logged. **This route only edits the setting — enforcement is P1's service-laye
 **Primitives reused** — `ConfirmDialog`, `TextInputDialog` (destructive/typed confirms, no
 `window.confirm`), `Table`/`TableHeader`/`TableBody`/`TableRow`/`TableCell`, `Tabs`, `Select`,
 `Badge`, `Button` (design system), `requireSuperAdmin`/`checkIsSuperAdmin` (admin gate — no new
-gate primitive), `toast` from `sonner`, `date-fns` `formatDistanceToNow`, the `(admin)` route
-group's server-side super-admin layout gate.
+gate primitive), `BackendClient` / `createAuthenticatedClient` (typed aidream transport), `toast`
+from `sonner`, `date-fns` `formatDistanceToNow`, the `(admin)` route group's server-side
+super-admin layout gate.
 
 **Primitives introduced**
 
 - `app/api/cms/_lib/cmsDb.ts` / `activityLog.ts` (`getCmsClient`, ownership checks, `logCmsActivity`) — Why: was previously copy-pasted verbatim across 4 route files; extracted so every new `/api/cms/*` route (and the new admin/approvals routes) shares one client factory and one C6-shape writer instead of re-forking both. Considered extending: nothing existed to extend — this is the extraction itself.
+- `app/api/cms/_lib/validateContent.ts` — Why: every CMS page/component writer needs one authenticated call, one strict response parser, one structured 422, and one loud fail-open marker around aidream's existing validator; keeping that I/O seam beside the routes prevents each action from inventing a different safety contract. The validation logic itself remains Python-only.
 - `features/cms/utils/pageUrls.ts` (C4) — Why: no TS implementation of my-matrx's routing rules existed anywhere in this repo; the visibility surface needs it to link out to live/preview URLs. Considered extending: none — genuinely new, and explicitly named as a day-1 contract (C4) in the master plan.
 
 If this list grows past two on a future change, re-read `PRINCIPLES.md` before merging.
@@ -369,6 +379,14 @@ UI-complete here but only take effect once P1's service layer reads them.
 
 ## Change log
 
+- `2026-08-13` — **WF-3 closed: frontend page/component writes now pass through
+  aidream's canonical content guard.** New `_lib/validateContent.ts` forwards the
+  user's Supabase JWT to authenticated `POST /cms/validate`; page
+  `create/promote/update/save-draft` and component `create/update` validate every
+  written HTML/CSS/JS buffer before touching the CMS project. Blocks return 422
+  `cms_content_blocked` with the guard's real findings. Aidream transport/config/
+  malformed-response failures fail open by the pre-launch ruling, but scream via
+  `console.error` and mark the write response `X-Cms-Validation: skipped`.
 - `2026-08-13` — **AI-everywhere: every CMS editing surface got its in-place agent
   button** (`SurfaceRoleAgentButton`), and the dormant CMS surface roles were bound to real
   platform agents (manifests + `ui.ui_surface_agent_role` in lockstep). PageEditor mounts all
@@ -729,8 +747,9 @@ UI-complete here but only take effect once P1's service layer reads them.
   (`features/html-pages/components/`), launched from the html-pages list row menu ("Promote to
   site…") and the editor toolbar (`UploadTapButton`). `ClientPage` gained the four `source_*`
   provenance fields; success view links the CMS page editor + the public `?preview=true` URL.
-  Browser-verified end-to-end. Twin of aidream's `promote_service`. NOTE: like every other FE CMS
-  write, `promote` does NOT run P3 content validation (aidream-only enforcement).
+  Browser-verified end-to-end. Twin of aidream's `promote_service`. The promote
+  write now enters aidream's P3 content-validation seam before insert (WF-3,
+  2026-08-13); the converter remains the only deliberate TypeScript twin.
 
 - `2026-07-13` — **Whole CMS route family on the gold-standard header** (round 2 of the `core-route-headers` reference fix). Hub level: `CmsHubHeader` (`features/cms/components/CmsHubHeader.tsx`) injects `RouteHeader` + `RouteModeNav` **Sites | Pages** on both `/cms` and `/cms/html-pages` — no title text, New Site / New Page are right-slot tap targets. Site level: `SiteLayoutClient` now injects the layout-level header — back chevron + `CmsSiteSwitcher` (agents-style entity dropdown, keeps sub-view on switch) + **Pages | Components | Settings** center nav + open-live/new-page tap targets; deleted the bordered in-body breadcrumb bar, the dashboard's stacked sub-header (Settings/Components/"+ New Page" buttons), and the settings/components in-body `<h2>` title rows; all `h-[calc(100dvh-…)]` → `h-full` + `pt-[var(--shell-header-h)]`. Also fixed `RouteModeNav` (w-full measurement trap: compact first paint locked it in "menu" forever).
 - `2026-07-10` — CMS Surfaces Rollout gap-closing: (1) `/cms/html-pages` LIST route now mounts the
