@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-08-13`
+**Last updated:** `2026-08-14`
 
 ---
 
@@ -378,6 +378,16 @@ UI-complete here but only take effect once P1's service layer reads them.
 ---
 
 ## Change log
+
+- `2026-08-14` — **W3 reverse doors: a CMS page is now reachable from the surfaces that
+  name it.** New `features/cms/utils/cmsRoutes.ts` owns the in-app CMS hrefs
+  (`cmsSiteHref` / `cmsPageEditorHref`) — app routes, not the public URLs in
+  `pageUrls.ts` — and is consumed by the page workspace, the plan tree/table badges,
+  NodeRealityCard, and PushToCmsCard so the route shape lives in one place. Doors added:
+  "Edit in CMS" in the marketing PageWorkspace header (resolved off the existing push lane,
+  durable `client_pages.web_page_id` join first, route match as fallback — no second data
+  path) and every plan CMS badge (Draft/Published) opens its page in a new tab. Work order:
+  `docs/handoffs/cms-page-hub.md` W3.
 
 - `2026-08-14` — **THE PAGE-HUB RULING (Arman): everything that makes a page is PART of the
   page.** The page editor becomes the page's hub — Plan / Measure tabs reusing the canonical

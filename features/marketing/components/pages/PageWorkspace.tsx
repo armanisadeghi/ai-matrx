@@ -8,6 +8,7 @@ import {
   ArrowRight,
   ChevronDown,
   Eye,
+  FileCode,
   FileQuestion,
   History,
   Monitor,
@@ -27,7 +28,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import {
   usePageContent,
   usePagePerformance,
@@ -119,6 +120,7 @@ import {
   cmsPushQueryKey,
   PushToCmsCard,
   summarizeCmsPushFacts,
+  useCmsEditorHref,
   type CmsPushFacts,
 } from "@/features/marketing/components/pages/cards/PushToCmsCard";
 import { pageRouteKey } from "@/features/marketing/lib/page-url";
@@ -324,6 +326,10 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
     workspace.data?.page.url ?? "",
   );
   const backlinks = usePageBacklinks(site.id, pageId);
+  // THE DOOR (no-dead-ends): where this measured page is EDITED. Rides the
+  // push lane's cache/resolver — durable `client_pages.web_page_id` id join
+  // first, route match as fallback — so no second data path appears here.
+  const cmsEditorHref = useCmsEditorHref(site, workspace.data?.page ?? null);
   const queryClient = useQueryClient();
   const dispatch = useAppDispatch();
   const pageTasks = useAppSelector(selectTasksForEntity("web_page", pageId));
@@ -1199,6 +1205,19 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
                 url={page.url}
                 pageId={page.id}
               />
+              {cmsEditorHref ? (
+                <Button asChild variant="outline" size="sm" className="h-8">
+                  <Link
+                    href={cmsEditorHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Open this page in the CMS editor (new tab)"
+                  >
+                    <FileCode className="mr-1.5 h-3.5 w-3.5" />
+                    Edit in CMS
+                  </Link>
+                </Button>
+              ) : null}
               <Button asChild variant="outline" size="sm" className="h-8">
                 <Link href={`${sitePath}/pages/${page.id}/snapshots`}>
                   <History className="mr-1.5 h-3.5 w-3.5" />

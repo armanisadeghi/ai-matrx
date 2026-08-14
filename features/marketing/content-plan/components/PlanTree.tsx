@@ -32,6 +32,7 @@ import {
 import { ChevronDown, ChevronRight, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { cmsPageEditorHref } from "@/features/cms/utils/cmsRoutes";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
 import { useCategories } from "@/features/scopes/hooks/useCategories";
 import { useSurfaceClientTools } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
@@ -92,8 +93,15 @@ export interface PlanTreeProps {
    * or no page yet). */
   cmsPageById?: Map<
     string,
-    { route: string | null; isPublished: boolean; liveUrl: string | null }
+    {
+      pageId: string;
+      route: string | null;
+      isPublished: boolean;
+      liveUrl: string | null;
+    }
   >;
+  /** The paired CMS site — the badge is a DOOR into the page editor with it. */
+  cmsSiteId?: string | null;
   /** node_id → production progress; untouched nodes are absent. */
   pipelineByNodeId: ReadonlyMap<string, NodePipelineProgress>;
   onSelect: (id: string) => void;
@@ -107,6 +115,7 @@ export function PlanTree({
   statusSlugById,
   liveById,
   cmsPageById,
+  cmsSiteId,
   pipelineByNodeId,
   onSelect,
   onReparent,
@@ -327,6 +336,7 @@ export function PlanTree({
                 statusSlug={statusSlugById.get(row.node.status_id ?? "")}
                 liveMatch={liveById?.get(row.node.id) ?? null}
                 cmsPage={cmsPageById?.get(row.node.id) ?? null}
+                cmsSiteId={cmsSiteId ?? null}
                 pipelineProgress={pipelineByNodeId.get(row.node.id) ?? null}
                 dragging={row.node.id === activeId}
                 onSelect={() => onSelect(row.node.id)}
@@ -376,6 +386,7 @@ function TreeRow({
   statusSlug,
   liveMatch,
   cmsPage,
+  cmsSiteId,
   pipelineProgress,
   dragging,
   onSelect,
@@ -392,10 +403,12 @@ function TreeRow({
   liveMatch: { url: string } | null;
   /** Present when a CMS page realizes this node (WF-11 overlay). */
   cmsPage: {
+    pageId: string;
     route: string | null;
     isPublished: boolean;
     liveUrl: string | null;
   } | null;
+  cmsSiteId: string | null;
   pipelineProgress: NodePipelineProgress | null;
   dragging: boolean;
   onSelect: () => void;
@@ -509,21 +522,43 @@ function TreeRow({
                 />
               ) : null}
               {cmsPage ? (
-                <span
-                  className={cn(
+                (() => {
+                  // THE DOOR LAW: this badge NAMES a CMS page, so it opens it
+                  // (new tab — the tree keeps its selection and scroll). Only
+                  // an unpaired site leaves it as plain text.
+                  const badgeClass = cn(
                     "ml-1.5 inline-block rounded px-1 align-middle text-[10px] font-medium leading-4",
                     cmsPage.isPublished
                       ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
                       : "bg-sky-500/15 text-sky-600 dark:text-sky-400",
-                  )}
-                  title={
-                    cmsPage.isPublished
-                      ? `Published CMS page: ${cmsPage.liveUrl ?? cmsPage.route ?? ""}`
-                      : `Draft CMS page: ${cmsPage.route ?? ""}`
+                  );
+                  const stateTitle = cmsPage.isPublished
+                    ? `Published CMS page: ${cmsPage.liveUrl ?? cmsPage.route ?? ""}`
+                    : `Draft CMS page: ${cmsPage.route ?? ""}`;
+                  const label = cmsPage.isPublished ? "published" : "page";
+                  if (!cmsSiteId) {
+                    return (
+                      <span className={badgeClass} title={stateTitle}>
+                        {label}
+                      </span>
+                    );
                   }
-                >
-                  {cmsPage.isPublished ? "published" : "page"}
-                </span>
+                  return (
+                    <a
+                      href={cmsPageEditorHref(cmsSiteId, cmsPage.pageId)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={`${stateTitle} — open in the CMS editor`}
+                      className={cn(badgeClass, "hover:underline")}
+                      // The row is selectable AND draggable; the badge is
+                      // neither — swallow both gestures.
+                      onClick={(event) => event.stopPropagation()}
+                      onPointerDown={(event) => event.stopPropagation()}
+                    >
+                      {label}
+                    </a>
+                  );
+                })()
               ) : null}
               {pipelineProgress ? (
                 <PipelineProgressBadge progress={pipelineProgress} dense />

@@ -35,6 +35,7 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CmsPageService, CmsSiteService } from "@/features/cms/services/cmsService";
 import type { ClientPage } from "@/features/cms/types";
+import { cmsPageEditorHref } from "@/features/cms/utils/cmsRoutes";
 import { resolveCmsLink } from "@/features/marketing/content-plan/setup/readiness";
 import { usePageContent } from "@/features/marketing/data/hooks";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
@@ -72,13 +73,23 @@ export interface CmsPushFacts {
   matched: ClientPage | null;
 }
 
-function useCmsPushFacts(site: MarketingSite, page: MarketingPage) {
-  const route = pageRouteKey(page.path);
+/**
+ * `page` is nullable so callers that mount ABOVE their page load (the
+ * workspace header) can call this unconditionally — the query simply stays
+ * disabled until the page arrives. Same key, same cache entry, one fetch.
+ */
+export function useCmsPushFacts(
+  site: MarketingSite,
+  page: MarketingPage | null,
+) {
+  const route = page ? pageRouteKey(page.path) : "";
   return useQuery<CmsPushFacts>({
     queryKey: cmsPushQueryKey(site.id, route),
     retry: false,
     staleTime: 30 * 1000,
+    enabled: page !== null,
     queryFn: async () => {
+      if (!page) throw new Error("No page to resolve a CMS target for.");
       const cmsSites = await CmsSiteService.listSites();
       const link = resolveCmsLink(site, cmsSites);
       if (!link.linked || !link.cmsSiteId) {
@@ -128,6 +139,27 @@ export function summarizeCmsPushFacts(
   };
 }
 
+/**
+ * THE DOOR (no-dead-ends): the CMS editor href for the page this measured page
+ * resolves to, or null when the site is unlinked / no CMS page exists yet.
+ *
+ * Rides the SAME react-query entry as the Push to CMS card (one key, one
+ * fetch) and the SAME resolver — `resolvePushTarget` matches on the durable
+ * `client_pages.web_page_id === page.id` id join FIRST and only falls back to
+ * the route key. No second data path.
+ */
+export function useCmsEditorHref(
+  site: MarketingSite,
+  page: MarketingPage | null,
+): string | null {
+  const facts = useCmsPushFacts(site, page);
+  const cmsSiteId = facts.data?.link.linked ? facts.data.link.cmsSiteId : null;
+  if (!page || !facts.data || !cmsSiteId) return null;
+  const target = resolvePushTarget(page, facts.data.pages);
+  if (target.kind !== "existing") return null;
+  return cmsPageEditorHref(cmsSiteId, target.page.id);
+}
+
 function PayloadRow({ ok, label, detail }: { ok: boolean; label: string; detail: string }) {
   return (
     <div className="flex items-center gap-2 text-xs">
@@ -172,7 +204,7 @@ export function PushToCmsCard({
 
   const cmsSiteId = link?.linked ? link.cmsSiteId : null;
   const cmsEditorHref = (cmsPageId: string) =>
-    cmsSiteId ? `/cms/${cmsSiteId}/pages/${cmsPageId}` : null;
+    cmsSiteId ? cmsPageEditorHref(cmsSiteId, cmsPageId) : null;
 
   const loading = facts.isLoading || contentQuery.isLoading;
   const canPush = Boolean(

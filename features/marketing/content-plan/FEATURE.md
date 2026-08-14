@@ -2,7 +2,7 @@
 
 **Status:** active
 **Tier:** 1
-**Last updated:** 2026-08-13
+**Last updated:** 2026-08-14
 
 ## Draft brief — SERVER-side, persisted on arrival
 
@@ -587,6 +587,14 @@ No new server capability was added: `cms-align` always took a node-id array,
 always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
+
+- 2026-08-14 — **THE DOOR LAW on the WF-11 CMS badges.** The tree badge (`page` /
+  `published`) and the table's Page column (`Draft` / `Published`) named a CMS page without
+  opening it. Both are now links to `/cms/{siteId}/pages/{pageId}` in a new tab, built with
+  `cmsPageEditorHref` and stopping propagation so the row's select/drag gestures are
+  untouched; an unpaired site still renders plain text. `cmsPageById` now carries `pageId`
+  and both components take the resolved `cmsSiteId` from `ContentPlanWorkbench`.
+  NodeRealityCard's existing "Edit in CMS" door was verified and moved onto the same helper.
 
 - 2026-08-14 — **Research grounding is now durable lineage, not a single setup hint.** The former `settings.content_plan.research_topic_id` remains readable for compatibility, but saving it also creates the canonical `research_topic → web_site` edge (`primary_grounding`) and never deletes prior research. Setup now manages many research topics and research tags at the site level; NodePanel manages the same two source types per plan node. The `matrx-user/content-plan` and `content-plan-node` manifests require their lineage values, and `?node=<uuid>` plus the flat plan-node resolver route makes every inherited-origin chip a real door. MAIN-project propagation carries node-specific lineage to realized `web_page` rows regardless of whether the lineage or realization edge was written first.
 - 2026-08-13 — Codex: **Pipeline progress now appears in every plan

@@ -79,8 +79,14 @@ Chips fired 2026-08-14 for W1–W3 (each carries its full spec — this list is 
 2. **Measure tab** — `<PageWorkspace pageId={web_page_id}/>` reused wholesale (React.lazy
    in-gate), + "Open page workspace" door; honest empty state when unjoined. *(chip
    task_66847610)*
-3. **Reverse doors** — "Edit in CMS" from PageWorkspace (via the `web_page_id` join) and from
-   every plan tree/table CMS badge. *(chip task_1ce41012)*
+3. ~~**Reverse doors** — "Edit in CMS" from PageWorkspace and from every plan tree/table CMS
+   badge.~~ **DONE 2026-08-14.** `features/cms/utils/cmsRoutes.ts` (`cmsPageEditorHref`) is
+   the one href builder; PageWorkspace's header door resolves off the existing push lane
+   (`useCmsEditorHref` → `useCmsPushFacts` → `resolvePushTarget`: `web_page_id` id join
+   first, route key fallback — same query key, no second fetch); the plan tree badge and the
+   table's Page column are now new-tab links with `stopPropagation` (row select/drag intact),
+   and NodeRealityCard's existing door was verified and moved onto the same helper. Unpaired
+   site = plain text, never a fake door.
 4. **SEO-plan surface.** The page's keyword intent lives in two places (node
    `primary_keyword_id` + `attributes.keyword_strategy` — see aidream content_plan FEATURE.md
    invariant 5). Decide whether it earns its own tab or a section of the Plan tab (recommend:

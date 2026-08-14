@@ -18,6 +18,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import { Columns3 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { cmsPageEditorHref } from "@/features/cms/utils/cmsRoutes";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -79,7 +80,12 @@ export interface PlanNodesTableProps {
   isLoading: boolean;
   isFetching: boolean;
   /** node_id → its realized CMS page (WF-11 overlay; absent = no pairing). */
-  cmsPageById?: Map<string, { isPublished: boolean; route: string | null }>;
+  cmsPageById?: Map<
+    string,
+    { pageId: string; isPublished: boolean; route: string | null }
+  >;
+  /** The paired CMS site — the Page badge is a DOOR into the editor with it. */
+  cmsSiteId?: string | null;
   /** One site-wide node_step query projected by node; untouched nodes absent. */
   pipelineByNodeId: ReadonlyMap<string, NodePipelineProgress>;
   /** The workspace's one plan-vs-reality verdict, shared with the drift bar. */
@@ -93,6 +99,7 @@ export function PlanNodesTable({
   isLoading,
   isFetching,
   cmsPageById,
+  cmsSiteId,
   pipelineByNodeId,
   drift,
   renderNodePanel,
@@ -309,7 +316,7 @@ export function PlanNodesTable({
           const page = cmsPageById?.get(row.id);
           if (!page)
             return <span className="text-sm text-muted-foreground">—</span>;
-          return (
+          const badge = (
             <Badge
               variant="secondary"
               className={cn(
@@ -317,10 +324,26 @@ export function PlanNodesTable({
                 page.isPublished
                   ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
                   : "bg-sky-500/15 text-sky-600 dark:text-sky-400",
+                cmsSiteId && "hover:underline",
               )}
+              title={page.route ?? undefined}
             >
               {page.isPublished ? "Published" : "Draft"}
             </Badge>
+          );
+          // THE DOOR LAW: the badge names a CMS page, so it opens it (new tab
+          // — the row click still opens the node panel). Unpaired site: text.
+          if (!cmsSiteId) return badge;
+          return (
+            <a
+              href={cmsPageEditorHref(cmsSiteId, page.pageId)}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={`Open the CMS page${page.route ? ` ${page.route}` : ""} in the editor`}
+              onClick={(event) => event.stopPropagation()}
+            >
+              {badge}
+            </a>
           );
         },
         width: 100,
@@ -451,6 +474,7 @@ export function PlanNodesTable({
     statusCategories.categories,
     statusMetaById,
     cmsPageById,
+    cmsSiteId,
     pipelineByNodeId,
     drift,
   ]);

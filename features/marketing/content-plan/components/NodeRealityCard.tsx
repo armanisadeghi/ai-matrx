@@ -39,6 +39,8 @@ import {
     REALITY_BADGE,
     type RealityState,
 } from "../lib/page-reality";
+import { cmsPageEditorHref } from "@/features/cms/utils/cmsRoutes";
+
 import type { CmsPageMapEntry } from "../setup/bridge";
 import type { PlanNodeRow } from "../types";
 
@@ -121,7 +123,7 @@ export function NodeRealityCard({
             case "edit-in-cms": {
                 if (cmsPage && cmsSiteId) {
                     window.open(
-                        `/cms/${cmsSiteId}/pages/${cmsPage.pageId}`,
+                        cmsPageEditorHref(cmsSiteId, cmsPage.pageId),
                         "_blank",
                     );
                 }
@@ -248,7 +250,10 @@ export function NodeRealityCard({
                             className="h-7 gap-1 text-xs"
                             onClick={() =>
                                 window.open(
-                                    `/cms/${cmsSiteId}/pages/${cmsPage.pageId}`,
+                                    cmsPageEditorHref(
+                                        cmsSiteId,
+                                        cmsPage.pageId,
+                                    ),
                                     "_blank",
                                 )
                             }

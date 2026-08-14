@@ -611,6 +611,7 @@ export function ContentPlanWorkbench({
               isLoading={nodes.isLoading}
               isFetching={nodes.isFetching}
               cmsPageById={cmsPages.pagesByNodeId}
+              cmsSiteId={resolvedCmsSiteId}
               pipelineByNodeId={pipelineByNodeId}
               drift={drift.model}
               renderNodePanel={(node, onDeleted) => (
@@ -649,6 +650,7 @@ export function ContentPlanWorkbench({
               statusSlugById={statusSlugById}
               liveById={liveById}
               cmsPageById={cmsPages.pagesByNodeId}
+              cmsSiteId={resolvedCmsSiteId}
               pipelineByNodeId={pipelineByNodeId}
               onSelect={setSelectedNodeId}
               onReparent={handleReparent}
@@ -670,6 +672,7 @@ export function ContentPlanWorkbench({
                     statusSlugById={statusSlugById}
                     liveById={liveById}
                     cmsPageById={cmsPages.pagesByNodeId}
+                    cmsSiteId={resolvedCmsSiteId}
                     pipelineByNodeId={pipelineByNodeId}
                     onSelect={setSelectedNodeId}
                     onReparent={handleReparent}
