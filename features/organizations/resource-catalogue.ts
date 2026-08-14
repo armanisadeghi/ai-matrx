@@ -178,10 +178,9 @@ export interface OrgResourceEntry {
   archivedColumn?: string;
 
   /**
-   * The value stored in `permissions.resource_type` for grants of this kind —
-   * i.e. the canonical table name. Drives the shared-with-org count and the
-   * "contribute" share action (the `share_resource_with_org` RPC resolver
-   * accepts canonical table names directly). Deliberately a plain string, not
+   * The canonical entity token stored in `permissions.resource_type` for grants
+   * of this kind. Drives the shared-with-org count and the "contribute" share
+   * action. Deliberately a plain string, not
    * the sharing `ResourceType` union: the DB shareable registry is broader than
    * the TS mirror, so the catalogue keys on the canonical name and stays
    * independent of which subset has been mirrored. Null = not shareable.
@@ -588,7 +587,7 @@ export function getEntry(key: string): OrgResourceEntry | undefined {
   return ORG_RESOURCE_CATALOGUE.find((e) => e.key === key);
 }
 
-/** Canonical-table → entry lookup, for resolving a permissions grant's kind. */
+/** Canonical-token → entry lookup, for resolving a permissions grant's kind. */
 export function getEntryByShareKey(
   shareKey: string,
 ): OrgResourceEntry | undefined {
@@ -596,11 +595,9 @@ export function getEntryByShareKey(
 }
 
 /**
- * Stable key used in `org_module_settings.module_key` (and matched by the
- * `share_resource_with_org` RPC). For shareable kinds this is the canonical
- * table name so the server can look it up directly; otherwise the public table
- * or the catalogue key.
+ * Stable canonical entity token used in `platform.org_module_config.module_token`.
+ * Bare physical table names are never module keys.
  */
 export function moduleKey(entry: OrgResourceEntry): string {
-  return entry.table ?? entry.shareKey ?? entry.key;
+  return entry.token ?? entry.shareKey ?? entry.key;
 }

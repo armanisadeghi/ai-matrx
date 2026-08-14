@@ -20,23 +20,24 @@
 --   the rows alone would leave the guard able to fire on the wrong table, so
 --   the key becomes (schema_name, table_name).
 --
--- Back-compat: schema_name IS NULL keeps the old "any schema with this table
--- name" behaviour, so nothing that relied on the loose match breaks.
+-- D158 follow-up (2026-08-13): there is deliberately NO NULL/wildcard
+-- compatibility. A bare table name is never a registry or queue key.
 -- ============================================================================
 
 alter table public.mtx_public_url_guard
   add column if not exists schema_name text;
 
 comment on column public.mtx_public_url_guard.schema_name is
-  'Schema of the guarded table. NULL matches any schema (legacy loose behaviour). Set it — bare table names like "definition"/"template" exist in several schemas.';
+  'Required schema of the guarded table. The registry key is exactly (schema_name, table_name, column_name).';
 
 -- Widen the uniqueness key so the same table name can be guarded in two schemas.
 -- Drop the CONSTRAINT (which owns the index) — dropping the index directly is
 -- rejected while the constraint depends on it.
 alter table public.mtx_public_url_guard
   drop constraint if exists mtx_public_url_guard_table_name_column_name_key;
-create unique index if not exists mtx_public_url_guard_unique_target
-  on public.mtx_public_url_guard (coalesce(schema_name, ''), table_name, column_name);
+drop index if exists public.mtx_public_url_guard_unique_target;
+create unique index mtx_public_url_guard_unique_target
+  on public.mtx_public_url_guard (schema_name, table_name, column_name);
 
 -- Heal jobs must say WHICH schema they came from, for the same reason.
 alter table public.mtx_media_heal_queue
@@ -59,6 +60,24 @@ update public.mtx_public_url_guard set schema_name = 'canvas'
 update public.mtx_public_url_guard set schema_name = 'public'
  where table_name in ('custom_app_configs', 'custom_applet_configs', 'site_metadata')
    and schema_name is null;
+
+update public.mtx_media_heal_queue q
+set schema_name = resolved.schema_name
+from (
+  select table_name, min(schema_name) as schema_name
+  from public.mtx_public_url_guard
+  group by table_name
+  having count(distinct schema_name) = 1
+) resolved
+where q.schema_name is null and q.table_name = resolved.table_name;
+
+alter table public.mtx_public_url_guard alter column schema_name set not null;
+alter table public.mtx_media_heal_queue alter column schema_name set not null;
+
+drop index if exists public.idx_mtx_media_heal_pending;
+create unique index idx_mtx_media_heal_pending
+  on public.mtx_media_heal_queue (schema_name, table_name, row_id, column_name)
+  where status = 'pending';
 
 -- ── Schema-aware trigger ────────────────────────────────────────────────────
 --
@@ -95,8 +114,8 @@ begin
   for guarded in
     select column_name
       from public.mtx_public_url_guard
-     where table_name = TG_TABLE_NAME
-       and (schema_name is null or schema_name = TG_TABLE_SCHEMA)
+     where schema_name = TG_TABLE_SCHEMA
+       and table_name = TG_TABLE_NAME
   loop
     col_json := row_json -> guarded.column_name;
 
@@ -122,7 +141,8 @@ begin
       insert into public.mtx_media_heal_queue
              (schema_name, table_name, row_id, column_name, bad_value)
       values (TG_TABLE_SCHEMA, TG_TABLE_NAME, (row_json ->> 'id'), guarded.column_name, val)
-      on conflict (table_name, row_id, column_name) where (status = 'pending') do nothing;
+      on conflict (schema_name, table_name, row_id, column_name)
+        where (status = 'pending') do nothing;
     end if;
   end loop;
   return NEW;
@@ -130,4 +150,4 @@ end;
 $$;
 
 comment on function public.mtx_public_url_guard_trigger() is
-  'Generic AFTER INSERT/UPDATE trigger. Matches public.mtx_public_url_guard on (schema_name, table_name) — schema_name NULL matches any schema. Array columns (text[]) are checked PER ELEMENT; JSON nulls are skipped. A non-durable value raises a loud WARNING and enqueues a heal job. Non-blocking by design.';
+  'Generic AFTER INSERT/UPDATE trigger. Matches public.mtx_public_url_guard on exact (schema_name, table_name). Array columns (text[]) are checked PER ELEMENT; JSON nulls are skipped. A non-durable value raises a loud WARNING and enqueues a schema-qualified heal job. Non-blocking by design.';

@@ -600,16 +600,43 @@ function renderBlockToMediaBlock(block: {
         : undefined;
   const mimeType =
     typeof data.mime_type === "string" ? data.mime_type : undefined;
+  const fileId = typeof data.file_id === "string" ? data.file_id : undefined;
 
-  if (!url && !mimeType) return null;
+  if (!url && !fileId) return null;
 
-  return {
+  const common = {
     type: "media",
-    kind: renderBlockTypeToMediaKind(block.type),
-    url,
-    mime_type: mimeType,
+    ...(mimeType ? { mime_type: mimeType } : {}),
     metadata: Object.fromEntries(
-      Object.entries(data).filter(([k]) => k !== "url" && k !== "mime_type"),
+      Object.entries(data).filter(
+        ([k]) => k !== "url" && k !== "file_id" && k !== "mime_type",
+      ),
     ),
-  };
+  } as const;
+
+  const kind = renderBlockTypeToMediaKind(block.type);
+  if (url) {
+    switch (kind) {
+      case "image":
+        return { ...common, kind: "image", url };
+      case "audio":
+        return { ...common, kind: "audio", url };
+      case "video":
+        return { ...common, kind: "video", url };
+      case "document":
+        return { ...common, kind: "document", url };
+    }
+  }
+
+  if (!fileId) return null;
+  switch (kind) {
+    case "image":
+      return { ...common, kind: "image", file_id: fileId };
+    case "audio":
+      return { ...common, kind: "audio", file_id: fileId };
+    case "video":
+      return { ...common, kind: "video", file_id: fileId };
+    case "document":
+      return { ...common, kind: "document", file_id: fileId };
+  }
 }

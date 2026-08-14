@@ -104,7 +104,7 @@ BEGIN
   END IF;
 
   SELECT resource_type INTO v_reg_rt FROM public.shareable_resource_registry
-    WHERE table_name=p_table AND is_active LIMIT 1;
+    WHERE schema_name=p_schema AND table_name=p_table AND is_active LIMIT 1;
   check_name:='sharing_token';
   IF v_reg_rt IS NULL THEN status:='SKIP'; detail:='not in shareable_resource_registry';
   ELSIF v_reg_rt=p_token THEN status:='PASS'; detail:=NULL;

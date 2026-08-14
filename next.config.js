@@ -353,7 +353,8 @@ const nextConfig = {
             { source: '/seo/keyword-research', destination: '/marketing/keyword-research', permanent: true },
             // 2026-08-13: "campaign" retired as a name platform-wide (db-rules
             // §1a — a table name repeats across schemas ONLY for the same role,
-            // and `crm.campaign` is a worked outreach list, not this). Marketing's
+            // and CRM's claimant on the word was a worked outreach list, not
+            // this — it is `crm.outreach_list` now). Marketing's
             // channel container is an INITIATIVE: goal, budget, timeline,
             // attribution. Renamed before it shipped, so no live destination is
             // lost — this redirect is what keeps that true.

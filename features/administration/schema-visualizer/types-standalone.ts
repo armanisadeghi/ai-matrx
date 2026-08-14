@@ -21,6 +21,7 @@ export interface SchemaRelationship {
 }
 
 export interface SchemaTable {
+    /** Exact `schema.table` identity used by every visualizer key. */
     table_name: string;
     table_type: "BASE TABLE" | "VIEW";
     schemaType: "table" | "view" | "dynamic" | "other";

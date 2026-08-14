@@ -6,6 +6,13 @@
  */
 
 import type { Database } from "@/types/database.types";
+import type {
+  AudioMediaPart,
+  DocumentMediaPart,
+  ImageMediaPart,
+  VideoMediaPart,
+  YouTubeMediaPart,
+} from "@/types/python-generated/stream-events";
 
 type ChatSchema = Database["chat"];
 
@@ -86,15 +93,13 @@ export interface CxThinkingContent {
   metadata?: Record<string, unknown>;
 }
 
-/** Media attachments — images, audio, video, documents */
-export interface CxMediaContent {
-  type: "media";
-  kind: "image" | "audio" | "video" | "document" | "youtube";
-  url?: string;
-  mime_type?: string;
-  base64_data?: string;
-  metadata?: Record<string, unknown>;
-}
+/** Media attachments — always the generated chat.message.content contract. */
+export type CxMediaContent =
+  | ImageMediaPart
+  | AudioMediaPart
+  | VideoMediaPart
+  | DocumentMediaPart
+  | YouTubeMediaPart;
 
 /**
  * Tool call — AI requests a tool (assistant/output messages).

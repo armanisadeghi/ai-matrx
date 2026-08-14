@@ -152,13 +152,16 @@ async function setVisibilityColumn(
   visibility: "personal" | "internal" | "link" | "public",
 ): Promise<ShareActionResult> {
   const entry = getShareableResource(resourceType);
-  const tableName = entry?.tableName ?? resourceType;
-  const idColumn = entry?.idColumn ?? "id";
-  const scoped = resolveDynamicClient(entry?.schemaName);
+  if (!entry) {
+    throw new Error(
+      `Unknown shareable resource token: ${resourceType}. Bare table names are not accepted.`,
+    );
+  }
+  const scoped = resolveDynamicClient(entry.schemaName);
   const { data, error } = await scoped
-    .from(tableName)
+    .from(entry.tableName)
     .update({ [column]: visibility })
-    .eq(idColumn, resourceId)
+    .eq(entry.idColumn, resourceId)
     .select("id");
   if (error) {
     return { success: false, error: errMessage(error) };
@@ -185,8 +188,13 @@ export async function getResourceVisibility(
   resourceId: string,
 ): Promise<ResourceVisibility> {
   const entry = getShareableResource(resourceType);
+  if (!entry) {
+    throw new Error(
+      `Unknown shareable resource token: ${resourceType}. Bare table names are not accepted.`,
+    );
+  }
   const capabilities = await getShareCapabilities(resourceType);
-  if (!entry || !capabilities.publicState) {
+  if (!capabilities.publicState) {
     return { isPublic: false };
   }
 

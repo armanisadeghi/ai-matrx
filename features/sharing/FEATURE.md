@@ -2,7 +2,7 @@
 
 **Status:** `stable`
 **Tier:** `1` — foundation for every collaborative surface
-**Last updated:** `2026-08-12`
+**Last updated:** `2026-08-13`
 
 > Single source of truth for the sharing and permissions system. For hands-on usage patterns (copy-paste snippets for wiring sharing into a new feature), see [`README.md`](./README.md). This doc covers the architecture, invariants, and agent-relevant internals.
 
@@ -79,7 +79,7 @@ One RLS-backed permissions system that makes any resource type shareable with us
 | `<resource>.is_public`                                                    | Public visibility lives on the **resource row**, not the permissions table. Owner-controlled, toggled via `make_resource_public` / `make_resource_private`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | `<resource>.user_id`                                                      | Ownership is always the resource row's `user_id`. No explicit "owner" permission row exists.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `shareable_resource_registry.content_role` / `.is_scopeable` (2026-06-06) | The knowledge-model classification on the registry: `content_role` ∈ source/destination/utility/container/hybrid; `is_scopeable` bool. Backend (scope-association pipeline) + the FE org catalogue read these.                                                                                                                                                                                                                                                                                                                                                                                                             |
-| `org_module_settings` (2026-06-06)                                        | Per-org per-module rules. `(organization_id, module_key)` unique; `module_key` = canonical table name for shareable kinds (so the share RPC matches it). Columns: `members_can_add`, `requires_approval`, `default_permission`, `auto_ingest`, `is_scopeable`. RLS: org members SELECT; writes only via `set_org_module_setting` (owner/admin). `members_can_add` + `requires_approval` are enforced in `share_resource_with_org`.                                                                                                                                                                                         |
+| `org_module_settings` (2026-06-06)                                        | Per-org per-module rules. `(organization_id, module_key)` unique; `module_key` is the canonical entity token (`shareable_resource_registry.resource_type`), never a physical or bare table name. Columns: `members_can_add`, `requires_approval`, `default_permission`, `auto_ingest`, `is_scopeable`. RLS: org members SELECT; writes only via `set_org_module_setting` (owner/admin). `members_can_add` + `requires_approval` are enforced in `share_resource_with_org`.                                                                                                                                                                                         |
 
 ### Key RPCs (all `SECURITY DEFINER`)
 
@@ -129,14 +129,14 @@ Sharing never flows upward to a parent or sideways to a sibling.
 
 The DB table `platform.shareable_resource_registry` is the **only** place where direct share targets are declared. Every component, RPC, and TypeScript type derives from this table. Structural inheritance is declared separately in `platform.entity_relationships`:
 
-- **DB-side resolver** — `public.resolve_shareable_resource(text)` maps an alias or canonical name to a registry row. All sharing RPCs (`share_resource_with_user`, `is_resource_owner`, `make_resource_public`, etc.) call this resolver — no more `CASE WHEN` ladders inside RPCs.
-- **DB-side validation** — a `BEFORE INSERT/UPDATE` trigger on `permissions.resource_type` rejects any value that isn't a canonical `table_name` in the registry. Loud failure, not silent drift.
+- **DB-side resolver** — `public.resolve_shareable_resource(text)` accepts only the canonical entity token in `resource_type`. All sharing RPCs (`share_resource_with_user`, `is_resource_owner`, `make_resource_public`, etc.) call this resolver; an unknown token raises instead of silently matching no rule.
+- **DB-side validation** — a `BEFORE INSERT/UPDATE` trigger on `permissions.resource_type` rejects any value that isn't a canonical registry token. Loud failure, not silent drift.
 - **TS-side mirror** — `utils/permissions/registry.ts` exports `SHAREABLE_RESOURCE_REGISTRY` plus `ResourceType`, `getShareableResource`, `resolveTableName`, `getResourceTypeLabel`, `getResourceSharePath`. All consumed by `ShareModal`, `ShareButton`, `service.ts`, hooks.
 - **Forcing-function test** — `utils/permissions/__tests__/registry.parity.test.ts` compares the TS mirror against a checked-in DB snapshot (`registry.db-snapshot.json`). If anyone updates one without the other, the test fails in CI before merge.
 
-### Resource-type aliases
+### Resource tokens and physical relations
 
-Aliases live in the registry's `resource_type` column. Canonical table names live in `table_name`. The two diverge only when a table name would be unfriendly in TS / RPC arguments (e.g. `agent` ↔ `agx_agent`, `prompt` ↔ `prompts`, `task` ↔ `ctx_tasks`). For new tables prefer the exact table name as the alias.
+Canonical entity tokens live in the registry's `resource_type` column. Physical identity is the pair `(schema_name, table_name)`. RPC arguments, permissions, module settings, and client registries use the token; only database access uses the physical pair. A bare table name is never accepted as an alias: `definition` exists in several schemas, and even a currently unique name is one schema move away from ambiguity.
 
 ---
 
@@ -364,6 +364,7 @@ Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) 
 
 ## Change log
 
+- 2026-08-13 — **D158 key shape hardened.** Sharing and organization-module RPCs now accept canonical entity tokens only; bare physical table aliases were removed. Unknown tokens raise. The frontend resolver and visibility service removed their table-name fallback, and module catalogue keys no longer fall back to a physical table name. Guard/queue identities use exact `schema.table` pairs.
 - 2026-08-13 — **No share page sends its recipient to an auth wall** (Arman ruling, above). New
   `lenses/source-surface.ts` resolves the per-share-type destination; consumed by the `/s/[token]`
   shell CTA, the keyword-research report CTA, the AI-visibility report CTA (now `/seo/ai-visibility`

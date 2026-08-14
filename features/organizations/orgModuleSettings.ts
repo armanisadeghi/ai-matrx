@@ -3,9 +3,9 @@
  *
  * Reads go through the `get_org_module_settings` RPC (over canonical
  * `platform.org_module_config`); the write goes through the `set_org_module_setting`
- * SECURITY DEFINER RPC (owner/admin gated). Both bridge module table-name <-> entity token.
- * `module_key` matches `moduleKey(entry)` from the resource catalogue (canonical
- * table name for shareable kinds — the share RPC enforces members_can_add /
+ * SECURITY DEFINER RPC (owner/admin gated). `module_key` is the canonical entity
+ * token returned by `moduleKey(entry)`; bare physical table names are not keys.
+ * The share RPC enforces members_can_add /
  * requires_approval off the same key).
  */
 
@@ -63,7 +63,7 @@ export async function getOrgModuleSettings(
  * for consumers that only care about a single kind — e.g. the scopes tag picker
  * checking `isScopeable` before allowing a kind to be tagged, or a share flow
  * reading `defaultPermission`. `moduleKey` is `moduleKey(entry)` from the
- * resource catalogue (canonical table name for shareable kinds).
+ * resource catalogue (canonical entity token).
  */
 export async function getOrgModuleSetting(
   orgId: string,

@@ -1,6 +1,6 @@
 # FEATURE.md — `crm`
 
-**Status:** `db-core live · route + WindowPanels live · campaigns + call queue live` · **Tier:** `1` · **Last updated:** `2026-08-13`
+**Status:** `db-core live · route + WindowPanels live · outreach lists + call queue live` · **Tier:** `1` · **Last updated:** `2026-08-13`
 
 Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/crm/FEATURE.md` — read it before touching this feature in ANY repo.
 
@@ -15,7 +15,7 @@ this, every module grew its own half-copy (`plan.entity`, `web.brand`,
 `users.user_form_profile`), and none could be reused by the next one.
 
 It serves, in one schema: known individuals with social channels, cold **email**
-campaigns, cold **calling** campaigns, real customers, and vendors — with companies
+lists, cold **calling** lists, real customers, and vendors — with companies
 first-class. "Company" here means **our users' clients**, never `iam.organizations`.
 
 ---
@@ -51,8 +51,8 @@ schema exists to prevent.
 | `address`             | component of `party`    | ❌        | structured postal + geo                                 |
 | `affiliation`         | component of `party`    | ✅        | person ↔ company employment, with dates                 |
 | `interaction`         | component of `party`    | ❌        | calls/emails/meetings, planned AND completed            |
-| `campaign`            | entity                  | ✅        | a named audience or cold campaign                       |
-| `campaign_member`     | component of `campaign` | ❌        | per-member state, attempts, dialer claim                |
+| `outreach_list`       | entity                  | ✅        | a named audience or worked cold list                    |
+| `outreach_list_member`| component of `outreach_list` | ❌   | per-member state, attempts, dialer claim                |
 | `party_merge`         | component of `party`    | ❌        | the exact unmerge record                                |
 | `merge_candidate`     | component of `party`    | ❌        | duplicate suggestion (ordered pair, durable dismissal)  |
 
@@ -125,9 +125,9 @@ DDL: [`migrations/crm_01_schema.sql`](../../migrations/crm_01_schema.sql),
 ## Entry points
 
 **Routes:** `/crm` (list: People + Companies, `app/(core)/crm/page.tsx`) ·
-`/crm/[partyId]` (record page) · `/crm/campaigns` (campaign console) ·
-`/crm/campaigns/[campaignId]` (campaign workspace) ·
-`/crm/campaigns/[campaignId]/dial` (call queue) · `/crm/admin` (the feature
+`/crm/[partyId]` (record page) · `/crm/outreach-lists` (outreach-list console) ·
+`/crm/outreach-lists/[listId]` (outreach-list workspace) ·
+`/crm/outreach-lists/[listId]/dial` (call queue) · `/crm/admin` (the feature
 admin map).
 The main app menu links to the route, opens the manager window, and opens
 person/company capture directly. All consume `features/crm/`:
@@ -164,14 +164,14 @@ value metadata mirror the manifests.
 - **Trash:** the list's Trash view flips the `deleted_at` predicate with the
   scope predicates intact; restore = `restoreParty`, erasure =
   `purgeParty` → `crm_party_purge` behind a destructive confirm.
-- `party` + `crm_campaign` are registered in `ENTITY_OVERLAY`
+- `party` + `crm_outreach_list` are registered in `ENTITY_OVERLAY`
   (`features/scopes/registry/entityRegistry.ts`) and `ASSOCIATION_TARGET_TYPES`
   (`features/scopes/types.ts`); notes use `commentsService` with
   `entityType: "party"` + explicit `orgId`.
 
-**Tokens** (`platform.entity_types`): `party`, `contact_medium`, `crm_campaign`
+**Tokens** (`platform.entity_types`): `party`, `contact_medium`, `crm_outreach_list`
 (entities) · `party_contact_point`, `crm_address`, `crm_affiliation`,
-`crm_interaction`, `crm_campaign_member`, `crm_party_merge` (components).
+`crm_interaction`, `crm_outreach_list_member`, `crm_party_merge` (components).
 
 **RPCs** (`public`, `auth.uid()`-gated, `activity_log`-audited):
 `crm_set_primary_contact_point` · `crm_merge_parties` · `crm_unmerge_parties` ·
@@ -219,14 +219,14 @@ synonyms) → **dry-run preview** → commit. Engine in `features/crm/import/`
   resolver's territory). Rows with no valid email/phone dedupe by nothing and
   re-import as new people.
 
-## Campaigns + call queue (`/crm/campaigns`)
+## Outreach lists + call queue (`/crm/outreach-lists`)
 
-Data layer `features/crm/campaigns/` (`types.ts` vocabularies + dispositions,
-`service.ts` all reads/writes); UI `features/crm/components/campaigns/`
+Data layer `features/crm/outreach-lists/` (`types.ts` vocabularies + dispositions,
+`service.ts` all reads/writes); UI `features/crm/components/outreach-lists/`
 (console, workspace, `CallQueuePage` dialer, `AddMembersDialog` filter
-enrollment, `AddToCampaignDialog` selection enrollment, `badges.tsx` — the ONE
+enrollment, `AddToOutreachListDialog` selection enrollment, `badges.tsx` — the ONE
 status→color map). Enrollment on-ramps: `/crm` row selection → bulk bar →
-"Add to campaign", or campaign workspace → "Add members" by filter. Rules paid
+"Add to outreach list", or list workspace → "Add members" by filter. Rules paid
 for once:
 
 - **The claim lock is a CONDITIONAL UPDATE, no RPC.** `claimNextMember` reads
@@ -254,7 +254,7 @@ for once:
   unique index would abort a whole batch on one duplicate); DNC records are
   excluded by default; filter enrollment throws above `FILTER_ENROLL_CAP`
   (5000) rather than truncating.
-- **Campaign scope is blended mine + my orgs** (declared, THE VIEW LAW) — a
+- **Outreach-list scope is blended mine + my orgs** (declared, THE VIEW LAW) — a
   sales-floor work console, not a browse surface.
 - **Known limits:** dialing is a `tel:` handoff (no telephony integration);
   an expired-but-unexpired-looking suppression (`suppression_expires_at`
@@ -310,12 +310,27 @@ pending count. Every party named on these surfaces opens (THE DOOR LAW).
   22P02 into a retry-able lie). Browser-verified: `/crm/not-a-uuid` → clean
   missing state, zero PostgREST requests, one deliberate record-unavailable
   inspector row; nonexistent uuid → RPC-resolved missing; real record loads.
-- 2026-08-13 — Campaign builder + call queue shipped (Wave 3): `/crm/campaigns`
-  console, campaign workspace (status rollup chips filter the roster,
+- 2026-08-13 — **`campaign` → `outreach_list`, the honest name** (db-rules §1a;
+  closed the one open deviation in §12). `crm.campaign` was never a marketing
+  campaign — `campaign_kind IN ('list','email','call','mixed')` with members
+  carrying `status` + `next_attempt_at` is a send/dial queue. Marketing's
+  channel container had already taken `initiative` so the two would not
+  collide. Live rename (`migrations/crm_outreach_list_rename.sql`, applied +
+  ledgered): tables, tokens (`crm_outreach_list`, `crm_outreach_list_member`),
+  `campaign_kind`→`list_kind`, `campaign_id`→`outreach_list_id` on the member
+  AND on `interaction`, every constraint/index name, the token literals inside
+  trigger args, the shareable registry, and the three `crm_*` merge/purge
+  functions; RLS regenerated through `iam.apply_rls` (policy bodies carry the
+  token as a literal). Both gates green, zero FAIL/zero WARN. FE moved to
+  `features/crm/outreach-lists/` + `/crm/outreach-lists/[listId]`, with a 308
+  from `/crm/campaigns/*`; users see "Outreach Lists". Old name is GONE — no
+  compat view, so a stale reference errors loudly.
+- 2026-08-13 — Outreach-list builder + call queue shipped (Wave 3): `/crm/outreach-lists`
+  console, list workspace (status rollup chips filter the roster,
   server-paged member table), enrollment from `/crm` selection (table
-  `selection` bulk bar → `AddToCampaignDialog`) and from filters
+  `selection` bulk bar → `AddToOutreachListDialog`) and from filters
   (`AddMembersDialog` over the shared `applyPartyListPredicates`), and the
-  claim-locked power dialer at `/crm/campaigns/[id]/dial` (conditional-update
+  claim-locked power dialer at `/crm/outreach-lists/[id]/dial` (conditional-update
   claim, DNC/suppression-checked dial targets, interaction-first disposition
   writes, retry windows, session tally). Data layer live-verified against the
   real DB (15/15: claim race, foreign-claim skip, lost-claim guard, D181 bare
@@ -333,9 +348,9 @@ pending count. Every party named on these surfaces opens (THE DOOR LAW).
   door + count badge + assist chips (`crm-assists-producer.ts`), record-page
   `MergeStatusCard`. `useCrmContext` extracted from `usePartyList`.
 
-- 2026-08-12 — Restored strict Supabase write typing for campaign status
+- 2026-08-12 — Restored strict Supabase write typing for outreach-list status
   transitions: the dynamic lifecycle patch now uses the generated
-  `campaign.Update` shape instead of `Record<string, unknown>`, keeping status
+  `outreach_list.Update` shape instead of `Record<string, unknown>`, keeping status
   and timestamp writes aligned with the live generated schema.
 - 2026-08-13 — CSV import shipped: `/crm/import` wizard (file or paste →
   auto-mapped columns → dry-run preview → commit), engine + bulk dedup service
@@ -400,7 +415,7 @@ pending count. Every party named on these surfaces opens (THE DOOR LAW).
   and added `/crm/admin` as the canonical feature map.
 - 2026-07-27 — First UI: `/crm` list (scoped, table-first, server-side
   sort/filter/paging via PostgREST) + `/crm/[partyId]` record page; data layer
-  `features/crm/` (types/service/hooks); `party` + `crm_campaign` registry
+  `features/crm/` (types/service/hooks); `party` + `crm_outreach_list` registry
   wiring. Browser-verified live: create person/company, employ, 2 emails +
   2 phones with RPC primary flips, logged call, note.
 - 2026-07-27 — DB core live: 9 tables, canonical RLS (zero FAIL / zero WARN on

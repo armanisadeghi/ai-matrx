@@ -1,15 +1,15 @@
 /**
  * features/files/blocks/image/adapters/to-cx-media-part.ts
  *
- * Convert a `UnifiedImageBlock` into the DB on-disk media-part shape
- * (`CxMediaContent` with kind: "image").
+ * Convert a `UnifiedImageBlock` into the generated DB on-disk
+ * `ImageMediaPart` shape.
  *
- * On-disk shape today (`CxMediaContent`):
- *   { type: "media", kind: "image", url?, mime_type?,
- *     base64_data?, metadata? }
+ * On-disk shape today (`ImageMediaPart`):
+ *   { type: "media", kind: "image", file_id? | url?, origin?,
+ *     mime_type?, size_bytes?, width?, height?, metadata? }
  *
  * Strategy:
- *   - Keep the visible fields (`url`, `mime_type`) populated so
+ *   - Keep generated top-level identity fields populated so
  *     legacy readers that haven't migrated keep working.
  *   - Pack EVERY canonical field (origin, fileId, cdnUrl, signedUrl,
  *     downloadUrl, visibility, thumbnails, dimensions, etc.) into
@@ -20,10 +20,10 @@
  * natively (Phase 3).
  */
 
-import type { CxMediaContent } from "@/features/public-chat/types/cx-tables";
+import type { ImageMediaPart } from "@/types/python-generated/stream-events";
 import type { UnifiedImageBlock } from "../types";
 
-export function toCxMediaPart(block: UnifiedImageBlock): CxMediaContent {
+export function toCxMediaPart(block: UnifiedImageBlock): ImageMediaPart {
   // The visible `url` field: prefer the most permanent option so reload
   // works even if the signed URL has expired and metadata isn't read.
   const visibleUrl =
@@ -66,19 +66,47 @@ export function toCxMediaPart(block: UnifiedImageBlock): CxMediaContent {
     packed.source_label = block.sourceLabel;
   }
 
-  // Base64 (rare — only for streaming or tiny inline assets) goes onto its
-  // own field so legacy readers can find it without parsing metadata.
+  // Base64 is transient render data, not a top-level ImageMediaPart field.
+  // Preserve it inside extensible metadata for the live Redux round-trip;
+  // emitting `base64_data` beside `type`/`kind` violates the generated
+  // chat.message.content contract and crashes the strict read boundary.
   if (block.base64) {
     packed.base64_data = block.base64;
   }
 
-  const part: CxMediaContent = {
+  const common = {
     type: "media",
     kind: "image",
-    url: visibleUrl,
-    mime_type: block.mimeType ?? undefined,
-    base64_data: block.base64 ?? undefined,
+    ...(block.mimeType !== null ? { mime_type: block.mimeType } : {}),
+    ...(block.sizeBytes !== null ? { size_bytes: block.sizeBytes } : {}),
+    ...(block.width !== null ? { width: block.width } : {}),
+    ...(block.height !== null ? { height: block.height } : {}),
     metadata: packed,
+  } as const;
+
+  if (block.origin === "matrx") {
+    return {
+      ...common,
+      origin: "matrx",
+      file_id: block.fileId,
+      ...(visibleUrl ? { url: visibleUrl } : {}),
+    };
+  }
+
+  const externalUrl =
+    visibleUrl ??
+    (block.base64
+      ? `data:${block.mimeType ?? "image/*"};base64,${block.base64}`
+      : null);
+  if (!externalUrl) {
+    throw new TypeError(
+      "Cannot project external image into chat.message.content: missing URL and base64 locator",
+    );
+  }
+
+  return {
+    ...common,
+    origin: "external",
+    url: externalUrl,
   };
-  return part;
 }
