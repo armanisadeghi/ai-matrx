@@ -246,10 +246,6 @@ INSERT skips the resolver.
 - **The fold debt compounds daily:** `public.contact_submissions` was 4 → 21 while this doc was
   first being written and is still growing; `web.brand` 22 → 25. Every day one runs, the
   migration gets bigger. *(`plan.entity` person/org fold DONE 2026-08-13.)*
-- **`party.expert_status` still has no producer and no reader.** Research extracts the exact
-  promotion signals (`NotableQuote.speaker`, `has_author_credentials`, `expert_opinion` findings,
-  per-page `EntitiesMentioned`) and buries them in `rs_source.page_analysis` JSONB. **This is the
-  forcing function the entire CRM was built for and it is still not connected.**
 - **Auto-merge effectively never fires.** The resolver marks `is_identity_key=true` for
   `external_id` points ONLY (deliberately conservative — an email is not proof of identity), and
   nothing else creates external_id points yet. Today every collision surfaces as a *suggestion*.
@@ -302,33 +298,44 @@ per-item efforts in the cross-repo SoR.
 
 ## Open now — in priority order
 
-1. **Research experts → party.** *(chip: "Research experts → crm.party")* Promote expert
-   candidates through the server resolver, write `expert_status` on `registered → approved →
-   vetted`, give it a **reader** in the FE, and add one `topic.experts` entry to
-   `features/research/resources/catalog.ts` (that single entry lights up the whole picker/budget/
-   bundle machinery). Suggestion-gated wherever the signal is weak. **Highest strategic value:
-   this is the forcing function the entire system was built for, and it closes the last Wave 0
-   item (`expert_status` — wire it, don't drop it).**
-2. **The three contact folds.** *(chip: "Fold the three contact tables into crm.party")*
+1. **The three contact folds.** *(chip: "Fold the three contact tables into crm.party")*
    `users.invitation_requests` + `public.contact_submissions` + `users.user_form_profile`. Each
    needs `scripts/dead-relations.json` + `platform.deprecated_relations` BEFORE repointing;
    `plan_entity_person_org_fold.sql` is the worked reference. **Most urgent by decay** — the
    source tables grow every day this waits.
-3. **CRM agent surface, FE half.** *(chip: "Complete the CRM agent surface")* The server half
+2. **CRM agent surface, FE half.** *(chip: "Complete the CRM agent surface")* The server half
    shipped 2026-08-12; this repo still owns `features/crm/agent-context/`, the context-menu
    "Save selection as contact" (routed through the server `resolve_contact` action, never a raw
    insert), and client tools **only if** `resolve_contact` + the generic `data` resource don't
    already cover them.
-4. **Smart views.** *(chip: "CRM smart views")* Saved dynamic filters + bulk actions over the
-   existing shared `applyPartyListPredicates` — the list becomes the work queue. Also closes two
-   known gaps: enrollment from a *saved view*, and the missing **unsuppress affordance** (today
-   "Do not call" scrubs a medium org-wide with no way back, so a mis-click is permanent).
-5. **D182 — the RLS component remainder.** *(chip: "Finish D182")* 33 component tables still
+3. **D182 — the RLS component remainder.** *(chip: "Finish D182")* 33 component tables still
    can't serve an authed insert-with-returning (21 missing the actor-stamp trigger, 12 with no
    `created_by` at all). All service_role-written today, so nothing user-facing is known broken —
    fix it before a user surface lands on one. Carries a product question for Arman (§5.4).
 
 ## Delivered, for provenance
+
+**Smart views — DONE 2026-08-14.** `crm.saved_view` (applied + ledgered) makes a `/crm` query a
+named record, shared through the platform `visibility` tier and opened by `/crm?view=<id>`; the
+list gained the saved-view bar and bulk work-queue actions. Both gaps this item carried are
+closed: `AddMembersDialog` enrolls straight from a saved view (stamping the view's id into
+`crm.outreach_list.definition`, so the queue links back to the query that filled it), and "Do not
+call" is no longer one-way — `unsuppressMedium` + `allowPartyContact` lift only OUR stance, name
+every blocker that survives (unsubscribe, complaint, hard bounce, DNC registry, invalid), and
+leave an audit trail on both sides. Details + the reversibility rule: `features/crm/FEATURE.md`.
+
+**Wave 3 (experts) — DONE 2026-08-14.** Research experts now become `crm.party` rows:
+deterministic extraction over `rs_source.page_analysis` (aidream
+`services/crm/expert_promotion.py` — no second model call, the analysis agent already produced
+the structure), promotion through the party resolver with `expert_status='registered'`, the
+`expert_for` topic edge and a `party_observation` edge per evidencing page; suggestion-gated
+(extraction writes nothing; the promote call refuses keys the current evidence does not produce
+and refuses weak candidates without an explicit confirm). Readers: `/crm` Expert column with a
+real server-side filter, `ExpertStatusCard` on the record page (tier ladder + provenance doors),
+`/research/topics/[id]/experts`, and the `topic.experts` resource-catalog entry. **This closed
+the last Wave 0 item.** It also exposed and fixed a live duplicate factory — `crm.name_key()`
+mangled accented names while its Python twin folded them, so the resolver missed real rows
+(`migrations/crm_name_key_unicode_fold.sql`, applied + backfilled).
 
 **Wave 0** — raw-`database`-tool guard (`WRITE_GOVERNED_SCHEMAS = {"crm"}`) + `DocketParty`
 rename, aidream v0.2.57. **Wave 1 server half** — the party resolver, the `party` `agent_data`

@@ -1,6 +1,6 @@
 # FEATURE.md — `crm`
 
-**Status:** `db-core live · route + WindowPanels live · outreach lists + call queue live` · **Tier:** `1` · **Last updated:** `2026-08-13`
+**Status:** `db-core live · route + WindowPanels live · outreach lists + call queue live · smart views live` · **Tier:** `1` · **Last updated:** `2026-08-14`
 
 Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/crm/FEATURE.md` — read it before touching this feature in ANY repo.
 
@@ -55,6 +55,7 @@ schema exists to prevent.
 | `outreach_list_member`| component of `outreach_list` | ❌   | per-member state, attempts, dialer claim                |
 | `party_merge`         | component of `party`    | ❌        | the exact unmerge record                                |
 | `merge_candidate`     | component of `party`    | ❌        | duplicate suggestion (ordered pair, durable dismissal)  |
+| `saved_view`          | entity                  | ✅        | a named, re-runnable party-list query (smart view)      |
 
 `party_kind ('person','organization')` is the **only** closed set. Expert, lead,
 vendor, journalist, competitor, customer are **roles** — `platform.categories` rows in
@@ -169,8 +170,8 @@ value metadata mirror the manifests.
   (`features/scopes/types.ts`); notes use `commentsService` with
   `entityType: "party"` + explicit `orgId`.
 
-**Tokens** (`platform.entity_types`): `party`, `contact_medium`, `crm_outreach_list`
-(entities) · `party_contact_point`, `crm_address`, `crm_affiliation`,
+**Tokens** (`platform.entity_types`): `party`, `contact_medium`, `crm_outreach_list`,
+`crm_saved_view` (entities) · `party_contact_point`, `crm_address`, `crm_affiliation`,
 `crm_interaction`, `crm_outreach_list_member`, `crm_party_merge` (components).
 
 **RPCs** (`public`, `auth.uid()`-gated, `activity_log`-audited):
@@ -256,11 +257,81 @@ for once:
   (5000) rather than truncating.
 - **Outreach-list scope is blended mine + my orgs** (declared, THE VIEW LAW) — a
   sales-floor work console, not a browse surface.
+- **Enrollment sources are the list selection, an ad-hoc filter, or a SMART
+  VIEW** (`AddMembersDialog` source picker). Whichever it was, the enrolled
+  list stamps its provenance into `crm.outreach_list.definition`
+  (`recordEnrollmentSource` / `readEnrollmentSource` — the column that shipped
+  with no writer), so the workspace header names the query that filled the
+  queue and links back to it at `/crm?view=<id>`.
 - **Known limits:** dialing is a `tel:` handoff (no telephony integration);
-  an expired-but-unexpired-looking suppression (`suppression_expires_at`
-  passed) still blocks because generated `is_contactable` ignores expiry — an
-  unsuppress affordance is future work; member table search/status filter are
-  server-side but member columns don't sort.
+  member table search/status filter are server-side but member columns don't
+  sort.
+
+## Suppression, and its reverse
+
+Read `reachability.ts` first — it is THE one reader: `contactPointBlockReason`
+answers "may we use this point?" (record-first precedence), and
+`mediumBlocks` / `blocksSurvivingUnsuppress` answer "what is on this value, and
+what would survive an undo?". Never restate a block list in a component.
+
+**THE REVERSIBILITY RULE.** "Do not call" writes exactly two things —
+`contact_medium.suppressed_at` (+ reason) and `party.do_not_contact` — and both
+are undoable, because a mis-click that permanently scrubs a number org-wide is
+the more expensive failure. Everything else a medium carries (unsubscribe,
+complaint, hard bounce, DNC-registry listing, invalid verification) is a fact
+from outside or a legal opt-out: the undo never clears one, and the surviving
+blockers are named in the confirm and in the resulting toast.
+
+- **Party half:** `allowPartyContact` (single record — also logs a `note`
+  interaction) and `setPartiesDoNotContact` (the list's bulk bar, both
+  directions; `crm.party` is versioned, so `history.row_versions` already
+  records the actor).
+- **Medium half:** `unsuppressMedium` clears `suppressed_at` /
+  `suppression_reason` / `suppression_expires_at` and appends to the medium's
+  `details.suppression_history` (who / when / previous reason). The medium is
+  NOT versioned, which is exactly why that history entry exists.
+- **Offered where it bites:** the record's Contact card (per suppressed value),
+  the identity card's do-not-contact toggle, the dialer's blocked dial targets
+  (which re-resolve the card from the DB after the lift), and the `/crm` bulk
+  bar. Auto-suppressed names in the dialer's tally are links to their records.
+- This also resolves the old expiry trap: a suppression whose
+  `suppression_expires_at` has passed still blocks (generated `is_contactable`
+  has no clock), and `isSuppressionExpired` says so in the confirm so a rep
+  knows the lift is expected rather than an override.
+
+## Smart views (`crm.saved_view`)
+
+**A named, re-runnable `/crm` query** — the list becomes a work queue instead of
+a browser. `lib/list-views` persists STYLE and deliberately never QUERY, so a
+view is a real record: owner, org, and the platform `visibility` tier as the
+only sharing mechanism (`personal` = mine, `internal` = the org can open AND
+edit it, which `iam.has_access` already confers — nothing invented).
+
+- Data layer `features/crm/saved-views/` (`types.ts` — the definition shape,
+  its validator, `definitionFromQuery` / `queryFromDefinition` /
+  `definitionsMatch` / `describeDefinition`; `service.ts` — declared-scope read
+  of mine + my orgs, create/update/touch/delete). UI:
+  `components/saved-views/SavedViewBar.tsx`.
+- **The definition is jsonb and is validated on read.** An unrecognised field
+  falls back to its default rather than throwing away a list page the user only
+  wanted to browse. `SAVED_VIEW_DEFINITION_VERSION` is the shape version —
+  bump it and teach the parser when the definition changes.
+- **Applying a view lands through the SAME setters the human controls call**
+  (`usePartyList.setQuery` + `useListViewPrefs.setPrefs`), like the agent write
+  handlers. There is no second query path, so a chip click, a filter click and
+  an agent write are indistinguishable downstream.
+- **`/crm?view=<id>` opens a view** — that is what makes it a destination an
+  outreach list (or a teammate) can link to. Only the route mount reads it;
+  the floating `CrmManagerWindow` has no URL of its own.
+- A view never describes the trash: it is a queue of live records.
+- **Bulk actions** on the list selection: add to outreach list, flag
+  do-not-contact, allow contact, delete — each behind a confirm that states
+  what it does NOT touch (a value suppressed on the medium stays suppressed).
+- **Known limits:** the definition covers what the list can serve server-side
+  today; a view cannot yet express "no phone number" or "not contacted in 30
+  days" (both need a predicate over `crm.interaction` / contact points, not a
+  party column). No per-view member counts on the bar — counting every view on
+  every load is a query per chip.
 
 ## Dedup + merge review (`/crm/duplicates`)
 
@@ -275,15 +346,76 @@ duplicate, absorbed merges), `CrmAssistStrip` (assists producer
 navigate actions). `/crm` header carries a Duplicates door with the true
 pending count. Every party named on these surfaces opens (THE DOOR LAW).
 
+## Experts (`expert_status`) — the loop the CRM was built for
+
+**A research topic finds experts; they become `crm.party` rows here.** The
+producer is aidream `services/crm/expert_promotion.py` (deterministic — it
+reads the structure the page-analysis agent already produced, no second model
+call) and it writes ONLY through the party resolver. The reader is this
+feature: the `/crm` Expert column (server-side filter: any tier / a tier /
+not an expert) and `ExpertStatusCard` on the record page.
+
+- **Tiers are `registered → approved → vetted`, and only the FIRST may be
+  proposed by a producer.** `expert_status` is in the resolver's
+  `_FILLABLE_FIELDS`, so a promotion fills a NULL and can never demote a
+  human's verdict. Raising a tier (or clearing it) happens on the record page
+  through `setExpertStatus`. Vocabulary: `EXPERT_STATUSES` in `types.ts`, twin
+  of `EXPERT_STATUSES` in the resolver.
+- **"Expert of topic X" is an EDGE, never a column** — `party -> research_topic`
+  role `expert_for` (registered in `crm_02_core.sql`; `EXPERT_EDGE_ROLE`).
+  Provenance per page is a `party -> research_source` edge carrying the
+  `party_observation` payload. Readers: `fetchTopicExperts` (topic → its
+  experts) and `fetchPartyExpertTopics` (person → their topics, so the record
+  page can open each one).
+- **Promotion is suggestion-gated.** The extraction endpoint writes nothing;
+  the promote endpoint accepts only keys its CURRENT extraction produces and
+  refuses anything below the promotable floor unless the caller explicitly
+  confirms. Strong candidates are pre-selected in the UI, weak ones are not.
+- **The directory is public by design** — experts charge for what they sell,
+  never for being looked at. Nothing here gates viewing on a tier.
+- **`allow_name_match=True` is deliberate for this producer** (resolver default
+  is false for persons): expert candidates carry no email or phone, so without
+  name matching every re-scan would mint a duplicate of every expert.
+
 ## Not built yet
 
 - "Shared" list scope (needs a crm grant-reader RPC).
-- Research expert writing, the `web.brand` fold, expert
-  registration — see [`docs/handoffs/crm-system.md`](../../docs/handoffs/crm-system.md).
+- The `web.brand` fold and public expert registration — see
+  [`docs/handoffs/crm-system.md`](../../docs/handoffs/crm-system.md).
 
 ---
 
 ## Change log
+
+- 2026-08-14 — **Smart views + the unsuppress affordance** (Wave 3 remainder).
+  `crm.saved_view` applied live + ledgered (`migrations/crm_04_saved_views.sql`)
+  — a named, re-runnable party-list query, shared through the platform
+  `visibility` tier and opened by `/crm?view=<id>`. `SavedViewBar` on the list
+  with dirty detection and update/rename/share/delete; bulk work-queue actions
+  on the selection (outreach list, do-not-contact, allow contact, delete);
+  `AddMembersDialog` enrolls straight from a view over the shared
+  `applyPartyListPredicates`, stamping provenance into
+  `crm.outreach_list.definition` so the queue links back to the query that
+  filled it. **Closed the permanent-mis-click hole:** "Do not call" now has a
+  reverse on both halves — `unsuppressMedium` (with a
+  `details.suppression_history` audit entry) and `allowPartyContact` (with a
+  timeline note) — lifting only OUR stance and naming every blocker that
+  survives. The medium-block reader folded into `reachability.ts` rather than
+  forking a second suppression module. Browser-verified end to end against the
+  live DB: a saved view drove a real 3-member enrollment, and a real leftover
+  `dnc_request` suppression from the dialer verification was lifted.
+- 2026-08-14 — **Research experts → `crm.party`; `expert_status` finally has
+  both a producer and a reader** (see the Experts section above). Server:
+  aidream `services/crm/expert_promotion.py` + two research endpoints;
+  `expert_status` added to the resolver's fill-when-NULL fields. Client:
+  Expert column + server-side filter on `/crm`, `ExpertStatusCard` on the
+  record page, `/research/topics/[id]/experts`, and the `topic.experts`
+  research resource. **Fixed a live duplicate factory found while verifying:**
+  `crm.name_key()` treated every accented character as punctuation
+  ("José Fábio Lana" → "jos f bio lana") while its Python twin NFKD-folded, so
+  the resolver missed real rows and created a second party on every run —
+  `migrations/crm_name_key_unicode_fold.sql`, applied + ledgered + backfilled,
+  re-verified converging on the same party.
 
 - 2026-08-13 — **`plan.entity` fold executed (Wave 2, partial by design).**
   Per the ratified SoR ruling, person/org rows folded into `crm.party`
