@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2` — a surface on the existing artifacts/canvas + diagram stack, not a new system
-**Last updated:** `2026-08-10`
+**Last updated:** `2026-08-14`
 
 > **What this is:** `/maps` lets a user create and edit a visual map — boxes and
 > arrows — from the UI, with no code and no JSON. It is the authoring half of a
@@ -13,10 +13,10 @@
 ## The question this answers
 
 Arman, 2026-08-09, after seeing the Growth Loop map at
-`/administration/knowledge/growth-loop`: *we already let agents make diagrams in
+`/administration/knowledge/growth-loop`: _we already let agents make diagrams in
 chat — should users be able to CREATE maps like this from a UI? And should that
 be a new feature, or part of the workflow package (which already has a node
-graph editor)?*
+graph editor)?_
 
 **Decision: neither. Extend what exists.** A map is a **canvas item of type
 `diagram`** whose content is the canonical `DiagramData`, edited by the ONE
@@ -24,13 +24,13 @@ existing diagram renderer running in authoring mode.
 
 ### What already existed (the inventory that forced this answer)
 
-| Piece | Where it already lives |
-|---|---|
-| The data shape | `DiagramData` (`components/mardown-display/blocks/diagram/parseDiagramJSON.ts`) |
-| The AI-emittable form of that shape | `diagram_spec` content-IR kind (`features/content-ir/kinds/diagram-spec.ts`) — an agent already emits maps in chat |
-| The renderer | `InteractiveDiagramBlock` — React Flow, 10 node kinds, dagre/radial/org/pedigree layouts, PNG + JSON export, print/PDF, canvas hand-off |
-| Persistence, versioning, favourites, sharing | `canvas.canvas_items` + `canvasItemsService` (+ `canvas_save_user_version`, `canvas_publish`, `canvas_get_version_history` RPCs) |
-| The list shell | `lib/entity-list` (`/agents/all`, `/transcripts`) |
+| Piece                                        | Where it already lives                                                                                                                                                                |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The data shape                               | `DiagramData` (`components/mardown-display/blocks/diagram/parseDiagramJSON.ts`)                                                                                                       |
+| The AI-emittable form of that shape          | `diagram_spec` content-IR kind (`features/content-ir/kinds/diagram-spec.ts`) — an agent already emits maps in chat                                                                    |
+| The renderer                                 | `InteractiveDiagramBlock` — XYFlow 12, 10 box kinds, resizable visual sections, dagre/radial/org/pedigree layouts, configurable arrows, PNG + JSON export, print/PDF, canvas hand-off |
+| Persistence, versioning, favourites, sharing | `canvas.canvas_items` + `canvasItemsService` (+ `canvas_save_user_version`, `canvas_publish`, `canvas_get_version_history` RPCs)                                                      |
+| The list shell                               | `lib/entity-list` (`/agents/all`, `/transcripts`)                                                                                                                                     |
 
 Four of the five pieces of "let users make maps" were already built. The only
 missing piece was **authoring**: nothing let a person rename a box, add one,
@@ -48,6 +48,7 @@ system — a defect even if it worked.
 **Extend the workflow package (`aidream/apps/workflow-studio`, XYFlow +
 `matrx-graph`).** Rejected, and it is the most tempting wrong answer because it
 already draws node graphs. Three reasons it fails:
+
 1. **A workflow is executable; a map is not.** The workflow DAG model carries
    node types, typed ports, `input_kind`/`output_kind`, and run semantics. A map
    of "how a new patient gets seen" has none of that, and forcing one to satisfy
@@ -61,7 +62,7 @@ already draws node graphs. Three reasons it fails:
    (`common-docs/systems/ai-dream-platform/USER.md`). "Nodes and edges" is
    exactly the vocabulary they must never meet.
 
-**A new content-IR kind.** Rejected as a *no-op*: `diagram_spec` already is that
+**A new content-IR kind.** Rejected as a _no-op_: `diagram_spec` already is that
 kind. Adding `map_spec` would fork the shape agents emit and the shape we render
 for no gain.
 
@@ -86,11 +87,13 @@ AI drafts, the person refines. Neither half needed a new system.
 ## Entry points
 
 **Routes**
+
 - `app/(core)/maps/page.tsx` → `MapsListPage` — the library (list first; a
   feature entry page is never a forced editor).
 - `app/(core)/maps/[id]/page.tsx` → `MapEditor` — one map, open, autosaving.
 
 **Feature code — `features/canvas/maps/`**
+
 - `types.ts` — `MapListRow`, `starterMap`, `draftMapFromLines`,
   `diagramFromCanvasContent`. No new persisted shape: it is all `DiagramData`.
 - `service.ts` — the entity-list read triple (direct `canvas.canvas_items`
@@ -99,8 +102,12 @@ AI drafts, the person refines. Neither half needed a new system.
 - `columns.tsx`, `listConfig.tsx`, `useMapRowActions.tsx` — the entity-list
   config triple.
 - `MapsListPage.tsx`, `NewMapDialog.tsx`, `MapEditor.tsx`, `MapCanvas.tsx`.
+- `features/surfaces/manifests/maps.manifest.ts` — the live read/write Surface
+  contract (`matrx-user/maps`): full map JSON in, confirmed full-map replacement
+  out.
 
 **Extended, not copied**
+
 - `components/mardown-display/blocks/diagram/InteractiveDiagramBlock.tsx` gained
   ONE optional prop, `onDiagramChange`. When set, the block shows an Edit
   toggle and an authoring panel, and reports the whole updated `DiagramData` on
@@ -132,6 +139,14 @@ AI drafts, the person refines. Neither half needed a new system.
    re-run auto-layout when the diagram changes, and skips the initial auto-layout
    entirely when every box already has a position. Otherwise reopening a map
    would silently discard the arrangement the user made.
+8. **Sections are visual, never executable.** A section is a React Flow v12
+   sub-flow parent (`isGroup`, `parentId`, relative child positions), persisted
+   in the same `DiagramData`. Removing one keeps its boxes and their visible
+   positions.
+9. **Agent edits use the Surface write seam.** The mounted
+   `SurfaceRuntimeProvider` exposes the complete current map through `map_json`;
+   agents may only propose `replace_map`, which is user-confirmed, strictly
+   parsed, relationship-validated, and saved through `saveMap`.
 
 ---
 
@@ -147,11 +162,22 @@ understood but never required.
 can be edited box by box. This path predates this feature; what is new is that
 the result is now editable and re-savable rather than frozen.
 
-**Edit.** Open a map → Edit (pencil) → click a box to rename it or add notes,
+**Edit.** Open a map — the dedicated editor starts ready to edit — then click a box to rename it or add notes,
 drag it to move it, drag from a box's dot onto another box to draw an arrow,
 click an arrow to label or remove it, "Add a box" for a new one. Autosaves
 1.2s after the last change; the header states `Unsaved changes` / `Saving…` /
 `All changes saved` / `Not saved` and never claims a failed save succeeded.
+
+**Organize without turning it into a workflow.** Add a resizable visual section,
+choose solid/dashed/dotted framing, and place boxes inside it. Arrows may be
+curved, rounded, stepped, or straight; solid, dashed, or dotted; animated or
+still; with or without arrowheads. These are presentation choices only.
+
+**Work with an agent.** The open editor is the declared `matrx-user/maps`
+surface. Its agent context includes `map_json`, convenient box/arrow lists,
+counts, and the user's current selection. A bound agent reads the complete
+document and proposes a complete replacement through `replace_map`; the user
+sees the standard in-place confirmation before the canonical save path runs.
 
 ---
 
@@ -175,6 +201,12 @@ click an arrow to label or remove it, "Add a box" for a new one. Autosaves
 
 ## Change Log
 
+- **2026-08-14** — Finished the previously unwired product surface: placed
+  Visual Maps under Docs navigation; migrated the canonical renderer from
+  legacy React Flow 11 to `@xyflow/react` 12.11.3; added resizable visual
+  sections/sub-flows, box styles, richer arrow paths/lines/motion/arrowheads;
+  declared and live-synced `matrx-user/maps` with complete JSON read context
+  and a confirmed, validated `replace_map` agent write target.
 - **2026-08-10** — Created. Decision recorded (extend canvas + the one diagram
   renderer; not a new feature, not the workflow package). Added `/maps` list +
   editor, `draftMapFromLines` plain-language drafting, and authoring mode on

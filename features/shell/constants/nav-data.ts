@@ -424,7 +424,7 @@ export const primaryNavItems: ShellNavItem[] = [
     dockOrder: 4,
     profileMenu: false,
     dashboard: false,
-    description: "Notes and cloud documents",
+    description: "Notes, cloud documents, and visual maps",
     color: "amber",
     children: [
       {
@@ -442,6 +442,15 @@ export const primaryNavItems: ShellNavItem[] = [
         iconName: "FileText",
         description: "Cloud documents — realtime co-editing, full history",
         color: "indigo",
+        profileMenu: true,
+        dashboard: true,
+      },
+      {
+        label: "Visual Maps",
+        href: "/maps",
+        iconName: "Network",
+        description: "Think visually with editable boxes, sections, and arrows",
+        color: "violet",
         profileMenu: true,
         dashboard: true,
       },

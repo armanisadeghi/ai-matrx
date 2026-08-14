@@ -8,11 +8,21 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Check, Loader2, TriangleAlert } from "lucide-react";
-import { toast } from "sonner";
-import type { DiagramData } from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
+import { toast } from "@/lib/toast";
+import {
+  parseDiagramJSON,
+  validateDiagram,
+  type DiagramData,
+} from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import PageHeader from "@/features/shell/components/header/PageHeader";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  MAPS_SURFACE_NAME,
+  createMapsScope,
+  type MapSurfaceSelection,
+} from "@/features/surfaces/manifests/maps.manifest";
 import MapCanvas from "./MapCanvas";
 import { getMap, saveMap } from "./service";
 
@@ -24,10 +34,19 @@ export function MapEditor({ mapId }: { mapId: string }) {
   const [diagram, setDiagram] = useState<DiagramData | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<SaveState>("idle");
+  const [selection, setSelection] = useState<MapSurfaceSelection>({
+    kind: null,
+    id: null,
+  });
 
   // The live document, read by the debounced save without re-arming it.
   const latest = useRef<DiagramData | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveStateRef = useRef<SaveState>("idle");
+
+  useEffect(() => {
+    saveStateRef.current = saveState;
+  }, [saveState]);
 
   useEffect(() => {
     let cancelled = false;
@@ -76,19 +95,98 @@ export function MapEditor({ mapId }: { mapId: string }) {
   // Never let a pending edit die with the page.
   useEffect(() => {
     const warn = (e: BeforeUnloadEvent) => {
-      if (saveState === "pending" || saveState === "saving") e.preventDefault();
+      if (
+        saveStateRef.current === "pending" ||
+        saveStateRef.current === "saving"
+      )
+        e.preventDefault();
     };
     window.addEventListener("beforeunload", warn);
     return () => {
       window.removeEventListener("beforeunload", warn);
       if (timer.current) clearTimeout(timer.current);
     };
-  }, [saveState]);
+  }, []);
 
   const renameMap = (title: string) => {
     if (!latest.current) return;
     handleChange({ ...latest.current, title });
   };
+
+  const getApplicationScope = () => {
+    const doc = latest.current;
+    if (!doc)
+      throw new Error(
+        "The visual map has not finished loading its canvas data.",
+      );
+    const boxes = doc.nodes.filter((item) => !item.isGroup);
+    const sections = doc.nodes.filter((item) => item.isGroup);
+    const selectedItem = selection.id
+      ? selection.kind === "arrow"
+        ? doc.edges.find((item) => item.id === selection.id)
+        : doc.nodes.find((item) => item.id === selection.id)
+      : undefined;
+
+    return createMapsScope({
+      map_id: mapId,
+      map_title: doc.title,
+      map_description: doc.description,
+      map_summary: {
+        id: mapId,
+        title: doc.title,
+        description: doc.description,
+        box_count: boxes.length,
+        section_count: sections.length,
+        arrow_count: doc.edges.length,
+      },
+      map_json: doc,
+      map_boxes: doc.nodes,
+      map_arrows: doc.edges,
+      box_count: boxes.length,
+      section_count: sections.length,
+      arrow_count: doc.edges.length,
+      selected_item_kind: selection.kind ?? undefined,
+      selected_item_id: selection.id ?? undefined,
+      selected_item: selectedItem,
+      content: JSON.stringify(doc),
+      context: {
+        purpose: "Non-executable visual thinking map",
+        selection,
+      },
+    });
+  };
+
+  const replaceMapFromSurface = async (value: unknown) => {
+    if (!value || typeof value !== "object" || Array.isArray(value))
+      throw new Error(
+        "replace_map expects the complete map object, not text or an array.",
+      );
+
+    const next = parseDiagramJSON(JSON.stringify({ diagram: value }));
+    if (!validateDiagram(next))
+      throw new Error(
+        "replace_map received an invalid map: every box needs a unique id and name, and every arrow must reference boxes that exist.",
+      );
+
+    if (timer.current) {
+      clearTimeout(timer.current);
+      timer.current = null;
+    }
+    setSaveState("saving");
+    const { error } = await saveMap(mapId, next);
+    if (error) {
+      setSaveState("error");
+      throw new Error(`The approved map could not be saved: ${error}`);
+    }
+    latest.current = next;
+    setDiagram(next);
+    setSelection({ kind: null, id: null });
+    setSaveState("saved");
+  };
+
+  const getSurfaceWriteHandlers = () => ({
+    replace_map: replaceMapFromSurface,
+  });
 
   const header = (
     <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -99,6 +197,7 @@ export function MapEditor({ mapId }: { mapId: string }) {
         </Link>
       </Button>
       <Input
+        data-surface-value="map_title"
         value={diagram?.title ?? ""}
         onChange={(e) => renameMap(e.target.value)}
         disabled={!diagram}
@@ -124,31 +223,48 @@ export function MapEditor({ mapId }: { mapId: string }) {
     );
   }
 
+  if (!diagram) {
+    return (
+      <>
+        <PageHeader>{header}</PageHeader>
+        <div className="flex h-full items-center justify-center">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </div>
+      </>
+    );
+  }
+
   return (
-    <>
+    <SurfaceRuntimeProvider
+      surfaceName={MAPS_SURFACE_NAME}
+      getScope={getApplicationScope}
+      isEditable
+      getWriteHandlers={getSurfaceWriteHandlers}
+    >
       <PageHeader>{header}</PageHeader>
-      <div className="h-full overflow-auto">
-        {diagram ? (
-          <MapCanvas diagram={diagram} onDiagramChange={handleChange} />
-        ) : (
-          <div className="flex h-full items-center justify-center">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-          </div>
-        )}
+      <div className="h-full overflow-auto" data-surface-value="map_json">
+        <MapCanvas
+          diagram={diagram}
+          defaultEditing
+          onDiagramChange={handleChange}
+          onSelectionChange={setSelection}
+        />
       </div>
-    </>
+    </SurfaceRuntimeProvider>
   );
 }
 
 function SaveIndicator({ state }: { state: SaveState }) {
   if (state === "idle") return null;
-  const map: Record<Exclude<SaveState, "idle">, { label: string; className: string }> =
-    {
-      pending: { label: "Unsaved changes", className: "text-muted-foreground" },
-      saving: { label: "Saving…", className: "text-muted-foreground" },
-      saved: { label: "All changes saved", className: "text-muted-foreground" },
-      error: { label: "Not saved", className: "text-destructive" },
-    };
+  const map: Record<
+    Exclude<SaveState, "idle">,
+    { label: string; className: string }
+  > = {
+    pending: { label: "Unsaved changes", className: "text-muted-foreground" },
+    saving: { label: "Saving…", className: "text-muted-foreground" },
+    saved: { label: "All changes saved", className: "text-muted-foreground" },
+    error: { label: "Not saved", className: "text-destructive" },
+  };
   const { label, className } = map[state];
   return (
     <span className={`flex shrink-0 items-center gap-1 text-xs ${className}`}>

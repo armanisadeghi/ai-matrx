@@ -7,7 +7,11 @@
 // field, not in diagram tooling.
 
 import { Badge } from "@/components/ui/badge";
-import { Muted, timeCell, type EntityColumnSpec } from "@/lib/entity-list/columns";
+import {
+  Muted,
+  timeCell,
+  type EntityColumnSpec,
+} from "@/lib/entity-list/columns";
 import { mapHref, type MapListRow } from "./types";
 
 export const MAP_COLUMNS: EntityColumnSpec<MapListRow>[] = [
@@ -63,6 +67,17 @@ export const MAP_COLUMNS: EntityColumnSpec<MapListRow>[] = [
       header: "Boxes",
       filter: false,
       cell: (row) => <span className="tabular-nums">{row.box_count}</span>,
+    },
+  },
+  {
+    id: "section_count",
+    label: "Sections",
+    column: {
+      id: "section_count",
+      accessorKey: "section_count",
+      header: "Sections",
+      filter: false,
+      cell: (row) => <span className="tabular-nums">{row.section_count}</span>,
     },
   },
   {

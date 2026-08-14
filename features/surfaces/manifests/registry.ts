@@ -50,6 +50,7 @@ import { projectsManifest } from "./projects.manifest";
 import { messagesManifest } from "./messages.manifest";
 import { listsManifest } from "./lists.manifest";
 import { canvasManifest } from "./canvas.manifest";
+import { mapsManifest } from "./maps.manifest";
 import { aiResultsManifest } from "./ai-results.manifest";
 import { agentAdvancedEditorManifest } from "./agent-advanced-editor.manifest";
 import { mermaidEditorManifest } from "./mermaid-editor.manifest";
@@ -218,6 +219,7 @@ const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   messagesManifest,
   listsManifest,
   canvasManifest,
+  mapsManifest,
   aiResultsManifest,
   agentAdvancedEditorManifest,
   mermaidEditorManifest,

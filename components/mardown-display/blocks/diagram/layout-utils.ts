@@ -1,6 +1,6 @@
 import dagre from "dagre";
 // eslint-disable-next-line no-restricted-syntax -- imported only by InteractiveDiagramBlock, which every consumer loads via React.lazy/next/dynamic; React Flow stays STATIC in-gate per the code-splitting skill (rule 3).
-import { Node, Edge, Position, MarkerType } from "reactflow";
+import { type Node, type Edge, Position, MarkerType } from "@xyflow/react";
 
 export interface LayoutOptions {
   direction?: "TB" | "LR" | "BT" | "RL";

@@ -6,6 +6,15 @@ export interface DiagramNode {
   description?: string;
   details?: string;
   position?: { x: number; y: number };
+  /** True when this item is a visual section that contains other boxes. */
+  isGroup?: boolean;
+  /** Parent section id. Positions are relative to the section when present. */
+  parentId?: string;
+  /** Persisted section size; ignored for ordinary boxes. */
+  width?: number;
+  height?: number;
+  /** Border treatment for a visual section. */
+  groupStyle?: "solid" | "dashed" | "dotted";
   // Pedigree-specific fields
   gender?: "male" | "female" | "unknown";
   affected?: boolean;
@@ -29,6 +38,8 @@ export interface DiagramEdge {
   type?: string;
   color?: string;
   dashed?: boolean;
+  /** Richer replacement for `dashed`; legacy diagrams may still use either. */
+  lineStyle?: "solid" | "dashed" | "dotted";
   strokeWidth?: number;
   // Semantic relationship type (used for rendering decisions)
   relationship?:
@@ -126,6 +137,17 @@ export function parseDiagramJSON(content: string): DiagramData {
           position:
             (node.position as { x: number; y: number } | undefined) ||
             generateDefaultPosition(index, diagramData.type || "flowchart"),
+          isGroup: node.isGroup === true,
+          parentId:
+            typeof node.parentId === "string" ? node.parentId : undefined,
+          width: typeof node.width === "number" ? node.width : undefined,
+          height: typeof node.height === "number" ? node.height : undefined,
+          groupStyle:
+            node.groupStyle === "solid" ||
+            node.groupStyle === "dashed" ||
+            node.groupStyle === "dotted"
+              ? node.groupStyle
+              : undefined,
           // Pedigree fields
           gender: node.gender as DiagramNode["gender"],
           affected: node.affected as boolean | undefined,
@@ -164,6 +186,12 @@ export function parseDiagramJSON(content: string): DiagramData {
           type: (edge.type || "default") as string,
           color: edge.color as string | undefined,
           dashed: (edge.dashed as boolean) || false,
+          lineStyle:
+            edge.lineStyle === "solid" ||
+            edge.lineStyle === "dashed" ||
+            edge.lineStyle === "dotted"
+              ? edge.lineStyle
+              : undefined,
           strokeWidth: (edge.strokeWidth as number) || 2,
           relationship: edge.relationship as string | undefined,
           arrow: edge.arrow as boolean | undefined,
@@ -239,19 +267,32 @@ function generateDefaultPosition(
 export function validateDiagram(diagram: DiagramData): boolean {
   if (!diagram.title || !diagram.nodes || !Array.isArray(diagram.nodes))
     return false;
+  const nodeIds = new Set<string>();
   for (const node of diagram.nodes) {
     if (!node.id || !node.label) return false;
+    if (nodeIds.has(node.id)) return false;
+    nodeIds.add(node.id);
+  }
+  const byId = new Map(diagram.nodes.map((node) => [node.id, node]));
+  for (const node of diagram.nodes) {
+    if (!node.parentId) continue;
+    const parent = byId.get(node.parentId);
+    if (!parent?.isGroup || parent.id === node.id) return false;
+    const seen = new Set([node.id]);
+    let ancestor: DiagramNode | undefined = parent;
+    while (ancestor) {
+      if (seen.has(ancestor.id)) return false;
+      seen.add(ancestor.id);
+      ancestor = ancestor.parentId ? byId.get(ancestor.parentId) : undefined;
+    }
   }
   if (diagram.edges) {
+    const edgeIds = new Set<string>();
     for (const edge of diagram.edges) {
       if (!edge.source || !edge.target) return false;
-      const sourceExists = diagram.nodes.some(
-        (node) => node.id === edge.source,
-      );
-      const targetExists = diagram.nodes.some(
-        (node) => node.id === edge.target,
-      );
-      if (!sourceExists || !targetExists) return false;
+      if (edgeIds.has(edge.id)) return false;
+      edgeIds.add(edge.id);
+      if (!nodeIds.has(edge.source) || !nodeIds.has(edge.target)) return false;
     }
   }
   return true;

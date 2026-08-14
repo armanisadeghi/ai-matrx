@@ -5,9 +5,11 @@ import React, {
   useMemo,
   useEffect,
   useRef,
+  useId,
 } from "react";
 // eslint-disable-next-line no-restricted-syntax -- every consumer loads InteractiveDiagramBlock via React.lazy/next/dynamic (BlockComponentRegistry, CanvasRenderer, MindMapView, artifact-renderers); React Flow stays STATIC in-gate per the code-splitting skill (rule 3).
-import ReactFlow, {
+import {
+  ReactFlow,
   Node,
   Edge,
   Controls,
@@ -28,8 +30,13 @@ import ReactFlow, {
   useNodesInitialized,
   getNodesBounds,
   getViewportForBounds,
-} from "reactflow";
-import "reactflow/dist/style.css";
+  NodeResizer,
+  applyNodeChanges,
+  reconnectEdge,
+  type NodeChange,
+  type OnReconnect,
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
 import {
   Network,
   Maximize2,
@@ -61,6 +68,7 @@ import {
   Trash2,
   Pencil,
   Check,
+  Boxes,
 } from "lucide-react";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import IconButton from "@/components/official/IconButton";
@@ -72,11 +80,7 @@ import {
   getPedigreeLayout,
 } from "./layout-utils";
 import { getOrgChartRoleIcon, formatDiagramType } from "./ui-utils";
-import type {
-  DiagramData,
-  DiagramEdge,
-  DiagramNode,
-} from "./parseDiagramJSON";
+import type { DiagramData, DiagramEdge, DiagramNode } from "./parseDiagramJSON";
 import {
   PrintOptionsDialog,
   usePrintOptions,
@@ -256,8 +260,7 @@ const TimelineNode = ({
   data: Record<string, unknown>;
   selected: boolean;
 }) => {
-  const details =
-    typeof data.details === "string" ? data.details : undefined;
+  const details = typeof data.details === "string" ? data.details : undefined;
   const description =
     typeof data.description === "string" ? data.description : undefined;
 
@@ -511,6 +514,50 @@ const CustomNode = ({
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Visual section — React Flow v12 sub-flow/group node
+// ─────────────────────────────────────────────────────────────────────────────
+const GroupNode = ({
+  data,
+  selected,
+}: {
+  data: Record<string, unknown>;
+  selected: boolean;
+}) => {
+  const style =
+    data.groupStyle === "solid"
+      ? "border-solid"
+      : data.groupStyle === "dotted"
+        ? "border-dotted"
+        : "border-dashed";
+  const color = typeof data.color === "string" ? data.color : undefined;
+
+  return (
+    <div
+      className={`h-full w-full rounded-2xl border-2 ${style} bg-background/35 shadow-sm backdrop-blur-[1px] transition-colors ${
+        selected ? "border-primary ring-2 ring-primary/20" : "border-border/80"
+      }`}
+      style={
+        color
+          ? { borderColor: color, backgroundColor: `${color}0d` }
+          : undefined
+      }
+    >
+      <NodeResizer
+        isVisible={selected && data.editing === true}
+        minWidth={260}
+        minHeight={180}
+        lineClassName="!border-primary"
+        handleClassName="!h-2.5 !w-2.5 !border-primary !bg-background"
+      />
+      <div className="pointer-events-none absolute left-3 top-2 flex max-w-[calc(100%-1.5rem)] items-center gap-1.5 rounded-md bg-background/90 px-2 py-1 text-xs font-semibold text-foreground shadow-sm ring-1 ring-border/70">
+        <Boxes className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+        <span className="truncate">{String(data.label ?? "Section")}</span>
+      </div>
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 // NodeTypes registry — defined OUTSIDE render to prevent ReactFlow warning
 // ─────────────────────────────────────────────────────────────────────────────
 const nodeTypes: NodeTypes = {
@@ -518,6 +565,7 @@ const nodeTypes: NodeTypes = {
   pedigree: PedigreeNode as NodeTypes[string],
   timeline: TimelineNode as NodeTypes[string],
   erd: ERDNode as NodeTypes[string],
+  group: GroupNode as NodeTypes[string],
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -527,14 +575,20 @@ function getReactFlowNodeType(
   diagramType: string,
   nodeData: DiagramNode,
 ): string {
+  if (nodeData.isGroup) return "group";
   if (diagramType === "pedigree") return "pedigree";
   if (diagramType === "timeline") return "timeline";
   if (diagramType === "erd") return "erd";
   return "custom";
 }
 
-function buildReactFlowNodes(diagram: DiagramData): Node[] {
-  return diagram.nodes.map((node, index) => ({
+function buildReactFlowNodes(diagram: DiagramData, editing = false): Node[] {
+  // React Flow requires parents before children in the array for sub-flows.
+  const ordered = [...diagram.nodes].sort(
+    (a, b) => Number(Boolean(b.isGroup)) - Number(Boolean(a.isGroup)),
+  );
+
+  return ordered.map((node, index) => ({
     id: node.id,
     type: getReactFlowNodeType(diagram.type, node),
     position: node.position || {
@@ -543,6 +597,9 @@ function buildReactFlowNodes(diagram: DiagramData): Node[] {
     },
     data: {
       label: node.label,
+      isGroup: node.isGroup === true,
+      groupStyle: node.groupStyle ?? "dashed",
+      editing,
       nodeType: node.nodeType || node.type || "default",
       description: node.description,
       details: node.details,
@@ -559,6 +616,12 @@ function buildReactFlowNodes(diagram: DiagramData): Node[] {
       color: node.color,
       attributes: node.metadata?.attributes as string[] | undefined,
     },
+    parentId: node.parentId,
+    extent: node.parentId ? "parent" : undefined,
+    expandParent: Boolean(node.parentId),
+    style: node.isGroup
+      ? { width: node.width ?? 420, height: node.height ?? 260 }
+      : undefined,
   }));
 }
 
@@ -590,9 +653,11 @@ function buildReactFlowEdges(diagram: DiagramData): Edge[] {
           ? "6,3"
           : isConsanguineous
             ? "2,2"
-            : edge.dashed
-              ? "5,5"
-              : "none",
+            : edge.lineStyle === "dotted"
+              ? "2,5"
+              : edge.lineStyle === "dashed" || edge.dashed
+                ? "7,5"
+                : "none",
       };
 
       const showArrow = !hideArrows && !isMarriage && edge.arrow !== false;
@@ -603,7 +668,14 @@ function buildReactFlowEdges(diagram: DiagramData): Edge[] {
         target: edge.target,
         sourceHandle: "output",
         targetHandle: "input",
-        type: isPedigree && isMarriage ? "straight" : "default",
+        type:
+          isPedigree && isMarriage
+            ? "straight"
+            : edge.type === "straight" ||
+                edge.type === "step" ||
+                edge.type === "smoothstep"
+              ? edge.type
+              : "default",
         animated: edge.animated || false,
         markerEnd: showArrow
           ? {
@@ -621,6 +693,11 @@ function buildReactFlowEdges(diagram: DiagramData): Edge[] {
           fill: edge.color || "#6b7280",
         },
         labelBgStyle: { fill: "#ffffff", fillOpacity: 0.8, rx: 4, ry: 4 },
+        data: {
+          lineStyle: edge.lineStyle ?? (edge.dashed ? "dashed" : "solid"),
+          arrow: edge.arrow !== false,
+          edgeType: edge.type ?? "bezier",
+        },
       };
     });
 }
@@ -636,6 +713,10 @@ const DiagramFlow: React.FC<{
   setBackgroundVariant: (v: BackgroundVariant) => void;
   onExportImage: () => void;
   onNodeClick?: (node: DiagramNode) => void;
+  onSelectionChange?: (selection: {
+    kind: "box" | "section" | "arrow" | null;
+    id: string | null;
+  }) => void;
   /** Authoring mode is ON. Only ever true when `onDiagramChange` is wired. */
   editing?: boolean;
   onDiagramChange?: (next: DiagramData) => void;
@@ -647,19 +728,30 @@ const DiagramFlow: React.FC<{
   setBackgroundVariant,
   onExportImage,
   onNodeClick,
+  onSelectionChange,
   editing = false,
   onDiagramChange,
 }) => {
-  const { fitView, getNodes, getEdges } = useReactFlow();
+  const { fitView, getNodes, getEdges, screenToFlowPosition } = useReactFlow();
   const nodesInitialized = useNodesInitialized();
   const hasAutoLayoutApplied = useRef(false);
   const autoLayoutFrameRef = useRef<number | null>(null);
 
-  const initialNodes = useMemo(() => buildReactFlowNodes(diagram), [diagram]);
+  const initialNodes = useMemo(
+    () => buildReactFlowNodes(diagram, editing),
+    [diagram, editing],
+  );
   const initialEdges = useMemo(() => buildReactFlowEdges(diagram), [diagram]);
 
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [nodes, setNodes] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+
+  // Keep the React Flow document in lockstep when the host replaces the
+  // canonical diagram (notably an approved Surface write from an agent).
+  useEffect(() => {
+    setNodes(buildReactFlowNodes(diagram, editing));
+    setEdges(buildReactFlowEdges(diagram));
+  }, [diagram, editing, setNodes, setEdges]);
 
   // ── Authoring mode ────────────────────────────────────────────────────────
   // The ONE diagram renderer also authors. A second React Flow canvas whose
@@ -679,6 +771,7 @@ const DiagramFlow: React.FC<{
 
       const nodes: DiagramNode[] = rfNodes.map((rf) => {
         const data = rf.data as Record<string, unknown>;
+        const isGroup = data.isGroup === true;
         return {
           ...(priorNodes.get(rf.id) ?? { id: rf.id, label: rf.id }),
           id: rf.id,
@@ -687,21 +780,54 @@ const DiagramFlow: React.FC<{
             typeof data.description === "string" && data.description !== ""
               ? data.description
               : undefined,
+          nodeType:
+            typeof data.nodeType === "string" ? data.nodeType : undefined,
+          isGroup,
+          parentId: rf.parentId,
+          width: isGroup ? (rf.measured?.width ?? rf.width ?? 420) : undefined,
+          height: isGroup
+            ? (rf.measured?.height ?? rf.height ?? 260)
+            : undefined,
+          groupStyle:
+            data.groupStyle === "solid" ||
+            data.groupStyle === "dashed" ||
+            data.groupStyle === "dotted"
+              ? data.groupStyle
+              : undefined,
           position: { x: rf.position.x, y: rf.position.y },
         };
       });
 
-      const edges: DiagramEdge[] = rfEdges.map((rf) => ({
-        ...(priorEdges.get(rf.id) ?? {
+      const edges: DiagramEdge[] = rfEdges.map((rf) => {
+        const data = rf.data as Record<string, unknown> | undefined;
+        return {
+          ...(priorEdges.get(rf.id) ?? {
+            id: rf.id,
+            source: rf.source,
+            target: rf.target,
+          }),
           id: rf.id,
           source: rf.source,
           target: rf.target,
-        }),
-        id: rf.id,
-        source: rf.source,
-        target: rf.target,
-        label: typeof rf.label === "string" && rf.label !== "" ? rf.label : undefined,
-      }));
+          label:
+            typeof rf.label === "string" && rf.label !== ""
+              ? rf.label
+              : undefined,
+          type:
+            data?.edgeType === "straight" ||
+            data?.edgeType === "step" ||
+            data?.edgeType === "smoothstep"
+              ? data.edgeType
+              : "bezier",
+          lineStyle:
+            data?.lineStyle === "dashed" || data?.lineStyle === "dotted"
+              ? data.lineStyle
+              : "solid",
+          dashed: data?.lineStyle === "dashed",
+          animated: rf.animated === true,
+          arrow: data?.arrow !== false,
+        };
+      });
 
       onDiagramChange({ ...diagram, nodes, edges });
     },
@@ -709,81 +835,268 @@ const DiagramFlow: React.FC<{
   );
 
   const onConnect = useCallback(
-    (params: Connection) =>
-      setEdges((eds) => {
-        // A hand-drawn arrow needs a stable id of its own: addEdge's generated
-        // ids are positional and would churn on every reload.
-        const next = addEdge(
-          { ...params, id: `e-${crypto.randomUUID().slice(0, 8)}` },
-          eds,
-        );
-        commit(getNodes(), next);
-        return next;
-      }),
-    [setEdges, commit, getNodes],
+    (params: Connection) => {
+      // A hand-drawn arrow needs a stable id of its own: addEdge's generated
+      // ids are positional and would churn on every reload.
+      const next = addEdge(
+        {
+          ...params,
+          id: `e-${crypto.randomUUID().slice(0, 8)}`,
+          type: "default",
+          markerEnd: { type: MarkerType.ArrowClosed, color: "#6b7280" },
+          data: { lineStyle: "solid", arrow: true, edgeType: "bezier" },
+        },
+        getEdges(),
+      );
+      setEdges(next);
+      commit(getNodes(), next);
+    },
+    [setEdges, commit, getNodes, getEdges],
+  );
+
+  const onReconnect = useCallback<OnReconnect>(
+    (oldEdge, connection) => {
+      const next = reconnectEdge(oldEdge, connection, getEdges());
+      setEdges(next);
+      commit(getNodes(), next);
+    },
+    [commit, getEdges, getNodes, setEdges],
   );
 
   /** Add a box near the middle of what the user is currently looking at. */
   const addBox = useCallback(() => {
     const id = `n-${crypto.randomUUID().slice(0, 8)}`;
     const existing = getNodes();
-    const anchor = existing[existing.length - 1]?.position ?? { x: 0, y: 0 };
+    const selectedGroup = existing.find(
+      (node) =>
+        node.id === selectedNodeId &&
+        (node.data as Record<string, unknown>).isGroup === true,
+    );
+    const viewportCenter = screenToFlowPosition({
+      x: window.innerWidth * 0.58,
+      y: window.innerHeight * 0.42,
+    });
     const newNode: Node = {
       id,
       type: getReactFlowNodeType(diagram.type, { id, label: "New box" }),
-      position: { x: anchor.x + 60, y: anchor.y + 140 },
+      position: selectedGroup ? { x: 28, y: 72 } : viewportCenter,
       data: { label: "New box", diagramType: diagram.type },
+      parentId: selectedGroup?.id,
+      extent: selectedGroup ? "parent" : undefined,
+      expandParent: Boolean(selectedGroup),
     };
-    setNodes((ns) => {
-      const next = [...ns, newNode];
-      commit(next, getEdges());
-      return next;
-    });
+    const next = [...existing, newNode];
+    setNodes(next);
+    commit(next, getEdges());
     setSelectedNodeId(id);
     setSelectedEdgeId(null);
-  }, [getNodes, getEdges, setNodes, commit, diagram.type]);
+    onSelectionChange?.({ kind: "box", id });
+  }, [
+    getNodes,
+    getEdges,
+    setNodes,
+    commit,
+    diagram.type,
+    selectedNodeId,
+    onSelectionChange,
+    screenToFlowPosition,
+  ]);
+
+  /** Add a resizable visual section using React Flow v12 sub-flow semantics. */
+  const addSection = useCallback(() => {
+    const id = `g-${crypto.randomUUID().slice(0, 8)}`;
+    const existing = getNodes();
+    const viewportCenter = screenToFlowPosition({
+      x: window.innerWidth * 0.55,
+      y: window.innerHeight * 0.38,
+    });
+    const section: Node = {
+      id,
+      type: "group",
+      position: viewportCenter,
+      data: {
+        label: "New section",
+        isGroup: true,
+        groupStyle: "dashed",
+        editing: true,
+      },
+      style: { width: 420, height: 260 },
+    };
+    const next = [section, ...existing];
+    setNodes(next);
+    commit(next, getEdges());
+    setSelectedNodeId(id);
+    setSelectedEdgeId(null);
+    onSelectionChange?.({ kind: "section", id });
+  }, [
+    getNodes,
+    getEdges,
+    setNodes,
+    commit,
+    onSelectionChange,
+    screenToFlowPosition,
+  ]);
 
   /** Rename / re-describe the selected box, live. */
   const patchSelectedNode = useCallback(
-    (patch: { label?: string; description?: string }) => {
+    (patch: {
+      label?: string;
+      description?: string;
+      nodeType?: string;
+      groupStyle?: "solid" | "dashed" | "dotted";
+    }) => {
       if (!selectedNodeId) return;
-      setNodes((ns) => {
-        const next = ns.map((n) =>
-          n.id === selectedNodeId ? { ...n, data: { ...n.data, ...patch } } : n,
-        );
-        commit(next, getEdges());
-        return next;
-      });
+      const next = getNodes().map((node) =>
+        node.id === selectedNodeId
+          ? { ...node, data: { ...node.data, ...patch } }
+          : node,
+      );
+      setNodes(next);
+      commit(next, getEdges());
     },
-    [selectedNodeId, setNodes, getEdges, commit],
+    [selectedNodeId, setNodes, getNodes, getEdges, commit],
   );
 
   const deleteSelectedNode = useCallback(() => {
     if (!selectedNodeId) return;
-    const nextNodes = getNodes().filter((n) => n.id !== selectedNodeId);
-    // An arrow with no box on one end is not a thing the user can see or fix,
-    // so it goes with the box rather than becoming an invisible orphan.
-    const nextEdges = getEdges().filter(
-      (e) => e.source !== selectedNodeId && e.target !== selectedNodeId,
-    );
+    const currentNodes = getNodes();
+    const selected = currentNodes.find((node) => node.id === selectedNodeId);
+    const selectedIsGroup = selected?.data.isGroup === true;
+    const nextNodes = currentNodes
+      .filter((node) => node.id !== selectedNodeId)
+      .map((node) => {
+        if (!selectedIsGroup || node.parentId !== selectedNodeId || !selected)
+          return node;
+        // Removing a section never destroys its boxes. Lift them back onto
+        // the canvas and preserve where the user placed them visually.
+        return {
+          ...node,
+          parentId: undefined,
+          extent: undefined,
+          expandParent: false,
+          position: {
+            x: selected.position.x + node.position.x,
+            y: selected.position.y + node.position.y,
+          },
+        };
+      });
+    const nextEdges = selectedIsGroup
+      ? getEdges()
+      : getEdges().filter(
+          (edge) =>
+            edge.source !== selectedNodeId && edge.target !== selectedNodeId,
+        );
     setNodes(nextNodes);
     setEdges(nextEdges);
     setSelectedNodeId(null);
     commit(nextNodes, nextEdges);
-  }, [selectedNodeId, getNodes, getEdges, setNodes, setEdges, commit]);
+    onSelectionChange?.({ kind: null, id: null });
+  }, [
+    selectedNodeId,
+    getNodes,
+    getEdges,
+    setNodes,
+    setEdges,
+    commit,
+    onSelectionChange,
+  ]);
+
+  const moveSelectedBoxToSection = useCallback(
+    (parentId: string | null) => {
+      if (!selectedNodeId) return;
+      const current = getNodes();
+      const selected = current.find((node) => node.id === selectedNodeId);
+      if (!selected || selected.data.isGroup === true) return;
+      const oldParent = selected.parentId
+        ? current.find((node) => node.id === selected.parentId)
+        : undefined;
+      const newParent = parentId
+        ? current.find(
+            (node) => node.id === parentId && node.data.isGroup === true,
+          )
+        : undefined;
+      if (parentId && !newParent)
+        throw new Error(`Section ${parentId} is not on this map.`);
+
+      const absolute = oldParent
+        ? {
+            x: oldParent.position.x + selected.position.x,
+            y: oldParent.position.y + selected.position.y,
+          }
+        : selected.position;
+      const position = newParent
+        ? {
+            x: Math.max(24, absolute.x - newParent.position.x),
+            y: Math.max(64, absolute.y - newParent.position.y),
+          }
+        : absolute;
+      const next = current.map((node) =>
+        node.id === selectedNodeId
+          ? {
+              ...node,
+              parentId: newParent?.id,
+              extent: newParent ? ("parent" as const) : undefined,
+              expandParent: Boolean(newParent),
+              position,
+            }
+          : node,
+      );
+      setNodes(next);
+      commit(next, getEdges());
+    },
+    [selectedNodeId, setNodes, getNodes, getEdges, commit],
+  );
 
   const patchSelectedEdge = useCallback(
-    (label: string) => {
+    (patch: {
+      label?: string;
+      lineStyle?: "solid" | "dashed" | "dotted";
+      edgeType?: "bezier" | "smoothstep" | "step" | "straight";
+      animated?: boolean;
+      arrow?: boolean;
+    }) => {
       if (!selectedEdgeId) return;
-      setEdges((es) => {
-        const next = es.map((e) =>
-          e.id === selectedEdgeId ? { ...e, label } : e,
-        );
-        commit(getNodes(), next);
-        return next;
+      const next = getEdges().map((edge) => {
+        if (edge.id !== selectedEdgeId) return edge;
+        const data = {
+          ...(edge.data as Record<string, unknown> | undefined),
+          ...(patch.lineStyle ? { lineStyle: patch.lineStyle } : {}),
+          ...(patch.edgeType ? { edgeType: patch.edgeType } : {}),
+          ...(patch.arrow !== undefined ? { arrow: patch.arrow } : {}),
+        };
+        const lineStyle =
+          data.lineStyle === "dashed" || data.lineStyle === "dotted"
+            ? data.lineStyle
+            : "solid";
+        const arrow = data.arrow !== false;
+        return {
+          ...edge,
+          ...(patch.label !== undefined ? { label: patch.label } : {}),
+          ...(patch.edgeType
+            ? {
+                type: patch.edgeType === "bezier" ? "default" : patch.edgeType,
+              }
+            : {}),
+          ...(patch.animated !== undefined ? { animated: patch.animated } : {}),
+          data,
+          markerEnd: arrow
+            ? { type: MarkerType.ArrowClosed, color: "#6b7280" }
+            : undefined,
+          style: {
+            ...edge.style,
+            strokeDasharray:
+              lineStyle === "dotted"
+                ? "2,5"
+                : lineStyle === "dashed"
+                  ? "7,5"
+                  : "none",
+          },
+        };
       });
+      setEdges(next);
+      commit(getNodes(), next);
     },
-    [selectedEdgeId, setEdges, getNodes, commit],
+    [selectedEdgeId, setEdges, getNodes, getEdges, commit],
   );
 
   const deleteSelectedEdge = useCallback(() => {
@@ -792,22 +1105,35 @@ const DiagramFlow: React.FC<{
     setEdges(nextEdges);
     setSelectedEdgeId(null);
     commit(getNodes(), nextEdges);
-  }, [selectedEdgeId, getEdges, setEdges, getNodes, commit]);
+    onSelectionChange?.({ kind: null, id: null });
+  }, [selectedEdgeId, getEdges, setEdges, getNodes, commit, onSelectionChange]);
 
-  const handleEditNodeClick = useCallback((_e: React.MouseEvent, node: Node) => {
-    setSelectedEdgeId(null);
-    setSelectedNodeId(node.id);
-  }, []);
+  const handleEditNodeClick = useCallback(
+    (_e: React.MouseEvent, node: Node) => {
+      setSelectedEdgeId(null);
+      setSelectedNodeId(node.id);
+      onSelectionChange?.({
+        kind: node.data.isGroup === true ? "section" : "box",
+        id: node.id,
+      });
+    },
+    [onSelectionChange],
+  );
 
-  const handleEditEdgeClick = useCallback((_e: React.MouseEvent, edge: Edge) => {
-    setSelectedNodeId(null);
-    setSelectedEdgeId(edge.id);
-  }, []);
+  const handleEditEdgeClick = useCallback(
+    (_e: React.MouseEvent, edge: Edge) => {
+      setSelectedNodeId(null);
+      setSelectedEdgeId(edge.id);
+      onSelectionChange?.({ kind: "arrow", id: edge.id });
+    },
+    [onSelectionChange],
+  );
 
   const handlePaneClick = useCallback(() => {
     setSelectedNodeId(null);
     setSelectedEdgeId(null);
-  }, []);
+    onSelectionChange?.({ kind: null, id: null });
+  }, [onSelectionChange]);
 
   /** Dragging a box IS an edit — positions are the map's layout. */
   const handleNodeDragStop = useCallback(() => {
@@ -822,6 +1148,36 @@ const DiagramFlow: React.FC<{
   const selectedEdge = editing
     ? edges.find((e) => e.id === selectedEdgeId)
     : undefined;
+  const selectedIsSection = selectedNode?.data.isGroup === true;
+  const sections = editing
+    ? nodes.filter((node) => node.data.isGroup === true)
+    : [];
+
+  useEffect(() => {
+    setNodes((current) =>
+      current.map((node) =>
+        node.data.isGroup === true
+          ? { ...node, data: { ...node.data, editing } }
+          : node,
+      ),
+    );
+  }, [editing, setNodes]);
+
+  const handleNodesChange = useCallback(
+    (changes: NodeChange<Node>[]) => {
+      const next = applyNodeChanges(changes, getNodes());
+      setNodes(next);
+      if (
+        editing &&
+        changes.some(
+          (change) => change.type === "dimensions" && change.resizing === false,
+        )
+      ) {
+        commit(next, getEdges());
+      }
+    },
+    [setNodes, editing, commit, getNodes, getEdges],
+  );
 
   // Opt-in node-click bridge (e.g. mind-map node → source card / Ask tutor).
   // Only wired when a consumer passes `onNodeClick`; other consumers are
@@ -980,11 +1336,11 @@ const DiagramFlow: React.FC<{
   }, [getNodes, getEdges, setNodes, commit, fitViewAfterLayout]);
 
   const resetLayout = useCallback(() => {
-    setNodes(buildReactFlowNodes(diagram));
+    setNodes(buildReactFlowNodes(diagram, editing));
     setEdges(buildReactFlowEdges(diagram));
     fitViewAfterLayout();
     hasAutoLayoutApplied.current = true;
-  }, [diagram, setNodes, setEdges, fitViewAfterLayout]);
+  }, [diagram, editing, setNodes, setEdges, fitViewAfterLayout]);
 
   // Re-run auto layout when diagram data changes.
   //
@@ -1011,7 +1367,15 @@ const DiagramFlow: React.FC<{
       diagram.nodes.every((n) => n.position)
     ) {
       hasAutoLayoutApplied.current = true;
-      return undefined;
+      autoLayoutFrameRef.current = requestAnimationFrame(() => {
+        fitView({ duration: 450, padding: 0.22 });
+      });
+      return () => {
+        if (autoLayoutFrameRef.current !== null) {
+          cancelAnimationFrame(autoLayoutFrameRef.current);
+          autoLayoutFrameRef.current = null;
+        }
+      };
     }
 
     autoLayoutFrameRef.current = requestAnimationFrame(() => {
@@ -1027,22 +1391,39 @@ const DiagramFlow: React.FC<{
         autoLayoutFrameRef.current = null;
       }
     };
-  }, [nodesInitialized, applyAutoLayout, getNodes, diagram, onDiagramChange]);
+  }, [
+    nodesInitialized,
+    applyAutoLayout,
+    fitView,
+    getNodes,
+    diagram,
+    onDiagramChange,
+  ]);
 
   return (
     <ReactFlow
       nodes={nodes}
       edges={edges}
-      onNodesChange={onNodesChange}
+      onNodesChange={handleNodesChange}
       onEdgesChange={onEdgesChange}
       onConnect={onConnect}
+      onReconnect={onReconnect}
       onNodeClick={
-        editing ? handleEditNodeClick : onNodeClick ? handleNodeClick : undefined
+        editing
+          ? handleEditNodeClick
+          : onNodeClick
+            ? handleNodeClick
+            : undefined
       }
       onEdgeClick={editing ? handleEditEdgeClick : undefined}
       onPaneClick={editing ? handlePaneClick : undefined}
       onNodeDragStop={editing ? handleNodeDragStop : undefined}
       nodeTypes={nodeTypes}
+      nodesDraggable={editing}
+      nodesConnectable={editing}
+      edgesReconnectable={editing}
+      elementsSelectable={editing || Boolean(onNodeClick)}
+      deleteKeyCode={null}
       fitView={false}
       proOptions={{ hideAttribution: true }}
       className={`bg-gray-50 dark:bg-gray-900 ${onNodeClick || editing ? "[&_.react-flow__node]:cursor-pointer" : ""}`}
@@ -1087,26 +1468,53 @@ const DiagramFlow: React.FC<{
       {editing && (
         <Panel
           position="top-left"
-          className="w-[248px] rounded-lg border border-border bg-card p-2.5 shadow-lg"
+          className="max-h-[calc(100%-24px)] w-[286px] overflow-y-auto rounded-xl border border-border/80 bg-card/95 p-3 shadow-xl backdrop-blur"
         >
-          <button
-            type="button"
-            onClick={addBox}
-            className="flex w-full items-center justify-center gap-1.5 rounded-md bg-primary px-2 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            Add a box
-          </button>
+          <div className="mb-2.5 flex items-center gap-2">
+            <div className="rounded-lg bg-primary/10 p-1.5 text-primary">
+              <Pencil className="h-3.5 w-3.5" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-foreground">
+                Build your map
+              </p>
+              <p className="text-[10px] text-muted-foreground">
+                Everything saves as you work
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-1.5">
+            <button
+              type="button"
+              onClick={addBox}
+              className="flex items-center justify-center gap-1.5 rounded-lg bg-primary px-2 py-2 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Add box
+            </button>
+            <button
+              type="button"
+              onClick={addSection}
+              className="flex items-center justify-center gap-1.5 rounded-lg border border-border bg-background px-2 py-2 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+            >
+              <Boxes className="h-3.5 w-3.5" />
+              Add section
+            </button>
+          </div>
 
           {!selectedNode && !selectedEdge && (
             <p className="mt-2 text-[11px] leading-snug text-muted-foreground">
-              Click a box to rename it. Drag a box to move it. To draw an arrow,
-              drag from the small dot on one box onto another box.
+              Click anything to shape it. Drag boxes to move them. Draw an arrow
+              by dragging from the small dot on one box to another.
             </p>
           )}
 
           {selectedNode && (
-            <div className="mt-2.5 space-y-2">
+            <div className="mt-3 space-y-2.5 border-t border-border/70 pt-3">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                {selectedIsSection ? "Section" : "Box"}
+              </p>
               <label className="block text-[11px] font-medium text-foreground">
                 Name
                 <input
@@ -1120,35 +1528,112 @@ const DiagramFlow: React.FC<{
                   placeholder="What is this step?"
                 />
               </label>
-              <label className="block text-[11px] font-medium text-foreground">
-                Notes <span className="text-muted-foreground">(optional)</span>
-                <textarea
-                  value={
-                    typeof selectedNode.data.description === "string"
-                      ? selectedNode.data.description
-                      : ""
-                  }
-                  onChange={(e) =>
-                    patchSelectedNode({ description: e.target.value })
-                  }
-                  rows={2}
-                  className="mt-1 w-full resize-none rounded border border-border bg-background px-2 py-1 text-xs text-foreground outline-none focus:border-primary"
-                  placeholder="A short line of detail"
-                />
-              </label>
+              {selectedIsSection ? (
+                <label className="block text-[11px] font-medium text-foreground">
+                  Border
+                  <select
+                    value={
+                      selectedNode.data.groupStyle === "solid" ||
+                      selectedNode.data.groupStyle === "dotted"
+                        ? selectedNode.data.groupStyle
+                        : "dashed"
+                    }
+                    onChange={(event) =>
+                      patchSelectedNode({
+                        groupStyle: event.target.value as
+                          "solid" | "dashed" | "dotted",
+                      })
+                    }
+                    className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs text-foreground outline-none focus:border-primary"
+                  >
+                    <option value="dashed">Dashed</option>
+                    <option value="dotted">Dotted</option>
+                    <option value="solid">Solid</option>
+                  </select>
+                </label>
+              ) : (
+                <>
+                  <label className="block text-[11px] font-medium text-foreground">
+                    Notes{" "}
+                    <span className="text-muted-foreground">(optional)</span>
+                    <textarea
+                      value={
+                        typeof selectedNode.data.description === "string"
+                          ? selectedNode.data.description
+                          : ""
+                      }
+                      onChange={(event) =>
+                        patchSelectedNode({ description: event.target.value })
+                      }
+                      rows={2}
+                      className="mt-1 w-full resize-none rounded-md border border-border bg-background px-2 py-1.5 text-xs text-foreground outline-none focus:border-primary"
+                      placeholder="A short line of detail"
+                    />
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="block text-[11px] font-medium text-foreground">
+                      Style
+                      <select
+                        value={
+                          typeof selectedNode.data.nodeType === "string"
+                            ? selectedNode.data.nodeType
+                            : "default"
+                        }
+                        onChange={(event) =>
+                          patchSelectedNode({ nodeType: event.target.value })
+                        }
+                        className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs text-foreground outline-none focus:border-primary"
+                      >
+                        <option value="default">Plain</option>
+                        <option value="start">Start</option>
+                        <option value="process">Step</option>
+                        <option value="decision">Decision</option>
+                        <option value="data">Information</option>
+                        <option value="end">Finish</option>
+                      </select>
+                    </label>
+                    <label className="block text-[11px] font-medium text-foreground">
+                      Section
+                      <select
+                        value={selectedNode.parentId ?? "none"}
+                        onChange={(event) =>
+                          moveSelectedBoxToSection(
+                            event.target.value === "none"
+                              ? null
+                              : event.target.value,
+                          )
+                        }
+                        className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs text-foreground outline-none focus:border-primary"
+                      >
+                        <option value="none">No section</option>
+                        {sections.map((section) => (
+                          <option key={section.id} value={section.id}>
+                            {String(section.data.label ?? "Section")}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                </>
+              )}
               <button
                 type="button"
                 onClick={deleteSelectedNode}
                 className="flex w-full items-center justify-center gap-1.5 rounded-md border border-destructive/40 px-2 py-1.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10"
               >
                 <Trash2 className="h-3.5 w-3.5" />
-                Remove this box
+                {selectedIsSection
+                  ? "Remove section (keep boxes)"
+                  : "Remove box"}
               </button>
             </div>
           )}
 
           {selectedEdge && (
-            <div className="mt-2.5 space-y-2">
+            <div className="mt-3 space-y-2.5 border-t border-border/70 pt-3">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                Arrow
+              </p>
               <label className="block text-[11px] font-medium text-foreground">
                 Arrow label
                 <input
@@ -1157,18 +1642,100 @@ const DiagramFlow: React.FC<{
                       ? selectedEdge.label
                       : ""
                   }
-                  onChange={(e) => patchSelectedEdge(e.target.value)}
-                  className="mt-1 w-full rounded border border-border bg-background px-2 py-1 text-xs text-foreground outline-none focus:border-primary"
+                  onChange={(event) =>
+                    patchSelectedEdge({ label: event.target.value })
+                  }
+                  className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs text-foreground outline-none focus:border-primary"
                   placeholder="e.g. sends to"
                 />
               </label>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="block text-[11px] font-medium text-foreground">
+                  Path
+                  <select
+                    value={
+                      selectedEdge.data?.edgeType === "smoothstep" ||
+                      selectedEdge.data?.edgeType === "step" ||
+                      selectedEdge.data?.edgeType === "straight"
+                        ? selectedEdge.data.edgeType
+                        : "bezier"
+                    }
+                    onChange={(event) =>
+                      patchSelectedEdge({
+                        edgeType: event.target.value as
+                          "bezier" | "smoothstep" | "step" | "straight",
+                      })
+                    }
+                    className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs text-foreground outline-none focus:border-primary"
+                  >
+                    <option value="bezier">Curved</option>
+                    <option value="smoothstep">Rounded</option>
+                    <option value="step">Stepped</option>
+                    <option value="straight">Straight</option>
+                  </select>
+                </label>
+                <label className="block text-[11px] font-medium text-foreground">
+                  Line
+                  <select
+                    value={
+                      selectedEdge.data?.lineStyle === "dashed" ||
+                      selectedEdge.data?.lineStyle === "dotted"
+                        ? selectedEdge.data.lineStyle
+                        : "solid"
+                    }
+                    onChange={(event) =>
+                      patchSelectedEdge({
+                        lineStyle: event.target.value as
+                          "solid" | "dashed" | "dotted",
+                      })
+                    }
+                    className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs text-foreground outline-none focus:border-primary"
+                  >
+                    <option value="solid">Solid</option>
+                    <option value="dashed">Dashed</option>
+                    <option value="dotted">Dotted</option>
+                  </select>
+                </label>
+              </div>
+              <div className="grid grid-cols-2 gap-1.5">
+                <button
+                  type="button"
+                  onClick={() =>
+                    patchSelectedEdge({ animated: !selectedEdge.animated })
+                  }
+                  className={`rounded-md border px-2 py-1.5 text-[11px] font-medium transition-colors ${
+                    selectedEdge.animated
+                      ? "border-primary/40 bg-primary/10 text-primary"
+                      : "border-border text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  {selectedEdge.animated ? "Motion on" : "Motion off"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    patchSelectedEdge({
+                      arrow: selectedEdge.data?.arrow === false,
+                    })
+                  }
+                  className={`rounded-md border px-2 py-1.5 text-[11px] font-medium transition-colors ${
+                    selectedEdge.data?.arrow !== false
+                      ? "border-primary/40 bg-primary/10 text-primary"
+                      : "border-border text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  {selectedEdge.data?.arrow !== false
+                    ? "Arrowhead on"
+                    : "Arrowhead off"}
+                </button>
+              </div>
               <button
                 type="button"
                 onClick={deleteSelectedEdge}
                 className="flex w-full items-center justify-center gap-1.5 rounded-md border border-destructive/40 px-2 py-1.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10"
               >
                 <Trash2 className="h-3.5 w-3.5" />
-                Remove this arrow
+                Remove arrow
               </button>
             </div>
           )}
@@ -1436,6 +2003,13 @@ interface InteractiveDiagramBlockProps {
    * "Ask tutor about this" affordance.
    */
   onNodeClick?: (node: DiagramNode) => void;
+  /** Open directly in authoring mode for dedicated editor surfaces. */
+  defaultEditing?: boolean;
+  /** Reports the currently focused box, section, or arrow to the host surface. */
+  onSelectionChange?: (selection: {
+    kind: "box" | "section" | "arrow" | null;
+    id: string | null;
+  }) => void;
   /**
    * Opt-in AUTHORING. When set, the block offers an Edit toggle and calls this
    * with the whole updated diagram on every change (rename, add, delete, draw
@@ -1452,23 +2026,28 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
   diagram,
   taskId,
   onNodeClick,
+  defaultEditing = false,
+  onSelectionChange,
   onDiagramChange,
 }) => {
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(defaultEditing);
   const canEdit = Boolean(onDiagramChange);
   const [showMiniMap, setShowMiniMap] = useState(false);
   const [backgroundVariant, setBackgroundVariant] = useState<BackgroundVariant>(
     BackgroundVariant.Dots,
   );
   const { open: openCanvas } = useCanvas();
-  const diagramContainerRef = useRef<HTMLDivElement>(null);
+  const diagramContainerId = useId();
+  const getDiagramElement = useCallback(
+    () => document.getElementById(diagramContainerId),
+    [diagramContainerId],
+  );
 
   // Build printer — stable unless diagram type or title changes
   const diagramPrinter = useMemo(
-    () => createDiagramPrinter(() => diagramContainerRef.current, diagram),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [diagram.title, diagram.type],
+    () => createDiagramPrinter(getDiagramElement, diagram),
+    [getDiagramElement, diagram],
   );
 
   const {
@@ -1488,6 +2067,12 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
     a.click();
     URL.revokeObjectURL(url);
   }, [diagram]);
+
+  const toggleEditing = () => {
+    const next = !editing;
+    setEditing(next);
+    if (!next) onSelectionChange?.({ kind: null, id: null });
+  };
 
   // Fallback image export (used if DiagramFlow can't do it)
   const handleExportImage = useCallback(() => {
@@ -1588,7 +2173,7 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
                   <IconButton
                     icon={editing ? Check : Pencil}
                     tooltip={editing ? "Done editing" : "Edit this map"}
-                    onClick={() => setEditing((v) => !v)}
+                    onClick={toggleEditing}
                     size="sm"
                     className={
                       editing
@@ -1660,7 +2245,7 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
                       <IconButton
                         icon={editing ? Check : Pencil}
                         tooltip={editing ? "Done editing" : "Edit this map"}
-                        onClick={() => setEditing((v) => !v)}
+                        onClick={toggleEditing}
                         size="sm"
                         className={
                           editing
@@ -1714,7 +2299,7 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
 
             {/* ReactFlow Container */}
             <div
-              ref={diagramContainerRef}
+              id={diagramContainerId}
               className={`${isFullScreen ? "flex-1 min-h-0" : "h-[600px]"} bg-textured rounded-xl border border-border overflow-hidden`}
             >
               <ReactFlowProvider>
@@ -1726,6 +2311,7 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
                   setBackgroundVariant={setBackgroundVariant}
                   onExportImage={handleExportImage}
                   onNodeClick={onNodeClick}
+                  onSelectionChange={onSelectionChange}
                   editing={canEdit && editing}
                   onDiagramChange={onDiagramChange}
                 />

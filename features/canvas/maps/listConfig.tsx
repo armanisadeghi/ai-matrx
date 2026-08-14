@@ -52,7 +52,7 @@ export const mapListConfig: EntityListConfig<MapListRow> = {
     rowKind: "map",
     listKind: "map-list",
     humanRow: (row) =>
-      `${row.title} — ${row.box_count} boxes, ${row.arrow_count} arrows, edited ${relativeTime(row.updated_at)}`,
+      `${row.title} — ${row.box_count} boxes, ${row.section_count} sections, ${row.arrow_count} arrows, edited ${relativeTime(row.updated_at)}`,
     showRow: false,
     showToolbar: false,
   },

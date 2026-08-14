@@ -38,17 +38,20 @@ const SORTABLE: Record<string, string> = {
   updated_at: "updated_at",
   created_at: "created_at",
   box_count: "updated_at", // derived client-side; fall back to a real column
+  section_count: "updated_at",
   arrow_count: "updated_at",
 };
 
 function toRow(raw: Record<string, unknown>): MapListRow {
-  const title = typeof raw.title === "string" && raw.title ? raw.title : "Untitled map";
+  const title =
+    typeof raw.title === "string" && raw.title ? raw.title : "Untitled map";
   const diagram = diagramFromCanvasContent(raw.content, title);
   return {
     id: String(raw.id),
     title,
     description: typeof raw.description === "string" ? raw.description : null,
-    box_count: diagram?.nodes.length ?? 0,
+    box_count: diagram?.nodes.filter((node) => !node.isGroup).length ?? 0,
+    section_count: diagram?.nodes.filter((node) => node.isGroup).length ?? 0,
     arrow_count: diagram?.edges.length ?? 0,
     is_favorited: raw.is_favorited === true,
     is_archived: raw.is_archived === true,
@@ -158,7 +161,11 @@ export async function createMap(
 
 export async function getMap(
   id: string,
-): Promise<{ row: MapListRow | null; diagram: DiagramData | null; error: string | null }> {
+): Promise<{
+  row: MapListRow | null;
+  diagram: DiagramData | null;
+  error: string | null;
+}> {
   const { data, error } = await canvasItemsService.getById(id);
   if (error || !data) {
     return {
@@ -244,12 +251,14 @@ export async function deleteMap(id: string): Promise<{ error: string | null }> {
   return { error: error ? (error.message ?? String(error)) : null };
 }
 
-export async function duplicateMap(
-  id: string,
-): Promise<CreateMapResult> {
+export async function duplicateMap(id: string): Promise<CreateMapResult> {
   const { diagram, row, error } = await getMap(id);
   if (error || !diagram || !row) {
-    return { id: null, isDuplicate: false, error: error ?? "Could not copy that map." };
+    return {
+      id: null,
+      isDuplicate: false,
+      error: error ?? "Could not copy that map.",
+    };
   }
   const title = `${row.title} (copy)`;
   return createMap(title, { ...diagram, title });

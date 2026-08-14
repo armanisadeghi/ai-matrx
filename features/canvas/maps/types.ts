@@ -26,6 +26,8 @@ export interface MapListRow {
   description: string | null;
   /** Boxes on the map — the one number that says how big it is. */
   box_count: number;
+  /** Visual sections that organize boxes without adding workflow behavior. */
+  section_count: number;
   arrow_count: number;
   is_favorited: boolean;
   is_archived: boolean;
@@ -95,7 +97,11 @@ export function draftMapFromLines(title: string, text: string): DiagramData {
       let fromId = idFor(chain[0]);
       for (const step of chain.slice(1)) {
         const toId = idFor(step);
-        edges.push({ id: `e-${edges.length + 1}`, source: fromId, target: toId });
+        edges.push({
+          id: `e-${edges.length + 1}`,
+          source: fromId,
+          target: toId,
+        });
         fromId = toId;
       }
       previousId = fromId;
@@ -105,7 +111,11 @@ export function draftMapFromLines(title: string, text: string): DiagramData {
     // A plain line is the next step after the previous one.
     const id = idFor(line);
     if (previousId && previousId !== id) {
-      edges.push({ id: `e-${edges.length + 1}`, source: previousId, target: id });
+      edges.push({
+        id: `e-${edges.length + 1}`,
+        source: previousId,
+        target: id,
+      });
     }
     previousId = id;
   }
@@ -132,7 +142,8 @@ export function diagramFromCanvasContent(
   const candidate = data as Partial<DiagramData>;
   if (!Array.isArray(candidate.nodes)) return null;
   return {
-    title: typeof candidate.title === "string" ? candidate.title : fallbackTitle,
+    title:
+      typeof candidate.title === "string" ? candidate.title : fallbackTitle,
     description: candidate.description,
     type: typeof candidate.type === "string" ? candidate.type : "flowchart",
     nodes: candidate.nodes,
