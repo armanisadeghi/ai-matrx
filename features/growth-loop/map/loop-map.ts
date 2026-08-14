@@ -152,7 +152,7 @@ export const STAGES: LoopStage[] = [
     pipes: {
       code: {
         state: "live",
-        note: "research_refresh_dispatch is registered in system_task_runner and runs on the scheduler — 394 runs / 2 failures live on 2026-08-13. A run no longer needs a click.",
+        note: "research_refresh_dispatch is registered in system_task_runner and scheduled — 486 runs / 2 failures live on 2026-08-13. run_pipeline no longer needs a click.",
         ref: "aidream/aidream/services/research/pipeline.py#run_pipeline",
       },
       human: {
@@ -286,7 +286,7 @@ export const STAGES: LoopStage[] = [
     pipes: {
       code: {
         state: "partial",
-        note: "Durable queue + mandatory 1-page preview exist, but the plan's template_map is not consumed — there is no deterministic template path from plan to markup.",
+        note: "The durable queue and mandatory one-page preview are live; cms_fill reads the shared template_map resolver and treats realized scaffolds as unfilled, but deterministic code does not author brief-specific body copy.",
         ref: "aidream/aidream/services/content_plan/cms_fill.py",
       },
       human: {
@@ -346,9 +346,9 @@ export const STAGES: LoopStage[] = [
     maturity: "near",
     pipes: {
       code: {
-        state: "partial",
-        note: "One renderer + custom-domain routing + 301 ledger are live, and collections now server-render into the HTML a crawler receives: <template data-matrx-collection> expanded in loadSitePageProps, order from settings.default_order / ?order= instead of a hardcoded created_at DESC (G-COLLECTIONS closed 2026-08-11). Still partial: the site emits NO sitemap.xml and NO robots.txt.",
-        ref: "my-matrx/lib/render/clientSiteRenderer.js",
+        state: "live",
+        note: "The renderer, custom-domain routing, 301 ledger, server-rendered collections, sitemap.xml, and robots.txt are live; the public collection fixture and both discovery files return complete HTML/200 responses.",
+        ref: "my-matrx/lib/render/",
       },
       human: {
         state: "n/a",
@@ -383,8 +383,8 @@ export const STAGES: LoopStage[] = [
       },
       human: {
         state: "live",
-        note: "New-crawl workspace, per-page fetch, sitemap sync — all button-driven.",
-        ref: "ai-matrx/features/marketing/crawler/direct-client.ts",
+        note: "New-crawl workspace, per-page fetch, sitemap sync, and CrawlScheduleCard cadence/toggle controls are reachable.",
+        ref: "ai-matrx/features/marketing/components/crawls/CrawlScheduleCard.tsx",
       },
       ai: {
         state: "missing",
@@ -482,19 +482,19 @@ export const STAGES: LoopStage[] = [
     maturity: "stub",
     pipes: {
       code: {
-        state: "partial",
-        note: "Exactly ONE SEO producer emits assists (Search Console insights). The 15-check finding catalogue emits none.",
-        ref: "ai-matrx/features/marketing/search-console/insights-assists-producer.ts",
+        state: "live",
+        note: "private.sweep_marketing_finding_assists runs every 15 minutes and maintains the three highest-priority finding groups per actionable site in platform.assists.",
+        ref: "ai-matrx/features/marketing/findings-assists-producer.ts",
       },
       human: {
-        state: "partial",
-        note: "Findings are READ-ONLY in the app — a user cannot acknowledge, resolve or suppress one. Assist chips can be accepted or dismissed.",
-        ref: "ai-matrx/features/assists/runtime/useAssistRunner.ts",
+        state: "live",
+        note: "Finding detail and the register expose acknowledge, resolve, reopen, suppress, unsuppress, and bulk actions through one mutation service.",
+        ref: "ai-matrx/features/marketing/data/finding-mutations.ts",
       },
       ai: {
-        state: "partial",
-        note: "An assist can launch a pre-filled agent run, but nothing produces assists from findings for it to launch from.",
-        ref: "ai-matrx/features/assists/runtime/handlers/launch-agent.ts",
+        state: "live",
+        note: "The purpose-built SEO Finding Fixer is pinned to seo.finding_fixer and POST /seo/findings/draft-fix returns finding-scoped replacement proposals.",
+        ref: "aidream/aidream/services/seo/finding_fix.py",
       },
     },
   },
@@ -529,8 +529,8 @@ export const STAGES: LoopStage[] = [
       },
       ai: {
         state: "partial",
-        note: "Agents can write CMS drafts via tools, but no agent path starts from a finding and ends at a corrected page.",
-        ref: "ai-matrx/features/marketing/components/pages/MarketingPageWriteTargets.tsx",
+        note: "The purpose-built finding fixer proposes exact replacements and agents can write CMS drafts, but the fixer itself never applies or publishes its proposal.",
+        ref: "aidream/aidream/services/seo/finding_fix.py",
       },
     },
   },
@@ -664,11 +664,11 @@ export const EDGES: LoopEdge[] = [
     from: "publish",
     to: "serve",
     label: "reachable",
-    gaps: [],
+    gaps: ["G-SITEMAP"],
     pipes: {
       code: {
-        state: "partial",
-        note: "Rendering, domains, server-rendered collections, sitemap.xml, and robots.txt are live. Still missing on this edge: an IndexNow/GSC submit on publish (G-PUBLISH-CRAWL).",
+        state: "live",
+        note: "Published pages render on custom domains, collections are present in server HTML, and per-host sitemap.xml plus robots.txt are live.",
         ref: "my-matrx/lib/render/sitemap.js",
       },
       human: { state: "n/a", note: "Nothing for a human to do." },
@@ -683,8 +683,9 @@ export const EDGES: LoopEdge[] = [
     gaps: ["G-PUBLISH-CRAWL"],
     pipes: {
       code: {
-        state: "missing",
-        note: "THE BIGGEST BREAK IN THE LOOP. Publishing a page notifies nothing: no crawl is enqueued, no web.page row is created, nothing is invalidated. The chain stops here and only restarts when a human clicks Crawl.",
+        state: "live",
+        note: "cms/pages.py calls web_announce on publish, and the scheduled reconcile sweep recovers missed announcements; live runs have announced pages without errors.",
+        ref: "aidream/aidream/services/web_announce/",
       },
       human: {
         state: "live",
@@ -703,8 +704,8 @@ export const EDGES: LoopEdge[] = [
     pipes: {
       code: {
         state: "live",
-        note: "web.page is the anchor: gsc_page_stat, search_performance_daily, web_analytics_daily and page_performance all carry a real page_id FK.",
-        ref: "aidream/packages/matrx-seo/matrx_seo/db/models_seo.py",
+        note: "client_pages.web_page_id is the durable CMS-to-measurement identity stamped by executeCmsPush; every measurement table keeps that same web.page id as its FK.",
+        ref: "ai-matrx/features/marketing/lib/push-to-cms.ts",
       },
       human: {
         state: "live",
@@ -746,7 +747,7 @@ export const EDGES: LoopEdge[] = [
     pipes: {
       code: {
         state: "partial",
-        note: "THE SECOND BIG BREAK IS CLOSED (G-FINDING-ASSIST, 2026-08-13): private.sweep_marketing_finding_assists runs every 15 minutes without a page visit, grouping open web.finding rows by site + check and maintaining the top three ranked platform.assists per actionable site. The strip, dock, ledger, and runner remain singular. Still partial because the offer-layer fork is not collapsed and assists are owner-addressed rather than team-addressed (G-SUGGEST-FORK).",
+        note: "private.sweep_marketing_finding_assists runs every 15 minutes without a page visit and maintains the top three finding groups per actionable site; G-SUGGEST-FORK remains because thirteen legacy offer capabilities are not absorbed.",
         ref: "features/marketing/findings-assists-producer.ts",
       },
       human: {
@@ -816,8 +817,8 @@ export const EDGES: LoopEdge[] = [
     pipes: {
       code: {
         state: "partial",
-        note: "Publishing advances a node to 'published', but nothing ever flips a node to 'needs-update' from performance data — the cadences in plan.profile are unread.",
-        ref: "cms_reconciler.py#advance_plan_status_for_published_page",
+        note: "plan._status_flow_guard enforces transitions and publish advances nodes, but plan_signal_sweep has flipped 0 nodes in 19 runs; three sites are skipped for ambiguous vertical.",
+        ref: "aidream/aidream/services/content_plan/signals.py",
       },
       human: {
         state: "live",
@@ -860,9 +861,9 @@ export const GAPS: LoopGap[] = [
     severity: "blocker",
     status: "closed",
     at: "serve->crawl",
-    breaks: ["code", "ai"],
+    breaks: ["code"],
     detail:
-      "CLOSED AND RUNNING 2026-08-13. aidream deployed; web_announce is called from cms/pages.py:932 on publish and from system_task_runner.py:958 for the reconcile sweep. Live-verified: the 'CMS publish → crawl reconcile' task is enabled with 198 runs / 0 failures. Still deliberately NOT claimed here: the IndexNow / Search Console submit ping on publish — that is a new gap if wanted, not this one.",
+      "CLOSED AND RUNNING 2026-08-13. aidream deployed; web_announce is called from cms/pages.py on publish and from system_task_runner.py for the reconcile sweep. Live-verified at 244 successful runs: recent sweeps announced pages with zero errors. The AI crawl pipe remains honestly missing because no agent tool starts or reads a crawl.",
     lane: "L1",
     evidence: "aidream/aidream/services/web_announce/",
   },
@@ -876,6 +877,8 @@ export const GAPS: LoopGap[] = [
     detail:
       "CLOSED 2026-08-11. The writer half shipped: CrawlScheduleCard in the new-crawl workspace (plus CrawlScheduleSummary in SiteOverview) creates, edits, and toggles a site's recurring schedule directly through crawl-schedule-service.ts with guardedUpdate version CAS. aidream migration 0322 is applied and ledgered: authenticated has column-scoped INSERT/UPDATE for intent columns plus version, while dispatcher lease/outcome columns stay server-only. Every save clears next_run_at so the dispatcher recomputes the occurrence from the new cadence. Verified live with a schedule row written from the card. Still open elsewhere: historical dispatcher failures and the AI pipe (no agent tool starts or reads a crawl).",
     lane: "L1",
+    evidence:
+      "ai-matrx/features/marketing/components/crawls/CrawlScheduleCard.tsx",
   },
   {
     id: "G-SITEMAP",
@@ -909,7 +912,7 @@ export const GAPS: LoopGap[] = [
     at: "analyze->suggest",
     breaks: ["code", "ai"],
     detail:
-      "CLOSED 2026-08-13; coverage corrected the same day. The first close proved real ledger writes but only after FindingsAssistStrip rendered: produceFindingAssists lived in useEffect behind a once-per-site/browser-session guard. Live Matrx Main therefore had 5,506 findings and six rows created at page-open times. The canonical producer is now private.sweep_marketing_finding_assists(), scheduled every 15 minutes: group by site + check, rank severity/scope/recency, cap at three undecided groups per site, stable key 'seo.finding_rollup.<check>:<siteId>:site', supersede stale groups. FINAL POST-DEPLOY PROOF: 24 ledger rows — 18 current sweep groups with 18 distinct keys, exactly three each across six actionable sites; five render-era rows superseded; one dismissal retained. Scheduled runs at 00:45 and 01:00 UTC succeeded and the latter absorbed a newly analyzed site without a page visit. Clicking still only expands; explicit 'Review findings' navigates. True boundary: rows are personal and addressed to the site owner, so team-wide delivery remains a separate Assists gap.",
+      "CLOSED 2026-08-13; coverage corrected the same day. The first close proved real ledger writes but only after FindingsAssistStrip rendered: produceFindingAssists lived in useEffect behind a once-per-site/browser-session guard. Live Matrx Main therefore had 5,506 findings and six rows created at page-open times. The canonical producer is now private.sweep_marketing_finding_assists(), scheduled every 15 minutes: group by site + check, rank severity/scope/recency, cap at three undecided groups per site, stable key 'seo.finding_rollup.<check>:<siteId>:site', supersede stale groups. FINAL POST-DEPLOY PROOF: 24 ledger rows — 18 current sweep groups with 18 distinct keys, exactly three each across six actionable sites; five render-era rows superseded; one dismissal retained. Scheduled runs at 00:45 and 01:00 UTC succeeded and the latter absorbed a newly analyzed site without a page visit. Clicking still only expands; explicit 'Review findings' navigates. Rows are personal and addressed to web.site.created_by by design.",
     lane: "L2",
     evidence:
       "ai-matrx/features/marketing/components/analysis/FindingsAssistStrip.tsx",
@@ -947,7 +950,7 @@ export const GAPS: LoopGap[] = [
     at: "suggest",
     breaks: ["code", "human", "ai"],
     detail:
-      "ABSORB COMPLETE AND SHIPPED; RETIREMENT DELIBERATELY BLOCKED. The seven absorbed columns on platform.assists were DDL-only — no client read or wrote one — and are now live end to end: the evidence receipt on the card, first_seen_at + occurrences (a re-notice counts and never moves the first sighting), the resolved status with resolveAssistsByDedupeKeys() so a condition that went away closes itself, decision_note, is_starred and viewed_at with a flag column, unseen dot and filters in the /assists manager. THE CAPABILITY INVENTORY is written in features/assists/FEATURE.md — every capability of kg-suggestions and of web.finding's offer layer, each judged better / equal / not yet. NOTHING WAS RETIRED, and that is the method working: thirteen capabilities are still uncovered. The widest is that an assist is visibility='personal' addressed to one user_id, so a shared SEO register produces chips only the person who swept can see; then producer-level suppression (dismissal is per dedupe_key, so silencing a whole check means dismissing every chip one at a time), per-record chips (entity_type/entity_id are on the ledger with no selector), and an rpc action kind for kg-suggestions' accept semantics. Also settled here: web.finding's domain half is NOT a fork and is not being absorbed (the analyzer owns detection; only the offer layer moved), and extend.wbx_seo_audit is NOT dead — it is a registered canonical entity with zero consumers, i.e. unfinished work under policies/unfinished-work-alarm.md, so deleting it is forbidden.",
+      "ABSORB COMPLETE AND SHIPPED; RETIREMENT DELIBERATELY BLOCKED. The seven absorbed columns on platform.assists were DDL-only — no client read or wrote one — and are now live end to end: the evidence receipt on the card, first_seen_at + occurrences (a re-notice counts and never moves the first sighting), the resolved status with resolveAssistsByDedupeKeys() so a condition that went away closes itself, decision_note, is_starred and viewed_at with a flag column, unseen dot and filters in the /assists manager. THE CAPABILITY INVENTORY is written in features/assists/FEATURE.md — every capability of kg-suggestions and of web.finding's offer layer, each judged better / equal / not yet. NOTHING WAS RETIRED, and that is the method working: thirteen capabilities are still uncovered. The remaining gaps include producer-level suppression (dismissal is per dedupe_key, so silencing a whole check means dismissing every chip one at a time), per-record chips (entity_type/entity_id are on the ledger with no selector), and an rpc action kind for kg-suggestions' accept semantics. Assists are personal and addressed to one user by design; that is not a gap. Also settled here: web.finding's domain half is NOT a fork and is not being absorbed (the analyzer owns detection; only the offer layer moved), and extend.wbx_seo_audit is NOT dead — it is a registered canonical entity with zero consumers, i.e. unfinished work under policies/unfinished-work-alarm.md, so deleting it is forbidden.",
     lane: "L2",
     evidence: "ai-matrx/features/assists/FEATURE.md",
   },
@@ -979,13 +982,12 @@ export const GAPS: LoopGap[] = [
     id: "G-STALENESS",
     title: "Nothing ever marks a page as needing an update",
     severity: "major",
-    status: "closed",
+    status: "in-progress",
     at: "writeback->plan",
     breaks: ["code", "ai"],
     detail:
-      "CLOSED AND RUNNING. services/content_plan/signals.py flips published/live-verified nodes to needs-update on two lanes — cadence (plan.profile.cadences review_days) and a 28-day-over-28-day GSC click decline. Registered as plan_signal_sweep, seeded daily by migration 0252, and live-verified: 17 runs, 0 failures.",
+      "EXISTS, REACHABLE, DEPLOYED, AND EXERCISED; NOT PRODUCED. plan_signal_sweep is enabled and has succeeded 19/19 times, but every run flipped 0 nodes, no plan.node is needs-update, and three sites are skipped every day because their vertical is ambiguous. The AI pipe remains missing.",
     lane: "L4",
-    evidence: "aidream/aidream/services/content_plan/signals.py",
   },
   {
     id: "G-PLAN-STATUS",
@@ -1020,7 +1022,7 @@ export const GAPS: LoopGap[] = [
     at: "research",
     breaks: ["code", "ai"],
     detail:
-      "CLOSED AND RUNNING 2026-08-13. aidream deployed. Both pipes live: aidream/tools/research_tool.py exposes research_run(action='start') for the AI pipe, and research_refresh_dispatch drives the scheduled lane. Live-verified: the 'Research refresh dispatch' task is enabled with 394 runs / 2 failures.",
+      "CLOSED AND RUNNING 2026-08-13. aidream deployed. Both pipes live: aidream/tools/research_tool.py exposes research_run(action='start') for the AI pipe, and research_refresh_dispatch drives the scheduled lane. Live-verified: the task is enabled with 486 runs / 2 failures.",
     lane: "L5",
     evidence: "aidream/aidream/tools/research_tool.py",
   },
