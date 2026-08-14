@@ -189,14 +189,30 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   },
   { prefix: "/administration/agents/lookups", surface: "matrx-admin/lookups" },
   { prefix: "/administration/agents/skills", surface: "matrx-admin/skills" },
+  // growth-loop has its own surface — must sit ABOVE the knowledge hub prefix.
+  {
+    prefix: "/administration/knowledge/growth-loop",
+    surface: "matrx-admin/growth-loop",
+  },
   {
     prefix: "/administration/knowledge",
     surface: "matrx-admin/knowledge",
+  },
+  { prefix: "/administration/reporting", surface: "matrx-admin/reporting" },
+  {
+    prefix: "/administration/documentation",
+    surface: "matrx-admin/documentation",
   },
   {
     prefix: "/administration/utilities/kind-registry",
     surface: "matrx-admin/kind-registry",
   },
+  // utilities hub — must stay BELOW the more-specific kind-registry entry.
+  { prefix: "/administration/utilities", surface: "matrx-admin/utilities" },
+  // Public agent-app runner (/p/[slug], anonymous). NOTE: /p/e/* is the
+  // public-resource viewer — a different surface, unregistered today; give it
+  // its own entry ABOVE this one when it gets a manifest.
+  { prefix: "/p", surface: "matrx-public/p" },
   {
     prefix: "/administration/agents/slots",
     surface: "matrx-admin/agent-slots",

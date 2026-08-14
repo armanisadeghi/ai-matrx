@@ -115,6 +115,7 @@ import { educationLearnManifest } from "./education-learn.manifest";
 import { educationProgressManifest } from "./education-progress.manifest";
 import { settingsManifest } from "./settings.manifest";
 import { agentAppsManifest } from "./agent-apps.manifest";
+import { publicAgentAppManifest } from "./public-agent-app.manifest";
 import { agentConnectionsManifest } from "./agent-connections.manifest";
 import { connectionsSkillsManifest } from "./connections-skills.manifest";
 import { keywordResearchManifest } from "./keyword-research.manifest";
@@ -182,6 +183,11 @@ import { crmCreatePartyManifest } from "./crm-create-party.manifest";
 import { adminKnowledgeManifest } from "./admin-knowledge.manifest";
 import { adminKindRegistryManifest } from "./admin-kind-registry.manifest";
 import { adminSkillsManifest } from "./admin-skills.manifest";
+import { adminGrowthLoopManifest } from "./admin-growth-loop.manifest";
+import { adminReportingManifest } from "./admin-reporting.manifest";
+import { adminUtilitiesManifest } from "./admin-utilities.manifest";
+import { adminDocumentationManifest } from "./admin-documentation.manifest";
+import { quickDataManifest } from "./quick-data.manifest";
 
 /**
  * Manifests exactly as authored. Do NOT consume directly — generic baselines
@@ -285,6 +291,7 @@ const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   educationProgressManifest,
   settingsManifest,
   agentAppsManifest,
+  publicAgentAppManifest,
   agentConnectionsManifest,
   connectionsSkillsManifest,
   keywordResearchManifest,
@@ -354,6 +361,11 @@ const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   adminKnowledgeManifest,
   adminKindRegistryManifest,
   adminSkillsManifest,
+  adminGrowthLoopManifest,
+  adminReportingManifest,
+  adminUtilitiesManifest,
+  adminDocumentationManifest,
+  quickDataManifest,
 ];
 
 // ---------------------------------------------------------------------------

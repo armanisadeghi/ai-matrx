@@ -5,6 +5,7 @@ import { createClient } from "@/utils/supabase/server";
 import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
 import { formatAbsoluteDate } from "@/utils/datetime";
 import type { FeatureDocDetail } from "@/features/feature-docs/service";
+import { FeatureDocViewerRuntime } from "@/features/feature-docs/components/FeatureDocViewerRuntime";
 
 interface FeatureDocViewPageProps {
   params: Promise<{ path?: string[] }>;
@@ -46,6 +47,7 @@ export default async function FeatureDocViewPage({
   }
 
   return (
+    <FeatureDocViewerRuntime path={relPath} doc={doc}>
     <div className="min-h-[calc(100dvh-var(--header-height))] bg-background flex flex-col">
       <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur px-4 py-2 flex items-center gap-3 flex-wrap shrink-0">
         <Link
@@ -83,5 +85,6 @@ export default async function FeatureDocViewPage({
         <BasicMarkdownContent content={doc.content} />
       </main>
     </div>
+    </FeatureDocViewerRuntime>
   );
 }

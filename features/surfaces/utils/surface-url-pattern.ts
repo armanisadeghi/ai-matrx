@@ -76,9 +76,14 @@ export function getDefaultUrlPatternForSurface(
  * Returns null when no canonical pattern is known.
  */
 export function resolveSurfaceUrlPattern(
-  manifest: Pick<SurfaceManifest, "surfaceName" | "urlPattern">,
+  manifest: Pick<SurfaceManifest, "surfaceName" | "urlPattern" | "overlayId">,
 ): string | null {
   const explicit = manifest.urlPattern?.trim();
   if (explicit) return explicit;
+  // Overlay-only surfaces have NO route: fabricating `/${local}` here is how
+  // fictional url_patterns like /quick-data reached the DB. overlayId is the
+  // overlay twin of urlPattern — a manifest declaring it and no urlPattern
+  // means "no route", not "guess one".
+  if (manifest.overlayId) return null;
   return getDefaultUrlPatternForSurface(manifest.surfaceName);
 }

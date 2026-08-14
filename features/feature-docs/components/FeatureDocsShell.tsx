@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -9,6 +10,12 @@ import {
   type FeatureDocDotDir,
   type FeatureDocZone,
 } from "@/features/feature-docs/constants";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ADMIN_DOCUMENTATION_SURFACE_NAME,
+  createAdminDocumentationScope,
+} from "@/features/surfaces/manifests/admin-documentation.manifest";
+import type { SurfaceScopePayload } from "@/features/surfaces/types";
 
 interface FeatureDocsShellProps {
   title: string;
@@ -36,6 +43,20 @@ const MAIN_TABS: {
   },
 ];
 
+/**
+ * documentation_section for the surface manifest — derived from the same
+ * zone/dotDir props that already drive this shell's own nav highlighting,
+ * never a second source of truth.
+ */
+function sectionFor(
+  zone: FeatureDocZone | "hub",
+  dotDir: FeatureDocDotDir | undefined,
+): "hub" | "codebase" | "docs" | "dotdirs" | "dotdir_detail" {
+  if (zone === "hub") return "hub";
+  if (zone === "dotdir") return dotDir ? "dotdir_detail" : "dotdirs";
+  return zone;
+}
+
 export default function FeatureDocsShell({
   title,
   subtitle,
@@ -45,7 +66,22 @@ export default function FeatureDocsShell({
 }: FeatureDocsShellProps) {
   const pathname = usePathname();
 
+  const getScope = useCallback((): SurfaceScopePayload => {
+    const section = sectionFor(zone, dotDir);
+    return createAdminDocumentationScope({
+      documentation_section: section,
+      feature_docs_zone: zone === "hub" ? undefined : zone,
+      feature_docs_dot_dir: dotDir,
+      feature_docs_dot_dirs_list:
+        section === "dotdirs" ? [...FEATURE_DOC_DOT_DIRS] : undefined,
+    });
+  }, [zone, dotDir]);
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_DOCUMENTATION_SURFACE_NAME}
+      getScope={getScope}
+    >
     <div className="h-[calc(100dvh-var(--header-height))] flex flex-col overflow-hidden bg-background">
       <header className="border-b border-border px-4 py-3 shrink-0 space-y-2">
         <div className="flex items-baseline gap-2 flex-wrap">
@@ -109,5 +145,6 @@ export default function FeatureDocsShell({
       </header>
       {children}
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

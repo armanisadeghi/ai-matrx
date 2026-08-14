@@ -20,6 +20,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  QUICK_DATA_SURFACE_NAME,
+  createQuickDataScope,
+} from "@/features/surfaces/manifests/quick-data.manifest";
 
 interface QuickDataSheetProps {
   onClose?: () => void;
@@ -119,18 +124,30 @@ export function QuickDataSheet({
     setSelectedTableId(tableId);
   };
 
+  // Sorted most-recently-updated first — quick access surfaces what you
+  // touched last, not an alphabetical directory. Computed unconditionally so
+  // the surface emitter below can read it regardless of which body renders.
+  const sortedTables = [...tables].sort((a, b) => {
+    const at = a.updated_at ? new Date(a.updated_at).getTime() : 0;
+    const bt = b.updated_at ? new Date(b.updated_at).getTime() : 0;
+    return bt - at;
+  });
+  const selectedTable = selectedTableId
+    ? tables.find((t) => t.id === selectedTableId)
+    : undefined;
+
+  let body: React.ReactNode;
+
   if (loading) {
-    return (
+    body = (
       <div className={cn("flex items-center justify-center h-full", className)}>
         <div className="text-sm text-zinc-500 dark:text-zinc-400">
           Loading tables...
         </div>
       </div>
     );
-  }
-
-  if (error) {
-    return (
+  } else if (error) {
+    body = (
       <div
         className={cn(
           "flex flex-col items-center justify-center h-full gap-3",
@@ -143,10 +160,8 @@ export function QuickDataSheet({
         </Button>
       </div>
     );
-  }
-
-  if (tables.length === 0) {
-    return (
+  } else if (tables.length === 0) {
+    body = (
       <div
         className={cn(
           "flex flex-col items-center justify-center h-full gap-3",
@@ -165,71 +180,97 @@ export function QuickDataSheet({
         </Button>
       </div>
     );
+  } else {
+    // A table picker in the header — NOT a sidebar. Quick Data is a table
+    // viewer; the table itself needs every pixel of horizontal width, so the
+    // list of tables lives in a dropdown rather than a column eating half the
+    // panel.
+    body = (
+      <div
+        className={cn("flex w-full h-full flex-col overflow-hidden", className)}
+      >
+        {/* Compact Header — table picker (dropdown) + open-in-tab. */}
+        <div
+          className="flex items-center gap-2 p-2 border-b border-zinc-200 dark:border-zinc-800 bg-background z-10 shrink-0 shadow-sm"
+          data-surface-value="selected_table_id"
+        >
+          <Select value={selectedTableId ?? ""} onValueChange={handleTableChange}>
+            <SelectTrigger className="h-8 w-[260px] max-w-[60%] text-sm">
+              <SelectValue placeholder="Select a table" />
+            </SelectTrigger>
+            <SelectContent>
+              {sortedTables.map((table) => (
+                <SelectItem key={table.id} value={table.id} className="text-sm">
+                  <span className="flex w-full items-center justify-between gap-3">
+                    <span className="truncate">{table.table_name}</span>
+                    <span className="text-[10px] text-muted-foreground shrink-0">
+                      {table.row_count} rows
+                    </span>
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <div className="flex-1" />
+
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                  onClick={() => window.open("/data", "_blank")}
+                >
+                  <ExternalLink className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Open in New Tab</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+
+        {/* Table Viewer — full panel width. */}
+        <div className="flex-1 overflow-auto relative p-2">
+          {selectedTableId && (
+            <UserTableViewer
+              key={selectedTableId}
+              tableId={selectedTableId}
+            />
+          )}
+        </div>
+      </div>
+    );
   }
 
-  // Most recently updated first — quick access surfaces what you touched last,
-  // not an alphabetical directory.
-  const sortedTables = [...tables].sort((a, b) => {
-    const at = a.updated_at ? new Date(a.updated_at).getTime() : 0;
-    const bt = b.updated_at ? new Date(b.updated_at).getTime() : 0;
-    return bt - at;
-  });
-
-  // A table picker in the header — NOT a sidebar. Quick Data is a table viewer;
-  // the table itself needs every pixel of horizontal width, so the list of
-  // tables lives in a dropdown rather than a column eating half the panel.
+  // Overlay emitter — QuickDataSheet is the component that actually owns the
+  // table-picker state (QuickDataWindow itself holds none), and it renders
+  // inside the quickDataWindow overlay, so this is still "inside the window
+  // component" per the overlay-surface doctrine. `getScope` stays
+  // SYNCHRONOUS over live render state.
   return (
-    <div
-      className={cn("flex w-full h-full flex-col overflow-hidden", className)}
+    <SurfaceRuntimeProvider
+      surfaceName={QUICK_DATA_SURFACE_NAME}
+      getScope={() =>
+        createQuickDataScope({
+          is_loading: loading,
+          load_error: error ?? undefined,
+          table_count: tables.length,
+          tables_summary: sortedTables.map((t) => ({
+            id: t.id,
+            table_name: t.table_name,
+            description: t.description,
+            row_count: t.row_count,
+            field_count: t.field_count,
+            updated_at: t.updated_at,
+          })),
+          selected_table_id: selectedTableId ?? undefined,
+          selected_table_name: selectedTable?.table_name,
+        })
+      }
     >
-      {/* Compact Header — table picker (dropdown) + open-in-tab. */}
-      <div className="flex items-center gap-2 p-2 border-b border-zinc-200 dark:border-zinc-800 bg-background z-10 shrink-0 shadow-sm">
-        <Select value={selectedTableId ?? ""} onValueChange={handleTableChange}>
-          <SelectTrigger className="h-8 w-[260px] max-w-[60%] text-sm">
-            <SelectValue placeholder="Select a table" />
-          </SelectTrigger>
-          <SelectContent>
-            {sortedTables.map((table) => (
-              <SelectItem key={table.id} value={table.id} className="text-sm">
-                <span className="flex w-full items-center justify-between gap-3">
-                  <span className="truncate">{table.table_name}</span>
-                  <span className="text-[10px] text-muted-foreground shrink-0">
-                    {table.row_count} rows
-                  </span>
-                </span>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <div className="flex-1" />
-
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                onClick={() => window.open("/data", "_blank")}
-              >
-                <ExternalLink className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Open in New Tab</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
-
-      {/* Table Viewer — full panel width. */}
-      <div className="flex-1 overflow-auto relative p-2">
-        {selectedTableId && (
-          <UserTableViewer
-            key={selectedTableId}
-            tableId={selectedTableId}
-          />
-        )}
-      </div>
-    </div>
+      {body}
+    </SurfaceRuntimeProvider>
   );
 }

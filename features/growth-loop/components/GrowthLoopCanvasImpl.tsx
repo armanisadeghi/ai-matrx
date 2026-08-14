@@ -28,6 +28,11 @@ import {
   type DiagramPoint,
 } from "@/features/canvas/edges/rounded-orthogonal-path";
 import { cn } from "@/lib/utils";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  createAdminGrowthLoopScope,
+  type GrowthLoopEdgeSummaryEntry,
+} from "@/features/surfaces/manifests/admin-growth-loop.manifest";
 import {
   EDGES,
   GAPS,
@@ -479,8 +484,76 @@ function GrowthLoopCanvasInner() {
       ? GAPS.filter((g) => (edge.gaps ?? []).includes(g.id))
       : [];
 
+  // Emitter — GrowthLoopCanvasInner owns the only real state on this page
+  // (which stage/edge is selected); the overview values are derived from the
+  // static loop map. `getScope` stays SYNCHRONOUS over live render state.
   return (
-    <div className="flex h-full w-full min-h-0">
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-admin/growth-loop"
+      getScope={() =>
+        createAdminGrowthLoopScope({
+          loop_score: score,
+          open_gap_count: openGaps.length,
+          blocker_count: blockers.length,
+          blockers_summary: blockers.map((g) => ({
+            id: g.id,
+            title: g.title,
+            lane: g.lane,
+            at: g.at,
+          })),
+          stages_summary: STAGES.map((s) => ({
+            id: s.id,
+            label: s.label,
+            maturity: s.maturity,
+            open_gap_count: gapsAt(s.id).length,
+          })),
+          edges_summary: EDGES.map(
+            (e): GrowthLoopEdgeSummaryEntry => ({
+              id: e.id,
+              from: e.from,
+              to: e.to,
+              label: e.label,
+              health: edgeHealth(e),
+            }),
+          ),
+          selection_kind: stage ? "stage" : edge ? "edge" : "none",
+          selected_stage_id: stage?.id,
+          selected_stage_detail: stage
+            ? {
+                id: stage.id,
+                label: stage.label,
+                blurb: stage.blurb,
+                maturity: stage.maturity,
+                repos: stage.repos,
+                stores: stage.stores,
+                pipes: stage.pipes,
+              }
+            : undefined,
+          selected_edge_id: edge?.id,
+          selected_edge_detail: edge
+            ? {
+                id: edge.id,
+                from: edge.from,
+                to: edge.to,
+                label: edge.label,
+                pipes: edge.pipes,
+              }
+            : undefined,
+          selection_gaps:
+            detailGaps.length > 0
+              ? detailGaps.map((g) => ({
+                  id: g.id,
+                  title: g.title,
+                  severity: g.severity,
+                  status: g.status,
+                  detail: g.detail,
+                  lane: g.lane,
+                }))
+              : undefined,
+        })
+      }
+    >
+    <div className="flex h-full w-full min-h-0" data-surface-value="selection_kind">
       <div className="relative min-w-0 flex-1">
         <ReactFlow
           nodes={nodes}
@@ -704,6 +777,7 @@ function GrowthLoopCanvasInner() {
         )}
       </aside>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 

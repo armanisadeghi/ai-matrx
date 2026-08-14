@@ -248,8 +248,29 @@ describe("Admin surface resolution (post catch-all removal)", () => {
 
   it("unmapped admin routes resolve to null, never to system-agents", () => {
     expect(surfaceFromPathname("/administration")).toBeNull();
-    expect(surfaceFromPathname("/administration/utilities")).toBeNull();
-    expect(surfaceFromPathname("/administration/documentation")).toBeNull();
+    expect(surfaceFromPathname("/administration/scopes-context")).toBeNull();
+  });
+
+  it("batch-3 families resolve, growth-loop wins over knowledge, utilities below kind-registry", () => {
+    expect(
+      surfaceFromPathname("/administration/knowledge/growth-loop"),
+    ).toBe("matrx-admin/growth-loop");
+    expect(surfaceFromPathname("/administration/knowledge/kg-inspector")).toBe(
+      "matrx-admin/knowledge",
+    );
+    expect(surfaceFromPathname("/administration/reporting/events")).toBe(
+      "matrx-admin/reporting",
+    );
+    expect(
+      surfaceFromPathname("/administration/documentation/feature-docs"),
+    ).toBe("matrx-admin/documentation");
+    expect(
+      surfaceFromPathname("/administration/utilities/kind-registry/build"),
+    ).toBe("matrx-admin/kind-registry");
+    expect(surfaceFromPathname("/administration/utilities/blob-cache")).toBe(
+      "matrx-admin/utilities",
+    );
+    expect(surfaceFromPathname("/p/my-app-slug")).toBe("matrx-public/p");
     expect(surfaceFromPathname("/admin")).toBeNull();
   });
 });

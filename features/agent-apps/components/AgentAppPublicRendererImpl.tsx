@@ -36,6 +36,11 @@ import { useWarmAgent } from "@/features/agents/hooks/useWarmAgent";
 import { SHELL_REGISTRY } from "./shells";
 import { AgentAppFullyCustomShell } from "./shells/AgentAppFullyCustomShell";
 import { useAgentAppTracker } from "../tracking/useAgentAppTracker";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  PUBLIC_AGENT_APP_SURFACE_NAME,
+  createPublicAgentAppScope,
+} from "@/features/surfaces/manifests/public-agent-app.manifest";
 
 const HtmlPreviewModal = dynamic(
   () => import("@/features/html-pages/components/HtmlPreviewModal"),
@@ -105,6 +110,14 @@ function CustomComponentRenderer({
   const [conversationId, setConversationId] = useState<string | null>(null);
 
   const { isAuthenticated, fingerprintId } = useApiAuth();
+
+  // Last submitted run input, captured for the SurfaceRuntimeProvider's
+  // getScope() — read at trigger time by chrome, not by handleExecute itself
+  // (which builds its own scope inline at launch).
+  const lastRunInputRef = useRef<{
+    userInput?: string;
+    variables?: Record<string, unknown>;
+  }>({});
 
   // Streaming state is owned by Redux (active-requests slice). We capture
   // `conversationId` synchronously via the launcher's `onConversationCreated`
@@ -286,6 +299,9 @@ function CustomComponentRenderer({
         // back is what we'll send on completion/error.
         runTracker = startRun(validVariables);
 
+        // Live refs for the SurfaceRuntimeProvider's chrome getScope().
+        lastRunInputRef.current = { userInput, variables: validVariables };
+
         await dispatch(
           launchAgentExecution({
             agentId: app.agent_id,
@@ -303,6 +319,26 @@ function CustomComponentRenderer({
             runtime: {
               userInput,
               variables: validVariables,
+              // Surface name so agent<->surface bindings (value_mappings,
+              // write policies) resolve at launch — this page previously
+              // never set it, so no binding on `matrx-public/p` could ever
+              // fire here regardless of what an agent author configured.
+              surfaceName: PUBLIC_AGENT_APP_SURFACE_NAME,
+              applicationScope: createPublicAgentAppScope({
+                app_id: app.id,
+                app_slug: app.slug,
+                app_name: app.name,
+                agent_id: app.agent_id,
+                agent_version_id: app.agent_version_id ?? undefined,
+                shell_kind: app.shell_kind ?? "fully_custom",
+                is_authenticated: isAuthenticated,
+                guest_fingerprint_id: fingerprintId ?? undefined,
+                guest_runs_remaining: !isAuthenticated
+                  ? guestLimit.remaining
+                  : undefined,
+                user_input: userInput,
+                form_variable_values: validVariables,
+              }),
             },
             // Capture conversationId synchronously, before the stream starts.
             // The launcher's awaited promise doesn't resolve until the stream
@@ -433,7 +469,40 @@ function CustomComponentRenderer({
 
   const showActionBar = isStreamComplete && !!responseText;
 
+  // Read at trigger time (chrome only calls this when the user opens the
+  // Agents panel / hits Run there) — never from stale closure state.
+  const buildScope = () =>
+    createPublicAgentAppScope({
+      app_id: app.id,
+      app_slug: app.slug,
+      app_name: app.name,
+      agent_id: app.agent_id,
+      agent_version_id: app.agent_version_id ?? undefined,
+      shell_kind: app.shell_kind ?? "fully_custom",
+      is_authenticated: isAuthenticated,
+      guest_fingerprint_id: fingerprintId ?? undefined,
+      guest_runs_remaining: !isAuthenticated ? guestLimit.remaining : undefined,
+      user_input: lastRunInputRef.current.userInput,
+      form_variable_values: lastRunInputRef.current.variables,
+      conversation_id: conversationId ?? undefined,
+      run_status:
+        requestStatus === "streaming" ||
+        requestStatus === "complete" ||
+        requestStatus === "error"
+          ? requestStatus
+          : requestStatus === "timeout" || requestStatus === "cancelled"
+            ? "error"
+            : requestStatus
+              ? "streaming" // pending / awaiting-tools: run is in flight
+              : undefined,
+      response_text: responseText || undefined,
+    });
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={PUBLIC_AGENT_APP_SURFACE_NAME}
+      getScope={buildScope}
+    >
     <div className="h-full flex flex-col">
       {guestLimit.showWarning && (
         <div className="flex-shrink-0 p-4">
@@ -563,5 +632,6 @@ function CustomComponentRenderer({
         />
       )}
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
