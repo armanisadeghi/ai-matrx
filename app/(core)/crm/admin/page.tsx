@@ -13,7 +13,7 @@ const CRM_ADMIN_MAP: FeatureAdminMap = {
       url: "/crm",
       label: "People & Companies",
       description:
-        "Scoped, server-paginated manager for people and companies with search, filters, sorting, and create actions.",
+        "Scoped, server-paginated manager for people and companies with search, filters, sorting, create actions, saved smart views (?view=<id> opens one), and bulk work-queue actions (outreach list, do-not-contact, allow contact, delete).",
       filePath: "app/(core)/crm/page.tsx",
       status: "Live",
     },
@@ -53,7 +53,7 @@ const CRM_ADMIN_MAP: FeatureAdminMap = {
       url: "/crm/outreach-lists/[listId]",
       label: "Outreach list workspace",
       description:
-        "One list: status rollup chips, server-paged member roster, enrollment from filters, lifecycle actions.",
+        "One list: status rollup chips, server-paged member roster, enrollment from a filter or a saved smart view (with provenance back to the view that filled it), lifecycle actions.",
       filePath: "app/(core)/crm/outreach-lists/[listId]/page.tsx",
       status: "Live",
     },
@@ -116,6 +116,22 @@ const CRM_ADMIN_MAP: FeatureAdminMap = {
       filePath: "features/crm/components/dedup/DuplicateReviewPage.tsx",
       description:
         "Merge review queue over crm.merge_candidate + the crm_merge_parties / crm_unmerge_parties RPCs; CandidatePairCard renders each side-by-side comparison.",
+      tier: "internal",
+      status: "Live",
+    },
+    {
+      name: "ExpertStatusCard",
+      filePath: "features/crm/components/record/ExpertStatusCard.tsx",
+      description:
+        "Record-page expert surface: the registered/approved/vetted ladder, the research confidence that proposed it, and a door to every topic this person is an expert for. Renders nothing for a non-expert.",
+      tier: "internal",
+      status: "Live",
+    },
+    {
+      name: "SavedViewBar",
+      filePath: "features/crm/components/saved-views/SavedViewBar.tsx",
+      description:
+        "Smart-view bar on the CRM list: chips over crm.saved_view, applied through the same setters the human controls call, with dirty detection, update/rename/share/delete, and /crm?view=<id> as a linkable destination.",
       tier: "internal",
       status: "Live",
     },
