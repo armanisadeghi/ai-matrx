@@ -1,6 +1,6 @@
 {
   "name": "app-matrx",
-  "version": "0.4.582",
+  "version": "0.4.583",
   "private": true,
   "scripts": {
     "dev": "bash scripts/dev-cleanup.sh reap && NODE_OPTIONS='--max-old-space-size=3072 --dns-result-order=ipv4first' next dev",
@@ -84,6 +84,9 @@
     "check:dead-ends": "tsx scripts/dead-ends/check-dead-ends.ts",
     "check:dead-ends:write": "tsx scripts/dead-ends/check-dead-ends.ts --write",
     "check:dead-ends:strict": "tsx scripts/dead-ends/check-dead-ends.ts --strict",
+    "check:unwired": "tsx scripts/unwired/check-unwired.ts",
+    "check:unwired:write": "tsx scripts/unwired/check-unwired.ts --write",
+    "check:unwired:strict": "tsx scripts/unwired/check-unwired.ts --strict",
     "check:copy-everywhere": "node .claude/skills/agent-copy/scripts/detect-copy-adoption.mjs",
     "test:copy-everywhere": "node --test .claude/skills/agent-copy/scripts/detect-copy-adoption.test.mjs",
     "check:lint-debt": "tsx scripts/lint-debt/check-lint-debt.ts",
