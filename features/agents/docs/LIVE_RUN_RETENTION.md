@@ -52,6 +52,31 @@ So the entire defense is: **the row must outlive every mounted viewer.**
 - **Relying on rejoin to restore live output.** It cannot (no chunk replay). Surfaces MUST keep
   the saved-artifact fallback for the post-remount case (`useSavedKeywordResearch` pattern).
 
+## Multi-run surfaces — RunSetDisplay is the canonical home
+
+A surface that fires MORE THAN ONE agent call (a pipeline per phase, a batch per node, a run
+beside API results) must NOT hold its run identity in component state — that state dies on any
+remount and the surface "forgets" runs that are still streaming (the "system gets confused when
+the first call finishes" class). The canonical primitive:
+
+- **Slice** `runSets` (`features/agents/redux/execution-system/run-sets/run-sets.slice.ts`):
+  ordered entries per caller-chosen stable `setKey`; entries are runs (`requestId` + label) or
+  non-stream data payloads (canonical block shape).
+- **Thunks** (`run-sets.thunks.ts`) are the ONLY write path — `addRunToSet` also places a
+  set-scoped retention hold so owner reaps defer while the set exists; `clearRunSet` /
+  `removeRunSetEntry` release. Guard test: `run-sets/__tests__/run-sets.test.ts`.
+- **Component** `RunSetDisplay` + `useRunSet`
+  (`features/agents/components/live-run/RunSetDisplay.tsx`): maps entries to `LiveRunDisplay`
+  per run and `MarkdownStream serverProcessedBlocks` per data payload. Renders null when empty;
+  mount at the BOTTOM of a surface (FLOATING LAW: zero page shift).
+- Launcher hooks register runs from `adoptForeignStream`'s `onAdopted` and clear ONLY on a new
+  logical session — never on unmount (surviving unmount is the point). Exemplar:
+  `useKeywordResearch` (`runSetKey` option) + `KeywordResearchTab`.
+- **Late-settling streams must not stomp state**: a hook that reuses one state object across
+  sequential calls guards every write with a run EPOCH (see `useKeywordResearch`'s
+  `runEpochRef`) so an older call resolving late no-ops instead of flipping the current run to
+  done/error.
+
 ## When output is present in Redux but still not rendered
 
 That is the OTHER family — kind-routing, not retention: the row holds blocks but the `__kind`
@@ -61,6 +86,9 @@ Redux devtools before touching retention seams.
 
 ## Change Log
 
+- 2026-08-13 — Multi-run surfaces get their canonical home: `runSets` slice + `RunSetDisplay`
+  (+ set-scoped retention holds, run-epoch guard doctrine). First consumer: keyword research
+  (`useKeywordResearch` `runSetKey`/`rejoinPhrase` options; phrase-scoped auto-rejoin).
 - 2026-08-12 — Seam #3 swept across every `adoptForeignStream` consumer: reputation
   analysis, competitor autopsy, AI visibility (hook + public tool), setup passes,
   authority router, and both YouTube-analysis callers now store the stream's

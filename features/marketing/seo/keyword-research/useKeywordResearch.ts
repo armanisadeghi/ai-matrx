@@ -16,6 +16,10 @@ import { callApi } from "@/lib/api/call-api";
 import { adoptForeignStream } from "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream";
 import { removeRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
 import {
+  addRunToSet,
+  clearRunSet,
+} from "@/features/agents/redux/execution-system/run-sets/run-sets.thunks";
+import {
   describeBackendFailure,
   parseCallApiError,
   parsePersistedBackendError,
@@ -151,13 +155,40 @@ type ResearchStreamRequest =
       body?: undefined;
     };
 
-export function useKeywordResearch(organizationId?: string | null) {
+export function useKeywordResearch(
+  organizationId?: string | null,
+  options?: {
+    /**
+     * Phrase-scoped surfaces (the Keyword Intelligence Research tab) pass
+     * their phrase so the mount-time auto-rejoin only reattaches a stored run
+     * for THIS keyword. Without it, every mounted instance of this hook
+     * rejoins whatever run sessionStorage holds — a different keyword's run
+     * renders under the wrong heading on multi-surface pages. Unscoped
+     * launchers (the workbench) omit it and rejoin anything.
+     */
+    rejoinPhrase?: string;
+    /**
+     * When set, every adopted run is registered in the surface-keyed run set
+     * (`runSets` slice) so the surface's live output SURVIVES REMOUNTS and
+     * multiple runs stay individually addressable. Render with
+     * `<RunSetDisplay setKey={…}/>`. A fresh `runResearch` clears the set
+     * (new logical session); a rejoin re-attaches without clearing.
+     */
+    runSetKey?: string;
+  },
+) {
   const dispatch = useAppDispatch();
   const [keywords, setKeywords] = useState<KeywordWithMarket[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [run, setRun] = useState<ResearchRunState>({ status: "idle" });
+  // RAW state setter — only run-seeding code (runResearch / rejoinResearch)
+  // may call this directly. Stream consumers get an epoch-scoped `setRun`
+  // (below) so a STALE stream settling late can never stomp the state of the
+  // run currently on screen. That stomp is the "multiple calls confuse the
+  // UI when the first one finishes" class: a leftover rejoin or a previous
+  // run resolving flips status to done/error and the live view unrenders.
+  const [run, setRunState] = useState<ResearchRunState>({ status: "idle" });
   const [volumeStage, setVolumeStage] = useState<string | null>(null);
   // The active cluster scope — when set, the explorer lists only these
   // phrases instead of the whole universal library. Set by a completed
@@ -177,6 +208,13 @@ export function useKeywordResearch(organizationId?: string | null) {
    * (events on a missing row are silently dropped — the disappearing-run
    * class; see features/agents/docs/LIVE_RUN_RETENTION.md). */
   const streamAbortRef = useRef<AbortController | null>(null);
+  /** Monotonic run epoch. Bumped by every run/rejoin seed; each stream
+   * consumer captures its epoch and its state writes no-op once a newer run
+   * owns the surface. */
+  const runEpochRef = useRef(0);
+  /** Latest options without threading them through callback deps. */
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
 
   const reload = useCallback(async (searchValue: string) => {
     abortRef.current?.abort();
@@ -243,6 +281,14 @@ export function useKeywordResearch(organizationId?: string | null) {
 
   const consumeResearchStream = useCallback(
     async (phrase: string, request: ResearchStreamRequest) => {
+      // Epoch-scoped setter: shadows the raw setter so every state write in
+      // this consumer silently no-ops once a NEWER run seeded the surface.
+      const epoch = runEpochRef.current;
+      const setRun = (
+        updater: (current: ResearchRunState) => ResearchRunState,
+      ) => {
+        if (runEpochRef.current === epoch) setRunState(updater);
+      };
       const completedResults: KeywordResearchResponse[] = [];
       let serverBusy = false;
       let streamFailure: string | null = null;
@@ -369,6 +415,16 @@ export function useKeywordResearch(organizationId?: string | null) {
           onAdopted: ({ requestId }) => {
             adoptedRequestIdRef.current = requestId;
             setRun((current) => ({ ...current, requestId }));
+            const runSetKey = optionsRef.current?.runSetKey;
+            if (runSetKey) {
+              dispatch(
+                addRunToSet({
+                  setKey: runSetKey,
+                  requestId,
+                  label: `Keyword research — ${phrase}`,
+                }),
+              );
+            }
           },
           onEvent: onStreamEvent,
           abortController: streamAbort,
@@ -396,6 +452,10 @@ export function useKeywordResearch(organizationId?: string | null) {
               signal: streamAbort.signal,
             }),
       );
+      // A newer run seeded the surface while this one drained: everything
+      // below (error surfacing, stored-run clearing, cluster/reload side
+      // effects) belongs to the CURRENT run, not this one. Settle silently.
+      if (runEpochRef.current !== epoch) return;
       if (result.error) {
         storeActiveRun(null);
         const explanation = describeBackendFailure(
@@ -442,7 +502,12 @@ export function useKeywordResearch(organizationId?: string | null) {
     async (primaryKeyword: string) => {
       const phrase = primaryKeyword.trim();
       if (!phrase) return;
-      setRun({
+      runEpochRef.current += 1;
+      // A fresh run is a new logical session for the surface's run set; a
+      // REJOIN (below) deliberately re-attaches without clearing.
+      const runSetKey = optionsRef.current?.runSetKey;
+      if (runSetKey) dispatch(clearRunSet(runSetKey));
+      setRunState({
         status: "running",
         primaryKeyword: phrase,
         stage: "Checking organization access and DataForSEO credentials",
@@ -452,12 +517,13 @@ export function useKeywordResearch(organizationId?: string | null) {
         body: { primary_keyword: phrase },
       });
     },
-    [consumeResearchStream],
+    [consumeResearchStream, dispatch],
   );
 
   const rejoinResearch = useCallback(
     async (runId: string, primaryKeyword: string) => {
-      setRun({
+      runEpochRef.current += 1;
+      setRunState({
         status: "running",
         primaryKeyword,
         stage: "Rejoining previous run",
@@ -468,7 +534,7 @@ export function useKeywordResearch(organizationId?: string | null) {
         pathParams: { run_id: runId },
       });
     },
-    [consumeResearchStream],
+    [consumeResearchStream, dispatch],
   );
 
   // After a refresh/crash mid-run, automatically rejoin the durable run —
@@ -481,12 +547,19 @@ export function useKeywordResearch(organizationId?: string | null) {
     const stored = readStoredActiveRun();
     // Deferred so the rejoin's synchronous setRun never fires inside the
     // effect body (react-hooks/set-state-in-effect).
-    if (stored) {
-      void Promise.resolve().then(() =>
-        rejoinResearch(stored.runId, stored.primaryKeyword),
-      );
+    if (!stored) return;
+    if (
+      options?.rejoinPhrase &&
+      normalizeClusterPhrase(stored.primaryKeyword) !==
+        normalizeClusterPhrase(options.rejoinPhrase)
+    ) {
+      // Another surface's run — leave the stored record for that surface.
+      return;
     }
-  }, [rejoinResearch]);
+    void Promise.resolve().then(() =>
+      rejoinResearch(stored.runId, stored.primaryKeyword),
+    );
+  }, [rejoinResearch, options?.rejoinPhrase]);
 
   const refreshVolume = useCallback(
     async (phrases: string[], forceRefresh: boolean) => {

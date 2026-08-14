@@ -8,7 +8,8 @@
  * REUSING `useKeywordResearch` from the keyword-research feature — the same
  * durable-run, auto-rejoin behavior the workbench uses.
  *
- * Live output renders through the ONE canonical pipeline (`MarkdownStream`
+ * Live output renders through the remount-proof `RunSetDisplay` (which
+ * composes the ONE canonical pipeline, `MarkdownStream`
  * over the adopted requestId), exactly as chat does. Keyword SELECTION is not
  * threaded into the blocks as props — it travels the two surface seams:
  * this tab PUBLISHES `keyword_selection` UI state and REGISTERS the
@@ -29,7 +30,10 @@ import {
   useSavedKeywordResearch,
 } from "@/features/marketing/seo/keyword-research/useSavedKeywordResearch";
 import SavedResearchFeed from "@/features/marketing/seo/keyword-research/components/SavedResearchFeed";
-import MarkdownStream from "@/components/MarkdownStream";
+import {
+  RunSetDisplay,
+  useRunSet,
+} from "@/features/agents/components/live-run/RunSetDisplay";
 import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { publishSurfaceUiState } from "@/features/surfaces/runtime/surface-ui-state";
 import type {
@@ -61,8 +65,18 @@ export function KeywordResearchTab({
   pageId?: string | null;
   onResearchStart?: (phrase: string) => void;
 }) {
-  const research = useKeywordResearch(organizationId);
+  // The run set is the REMOUNT-PROOF home of this surface's live output:
+  // registered runs live in Redux under this key, so a tab switch, a
+  // query-driven re-render, or any parent remount re-attaches to the same
+  // streamed content (features/agents/docs/LIVE_RUN_RETENTION.md § Multi-run
+  // surfaces). Keyed per phrase + org so parallel windows never collide.
+  const runSetKey = `keyword-research:${normalizeKeywordPhrase(phrase)}:${organizationId ?? "personal"}`;
+  const research = useKeywordResearch(organizationId, {
+    rejoinPhrase: phrase,
+    runSetKey,
+  });
   const { run } = research;
+  const runSet = useRunSet(runSetKey);
   const running = run.status === "running";
   const queryClient = useQueryClient();
   const [selectedByKey, setSelectedByKey] = useState<Record<string, string>>({});
@@ -70,7 +84,7 @@ export function KeywordResearchTab({
   const disabledPhrases = new Set([normalizeKeywordPhrase(phrase)]);
   const saved = useSavedKeywordResearch(phrase, organizationId);
   const visibleArtifact = run.result?.artifact ?? saved.data?.artifact ?? null;
-  const hasLiveOutput = Boolean(run.requestId && run.hasStreamedContent);
+  const hasLiveOutput = runSet.entries.length > 0;
 
   // ── The 360 loop, this surface's half ────────────────────────────────────
   // PUBLISH what the blocks need to read, REGISTER the handler for the target
@@ -275,13 +289,15 @@ export function KeywordResearchTab({
         </div>
       ) : null}
 
+      {/* Live (and just-finished) runs — remount-proof, from the run set. */}
       {hasLiveOutput ? (
-        <MarkdownStream
-          requestId={run.requestId}
-          isStreamActive={running}
-          hideCopyButton
-        />
-      ) : visibleArtifact ? (
+        <RunSetDisplay setKey={runSetKey} variant="bare" dismissible={false} />
+      ) : null}
+
+      {/* The durable artifact — always reachable once the run settles, so a
+          thin stream (a classification-only pass) never hides the full
+          research feed. */}
+      {!running && visibleArtifact ? (
         <SavedResearchFeed
           artifact={visibleArtifact}
           // Only the SAVED artifact is an addressable, shareable record; a
