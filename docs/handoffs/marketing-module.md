@@ -13,6 +13,7 @@ The module was **structurally repaired and then given its full intended shape**.
 
 | Area | Doc |
 | --- | --- |
+| Navigation BELOW the pillar level (the site's 26 sections, sub-view hierarchy, marketing mode sidebar) | [marketing-navigation-hierarchy.md](marketing-navigation-hierarchy.md) |
 | Websites vertical (brands, crawls, coverage, GSC) **+ the `web.*` access model** | [marketing-brand-coverage-program.md](marketing-brand-coverage-program.md) |
 | ↳ Backlinks workspace (provider profile, assessments, outreach) | [backlink-intelligence-frontend.md](backlink-intelligence-frontend.md) + aidream `docs/handoffs/backlink-intelligence-backend.md` |
 | ↳ Legacy `web.gsc_page_stat` retirement | [gsc-page-stat-retirement.md](gsc-page-stat-retirement.md) |

@@ -18,6 +18,7 @@ One page that tells any agent (or Arman) what this program is, what's in motion,
 | **Access model, RLS, visibility — read before touching any of it** | [docs/handoffs/marketing-brand-coverage-program.md](handoffs/marketing-brand-coverage-program.md) (Access model section — the former access-and-rls handoff is merged there) |
 | Full work order, remaining items, decisions needed | [docs/handoffs/marketing-brand-coverage-program.md](handoffs/marketing-brand-coverage-program.md)                                |
 | Module shape: pillars, reserved routes, nav, landing | [docs/handoffs/marketing-module.md](handoffs/marketing-module.md)                                                                |
+| Site-level navigation: the 26 sections, sub-view hierarchy, marketing mode sidebar | [docs/handoffs/marketing-navigation-hierarchy.md](handoffs/marketing-navigation-hierarchy.md)                    |
 | Page workspace authoring layer | [docs/handoffs/marketing-page-workspace-evolution.md](handoffs/marketing-page-workspace-evolution.md)                            |
 | Feature truth (invariants, CRUD map, data model)   | [features/marketing/FEATURE.md](../features/marketing/FEATURE.md)                                                                |
 | Scraper twin (commands, contracts, deployment env) | aidream `packages/matrx-scraper/matrx_scraper/web_crawl/FEATURE.md`                                                              |
