@@ -26,13 +26,21 @@ the legacy-owner `user_id` warning. Fix this as one focused base-entity retrofit
 auditing every current producer; do not fold it into suppression or change the personal
 addressee contract while doing so.
 
-### Database reorg regressions → tracked in their own working list (2026-08-13)
+### Database reorg regressions → CLOSED 2026-08-13, no working list remains
 
-Breakage caused by the ~160-migration database reorganization of 2026-08-11→13 is
-worked from **[docs/db_changes/DB_REGRESSION_SWEEP.md](docs/db_changes/DB_REGRESSION_SWEEP.md)**,
-not from here. Add new findings of that class there. Two rules learned the hard way
-and written up in that doc: a migration file on disk changes nothing until it is
-applied live, and `audit.broken_functions` is currently ~97% false positives.
+Every regression from the ~160-migration reorganization of 2026-08-11→13 is fixed and
+verified live; `docs/db_changes/DB_REGRESSION_SWEEP.md` was deleted rather than left as
+an archive. Both durable lessons moved to their permanent homes: "a migration file on
+disk changes nothing" is §Database migrations in [CLAUDE.md](CLAUDE.md), and the
+conformance checker's contract — **act on `audit.broken_functions.severity`, NEVER on
+`level`** — is `common-docs/systems/db-rules/FEATURE.md` §11.
+
+⚠️ **The old "`audit.broken_functions` is ~97% false positives" warning is obsolete —
+do not act on it.** That was true of the *broken* checker: 101 rows for 3 genuinely
+broken functions, because `plpgsql_check` ran under a `search_path` no function ever
+uses. Fixed 2026-08-13; each function is now checked under its own effective search
+path, every finding carries a `severity`, and the actionable count is **0**. A `real`
+row today is a real runtime failure — treat it as one.
 
 ### D184 — `growth.v_loop_state` is exposed to nobody, and would leak every org if it were (2026-08-13)
 
