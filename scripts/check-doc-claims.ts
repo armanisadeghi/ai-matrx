@@ -47,6 +47,7 @@ const PKG = JSON.parse(read("package.json")) as {
   packageManager?: string;
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
+  scripts?: Record<string, string>;
 };
 
 /** Installed version from node_modules, not the declared range (many deps are "latest"). */
@@ -103,6 +104,29 @@ interface Claim {
 }
 
 const claims: Claim[] = [
+  {
+    id: "unwired-detector-wiring",
+    claim:
+      "pnpm check:unwired exists and is advisory in run-release-gates.sh in both modes",
+    where: "CLAUDE.md § No Dead Ends / unfinished-work alarm",
+    check: () => {
+      const gate = read("scripts/run-release-gates.sh");
+      const script = PKG.scripts?.["check:unwired"];
+      const problems: string[] = [];
+      if (script !== "tsx scripts/unwired/check-unwired.ts") {
+        problems.push(`package.json check:unwired is ${JSON.stringify(script)}`);
+      }
+      if (!existsSync(join(ROOT, "scripts/unwired/check-unwired.ts"))) {
+        problems.push("scripts/unwired/check-unwired.ts does not exist");
+      }
+      const mentions = gate.match(/scripts\/unwired\/check-unwired\.ts/g)?.length ?? 0;
+      if (mentions < 2) {
+        problems.push(`run-release-gates.sh invokes the unwired checker ${mentions} time(s), not once in each mode`);
+      }
+      return problems.length > 0 ? problems.join("; ") : null;
+    },
+    fix: "Keep package.json, scripts/unwired/check-unwired.ts, and both release-gate arrays wired in the same commit—or remove the CLAUDE.md claim in that same commit.",
+  },
   {
     id: "react-compiler",
     claim:

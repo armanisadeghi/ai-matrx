@@ -71,6 +71,10 @@ if $STRICT; then
         # block every release until the campaign lands. Promote to --strict when
         # the scoreboard reaches zero.
         "No dead ends (Door Law)|pnpm exec tsx scripts/dead-ends/check-dead-ends.ts --limit=15"
+        # UNWIRED WORK stays ADVISORY even in strict mode. A finding means a
+        # previous builder was interrupted and the runtime seam must be FINISHED;
+        # the standing backlog may never block an unrelated release.
+        "Unwired work (finish purpose-built artifacts)|pnpm exec tsx scripts/unwired/check-unwired.ts --limit=15"
         # ACCESS ERRORS stays ADVISORY in both modes, same reasoning as the Door
         # Law above: the primitive (features/access-gate) shipped 2026-08-11 with
         # a known ~540-surface conversion backlog behind it. Hard-failing would
@@ -120,6 +124,9 @@ else
         # open it. Advisory by design (Arman: no check blocks a build); the
         # ranked scoreboard lives at /administration/reporting/dead-ends.
         "No dead ends (Door Law)|pnpm exec tsx scripts/dead-ends/check-dead-ends.ts --limit=15"
+        # Cross-repo unfinished-work alarm; loud and advisory in every mode.
+        # Scoreboard: /administration/reporting/unwired.
+        "Unwired work (finish purpose-built artifacts)|pnpm exec tsx scripts/unwired/check-unwired.ts --limit=15"
         # Every surface still guessing why a read failed — see the strict list
         # above for why this is advisory. Fix = <AccessGate/>.
         "Access errors (surfaces that guess why a read failed)|pnpm exec tsx scripts/access-errors/check-access-errors.ts"

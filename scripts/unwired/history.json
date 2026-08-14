@@ -1,0 +1,9 @@
+[
+  {
+    "generatedAt": "2026-08-14T00:50:49.301Z",
+    "commit": "8b11a219529367f277138b977486e4cf49acefd1",
+    "findings": 1268,
+    "lines": 61426,
+    "filesWithFindings": 882
+  }
+]

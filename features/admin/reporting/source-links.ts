@@ -26,20 +26,34 @@
  * is still shown in the header, linked to its own compare view, as provenance.
  */
 
-/** The one place the repo URL is written. */
-const REPO_URL = "https://github.com/armanisadeghi/ai-matrx";
+/** The one place reporting scoreboards map a repository to its durable source. */
+const REPO_URLS = {
+  "matrx-frontend": "https://github.com/armanisadeghi/ai-matrx",
+  aidream: "https://github.com/AI-Matrix-Engine/aidream",
+} as const;
+
+export type SourceRepository = keyof typeof REPO_URLS;
 
 /** Permanent ref. See the note above — never the scan commit. */
 const DEFAULT_BRANCH = "main";
 
 /** Line-anchored source door. */
 export function sourceHref(file: string, line: number): string {
-  return `${REPO_URL}/blob/${DEFAULT_BRANCH}/${encodeURI(file)}#L${line}`;
+  return repositorySourceHref("matrx-frontend", file, line);
+}
+
+/** Cross-repo line door for scoreboards such as built-and-unwired. */
+export function repositorySourceHref(
+  repository: SourceRepository,
+  file: string,
+  line: number,
+): string {
+  return `${REPO_URLS[repository]}/blob/${DEFAULT_BRANCH}/${encodeURI(file)}#L${line}`;
 }
 
 /** File or directory door, unanchored — used by the bucket lists. */
 export function pathHref(path: string): string {
-  return `${REPO_URL}/tree/${DEFAULT_BRANCH}/${encodeURI(path)}`;
+  return `${REPO_URLS["matrx-frontend"]}/tree/${DEFAULT_BRANCH}/${encodeURI(path)}`;
 }
 
 /**
@@ -49,5 +63,5 @@ export function pathHref(path: string): string {
  * is gone" rather than silently mis-anchoring a line.
  */
 export function commitHref(commit: string): string {
-  return `${REPO_URL}/commit/${commit}`;
+  return `${REPO_URLS["matrx-frontend"]}/commit/${commit}`;
 }

@@ -1180,6 +1180,14 @@ export const adminCategoriesData: AdminCategory[] = [
         link: "/administration/reporting/lint-debt",
         isNew: true,
       },
+      {
+        title: "Unwired Work",
+        description:
+          "Purpose-built components, services, routers, host installers, and scheduler handlers that still need a runtime path. Ranked by implementation size with a finish-the-wiring brief on every row.",
+        iconName: "PlugZap",
+        link: "/administration/reporting/unwired",
+        isNew: true,
+      },
     ],
   },
   {

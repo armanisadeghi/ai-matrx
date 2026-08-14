@@ -1,0 +1,8 @@
+{
+  "_doc": [
+    "Reason-required suppressions for pnpm check:unwired.",
+    "An entry means the artifact IS wired through a static shape the detector cannot see.",
+    "It never means the artifact is unwanted. Unmatched entries are reported as stale."
+  ],
+  "entries": []
+}
