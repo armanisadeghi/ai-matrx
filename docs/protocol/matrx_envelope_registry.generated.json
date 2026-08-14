@@ -9183,7 +9183,7 @@
     },
     {
       "category": "pure",
-      "doc": "Pointer to one Campaign (crm.campaign) row by id (RLS-scoped, read-only).",
+      "doc": "Pointer to one Outreach List (crm.outreach_list) row by id (RLS-scoped, read-only).",
       "item_model": "RecordRef",
       "kind": "reference",
       "purposes": [
@@ -9263,7 +9263,7 @@
             "type": "integer"
           },
           "type": {
-            "const": "crm_campaign",
+            "const": "crm_outreach_list",
             "type": "string"
           }
         },
@@ -9275,7 +9275,7 @@
         ],
         "type": "object"
       },
-      "type": "crm_campaign"
+      "type": "crm_outreach_list"
     },
     {
       "category": "pure",

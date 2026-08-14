@@ -13436,138 +13436,6 @@
    "view": "no"
   },
   {
-   "create": "planned",
-   "delete": "planned",
-   "family": "Other",
-   "identity_fields": [
-    "id"
-   ],
-   "label": "Campaign",
-   "noun": "crm_campaign",
-   "reference": "yes",
-   "schemas": {
-    "create": {
-     "additionalProperties": true,
-     "properties": {
-      "campaign_kind": {
-       "default": "list",
-       "title": "Campaign Kind"
-      },
-      "definition": {
-       "default": {},
-       "title": "Definition"
-      },
-      "description": {
-       "default": null,
-       "title": "Description"
-      },
-      "ended_at": {
-       "default": null,
-       "title": "Ended At"
-      },
-      "metadata": {
-       "default": {},
-       "title": "Metadata"
-      },
-      "name": {
-       "title": "Name"
-      },
-      "started_at": {
-       "default": null,
-       "title": "Started At"
-      },
-      "status": {
-       "default": "draft",
-       "title": "Status"
-      }
-     },
-     "required": [
-      "name"
-     ],
-     "title": "CreateCrmCampaignItem",
-     "type": "object"
-    },
-    "delete": {
-     "additionalProperties": true,
-     "properties": {
-      "id": {
-       "title": "Id",
-       "type": "string"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "DeleteCrmCampaignItem",
-     "type": "object"
-    },
-    "update": {
-     "additionalProperties": true,
-     "properties": {
-      "campaign_kind": {
-       "default": null,
-       "title": "Campaign Kind"
-      },
-      "definition": {
-       "default": null,
-       "title": "Definition"
-      },
-      "description": {
-       "default": null,
-       "title": "Description"
-      },
-      "ended_at": {
-       "default": null,
-       "title": "Ended At"
-      },
-      "id": {
-       "title": "Id",
-       "type": "string"
-      },
-      "metadata": {
-       "default": null,
-       "title": "Metadata"
-      },
-      "name": {
-       "default": null,
-       "title": "Name"
-      },
-      "started_at": {
-       "default": null,
-       "title": "Started At"
-      },
-      "status": {
-       "default": null,
-       "title": "Status"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "UpdateCrmCampaignItem",
-     "type": "object"
-    }
-   },
-   "table": "crm.campaign",
-   "title_column": "name",
-   "update": "planned",
-   "view": "yes"
-  },
-  {
-   "create": "no",
-   "delete": "no",
-   "family": "Other",
-   "identity_fields": [],
-   "label": "Campaign Member",
-   "noun": "crm_campaign_member",
-   "reference": "no",
-   "schemas": null,
-   "table": "crm.campaign_member",
-   "title_column": null,
-   "update": "no",
-   "view": "no"
-  },
-  {
    "create": "no",
    "delete": "no",
    "family": "Other",
@@ -13591,6 +13459,138 @@
    "reference": "no",
    "schemas": null,
    "table": "crm.merge_candidate",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Outreach List",
+   "noun": "crm_outreach_list",
+   "reference": "yes",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "definition": {
+       "default": {},
+       "title": "Definition"
+      },
+      "description": {
+       "default": null,
+       "title": "Description"
+      },
+      "ended_at": {
+       "default": null,
+       "title": "Ended At"
+      },
+      "list_kind": {
+       "default": "list",
+       "title": "List Kind"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "name": {
+       "title": "Name"
+      },
+      "started_at": {
+       "default": null,
+       "title": "Started At"
+      },
+      "status": {
+       "default": "draft",
+       "title": "Status"
+      }
+     },
+     "required": [
+      "name"
+     ],
+     "title": "CreateCrmOutreachListItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteCrmOutreachListItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "definition": {
+       "default": null,
+       "title": "Definition"
+      },
+      "description": {
+       "default": null,
+       "title": "Description"
+      },
+      "ended_at": {
+       "default": null,
+       "title": "Ended At"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "list_kind": {
+       "default": null,
+       "title": "List Kind"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "name": {
+       "default": null,
+       "title": "Name"
+      },
+      "started_at": {
+       "default": null,
+       "title": "Started At"
+      },
+      "status": {
+       "default": null,
+       "title": "Status"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateCrmOutreachListItem",
+     "type": "object"
+    }
+   },
+   "table": "crm.outreach_list",
+   "title_column": "name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Outreach List Member",
+   "noun": "crm_outreach_list_member",
+   "reference": "no",
+   "schemas": null,
+   "table": "crm.outreach_list_member",
    "title_column": null,
    "update": "no",
    "view": "no"

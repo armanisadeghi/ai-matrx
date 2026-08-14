@@ -139,7 +139,7 @@ const EMPLOYER_EMBED =
 /**
  * The filter methods the party predicates use, structurally — so ONE helper
  * serves builders parameterized on different select strings (the list page's
- * embed select and the campaign flow's id-only select). PostgREST builder
+ * embed select and the outreach list flow's id-only select). PostgREST builder
  * methods return `this`, which satisfies the recursive `Q`.
  */
 type PartyPredicateBuilder<Q> = {
@@ -155,8 +155,8 @@ type PartyPredicateBuilder<Q> = {
 /**
  * Apply the FULL party-list predicate set (canonical, view, scope, kind facet,
  * column filters, search) to a `crm.party` PostgREST builder. Shared by the
- * list page AND the campaign "add members from filters" flow, so the records
- * a filter previews and the records a campaign enrolls can never diverge.
+ * list page AND the outreach list "add members from filters" flow, so the records
+ * a filter previews and the records an outreach list enrolls can never diverge.
  */
 export function applyPartyListPredicates<Q extends PartyPredicateBuilder<Q>>(
   builder: Q,

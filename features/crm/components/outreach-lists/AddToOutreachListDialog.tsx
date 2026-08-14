@@ -1,9 +1,9 @@
 "use client";
 
-// features/crm/components/campaigns/AddToCampaignDialog.tsx
+// features/crm/components/outreach-lists/AddToOutreachListDialog.tsx
 //
-// Enroll an EXPLICIT selection (the /crm list's checked rows) into a campaign
-// — pick an existing campaign or create one inline. DNC-flagged records in
+// Enroll an EXPLICIT selection (the /crm list's checked rows) into an outreach list
+// — pick an existing outreach list or create one inline. DNC-flagged records in
 // the selection are surfaced (and skipped by default), never silently dialed
 // later.
 
@@ -27,14 +27,14 @@ import { formatRelativeTime } from "@/utils/datetime";
 import { useCrmContext } from "../../hooks/useCrmContext";
 import {
   addMembersByPartyIds,
-  createCampaign,
-  fetchCampaigns,
-} from "../../campaigns/service";
-import type { CampaignListRow } from "../../campaigns/types";
-import { CampaignKindBadge, CampaignStatusBadge } from "./badges";
+  createOutreachList,
+  fetchOutreachLists,
+} from "../../outreach-lists/service";
+import type { OutreachListWithCount } from "../../outreach-lists/types";
+import { ListKindBadge, ListStatusBadge } from "./badges";
 import type { PartyListRow } from "../../types";
 
-export function AddToCampaignDialog({
+export function AddToOutreachListDialog({
   open,
   onOpenChange,
   /** The selected rows that are loaded (for DNC awareness) … */
@@ -50,7 +50,7 @@ export function AddToCampaignDialog({
   onDone: () => void;
 }) {
   const ctx = useCrmContext();
-  const [campaigns, setCampaigns] = useState<CampaignListRow[] | null>(null);
+  const [lists, setLists] = useState<OutreachListWithCount[] | null>(null);
   const [chosenId, setChosenId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
@@ -62,21 +62,21 @@ export function AddToCampaignDialog({
     let cancelled = false;
     void (async () => {
       try {
-        const rows = await fetchCampaigns(ctx);
+        const rows = await fetchOutreachLists(ctx);
         if (cancelled) return;
-        // Working campaigns first; archived stay reachable but sink.
+        // Working outreach lists first; archived stay reachable but sink.
         const ranked = [...rows].sort((a, b) => {
           const rank = (s: string) =>
             s === "active" ? 0 : s === "draft" ? 1 : s === "paused" ? 2 : 3;
           return rank(a.status) - rank(b.status);
         });
-        setCampaigns(ranked);
+        setLists(ranked);
         setChosenId((prev) => prev ?? ranked[0]?.id ?? null);
         if (ranked.length === 0) setCreating(true);
       } catch (e) {
         if (!cancelled)
           toast.error(
-            e instanceof Error ? e.message : "Failed to load campaigns",
+            e instanceof Error ? e.message : "Failed to load outreach lists",
           );
       }
     })();
@@ -105,21 +105,21 @@ export function AddToCampaignDialog({
     if (!ctx) return;
     setSaving(true);
     try {
-      let campaign =
-        campaigns?.find((c) => c.id === chosenId) ?? null;
+      let list =
+        lists?.find((c) => c.id === chosenId) ?? null;
       if (creating) {
         if (!newName.trim()) {
-          toast.error("Name the new campaign");
+          toast.error("Name the new outreach list");
           return;
         }
         const orgId =
           selectedRows[0]?.organization_id ?? ctx.orgIds[0];
         if (!orgId) {
-          toast.error("No organization resolved for the new campaign");
+          toast.error("No organization resolved for the new outreach list");
           return;
         }
-        campaign = {
-          ...(await createCampaign({
+        list = {
+          ...(await createOutreachList({
             name: newName,
             kind: "call",
             orgId,
@@ -127,24 +127,24 @@ export function AddToCampaignDialog({
           members: [],
         };
       }
-      if (!campaign) {
-        toast.error("Pick a campaign first");
+      if (!list) {
+        toast.error("Pick an outreach list first");
         return;
       }
       const { added, skippedExisting } = await addMembersByPartyIds({
-        campaign,
+        list,
         partyIds: enrollIds,
       });
       onOpenChange(false);
       onDone();
       const skippedDnc = selectedIds.length - enrollIds.length;
       toast.success(
-        `${added.toLocaleString()} added to ${campaign.name}` +
+        `${added.toLocaleString()} added to ${list.name}` +
           (skippedExisting > 0
             ? ` · ${skippedExisting.toLocaleString()} already enrolled`
             : "") +
           (skippedDnc > 0 ? ` · ${skippedDnc.toLocaleString()} DNC skipped` : ""),
-        { action: toastDoor("crm_campaign", campaign.id) },
+        { action: toastDoor("crm_outreach_list", list.id) },
       );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Enrollment failed");
@@ -159,23 +159,23 @@ export function AddToCampaignDialog({
         <DialogHeader>
           <DialogTitle>
             Add {selectedIds.length.toLocaleString()} record
-            {selectedIds.length === 1 ? "" : "s"} to a campaign
+            {selectedIds.length === 1 ? "" : "s"} to an outreach list
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-3">
           {!creating && (
             <div className="max-h-56 space-y-1 overflow-y-auto pr-1">
-              {campaigns === null ? (
+              {lists === null ? (
                 <div className="py-3 text-center text-xs text-muted-foreground">
-                  Loading campaigns…
+                  Loading outreach lists…
                 </div>
-              ) : campaigns.length === 0 ? (
+              ) : lists.length === 0 ? (
                 <div className="py-3 text-center text-xs text-muted-foreground">
-                  No campaigns yet — create the first one below.
+                  No outreach lists yet — create the first one below.
                 </div>
               ) : (
-                campaigns.map((c) => (
+                lists.map((c) => (
                   <button
                     key={c.id}
                     type="button"
@@ -190,8 +190,8 @@ export function AddToCampaignDialog({
                     <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground">
                       {c.name}
                     </span>
-                    <CampaignKindBadge kind={c.campaign_kind} />
-                    <CampaignStatusBadge status={c.status} />
+                    <ListKindBadge kind={c.list_kind} />
+                    <ListStatusBadge status={c.status} />
                     <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
                       {(c.members?.[0]?.count ?? 0).toLocaleString()} ·{" "}
                       {formatRelativeTime(c.updated_at)}
@@ -204,27 +204,27 @@ export function AddToCampaignDialog({
 
           {creating ? (
             <div className="space-y-1">
-              <Label htmlFor="new-campaign-name" className="text-xs">
-                New calling campaign
+              <Label htmlFor="new-outreach-list-name" className="text-xs">
+                New calling outreach list
               </Label>
               <Input
-                id="new-campaign-name"
+                id="new-outreach-list-name"
                 value={newName}
                 autoFocus
                 onChange={(e) => setNewName(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") void submit();
                 }}
-                placeholder="Campaign name"
+                placeholder="Outreach list name"
                 className="h-9 text-sm"
               />
-              {campaigns !== null && campaigns.length > 0 && (
+              {lists !== null && lists.length > 0 && (
                 <button
                   type="button"
                   className="text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
                   onClick={() => setCreating(false)}
                 >
-                  Pick an existing campaign instead
+                  Pick an existing outreach list instead
                 </button>
               )}
             </div>
@@ -235,7 +235,7 @@ export function AddToCampaignDialog({
               onClick={() => setCreating(true)}
             >
               <Plus className="h-3.5 w-3.5" />
-              New campaign
+              New outreach list
             </button>
           )}
 

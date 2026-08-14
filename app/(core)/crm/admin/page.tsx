@@ -42,27 +42,27 @@ const CRM_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
-      url: "/crm/campaigns",
-      label: "Campaigns",
+      url: "/crm/outreach-lists",
+      label: "Outreach Lists",
       description:
-        "Campaign console: create list/email/call campaigns, lifecycle controls, member counts.",
-      filePath: "app/(core)/crm/campaigns/page.tsx",
+        "Outreach list console: create list/email/call outreach lists, lifecycle controls, member counts.",
+      filePath: "app/(core)/crm/outreach-lists/page.tsx",
       status: "Live",
     },
     {
-      url: "/crm/campaigns/[campaignId]",
-      label: "Campaign workspace",
+      url: "/crm/outreach-lists/[listId]",
+      label: "Outreach list workspace",
       description:
-        "One campaign: status rollup chips, server-paged member roster, enrollment from filters, lifecycle actions.",
-      filePath: "app/(core)/crm/campaigns/[campaignId]/page.tsx",
+        "One list: status rollup chips, server-paged member roster, enrollment from filters, lifecycle actions.",
+      filePath: "app/(core)/crm/outreach-lists/[listId]/page.tsx",
       status: "Live",
     },
     {
-      url: "/crm/campaigns/[campaignId]/dial",
+      url: "/crm/outreach-lists/[listId]/dial",
       label: "Call queue (power dialer)",
       description:
         "Claim-locked power dialer: next member, DNC/suppression-checked dial targets, call logging to crm.interaction, dispositions with retry windows.",
-      filePath: "app/(core)/crm/campaigns/[campaignId]/dial/page.tsx",
+      filePath: "app/(core)/crm/outreach-lists/[listId]/dial/page.tsx",
       status: "Live",
     },
     {
@@ -128,10 +128,10 @@ const CRM_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
-      name: "CampaignListPage / CampaignDetailPage / CallQueuePage",
-      filePath: "features/crm/components/campaigns/",
+      name: "OutreachListsPage / OutreachListDetailPage / CallQueuePage",
+      filePath: "features/crm/components/outreach-lists/",
       description:
-        "Campaign console, campaign workspace, and the claim-locked power dialer plus the enrollment dialogs (AddMembersDialog by filter, AddToCampaignDialog from list selection). Data layer in features/crm/campaigns/.",
+        "Outreach list console, outreach list workspace, and the claim-locked power dialer plus the enrollment dialogs (AddMembersDialog by filter, AddToOutreachListDialog from list selection). Data layer in features/crm/outreach-lists/.",
       tier: "internal",
       status: "Live",
     },

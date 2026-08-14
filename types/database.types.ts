@@ -10675,160 +10675,6 @@ export type Database = {
           },
         ]
       }
-      campaign: {
-        Row: {
-          campaign_kind: string
-          created_at: string
-          created_by: string | null
-          definition: Json
-          deleted_at: string | null
-          description: string | null
-          ended_at: string | null
-          id: string
-          metadata: Json
-          name: string
-          organization_id: string
-          started_at: string | null
-          status: string
-          updated_at: string
-          updated_by: string | null
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          campaign_kind?: string
-          created_at?: string
-          created_by?: string | null
-          definition?: Json
-          deleted_at?: string | null
-          description?: string | null
-          ended_at?: string | null
-          id?: string
-          metadata?: Json
-          name: string
-          organization_id: string
-          started_at?: string | null
-          status?: string
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          campaign_kind?: string
-          created_at?: string
-          created_by?: string | null
-          definition?: Json
-          deleted_at?: string | null
-          description?: string | null
-          ended_at?: string | null
-          id?: string
-          metadata?: Json
-          name?: string
-          organization_id?: string
-          started_at?: string | null
-          status?: string
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Relationships: []
-      }
-      campaign_member: {
-        Row: {
-          attempt_count: number
-          campaign_id: string
-          claimed_by: string | null
-          claimed_until: string | null
-          contact_point_id: string | null
-          created_at: string
-          created_by: string | null
-          current_step: number | null
-          deleted_at: string | null
-          id: string
-          last_attempt_at: string | null
-          metadata: Json
-          next_attempt_at: string | null
-          notes: string | null
-          organization_id: string
-          outcome_id: string | null
-          party_id: string
-          status: string
-          updated_at: string
-          updated_by: string | null
-          version: number
-        }
-        Insert: {
-          attempt_count?: number
-          campaign_id: string
-          claimed_by?: string | null
-          claimed_until?: string | null
-          contact_point_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          current_step?: number | null
-          deleted_at?: string | null
-          id?: string
-          last_attempt_at?: string | null
-          metadata?: Json
-          next_attempt_at?: string | null
-          notes?: string | null
-          organization_id: string
-          outcome_id?: string | null
-          party_id: string
-          status?: string
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-        }
-        Update: {
-          attempt_count?: number
-          campaign_id?: string
-          claimed_by?: string | null
-          claimed_until?: string | null
-          contact_point_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          current_step?: number | null
-          deleted_at?: string | null
-          id?: string
-          last_attempt_at?: string | null
-          metadata?: Json
-          next_attempt_at?: string | null
-          notes?: string | null
-          organization_id?: string
-          outcome_id?: string | null
-          party_id?: string
-          status?: string
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "campaign_member_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "campaign"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "campaign_member_contact_point_id_fkey"
-            columns: ["contact_point_id"]
-            isOneToOne: false
-            referencedRelation: "party_contact_point"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "campaign_member_party_id_fkey"
-            columns: ["party_id"]
-            isOneToOne: false
-            referencedRelation: "party"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       contact_medium: {
         Row: {
           bounce_count: number
@@ -10959,7 +10805,6 @@ export type Database = {
           attempt_number: number | null
           attributes: Json
           body: string | null
-          campaign_id: string | null
           channel_code: string
           channel_id: string | null
           contact_point_id: string | null
@@ -10975,6 +10820,7 @@ export type Database = {
           occurred_at: string | null
           organization_id: string
           outcome_id: string | null
+          outreach_list_id: string | null
           party_id: string
           performed_by: string | null
           recording_url: string | null
@@ -10992,7 +10838,6 @@ export type Database = {
           attempt_number?: number | null
           attributes?: Json
           body?: string | null
-          campaign_id?: string | null
           channel_code?: string
           channel_id?: string | null
           contact_point_id?: string | null
@@ -11008,6 +10853,7 @@ export type Database = {
           occurred_at?: string | null
           organization_id: string
           outcome_id?: string | null
+          outreach_list_id?: string | null
           party_id: string
           performed_by?: string | null
           recording_url?: string | null
@@ -11025,7 +10871,6 @@ export type Database = {
           attempt_number?: number | null
           attributes?: Json
           body?: string | null
-          campaign_id?: string | null
           channel_code?: string
           channel_id?: string | null
           contact_point_id?: string | null
@@ -11041,6 +10886,7 @@ export type Database = {
           occurred_at?: string | null
           organization_id?: string
           outcome_id?: string | null
+          outreach_list_id?: string | null
           party_id?: string
           performed_by?: string | null
           recording_url?: string | null
@@ -11061,17 +10907,17 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "interaction_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "campaign"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "interaction_contact_point_id_fkey"
             columns: ["contact_point_id"]
             isOneToOne: false
             referencedRelation: "party_contact_point"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "interaction_outreach_list_id_fkey"
+            columns: ["outreach_list_id"]
+            isOneToOne: false
+            referencedRelation: "outreach_list"
             referencedColumns: ["id"]
           },
           {
@@ -11155,6 +11001,160 @@ export type Database = {
           {
             foreignKeyName: "merge_candidate_target_id_fkey"
             columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "party"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      outreach_list: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          definition: Json
+          deleted_at: string | null
+          description: string | null
+          ended_at: string | null
+          id: string
+          list_kind: string
+          metadata: Json
+          name: string
+          organization_id: string
+          started_at: string | null
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          definition?: Json
+          deleted_at?: string | null
+          description?: string | null
+          ended_at?: string | null
+          id?: string
+          list_kind?: string
+          metadata?: Json
+          name: string
+          organization_id: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          definition?: Json
+          deleted_at?: string | null
+          description?: string | null
+          ended_at?: string | null
+          id?: string
+          list_kind?: string
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      outreach_list_member: {
+        Row: {
+          attempt_count: number
+          claimed_by: string | null
+          claimed_until: string | null
+          contact_point_id: string | null
+          created_at: string
+          created_by: string | null
+          current_step: number | null
+          deleted_at: string | null
+          id: string
+          last_attempt_at: string | null
+          metadata: Json
+          next_attempt_at: string | null
+          notes: string | null
+          organization_id: string
+          outcome_id: string | null
+          outreach_list_id: string
+          party_id: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          attempt_count?: number
+          claimed_by?: string | null
+          claimed_until?: string | null
+          contact_point_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_step?: number | null
+          deleted_at?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          metadata?: Json
+          next_attempt_at?: string | null
+          notes?: string | null
+          organization_id: string
+          outcome_id?: string | null
+          outreach_list_id: string
+          party_id: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          attempt_count?: number
+          claimed_by?: string | null
+          claimed_until?: string | null
+          contact_point_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_step?: number | null
+          deleted_at?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          metadata?: Json
+          next_attempt_at?: string | null
+          notes?: string | null
+          organization_id?: string
+          outcome_id?: string | null
+          outreach_list_id?: string
+          party_id?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outreach_list_member_contact_point_id_fkey"
+            columns: ["contact_point_id"]
+            isOneToOne: false
+            referencedRelation: "party_contact_point"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outreach_list_member_list_id_fkey"
+            columns: ["outreach_list_id"]
+            isOneToOne: false
+            referencedRelation: "outreach_list"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outreach_list_member_party_id_fkey"
+            columns: ["party_id"]
             isOneToOne: false
             referencedRelation: "party"
             referencedColumns: ["id"]
@@ -32470,7 +32470,7 @@ export type Database = {
           healed_at: string | null
           id: string
           row_id: string
-          schema_name: string | null
+          schema_name: string
           status: string
           table_name: string
         }
@@ -32482,7 +32482,7 @@ export type Database = {
           healed_at?: string | null
           id?: string
           row_id: string
-          schema_name?: string | null
+          schema_name: string
           status?: string
           table_name: string
         }
@@ -32494,7 +32494,7 @@ export type Database = {
           healed_at?: string | null
           id?: string
           row_id?: string
-          schema_name?: string | null
+          schema_name?: string
           status?: string
           table_name?: string
         }
@@ -32506,7 +32506,7 @@ export type Database = {
           created_at: string
           id: string
           note: string | null
-          schema_name: string | null
+          schema_name: string
           table_name: string
         }
         Insert: {
@@ -32514,7 +32514,7 @@ export type Database = {
           created_at?: string
           id?: string
           note?: string | null
-          schema_name?: string | null
+          schema_name: string
           table_name: string
         }
         Update: {
@@ -32522,7 +32522,7 @@ export type Database = {
           created_at?: string
           id?: string
           note?: string | null
-          schema_name?: string | null
+          schema_name?: string
           table_name?: string
         }
         Relationships: []

@@ -79,7 +79,7 @@ import {
   PARTY_TEXT_FILTER_KEYS,
 } from "../types";
 import { PARTY_COLUMNS } from "./columns";
-import { AddToCampaignDialog } from "./campaigns/AddToCampaignDialog";
+import { AddToOutreachListDialog } from "./outreach-lists/AddToOutreachListDialog";
 import { useOpenCrmCreatePartyWindow } from "@/features/overlays/openers/crmCreatePartyWindow";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
@@ -395,9 +395,9 @@ export function CrmListPage({
 
   const inTrash = list.query.view === "trash";
 
-  // Checked rows → "Add to campaign" (the campaign builder's list on-ramp).
+  // Checked rows → "Add to outreach list" (the outreach list builder's list on-ramp).
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [addToCampaignOpen, setAddToCampaignOpen] = useState(false);
+  const [addToOutreachListOpen, setAddToOutreachListOpen] = useState(false);
   const selectedLoadedRows = list.rows.filter((row) =>
     selectedIds.includes(row.id),
   );
@@ -591,13 +591,13 @@ export function CrmListPage({
         className="h-11 gap-1 px-2 text-xs lg:h-7"
         asChild
       >
-        {/* Window mounts keep their state: campaigns open in a new tab. */}
+        {/* Window mounts keep their state: outreach lists open in a new tab. */}
         <Link
-          href="/crm/campaigns"
+          href="/crm/outreach-lists"
           target={presentation === "route" ? undefined : "_blank"}
         >
           <Megaphone className="h-3.5 w-3.5" />
-          Campaigns
+          Outreach Lists
         </Link>
       </Button>
       <Button
@@ -828,10 +828,10 @@ export function CrmListPage({
                       <Button
                         size="sm"
                         className="h-7 gap-1 px-2 text-xs"
-                        onClick={() => setAddToCampaignOpen(true)}
+                        onClick={() => setAddToOutreachListOpen(true)}
                       >
                         <Megaphone className="h-3.5 w-3.5" />
-                        Add to campaign
+                        Add to outreach list
                       </Button>
                     ),
                   }
@@ -878,9 +878,9 @@ export function CrmListPage({
           />
         </div>
 
-        <AddToCampaignDialog
-          open={addToCampaignOpen}
-          onOpenChange={setAddToCampaignOpen}
+        <AddToOutreachListDialog
+          open={addToOutreachListOpen}
+          onOpenChange={setAddToOutreachListOpen}
           selectedRows={selectedLoadedRows}
           selectedIds={selectedIds}
           onDone={() => setSelectedIds([])}

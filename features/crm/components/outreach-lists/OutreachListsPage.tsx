@@ -1,9 +1,9 @@
 "use client";
 
-// features/crm/components/campaigns/CampaignListPage.tsx
+// features/crm/components/outreach-lists/OutreachListsPage.tsx
 //
-// /crm/campaigns — the campaign console: every campaign the user can work
-// (mine + my orgs), dense table-first, with create. Campaign counts are small
+// /crm/outreach-lists — the outreach list console: every outreach list the user can work
+// (mine + my orgs), dense table-first, with create. Outreach list counts are small
 // (an org runs dozens, not thousands), so the table runs in local mode —
 // sort/filter over the loaded set.
 
@@ -20,26 +20,26 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { formatRelativeTime } from "@/utils/datetime";
 import { useCrmContext } from "../../hooks/useCrmContext";
 import {
-  deleteCampaign,
-  fetchCampaigns,
-  setCampaignStatus,
-} from "../../campaigns/service";
-import type { CampaignListRow, CampaignStatus } from "../../campaigns/types";
-import { CAMPAIGN_STATUSES } from "../../campaigns/types";
+  deleteOutreachList,
+  fetchOutreachLists,
+  setOutreachListStatus,
+} from "../../outreach-lists/service";
+import type { OutreachListWithCount, OutreachListStatus } from "../../outreach-lists/types";
+import { LIST_STATUSES } from "../../outreach-lists/types";
 import {
-  CampaignKindBadge,
-  CampaignStatusBadge,
+  ListKindBadge,
+  ListStatusBadge,
 } from "./badges";
-import { CampaignCreateDialog } from "./CampaignCreateDialog";
+import { OutreachListCreateDialog } from "./OutreachListCreateDialog";
 
-function memberCount(row: CampaignListRow): number {
+function memberCount(row: OutreachListWithCount): number {
   return row.members?.[0]?.count ?? 0;
 }
 
-export function CampaignListPage() {
+export function OutreachListsPage() {
   const router = useRouter();
   const ctx = useCrmContext();
-  const [rows, setRows] = useState<CampaignListRow[]>([]);
+  const [rows, setRows] = useState<OutreachListWithCount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -48,7 +48,7 @@ export function CampaignListPage() {
     if (!ctx) return;
     try {
       setError(null);
-      setRows(await fetchCampaigns(ctx));
+      setRows(await fetchOutreachLists(ctx));
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -60,14 +60,14 @@ export function CampaignListPage() {
     void load();
   }, [load]);
 
-  const columns: MatrxColumnDef<CampaignListRow>[] = [
+  const columns: MatrxColumnDef<OutreachListWithCount>[] = [
     {
       id: "name",
       accessorKey: "name",
-      header: "Campaign",
+      header: "Outreach list",
       sortable: true,
       filter: "text",
-      href: (row) => `/crm/campaigns/${row.id}`,
+      href: (row) => `/crm/outreach-lists/${row.id}`,
       cell: (row) => (
         <div className="flex min-w-0 flex-col">
           <span className="truncate text-sm font-medium text-foreground">
@@ -82,8 +82,8 @@ export function CampaignListPage() {
       ),
     },
     {
-      id: "campaign_kind",
-      accessorKey: "campaign_kind",
+      id: "list_kind",
+      accessorKey: "list_kind",
       header: "Kind",
       sortable: true,
       filter: "select",
@@ -94,7 +94,7 @@ export function CampaignListPage() {
         { value: "mixed", label: "Mixed" },
       ],
       width: 100,
-      cell: (row) => <CampaignKindBadge kind={row.campaign_kind} />,
+      cell: (row) => <ListKindBadge kind={row.list_kind} />,
     },
     {
       id: "status",
@@ -102,12 +102,12 @@ export function CampaignListPage() {
       header: "Status",
       sortable: true,
       filter: "select",
-      filterOptions: CAMPAIGN_STATUSES.map((s) => ({
+      filterOptions: LIST_STATUSES.map((s) => ({
         value: s,
         label: s.charAt(0).toUpperCase() + s.slice(1),
       })),
       width: 110,
-      cell: (row) => <CampaignStatusBadge status={row.status} />,
+      cell: (row) => <ListStatusBadge status={row.status} />,
     },
     {
       id: "members",
@@ -151,7 +151,7 @@ export function CampaignListPage() {
     },
   ];
 
-  const menuFor = (row: CampaignListRow): (() => ItemMenuConfig) => () => ({
+  const menuFor = (row: OutreachListWithCount): (() => ItemMenuConfig) => () => ({
     sections: [
       {
         id: "open",
@@ -160,20 +160,20 @@ export function CampaignListPage() {
             id: "open",
             kind: "link",
             label: "Open",
-            href: `/crm/campaigns/${row.id}`,
+            href: `/crm/outreach-lists/${row.id}`,
           },
           {
             id: "dial",
             kind: "link",
             label: "Open call queue",
-            href: `/crm/campaigns/${row.id}/dial`,
+            href: `/crm/outreach-lists/${row.id}/dial`,
           },
           {
             id: "copy-link",
             label: "Copy link",
             onSelect: () =>
               navigator.clipboard.writeText(
-                `${window.location.origin}/crm/campaigns/${row.id}`,
+                `${window.location.origin}/crm/outreach-lists/${row.id}`,
               ),
             toast: { loading: "Copying…", success: "Link copied" },
           },
@@ -183,18 +183,18 @@ export function CampaignListPage() {
         id: "lifecycle",
         items: (row.status === "active"
           ? [
-              { next: "paused" as CampaignStatus, label: "Pause" },
-              { next: "completed" as CampaignStatus, label: "Mark completed" },
+              { next: "paused" as OutreachListStatus, label: "Pause" },
+              { next: "completed" as OutreachListStatus, label: "Mark completed" },
             ]
           : row.status === "draft" || row.status === "paused"
-            ? [{ next: "active" as CampaignStatus, label: "Activate" }]
-            : [{ next: "archived" as CampaignStatus, label: "Archive" }]
+            ? [{ next: "active" as OutreachListStatus, label: "Activate" }]
+            : [{ next: "archived" as OutreachListStatus, label: "Archive" }]
         ).map(({ next, label }) => ({
           id: `status-${next}`,
           label,
           onSelect: async () => {
             try {
-              await setCampaignStatus(row, next);
+              await setOutreachListStatus(row, next);
               await load();
               toast.success(`${row.name} → ${next}`);
             } catch (e) {
@@ -214,13 +214,13 @@ export function CampaignListPage() {
               const ok = await confirm({
                 title: `Delete ${row.name}?`,
                 description:
-                  "The campaign moves to trash. Members and logged calls are kept.",
+                  "The outreach list moves to trash. Members and logged calls are kept.",
                 confirmLabel: "Delete",
                 variant: "destructive",
               });
               if (!ok) return;
               try {
-                await deleteCampaign(row.id);
+                await deleteOutreachList(row.id);
                 setRows((prev) => prev.filter((r) => r.id !== row.id));
                 toast.success(`${row.name} deleted`);
               } catch (e) {
@@ -240,7 +240,7 @@ export function CampaignListPage() {
       onClick={() => setCreateOpen(true)}
     >
       <Plus className="h-3.5 w-3.5" />
-      New campaign
+      New outreach list
     </Button>
   );
 
@@ -249,7 +249,7 @@ export function CampaignListPage() {
       <div className="shrink-0 px-3 pt-[calc(var(--shell-header-h)+0.375rem)]">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs text-muted-foreground">
-            Campaigns you created or that live in your organizations.
+            Outreach lists you created or that live in your organizations.
           </span>
           <div className="ml-auto">{newButton}</div>
         </div>
@@ -261,7 +261,7 @@ export function CampaignListPage() {
       </div>
 
       <div className="min-h-0 flex-1 px-3 pb-2 pt-2">
-        <MatrxDataTable<CampaignListRow>
+        <MatrxDataTable<OutreachListWithCount>
           data={rows}
           columns={columns}
           getRowId={(row) => row.id}
@@ -269,8 +269,8 @@ export function CampaignListPage() {
           zebra
           detail={{ enabled: false }}
           window={{ enabled: false }}
-          onRowOpen={(row) => router.push(`/crm/campaigns/${row.id}`)}
-          toolbar={{ search: true, searchPlaceholder: "Search campaigns…" }}
+          onRowOpen={(row) => router.push(`/crm/outreach-lists/${row.id}`)}
+          toolbar={{ search: true, searchPlaceholder: "Search outreach lists…" }}
           rowActions={(row) => (
             <ItemMenu config={menuFor(row)} align="end">
               <button
@@ -284,19 +284,19 @@ export function CampaignListPage() {
             </ItemMenu>
           )}
           copy={{
-            label: "Campaign",
-            listLabel: "Campaigns",
-            location: "/crm/campaigns",
-            rowKind: "crm-campaign",
-            listKind: "crm-campaign-list",
+            label: "Outreach list",
+            listLabel: "Outreach Lists",
+            location: "/crm/outreach-lists",
+            rowKind: "crm-outreach-list",
+            listKind: "crm-outreach-lists",
             humanRow: (row) =>
-              `${row.name} (${row.campaign_kind}, ${row.status}) — ${memberCount(row)} members`,
+              `${row.name} (${row.list_kind}, ${row.status}) — ${memberCount(row)} members`,
             showRow: false,
             showToolbar: false,
           }}
           emptyState={{
             icon: <Megaphone className="h-5 w-5" />,
-            title: "No campaigns yet",
+            title: "No outreach lists yet",
             description:
               "Create one, then add members from the CRM list or from a saved filter — and power-dial it from the call queue.",
             action: newButton,
@@ -304,12 +304,12 @@ export function CampaignListPage() {
         />
       </div>
 
-      <CampaignCreateDialog
+      <OutreachListCreateDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
-        onCreated={(campaign) => {
-          toast.success(`${campaign.name} created`);
-          router.push(`/crm/campaigns/${campaign.id}`);
+        onCreated={(list) => {
+          toast.success(`${list.name} created`);
+          router.push(`/crm/outreach-lists/${list.id}`);
         }}
       />
     </div>

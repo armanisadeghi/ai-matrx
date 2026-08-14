@@ -410,11 +410,10 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     labelPlural: "People & Companies",
     hrefFor: (id) => `/crm/${id}`,
   },
-  crm_campaign: {
+  crm_outreach_list: {
     Icon: Megaphone,
-    labelPlural: "Campaigns",
-    // No hrefFor yet — the campaign builder is a later wave; adding a route
-    // here before it exists would mint dead links on every association card.
+    labelPlural: "Outreach Lists",
+    hrefFor: (id) => `/crm/outreach-lists/${id}`,
   },
 
   // ─── Web (canonical Marketing access-tree doors) ─────────────────────────

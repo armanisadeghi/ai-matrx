@@ -132,13 +132,13 @@
     "is_active": true
   },
   {
-    "resource_type": "crm_campaign",
-    "table_name": "campaign",
+    "resource_type": "crm_outreach_list",
+    "table_name": "outreach_list",
     "id_column": "id",
     "owner_column": "created_by",
     "is_public_column": null,
-    "display_label": "Campaign",
-    "url_path_template": "/crm/campaigns/{id}",
+    "display_label": "Outreach List",
+    "url_path_template": "/crm/outreach-lists/{id}",
     "rls_uses_has_permission": true,
     "is_active": true
   },
