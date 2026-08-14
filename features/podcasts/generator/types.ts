@@ -120,7 +120,8 @@ export interface PodcastGenerateRequest {
 
   // Host-count-aware dimensions (honored server-side since 2026-06-10):
   // 1 → solo script + single voice; 2 → the proven two-host path;
-  // 3-4 → multihost script; 5-20 → roundtable script + ElevenLabs dialogue.
+  // 3-4 → multihost script; 5-10 → roundtable script + ElevenLabs dialogue
+  // (10 = MAX_HOST_COUNT, the ElevenLabs distinct-voice ceiling).
   language?: PodcastLanguageCode;
   host_count?: number;
   /** Format string for the script agent (extends podcast_type for non-default

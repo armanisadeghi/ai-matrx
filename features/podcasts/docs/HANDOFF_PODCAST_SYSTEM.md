@@ -1,6 +1,6 @@
 # Podcast System — Authoritative Handoff & Known-State
 
-**Last updated: 2026-08-08** (large-cast hardening + live 10/14/20 verification — see §5.1/§5.2/§5.3). This handoff records the state
+**Last updated: 2026-08-09** (host_count capped at 10 — see §5.2). This handoff records the state
 of the podcast generation system across both repos. If you're taking over, read
 this top to bottom — it tells you exactly what works, what doesn't, and what's a
 known weakness. Supersedes `HANDOFF_2026-06-12.md` (archived at `docs/archive/2026/HANDOFF_2026-06-12.md`).
@@ -16,15 +16,16 @@ known weakness. Supersedes `HANDOFF_2026-06-12.md` (archived at `docs/archive/20
 
 The flow is now `Content → Script → Audio` with **hard gates** between stages, and
 it produces real audio across every starting point and host count we've tested
-(1, 2, 3, 6, and — verified live on prod 2026-08-08 — 10, 14, 20).
+(1, 2, 3, 6, and — verified live on prod 2026-08-08 — 10, the maximum).
 The class of failure that prompted the rebuild — a script agent's thinking text
 leaking into TTS, and the "speaker name mismatch" error — is now **structurally
 impossible**: nothing reaches TTS that isn't a validated `<podcast_dialogue>`
 script with exactly the requested number of speakers and names that match.
-**Large casts are no longer a question mark: 10-, 14-, and 20-host episodes all
-render end-to-end on production** (script + ElevenLabs audio), after two server
-fixes shipped the same day — the typed-`LLMParams` regression and ElevenLabs'
-hard 10-distinct-voice cap (§5.1/§5.2).
+**Large casts are settled: `host_count` is capped at 10** (2026-08-09, Arman's
+ruling) because ElevenLabs `text_to_dialogue` accepts at most 10 distinct
+voices per request and every speaker gets their own. 10-host episodes render
+end-to-end on production; 14 and 20 were how we found the wall, and are no
+longer accepted (§5.1/§5.2).
 
 ---
 
@@ -39,10 +40,10 @@ hard 10-distinct-voice cap (§5.1/§5.2).
 | `partial_content` → script writer (no extractor)                   | real run `partial_content` PASS+audio                                                                                | ✅                                            |
 | `full_content` already-a-script → skip generation                  | real run `pasted_script` (22s, "skipping generation")                                                                | ✅                                            |
 | 1/2/3/6 hosts produce audio (Gemini + ElevenLabs)                  | real runs `solo`/`two_host_custom_names`/`three_host`/`six_host_roundtable` all PASS+audio                           | ✅                                            |
-| **10/14/20 hosts produce audio (large cast)**                      | live PROD runs `afd2d558` / `25031425` / `966bfb95` — every stage `completed`; exact GATE 2 counts + matching `<speaker_settings>` | ✅ (2026-08-08)                               |
+| **10 hosts produce audio (the maximum cast)**                      | live PROD run `afd2d558` — every stage `completed`; exact GATE 2 count + matching `<speaker_settings>`. (14/20 also rendered on 08-08, before the cap; they are no longer accepted.) | ✅ (2026-08-08)                               |
 | Content gate rejects thin sources                                  | thin fixtures rejected at GATE 1 (331/358 chars)                                                                     | ✅                                            |
 | Blog / show-notes generate + publish                               | `EpisodeContentStudio`, `pc_articles` live                                                                           | ✅ wired (live-UI run still pending — see §6) |
-| Create form: 1–20 hosts, all formats, per-host names/voices        | live DOM check, zero false "Coming Soon"                                                                             | ✅                                            |
+| Create form: 1–10 hosts, all formats, per-host names/voices        | live DOM check, zero false "Coming Soon"                                                                             | ✅                                            |
 
 **Two test suites (run these first when you take over):**
 
@@ -52,7 +53,7 @@ uv run python scripts/podcast_gate_tests.py                 # deterministic, fre
 uv run python -u scripts/podcast_e2e_matrix.py <scenario…>  # real agents/$$, truncated audio
 # scenarios: topic full_content partial_content pasted_script file_url file_url_real
 #            two_host_custom_names solo three_host six_host_roundtable
-#            roundtable_10 roundtable_14 roundtable_20   (large-cast, 2026-08-08)
+#            roundtable_10   (the maximum cast; 14/20 no longer accepted)
 ```
 
 ---
@@ -82,7 +83,7 @@ Full detail in `PODCAST_PIPELINE.md` §3. Summary:
 **Agents (master / pinned version):**
 
 - Script (legacy, 2-host, best quality): `podcast_script_educational` `4541ba46`, `_news` `23ca9704`, `_persian` `3456f665`.
-- Script (generic, host-count-aware) — **repinned 2026-08-08** to the hardened versions: solo `3f0b22c2`, multihost (2–4) `29bebcba`, roundtable (5–20) `e7cad8a6`. The DB slot (`agent.slot_definition`, `podcast.*_script`) is the pin authority — repin there, never in code.
+- Script (generic, host-count-aware) — **repinned 2026-08-08** to the hardened versions: solo `3f0b22c2`, multihost (2–4) `29bebcba`, roundtable (5–10) `b23156bf`. The DB slot (`agent.slot_definition`, `podcast.*_script`) is the pin authority — repin there, never in code.
 - Audio: Gemini english `055c6d30` / persian `21238b08`; **ElevenLabs dialogue `podcast_audio_dialogue` master `88f05360`, version `293425be`** (model `eleven_v3` = `7b1bc855…`).
 - Companion: blog `58204bd9`, show-notes `b1910198`, chapters/title/audience built but unwired.
 
@@ -92,7 +93,7 @@ MAY append after the dialogue block:
 The pipeline prefers it for voice assignment; GATE 2 cross-checks it. **All three
 generic script agents REQUIRE and emit it as of 2026-08-08** (name + gender,
 never voice — the server owns voice selection); verified in persisted prod
-scripts at 1/10/14/20 hosts.
+scripts at 1/10/14/20 hosts (14/20 predate the 10-host cap).
 
 **DB:** `pc_episodes.{script,host_count,speakers}`, `pc_articles` (kind blog|show_notes, unique `(episode_id,kind)`).
 
@@ -131,8 +132,10 @@ Ordered by importance. These are the honest gaps.
    distinct, so GATE 2 and transcripts are unaffected; loud warning on every
    firing), plus a pre-flight `PodcastConfigError` when explicit per-speaker
    pins force past the cap — raised before the paid call. **Open product call
-   for Arman:** if all-distinct voices at 11–20 matter, the upgrade is a
-   multi-request render + stitch (deferred in aidream `FOUND_DEFECTS.md`).
+   **DECIDED 2026-08-09 (Arman):** cap `host_count` at 10 rather than build
+   multi-request render + stitch. The interim voice-SHARING workaround was
+   deleted with the cap — two speakers never share a voice again. 11–20 is now
+   a 422 at the API boundary, and the roundtable agent + slot advertise 5–10.
 
 3. **`<speaker_settings>` is now REQUIRED and emitted (2026-08-08).** All three
    generic script agents demand the declaration (name + gender, never voice —
@@ -195,11 +198,10 @@ summarization,fact_checking,expansion}`) → the create form's "Pre/Post-script
   2026-08-08** for both Gemini PCM and ElevenLabs MP3, including Play/Pause,
   advancing position/rendered duration, and canonical-player handoff. The
   blog/show-notes generate→publish UI remains separate and unverified here.
-- **A listening check on a large cast.** 10/14/20-host audio is confirmed to
-  RENDER end-to-end on prod (§5.2), but nobody has listened to it: at 11–20
-  hosts several speakers necessarily SHARE a voice (ElevenLabs' 10-distinct-voice
-  cap), so verify by ear that a 14- or 20-host episode is still followable
-  before advertising that size.
+- **A listening check on a 10-host episode.** It renders end-to-end (§5.2) but
+  nobody has listened: 10 distinct voices in one dialogue is the top of the
+  range, so confirm by ear that it is followable before advertising that size.
+  (The old "voices are shared above 10" caveat is gone — the cap removed it.)
 
 ---
 
