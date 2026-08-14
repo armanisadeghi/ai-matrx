@@ -1276,10 +1276,10 @@ function SlidesOutputCard({
 // filed and closed 2026-08-11), so the server still reloads the topic's saved
 // scope exactly as the one-shot runner made it do.
 //
-// SAVING is broken platform-wide right now — FOUND_DEFECTS D167: every Outputs
-// Studio generator persists through `rs_topic_append_output`, whose `FOR UPDATE`
-// is denied by the RLS update policy, so the run completes and the save 400s.
-// Not this card's bug; this card just refuses to hide it.
+// Saving goes through `rs_topic_append_output` (row-locked append). A save the
+// caller's access cannot reach raises P0002, which `appendTopicOutput` converts
+// into a `RecordUnavailableError` for AccessGate to resolve — never a raw
+// "not found" the user can disprove by looking at the topic on screen (D167).
 
 function SeoOutputCard({
   topicId,

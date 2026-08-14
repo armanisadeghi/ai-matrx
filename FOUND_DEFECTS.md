@@ -172,10 +172,6 @@ Arman: "there are other UI issues with this page as well" (`/marketing/keyword-r
 
 System-of-record: `common-docs/systems/entity-content-role/FEATURE.md` — read it before changing either role field or its consumers in any repo.
 
-### D167 — Research outputs cannot be SAVED: `rs_topic_append_output` blocked by the RLS UPDATE policy (2026-08-11)
-
-Every Outputs Studio generator (blog, slides, podcast, SEO) persists through `public.rs_topic_append_output`; generation works, save fails — the user watches a full run and loses it. Measured live: SELECT on `research.rs_topic` returns the row; UPDATE affects 0 rows; the RPC (`migrations/research_canon_05_move_to_research_schema.sql:108`) is plain plpgsql with `FOR UPDATE`, which needs the UPDATE policy → `rs_topic % not found` → PostgREST 400. Topics are `visibility='internal'`; SELECT honours it, UPDATE doesn't. **Decides: Arman** — should an org reader be able to write an org-internal topic, and should the RPC become `security definer` + `iam.has_access`? Also: the raw "not found" is an `<AccessGate>` case — the row exists and the user can see it.
-
 ### D170 — A live run whose payload is JSON or an XML wrapper shows an EMPTY window until it finishes (2026-08-11)
 
 The floating-window posture only kills the spinner for markdown payloads. Watched blank for their whole run: podcast blog writer/show notes (`useEpisodeArticles` — structured JSON envelope) and the marketing image prompt generator (`generate-page-image.ts` step 1 — `<image_prompt>` wrapper). Fix belongs in the canonical pipeline, never the call site: content-IR renders un-kinded live JSON progressively, or these agents get a registered kind. Per `docs/handoffs/live-run-streaming-sweep.md`; note its §6 wrongly records podcast articles as plain markdown — the wire is JSON, markdown is assembled client-side (`articleMarkdown.ts`). Whether they get a kind is **Arman's call**.
@@ -194,15 +190,19 @@ Also found live while closing `G-FINDING-FIX`. The crawled sites with open metad
 
 ### D164 — `keyword_set` and `keyword_variant_set` are byte-identical kinds (2026-08-11)
 
-Same `emitted_json_schema`, same fingerprint (`9q-183lvc51ku2s37`); `matchKindForSchema` is first-writer-wins so an agent bound to `keyword_variant_set` displays as `keyword_set`. Merge or genuinely differentiate — **Arman's call** (product semantics).
+Same `emitted_json_schema`, same fingerprint (`9q-183lvc51ku2s37`); `matchKindForSchema` is first-writer-wins so an agent bound to `keyword_variant_set` displays as `keyword_set`.
+
+🚨 **ARMAN'S RULING 2026-08-14 — DELETING EITHER ONE IS FORBIDDEN** until documentation PROVES they were the same thing from birth and an agent merely made two copies. Duplicates like this are rarely accidental: usually two genuinely different intents got collapsed, and deleting one deepens the damage. Required work is investigation, not cleanup — compare every column and asset, compare all UI/consumers/bindings, then do a full documentation review for original intent (the names suggest "the keywords for a page" vs "variants of one keyword"). **Chip fired 2026-08-14.**
 
 ### D163 — 12 stored `emitted_block_schema` rows are stale against the live emitter (2026-08-11)
 
 Found by `pnpm shape:reemit-discriminator`. 10 rows: `additionalDetails.additionalProperties` stored `false`, emitter now emits `true` — needs a ruling on which is intended before re-emitting. Plus `study_pack_set` (dangling `flashcard_set_beta` stub in `$defs`) and `video_transcript_research` (python-owned `claim_evidence` child unreconstructable — correctly refused). No runtime reader of the column today; drift-guard only.
 
-### D159/D160 — Agent-definition reads are served from ORM caches, so a DB edit may not reach production runs (2026-08-11)
+### D159/D160 — An agent edit can fail to reach production because SOME WRITE PATH never fires cache invalidation (2026-08-11)
 
-Two paths, one class: (a) aidream `execution_definition.py` → `definition_manager.load_by_id(id)` with default `use_cache=True` — a **process-global** cache with no TTL; the row decides is_public/user_id/is_active, i.e. exactly what the docstring says must be an authoritative `use_cache=False` read. Measured: grounding disabled in DB, production kept grounding until restart. (b) matrx-ai `_agx_manager_impl.py:52,71` `to_config()` → `load_by_id` under `CachePolicy.SHORT_TERM` = **10 min**, staggered per worker, so migration-applied agent edits flap between old/new — "verified live" within 10 min of an agent migration can be a false claim (unchanged `input_tokens` = still reading cache). Fix candidates: `use_cache=False` on the execution reads (one PK read per run), an invalidation hook on agent write, or a short TTL. **Decides: Arman** — execution-hot-path change in aidream/matrx-ai. Working rule meanwhile: after a migration-applied agent edit, wait out 10 min and re-run until output changes.
+Symptoms: (a) aidream `execution_definition.py` → `definition_manager.load_by_id(id)` reads a **process-global** record cache — grounding disabled in the DB, production kept grounding until restart. (b) matrx-ai `_agx_manager_impl.py:52,71` `to_config()` under `CachePolicy.SHORT_TERM` (10 min, staggered per worker) makes migration-applied agent edits FLAP; "verified live" within 10 min of an agent migration can be a false claim (unchanged `input_tokens` = still reading cache, not proof of no-op).
+
+🚨 **ARMAN'S RULING 2026-08-14 — `use_cache=False` ON THE EXECUTION PATH IS FORBIDDEN.** Agent caching is deliberate, hard-won work; definitions are static 99.999% of the time; refetching per run adds ~0.5–1.5s to every chat and loses us the latency race. **Never disable, bypass, shorten, or TTL the agent cache to fix this.** The defect is a WRITER that mutates an agent without firing the invalidation we already built — most obviously the migration-applied edit path (`migrations/agent_bind_*.sql`), which writes straight to Postgres and cannot fire an app-level hook, and possibly an ad-hoc edit route someone added around the sanctioned path. Required work: inventory every writer of `agent.definition`/`definition_version` across all repos, record which fire invalidation and which don't, wire the misses, and design an out-of-band signal for the migration class that costs ZERO per-run round trips. **Chip fired 2026-08-14.**
 
 ### D161 — The portable-schema gate SILENTLY EMPTIES map-typed fields; `research.suggest_setup` left unbound (2026-08-11)
 
@@ -210,7 +210,9 @@ Two paths, one class: (a) aidream `execution_definition.py` → `definition_mana
 
 ### D155 — Google's grounded stream DROPS a span of the answer (2026-08-11)
 
-Confirmed by Google's own forum (https://discuss.ai.google.dev/t/176967) and our raw-SSE capture: with Search grounding, 8–58% of runs lose a span (whole first grounded segment) regardless of schema; without tools, 0/16. There is no final full-text event to reconcile against (tested), repair would silently drop content, retry re-gambles. **The fix is the two-call split: call 1 grounds and gathers, call 2 structures with NO search tools (0/16 corrupt).** Forum reports 2.5-flash unaffected — worth testing. User-visible today as `noJson` (empty result in `KindRequestDialog`).
+Confirmed by Google's own forum (https://discuss.ai.google.dev/t/176967) and our raw-SSE capture: with Search grounding, 8–58% of runs lose a span (whole first grounded segment) regardless of schema; without tools, 0/16. There is no final full-text event to reconcile against (tested), repair would silently drop content, retry re-gambles. The fix shape is the two-call split: call 1 grounds and gathers, call 2 structures with NO search tools (0/16 corrupt). User-visible today as `noJson` (empty result in `KindRequestDialog`).
+
+⛔ **HANDS OFF — Arman 2026-08-14: this is already in the works elsewhere. Do not touch it.**
 
 ### D154 — React #418 hydration mismatch reported by Arman on marketing site shell; not reproducible (2026-08-11)
 
@@ -299,7 +301,9 @@ On a 325-page site the audit tab replaces the whole surface with a generic retry
 
 ### D135 — soft-deleting a row HARD-deletes its association edges; "Dismiss" is not reversible (2026-08-08)
 
-`platform._gc_entity_associations` fires on UPDATE-to-deleted and hard-deletes all edges. On `web.page` this breaks the documented Dismiss/Restore + scraper-revive contract — edges gone, nothing rebuilds them. Fix: GC on hard DELETE only (readers already filter by the entity's `deleted_at`), or tombstone edges reversibly. Platform-wide trigger, conveyance semantics — **Arman's call**.
+`platform._gc_entity_associations` fires on UPDATE-to-deleted and PERMANENTLY deletes every edge of the trashed row. So a restored item comes back stripped — its keywords, tasks, notes, and files are gone forever and nothing rebuilds them. On `web.page` this breaks the documented Dismiss/Restore + scraper-revive contract.
+
+🚨 **ARMAN'S RULING 2026-08-14 — the design is: a soft delete SOFT-removes everything, and restore brings it ALL back, easily.** So edges get tombstoned (rows kept, marked removed, stamped) and un-tombstoned on restore; permanent purge belongs only to a true hard DELETE. Not acceptable: leaving edges untouched and filtering in readers. Constraint: associations convey access, so a tombstoned edge must stop conveying the instant the item is trashed, and every reader (both repos + reachability + `iam.has_access`) must ignore tombstones — a missed reader is an access leak. **Chip fired 2026-08-14.**
 
 ### D133 (remainder) — no product path to move a site between organizations (2026-08-08)
 
@@ -351,7 +355,9 @@ Board: [docs/handoffs/website-factory-bug-dispatch.md](docs/handoffs/website-fac
 
 ### D119 — any EDITOR can flip a canonical entity's `visibility` (incl. to `public`) at the DB layer (2026-07-29)
 
-`std_update` gates at editor for ALL columns; only the ShareModal UI is owner-gated — an editor-sharee can `PATCH visibility='public'` via PostgREST. Fix candidates: platform-wide column guard (visibility changes require owner/admin) in the canonical RLS pipeline. **Decides: Arman** (security posture, cross-cutting).
+`std_update` gates at editor for ALL columns; only the ShareModal UI is owner-gated — an editor-sharee can `PATCH visibility='public'` via PostgREST. The comment in `utils/permissions/service.ts` claiming RLS enforces owner-only writes is FALSE for std-variant tables.
+
+🚨 **ARMAN'S RULING 2026-08-14 — DO NOT HARD-CODE A `visibility` GUARD.** The concept (owner/admin only — and "owner" here means `created_by`, not a column named owner) is right, but this is a symptom of something bigger: the original design had TIERED access — view / edit / **admin** — where an editor got certain privileges and deliberately not others, with defaults, and with the split allowed to differ per entity type. If that tiering has been lost, restoring it is the task and it is a much larger conversation than one column. Required work is archaeology FIRST (common-docs, db-rules, `iam.membership_grant`'s member_role→confers mapping, git history of `iam.apply_rls`/`iam.has_access`): what the model was, what it conferred, where it eroded — written up in `common-docs/systems/access-architecture/FEATURE.md` — and only then restored in the canonical RLS pipeline, never per table. If it turns out it was never fully built, STOP and report; that is Arman's call. **Chip fired 2026-08-14.**
 
 ### D118 — conveying `working_document → conversation` edges let an editor-sharee re-share and amplify access (2026-07-29)
 
@@ -510,6 +516,7 @@ One line per fix — title, date, pointer. History lives in git. Entries older t
 - **D172** — `acceptPageUrlInput` scheme check made case-insensitive to match the scraper's `_normalise_url` (`5bdf85834`). 2026-08-12.
 - **D166** — kind-activation guard + `set_kind_activation` genuinely exempt the service role; `activate-kinds.ts --apply` goes through the canonical RPC (`content_ir_activation_service_role_fix.sql`, `4f2804efa`). 2026-08-12.
 - **D120** — `chart.tsx` typed against recharts 3.9, `@ts-nocheck` deleted (`409a98d2b`). 2026-08-12.
+- **D167 (research saves)** — access half fixed by the RLS reorg (proven live: an entitled org member's `rs_topic_append_output` succeeds). The remaining lie is gone too: the RPC no longer asserts "not found" for an access denial — it raises an honest ambiguous message under errcode `P0002` (RLS stays the sole authority; no definer probe added) and `appendTopicOutput` routes it to `<AccessGate token="research_topic"/>`. Also hardened: a zero-row write now raises instead of reporting success on a paid run. `migrations/rs_topic_append_output_honest_access_error.sql`, applied + ledgered. Class sweep of the other 18 invoker functions → chip. 2026-08-14.
 - **D181** — component-table `INSERT…RETURNING` 42501 platform-wide: component `std_select` leads with `created_by = (select auth.uid())`; 126 policies repaired (`iam_apply_rls_component_select_owner_arm.sql`). Remainder → D182. 2026-08-13.
 - **D173** — shortcut/template project/task scoping moved to `platform.associations` edges; 4 forbidden FK columns dropped; 7 RPCs + view rewritten (`agent_shortcut_scoping_to_associations.sql`). 2026-08-12.
 - **D168** — untracked `preview_start` replaced by tracked `pnpm preview:start` + harness hooks (`scripts/agent-harness/`). 2026-08-12.

@@ -2,6 +2,7 @@ import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
 import type { Database } from "@/types/database.types";
 import { isJsonObject } from "@/types/json";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type {
   ResearchTopic,
   ResearchProgress,
@@ -344,7 +345,23 @@ export async function appendTopicOutput(
     p_asset:
       asset as Database["research"]["Tables"]["rs_topic"]["Row"]["outputs"],
   });
-  if (error) throw error;
+  if (error) {
+    // P0002 is the RPC's honest "this topic is not available to you" — it fires
+    // when RLS hid the row from the lock, which for a user staring at the topic
+    // is an ACCESS answer, not a missing one (D167). Hand it to AccessGate to
+    // resolve rather than surfacing a raw "not found" the user can disprove by
+    // looking at their screen.
+    if (error.code === "P0002") {
+      throw recordUnavailable({
+        entity: "research topic",
+        reason: "unknown",
+        recordId: topicId,
+        token: "research_topic",
+        relation: "research.rs_topic",
+      });
+    }
+    throw error;
+  }
   if (!isJsonObject(data)) {
     throw new Error(
       "rs_topic_append_output returned a non-object outputs value",
