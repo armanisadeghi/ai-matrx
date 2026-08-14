@@ -2,38 +2,7 @@
 
 import { createContext, useContext } from "react";
 import { useParams, usePathname } from "next/navigation";
-import {
-  Activity,
-  AlertTriangle,
-  BadgeCheck,
-  ClipboardCheck,
-  Compass,
-  ExternalLink,
-  FileText,
-  FlaskConical,
-  Gauge,
-  Grid3x3,
-  Images,
-  Inbox,
-  KeyRound,
-  Link2,
-  ListTree,
-  Map,
-  Network,
-  Newspaper,
-  Plug,
-  Radar,
-  RefreshCw,
-  Route,
-  ScanSearch,
-  Settings,
-  ShieldCheck,
-  TrendingUp,
-  Loader2,
-  Timer,
-  Wrench,
-  type LucideIcon,
-} from "lucide-react";
+import { ExternalLink, ListTree, Loader2, ScanSearch } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
@@ -64,10 +33,10 @@ import {
   type SiteCommandMode,
 } from "@/features/marketing/crawler/site-commands";
 import {
-  MARKETING_SITE_SECTIONS,
   listMarketingSiteModes,
   marketingSiteSectionSuffix,
 } from "@/features/marketing/lib/route-sections";
+import { MARKETING_SITE_SECTION_ICONS } from "@/features/marketing/lib/site-section-icons";
 
 interface MarketingSiteContextValue {
   site: MarketingSite;
@@ -88,38 +57,6 @@ export function useMarketingSite() {
     );
   return value;
 }
-
-const SITE_MODE_ICONS: Record<
-  (typeof MARKETING_SITE_SECTIONS)[number]["slug"],
-  LucideIcon
-> = {
-  "": Gauge,
-  "growth-loop": RefreshCw,
-  capabilities: Wrench,
-  performance: Timer,
-  discovery: Inbox,
-  sitemaps: Map,
-  coverage: Grid3x3,
-  audit: ClipboardCheck,
-  pages: FileText,
-  structure: Network,
-  media: Images,
-  crawls: ScanSearch,
-  analysis: Activity,
-  findings: AlertTriangle,
-  links: Link2,
-  authority: Route,
-  backlinks: BadgeCheck,
-  changes: FlaskConical,
-  reputation: Newspaper,
-  keywords: KeyRound,
-  intake: Compass,
-  ranks: TrendingUp,
-  "ai-visibility": Radar,
-  integrations: Plug,
-  access: ShieldCheck,
-  settings: Settings,
-};
 
 /**
  * A site reached through the wrong brand's URL is a broken link, not a locked
@@ -298,7 +235,7 @@ export function MarketingSiteLayoutClient({
         modes={siteModes.map((mode) => ({
           name: mode.name,
           href: mode.href,
-          icon: SITE_MODE_ICONS[mode.slug],
+          icon: MARKETING_SITE_SECTION_ICONS[mode.slug],
           exact: mode.exact,
         }))}
         actions={[

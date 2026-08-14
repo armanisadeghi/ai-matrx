@@ -54,4 +54,11 @@ export const routeMenuRegistry: RouteMenuEntry[] = [
     label: "Code Workspace",
     importFn: () => import("@/features/code/shell/CodeSidebarMenu"),
   },
+  {
+    pathPattern: /^\/marketing(?:\/|$)/,
+    iconName: "TrendingUp",
+    label: "Marketing",
+    importFn: () =>
+      import("@/features/marketing/components/shell/MarketingSidebarMenu"),
+  },
 ];
