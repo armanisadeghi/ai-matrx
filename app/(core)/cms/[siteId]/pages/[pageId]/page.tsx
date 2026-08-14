@@ -166,6 +166,7 @@ export default function EditPageRoute() {
         throw new Error("Use /pages/new to create");
       }}
       onClose={handleClose}
+      onRefetchPage={fetchPage}
     />
   );
 }

@@ -43,6 +43,7 @@ import type { PartyRow } from "@/features/crm/types";
 import {
   createPlanEntity,
   createPlanNode,
+  getPlanNode,
   listKeywordLabels,
   listNodeArtifacts,
   listNodeSteps,
@@ -62,6 +63,7 @@ import {
 export const planKeys = {
   all: ["content-plan"] as const,
   nodes: (siteId: string) => ["content-plan", "nodes", siteId] as const,
+  node: (nodeId: string) => ["content-plan", "node", nodeId] as const,
   entities: (siteId: string) => ["content-plan", "entities", siteId] as const,
   siteParties: (siteId: string) =>
     ["content-plan", "site-parties", siteId] as const,
@@ -99,6 +101,19 @@ export function usePlanNodes(siteId: string | null) {
     queryFn: ({ signal }) => listPlanNodes(siteId as string, signal),
     enabled: Boolean(siteId),
     placeholderData: keepPreviousData,
+  });
+}
+
+/**
+ * ONE plan node by id — for surfaces that hold a `plan_node_id` and never load
+ * the whole tree (the CMS page editor's Plan tab). Inside the workspace, read
+ * from `usePlanNodes` instead; this is the single-record door.
+ */
+export function usePlanNode(nodeId: string | null) {
+  return useQuery({
+    queryKey: planKeys.node(nodeId ?? "none"),
+    queryFn: ({ signal }) => getPlanNode(nodeId as string, signal),
+    enabled: Boolean(nodeId),
   });
 }
 

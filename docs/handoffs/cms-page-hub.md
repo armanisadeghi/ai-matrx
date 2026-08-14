@@ -73,9 +73,15 @@ reused canonical component, never a rebuilt poorer one (Inventory Law).
 
 Chips fired 2026-08-14 for W1–W3 (each carries its full spec — this list is the tracker):
 
-1. **Plan tab** in PageEditor — linked node context (brief, keyword, status, pipeline rail) +
-   "Open in plan workspace"; `adopt` flow when `plan_node_id` is null; honest unpaired-site
-   state. *(chip task_a448e83d)*
+1. ~~**Plan tab** in PageEditor~~ — **DONE 2026-08-14.** `features/cms/components/PagePlanTab.tsx`
+   (`React.lazy` in-gate), tab sits between Preview and SEO and is hidden on `/pages/new`.
+   Linked: `usePlanNode` (new single-record hook in `content-plan/data/hooks.ts`) + status
+   categories + `useKeywordLabels` + canonical `NodeStepRail`, with a new-tab door to
+   `/marketing/content-plan/{site_id}?node={id}`; read-only — the NodePanel editors are NOT
+   duplicated. Plan-less + paired site: `bridgeAdopt` behind a `ConfirmDialog`, server per-item
+   result shown verbatim, page refetched via the new `onRefetchPage` prop. Unpaired site: says so
+   and links `/marketing/content-plan`. `type-check` + `check:surface-drift` clean; browser pass
+   still owed (the shared dev server died during compile on three attempts).
 2. **Measure tab** — `<PageWorkspace pageId={web_page_id}/>` reused wholesale (React.lazy
    in-gate), + "Open page workspace" door; honest empty state when unjoined. *(chip
    task_66847610)*

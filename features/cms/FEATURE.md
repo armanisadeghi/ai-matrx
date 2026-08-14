@@ -31,6 +31,15 @@ build plan this feature is part of (project P5).
 - `features/cms/components/collections/CollectionItemEditorDialog.tsx` — schema-driven create/edit for one item (correct input per field type, required markers, raw-JSON escape hatch for undeclared keys, route errors pinned to the offending inputs); Drawer on mobile, Dialog on desktop
 - `features/cms/collections/validateItem.ts` — the canonical item-validator TWIN (see Doctrine)
 - `app/(core)/cms/[siteId]/pages/[pageId]/page.tsx`, `.../pages/new/page.tsx` — page editor
+  (`features/cms/components/PageEditor.tsx`). Tabs: **HTML · CSS · JS · Preview · Plan · SEO ·
+  Settings · History** (Plan and History are hidden while creating an unsaved page). **Plan**
+  (`components/PagePlanTab.tsx`, `React.lazy` in-gate) is the page's BEFORE per
+  `docs/handoffs/cms-page-hub.md`: with `plan_node_id` set it reads the `plan.node` direct from
+  Supabase and shows label/route, status, brief, target keyword, and the canonical `NodeStepRail`
+  with an "Open in plan workspace" door (`/marketing/content-plan/{site_id}?node={id}`); editing
+  stays in the plan workspace's NodePanel. With no node but a paired `web_site_id`, it runs the
+  real adopt (`bridgeAdopt` → aidream `cms-align`) behind a confirm and prints the server's
+  per-item result verbatim; with no pairing it says so and links `/marketing/content-plan`.
 - `app/(core)/cms/html-pages/**` — standalone `html_pages` management (see `features/html-pages/FEATURE.md`... not yet split out; documented in `features/html-pages/README.md`)
 - `app/(admin)/administration/knowledge/cms-agents/page.tsx` — **agent visibility surface** (super-admin gated by the `(admin)` layout): live activity feed, per-site page tree, agent-write-policy editor, validation-exception approvals queue
 
@@ -378,6 +387,21 @@ UI-complete here but only take effect once P1's service layer reads them.
 ---
 
 ## Change log
+
+- `2026-08-14` — **W1 Plan tab: the page editor no longer forgets where the page came from.**
+  `PageEditor` gains a lazy **Plan** tab (`components/PagePlanTab.tsx`) between Preview and SEO.
+  Three honest states, no dead ends: (1) linked — `usePlanNode` (new single-record hook in
+  `content-plan/data/hooks.ts`, the direct-to-Supabase read) renders label + route, plan status
+  (via `planStatus` categories + `planStatusColor`), brief lines, primary keyword phrase
+  (`useKeywordLabels`), planned meta, and the canonical `NodeStepRail` fed by `useNodeSteps` +
+  `buildNodePipelineProgress`, with a prominent new-tab door to
+  `/marketing/content-plan/{site_id}?node={id}`; (2) no `plan_node_id` but a paired
+  `web_site_id` — a "Create plan entry" button running the existing `bridgeAdopt` behind a
+  `ConfirmDialog`, printing the server's per-item lines verbatim and refetching the page (new
+  optional `onRefetchPage` prop, wired from the route); (3) unpaired site — states that plainly
+  and links `/marketing/content-plan`. Read-focused BY DESIGN — the NodePanel editors are not
+  duplicated (THE CANONICAL COMPONENT LAW). `CmsPageEditorTab` and the `cms-page` manifest's
+  `active_tab` / `content` prose gained `plan`. Work order: `docs/handoffs/cms-page-hub.md` W1.
 
 - `2026-08-14` — **W3 reverse doors: a CMS page is now reachable from the surfaces that
   name it.** New `features/cms/utils/cmsRoutes.ts` owns the in-app CMS hrefs
