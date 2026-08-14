@@ -196,13 +196,7 @@ export type CapturedErrorSource =
 
 /** A Supabase DML verb, or "rpc" for a function call. */
 export type CapturedOperation =
-  | "select"
-  | "insert"
-  | "update"
-  | "upsert"
-  | "delete"
-  | "rpc"
-  | "unknown";
+  "select" | "insert" | "update" | "upsert" | "delete" | "rpc" | "unknown";
 
 export interface CapturedError {
   /** Stable id for React keys + dedupe targeting. */
@@ -340,6 +334,10 @@ let unseen = 0;
 let occurrences = 0;
 let unseenRed = 0;
 let unseenOrange = 0;
+// Per-entry unseen occurrences let a later structured resolution reclassify
+// the SAME row without leaving a stale red/orange badge behind. The public
+// entry shape stays unchanged; markAllSeen clears this bookkeeping in one go.
+const unseenById = new Map<string, number>();
 
 const listeners = new Set<() => void>();
 
@@ -413,7 +411,10 @@ function emit(): void {
 
 function makeId(): string {
   try {
-    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    if (
+      typeof crypto !== "undefined" &&
+      typeof crypto.randomUUID === "function"
+    ) {
       return crypto.randomUUID();
     }
   } catch {
@@ -458,14 +459,15 @@ function currentRoute(): { route: string; url: string } {
  * instead of flooding the buffer — essential during a cutover where one broken
  * query fires on a loop.
  */
-/** Bump the unseen counters for a given tier (called once per occurrence). */
-function bumpUnseen(tier: ErrorTier): void {
+/** Bump the unseen counters for a given entry/tier (once per occurrence). */
+function bumpUnseen(id: string, tier: ErrorTier): void {
   unseen += 1;
+  unseenById.set(id, (unseenById.get(id) ?? 0) + 1);
   if (tier === "red") unseenRed += 1;
   else if (tier === "orange") unseenOrange += 1;
 }
 
-export function captureError(input: CaptureInput): void {
+export function captureError(input: CaptureInput): string {
   const at = nowMs();
   occurrences += 1;
 
@@ -483,13 +485,13 @@ export function captureError(input: CaptureInput): void {
       status: input.status ?? existing.status,
       raw: input.raw ?? existing.raw,
     };
-    bumpUnseen(existing.tier);
+    bumpUnseen(existing.id, existing.tier);
     const next = entries.slice();
     next.splice(existingIdx, 1);
     next.unshift(updated);
     entries = next;
     emit();
-    return;
+    return existing.id;
   }
 
   const { route, url } = currentRoute();
@@ -531,10 +533,82 @@ export function captureError(input: CaptureInput): void {
   } catch {
     entry.tier = "red";
   }
-  bumpUnseen(entry.tier);
+  bumpUnseen(entry.id, entry.tier);
 
   const next = [entry, ...entries];
-  if (next.length > MAX_ENTRIES) next.length = MAX_ENTRIES;
+  if (next.length > MAX_ENTRIES) {
+    for (const evicted of next.slice(MAX_ENTRIES)) {
+      const evictedUnseen = unseenById.get(evicted.id) ?? 0;
+      unseen = Math.max(0, unseen - evictedUnseen);
+      if (evicted.tier === "red") {
+        unseenRed = Math.max(0, unseenRed - evictedUnseen);
+      } else if (evicted.tier === "orange") {
+        unseenOrange = Math.max(0, unseenOrange - evictedUnseen);
+      }
+      unseenById.delete(evicted.id);
+    }
+    next.length = MAX_ENTRIES;
+  }
+  entries = next;
+  emit();
+  return entry.id;
+}
+
+export interface CapturedErrorResolution {
+  /** Replace the technical summary when a later resolver learned the truth. */
+  message?: string;
+  /** Replace the human sentence when the resolved state changes it. */
+  userMessage?: string;
+  /** Replace the raw structured object with the resolver-enriched payload. */
+  raw?: unknown;
+}
+
+/**
+ * Reconcile an existing capture after a later structured resolver learns more.
+ * This is NOT another occurrence: identity/count/timestamps stay intact. The
+ * same row is reclassified through the canonical tier rules and its unseen
+ * tier counters move with it, so a handled result cannot leave a stale red
+ * badge behind. Unknown/unmatched outcomes remain red by default.
+ */
+export function resolveCapturedError(
+  id: string,
+  resolution: CapturedErrorResolution,
+): void {
+  const index = entries.findIndex((entry) => entry.id === id);
+  if (index === -1) return;
+
+  const existing = entries[index];
+  const updated: CapturedError = {
+    ...existing,
+    message: resolution.message ?? existing.message,
+    userMessage: resolution.userMessage ?? existing.userMessage,
+    raw: resolution.raw ?? existing.raw,
+  };
+
+  try {
+    const classified = classifyTier(updated);
+    updated.tier = classified.tier;
+    updated.tierRuleId = classified.ruleId;
+    updated.tierReason = classified.reason;
+  } catch {
+    updated.tier = "red";
+    updated.tierRuleId = undefined;
+    updated.tierReason = undefined;
+  }
+
+  if (updated.tier !== existing.tier) {
+    const unseenForEntry = unseenById.get(existing.id) ?? 0;
+    if (existing.tier === "red") {
+      unseenRed = Math.max(0, unseenRed - unseenForEntry);
+    } else if (existing.tier === "orange") {
+      unseenOrange = Math.max(0, unseenOrange - unseenForEntry);
+    }
+    if (updated.tier === "red") unseenRed += unseenForEntry;
+    else if (updated.tier === "orange") unseenOrange += unseenForEntry;
+  }
+
+  const next = entries.slice();
+  next[index] = updated;
   entries = next;
   emit();
 }
@@ -571,13 +645,23 @@ export function clearCapturedErrors(): void {
   occurrences = 0;
   unseenRed = 0;
   unseenOrange = 0;
+  unseenById.clear();
   emit();
 }
 
 /** Remove a single entry by id. */
 export function dismissCapturedError(id: string): void {
+  const dismissed = entries.find((entry) => entry.id === id);
   const next = entries.filter((e) => e.id !== id);
   if (next.length === entries.length) return;
+  const dismissedUnseen = unseenById.get(id) ?? 0;
+  unseen = Math.max(0, unseen - dismissedUnseen);
+  if (dismissed?.tier === "red") {
+    unseenRed = Math.max(0, unseenRed - dismissedUnseen);
+  } else if (dismissed?.tier === "orange") {
+    unseenOrange = Math.max(0, unseenOrange - dismissedUnseen);
+  }
+  unseenById.delete(id);
   entries = next;
   emit();
 }
@@ -588,5 +672,6 @@ export function markAllSeen(): void {
   unseen = 0;
   unseenRed = 0;
   unseenOrange = 0;
+  unseenById.clear();
   emit();
 }

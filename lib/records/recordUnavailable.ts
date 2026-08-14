@@ -17,10 +17,17 @@
  * sentence to render.
  */
 
-import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import {
+  captureError,
+  resolveCapturedError,
+} from "@/lib/diagnostics/errorCaptureStore";
 
 /** `deleted` is PROVEN (a probe read the row and saw `deleted_at`). */
 export type RecordUnavailableReason = "deleted" | "unknown";
+
+/** The truth AccessGate can add after the initial ambiguous read failure. */
+export type RecordUnavailableResolution =
+  "denied" | "deleted" | "missing" | "signed-out" | "ok";
 
 export class RecordUnavailableError extends Error {
   readonly entity: string;
@@ -33,6 +40,10 @@ export class RecordUnavailableError extends Error {
    * Without one, honest ambiguity is still the best available answer.
    */
   readonly token?: string;
+  /** Inspector identity for reconciling this exact capture in place. */
+  captureId?: string;
+  /** Last truth written to the inspector; avoids duplicate reconciliation. */
+  captureResolution: RecordUnavailableReason | RecordUnavailableResolution;
 
   constructor(input: {
     entity: string;
@@ -46,6 +57,7 @@ export class RecordUnavailableError extends Error {
     this.reason = input.reason;
     this.recordId = input.recordId;
     this.token = input.token;
+    this.captureResolution = input.reason;
   }
 }
 
@@ -80,7 +92,7 @@ export function recordUnavailable(input: {
 }): RecordUnavailableError {
   const error = new RecordUnavailableError(input);
   try {
-    captureError({
+    error.captureId = captureError({
       source: "record-unavailable",
       operation: "select",
       relation: input.relation ?? input.entity,
@@ -98,4 +110,48 @@ export function recordUnavailable(input: {
     /* capture must never break the read path */
   }
   return error;
+}
+
+/**
+ * Replace an ambiguous record-unavailable capture with AccessGate's resolved
+ * truth. The same inspector row remains logged; the tier rules decide whether
+ * that truth is expected or still a system error. A resolver failure never
+ * calls this, so the original `unknown` capture stays loud.
+ */
+export function resolveRecordUnavailableCapture(
+  value: unknown,
+  resolution: RecordUnavailableResolution,
+): void {
+  if (!isRecordUnavailableError(value) || !value.captureId) return;
+  if (value.captureResolution === resolution) return;
+
+  resolveCapturedError(value.captureId, {
+    message: `Zero-row read for ${value.entity}${value.recordId ? ` ${value.recordId}` : ""} (${resolution})`,
+    userMessage: resolvedRecordUnavailableMessage(value.entity, resolution),
+    raw: {
+      entity: value.entity,
+      reason: resolution,
+      recordId: value.recordId,
+      token: value.token,
+    },
+  });
+  value.captureResolution = resolution;
+}
+
+function resolvedRecordUnavailableMessage(
+  entity: string,
+  resolution: RecordUnavailableResolution,
+): string {
+  switch (resolution) {
+    case "denied":
+      return `You don't have access to this ${entity}.`;
+    case "deleted":
+      return `This ${entity} was deleted.`;
+    case "missing":
+      return `We couldn't find this ${entity}.`;
+    case "signed-out":
+      return `Sign in to open this ${entity}.`;
+    case "ok":
+      return `We couldn't load this ${entity}.`;
+  }
 }

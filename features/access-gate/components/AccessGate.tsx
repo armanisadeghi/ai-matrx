@@ -16,6 +16,7 @@
 
 import { AccessDenied } from "@/features/access-gate/components/AccessDenied";
 import { classifyDataError } from "@/features/access-gate/classifyDataError";
+import { useAccessGate } from "@/features/access-gate/hooks/useAccessGate";
 
 export interface AccessGateProps {
   /** Canonical entity token of the record the surface tried to open. */
@@ -29,6 +30,15 @@ export interface AccessGateProps {
   onRetry?: () => void;
   fallbackHref?: string;
   fallbackLabel?: string;
+  /**
+   * Parallel failed reads hidden by this gate's early return. Each is resolved
+   * independently for truthful diagnostics; none renders a second surface.
+   */
+  relatedReads?: ReadonlyArray<{
+    token: string;
+    id: string;
+    error: unknown;
+  }>;
   /**
    * Render this instead when the failure was a genuine fault rather than an
    * access state. Defaults to the access surface, which handles faults with an
@@ -44,6 +54,7 @@ export function AccessGate({
   onRetry,
   fallbackHref,
   fallbackLabel,
+  relatedReads = [],
   renderFault,
 }: AccessGateProps) {
   // A hard fault (network, timeout, malformed query) is not an access story.
@@ -54,12 +65,40 @@ export function AccessGate({
   }
 
   return (
-    <AccessDenied
-      token={token}
-      id={id}
-      onRetry={onRetry}
-      fallbackHref={fallbackHref}
-      fallbackLabel={fallbackLabel}
-    />
+    <>
+      {relatedReads.map((read) => (
+        <AccessGateCaptureResolver
+          key={`${read.token}:${read.id}`}
+          token={read.token}
+          id={read.id}
+          error={read.error}
+        />
+      ))}
+      <AccessDenied
+        token={token}
+        id={id}
+        readError={error}
+        onRetry={onRetry}
+        fallbackHref={fallbackHref}
+        fallbackLabel={fallbackLabel}
+      />
+    </>
   );
+}
+
+/** Resolves diagnostics for a parallel read without rendering another gate. */
+function AccessGateCaptureResolver({
+  token,
+  id,
+  error,
+}: {
+  token: string;
+  id: string;
+  error: unknown;
+}) {
+  // This hook owns both the authoritative resolver call and capture
+  // reconciliation. Its visual context is deliberately consumed by the one
+  // primary AccessDenied above, never by a second competing surface.
+  useAccessGate(token, id, { readError: error });
+  return null;
 }

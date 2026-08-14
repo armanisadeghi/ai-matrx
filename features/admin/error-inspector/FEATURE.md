@@ -103,6 +103,11 @@ the safety net, not the main event.
 - **Domain** — `lib/media/durability.ts` (`reportMediaDurabilityViolation` →
   `media-durability`) and `lib/toast-service.ts` (`toast.error` → `user-toast`,
   tiered orange: already handled + shown to the user).
+- **Record reads** — `lib/records/recordUnavailable.ts` captures an ambiguous
+  zero-row read immediately as red, then AccessGate reconciles the resolver's
+  definite state onto that same entry via `resolveCapturedError`. A handled
+  `denied` result is yellow/Silent; unresolved, missing, deleted, signed-out,
+  and access-`ok` transient failures remain red.
 - **Layout** — `lib/layout/useClippedContentGuard.ts` (`layout-scroll-chain`).
   Measures a bounded scroll surface against the nearest ancestor that
   constrains overflow: content hanging past a CLIPPING ancestor is
@@ -155,8 +160,10 @@ time. Default is `red` — nearly everything is loud until tuned.
 Seeded defaults (in `DOWNGRADE_RULES`): **tool errors → yellow** (a failed tool
 call is normal agent operation — the agent adapts; e.g. the sql guard rejecting
 `grant`/`delete from`), **redux-rejected → orange**, **user-toast → orange**.
-Everything else stays red until tuned. Promote a specific tool/slice to red with
-a `relation` rule ABOVE the broad source rule.
+Resolved+handled AccessGate denials → yellow; the original unknown capture and
+all other resolved record states stay red. Everything else stays red until
+tuned. Promote a specific tool/slice to red with a `relation` rule ABOVE the
+broad source rule.
 
 **To quiet an error**, add a rule to `DOWNGRADE_RULES` in `errorTierRules.ts`
 pointing a match at `orange`/`yellow`. Rules are evaluated top-down, first match
@@ -246,6 +253,13 @@ source, ... })` from the chokepoint. Store + UI are source-agnostic.
 
 ## Change Log
 
+- 2026-08-13 — **Captured errors can be reconciled in place.** AccessGate uses
+  the new `resolveCapturedError` seam to replace `reason: "unknown"` with the
+  resolver's definite record state without creating an occurrence or changing
+  identity/timestamps. Reclassification moves the entry's unseen red/orange
+  counters too. The `record-unavailable-resolved-denial` rule makes a fully
+  handled denial yellow/Silent while every unresolved or genuinely broken read
+  remains red.
 - 2026-08-12 — **Client deadlines no longer masquerade as cancellation.** The
   multipart Python client accepts `timeoutMs` through its shared timeout
   transport, emits `code: request_timeout` at `POST <path>`, and preserves the

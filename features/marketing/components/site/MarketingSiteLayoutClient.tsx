@@ -143,6 +143,11 @@ export function MarketingSiteLayoutClient({
           token="web_site"
           id={siteId}
           error={site.error}
+          relatedReads={
+            brand.isError
+              ? [{ token: "web_brand", id: brandId, error: brand.error }]
+              : undefined
+          }
           onRetry={() => void site.refetch()}
           fallbackHref="/marketing/sites"
           fallbackLabel="All sites"

@@ -119,4 +119,34 @@ describe("classifyTier", () => {
 
     expect(c.tier).toBe("red");
   });
+
+  it("silences a record-unavailable capture only after AccessGate resolves denial", () => {
+    const c = classifyTier(
+      captured({
+        source: "record-unavailable",
+        relation: "site",
+        operation: "select",
+        message: "Zero-row read for site site-1 (denied)",
+      }),
+    );
+
+    expect(c.tier).toBe("yellow");
+    expect(c.ruleId).toBe("record-unavailable-resolved-denial");
+  });
+
+  it.each(["unknown", "missing", "deleted", "signed-out", "ok"])(
+    "keeps a record-unavailable %s outcome RED",
+    (reason) => {
+      const c = classifyTier(
+        captured({
+          source: "record-unavailable",
+          relation: "site",
+          operation: "select",
+          message: `Zero-row read for site site-1 (${reason})`,
+        }),
+      );
+
+      expect(c.tier).toBe("red");
+    },
+  );
 });

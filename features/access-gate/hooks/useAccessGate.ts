@@ -16,6 +16,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { fetchAccessDeniedContext } from "@/features/access-gate/service/accessDeniedContext";
 import type { AccessDeniedContext } from "@/features/access-gate/types";
+import {
+  resolveRecordUnavailableCapture,
+  type RecordUnavailableResolution,
+} from "@/lib/records/recordUnavailable";
 
 export interface UseAccessGateResult {
   context: AccessDeniedContext | null;
@@ -28,7 +32,7 @@ export interface UseAccessGateResult {
 export function useAccessGate(
   token: string | null | undefined,
   id: string | null | undefined,
-  options: { enabled?: boolean } = {},
+  options: { enabled?: boolean; readError?: unknown } = {},
 ): UseAccessGateResult {
   const [nonce, setNonce] = useState(0);
 
@@ -51,12 +55,30 @@ export function useAccessGate(
     // navigate between two denied ids faster than the RPC returns.
     let active = true;
     void fetchAccessDeniedContext(token, id).then((next) => {
-      if (active) setResolved({ key, context: next });
+      if (!active) return;
+
+      // `recordUnavailable()` had to capture immediately while the read was
+      // still ambiguous. Now the platform resolver knows the truth, reconcile
+      // that SAME inspector row before rendering the handled state. A resolver
+      // `error` deliberately does nothing: unknown access gaps stay loud.
+      const resolution: RecordUnavailableResolution | null =
+        next.status === "anonymous"
+          ? "signed-out"
+          : next.status === "denied" ||
+              next.status === "deleted" ||
+              next.status === "missing" ||
+              next.status === "ok"
+            ? next.status
+            : null;
+      if (resolution) {
+        resolveRecordUnavailableCapture(options.readError, resolution);
+      }
+      setResolved({ key, context: next });
     });
     return () => {
       active = false;
     };
-  }, [key, token, id]);
+  }, [key, token, id, options.readError]);
 
   // Stale answers are discarded by comparing keys, not by clearing state.
   const context = resolved && resolved.key === key ? resolved.context : null;

@@ -45,6 +45,8 @@ export interface AccessDeniedProps {
   token: string;
   /** Its id. */
   id: string;
+  /** The original failed read, so the resolver can reconcile its capture. */
+  readError?: unknown;
   /**
    * Where "go back to what I can see" should land when the platform can't find
    * a reachable ancestor — usually the feature's own list route.
@@ -111,8 +113,10 @@ function StatusIcon({ status }: { status: AccessDeniedContext["status"] }) {
   const className = "h-6 w-6 text-muted-foreground";
   if (status === "denied") return <Lock className={className} aria-hidden />;
   if (status === "deleted") return <Trash2 className={className} aria-hidden />;
-  if (status === "missing") return <SearchX className={className} aria-hidden />;
-  if (status === "anonymous") return <LogIn className={className} aria-hidden />;
+  if (status === "missing")
+    return <SearchX className={className} aria-hidden />;
+  if (status === "anonymous")
+    return <LogIn className={className} aria-hidden />;
   return <TriangleAlert className={className} aria-hidden />;
 }
 
@@ -146,7 +150,9 @@ function IdentityBlock({
   );
 
   if (!href) {
-    return <span className="flex min-w-0 items-center gap-2 text-sm">{body}</span>;
+    return (
+      <span className="flex min-w-0 items-center gap-2 text-sm">{body}</span>
+    );
   }
   return (
     <Link
@@ -341,11 +347,14 @@ export function AccessDeniedView({
 export function AccessDenied({
   token,
   id,
+  readError,
   fallbackHref,
   fallbackLabel,
   onRetry,
 }: AccessDeniedProps) {
-  const { context, isLoading, refresh } = useAccessGate(token, id);
+  const { context, isLoading, refresh } = useAccessGate(token, id, {
+    readError,
+  });
 
   if (isLoading || !context) {
     // Deliberately quiet: this renders in a failure path that usually resolves

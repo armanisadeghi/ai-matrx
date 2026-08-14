@@ -25,17 +25,17 @@ different situations:
 
 Surfaces across the app each picked one and asserted it. The incident that
 produced this feature was case **4**: a signed-out tab was told
-*"This site was deleted or is no longer accessible"* — about a live site, with a
+_"This site was deleted or is no longer accessible"_ — about a live site, with a
 Retry button that could never succeed. At the time the repo had ~339 sites
 throwing raw PostgREST text at users, ~155 hand-written "no permission" strings,
 no `AccessDenied` component at all, and no way for a blocked user to ask.
 
 ## The two halves
 
-| Half | Owner | What it does |
-|---|---|---|
-| The **throw** | [`lib/records/recordUnavailable.ts`](../../lib/records/recordUnavailable.ts) | Refuses to claim deletion without proof, says both possibilities out loud, screams into the Error Inspector. |
-| The **surface** | this feature | Asks the platform which of the four it actually is, says it in human words, and offers the next step. |
+| Half            | Owner                                                                        | What it does                                                                                                                                             |
+| --------------- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The **throw**   | [`lib/records/recordUnavailable.ts`](../../lib/records/recordUnavailable.ts) | Refuses to claim deletion without proof, says both possibilities out loud, screams into the Error Inspector.                                             |
+| The **surface** | this feature                                                                 | Asks the platform which of the four it actually is, reconciles that truth onto the same inspector row, says it in human words, and offers the next step. |
 
 They compose. Do not add a third marker error.
 
@@ -63,43 +63,43 @@ if (site.isError || !site.data) {
 That is the whole integration. `AccessGate` resolves the true state and renders
 it. The states it can render:
 
-| Status | What the user sees |
-|---|---|
-| `denied` | Kind, name, owner, org + **Request access** (view / edit + a note) |
-| `deleted` | "This site was deleted" — no request offer, a door back |
-| `missing` | "We couldn't find this site" — the link may be wrong |
-| `anonymous` | "Sign in to open this site" → `/login?next=<here>` |
-| `ok` | **They DO have access** — the read failed transiently. Retry actually works. |
+| Status      | What the user sees                                                           |
+| ----------- | ---------------------------------------------------------------------------- |
+| `denied`    | Kind, name, owner, org + **Request access** (view / edit + a note)           |
+| `deleted`   | "This site was deleted" — no request offer, a door back                      |
+| `missing`   | "We couldn't find this site" — the link may be wrong                         |
+| `anonymous` | "Sign in to open this site" → `/login?next=<here>`                           |
+| `ok`        | **They DO have access** — the read failed transiently. Retry actually works. |
 
 `ok` is the state everyone forgets. Rendering a denial to someone who has access
 is the same class of lie this feature exists to kill.
 
 ## Files
 
-| Path | Role |
-|---|---|
-| `components/AccessGate.tsx` | The drop-in. Fault vs access-state decision. |
-| `components/ForbiddenSurface.tsx` | The SERVER face: what `forbidden.tsx` renders. Honest generic refusal — it structurally cannot name the record; the file says why. |
-| `../../app/forbidden.tsx` · `../../app/(core)/forbidden.tsx` | The boundaries. Root is bare; `(core)`'s renders inside the AppShell. |
-| `../../utils/permissions/requireAccess.ts` | Server-side `requireAccess(type, id, level, { forbid: true })` → real 403 + the boundary. |
-| `components/AccessDenied.tsx` | The screen (+ `AccessDeniedView` for variants). |
-| `components/AccessRequestsSurface.tsx` | The INBOX — both directions, at `/settings/access-requests`. Answers with the same service calls the DM chip uses; never its own copy. |
-| `../../app/(core)/settings/access-requests/page.tsx` | The route. Signed-out → `ModuleSignInGate`. Reached from the settings nav (`Access requests`). |
-| `components/RequestAccessPanel.tsx` | Ask → pending → answered, in place. |
-| `hooks/useAccessGate.ts` | `(token, id) → status + context`. |
-| `service/accessDeniedContext.ts` | Client half of `access_denied_context`. |
-| `service/accessRequests.ts` | create / list / decide / report / withdraw + DM delivery. |
-| — | **No variant registry.** A feature that earns a bespoke screen composes the exported `AccessDeniedView`. A token→component map consulted during render is a dynamic component boundary for an extension point with zero users — speculative abstraction, and React Compiler lint rightly flags it. |
-| `classifyDataError.ts` | Access question vs real fault. |
+| Path                                                         | Role                                                                                                                                                                                                                                                                                               |
+| ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `components/AccessGate.tsx`                                  | The drop-in. Fault vs access-state decision.                                                                                                                                                                                                                                                       |
+| `components/ForbiddenSurface.tsx`                            | The SERVER face: what `forbidden.tsx` renders. Honest generic refusal — it structurally cannot name the record; the file says why.                                                                                                                                                                 |
+| `../../app/forbidden.tsx` · `../../app/(core)/forbidden.tsx` | The boundaries. Root is bare; `(core)`'s renders inside the AppShell.                                                                                                                                                                                                                              |
+| `../../utils/permissions/requireAccess.ts`                   | Server-side `requireAccess(type, id, level, { forbid: true })` → real 403 + the boundary.                                                                                                                                                                                                          |
+| `components/AccessDenied.tsx`                                | The screen (+ `AccessDeniedView` for variants).                                                                                                                                                                                                                                                    |
+| `components/AccessRequestsSurface.tsx`                       | The INBOX — both directions, at `/settings/access-requests`. Answers with the same service calls the DM chip uses; never its own copy.                                                                                                                                                             |
+| `../../app/(core)/settings/access-requests/page.tsx`         | The route. Signed-out → `ModuleSignInGate`. Reached from the settings nav (`Access requests`).                                                                                                                                                                                                     |
+| `components/RequestAccessPanel.tsx`                          | Ask → pending → answered, in place.                                                                                                                                                                                                                                                                |
+| `hooks/useAccessGate.ts`                                     | `(token, id) → status + context`; reconciles a passed `RecordUnavailableError` capture before rendering.                                                                                                                                                                                           |
+| `service/accessDeniedContext.ts`                             | Client half of `access_denied_context`.                                                                                                                                                                                                                                                            |
+| `service/accessRequests.ts`                                  | create / list / decide / report / withdraw + DM delivery.                                                                                                                                                                                                                                          |
+| —                                                            | **No variant registry.** A feature that earns a bespoke screen composes the exported `AccessDeniedView`. A token→component map consulted during render is a dynamic component boundary for an extension point with zero users — speculative abstraction, and React Compiler lint rightly flags it. |
+| `classifyDataError.ts`                                       | Access question vs real fault.                                                                                                                                                                                                                                                                     |
 
 ## Database
 
-| Object | Notes |
-|---|---|
-| `public.access_denied_context(type, id)` | THE resolver. Returns kind, title, owner, org, nearest reachable ancestor, the caller's own request. **Never row content.** |
-| `iam.access_requests` | The ask ledger. Requester sees their own rows via RLS; the decider's inbox comes from the RPC (no per-row access resolution — the 2026-08-08 component-access precedent). |
-| `access_request_create / list / decide / report / withdraw` | The verb family. |
-| `platform.entity_types.allow_preview` | Per-kind disclosure switch. ONE place. `true` (default) = name+owner+org; `false` = kind only. Flip with `admin_set_entity_type_preview` (super-admin). |
+| Object                                                      | Notes                                                                                                                                                                     |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `public.access_denied_context(type, id)`                    | THE resolver. Returns kind, title, owner, org, nearest reachable ancestor, the caller's own request. **Never row content.**                                               |
+| `iam.access_requests`                                       | The ask ledger. Requester sees their own rows via RLS; the decider's inbox comes from the RPC (no per-row access resolution — the 2026-08-08 component-access precedent). |
+| `access_request_create / list / decide / report / withdraw` | The verb family.                                                                                                                                                          |
+| `platform.entity_types.allow_preview`                       | Per-kind disclosure switch. ONE place. `true` (default) = name+owner+org; `false` = kind only. Flip with `admin_set_entity_type_preview` (super-admin).                   |
 
 ## Invariants
 
@@ -115,6 +115,12 @@ is the same class of lie this feature exists to kill.
   An unregistered token surfaces as an error, not "this doesn't exist" — a
   registry bug on our side must never be reported as the user's data being gone.
   The panel says "we couldn't message them" when zero DMs landed.
+- **Capture unknown immediately; reconcile truth, never suppress.**
+  `recordUnavailable()` starts red because the read is genuinely ambiguous.
+  Once AccessGate resolves it, the same inspector row carries `denied`,
+  `deleted`, `missing`, `signed-out`, or `ok`. A fully rendered `denied` path is
+  expected authorization and becomes yellow/Silent; resolver `error` leaves
+  `unknown` red, and every other resolved state remains red.
 - **Recipients (owner ruling, 2026-08-11):** the owner **and** the org's
   owners/admins when the org is shared. First to act wins, so a request never
   dies with one person. A personal workspace routes to the owner only — no
@@ -122,8 +128,8 @@ is the same class of lie this feature exists to kill.
 - **A link the viewer cannot open is worse than no link.** The owner is a door
   only when they have a public creator profile (`/c/{handle}`); the organization
   is a door only when the viewer is a member. Otherwise: identity, no link.
-  *(The first cut linked `/users/{id}`, a route that does not exist — browser
-  verification caught it. Do not reintroduce it.)*
+  _(The first cut linked `/users/{id}`, a route that does not exist — browser
+  verification caught it. Do not reintroduce it.)_
 - **One open request per person per record** — enforced by a partial unique
   index, so a second click is a no-op and never a second DM.
 - **Delivery never fails the ask, and delivery is never the only surface.** The
@@ -145,8 +151,8 @@ Granting writes `iam.permissions` and sends the canonical `resource_shared` card
 back, so the loop closes in the surface the requester already reads.
 
 `/settings/access-requests` is the **durable** one — the ledger itself, in both
-directions: *To me* (`listAccessRequests("inbox")`, pending asks I am entitled to
-answer) and *I sent* (every ask I made, with its status, the decider's note, and
+directions: _To me_ (`listAccessRequests("inbox")`, pending asks I am entitled to
+answer) and _I sent_ (every ask I made, with its status, the decider's note, and
 Withdraw while pending). It exists because the DM can fail to land.
 
 **Both call the same functions.** `decideAccessRequest` / `reportAccessRequest`
@@ -173,7 +179,7 @@ surface means importing them too, never reimplementing the RPC call.
 - **`requireAccess(..., { forbid: true })` has no production callsite yet.**
   Built and verified in the browser (real 403 + the boundary inside the shell),
   but every gated route still redirects — and for the seven `[id]/edit` routes
-  that is *correct*, because the view route offers "Make a copy". The flag is
+  that is _correct_, because the view route offers "Make a copy". The flag is
   for future routes with no better destination. Left deliberately unused rather
   than converted for the sake of it.
 - **A `forbidden.tsx` can never name the record — do not rebuild the handoff.**
@@ -192,7 +198,7 @@ surface means importing them too, never reimplementing the RPC call.
   text for "403". A real fix needs a `cms_site` entity token, which is a
   cross-project decision, not an agent's call.
 - **Slug-addressed records have no gate.** `access_denied_context(p_type, p_id
-  uuid)` needs the uuid, and `/organizations/[orgId]` accepts a slug. When the
+uuid)` needs the uuid, and `/organizations/[orgId]` accepts a slug. When the
   slug doesn't resolve, `OrganizationAccessGate` says the address didn't match
   rather than inventing a reason. Same shape will hit any future slug route.
 - **`check:access-errors` only sees quoted strings.** Bare JSX text
@@ -210,6 +216,15 @@ surface means importing them too, never reimplementing the RPC call.
   `recordUnavailable`, assert some consumer reads `.isError`/`.error`.
 
 ## Change Log
+
+- **2026-08-13** — **Resolved denials stopped masquerading as Clear Errors.**
+  `recordUnavailable()` still captures the ambiguous zero-row read immediately,
+  but AccessGate now reconciles the resolver's truth onto that same entry before
+  rendering. The exact PBW Law site/brand denial therefore stays logged with
+  `reason: "denied"` at yellow/Silent, while unresolved gaps and resolved
+  missing/deleted/signed-out/access-ok failures remain red. The store moves the
+  existing entry's unseen-tier counters in place, so no stale red badge survives
+  the reclassification and no duplicate capture is created.
 
 - **2026-08-11** — **`features/marketing` converted (41 → 0); the client sweep's
   last feature bucket of real record surfaces is closed.** Fourteen surfaces
@@ -272,7 +287,6 @@ surface means importing them too, never reimplementing the RPC call.
   `"… Not Found"` page title went neutral. Two checker blind spots fixed:
   escaped apostrophes (`doesn&apos;t exist`) were invisible, and Route Handlers
   outside `app/api/` were being flagged for copy no human reads.
-
 
 - **2026-08-11** — Built and shipped. DB resolver + request ledger + RPC family +
   the surface + DM approval chips. Verified end to end in the browser (ask →

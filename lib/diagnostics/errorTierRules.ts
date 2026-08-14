@@ -182,6 +182,17 @@ export const DOWNGRADE_RULES: DowngradeRule[] = [
     },
   },
   {
+    id: "record-unavailable-resolved-denial",
+    tier: "yellow",
+    reason:
+      "AccessGate resolved the zero-row read as a definite permission denial and rendered the complete owner/org/request-access path. This is expected authorization behavior, not a system failure. The capture remains listed for diagnostics; unknown, missing, deleted, signed-out, and transient/ok reads do not match and stay red.",
+    addedAt: "2026-08-13",
+    match: {
+      source: "record-unavailable",
+      messageIncludes: "(denied)",
+    },
+  },
+  {
     id: "tool-error-normal-operation",
     tier: "yellow",
     reason:
