@@ -24596,7 +24596,20 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      execute_complex_save: {
+        Args: { operations: Json; options?: Json }
+        Returns: Json
+      }
+      get_table_info: {
+        Args: { table_name: string }
+        Returns: {
+          column_name: string
+          data_type: string
+          foreign_column: string
+          foreign_table: string
+          is_nullable: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
@@ -24843,6 +24856,7 @@ export type Database = {
       }
       stage_ref_kind: {
         Row: {
+          completion_rules: Json
           id_column: string
           is_active: boolean
           kind: string
@@ -24853,6 +24867,7 @@ export type Database = {
           table_name: string
         }
         Insert: {
+          completion_rules?: Json
           id_column?: string
           is_active?: boolean
           kind: string
@@ -24863,6 +24878,7 @@ export type Database = {
           table_name: string
         }
         Update: {
+          completion_rules?: Json
           id_column?: string
           is_active?: boolean
           kind?: string
@@ -36263,10 +36279,6 @@ export type Database = {
         Returns: boolean
       }
       execute_admin_query: { Args: { query: string }; Returns: Json }
-      execute_complex_save: {
-        Args: { operations: Json; options?: Json }
-        Returns: Json
-      }
       expand_archetype: {
         Args: { p_archetype: string; p_choices?: Json }
         Returns: Json
@@ -37144,16 +37156,6 @@ export type Database = {
       }
       get_table_cell: { Args: { ref: Json }; Returns: Json }
       get_table_column: { Args: { ref: Json }; Returns: Json }
-      get_table_info: {
-        Args: { table_name: string }
-        Returns: {
-          column_name: string
-          data_type: string
-          foreign_column: string
-          foreign_table: string
-          is_nullable: string
-        }[]
-      }
       get_table_row: { Args: { ref: Json }; Returns: Json }
       get_tables_and_columns: {
         Args: never
@@ -38647,6 +38649,73 @@ export type Database = {
           p_sender_name?: string
         }
         Returns: Json
+      }
+      seo_rank_position_bucket: {
+        Args: { p_position: number }
+        Returns: string
+      }
+      seo_rank_target_list_facets: {
+        Args: { p_org_id?: string; p_scope?: string; p_search?: string }
+        Returns: {
+          kind: string
+          total: number
+          value: string
+        }[]
+      }
+      seo_rank_target_list_scope_counts: {
+        Args: { p_filters?: Json; p_search?: string }
+        Returns: {
+          label: string
+          narrow_id: string
+          scope: string
+          total: number
+        }[]
+      }
+      seo_rank_target_list_scoped: {
+        Args: {
+          p_dir?: string
+          p_filters?: Json
+          p_limit?: number
+          p_offset?: number
+          p_org_id?: string
+          p_scope?: string
+          p_search?: string
+          p_sort?: string
+        }
+        Returns: {
+          access_level: string
+          best_position: number
+          brand_id: string
+          created_at: string
+          created_by: string
+          device: string
+          engine: string
+          history_observed_at: string[]
+          history_organic_rank: number[]
+          is_active: boolean
+          is_owner: boolean
+          keyword: string
+          keyword_id: string
+          last_checked_at: string
+          latest_position: number
+          movement: number
+          organization_id: string
+          organization_name: string
+          owner_email: string
+          previous_position: number
+          search_type: string
+          site_domain: string
+          site_id: string
+          site_name: string
+          target_id: string
+          total_count: number
+          tracking_label: string
+          updated_at: string
+        }[]
+      }
+      seo_rank_tracking_label: {
+        Args: { p_engine: string; p_search_type: string }
+        Returns: string
       }
       set_admin_decision: {
         Args: {

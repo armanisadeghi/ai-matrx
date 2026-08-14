@@ -30,21 +30,6 @@ Only `audit.function_runtime_probe` proves a function runs.
 
 ## Still open
 
-- **Three live `public.*` RPCs are genuinely broken** — the findings that survived
-  the checker cleanup below, so these are now the entire actionable list:
-  `execute_complex_save` (casts jsonb to `text[]`, and contains a bare `ROLLBACK`
-  inside a function — `2D000` on every call that reaches it),
-  `get_full_table` (missing GROUP BY on `tf.field_order`), and
-  `get_table_info` (declared result type does not match its query). All three are
-  legacy user-data-table (UDT) RPCs with **no frontend callsite** — only
-  `types/database.types.ts` mentions them here — but `get_full_table` is still
-  named in aidream's UDT docs, so "unused" is not proven. Next step: for each,
-  decide *repair or graveyard* (do not guess — check aidream's
-  `docs/udt_user_data_and_lists/` and `packages/matrx-ai/.../content_types/`
-  first), then re-run `audit.refresh()` and confirm the real count returns to 0.
-  Watch them at `/administration/database/canonicalization/broken-functions`
-  (defaults to real breakage only).
-
 - **A 13-million-row table is unreadable to any signed-in user.** The access
   kernel builds a list of every row id you may see, so reads of
   `seo.search_performance_daily` time out. The fix is to make the policy a
@@ -58,8 +43,33 @@ Only `audit.function_runtime_probe` proves a function runs.
 
 ## Fixed and verified live — 2026-08-13
 
+- **The three genuinely-broken RPCs the checker found are all resolved — the
+  actionable count is 0, reached by fixing findings, not reclassifying them.**
+  `get_full_table` was **repaired**: it raised `42803` on *every* call (proven by
+  executing it against a real dataset, not inferred) because its `columns`
+  sub-select hung `ORDER BY tf.field_order` off the outer single-row aggregate
+  query instead of inside `jsonb_agg`. Now returns columns in `field_order`;
+  asserted against live rows in the migration.
+  `get_table_info` and `execute_complex_save` were **retired to `graveyard`**
+  (`SET SCHEMA`, fully reversible, logged in `platform.deprecated_relations` — no
+  `DROP`). `get_table_info` ignored its own `table_name` parameter and hardcoded
+  `WHERE table_name = 'registered_function'`, a table *already* in the graveyard,
+  so it could only ever introspect retired data; generic introspection is served
+  by `schema_truth_snapshot()`. `execute_complex_save` could never have run once:
+  `ROLLBACK` inside a plpgsql function, a `jsonb::text[]` cast, **empty** `update`
+  and `delete` branches holding only "Implementation for update" comments, and an
+  insert branch splicing `jsonb_populate_record` into `format()` as if it were
+  VALUES syntax; its job is served by direct Supabase writes + `guardedUpdate.ts`
+  + the ORM. Zero live callers for any of the three, verified across all six repos
+  (incl. every dynamic `.rpc(name)` dispatcher) — and the same-named Python
+  `DatasetsManager.get_full_table()` is **not** a caller, it reads via
+  `datasets_get_rows*` named queries. Retiring them out of `public` also
+  un-exposes them from PostgREST, so no client can reach a function that cannot
+  succeed. `pnpm db-types` regenerated; both now sit under `graveyard` in
+  `types/database.types.ts`.
+
 - **The conformance checker now means something: 101 rows → 3 actionable
-  functions.** Two defects, both in the tooling itself.
+  functions, now 0.** Two defects, both in the tooling itself.
   *The counts disagreed:* `audit.refresh_log.broken_fn` said 29 while
   `audit.broken_functions` held 101 rows — two different measures shown side by
   side, and the runtime probes wrote their failures *after* the log row existed, so
