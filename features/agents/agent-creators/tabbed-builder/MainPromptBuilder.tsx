@@ -1,6 +1,7 @@
 'use client';
 
 import React, { lazy, Suspense } from 'react';
+import SuspenseLoader from '@/components/loaders/SuspenseLoader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PromptBuilderProvider, usePromptBuilder } from './PromptBuilderContext';
 
@@ -101,7 +102,16 @@ const PromptBuilderContent: React.FC = () => {
         
         {allTabs.map((tab) => (
           <TabsContent key={tab.id} value={tab.id} className="mt-0">
-            <Suspense fallback={<div className="p-4 animate-pulse">Loading...</div>}>
+            <Suspense
+              fallback={
+                <div className="p-4 animate-pulse">
+                  <SuspenseLoader
+                    centered={false}
+                    message="Loading prompt builder section…"
+                  />
+                </div>
+              }
+            >
               {renderTabContent(tab)}
             </Suspense>
           </TabsContent>
@@ -128,4 +138,4 @@ export const MainPromptBuilder: React.FC = () => {
       </div>
     </PromptBuilderProvider>
   );
-}; 
+};
