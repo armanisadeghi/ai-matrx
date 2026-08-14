@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 351 active entity tokens. A token here is FK-valid for
+// 352 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -121,6 +121,7 @@ export type EntityTypeToken =
   | "crm_outreach_list"
   | "crm_outreach_list_member"
   | "crm_party_merge"
+  | "crm_saved_view"
   | "cx_agent_memory"
   | "cx_agent_plan"
   | "cx_agent_task"
@@ -731,6 +732,7 @@ export type ScopeableEntityToken =
   | "crm_outreach_list"
   | "crm_outreach_list_member"
   | "crm_party_merge"
+  | "crm_saved_view"
   | "data_store"
   | "dataset"
   | "derive_run"
@@ -1002,6 +1004,7 @@ export type ListedEntityToken =
   | "content_ir_kind"
   | "content_ir_kind_instance"
   | "crm_outreach_list"
+  | "crm_saved_view"
   | "dataset"
   | "expertise_pack"
   | "growth_loop_run"
@@ -1103,6 +1106,7 @@ export const ENTITY_TYPE_METADATA = {
   "crm_outreach_list": { token: "crm_outreach_list", schema: "crm", table: "outreach_list", label: "Outreach List", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: "container", referenceCategory: null },
   "crm_outreach_list_member": { token: "crm_outreach_list_member", schema: "crm", table: "outreach_list_member", label: "Outreach List Member", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "crm_party_merge": { token: "crm_party_merge", schema: "crm", table: "party_merge", label: "Party Merge", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "crm_saved_view": { token: "crm_saved_view", schema: "crm", table: "saved_view", label: "Smart View", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "cx_agent_memory": { token: "cx_agent_memory", schema: "chat", table: "agent_memory", label: "Agent Memory", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: false, category: "Conversations", referencePickable: true, titleColumn: "key", contentRole: null, referenceCategory: null },
   "cx_agent_plan": { token: "cx_agent_plan", schema: "chat", table: "agent_plan", label: "Agent Plan", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: false, category: "Conversations", referencePickable: false, titleColumn: "title", contentRole: null, referenceCategory: null },
   "cx_agent_task": { token: "cx_agent_task", schema: "chat", table: "agent_task", label: "Agent Task", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: false, category: "Conversations", referencePickable: false, titleColumn: "title", contentRole: null, referenceCategory: null },
@@ -1458,6 +1462,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "crm_outreach_list",
   "crm_outreach_list_member",
   "crm_party_merge",
+  "crm_saved_view",
   "cx_agent_memory",
   "cx_agent_plan",
   "cx_agent_task",
