@@ -64,11 +64,28 @@ Settled by Arman, 2026-08-13 — **never re-ask these** (full list in the system
    another operation is in progress` every 30s since 02:51 — an asyncpg connection reused
    concurrently, not a logic fault. Fix the concurrency AND the fact that one row can fail 1,913
    times silently. `aidream/services/growth_loop/supervisor.py`.
-2. **Four scheduled tasks failing.** "Human Baseline Schedule" now exists TWICE (both enabled,
-   103/124 failed each — a repair that inserted instead of updating); "Daily Standup Summary"
-   102/123; GA4 dispatcher 4/4 (`ResourceBindingError` — a connection points at an
-   analytics_property that was never discovered); backlink enrichment 82/89, still reporting
-   aggregate counts instead of naming what failed.
+2. **Scheduled tasks — mostly closed 2026-08-14; ONE external blocker left.** The cumulative
+   `failed` totals that made these look broken never decrease, which is what made three repaired
+   tasks read as still failing. Verified against `scheduler.sch_run`, not against totals:
+   - **Human Baseline Schedule / Daily Standup Summary — FIXED.** The `agent_id` repair worked;
+     all failures stopped 08-14 00:31 and every run since has succeeded. The duplicate was NOT
+     created by a repair that inserted instead of updating — both rows were created by hand
+     36 seconds apart on 08-09, five days before any repair, and the repair correctly updated
+     both. The newer duplicate (`da07e6c6`) is now soft-deleted + disabled.
+   - **Backlink enrichment — per-item surfacing already landed.** Errors now name the site,
+     the backlink, the source URL, and the stage. It completes ~20 enrichments per run; the
+     remaining failures are genuine per-item scraper 422s on unreachable directory URLs.
+   - 🚨 **GA4 dispatcher — BLOCKED ON ARMAN, not on code.** The `ResourceBindingError` binding
+     was fixed on 08-13; the sync now reaches Google and is refused there: *"Google Analytics
+     Data API has not been used in project 34576215171 before or it is disabled."* **Enable the
+     Analytics Data API on Google Cloud project 34576215171** — nothing in this repo can fix it.
+   - **The silence itself is fixed.** THE SCHEDULER REPEAT GUARD (aidream 0.2.75,
+     `packages/matrx-scheduler/matrx_scheduler/repeat_guard.py` +
+     `aidream/services/scheduling/failure_escalation.py`) escalates at `finalize_run` on three
+     ceilings — 3 same-signature failures, 3 failures with no success ANYWHERE, or 8 mixed
+     failures for a task that used to work — and raises one deduped `platform.assists` chip on
+     the schedule owner. It stops the silence, not the schedule: **whether a repeatedly-failing
+     schedule should auto-disable is Arman's call and was deliberately not taken.**
 3. **1,270 unwired artifacts** found by the new `pnpm check:unwired`. Triage worst-first; expect
    false positives (sample code, demos, debug panels) — fix the scanner for a mis-detected
    CATEGORY rather than allowlisting rows one at a time. **Deletion recommendations are forbidden**
