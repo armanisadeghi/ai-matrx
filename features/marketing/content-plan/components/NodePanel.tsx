@@ -78,6 +78,7 @@ import { NodeAssociations } from "./NodeAssociations";
 import { AttributesEditor } from "./AttributesEditor";
 import { BriefEditor } from "./BriefEditor";
 import { hasKeywordAssignment } from "../plan-assists-producer";
+import type { NodePipelineProgress } from "../lib/pipeline-progress";
 
 export function NodePanel({
   node,
@@ -90,6 +91,7 @@ export function NodePanel({
   cmsPage,
   cmsSiteId,
   cmsPagesByNodeId,
+  pipelineProgress,
   hosted = false,
 }: {
   node: PlanNodeRow;
@@ -108,6 +110,8 @@ export function NodePanel({
   cmsSiteId?: string | null;
   /** Every node's CMS page — the reality card needs it to build ancestors. */
   cmsPagesByNodeId?: ReadonlyMap<string, CmsPageMapEntry>;
+  /** Site-wide node_step query projected once by the workbench. */
+  pipelineProgress?: NodePipelineProgress | null;
   /**
    * The canonical side panel / WindowPanel already owns title and close chrome.
    * Keep only this editor's action toolbar when hosted so controls never stack
@@ -811,7 +815,10 @@ export function NodePanel({
           steps are deliberately visible: the pipeline exists in data even
           where today's fill still skips it. */}
             <PanelSection title="Pipeline">
-              <NodeStepRail nodeId={node.id} siteId={siteId} />
+              <NodeStepRail
+                nodeId={node.id}
+                progress={pipelineProgress ?? null}
+              />
             </PanelSection>
 
             <PanelSection title="Targeting">

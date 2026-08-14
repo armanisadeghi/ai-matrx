@@ -52,6 +52,8 @@ import {
 } from "../lib/tree-view";
 import type { PlanNodeRow, PlanNodeTreeItem, PlanNodeType } from "../types";
 import { buildPlanTree } from "../types";
+import type { NodePipelineProgress } from "../lib/pipeline-progress";
+import { PipelineProgressBadge } from "./PipelineProgressBadge";
 import { filterWithAncestors } from "./pillar-map/layouts";
 import { PlanTreeToolbar, type TreeStatusOption } from "./PlanTreeToolbar";
 
@@ -92,6 +94,8 @@ export interface PlanTreeProps {
     string,
     { route: string | null; isPublished: boolean; liveUrl: string | null }
   >;
+  /** node_id → production progress; untouched nodes are absent. */
+  pipelineByNodeId: ReadonlyMap<string, NodePipelineProgress>;
   onSelect: (id: string) => void;
   onReparent: (id: string, parentId: string | null) => void;
   onAddChild: (parentId: string | null) => void;
@@ -103,6 +107,7 @@ export function PlanTree({
   statusSlugById,
   liveById,
   cmsPageById,
+  pipelineByNodeId,
   onSelect,
   onReparent,
   onAddChild,
@@ -322,6 +327,7 @@ export function PlanTree({
                 statusSlug={statusSlugById.get(row.node.status_id ?? "")}
                 liveMatch={liveById?.get(row.node.id) ?? null}
                 cmsPage={cmsPageById?.get(row.node.id) ?? null}
+                pipelineProgress={pipelineByNodeId.get(row.node.id) ?? null}
                 dragging={row.node.id === activeId}
                 onSelect={() => onSelect(row.node.id)}
                 onToggle={() => {
@@ -370,6 +376,7 @@ function TreeRow({
   statusSlug,
   liveMatch,
   cmsPage,
+  pipelineProgress,
   dragging,
   onSelect,
   onToggle,
@@ -389,6 +396,7 @@ function TreeRow({
     isPublished: boolean;
     liveUrl: string | null;
   } | null;
+  pipelineProgress: NodePipelineProgress | null;
   dragging: boolean;
   onSelect: () => void;
   onToggle: () => void;
@@ -516,6 +524,9 @@ function TreeRow({
                 >
                   {cmsPage.isPublished ? "published" : "page"}
                 </span>
+              ) : null}
+              {pipelineProgress ? (
+                <PipelineProgressBadge progress={pipelineProgress} dense />
               ) : null}
             </span>
             <span className="mt-px shrink-0 rounded bg-muted px-1 py-px text-[10px] font-medium uppercase tracking-wide text-muted-foreground">

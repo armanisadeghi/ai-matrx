@@ -41,12 +41,17 @@ import { cn } from "@/lib/utils";
 
 import { NODE_TYPE_LABELS, planStatusColor } from "../constants";
 import type { PlanDriftModel } from "../lib/drift";
+import {
+  PIPELINE_FILTER_OPTIONS,
+  type NodePipelineProgress,
+} from "../lib/pipeline-progress";
 import { countBy, formatUpdated, withCounts } from "../utils";
 import type { PlanNodeRow, PlanNodeType } from "../types";
+import { PipelineProgressBadge } from "./PipelineProgressBadge";
 
 /** Bump `version` when a column is added/removed (lib/list-views backfill contract). */
 const SURFACE_PREFS: Partial<ListViewPrefs> = {
-  version: 3,
+  version: 4,
   sort: "route",
   direction: "asc",
   hiddenColumns: ["reviewer"],
@@ -59,6 +64,7 @@ const COLUMN_LABELS: Record<string, string> = {
   status: "Status",
   priority: "Priority",
   keyword: "Keyword",
+  pipeline: "Pipeline",
   page: "Page",
   alignment: "Alignment",
   pillar: "Pillar",
@@ -74,6 +80,8 @@ export interface PlanNodesTableProps {
   isFetching: boolean;
   /** node_id → its realized CMS page (WF-11 overlay; absent = no pairing). */
   cmsPageById?: Map<string, { isPublished: boolean; route: string | null }>;
+  /** One site-wide node_step query projected by node; untouched nodes absent. */
+  pipelineByNodeId: ReadonlyMap<string, NodePipelineProgress>;
   /** The workspace's one plan-vs-reality verdict, shared with the drift bar. */
   drift: PlanDriftModel;
   /** One editor body, hosted by both the canonical window and side panel. */
@@ -85,6 +93,7 @@ export function PlanNodesTable({
   isLoading,
   isFetching,
   cmsPageById,
+  pipelineByNodeId,
   drift,
   renderNodePanel,
 }: PlanNodesTableProps) {
@@ -133,6 +142,10 @@ export function PlanNodesTable({
     );
     const keywordCounts = countBy(nodes, (row) =>
       row.primary_keyword_id ? "Bound" : "Missing",
+    );
+    const pipelineCounts = countBy(
+      nodes,
+      (row) => pipelineByNodeId.get(row.id)?.filterValue ?? "",
     );
     const pillarCounts = countBy(nodes, (row) => row.pillar_label ?? "");
     const clusterCounts = countBy(nodes, (row) => row.cluster_label ?? "");
@@ -313,6 +326,22 @@ export function PlanNodesTable({
         width: 100,
       },
       {
+        id: "pipeline",
+        header: "Pipeline",
+        accessorFn: (row) => pipelineByNodeId.get(row.id)?.filterValue ?? "",
+        filter: "select",
+        filterOptions: withCounts(PIPELINE_FILTER_OPTIONS, pipelineCounts),
+        cell: (row) => {
+          const progress = pipelineByNodeId.get(row.id);
+          return progress ? (
+            <PipelineProgressBadge progress={progress} />
+          ) : (
+            <span className="text-sm text-muted-foreground">—</span>
+          );
+        },
+        width: 150,
+      },
+      {
         id: "alignment",
         header: "Alignment",
         accessorFn: alignmentLabel,
@@ -417,7 +446,14 @@ export function PlanNodesTable({
         width: 100,
       },
     ];
-  }, [nodes, statusCategories.categories, statusMetaById, cmsPageById, drift]);
+  }, [
+    nodes,
+    statusCategories.categories,
+    statusMetaById,
+    cmsPageById,
+    pipelineByNodeId,
+    drift,
+  ]);
 
   const hiddenColumns = prefs.hiddenColumns ?? [];
   const visibleColumns = useMemo(

@@ -38,6 +38,7 @@ import {
   usePlanEntities,
   useSiteParties,
   usePlanNodes,
+  useNodeSteps,
   usePlanProfiles,
   useReparentPlanNode,
 } from "../data/hooks";
@@ -66,6 +67,7 @@ import { PlanGenerateBar } from "./PlanGenerateBar";
 import { PlanWebsiteBar } from "./PlanWebsiteBar";
 import { usePlanDrift } from "../hooks/usePlanDrift";
 import type { PlanNodeRow } from "../types";
+import { buildNodePipelineProgress } from "../lib/pipeline-progress";
 import { useContentPlanSites } from "./ContentPlanHeader";
 import { EntityManager } from "./EntityManager";
 import { NewNodeDialog } from "./NewNodeDialog";
@@ -130,6 +132,7 @@ export function ContentPlanWorkbench({
     orgSites.find((row) => row.id === siteId) ??
     null;
   const nodes = usePlanNodes(siteId);
+  const nodeSteps = useNodeSteps(siteId);
   const entities = usePlanEntities(siteId);
   const siteParties = useSiteParties(siteId);
   const profiles = usePlanProfiles(site?.organization_id ?? null);
@@ -176,6 +179,7 @@ export function ContentPlanWorkbench({
   }, [statusCategories.categories]);
 
   const nodeRows = useMemo(() => nodes.data ?? [], [nodes.data]);
+  const pipelineByNodeId = buildNodePipelineProgress(nodeSteps.data ?? []);
   const drift = usePlanDrift(siteId, resolvedCmsSiteId, nodeRows);
   // Bulk-deepen candidates: pages whose brief is empty (route order, so the
   // run walks the site top-down like a reader would).
@@ -564,6 +568,7 @@ export function ContentPlanWorkbench({
               isLoading={nodes.isLoading}
               isFetching={nodes.isFetching}
               cmsPageById={cmsPages.pagesByNodeId}
+              pipelineByNodeId={pipelineByNodeId}
               drift={drift.model}
               renderNodePanel={(node, onDeleted) => (
                 <NodePanel
@@ -578,6 +583,7 @@ export function ContentPlanWorkbench({
                   cmsPage={cmsPages.pagesByNodeId.get(node.id) ?? null}
                   cmsSiteId={resolvedCmsSiteId}
                   cmsPagesByNodeId={cmsPages.pagesByNodeId}
+                  pipelineProgress={pipelineByNodeId.get(node.id) ?? null}
                   hosted
                 />
               )}
@@ -600,6 +606,7 @@ export function ContentPlanWorkbench({
               statusSlugById={statusSlugById}
               liveById={liveById}
               cmsPageById={cmsPages.pagesByNodeId}
+              pipelineByNodeId={pipelineByNodeId}
               onSelect={setSelectedNodeId}
               onReparent={handleReparent}
               onAddChild={openNewNode}
@@ -620,6 +627,7 @@ export function ContentPlanWorkbench({
                     statusSlugById={statusSlugById}
                     liveById={liveById}
                     cmsPageById={cmsPages.pagesByNodeId}
+                    pipelineByNodeId={pipelineByNodeId}
                     onSelect={setSelectedNodeId}
                     onReparent={handleReparent}
                     onAddChild={openNewNode}
@@ -644,6 +652,9 @@ export function ContentPlanWorkbench({
                       }
                       cmsSiteId={resolvedCmsSiteId}
                       cmsPagesByNodeId={cmsPages.pagesByNodeId}
+                      pipelineProgress={
+                        pipelineByNodeId.get(selectedNode.id) ?? null
+                      }
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center p-6">
@@ -718,6 +729,7 @@ export function ContentPlanWorkbench({
               cmsPage={cmsPages.pagesByNodeId.get(selectedNode.id) ?? null}
               cmsSiteId={resolvedCmsSiteId}
               cmsPagesByNodeId={cmsPages.pagesByNodeId}
+              pipelineProgress={pipelineByNodeId.get(selectedNode.id) ?? null}
               hosted
             />
           </SidePanelSurface>
