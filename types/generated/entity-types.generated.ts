@@ -116,10 +116,10 @@ export type EntityTypeToken =
   | "conversation_value"
   | "crm_address"
   | "crm_affiliation"
-  | "crm_campaign"
-  | "crm_campaign_member"
   | "crm_interaction"
   | "crm_merge_candidate"
+  | "crm_outreach_list"
+  | "crm_outreach_list_member"
   | "crm_party_merge"
   | "cx_agent_memory"
   | "cx_agent_plan"
@@ -420,7 +420,7 @@ export type ReferencePickableEntityToken =
   | "content_ir_kind_instance"
   | "context_item"
   | "conversation"
-  | "crm_campaign"
+  | "crm_outreach_list"
   | "cx_agent_memory"
   | "data_store"
   | "dataset"
@@ -509,9 +509,9 @@ export type ComponentEntityToken =
   | "conversation_value"
   | "crm_address"
   | "crm_affiliation"
-  | "crm_campaign_member"
   | "crm_interaction"
   | "crm_merge_candidate"
+  | "crm_outreach_list_member"
   | "crm_party_merge"
   | "cx_agent_plan"
   | "cx_agent_task"
@@ -719,10 +719,10 @@ export type ScopeableEntityToken =
   | "conversation"
   | "crm_address"
   | "crm_affiliation"
-  | "crm_campaign"
-  | "crm_campaign_member"
   | "crm_interaction"
   | "crm_merge_candidate"
+  | "crm_outreach_list"
+  | "crm_outreach_list_member"
   | "crm_party_merge"
   | "data_store"
   | "dataset"
@@ -994,7 +994,7 @@ export type ListedEntityToken =
   | "assist"
   | "content_ir_kind"
   | "content_ir_kind_instance"
-  | "crm_campaign"
+  | "crm_outreach_list"
   | "dataset"
   | "expertise_pack"
   | "growth_loop_run"
@@ -1091,10 +1091,10 @@ export const ENTITY_TYPE_METADATA = {
   "conversation_value": { token: "conversation_value", schema: "chat", table: "conversation_value", label: "Conversation Value", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: false, category: null, referencePickable: false, titleColumn: "key", contentRole: null, referenceCategory: null },
   "crm_address": { token: "crm_address", schema: "crm", table: "address", label: "Address", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "label", contentRole: null, referenceCategory: null },
   "crm_affiliation": { token: "crm_affiliation", schema: "crm", table: "affiliation", label: "Affiliation", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "title", contentRole: null, referenceCategory: null },
-  "crm_campaign": { token: "crm_campaign", schema: "crm", table: "campaign", label: "Campaign", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: "container", referenceCategory: null },
-  "crm_campaign_member": { token: "crm_campaign_member", schema: "crm", table: "campaign_member", label: "Campaign Member", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "crm_interaction": { token: "crm_interaction", schema: "crm", table: "interaction", label: "Interaction", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "subject", contentRole: null, referenceCategory: null },
   "crm_merge_candidate": { token: "crm_merge_candidate", schema: "crm", table: "merge_candidate", label: "Merge Candidate", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "crm_outreach_list": { token: "crm_outreach_list", schema: "crm", table: "outreach_list", label: "Outreach List", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: "container", referenceCategory: null },
+  "crm_outreach_list_member": { token: "crm_outreach_list_member", schema: "crm", table: "outreach_list_member", label: "Outreach List Member", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "crm_party_merge": { token: "crm_party_merge", schema: "crm", table: "party_merge", label: "Party Merge", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "cx_agent_memory": { token: "cx_agent_memory", schema: "chat", table: "agent_memory", label: "Agent Memory", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: false, category: "Conversations", referencePickable: true, titleColumn: "key", contentRole: null, referenceCategory: null },
   "cx_agent_plan": { token: "cx_agent_plan", schema: "chat", table: "agent_plan", label: "Agent Plan", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: false, category: "Conversations", referencePickable: false, titleColumn: "title", contentRole: null, referenceCategory: null },
@@ -1443,10 +1443,10 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "conversation_value",
   "crm_address",
   "crm_affiliation",
-  "crm_campaign",
-  "crm_campaign_member",
   "crm_interaction",
   "crm_merge_candidate",
+  "crm_outreach_list",
+  "crm_outreach_list_member",
   "crm_party_merge",
   "cx_agent_memory",
   "cx_agent_plan",
