@@ -94,6 +94,17 @@ function loadEnv(): { url: string; key: string } | null {
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
     "";
 
+  // The env-file scan below reads whatever it finds; keep the two key names
+  // apart so the SECRET one always wins. Collapsing them into one `key` slot
+  // filled by first-match makes the winner depend on LINE ORDER in .env.local
+  // — and the publishable key sits above the secret one there, so the check
+  // authenticated as anon, got 42501/401 on `_schema_migrations`, and reported
+  // "creds absent — ledger check skipped". Loud mode swallowed that, but
+  // --strict turned it into an exit 2 that blocked every release for a reason
+  // that had nothing to do with migrations (2026-08-13).
+  let fileSecret = "";
+  let filePublishable = "";
+
   if (!url || !key) {
     for (const f of [
       ".env.local",
@@ -109,15 +120,13 @@ function loadEnv(): { url: string; key: string } | null {
         const [, k, raw] = m;
         const v = (raw ?? "").replace(/^['"]|['"]$/g, "");
         if (!url && k === "NEXT_PUBLIC_SUPABASE_URL") url = v;
-        if (
-          !key &&
-          (k === "SUPABASE_SECRET_KEY" ||
-            k === "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY")
-        )
-          key = v;
+        if (!fileSecret && k === "SUPABASE_SECRET_KEY") fileSecret = v;
+        if (!filePublishable && k === "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY")
+          filePublishable = v;
       }
-      if (url && key) break;
+      if (url && fileSecret) break;
     }
+    key = key || fileSecret || filePublishable;
   }
   return url && key ? { url, key } : null;
 }
