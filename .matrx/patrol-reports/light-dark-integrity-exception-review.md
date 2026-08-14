@@ -1,11 +1,12 @@
 # P4 Human Exception Review
 
-- **Prepared:** 2026-08-11; reconciled 2026-08-12 (America/Los_Angeles)
+- **Prepared:** 2026-08-11; reconciled 2026-08-14 (America/Los_Angeles)
 - **Status:** EXCEPTION APPROVAL REQUIRED FOR ACTIVE PROPOSALS
 - **Approved exceptions:** 0
-- **Pending proposals:** 47 files / 100 raw-token lines
-- **Reviewable now:** 47
+- **Pending proposals:** 46 files / 100 raw-token lines
+- **Reviewable now:** 46
 - **Resolved by feature deletion:** 5 files / 9 raw-token lines
+- **Resolved before patrol:** 1 file / 1 raw-token line
 - **Blocked on a review harness:** 0
 
 These are proposals, not exclusions. Every item stays an open P4 finding until
@@ -17,8 +18,8 @@ rejection routes the item to a normal P4 repair.
 
 1. **P4-PENDING-001** — [Open review surface](https://manage.aimatrx.com/administration/users/feedback)
 
-   - Source: `app/(admin)/administration/users/feedback/components/FeedbackTable.tsx:937`
-   - Exact raw tokens by line: `937: bg-white/25`
+   - Source: `app/(admin)/administration/users/feedback/components/FeedbackTable.tsx:934`
+   - Exact raw tokens by line: `934: bg-white/25`
    - Why it may be legitimate: The translucent white count badge appears only on a selected stage whose established background is an opaque status color.
    - Review state: Activate a feedback-stage filter whose count is nonzero or untrusted; inspect the active count badge in both themes.
    - Normal-fix effect: A normal theme-token fix would remove the fixed white overlay and could weaken contrast on the colored selected tab.
@@ -89,8 +90,8 @@ rejection routes the item to a normal P4 repair.
 
 9. **P4-PENDING-009** — [Open review surface](https://aimatrx.com/chat/new)
 
-   - Source: `components/debug/PromptExecutionDebugPanel.tsx:223`
-   - Exact raw tokens by line: `223: hover:bg-white/20`
+   - Source: `components/debug/PromptExecutionDebugPanel.tsx:222`
+   - Exact raw tokens by line: `222: hover:bg-white/20`
    - Why it may be legitimate: The white-alpha close hover sits on an opaque blue gradient debug-panel header.
    - Review state: Enable the global debug indicator, execute a prompt, open the prompt execution debug panel, and hover its dark-surface action.
    - Normal-fix effect: A normal theme-token fix would replace the local on-blue hover overlay and could reduce hover contrast.
@@ -224,11 +225,11 @@ rejection routes the item to a normal P4 repair.
 
 24. **P4-PENDING-024** — [Open review surface](https://aimatrx.com/scraper)
 
-   - Source: `components/official/PageTemplate.tsx:106`
-   - Exact raw tokens by line: `106: bg-white/10`
-   - Why it may be legitimate: The white-alpha statistics tiles sit on the template's opaque blue-to-indigo hero.
-   - Review state: Run a scrape/analysis and open Keyword Analysis or Fact Checker output; inspect translucent white elements over the authored header surface.
-   - Normal-fix effect: A normal fix would theme the statistic tiles instead of retaining fixed local contrast on the blue hero.
+   - Source: `components/official/PageTemplate.tsx:106,280`
+   - Exact raw tokens by line: `106: bg-white/10`; `280: bg-white/20`
+   - Why it may be legitimate: The white-alpha statistics tiles and heading-count badge sit on the template's opaque blue-to-indigo or per-level colored headers.
+   - Review state: Run a scrape/analysis and open Keyword Analysis, Fact Checker, or Header Analysis output; inspect translucent white elements over the authored header surfaces.
+   - Normal-fix effect: A normal fix would theme the statistic tiles and count badge instead of retaining fixed local contrast on the colored headers.
    - Decision: **PENDING — Arman must approve or reject.**
 
 25. **P4-PENDING-025** — [Open review surface](https://manage.aimatrx.com/administration/ui/official-components/image-upload-field)
@@ -242,21 +243,21 @@ rejection routes the item to a normal P4 repair.
 
 26. **P4-PENDING-026** — [Open review surface](https://aimatrx.com/context-items)
 
-   - Source: `features/agents/components/context-items/bodies/MediaBody.tsx:65`
-   - Exact raw tokens by line: `65: bg-white`
+   - Source: `features/agents/components/context-items/bodies/MediaBody.tsx:73`
+   - Exact raw tokens by line: `73: bg-white`
    - Why it may be legitimate: Document and file_output items render inside an iframe with a fixed white document matte.
    - Review state: Select or open a real context item of media kind and inspect its media body background in both themes.
    - Normal-fix effect: A semantic background would follow the app theme but could expose transparent document regions as dark.
    - Decision: **PENDING — Arman must approve or reject.**
 
-27. **P4-PENDING-027** — [Open review surface](https://aimatrx.com/context-items)
+27. **P4-PENDING-027 — RESOLVED BEFORE PATROL**
 
    - Source: `features/agents/components/context-items/bodies/WebpageBody.tsx:49`
    - Exact raw tokens by line: `49: bg-white`
    - Why it may be legitimate: External webpages render in an iframe with a fixed white fallback matte.
    - Review state: Select or open a real webpage context item and inspect the iframe/document matte in both themes.
    - Normal-fix effect: A semantic background would make iframe loading and transparent areas follow the app theme instead of staying page-like white.
-   - Decision: **PENDING — Arman must approve or reject.**
+   - Decision: **RESOLVED — the live-page iframe was replaced before this patrol by the canonical saved-snapshot renderer, so the raw token and proposed exception no longer exist. No exception was approved.**
 
 28. **P4-PENDING-028 — RESOLVED BY FEATURE DELETION**
 
@@ -296,8 +297,8 @@ rejection routes the item to a normal P4 repair.
 
 32. **P4-PENDING-032** — [Open review surface](https://aimatrx.com/cms)
 
-   - Source: `features/cms/components/PageEditor.tsx:743`
-   - Exact raw tokens by line: `743: bg-white`
+   - Source: `features/cms/components/PageEditor.tsx:756`
+   - Exact raw tokens by line: `756: bg-white`
    - Why it may be legitimate: The authored page preview tab gives its iframe a fixed white output canvas.
    - Review state: Open a site, then create or edit a page at /cms/{siteId}/pages/new or /cms/{siteId}/pages/{pageId}; inspect the white editor/document canvas.
    - Normal-fix effect: A semantic background would expose iframe loading and transparent regions using the current app theme.
@@ -314,8 +315,8 @@ rejection routes the item to a normal P4 repair.
 
 34. **P4-PENDING-034** — [Open review surface](https://aimatrx.com/education/progress/learning-gain)
 
-   - Source: `features/education/study/learning-gain/components/LearningGainReportView.tsx:59`
-   - Exact raw tokens by line: `59: print:bg-white`
+   - Source: `features/education/study/learning-gain/components/LearningGainReportView.tsx:80`
+   - Exact raw tokens by line: `80: print:bg-white`
    - Why it may be legitimate: The report explicitly forces a white page background only for print and PDF output.
    - Review state: Open browser print preview; the matched class is print:bg-white and is not exercised by normal screen rendering.
    - Normal-fix effect: Removing the fixed print color would let the browser print the current application theme, potentially producing a dark PDF.
@@ -368,8 +369,8 @@ rejection routes the item to a normal P4 repair.
 
 40. **P4-PENDING-040** — [Open review surface](https://manage.aimatrx.com/administration/ui/official-components/content-editor)
 
-   - Source: `features/html-pages/components/HtmlPreviewModal.tsx:1168`
-   - Exact raw tokens by line: `1168: bg-white`
+   - Source: `features/html-pages/components/HtmlPreviewModal.tsx:1190`
+   - Exact raw tokens by line: `1190: bg-white`
    - Why it may be legitimate: The modal deliberately surrounds the iframe with white and sets the iframe color scheme to light.
    - Review state: Open the full HTML preview modal and inspect its document matte in both app themes.
    - Normal-fix effect: A semantic substitution plus removal of light colorScheme would allow the preview substrate and native controls to follow the app theme.
@@ -404,8 +405,8 @@ rejection routes the item to a normal P4 repair.
 
 44. **P4-PENDING-044** — [Open review surface](https://aimatrx.com/marketing/content-plan)
 
-   - Source: `features/marketing/content-plan/setup/components/SetupBridgeSection.tsx:995`
-   - Exact raw tokens by line: `995: bg-white`
+   - Source: `features/marketing/content-plan/setup/components/SetupBridgeSection.tsx:1120`
+   - Exact raw tokens by line: `1120: bg-white`
    - Why it may be legitimate: The authored marketing-page iframe preview uses a fixed white output matte.
    - Review state: Open a site at /marketing/content-plan/{siteId} in setup/bridge state and inspect the embedded white surface.
    - Normal-fix effect: A semantic background would make transparent authored-page regions follow the app theme.

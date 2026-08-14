@@ -1,145 +1,183 @@
 # P4 Light/Dark Integrity Patrol
 
-- **Run date:** 2026-08-12 (America/Los_Angeles)
-- **Run kind:** approved Tier-M recovery under delta-based certification
-- **Outcome:** 3 defect lines fixed across 2 files; 0 approved exceptions
-- **Readiness:** doctrine, skill, detector, schedule, and certification are
-  ready; the historical exception sweep remains open for Arman's decisions
+- **Run date:** 2026-08-14 (America/Los_Angeles)
+- **Run kind:** scheduled Tier-M patrol; structural-novelty scope plus full pass
+- **Outcome:** 46 active manual exception proposals / 100 raw-token lines; 0
+  new defects; 0 auto-fixes; 1 stale proposal resolved before this run
+- **Readiness:** P4 still declares Skill ✅ and Detector ✅
 
-## Why the earlier report was corrected
+## Immutable baseline and isolation
 
-The first report said 138 unpaired lines were legitimate exclusions. That was
-not acceptable: agents had inferred intent and the polished summary made an
-incomplete sweep look clean. Its detector was also property-agnostic: any
-`dark:` class on a line could hide an unrelated raw color, such as
-`text-black dark:bg-zinc-900`. The corrected detector uncovered eleven
-additional review lines across six files.
+- Checkout: `/Users/armanisadeghi/.codex/worktrees/f8df/matrx-frontend`
+- Starting commit: `3528d656712fd4ace5bc08fb8ef3d15c13cb8640`
+  (`HEAD == origin/main`), detached isolated worktree, clean status.
+- `node_modules` was absent, so the mandated
+  `pnpm install --offline --frozen-lockfile` completed without changing the
+  lockfile or dependency declarations.
+- Pre-edit `pnpm type-check`: PASS.
+- Pre-edit detector tests: 4/4 PASS.
+- Pre-edit `pnpm check:doctrine`: PASS.
+- Pre-edit `pnpm check:ui-primitives`: PASS with 19 pre-existing warnings.
+- Pre-edit strict detector: expected exit 1 because unapproved proposals remain;
+  no invalid exception record exists.
+- `pnpm check:migrations` completed after linking the canonical ignored
+  `.env.local` without reading or tracking it. It exposed three unrelated,
+  pre-existing non-blocking drift records: `iam_verify_canonical.sql`,
+  `iam_verify_canonical_add_legacy_is_deleted.sql`, and
+  `mtx_public_url_guard_schema_aware.sql`. P4 did not alter migrations or the
+  live database.
+- `pnpm sync-types` was intentionally not run because this patrol's explicit
+  hard rule forbids touching generated files; the required read-only
+  `pnpm type-check` gate passed before and after the report update.
 
-Every candidate was reopened and independently reclassified. The durable
-replacement is now enforced at every level:
+## Scope and detector baseline
 
-- the system doctrine and operator template say agents propose and Arman approves;
-- all 10 patrol automations contain the Human Exception Contract;
-- fleet health alerts when a patrol prompt is missing that contract;
-- P4 has a typed approval ledger, currently empty;
-- pairing is property- and state-variant-specific;
-- every approval is an exact file/line/token-set match with exactly one source
-  annotation, and approved exceptions remain separately reported;
-- a proposal without a stable UI route cannot be approved.
+The prior report anchor was commit
+`f549da931d4bd4d069becdd6535beadc14b7c2a2`. The required structural-novelty
+scope contained 195 added/changed runtime and test `.tsx` files, including
+eight new route leaves and no new top-level `features/*` directory:
 
-## Scope and baseline
+1. `app/(admin)/administration/reporting/unwired/page.tsx`
+2. `app/(core)/crm/duplicates/page.tsx`
+3. `app/(core)/crm/outreach-lists/[listId]/dial/page.tsx`
+4. `app/(core)/crm/outreach-lists/[listId]/page.tsx`
+5. `app/(core)/crm/outreach-lists/page.tsx`
+6. `app/(core)/marketing/brands/[brandId]/sites/[siteId]/growth-loop/page.tsx`
+7. `app/(core)/marketing/growth-loop/[loopRunId]/page.tsx`
+8. `app/(core)/marketing/initiatives/page.tsx`
 
-The correction repeated the required full scan rather than relying on git churn:
+Scoped detector result: 195 files scanned, 11 raw-token lines, 4 contextual
+candidates. All four are pre-existing proposals whose source lines moved or
+whose surrounding component changed; component and call-site review confirmed
+their fixed-output/on-color intent is still plausible but not agent-approvable:
 
-```bash
-node .claude/skills/light-dark-integrity/scripts/detect-light-dark.mjs --json
-```
+- `MediaBody.tsx:73` — fixed white document iframe matte.
+- `PageEditor.tsx:756` — fixed white authored-page preview canvas.
+- `LearningGainReportView.tsx:80` — print-only white report background.
+- `HtmlInlinePreview.tsx:317` — fixed white rendered-webpage iframe matte.
 
-Entering scan: 6,941 `.tsx` files; 312 files / 754 matching lines; 604 lines
-with a property-specific same-line dark pair; 150 lines requiring contextual
-review.
+The extra full pass scanned 6,635 `.tsx` files and found 262 files / 668
+matching lines: 532 property-specific same-line pairs and 136 contextual
+candidates. Those 136 reconcile to 100 active proposal lines plus 36 existing
+explicit/multiline theme branches, overridden fallbacks, comments, or
+non-rendered outputs. Approved exceptions: 0. Invalid exception records: 0.
 
-Independent line-by-line review classified those 150 lines as:
+## Routed report
 
-- **109 lines / 52 files:** proposed fixed-palette exceptions, all still open;
-- **38 lines:** compliant explicit/multiline branches, overridden fallbacks, comments, or
-  non-rendered/no-consumer code; these are not allowlisted;
-- **3 lines / 2 files:** real light/dark defects, fixed and certified in the
-  2026-08-12 recovery batch.
+### Auto-fixed now
 
-That first-pass baseline was 6,941 `.tsx` files; 312 files / 754 matching
-lines; 604 property-specific pairs; 150 review candidates; 0 approved
-exceptions; 0 invalid exception records.
+None. No verified theme-surface defect in this run matched the skill's exact
+mechanical semantic-token repair table.
 
-The 2026-08-12 recovery baseline from current `origin/main` is 6,595 `.tsx`
-files; 262 files / 668 matching lines; 532 property-specific pairs; 136 review
-candidates; 0 approved exceptions; 0 invalid exception records. Detector tests
-are 4/4 green, and `--strict` correctly exits nonzero while proposals remain.
+### Manual approval requested
 
-The complete human review list, with exact source lines, URLs, UI states, and
-normal-fix effects, is in
-`.matrx/patrol-reports/light-dark-integrity-exception-review.md`.
+The complete production URLs, reproduction states, raw tokens, contrast
+rationale, and normal-fix effects are maintained in
+`.matrx/patrol-reports/light-dark-integrity-exception-review.md`. The current
+46-item decision set is:
 
-## Recovered and certified Tier-M batch
+1. `P4-PENDING-001` — `FeedbackTable.tsx:934` selected-stage count badge.
+2. `P4-PENDING-002` — run-a `AssetGallery.tsx:102` media play disc.
+3. `P4-PENDING-003` — run-f `AssetGallery.tsx:54` media play disc.
+4. `P4-PENDING-004` — `ProductionStage.tsx:105,106` artwork carousel dots.
+5. `P4-PENDING-005` — `StageCanvas.tsx:169,170,185,186` artwork status/dots.
+6. `P4-PENDING-006` — `PageSpeedResults.tsx:76` gradient-button count badge.
+7. `P4-PENDING-007` — tool-viz `page.dev.tsx:1279` selected-row badge.
+8. `P4-PENDING-008` — tic-tac-toe `page.tsx:280` fixed-dark board hover.
+9. `P4-PENDING-009` — `PromptExecutionDebugPanel.tsx:222` blue-header hover.
+10. `P4-PENDING-010` — `ErrorBoundaryView.tsx:129` dark stack chrome.
+11. `P4-PENDING-011` — `MatxLoader.tsx:70,71` authored loader dots.
+12. `P4-PENDING-012` — `DecisionTreeBlock.tsx:340` active-node hover.
+13. `P4-PENDING-013` — `FlashcardMobileView.tsx:138,140,142,143,151,624,929,930,935,995,1094,1103` fixed-dark study chrome.
+14. `P4-PENDING-014` — `FlashcardsBlock.tsx:392` gradient-prompt button.
+15. `P4-PENDING-015` — `ImageBlock.tsx:337,369` black fullscreen viewer chrome.
+16. `P4-PENDING-016` — `TimelineBlock.tsx:363` on-color completion badge.
+17. `P4-PENDING-017` — `DefaultLoadingComponent.tsx:299,334,398,442,480` authored loading accents.
+18. `P4-PENDING-018` — `DynamicView.tsx:96` slate-header skeleton.
+19. `P4-PENDING-019` — `IntroOutroListView.tsx:49,159,162,165,168` gradient-header accents.
+20. `P4-PENDING-020` — `KeyPointsNestedListView.tsx:240` gradient progress track.
+21. `P4-PENDING-021` — `KeyPointsView.tsx:46,144,148,149,150` gradient accents.
+22. `P4-PENDING-022` — `LsiKeywordView.tsx:570` gradient-header skeleton.
+23. `P4-PENDING-023` — `ModernKeywordAnalyzerView.tsx:184,198` gradient editor chrome.
+24. `P4-PENDING-024` — `PageTemplate.tsx:106,280` colored-header tiles/badge.
+25. `P4-PENDING-025` — `ImageUploadField.tsx:115` image-overlay remove control.
+26. `P4-PENDING-026` — `MediaBody.tsx:73` document iframe matte.
+27. `P4-PENDING-032` — `PageEditor.tsx:756` authored-page preview canvas.
+28. `P4-PENDING-033` — `LiveCaptureButton.tsx:96,97` recording indicators.
+29. `P4-PENDING-034` — `LearningGainReportView.tsx:80` print/PDF background.
+30. `P4-PENDING-035` — `BboxPreview.tsx:43` transparent-image matte.
+31. `P4-PENDING-036` — `UnifiedImageBlockRenderer.tsx:528,952` media toolbar.
+32. `P4-PENDING-037` — `UnifiedVideoBlockRenderer.tsx:356,636` video toolbar.
+33. `P4-PENDING-038` — `HtmlPreview.tsx:183` saved-HTML iframe matte.
+34. `P4-PENDING-039` — `HtmlInlinePreview.tsx:317` rendered-page matte.
+35. `P4-PENDING-040` — `HtmlPreviewModal.tsx:1190` light HTML preview matte.
+36. `P4-PENDING-041` — `SavePageTab.tsx:444` publish-preview canvas.
+37. `P4-PENDING-042` — `CropPreview.tsx:342,350` image crop marker.
+38. `P4-PENDING-043` — `InitialCropPanel.tsx:742,749,756,763,772,779,786,793` image resize handles.
+39. `P4-PENDING-044` — `SetupBridgeSection.tsx:1120` authored-page iframe matte.
+40. `P4-PENDING-045` — `CaptureView.tsx:195,251,269` camera chrome.
+41. `P4-PENDING-046` — `PodcastAudioPlayer.tsx:423,425,431,468,570,573` explicit dark player variant.
+42. `P4-PENDING-047` — `PodcastEpisodePage.tsx:54` video-hero action.
+43. `P4-PENDING-048` — `PodcastShowPage.tsx:136` cover-art hero action.
+44. `P4-PENDING-049` — `AssetCard.tsx:234` media-overlay cover action.
+45. `P4-PENDING-050` — `ProductionTeaser.tsx:108,109` artwork carousel dots.
+46. `P4-PENDING-051` — `HeaderAnalysis.tsx:118,126,134,142,319` colored-header tiles/badge.
 
-The approved two-file batch used the skill's exact semantic substitutions:
+Each item has exactly two safe routes: Arman approves the fixed-palette intent,
+after which the typed exception ledger and exact source annotation may be
+added; or Arman rejects it, after which the owning theme surface is repaired
+with the skill's semantic token/explicit-variant recipe in a certified batch.
 
-1. `CandidateProfileView.tsx`: `bg-white/{20,10}` →
-   `bg-foreground/{20,10}` for two loading skeleton bars.
-2. `RoomHeader.tsx`: `active:bg-white/5 border-white/[0.06]` →
-   `active:bg-accent/50 border-border` for the mobile action-sheet row.
+### Backlog retained
 
-The earlier infrastructure/global-baseline rejection was invalid under the
-corrected certification constitution because it named no defect caused by
-these substitutions. The recovery ran in an isolated worktree from current
-`origin/main`, recorded pre-edit diagnostics, reapplied only the approved
-classes, and compared the same diagnostics after editing.
+No new unresolved defect lacks evidence or a repair decision. The 36 remaining
+detector candidates are retained as repeatedly scanned non-findings rather
+than suppressed: explicit/multiline theme branches, overridden fallbacks,
+comments, or non-rendered output. They remain visible on every full pass.
 
-- `pnpm type-check`: green before and after; byte-identical output.
-- Scoped P4 detector: 3 review candidates before, 0 after; the other 8 paired
-  matches were unchanged.
-- Scoped ESLint: the same 4 legacy errors and 1 warning before and after; none
-  names a changed line.
-- Doctrine and UI-primitives: same green exit and byte-identical output before
-  and after.
-- Focused preview: both representative routes compiled and returned HTTP 200,
-  then the process reached Arman's 8 GB safety cap and was terminated at 10.2
-  GB. The certifier used the constitution's equivalent evidence: compiled JS
-  contains both new skeleton classes, compiled CSS contains all four semantic
-  utilities, and the light/dark theme variables define distinct foreground,
-  accent, and border values.
-- **Adversarial verdict:** CERTIFIED — no concrete batch-caused defect; the
-  preview cap was infrastructure-only. The final product diff is exactly 2
-  files / 3 class substitutions, with no import, layout, interaction,
-  responsive-rule, component-boundary, or chunking change.
+### Resolved before this run
 
-## Human exception review
+`P4-PENDING-027` (`WebpageBody.tsx:49`) no longer exists. Commit
+`acbeea1b5ccedf8996a224604b2476105452867a` replaced the fixed-white live-page
+iframe with the canonical saved-snapshot renderer. No exception was approved.
+The missing `PageTemplate.tsx:280` on-color badge was added to
+`P4-PENDING-024`, keeping the active raw-token line total at 100 while reducing
+the active proposal file count from 47 to 46.
 
-- **Approved:** 0
-- **Pending:** 47 active files / 100 historical raw-token lines
-- **Reviewable by production URL or existing harness:** 47
-- **Resolved by feature deletion:** 5 applet files / 9 lines
-- **Blocked:** 0
+## Certification and post-run verification
 
-Representative production examples for Arman to inspect:
+No product-code Tier-M batch was created, so no adversarial certifier or
+browser matrix was required. This is not a report-only downgrade: the patrol
+completed its detector, triage, routing, ledger, and reporting duties and found
+no auto-approved repair. Product certifier verdict: **NOT APPLICABLE — no
+mutation batch**.
 
-- `https://aimatrx.com/free/games/tic-tac-toe` — fixed-dark authored game board;
-- `https://demos.aimatrx.com/demos/model-activity-indicators` — select MatxLoader;
-- `https://manage.aimatrx.com/administration/ui/official-components/content-editor`
-  — open an HTML preview to judge a deliberately light document matte;
-- `https://aimatrx.com/images/convert` — upload an image and enter crop mode;
-- `https://aimatrx.com/tools/scanner` — enter capture mode to judge camera chrome.
+Post-report verification must match the immutable baseline:
 
-## Validation and certification
-
-- Detector regression suite: 4/4 pass (wrong-property and standalone-dark
-  pairing, exact-line approval, duplicate annotations, and duplicate-ledger
-  rejection).
-- Detector JSON scan: pass; 0 invalid exception records.
-- Detector strict mode: expected failure because 150 contextual candidates
-  remain and no exception has been approved.
-- Detector ESLint: pass.
-- `pnpm check:doctrine`: pass.
-- `pnpm check:ui-primitives`: completes with 18 pre-existing warnings, none in
-  this batch.
-- Focused ESLint reaches only pre-existing React hook/static-component errors in
-  the two legacy files; neither changed line is implicated.
-- `pnpm type-check`: green before and after with byte-identical output.
-- **UI-batch adversarial certifier:** CERTIFIED under the corrected
-  batch-delta policy; no concrete batch-caused defect.
-- **Detector/process recertifier:** CERTIFIED for the original first-pass
-  inventory — independently reconciled all 52 historical proposals to 109
-  unique detector lines and exact unpaired token sets. The recovery reconciled
-  five applet proposal files / nine lines as resolved by feature deletion and
-  reran the 4/4 regression suite plus the current full scan.
-- **Report-only exception review:** certification not applicable; no exception
-  was approved or changed.
+- `pnpm type-check`: PASS.
+- Detector regression suite: 4/4 PASS.
+- Full detector: 6,635 files; 668 matching lines; 136 review candidates; 0
+  approved and 0 invalid exceptions.
+- Scoped detector: 195 files; 11 matching lines; 4 review candidates, all
+  routed above.
+- `pnpm check:doctrine`: PASS.
+- `pnpm check:ui-primitives`: PASS with the same 19 pre-existing warnings.
+- `pnpm check:migrations`: completed with the same three unrelated drift
+  records listed in the baseline; no P4 migration exists.
 
 ## Cadence health and candidates
 
-P4 does not have a preceding month of all-clean runs, so a longer cadence is
-not proposed. Mutation is not paused, and no recurring unregistered pattern
-was found. The sweep remains partial until Arman resolves the pending exception
-proposals; the automation cadence itself is unchanged.
+The preceding month is not all clean: P4 produced defect repairs and continuing
+human-owned proposals on August 11–12. No longer cadence is proposed. No
+concrete batch-caused rejection pattern exists, so mutation is not paused. No
+new recurring unregistered class was found, so there is no Candidate-bench
+nomination from this run.
+
+## EXCEPTION APPROVAL REQUIRED
+
+Arman must approve or reject every active item `P4-PENDING-001` through
+`P4-PENDING-051`, excluding resolved items `027`–`031` and `052`, using the
+complete production review instructions in
+`.matrx/patrol-reports/light-dark-integrity-exception-review.md`.
 
 ARMAN, WE NEED YOU: approve or reject every listed P4 exception.
