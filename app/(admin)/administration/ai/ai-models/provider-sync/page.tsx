@@ -2,6 +2,7 @@
 
 import { Suspense, useState, useEffect, useCallback } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { aiModelService } from "@/features/ai-models/service";
 import ProviderSyncDashboard from "@/features/ai-models/components/ProviderSyncDashboard";
 import type { AiModel, AiProvider } from "@/features/ai-models/types";
@@ -56,7 +57,10 @@ export default function ProviderSyncPage() {
       <Suspense
         fallback={
           <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
-            Loading…
+            <SuspenseLoader
+              centered={false}
+              message="Loading model provider sync…"
+            />
           </div>
         }
       >

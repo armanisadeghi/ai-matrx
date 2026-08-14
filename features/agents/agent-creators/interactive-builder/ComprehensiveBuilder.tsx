@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, Suspense } from "react";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { Button } from "@/components/ui/button";
 import { Loader2, Check } from "lucide-react";
 import { useAgentBuilder } from "../services/agentBuilderService";
@@ -123,7 +124,14 @@ function BuilderContent({ onComplete }: ComprehensiveBuilderProps) {
           {allTabs.map((tab) => (
             <TabsContent key={tab.id} value={tab.id} className="mt-0">
               <Suspense
-                fallback={<div className="p-4 animate-pulse">Loading...</div>}
+                fallback={
+                  <div className="p-4 animate-pulse">
+                    <SuspenseLoader
+                      centered={false}
+                      message="Loading agent builder section…"
+                    />
+                  </div>
+                }
               >
                 {renderTabContent(tab)}
               </Suspense>
