@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -43,6 +43,20 @@ export default function AddColumnModal({ tableId, isOpen, onClose, onSuccess }: 
   const [defaultValue, setDefaultValue] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // The modal stays mounted between opens, so without this every field keeps
+  // whatever the last (possibly cancelled) attempt left behind — reopening it
+  // showed a stale column name and a format that no longer matched the type.
+  useEffect(() => {
+    if (!isOpen) return;
+    setDisplayName('');
+    setFieldName('');
+    setDataType('string');
+    setFormat({ id: 'text' });
+    setIsRequired(false);
+    setDefaultValue('');
+    setError(null);
+  }, [isOpen]);
 
   // Generate field name from display name
   const generateFieldName = (name: string) => {

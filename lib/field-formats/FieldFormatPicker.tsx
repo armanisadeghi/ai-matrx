@@ -63,7 +63,9 @@ export function FieldFormatPicker({
   triggerClassName,
 }: FieldFormatPickerProps) {
   const groups = groupedFormatsForBase(dataType);
-  const activeId = value?.id ?? defaultFormatForBase(dataType);
+  // `||`, not `??` — an empty-string id is as absent as undefined, and one can
+  // arrive from a cleared Radix value or a hand-edited metadata row.
+  const activeId = value?.id || defaultFormatForBase(dataType);
   const def = getFieldFormat(activeId);
   const options = value?.options ?? {};
 
@@ -82,9 +84,16 @@ export function FieldFormatPicker({
     <div className={cn("space-y-2", className)}>
       <Select
         value={activeId}
-        onValueChange={(id) =>
-          onChange({ id: id as FieldFormatConfig["id"], options: {} })
-        }
+        onValueChange={(id) => {
+          // Radix fires onValueChange("") when the currently-selected item
+          // leaves the list — which happens every time the storage type
+          // changes and the option set is rebuilt. Writing that "" back
+          // clobbered the format the caller had just set (pick Number as the
+          // type and the format silently became "", rendering as "Text").
+          // Only accept a real, known format id.
+          if (!getFieldFormat(id)) return;
+          onChange({ id: id as FieldFormatConfig["id"], options: {} });
+        }}
       >
         <SelectTrigger className={cn("h-7 text-xs", triggerClassName)}>
           {/* A plain span, NOT <SelectValue>. Radix renders the trigger's text
