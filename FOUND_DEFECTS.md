@@ -13,6 +13,23 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D190 — PostgREST's 1000-row cap is read as "absence" wherever a list is fetched unpaginated (2026-08-14)
+
+`scripts/check-migrations.ts` fetched the whole `_schema_migrations` ledger in ONE unpaginated
+request. PostgREST caps at `db-max-rows` (1000) and says so — `206` + `Content-Range: 0-999/1005` —
+but the script ignored the status and read the truncated list as fact, so the **5 newest migrations
+were reported UNAPPLIED to a release that had just applied them**. Under `--strict` (what
+`scripts/release.sh` gates on) that is a hard release-blocker with no bad migration anywhere.
+**Fixed there** (paged with `Range` + stable `order=filename.asc`; a short read returns null and
+skips the check loudly rather than reporting confidently-wrong absence).
+
+**The class is open.** Any unpaginated `select` whose result is used to decide whether something
+EXISTS has this bug the moment the table passes 1000 rows, and it fails silently — the list just
+gets shorter. Same shape as the `information_schema` privilege-filtering trap in aidream's pooler
+defect: a partial answer wearing the costume of a complete one. Worth a sweep for `select=` /
+`.from(...).select(...)` calls that feed an existence/diff check with no `.range()`/`limit`, and a
+lint or helper that refuses an unbounded list read.
+
 ### D189 — dataset Strict Validation + Authenticated Access have NO live UI (2026-08-14)
 
 Found while converting dataset reads off `get_user_table_complete`; unrelated to that change.
