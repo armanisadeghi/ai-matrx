@@ -49,6 +49,7 @@ import type {
   OutreachListRow,
   DialBlockReason,
   DialSessionStats,
+  DialTarget,
   MemberStatusCounts,
   QueueEntry,
 } from "../../outreach-lists/types";
@@ -56,8 +57,15 @@ import {
   CALL_DISPOSITIONS,
   EMPTY_SESSION_STATS,
 } from "../../outreach-lists/types";
+import { allowPartyContact, unsuppressMedium } from "../../service";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { ListStatusBadge } from "./badges";
-import { CONTACT_BLOCK_REASON_LABELS } from "../../reachability";
+import type { MediumBlock } from "../../reachability";
+import {
+  CONTACT_BLOCK_REASON_LABELS,
+  describeBlocks,
+  isTenantSuppressed,
+} from "../../reachability";
 
 // Labels come from the ONE reachability map (features/crm/reachability.ts);
 // the dialer only overrides the two that should say "number" on a phone screen.
@@ -92,7 +100,11 @@ export function CallQueuePage({ listId }: { listId: string }) {
   const [stats, setStats] = useState<DialSessionStats>(EMPTY_SESSION_STATS);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [autoSuppressed, setAutoSuppressed] = useState<string[]>([]);
+  // Auto-suppressed records carry their id: a name the dialer skipped is a
+  // record the rep may need to go fix, so it must be a door (THE DOOR LAW).
+  const [autoSuppressed, setAutoSuppressed] = useState<
+    { id: string; name: string }[]
+  >([]);
 
   // The held member id, for release-on-leave (cleanup can't read state).
   const heldRef = useRef<{ memberId: string; userId: string } | null>(null);
@@ -136,7 +148,10 @@ export function CallQueuePage({ listId }: { listId: string }) {
           setStats((s) => ({ ...s, suppressed: s.suppressed + 1 }));
           setAutoSuppressed((prev) => [
             ...prev.slice(-4),
-            next.detail.party.display_name,
+            {
+              id: next.detail.party.id,
+              name: next.detail.party.display_name,
+            },
           ]);
           continue;
         }
@@ -231,6 +246,69 @@ export function CallQueuePage({ listId }: { listId: string }) {
     }
   };
 
+  /**
+   * The reverse of "Do not call", right where it bites: lift OUR block on this
+   * number (and/or on this record) and re-resolve the card, so the rep can dial
+   * immediately instead of leaving the queue to undo a mis-click. Blocks from
+   * outside — DNC registry, opt-out, invalid — are never touched, and the toast
+   * says so if the number is still dark afterwards.
+   */
+  const allowContact = async (target: DialTarget) => {
+    if (!entry || !userId || busy) return;
+    const partyDnc = entry.detail.party.do_not_contact;
+    const ok = await confirm({
+      title: `Allow contact on ${target.display}?`,
+      description:
+        (partyDnc
+          ? `This clears the do-not-contact flag on ${entry.detail.party.display_name}. `
+          : "") +
+        (isTenantSuppressed(target.medium)
+          ? `It also lifts your team's suppression on ${target.display}${
+              target.medium.suppression_reason
+                ? ` (recorded as "${target.medium.suppression_reason}")`
+                : ""
+            }, which re-opens that number for every record sharing it. `
+          : "") +
+        "Both are recorded on the record's timeline.",
+      confirmLabel: "Allow contact",
+    });
+    if (!ok) return;
+    setBusy(true);
+    try {
+      if (partyDnc) {
+        await allowPartyContact({
+          partyId: entry.detail.party.id,
+          orgId: entry.detail.party.organization_id,
+          userId,
+        });
+      }
+      let remaining: MediumBlock[] = [];
+      if (isTenantSuppressed(target.medium)) {
+        ({ remainingBlocks: remaining } = await unsuppressMedium({
+          mediumId: target.medium.id,
+          partyId: entry.detail.party.id,
+          orgId: entry.detail.party.organization_id,
+          userId,
+        }));
+      }
+      // Re-resolve this member's card from the DB — the dial targets are
+      // computed from suppression state, so they must be recomputed, never
+      // patched in place.
+      setEntry(await buildQueueEntry(entry.member));
+      if (remaining.length > 0) {
+        toast.warning(
+          `${target.display} is still blocked by ${describeBlocks(remaining)}`,
+        );
+      } else {
+        toast.success(`${target.display} can be dialed again`);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not lift the block");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const skip = async () => {
     if (!entry || !userId || busy) return;
     setBusy(true);
@@ -293,7 +371,19 @@ export function CallQueuePage({ listId }: { listId: string }) {
         {autoSuppressed.length > 0 && (
           <div className="mt-1.5 rounded-md border border-amber-500/20 bg-amber-500/10 px-2.5 py-1 text-[11px] text-amber-600 dark:text-amber-400">
             Auto-suppressed (DNC / no dialable number):{" "}
-            {autoSuppressed.join(", ")}
+            {autoSuppressed.map((p, i) => (
+              <span key={p.id}>
+                {i > 0 && ", "}
+                {/* Opens in a new tab: the dialer holds a claim on someone. */}
+                <Link
+                  href={`/crm/${p.id}`}
+                  target="_blank"
+                  className="font-medium underline underline-offset-2 hover:text-foreground"
+                >
+                  {p.name}
+                </Link>
+              </span>
+            ))}
           </div>
         )}
       </div>
@@ -427,12 +517,29 @@ export function CallQueuePage({ listId }: { listId: string }) {
                         primary
                       </span>
                     )}
-                    <span className="ml-auto">
+                    <span className="ml-auto flex items-center gap-1.5">
                       {t.blocked ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-destructive">
-                          <PhoneOff className="h-3 w-3" />
-                          {BLOCK_LABELS[t.blocked]}
-                        </span>
+                        <>
+                          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-destructive">
+                            <PhoneOff className="h-3 w-3" />
+                            {BLOCK_LABELS[t.blocked]}
+                          </span>
+                          {/* A block we put there ships with its undo. Blocks
+                              from outside (registry, opt-out, invalid) do not
+                              get one — they are not ours to lift. */}
+                          {(t.blocked === "party_dnc" ||
+                            (t.blocked === "medium_suppressed" &&
+                              isTenantSuppressed(t.medium))) && (
+                            <button
+                              type="button"
+                              disabled={busy}
+                              onClick={() => void allowContact(t)}
+                              className="rounded px-1.5 py-0.5 text-[11px] font-medium text-primary hover:bg-primary/10 disabled:opacity-50"
+                            >
+                              Allow contact
+                            </button>
+                          )}
+                        </>
                       ) : (
                         <Button
                           size="sm"

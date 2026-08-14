@@ -33,12 +33,24 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { cn } from "@/lib/utils";
 import {
   addContactPoint,
   removeContactPoint,
   setPrimaryContactPoint,
+  unsuppressMedium,
 } from "../../service";
+import {
+  MEDIUM_BLOCK_EXPLAINERS,
+  MEDIUM_BLOCK_LABELS,
+  blocksSurvivingUnsuppress,
+  describeBlocks,
+  isSuppressionExpired,
+  isTenantSuppressed,
+  mediumBlocks,
+} from "../../reachability";
 import type { ContactChannel, ContactPoint } from "../../types";
 import { SectionCard, SectionEmpty } from "./SectionCard";
 
@@ -65,28 +77,30 @@ interface Props {
   onChanged: () => Promise<void>;
 }
 
+/**
+ * Why this value can't be used, from the ONE reader (`../../reachability`) —
+ * never a second hand-written list, which is how the badge and the dialer
+ * drift apart.
+ */
 function deliverabilityBadge(point: ContactPoint) {
-  const m = point.medium;
-  const problems: string[] = [];
-  if (m.suppressed_at) problems.push("Suppressed");
-  if (m.unsubscribed_at) problems.push("Unsubscribed");
-  if (m.dnc_state === "listed") problems.push("DNC listed");
-  if (m.bounce_type === "hard" || m.bounce_type === "block")
-    problems.push("Bounced");
-  if (m.complaint_at) problems.push("Complaint");
-  if (m.verification_status === "invalid") problems.push("Invalid");
-  if (problems.length === 0) return null;
+  const blocks = mediumBlocks(point.medium);
+  if (blocks.length === 0) return null;
   return (
     <span
-      title={problems.join(" · ")}
+      title={blocks
+        .map((b) => `${MEDIUM_BLOCK_LABELS[b]} — ${MEDIUM_BLOCK_EXPLAINERS[b]}`)
+        .join("\n")}
       className="inline-flex shrink-0 items-center rounded-full border border-destructive/20 bg-destructive/15 px-1.5 py-0.5 text-[11px] font-medium leading-none text-destructive"
     >
-      {problems[0]}
+      {MEDIUM_BLOCK_LABELS[blocks[0]]}
     </span>
   );
 }
 
 export function ContactPointsCard({ partyId, orgId, points, onChanged }: Props) {
+  // The acting user — stamped on the suppression audit trail (the timeline
+  // note and the medium's own history entry).
+  const userId = useAppSelector(selectUserId);
   const [adding, setAdding] = useState(false);
   const [channel, setChannel] = useState<ContactChannel>("email");
   const [value, setValue] = useState("");
@@ -126,6 +140,54 @@ export function ContactPointsCard({ partyId, orgId, points, onChanged }: Props) 
       await onChanged();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to set primary");
+    }
+  };
+
+  /**
+   * The reverse of "Do not call" — the undo the dialer never had. It lifts OUR
+   * suppression only; anything the outside world put on the value (unsubscribe,
+   * complaint, hard bounce, DNC registry, invalid) survives and is named, so a
+   * rep is never told a number is open when it isn't.
+   */
+  const unsuppress = async (point: ContactPoint) => {
+    const value = point.medium.display_value ?? point.medium.value_raw;
+    const surviving = blocksSurvivingUnsuppress(point.medium);
+    const expired = isSuppressionExpired(point.medium);
+    const ok = await confirm({
+      title: `Allow contact on ${value}?`,
+      description:
+        (point.medium.suppression_reason
+          ? `Suppressed here as "${point.medium.suppression_reason}". `
+          : "Suppressed here by your team. ") +
+        (expired ? "That suppression's expiry has already passed. " : "") +
+        "Lifting it re-opens this value for EVERY record that shares it, and is recorded on this record's timeline." +
+        (surviving.length
+          ? ` It will still be blocked by: ${describeBlocks(surviving)} — those are not ours to lift.`
+          : ""),
+      confirmLabel: "Allow contact",
+    });
+    if (!ok) return;
+    if (!userId) {
+      toast.error("Sign in again — the audit trail needs to name who lifted it");
+      return;
+    }
+    try {
+      const { remainingBlocks } = await unsuppressMedium({
+        mediumId: point.medium.id,
+        partyId,
+        orgId,
+        userId,
+      });
+      await onChanged();
+      if (remainingBlocks.length > 0) {
+        toast.warning(
+          `Suppression lifted on ${value} — still blocked by ${describeBlocks(remainingBlocks)}`,
+        );
+      } else {
+        toast.success(`${value} can be contacted again`);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not lift suppression");
     }
   };
 
@@ -236,6 +298,16 @@ export function ContactPointsCard({ partyId, orgId, points, onChanged }: Props) 
                 )}
                 {deliverabilityBadge(point)}
                 <span className="ml-auto flex shrink-0 items-center gap-0.5">
+                  {/* A problem we can detect ships with its one-click fix. */}
+                  {isTenantSuppressed(point.medium) && (
+                    <button
+                      type="button"
+                      onClick={() => void unsuppress(point)}
+                      className="rounded px-1.5 py-0.5 text-[11px] font-medium text-primary hover:bg-primary/10"
+                    >
+                      Allow contact
+                    </button>
+                  )}
                   <button
                     type="button"
                     aria-label={

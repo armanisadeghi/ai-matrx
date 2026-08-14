@@ -13,7 +13,9 @@ import { cn } from "@/lib/utils";
 import { CategorySelect } from "@/features/scopes/components/CategorySelect";
 import { CategoryTagPicker } from "@/features/scopes/components/CategoryTagPicker";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
-import { updateParty } from "../../service";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { allowPartyContact, updateParty } from "../../service";
 import type { PartyListRow, PartyUpdate } from "../../types";
 import { SectionCard } from "./SectionCard";
 
@@ -142,6 +144,7 @@ function InlineField({
 }
 
 export function PartyIdentityCard({ party, onChanged }: Props) {
+  const userId = useAppSelector(selectUserId);
   const isPerson = party.party_kind === "person";
   const fields = FIELDS.filter(
     (f) => !(f.personOnly && !isPerson) && !(f.companyOnly && isPerson),
@@ -172,12 +175,35 @@ export function PartyIdentityCard({ party, onChanged }: Props) {
     }
   };
 
+  /**
+   * Flag / UNFLAG do-not-contact. Lifting it goes through `allowPartyContact`
+   * so the timeline records who re-opened the record — a suppression a rep can
+   * undo silently is how a mis-click becomes an argument later.
+   *
+   * Either direction only moves the PARTY stance: a phone or email suppressed
+   * on the value itself stays blocked until it is lifted in Contact, which is
+   * where that value's state is shown.
+   */
   const toggleDnc = async (next: boolean) => {
     try {
-      await updateParty(party.id, {
-        do_not_contact: next,
-        do_not_contact_reason: next ? party.do_not_contact_reason : null,
-      });
+      if (next) {
+        await updateParty(party.id, {
+          do_not_contact: true,
+          do_not_contact_reason: party.do_not_contact_reason,
+        });
+      } else {
+        if (!userId) {
+          toast.error(
+            "Sign in again — the audit trail needs to name who lifted it",
+          );
+          return;
+        }
+        await allowPartyContact({
+          partyId: party.id,
+          orgId: party.organization_id,
+          userId,
+        });
+      }
       await onChanged();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Save failed");

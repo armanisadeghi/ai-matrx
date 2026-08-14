@@ -14,13 +14,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "@/lib/toast";
 import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import {
   MoreVertical,
   Plus,
   UserPlus,
+  BellOff,
+  BellRing,
   Building2,
   Contact,
   Trash2,
@@ -46,14 +48,20 @@ import { LIST_VIEW_PAGE_SIZES } from "@/lib/list-views/defaults";
 import { cn } from "@/lib/utils";
 import { usePartyList } from "../hooks/usePartyList";
 import {
+  deleteParties,
   deleteParty,
   fetchPendingCandidateCount,
   purgeParty,
   restoreParty,
+  setPartiesDoNotContact,
 } from "../service";
+import { SavedViewBar } from "./saved-views/SavedViewBar";
+import type { SavedViewDefinition } from "../saved-views/types";
+import { queryFromDefinition } from "../saved-views/types";
 import { CrmAssistStrip } from "./dedup/CrmAssistStrip";
 import type {
   DateBucket,
+  ExpertStatusFilter,
   PartyKind,
   PartyKindFilter,
   PartyListFilters,
@@ -66,6 +74,8 @@ import {
   DATE_BUCKETS,
   DATE_BUCKET_ENUM_TEXT,
   DATE_BUCKET_VALUES,
+  EXPERT_STATUS_FILTERS,
+  EXPERT_STATUS_FILTER_ENUM_TEXT,
   PARTY_COLUMN_FILTER_KEYS,
   PARTY_COLUMN_FILTER_KEY_ENUM_TEXT,
   PARTY_KINDS,
@@ -110,6 +120,11 @@ function fromTableFilters(state: ColumnFiltersState): PartyListFilters {
         out.party_kind = values.filter(
           (v): v is PartyKind => v === "person" || v === "organization",
         );
+      } else if (id === "expert_status") {
+        const value = values.find((v) =>
+          (EXPERT_STATUS_FILTERS as readonly string[]).includes(v),
+        );
+        if (value) out.expert_status = value as ExpertStatusFilter;
       } else if (id === "updated_at" || id === "created_at") {
         const bucket = values.find((v) => BUCKET_VALUES.includes(v));
         if (bucket) out[id] = bucket as DateBucket;
@@ -138,6 +153,8 @@ function toTableFilters(filters: PartyListFilters): ColumnFiltersState {
     };
   if (filters.do_not_contact !== undefined)
     out.do_not_contact = { kind: "boolean", value: filters.do_not_contact };
+  if (filters.expert_status)
+    out.expert_status = { kind: "select", value: filters.expert_status };
   if (filters.updated_at)
     out.updated_at = { kind: "select", value: filters.updated_at };
   if (filters.created_at)
@@ -275,6 +292,19 @@ function parseColumnFilters(value: unknown): PartyListFilters {
     out.do_not_contact = next;
   }
 
+  if ("expert_status" in raw) {
+    const entry = raw.expert_status;
+    if (
+      typeof entry !== "string" ||
+      !(EXPERT_STATUS_FILTERS as readonly string[]).includes(entry)
+    ) {
+      throw new Error(
+        `column_filters.expert_status expects one of ${EXPERT_STATUS_FILTER_ENUM_TEXT} — received ${describeValue(entry)}. Omit the key for no filter.`,
+      );
+    }
+    out.expert_status = entry as ExpertStatusFilter;
+  }
+
   for (const key of ["updated_at", "created_at"] as const) {
     if (!(key in raw)) continue;
     const entry = raw[key];
@@ -362,6 +392,12 @@ export function CrmListPage({
   surfaceName = CRM_SURFACE_NAME,
 }: CrmListPageProps) {
   const router = useRouter();
+  // `/crm?view=<id>` opens that smart view — how an outreach list (or a
+  // teammate's link) points back at the query behind it. Windows have no URL
+  // of their own, so only the route mount reads it.
+  const searchParams = useSearchParams();
+  const requestedViewId =
+    presentation === "route" ? searchParams.get("view") : null;
   const openCreateParty = useOpenCrmCreatePartyWindow();
   const { prefs, setPrefs } = useListViewPrefs(SURFACE_KEY, SURFACE_DEFAULTS);
 
@@ -393,11 +429,121 @@ export function CrmListPage({
 
   const inTrash = list.query.view === "trash";
 
-  // Checked rows → "Add to outreach list" (the outreach list builder's list on-ramp).
+  // Checked rows → the bulk bar: enroll, flag/unflag do-not-contact, delete.
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [addToOutreachListOpen, setAddToOutreachListOpen] = useState(false);
+  const [bulkBusy, setBulkBusy] = useState(false);
   const selectedLoadedRows = list.rows.filter((row) =>
     selectedIds.includes(row.id),
+  );
+
+  // Smart views: the saved query the list is currently running, if any. The
+  // bar owns the records; this page owns which one is applied.
+  const [activeViewId, setActiveViewId] = useState<string | null>(null);
+  const applySavedView = (definition: SavedViewDefinition) => {
+    list.setQuery(queryFromDefinition(definition));
+    setPrefs({ sort: definition.sort, direction: definition.direction });
+    setSelectedIds([]);
+  };
+  const savedViewOrgId =
+    list.query.scope.kind === "orgs" && list.query.scope.organizationId
+      ? list.query.scope.organizationId
+      : effectiveOrgId;
+
+  /** One bulk write + one refresh, with the selection cleared on success. */
+  const runBulk = async (
+    label: string,
+    action: (ids: string[]) => Promise<void>,
+  ) => {
+    const ids = [...selectedIds];
+    if (ids.length === 0) return;
+    setBulkBusy(true);
+    try {
+      await action(ids);
+      setSelectedIds([]);
+      list.refresh();
+      toast.success(`${label} · ${ids.length.toLocaleString()} record${ids.length === 1 ? "" : "s"}`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : `${label} failed`);
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
+  const bulkActions = () => (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <Button
+        size="sm"
+        className="h-7 gap-1 px-2 text-xs"
+        disabled={bulkBusy}
+        onClick={() => setAddToOutreachListOpen(true)}
+      >
+        <Megaphone className="h-3.5 w-3.5" />
+        Add to outreach list
+      </Button>
+      <Button
+        size="sm"
+        variant="outline"
+        className="h-7 gap-1 px-2 text-xs"
+        disabled={bulkBusy}
+        onClick={async () => {
+          const ok = await confirm({
+            title: `Flag ${selectedIds.length} record${selectedIds.length === 1 ? "" : "s"} do-not-contact?`,
+            description:
+              "They stop being offered to campaigns and the dialer. Their phone numbers and emails are NOT scrubbed — a value is suppressed where the request was made. This is reversible with Allow contact.",
+            confirmLabel: "Flag do-not-contact",
+          });
+          if (!ok) return;
+          await runBulk("Flagged do-not-contact", (ids) =>
+            setPartiesDoNotContact({ ids, doNotContact: true }),
+          );
+        }}
+      >
+        <BellOff className="h-3.5 w-3.5" />
+        Do not contact
+      </Button>
+      <Button
+        size="sm"
+        variant="outline"
+        className="h-7 gap-1 px-2 text-xs"
+        disabled={bulkBusy}
+        onClick={async () => {
+          const ok = await confirm({
+            title: `Allow contact for ${selectedIds.length} record${selectedIds.length === 1 ? "" : "s"}?`,
+            description:
+              "Clears the do-not-contact flag so campaigns and the dialer can reach them again. Individual phone numbers or emails suppressed on the value itself stay blocked — open the record to lift those.",
+            confirmLabel: "Allow contact",
+          });
+          if (!ok) return;
+          await runBulk("Contact allowed", (ids) =>
+            setPartiesDoNotContact({ ids, doNotContact: false }),
+          );
+        }}
+      >
+        <BellRing className="h-3.5 w-3.5" />
+        Allow contact
+      </Button>
+      <Button
+        size="sm"
+        variant="outline"
+        className="h-7 gap-1 px-2 text-xs text-destructive hover:text-destructive"
+        disabled={bulkBusy}
+        onClick={async () => {
+          const ok = await confirm({
+            title: `Delete ${selectedIds.length} record${selectedIds.length === 1 ? "" : "s"}?`,
+            description:
+              "They move to trash and can be restored. Contact history is kept.",
+            confirmLabel: "Delete",
+            variant: "destructive",
+          });
+          if (!ok) return;
+          await runBulk("Deleted", (ids) => deleteParties(ids));
+        }}
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+        Delete
+      </Button>
+    </div>
   );
 
   const menuFor = (row: PartyListRow): (() => ItemMenuConfig) => {
@@ -733,6 +879,19 @@ export function CrmListPage({
               {!inTrash && newButtons}
             </div>
           </div>
+          {!inTrash && (
+            <SavedViewBar
+              ctx={list.ctx}
+              query={list.query}
+              sort={{ sort: prefs.sort, direction: prefs.direction }}
+              orgId={savedViewOrgId}
+              activeViewId={activeViewId}
+              onActiveViewIdChange={setActiveViewId}
+              onApply={applySavedView}
+              autoOpenViewId={requestedViewId}
+              className="mt-2"
+            />
+          )}
           {list.error && (
             <div className="mt-2 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
               {list.error}
@@ -818,16 +977,7 @@ export function CrmListPage({
                     selectedIds,
                     onSelectedIdsChange: setSelectedIds,
                     noun: "record",
-                    actions: () => (
-                      <Button
-                        size="sm"
-                        className="h-7 gap-1 px-2 text-xs"
-                        onClick={() => setAddToOutreachListOpen(true)}
-                      >
-                        <Megaphone className="h-3.5 w-3.5" />
-                        Add to outreach list
-                      </Button>
-                    ),
+                    actions: bulkActions,
                   }
             }
             rowActions={(row) => (

@@ -344,6 +344,92 @@ export async function fetchPartyIdsByFilter(
   return out;
 }
 
+/**
+ * Record WHAT filled this queue, in `crm.outreach_list.definition` — the column
+ * that existed for exactly this and had no writer. A queue whose provenance is
+ * unknown is a pile of names; with it, the workspace can name the smart view it
+ * came from and open it (THE DOOR LAW), and a future refresh knows the query to
+ * re-run.
+ *
+ * Last enrollment wins, with the previous ones kept in `history` — a list is
+ * usually filled once, and when it isn't, "where did these people come from?"
+ * must still have an answer.
+ */
+export async function recordEnrollmentSource(args: {
+  list: OutreachListRow;
+  query: PartyListQuery;
+  savedViewId: string | null;
+  savedViewName: string | null;
+  enrolled: number;
+}): Promise<void> {
+  const prior =
+    args.list.definition &&
+    typeof args.list.definition === "object" &&
+    !Array.isArray(args.list.definition)
+      ? (args.list.definition as Record<string, unknown>)
+      : {};
+  const priorHistory = Array.isArray(prior.history)
+    ? (prior.history as unknown[])
+    : [];
+  const entry = {
+    at: new Date().toISOString(),
+    source: args.savedViewId ? "saved_view" : "filter",
+    saved_view_id: args.savedViewId,
+    saved_view_name: args.savedViewName,
+    enrolled: args.enrolled,
+    query: args.query,
+  };
+
+  const { error } = await crm()
+    .from("outreach_list")
+    .update({
+      definition: {
+        ...prior,
+        ...entry,
+        // Cap the trail: the last few enrollments answer the question; an
+        // unbounded array in a jsonb column read on every page load does not.
+        history: [...priorHistory, entry].slice(-10),
+      },
+    })
+    .eq("id", args.list.id);
+  // The members are already enrolled — a failed provenance stamp must not
+  // undo that, but it is never swallowed.
+  if (error) {
+    console.error(
+      "[crm] members enrolled but the provenance stamp failed:",
+      pgError(error).message,
+    );
+  }
+}
+
+/** What last filled this queue, if anything recorded it. */
+export interface EnrollmentSource {
+  at: string;
+  source: "saved_view" | "filter";
+  savedViewId: string | null;
+  savedViewName: string | null;
+  enrolled: number;
+}
+
+export function readEnrollmentSource(
+  list: OutreachListRow,
+): EnrollmentSource | null {
+  const d = list.definition;
+  if (!d || typeof d !== "object" || Array.isArray(d)) return null;
+  const raw = d as Record<string, unknown>;
+  if (typeof raw.at !== "string" || typeof raw.source !== "string") return null;
+  if (raw.source !== "saved_view" && raw.source !== "filter") return null;
+  return {
+    at: raw.at,
+    source: raw.source,
+    savedViewId:
+      typeof raw.saved_view_id === "string" ? raw.saved_view_id : null,
+    savedViewName:
+      typeof raw.saved_view_name === "string" ? raw.saved_view_name : null,
+    enrolled: typeof raw.enrolled === "number" ? raw.enrolled : 0,
+  };
+}
+
 /** Remove a member from the outreach list (soft — the party is untouched). */
 export async function removeMember(memberId: string): Promise<void> {
   const { error } = await crm()

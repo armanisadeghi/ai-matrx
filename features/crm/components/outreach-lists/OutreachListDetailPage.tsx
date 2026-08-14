@@ -11,6 +11,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  Bookmark,
   ListPlus,
   Megaphone,
   MoreVertical,
@@ -36,6 +37,7 @@ import {
   fetchOutreachList,
   fetchOutreachListMembers,
   fetchMemberStatusCounts,
+  readEnrollmentSource,
   removeMember,
   requeueMember,
   setOutreachListStatus,
@@ -70,6 +72,8 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
   const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
+  // What last filled this queue (a smart view, or an ad-hoc filter).
+  const enrollmentSource = list ? readEnrollmentSource(list) : null;
 
   const loadHeader = useCallback(async () => {
     try {
@@ -425,6 +429,31 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
             {list.description && (
               <span className="hidden truncate text-xs text-muted-foreground lg:inline">
                 {list.description}
+              </span>
+            )}
+            {/* Where these members came from — and a door back to it. */}
+            {enrollmentSource && (
+              <span className="inline-flex items-center gap-1 rounded-md border border-border bg-muted/40 px-1.5 py-0.5 text-[11px] text-muted-foreground">
+                <Bookmark className="h-3 w-3" />
+                {enrollmentSource.source === "saved_view" &&
+                enrollmentSource.savedViewName ? (
+                  <>
+                    Filled from{" "}
+                    <Link
+                      href={`/crm?view=${enrollmentSource.savedViewId}`}
+                      className="font-medium text-foreground underline underline-offset-2"
+                      title={`Open the smart view "${enrollmentSource.savedViewName}" on /crm`}
+                    >
+                      {enrollmentSource.savedViewName}
+                    </Link>
+                  </>
+                ) : (
+                  <>Filled from a filter</>
+                )}
+                <span className="tabular-nums">
+                  · {enrollmentSource.enrolled.toLocaleString()} enrolled{" "}
+                  {formatRelativeTime(enrollmentSource.at)}
+                </span>
               </span>
             )}
             <div className="ml-auto flex items-center gap-1.5">

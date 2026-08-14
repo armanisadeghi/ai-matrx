@@ -15,6 +15,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { isUuid } from "@/features/scopes/service/associationGuards";
+import { associationsService } from "@/features/scopes/service/associationsService";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type {
   AddressInsert,
@@ -39,8 +40,13 @@ import type {
   PartyRow,
   PartySortOpts,
   PartyUpdate,
+  ExpertStatus,
+  ExpertTopicRef,
+  TopicExpertLink,
 } from "./types";
-import { DATE_BUCKETS, PARTY_SORT_KEYS } from "./types";
+import { DATE_BUCKETS, EXPERT_EDGE_ROLE, PARTY_SORT_KEYS } from "./types";
+import type { MediumBlock } from "./reachability";
+import { blocksSurvivingUnsuppress } from "./reachability";
 import type { EntityScopeCounts } from "@/lib/entity-list/types";
 
 // ── Error mapping ───────────────────────────────────────────────────────────
@@ -198,6 +204,12 @@ export function applyPartyListPredicates<Q extends PartyPredicateBuilder<Q>>(
     q = q.in("party_kind", f.party_kind);
   if (f.do_not_contact !== undefined)
     q = q.eq("do_not_contact", f.do_not_contact);
+  // Expert tier. "any"/"none" are not tiers — they are "has a status at all"
+  // and "explicitly has none", which is why the column's own null-ness is the
+  // predicate rather than a value comparison.
+  if (f.expert_status === "any") q = q.not("expert_status", "is", null);
+  else if (f.expert_status === "none") q = q.is("expert_status", null);
+  else if (f.expert_status) q = q.eq("expert_status", f.expert_status);
   if (f.updated_at) q = q.gte("updated_at", bucketSince(f.updated_at));
   if (f.created_at) q = q.gte("created_at", bucketSince(f.created_at));
 
@@ -382,6 +394,82 @@ export async function updateParty(
   if (error) throw pgError(error);
 }
 
+/**
+ * Move a person up (or off) the expert ladder — the human half of the tier
+ * system. The server-side research promotion may only ever propose the entry
+ * tier (`registered`, filled when NULL by the party resolver); `approved` and
+ * `vetted` are verdicts a person makes, here.
+ *
+ * `null` clears the status — "this is not an expert after all" — which is a
+ * real answer and not the same as leaving it at `registered`.
+ */
+export async function setExpertStatus(
+  id: string,
+  status: ExpertStatus | null,
+): Promise<void> {
+  await updateParty(id, { expert_status: status });
+}
+
+/**
+ * The experts a research topic promoted, newest first.
+ *
+ * The link is the canonical `party -> research_topic` association edge with
+ * role `expert_for` (registered in `crm_02_core.sql`) — never a column on
+ * either table. Reads the edges, then hydrates the parties; a party that was
+ * trashed after the edge was written simply drops out.
+ */
+export async function fetchTopicExperts(
+  topicId: string,
+): Promise<TopicExpertLink[]> {
+  const result = await associationsService.listForTargets("research_topic", [
+    topicId,
+  ]);
+  if (!result.ok) throw new Error(result.error.message);
+  const edges = result.data.edges.filter(
+    (edge) => edge.sourceType === "party" && edge.role === EXPERT_EDGE_ROLE,
+  );
+  if (edges.length === 0) return [];
+  const parties = await fetchPartiesByIds(edges.map((e) => e.sourceId));
+  const byId = new Map(parties.map((p) => [p.id, p]));
+  return edges
+    .map((edge) => {
+      const party = byId.get(edge.sourceId);
+      return party ? { party, edge } : null;
+    })
+    .filter((link): link is TopicExpertLink => link !== null)
+    .sort((a, b) => b.edge.createdAt.localeCompare(a.edge.createdAt));
+}
+
+/**
+ * The research topics this person is an expert FOR — the other direction of
+ * the same `expert_for` edge, resolved to real names so the record page can
+ * open each one (THE DOOR LAW: never render an id you can't click).
+ */
+export async function fetchPartyExpertTopics(
+  partyId: string,
+): Promise<ExpertTopicRef[]> {
+  const result = await associationsService.listForSources(
+    "party",
+    [partyId],
+    "research_topic",
+  );
+  if (!result.ok) throw new Error(result.error.message);
+  const ids = result.data.edges
+    .filter((edge) => edge.role === EXPERT_EDGE_ROLE)
+    .map((edge) => edge.targetId);
+  if (ids.length === 0) return [];
+  const { data, error } = await supabase
+    .schema("research")
+    .from("rs_topic")
+    .select("id,name")
+    .in("id", ids);
+  if (error) throw pgError(error);
+  // An unreadable topic (deleted, or outside this user's reach) still gets a
+  // row — with an honest label instead of a link into nothing.
+  const byId = new Map((data ?? []).map((row) => [row.id, row.name]));
+  return ids.map((id) => ({ id, name: byId.get(id) ?? null }));
+}
+
 /** Soft-delete (trash). Real erasure is `crm_party_purge` — a separate act. */
 export async function deleteParty(id: string): Promise<void> {
   const { error } = await supabase
@@ -409,6 +497,202 @@ export async function restoreParty(id: string): Promise<void> {
 export async function purgeParty(id: string): Promise<void> {
   const { error } = await supabase.rpc("crm_party_purge", { p_party: id });
   if (error) throw pgError(error);
+}
+
+// ── Bulk list actions (the work-queue verbs) ────────────────────────────────
+//
+// One statement per action over an explicit id list — never a predicate-driven
+// mass update, so what the user selected is exactly what changes.
+
+/** Chunk so no single PostgREST `in()` grows unbounded (bulk selections). */
+function chunkIds(ids: string[], size = 200): string[][] {
+  const out: string[][] = [];
+  for (let i = 0; i < ids.length; i += size) out.push(ids.slice(i, i + size));
+  return out;
+}
+
+/** Trash many records at once (restorable, same as the row action). */
+export async function deleteParties(ids: string[]): Promise<void> {
+  const now = new Date().toISOString();
+  for (const batch of chunkIds(ids)) {
+    const { error } = await supabase
+      .schema("crm")
+      .from("party")
+      .update({ deleted_at: now })
+      .in("id", batch);
+    if (error) throw pgError(error);
+  }
+}
+
+/**
+ * Flag or UNFLAG do-not-contact across a selection.
+ *
+ * Clearing it is the party half of the unsuppress affordance (see
+ * `reachability.ts` § THE REVERSIBILITY RULE): the stance we set is the stance
+ * we can lift. It does NOT touch any medium — a number suppressed on the value
+ * itself stays suppressed until that value is unsuppressed too, which the
+ * record page and the dialer both offer at the point where it bites.
+ */
+export async function setPartiesDoNotContact(args: {
+  ids: string[];
+  doNotContact: boolean;
+  reason?: string;
+}): Promise<void> {
+  const patch: PartyUpdate = args.doNotContact
+    ? {
+        do_not_contact: true,
+        do_not_contact_reason: args.reason?.trim() || null,
+      }
+    : { do_not_contact: false, do_not_contact_reason: null };
+  for (const batch of chunkIds(args.ids)) {
+    const { error } = await supabase
+      .schema("crm")
+      .from("party")
+      .update(patch)
+      .in("id", batch);
+    if (error) throw pgError(error);
+  }
+}
+
+// ── Unsuppress (the reverse of "Do not call") ───────────────────────────────
+
+/**
+ * Lift the do-not-contact stance on ONE record and say so on its timeline.
+ * (`crm.party` is versioned, so `history.row_versions` already records who
+ * changed the flag; the note is the trail a rep will actually read.)
+ */
+export async function allowPartyContact(args: {
+  partyId: string;
+  orgId: string;
+  userId: string;
+  note?: string;
+}): Promise<void> {
+  await setPartiesDoNotContact({ ids: [args.partyId], doNotContact: false });
+
+  // Bare insert — component INSERT…RETURNING 42501s (D181).
+  const logged = await supabase
+    .schema("crm")
+    .from("interaction")
+    .insert({
+      party_id: args.partyId,
+      organization_id: args.orgId,
+      channel_code: "note",
+      direction: "outbound",
+      status: "completed",
+      subject: "Do-not-contact lifted",
+      body:
+        "This record can be contacted again." +
+        (args.note?.trim() ? ` ${args.note.trim()}` : ""),
+      occurred_at: new Date().toISOString(),
+      performed_by: args.userId,
+    });
+  if (logged.error) {
+    console.error(
+      "[crm] do-not-contact lifted but the audit note failed:",
+      pgError(logged.error).message,
+    );
+  }
+}
+
+/**
+ * Lift OUR suppression on one medium — the undo the dialer never had. Clears
+ * `suppressed_at` / `suppression_reason` / `suppression_expires_at` and
+ * NOTHING else: an unsubscribe, complaint, hard bounce, DNC listing or invalid
+ * verification is a fact from outside, not our stance (reachability.ts).
+ *
+ * Two audit trails, because this affects every party sharing the value:
+ *   * the medium's own `details.suppression_history` — travels with the value;
+ *   * a `crm.interaction` note on the party the user acted from — so the
+ *     record's timeline says who re-opened it and why, where a rep will look.
+ *
+ * Returns what still blocks the value, so the caller can tell the truth
+ * instead of implying the number is now dialable.
+ */
+export async function unsuppressMedium(args: {
+  mediumId: string;
+  /** The record the user acted from — gets the timeline note. */
+  partyId?: string;
+  orgId: string;
+  userId: string;
+  note?: string;
+}): Promise<{ remainingBlocks: MediumBlock[] }> {
+  const current = await supabase
+    .schema("crm")
+    .from("contact_medium")
+    .select("*")
+    .eq("id", args.mediumId)
+    .single();
+  if (current.error) throw pgError(current.error);
+  const medium = current.data;
+
+  const details =
+    medium.details && typeof medium.details === "object" && !Array.isArray(medium.details)
+      ? (medium.details as Record<string, unknown>)
+      : {};
+  const priorHistory = Array.isArray(details.suppression_history)
+    ? (details.suppression_history as unknown[])
+    : [];
+  const now = new Date().toISOString();
+
+  const { error } = await supabase
+    .schema("crm")
+    .from("contact_medium")
+    .update({
+      suppressed_at: null,
+      suppression_reason: null,
+      suppression_expires_at: null,
+      details: {
+        ...details,
+        suppression_history: [
+          ...priorHistory,
+          {
+            action: "unsuppressed",
+            at: now,
+            by: args.userId,
+            from_party_id: args.partyId ?? null,
+            previous_suppressed_at: medium.suppressed_at,
+            previous_reason: medium.suppression_reason,
+            note: args.note?.trim() || null,
+          },
+        ],
+      },
+    })
+    .eq("id", args.mediumId);
+  if (error) throw pgError(error);
+
+  const value = medium.display_value ?? medium.value_raw;
+  if (args.partyId) {
+    // Bare insert — component INSERT…RETURNING 42501s (D181).
+    const logged = await supabase
+      .schema("crm")
+      .from("interaction")
+      .insert({
+        party_id: args.partyId,
+        organization_id: args.orgId,
+        channel_code: "note",
+        direction: "outbound",
+        status: "completed",
+        subject: `Suppression lifted — ${value}`,
+        body:
+          `Contact re-opened for ${value}` +
+          (medium.suppression_reason
+            ? ` (was suppressed: ${medium.suppression_reason})`
+            : "") +
+          (args.note?.trim() ? `. ${args.note.trim()}` : ""),
+        occurred_at: now,
+        performed_by: args.userId,
+      });
+    // The lift already landed; a failed note is a broken trail, not a broken
+    // action — scream, never swallow, never roll the lift back silently.
+    if (logged.error) {
+      console.error(
+        "[crm] suppression lifted but the audit note failed:",
+        pgError(logged.error).message,
+      );
+    }
+  }
+
+  return { remainingBlocks: blocksSurvivingUnsuppress(medium) };
 }
 
 // ── Record detail ───────────────────────────────────────────────────────────
