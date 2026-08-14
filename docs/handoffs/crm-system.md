@@ -303,11 +303,21 @@ per-item efforts in the cross-repo SoR.
    needs `scripts/dead-relations.json` + `platform.deprecated_relations` BEFORE repointing;
    `plan_entity_person_org_fold.sql` is the worked reference. **Most urgent by decay** — the
    source tables grow every day this waits.
-2. **CRM agent surface, FE half.** *(chip: "Complete the CRM agent surface")* The server half
-   shipped 2026-08-12; this repo still owns `features/crm/agent-context/`, the context-menu
-   "Save selection as contact" (routed through the server `resolve_contact` action, never a raw
-   insert), and client tools **only if** `resolve_contact` + the generic `data` resource don't
-   already cover them.
+2. **CRM agent surface — FE half BUILT 2026-08-14; blocked on an aidream deploy.**
+   `features/crm/agent-context/` (list + record builders, the selection parser), the
+   `matrx-user/crm-record` surface + record-page context menu, and the universal
+   "Save as contact" action all shipped — see `features/crm/FEATURE.md` § Agent surfaces.
+   **No client tools were built, deliberately:** the server already covers the capability
+   (`data_action(resolve_contact)` creates; the generic `data` tool registers `party`, alias
+   `contact`, for query/get/count/update). The one uncovered piece — linking a party to another
+   entity — belongs to the associations system, and a CRM-local tool for it would be the fork
+   this repo bans. **What remains is not frontend work** (D192 in `FOUND_DEFECTS.md`): aidream
+   commit `da0bcaba3` adds the `crm` source-feature to the allow-list and is pushed but
+   **undeployed** — `release.sh` refuses a dirty tree and another session has uncommitted work
+   in `db/models/workflow.py`; and newly-created agents currently fail every run (feedback
+   `3efd1f7c-f9ec-45e3-bb43-bceea595db3c`, critical). **Next agent: run aidream's `release.sh`
+   once its tree is clean, then re-run the live proof** — highlight a signature anywhere →
+   Convert → Save as contact → the record opens at `/crm/[id]`.
 3. **D182 — the RLS component remainder.** *(chip: "Finish D182")* 33 component tables still
    can't serve an authed insert-with-returning (21 missing the actor-stamp trigger, 12 with no
    `created_by` at all). All service_role-written today, so nothing user-facing is known broken —

@@ -13,6 +13,26 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D192 — CRM "Save as contact" cannot complete its save until aidream deploys (2026-08-14)
+
+The frontend half is live and browser-verified up to the server call; the governed save is blocked
+by **two server-side issues, both outside this repo**:
+
+1. **`source_feature: "crm"` 422s on the deployed server.** The FE now attributes CRM-launched runs
+   to `crm`, but `ScopedRequest._validate_source_feature` allow-lists the value. Added to aidream's
+   `SOURCE_FEATURES` and **pushed to `main` (da0bcaba3) — but NOT deployed**: `aidream/scripts/
+   release.sh` refuses a dirty tree, and another session has uncommitted work in `db/models/
+   workflow.py` + `db/managers/workflow/*`. **Anyone who lands next: run aidream's `release.sh`
+   once that tree is clean.** A plain push does not build (deployed `/health/version` stayed on
+   `98845bc3` for 10 minutes after the push).
+2. **Newly-created agents fail every run** on a turn-1 persistence barrier — filed as feedback
+   `3efd1f7c-f9ec-45e3-bb43-bceea595db3c` (critical, with the ruled-out list). This is what
+   prevented the live end-to-end proof, and it is not CRM-specific.
+
+Until both clear, `Convert → Save as contact` opens, parses, and reviews correctly, then reports
+"The agent failed before returning a result" — the failure is surfaced, never silent, and nothing
+is written.
+
 ### D190 — PostgREST's 1000-row cap is read as "absence" wherever a list is fetched unpaginated (2026-08-14)
 
 `scripts/check-migrations.ts` fetched the whole `_schema_migrations` ledger in ONE unpaginated

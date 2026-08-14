@@ -141,6 +141,9 @@ person/company capture directly. All consume `features/crm/`:
 | `components/CrmListPage.tsx`                        | List assembly on the canonical entity-list primitives (`MatrxDataTable` controlled, `BrowseScopeTabs`, `useListViewPrefs("crm-parties")`, `ItemMenu`) |
 | `components/PartyCreateForm.tsx`                    | Shared person/company capture core; used by `crmCreatePartyWindow` and writes optional email/phone through the canonical medium/contact-point flow    |
 | `components/record/PartyRecordPage.tsx`             | The 360°: identity, contact, addresses, employment (both directions), activity, notes (`platform.comments`), Files/Tasks via `AssociationCardGrid`    |
+| `reachability.ts`                                   | **THE ONE suppression rule** — `contactPointBlockReason` + its labels. Channel-agnostic; the dialer and the record agent-surface both read it        |
+| `normalize.ts`                                      | The canonical `normalizeMediumValue` (re-exported by `service.ts`), split out so pure consumers can use it without the Supabase client               |
+| `agent-context/`                                    | `buildCrmListContextData` · `buildCrmRecordContextData` · `parseContactSelection` (+ its Jest tests) — see § Agent surfaces                          |
 
 **WindowPanels:** `crmManagerWindow` is the full scoped list route inside
 WindowPanel chrome; `crmCreatePartyWindow` is the compact create flow. Both are
@@ -188,6 +191,63 @@ attachments = `features/files` · tags/stages = `platform.categories` · the 360
 `AssociationCardGrid` once `ENTITY_OVERLAY` has a `party` line.
 
 ---
+
+## Agent surfaces (2026-08-14)
+
+Three read surfaces plus one universal capture point.
+
+**`matrx-user/crm-record`** (`crm-record.manifest.ts` + `agent-context/buildCrmRecordContextData.ts`)
+— the 360° record page was the CRM's largest agent blind spot: an agent on
+`/crm/[partyId]` saw nothing at all. It now emits identity, every contact point
+**with its resolved usability verdict**, addresses, employment both directions,
+the interaction timeline, and a derived `last_touch_at`.
+
+- **Read-only, deliberately.** No write targets: every party mutation is either
+  governed (the server resolver) or destructive (merge / delete / purge /
+  primary flips). An agent proposes; the human presses the button.
+- **Reachability is resolved for the agent, never left to it.** `reachability.ts`
+  is the ONE rule (record `do_not_contact` → point `opt_out_at` → medium DNC /
+  invalid / suppressed). It was inlined phone-only inside `computeDialTargets`;
+  a second copy for email would have quietly defeated the reason
+  `crm.contact_medium` exists. The dialer consumes the same function and the
+  same label map.
+
+**`matrx-user/crm` / `crm-manager`** — unchanged contract; the payload build moved
+out of `CrmListPage`'s JSX into `agent-context/buildCrmListContextData.ts` so a
+menu `getApplicationScope` and the provider emit identical values.
+
+### "Save as contact" — the universal capture point
+
+Highlight a name, an email signature, a byline or a company footer on ANY
+surface → right-click → **Convert → Save as contact**.
+
+- Registered as a **rich-document action** (`features/rich-document/actions/
+  handlers/contact.ts`), not per-surface wiring: a CRM that only captures from
+  `/crm` captures nothing, and the v3 menu is already everywhere. Gated by
+  `looksLikeContact`, so the row never appears on prose.
+- **A deterministic parser fills the dialog** (`parseContactSelection`) before
+  any model runs — the user reviews a filled form, not a spinner. The parser is
+  hints only; the agent corrects it against the raw selection.
+- **The save is governed and has no client fallback.** `SaveContactFromSelection
+  Dialog` runs the `crm.save_contact` agent slot → `data_action(operation=
+  "resolve_contact")` → the party resolver (canonicalize + dedupe on
+  email/phone/domain/platform ids + merge lineage). **Never a raw insert:** the
+  raw `database` tool is blocked from the `crm` schema server-side, and a direct
+  `.insert()` would manufacture exactly the duplicates `/crm/duplicates` exists
+  to clean up. An unresolvable slot disables the save and says why — no
+  hardcoded agent id, ever.
+- The run **floats** in the live-run window (never a spinner) and the result is a
+  **door**: "Open contact" → `/crm/[id]`, and it says plainly when it matched an
+  existing record instead of creating one.
+- **Client tools were deliberately NOT built.** The server already covers the
+  capability: `data_action(resolve_contact)` is the governed create, and the
+  generic `data` tool registers `party` (alias `contact`) for
+  query/get/count/update. The only genuinely uncovered piece is linking a party
+  to another entity — that belongs to the associations system, not a bespoke CRM
+  tool, and forking one here would be the defect.
+- **Server halves:** agent `CRM Contact Saver` (`d9607d65`), slot declared in
+  aidream `services/agent_slots/client_slots.py`. **Live status: blocked on an
+  aidream deploy — see D192 in `FOUND_DEFECTS.md`.**
 
 ## CSV import (`/crm/import`)
 
