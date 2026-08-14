@@ -87,7 +87,13 @@ export function FieldFormatPicker({
         }
       >
         <SelectTrigger className={cn("h-7 text-xs", triggerClassName)}>
-          <SelectValue />
+          {/* A plain span, NOT <SelectValue>. Radix renders the trigger's text
+              by portaling it out of the matching <SelectItem>, which only
+              exists while the dropdown is open — so changing the storage type
+              (and with it the whole option list) left the trigger BLANK, and
+              the two-line label+description item body truncated to "Text…"
+              even when it did render. The label is ours to draw. */}
+          <span className="truncate">{def?.label ?? "Text"}</span>
         </SelectTrigger>
         <SelectContent>
           {groups.map((group) => (

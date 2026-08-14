@@ -639,7 +639,7 @@ export default function TableConfigModal({
                   >
                     <div className="flex items-center gap-2 px-3 py-2">
                       <GripVertical className="h-4 w-4 shrink-0 text-muted-foreground" />
-                      <div className="flex min-w-0 flex-1 items-center gap-3">
+                      <div className="flex min-w-0 flex-1 items-end gap-3">
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
                             <Input
@@ -659,30 +659,60 @@ export default function TableConfigModal({
                           </p>
                         </div>
 
-                        <Select
-                          value={field.data_type}
-                          onValueChange={(value) =>
-                            handleFieldChange(field.id, "data_type", value)
-                          }
-                        >
-                          <SelectTrigger className="h-7 w-28 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {DATA_TYPES.map((type) => (
-                              <SelectItem key={type.value} value={type.value}>
-                                <div>
-                                  <div className="font-medium">
-                                    {type.label}
+                        {/* Two adjacent selects that can both read "Text" are
+                            unreadable without captions — "Stores" is the
+                            database type (changing it rewrites data), "Shows
+                            as" is the display format (changing it never does). */}
+                        <div className="shrink-0">
+                          <span className="mb-0.5 block text-[10px] uppercase tracking-wide text-muted-foreground">
+                            Stores
+                          </span>
+                          <Select
+                            value={field.data_type}
+                            onValueChange={(value) =>
+                              handleFieldChange(field.id, "data_type", value)
+                            }
+                          >
+                            <SelectTrigger className="h-7 w-28 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {DATA_TYPES.map((type) => (
+                                <SelectItem key={type.value} value={type.value}>
+                                  <div>
+                                    <div className="font-medium">
+                                      {type.label}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">
+                                      {type.description}
+                                    </div>
                                   </div>
-                                  <div className="text-xs text-muted-foreground">
-                                    {type.description}
-                                  </div>
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="shrink-0">
+                          <span className="mb-0.5 block text-[10px] uppercase tracking-wide text-muted-foreground">
+                            Shows as
+                          </span>
+                          <FieldFormatPicker
+                            triggerClassName="w-32"
+                            dataType={field.data_type}
+                            value={
+                              formatChanges[field.id] ??
+                              resolveFieldFormat(field.data_type, field.metadata)
+                            }
+                            onChange={(next) => {
+                              setFormatChanges((prev) => ({
+                                ...prev,
+                                [field.id]: next,
+                              }));
+                              setHasChanges(true);
+                            }}
+                          />
+                        </div>
 
                         <div className="flex items-center gap-3">
                           <div className="flex items-center gap-1.5">
@@ -762,32 +792,6 @@ export default function TableConfigModal({
                       </div>
                     </div>
 
-                    {/* Display format — how the column LOOKS. Purely a UI
-                        layer over the storage type above: the data is never
-                        rewritten, so this is safe to change at any time. */}
-                    <div className="border-t px-3 py-2">
-                      <div className="flex items-start gap-2">
-                        <Label className="mt-1.5 w-20 shrink-0 text-[11px] text-muted-foreground">
-                          Shows as
-                        </Label>
-                        <FieldFormatPicker
-                          className="min-w-0 flex-1"
-                          triggerClassName="w-56"
-                          dataType={field.data_type}
-                          value={
-                            formatChanges[field.id] ??
-                            resolveFieldFormat(field.data_type, field.metadata)
-                          }
-                          onChange={(next) => {
-                            setFormatChanges((prev) => ({
-                              ...prev,
-                              [field.id]: next,
-                            }));
-                            setHasChanges(true);
-                          }}
-                        />
-                      </div>
-                    </div>
                   </Card>
                   {/* Drop ghost at the very end of the list. */}
                   {draggedField &&

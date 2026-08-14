@@ -59,10 +59,8 @@ import {
 import { useCopySlotAgent } from "../useCopySlotAgent";
 import { ContractItem, type ContractRowState } from "./ContractItem";
 
-/** The canonical settings-override pair (with SmartModelSelect) — every
- * surface that overrides run settings uses these, never a raw JSON field. */
-export const THINKING_LEVELS = ["minimal", "low", "medium", "high"] as const;
-export type ThinkingLevel = (typeof THINKING_LEVELS)[number];
+const THINKING_LEVELS = ["minimal", "low", "medium", "high"] as const;
+type ThinkingLevel = (typeof THINKING_LEVELS)[number];
 const THINKING_UNSET = "__default__";
 
 export interface OverridePrincipal {

@@ -30,15 +30,23 @@ import { invalidateClientSlotCache } from "./service";
 export type SlotDefinitionRow = Database["agent"]["Tables"]["slot_definition"]["Row"];
 export type SlotBindingRow = Database["agent"]["Tables"]["slot_binding"]["Row"];
 
-/** The slot's stored contract — `{required_variables, required_context_slots}`,
- * seeded from the default agent's declarations. */
+/** The slot's stored contract — `{required_variables, required_context_slots,
+ * required_output_keys}`, seeded from the default agent's declarations.
+ * `requiredOutputKeys` is the slot's OUTPUT promise: the keys any bound
+ * agent's structured output must produce (contract-checked server-side at
+ * bind time). */
 export interface SlotContract {
   requiredVariables: string[];
   requiredContextSlots: string[];
+  requiredOutputKeys: string[];
 }
 
 export function parseSlotContract(contract: Json): SlotContract {
-  const out: SlotContract = { requiredVariables: [], requiredContextSlots: [] };
+  const out: SlotContract = {
+    requiredVariables: [],
+    requiredContextSlots: [],
+    requiredOutputKeys: [],
+  };
   if (!isJsonObject(contract)) return out;
   const vars = contract.required_variables;
   if (Array.isArray(vars)) {
@@ -47,6 +55,12 @@ export function parseSlotContract(contract: Json): SlotContract {
   const slots = contract.required_context_slots;
   if (Array.isArray(slots)) {
     out.requiredContextSlots = slots.filter((v): v is string => typeof v === "string");
+  }
+  const outputKeys = contract.required_output_keys;
+  if (Array.isArray(outputKeys)) {
+    out.requiredOutputKeys = outputKeys.filter(
+      (v): v is string => typeof v === "string",
+    );
   }
   return out;
 }

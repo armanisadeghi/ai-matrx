@@ -15,7 +15,7 @@
  * thinking-level controls, never a raw JSON field.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   FlaskConical,
   History,
@@ -30,7 +30,7 @@ import {
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
-import { SmartModelSelect } from "@/features/ai-models/components/smart/SmartModelSelect";
+import { RunConfigOverrides } from "@/features/agents/components/run-controls/RunConfigOverrides";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,19 +43,24 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { fileIdFromUserFilesUrl } from "@/lib/media/durability";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
-import { isJsonObject, type JsonValue } from "@/types/json";
+import { isJsonObject, toJsonRecord } from "@/types/json";
 import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   AGENT_SLOTS_SURFACE_NAME,
   AGENT_SLOTS_WRITE_TARGETS,
 } from "@/features/surfaces/manifests/agent-slots.manifest";
 import { parseSlotContract } from "@/features/agents/slots/overrides";
+import { fetchAgentExecutionFull } from "@/features/agents/redux/agent-definition/thunks";
+import { selectAgentCustomExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
+import { initInstanceOverrides } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
 import {
-  THINKING_LEVELS,
-  type ThinkingLevel,
-} from "@/features/agents/slots/components/SlotOverrideEditor";
+  selectInstanceOverrideState,
+  selectOverriddenKeys,
+  selectSettingsOverridesForApi,
+} from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
+import { buildInstanceBaseSettings } from "@/features/agents/redux/execution-system/instance-model-overrides/base-settings";
 import {
   clearSlotBenchSnapshot,
   nextSlotBenchId,
@@ -90,9 +95,16 @@ interface CandidateDraft {
   /** Version number behind `versionId` — captured at pick time so the
    * comparison can be labelled without refetching. */
   versionNumber: number | null;
-  model: string | null;
-  thinking: ThinkingLevel | null;
   settingsOpen: boolean;
+}
+
+/** Each comparison's settings ride the CANONICAL overrides layer — the same
+ * `instanceModelOverrides` slice + `RunConfigOverrides` editor the chat's
+ * smart input uses, keyed by this synthetic id. The API selector re-diffs
+ * against the agent's base, so a base-equal value never reaches the wire
+ * (the backend rejects defaults disguised as overrides). */
+function benchOverridesId(draftId: string): string {
+  return `slot-bench-${draftId}`;
 }
 
 const SELECTION_LABEL: Record<CandidateSelection, string> = {
@@ -103,8 +115,6 @@ const SELECTION_LABEL: Record<CandidateSelection, string> = {
   version: "Specific saved version",
 };
 
-const THINKING_UNSET = "__default__";
-
 function latestCandidate(): CandidateDraft {
   return {
     draftId: crypto.randomUUID(),
@@ -112,8 +122,6 @@ function latestCandidate(): CandidateDraft {
     agentId: null,
     versionId: null,
     versionNumber: null,
-    model: null,
-    thinking: null,
     settingsOpen: false,
   };
 }
@@ -138,13 +146,6 @@ function candidateLabel(draft: CandidateDraft): string {
         ? `v${draft.versionNumber}`
         : "Specific version";
   }
-}
-
-function candidateSettingsSummary(draft: CandidateDraft): string | null {
-  const parts: string[] = [];
-  if (draft.model) parts.push(draft.model);
-  if (draft.thinking) parts.push(`${draft.thinking} thinking`);
-  return parts.length > 0 ? parts.join(" · ") : null;
 }
 
 function describeError(error: unknown): string {
@@ -333,75 +334,6 @@ function ResultRow({
   );
 }
 
-/** Optional per-comparison settings — the canonical model + thinking-level
- * controls, same pair the slot override editor uses. Never a JSON field. */
-function CandidateSettings({
-  draft,
-  onChange,
-}: {
-  draft: CandidateDraft;
-  onChange: (next: CandidateDraft) => void;
-}) {
-  return (
-    <div className="grid gap-2 rounded-md bg-muted/20 p-2 sm:grid-cols-2">
-      <label className="block">
-        <span className="text-[11px] font-medium text-muted-foreground">
-          Model
-        </span>
-        <div className="mt-1 flex items-center gap-1.5">
-          <SmartModelSelect
-            value={draft.model}
-            onValueChange={(id) => onChange({ ...draft, model: id })}
-            placeholder="Agent's own model"
-            className="flex-1"
-          />
-          {draft.model && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-7 shrink-0 px-2 text-[11px] text-muted-foreground hover:text-foreground"
-              onClick={() => onChange({ ...draft, model: null })}
-            >
-              Reset
-            </Button>
-          )}
-        </div>
-      </label>
-      <label className="block">
-        <span className="text-[11px] font-medium text-muted-foreground">
-          Thinking level
-        </span>
-        <Select
-          value={draft.thinking ?? THINKING_UNSET}
-          onValueChange={(value) =>
-            onChange({
-              ...draft,
-              thinking:
-                value === THINKING_UNSET ? null : (value as ThinkingLevel),
-            })
-          }
-        >
-          <SelectTrigger className="mt-1 h-8 text-[13px]">
-            <SelectValue placeholder="Agent default" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={THINKING_UNSET}>Agent default</SelectItem>
-            {THINKING_LEVELS.map((level) => (
-              <SelectItem key={level} value={level}>
-                {level.charAt(0).toUpperCase() + level.slice(1)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </label>
-      <p className="text-[11px] text-muted-foreground sm:col-span-2">
-        Optional — leave both unset to run with the agent&apos;s own settings.
-      </p>
-    </div>
-  );
-}
-
 function CandidateEditor({
   slot,
   draft,
@@ -415,12 +347,60 @@ function CandidateEditor({
   onChange: (next: CandidateDraft) => void;
   onRemove: () => void;
 }) {
+  const dispatch = useAppDispatch();
+  const store = useAppStore();
   const [versions, setVersions] = useState<SlotVersionInfo[]>([]);
   const [versionsForAgentId, setVersionsForAgentId] = useState<string | null>(
     null,
   );
   const versionAgentId = draft.agentId ?? defaultAgentId;
   const needsVersion = draft.selection === "version";
+
+  // Canonical per-comparison settings: this draft's entry in the
+  // instanceModelOverrides slice, edited by the same RunConfigOverrides the
+  // chat uses. Seeded lazily the first time Settings opens.
+  const overridesId = benchOverridesId(draft.draftId);
+  const overridesReady = useAppSelector((state) =>
+    Boolean(selectInstanceOverrideState(overridesId)(state)),
+  );
+  const overriddenKeys = useAppSelector(selectOverriddenKeys(overridesId));
+  const overriddenCount =
+    (overriddenKeys?.changed.length ?? 0) +
+    (overriddenKeys?.removed.length ?? 0);
+
+  async function toggleSettings() {
+    if (draft.settingsOpen) {
+      onChange({ ...draft, settingsOpen: false });
+      return;
+    }
+    onChange({ ...draft, settingsOpen: true });
+    if (overridesReady) return;
+    // Seed the base from the agent this comparison actually runs, so the
+    // editor shows the agent's model's real controls and effective values —
+    // and so the API diff has a base to compare against.
+    const agentId = draft.agentId ?? defaultAgentId;
+    let baseSettings = {};
+    if (agentId) {
+      try {
+        await dispatch(fetchAgentExecutionFull(agentId)).unwrap();
+        const payload = selectAgentCustomExecutionPayload(
+          store.getState(),
+          agentId,
+        );
+        if (payload.isReady) {
+          baseSettings = buildInstanceBaseSettings(
+            payload.settings,
+            payload.modelId,
+          );
+        }
+      } catch (error: unknown) {
+        toast.error(
+          `Couldn't load the agent's settings (${describeError(error)}) — starting from a blank base.`,
+        );
+      }
+    }
+    dispatch(initInstanceOverrides({ conversationId: overridesId, baseSettings }));
+  }
 
   useEffect(() => {
     if (!needsVersion || !versionAgentId) return;
@@ -445,7 +425,6 @@ function CandidateEditor({
   const visibleVersions = versionsForAgentId === versionAgentId ? versions : [];
   const showsAgentPicker =
     draft.selection === "agent" || draft.selection === "version";
-  const settingsSummary = candidateSettingsSummary(draft);
 
   return (
     <div className="space-y-2 rounded-md border border-border bg-card p-2">
@@ -529,14 +508,14 @@ function CandidateEditor({
 
         <Button
           size="sm"
-          variant="ghost"
+          variant={overriddenCount > 0 ? "secondary" : "ghost"}
           className="h-8 gap-1 text-[11px] text-muted-foreground"
-          onClick={() =>
-            onChange({ ...draft, settingsOpen: !draft.settingsOpen })
-          }
+          onClick={() => void toggleSettings()}
         >
           <SlidersHorizontal className="h-3 w-3" />
-          {settingsSummary ?? "Settings"}
+          {overriddenCount > 0
+            ? `Settings (${overriddenCount} overridden)`
+            : "Settings"}
         </Button>
 
         <Button
@@ -550,9 +529,17 @@ function CandidateEditor({
         </Button>
       </div>
 
-      {draft.settingsOpen && (
-        <CandidateSettings draft={draft} onChange={onChange} />
-      )}
+      {draft.settingsOpen &&
+        (overridesReady ? (
+          <div className="rounded-md bg-muted/20">
+            <RunConfigOverrides conversationId={overridesId} />
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 p-2 text-xs text-muted-foreground">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            Loading the agent&apos;s settings…
+          </div>
+        ))}
     </div>
   );
 }
@@ -588,14 +575,19 @@ export function SlotTestBench({
   slot,
   baselineLabel = "Current — what users get now",
   presetLatestCandidate = false,
+  autoRunSignal = 0,
 }: {
   slot: SlotDefinitionRow;
   /** Names the baseline column after the slot's actual pin state. */
   baselineLabel?: string;
   /** Version-drift slots start armed with a pinned-vs-latest comparison. */
   presetLatestCandidate?: boolean;
+  /** Bumped by "Test old vs new first" — the bench RUNS the armed comparison
+   * (a button that only scrolled here read as doing nothing). */
+  autoRunSignal?: number;
 }) {
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const [exemplars, setExemplars] = useState<SlotExemplarRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [defaultAgentId, setDefaultAgentId] = useState<string | null>(null);
@@ -640,11 +632,13 @@ export function SlotTestBench({
 
   function parseCandidate(draft: CandidateDraft): SlotTestCandidate | null {
     const label = candidateLabel(draft);
-    let configOverrides: SlotTestCandidate["config_overrides"];
-    const overrides: Record<string, JsonValue> = {};
-    if (draft.model) overrides.model = draft.model;
-    if (draft.thinking) overrides.thinking_level = draft.thinking;
-    if (Object.keys(overrides).length > 0) configOverrides = overrides;
+    // The canonical API-overrides selector: genuine deltas only (base-equal
+    // values are re-diffed away; removals travel as explicit nulls).
+    const overrides = selectSettingsOverridesForApi(
+      benchOverridesId(draft.draftId),
+    )(store.getState());
+    const configOverrides: SlotTestCandidate["config_overrides"] =
+      overrides && isJsonObject(overrides) ? toJsonRecord(overrides) : undefined;
     if (draft.selection === "agent" && !draft.agentId) {
       toast.error(`${label}: choose a system agent.`);
       return null;
@@ -707,6 +701,25 @@ export function SlotTestBench({
       setRunning(false);
     }
   }
+
+  // "Test old vs new first" runs the armed comparison the moment the bench is
+  // ready — a click that only scrolled here correctly read as a dead button.
+  const autoRanRef = useRef(0);
+  useEffect(() => {
+    if (!autoRunSignal || autoRunSignal === autoRanRef.current) return;
+    if (loading || running) return;
+    autoRanRef.current = autoRunSignal;
+    if (exemplars.length === 0) {
+      toast.info(
+        "Add a test case first — the comparison needs sample inputs to run.",
+      );
+      return;
+    }
+    // Deferred so the batch kickoff's setState never runs inside the effect
+    // body (react-hooks/set-state-in-effect).
+    const timer = setTimeout(() => void runAll(), 0);
+    return () => clearTimeout(timer);
+  });
 
   async function addExemplar() {
     let variables;

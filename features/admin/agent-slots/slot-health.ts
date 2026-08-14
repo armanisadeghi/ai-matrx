@@ -6,6 +6,7 @@
  */
 
 import { isJsonObject } from "@/types/json";
+import { parseSlotContract } from "@/features/agents/slots/overrides";
 import type {
   SlotConsoleData,
   SlotDefinitionRow,
@@ -52,6 +53,17 @@ export interface SlotRow {
   health: SlotHealth;
   inputKind: string;
   outputKind: string;
+  /** The slot's REAL inputs — the contract's required variables. Every run
+   * can also carry free user text on top of these. */
+  requiredVariables: string[];
+  requiredContextSlots: string[];
+  /** The slot's output promise beyond a registered kind — the structured
+   * keys any bound agent must produce. */
+  requiredOutputKeys: string[];
+  /** Search/sort/filter accessor for the Inputs column. */
+  inputSummary: string;
+  /** Search/sort/filter accessor for the Output column. */
+  outputSummary: string;
   overridesCount: number;
   isEnabled: boolean;
   isPlaceholder: boolean;
@@ -118,6 +130,12 @@ export function buildRow(
           ? "version drift"
           : "ok";
 
+  // The contract is the slot's factual I/O declaration — the Inputs and
+  // Output columns render THIS, never the bare input_kind/output_kind
+  // columns (which are null for most slots and were reporting "—"/"text"
+  // while the contract declared five required variables).
+  const contract = parseSlotContract(slot.contract);
+
   return {
     slot,
     id: slot.id,
@@ -133,6 +151,18 @@ export function buildRow(
     health,
     inputKind: slot.input_kind ?? "—",
     outputKind: slot.output_kind ?? "text",
+    requiredVariables: contract.requiredVariables,
+    requiredContextSlots: contract.requiredContextSlots,
+    requiredOutputKeys: contract.requiredOutputKeys,
+    inputSummary:
+      contract.requiredVariables.length > 0
+        ? contract.requiredVariables.join(", ")
+        : "user text only",
+    outputSummary:
+      slot.output_kind ??
+      (contract.requiredOutputKeys.length > 0
+        ? contract.requiredOutputKeys.join(", ")
+        : "unspecified"),
     overridesCount: (data.bindingsBySlotId[slot.id] ?? []).length,
     isEnabled: Boolean(slot.is_enabled),
     isPlaceholder:

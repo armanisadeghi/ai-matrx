@@ -64,6 +64,19 @@ describe("THE FALLBACK LAW", () => {
     });
   });
 
+  it("does not accept ordinary prose as a link", () => {
+    // `new URL()` alone happily parses `https://Beijing` and
+    // `https://Washington, D.C.`, which rendered every city name as a broken
+    // link instead of flagging the column as mismatched.
+    expect(f("Beijing", "url", {}, "string").ok).toBe(false);
+    expect(f("Washington, D.C.", "url", {}, "string").ok).toBe(false);
+    expect(f("North America", "url", {}, "string").ok).toBe(false);
+    // Real links still pass, with or without a scheme.
+    expect(f("example.com", "url").ok).toBe(true);
+    expect(f("https://example.com/a?b=1", "url").ok).toBe(true);
+    expect(f("http://sub.example.co.uk/x", "url").ok).toBe(true);
+  });
+
   it("treats empty as empty, not as a mismatch", () => {
     expect(f(null, "currency")).toMatchObject({ empty: true, ok: true });
     expect(f("", "currency").empty).toBe(true);

@@ -385,6 +385,9 @@ export interface AgentSlotDetail extends AgentSlotSummary {
 export interface AgentSlotContract {
   required_variables: string[];
   required_context_slots: string[];
+  /** The slot's output promise beyond a registered kind — structured keys
+   * any bound agent's output must produce. */
+  required_output_keys: string[];
 }
 
 /** One stored bench exemplar on the selected slot. */

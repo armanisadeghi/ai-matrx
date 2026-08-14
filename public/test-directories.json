@@ -12,10 +12,6 @@
     "name": "extension-bridge"
   },
   {
-    "path": "/demos/tests/field-tests",
-    "name": "field-tests"
-  },
-  {
     "path": "/demos/tests/google-apis",
     "name": "google-apis"
   },

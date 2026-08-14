@@ -48,6 +48,7 @@ import {
 import { onSlotCacheInvalidated } from "@/features/agents/slots/service";
 import { parseSlotContract } from "@/features/agents/slots/overrides";
 import { readSlotBenchSnapshot } from "./bench-draft";
+import { SlotInputsCell, SlotOutputCell } from "./slot-contract-cells";
 import { SlotDetail } from "./SlotDetailPanel";
 import {
   CreateSystemTwinButton,
@@ -111,9 +112,9 @@ function humanRow(r: SlotRow): string {
     `Agent: ${r.agentName}`,
     `Pin: ${r.pinLabel}${r.drift ? ` — ${r.drift}` : ""}`,
     `Health: ${r.health}`,
-    `Input: ${r.inputKind}`,
-    `Output: ${r.outputKind}`,
-    `Overrides: ${r.overridesCount}`,
+    `Inputs: ${r.inputSummary}`,
+    `Output: ${r.outputSummary}`,
+    `Bindings: ${r.overridesCount}`,
     `Enabled: ${r.isEnabled ? "yes" : "no"}`,
   ].join("\n");
 }
@@ -252,6 +253,7 @@ export function AgentSlotsConsole() {
       contract = {
         required_variables: parsed.requiredVariables,
         required_context_slots: parsed.requiredContextSlots,
+        required_output_keys: parsed.requiredOutputKeys,
       };
     }
     // Bench state lives in SlotTestBench (a grandchild, mounted only while a
@@ -487,29 +489,28 @@ export function AgentSlotsConsole() {
         },
       },
       {
-        id: "inputKind",
-        accessorKey: "inputKind",
-        header: "Input",
-        filter: "select",
-        width: 110,
-        cell: (r) => (
-          <span className="text-xs text-muted-foreground">{r.inputKind}</span>
-        ),
+        // The REAL inputs — the contract's required variables (+ user text),
+        // never the mostly-null input_kind column.
+        id: "inputSummary",
+        accessorKey: "inputSummary",
+        header: "Inputs",
+        width: 220,
+        cell: (r) => <SlotInputsCell row={r} />,
       },
       {
-        id: "outputKind",
-        accessorKey: "outputKind",
+        // The output promise — kind (a door), required output keys, or a
+        // loud "unspecified" gap. Never a bare "text".
+        id: "outputSummary",
+        accessorKey: "outputSummary",
         header: "Output",
         filter: "select",
-        width: 110,
-        cell: (r) => (
-          <span className="text-xs text-muted-foreground">{r.outputKind}</span>
-        ),
+        width: 160,
+        cell: (r) => <SlotOutputCell row={r} />,
       },
       {
         id: "overridesCount",
         accessorKey: "overridesCount",
-        header: "Overrides",
+        header: "Bindings",
         filter: "number",
         align: "center",
         width: 90,

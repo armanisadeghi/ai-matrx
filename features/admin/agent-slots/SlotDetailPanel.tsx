@@ -44,6 +44,7 @@ import { AgentDiffViewer } from "@/features/agents/components/diff/AgentDiffView
 import { SlotOverridePanel } from "@/features/agents/slots/components/SlotOverridePanel";
 import { SlotResolutionRibbon } from "@/features/agents/slots/components/SlotResolutionRibbon";
 import { SlotTestBench } from "./SlotTestBench";
+import { SlotInputsCell, SlotOutputCell } from "./slot-contract-cells";
 import {
   CreateSystemTwinButton,
   LineageChip,
@@ -643,57 +644,109 @@ function StatusBanner({
   }
 }
 
-// ── Agent identity — what this slot runs, with every door on it ──────────────
+// ── The facts — labeled values first, so nothing is ever guessed ─────────────
 
-function AgentCard({ row }: { row: SlotRow }) {
-  if (!row.agentId || row.health === "unresolved pin") return null;
-  const isSystem = row.agentType === "builtin";
-  const basePath = isSystem ? SYSTEM_AGENT_BASE : USER_AGENT_BASE;
+function Fact({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-md border border-border bg-card px-3 py-2">
-      <div className="min-w-0 text-sm font-medium">
-        <EntityRef
-          token="agent"
-          id={row.agentId}
-          name={row.agentName}
-          href={agentHref(row.agentId, row.agentType)}
-          alwaysShowActions
-        />
+    <>
+      <div className="text-[11px] font-medium text-muted-foreground">
+        {label}
       </div>
-      <Badge
-        variant="outline"
-        className={cn(
-          "h-5 text-[10px]",
-          !isSystem && HEALTH_CLASS["not a system agent"],
+      <div className="min-w-0 text-xs">{children}</div>
+    </>
+  );
+}
+
+/**
+ * The drawer opens with the FACTS, each labeled — agent, system-agent
+ * boolean, version (amber when it trails latest), the contract's inputs and
+ * output promise. The problem verdict comes AFTER the reader knows what
+ * they're looking at (Arman's ordering ruling, 2026-08-14).
+ */
+function FactsPanel({ row }: { row: SlotRow }) {
+  const isSystem = row.agentType === "builtin";
+  const drifted = row.drift != null;
+  return (
+    <div className="grid grid-cols-[max-content_1fr] items-center gap-x-4 gap-y-1.5 rounded-md border border-border bg-card px-3 py-2.5">
+      <Fact label="Agent">
+        <div className="flex min-w-0 items-center gap-2">
+          {row.agentId ? (
+            <EntityRef
+              token="agent"
+              id={row.agentId}
+              name={row.agentName}
+              href={agentHref(row.agentId, row.agentType)}
+              alwaysShowActions
+            />
+          ) : (
+            <span className="text-muted-foreground">{row.agentName}</span>
+          )}
+          {row.agentId && (
+            <a
+              href={getAgentModeHref(
+                "versions",
+                row.agentId,
+                isSystem ? SYSTEM_AGENT_BASE : USER_AGENT_BASE,
+              )}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ml-auto inline-flex h-6 shrink-0 items-center gap-1 rounded border border-border px-1.5 text-[11px] text-muted-foreground hover:bg-accent hover:text-foreground"
+              title={`Version history for ${row.agentName}`}
+            >
+              <History className="h-3 w-3" />
+              Versions
+            </a>
+          )}
+        </div>
+      </Fact>
+      <Fact label="System agent">
+        {row.agentType == null ? (
+          <span className="text-muted-foreground">unknown</span>
+        ) : isSystem ? (
+          "Yes"
+        ) : (
+          <span className="font-medium text-rose-600">No — personal agent</span>
         )}
-      >
-        {isSystem ? "System agent" : "Personal agent"}
-      </Badge>
-      <Badge
-        variant={row.slot.use_latest ? "secondary" : "outline"}
-        className="h-5 text-[10px]"
-      >
-        {row.pinnedVersionNumber != null
-          ? `pinned ${row.pinLabel}`
-          : row.slot.use_latest
-            ? "tracks latest"
-            : row.pinLabel}
-      </Badge>
-      {row.latestVersion != null && !row.slot.use_latest && (
-        <Badge variant="outline" className="h-5 text-[10px]">
-          latest v{row.latestVersion}
-        </Badge>
-      )}
-      <a
-        href={getAgentModeHref("versions", row.agentId, basePath)}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="ml-auto inline-flex h-6 items-center gap-1 rounded border border-border px-1.5 text-[11px] text-muted-foreground hover:bg-accent hover:text-foreground"
-        title={`Version history for ${row.agentName}`}
-      >
-        <History className="h-3 w-3" />
-        Versions
-      </a>
+      </Fact>
+      <Fact label="Version">
+        {row.slot.use_latest ? (
+          <span>
+            latest
+            {row.latestVersion != null && (
+              <span className="text-muted-foreground">
+                {" "}
+                (v{row.latestVersion})
+              </span>
+            )}
+          </span>
+        ) : row.pinnedVersionNumber != null ? (
+          <span className={cn(drifted && "font-medium text-amber-600")}>
+            v{row.pinnedVersionNumber}
+            {drifted && (
+              <span className="text-muted-foreground">
+                {" "}
+                — latest is v{row.latestVersion}
+              </span>
+            )}
+          </span>
+        ) : (
+          <span className="text-muted-foreground">
+            {row.slot.default_agent_version_id ? "unknown version" : "latest"}
+          </span>
+        )}
+      </Fact>
+      <Fact label="Inputs">
+        <SlotInputsCell row={row} maxChips={8} />
+      </Fact>
+      <Fact label="Output">
+        <SlotOutputCell row={row} maxChips={8} />
+      </Fact>
     </div>
   );
 }
@@ -866,7 +919,7 @@ function OverridesList({
   if (bindings.length === 0) return null;
   return (
     <div className="space-y-1 text-xs">
-      <div className="font-medium text-muted-foreground">All overrides</div>
+      <div className="font-medium text-muted-foreground">All bindings</div>
       {bindings.map((b) => {
         const versionAgentId = b.agent_version_id
           ? data.versionsById[b.agent_version_id]?.agentId
@@ -878,7 +931,7 @@ function OverridesList({
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="outline">{b.principal_type}</Badge>
               <span>
-                {agent ? `→ ${agent.name}` : "settings-only override"}
+                {agent ? `→ ${agent.name}` : "settings-only (no agent swap)"}
               </span>
               {!b.is_enabled && <Badge variant="secondary">disabled</Badge>}
             </div>
@@ -946,6 +999,9 @@ export function SlotDetail({
         <p className="text-xs text-muted-foreground">{row.slot.description}</p>
       )}
 
+      {/* Facts first — what IS. The verdict on what's wrong comes second. */}
+      <FactsPanel row={row} />
+
       <StatusBanner
         row={row}
         lineage={lineage}
@@ -956,8 +1012,6 @@ export function SlotDetail({
         }}
         onOpenRepin={() => setPinOpen(true)}
       />
-
-      <AgentCard row={row} />
 
       <Section
         title="Change pinned agent"
@@ -990,15 +1044,21 @@ export function SlotDetail({
             slot={row.slot}
             baselineLabel={baselineLabel}
             presetLatestCandidate={row.drift != null}
+            autoRunSignal={benchFocus}
           />
         </Section>
       </div>
 
+      {/* "Bindings", not "overrides" — in this system, "overrides" means the
+          config_overrides list sent to the API on a run. A slot_binding row is
+          a per-user/per-org replacement (different agent and/or settings). */}
       <Section
         title={
-          bindings.length > 0 ? `Overrides (${bindings.length})` : "Overrides"
+          bindings.length > 0
+            ? `User & org bindings (${bindings.length})`
+            : "User & org bindings"
         }
-        meta="per-user and per-org replacements"
+        meta="who gets a different agent or settings"
         open={overridesOpen}
         onToggle={setOverridesOpen}
       >

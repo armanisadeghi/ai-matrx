@@ -146,6 +146,9 @@ function formatRelative(date: Date): string {
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+/** Explicit scheme, OR a host with a real dot-TLD. No whitespace either way. */
+const URL_RE =
+  /^(?:[a-z][a-z0-9+.-]*:\/\/\S+|(?:[a-z0-9-]+\.)+[a-z]{2,}(?:[:/?#]\S*)?)$/i;
 const HEX_RE = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
 
 // ─── the registry ────────────────────────────────────────────────────────────
@@ -159,7 +162,9 @@ const DEFS: FieldFormatDef[] = [
     group: "Text",
     base: "string",
     editor: "text",
-    optionKeys: ["prefix", "suffix"],
+    // Deliberately no optionKeys — plain text is the default for every string
+    // column, and giving it prefix/suffix controls puts an options row under
+    // every column in the settings dialog for a setting almost nobody wants.
     format: (v, o) => {
       const t = toText(v);
       return t === null ? null : affix(t, o);
@@ -213,8 +218,14 @@ const DEFS: FieldFormatDef[] = [
     format: (v) => {
       const t = toText(v)?.trim();
       if (!t) return null;
+      // `new URL()` alone is uselessly permissive here: `https://Beijing` and
+      // even `https://Washington, D.C.` parse successfully, so every text value
+      // would render as a broken link instead of flagging as a mismatch.
+      // Require no whitespace, and either an explicit scheme or a real
+      // dot-TLD host. Bare domains stay accepted; https is added on click.
+      if (/\s/.test(t)) return null;
+      if (!URL_RE.test(t)) return null;
       try {
-        // Bare domains are accepted and rendered as-is; https is added on click.
         new URL(t.includes("://") ? t : `https://${t}`);
         return t;
       } catch {
