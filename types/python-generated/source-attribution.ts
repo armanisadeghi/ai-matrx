@@ -55,6 +55,7 @@ export const SOURCE_FEATURES = [
   "chat",
   "cms",
   "code-editor",
+  "crm",
   "content-extractor",
   "dictionary",
   "documents",

@@ -22,6 +22,11 @@ import { PrimaryEntityProvider } from "@/features/scopes/components/associations
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { CRM_RECORD_SURFACE_NAME } from "@/features/surfaces/manifests/crm-record.manifest";
+import { buildCrmRecordContextData } from "../../agent-context/buildCrmRecordContextData";
+import { CRM_RECORD_CONTEXT_MENU_PROPS } from "../../agent-context/crmRecordContextMenuProps";
 import { usePartyDetail } from "../../hooks/usePartyDetail";
 import { deleteParty } from "../../service";
 import { MergeStatusCard } from "../dedup/MergeStatusCard";
@@ -77,8 +82,17 @@ export function PartyRecordPage({ partyId }: Props) {
     }
   };
 
+  // The agent surface for ONE record. Read-only by design — see
+  // `crm-record.manifest.ts`: every party mutation is either governed (the
+  // server-side resolver) or destructive (merge/delete/primary flips).
+  const getScope = () =>
+    buildCrmRecordContextData({ detail, isLoading, loadError: error });
+
   return (
-    <>
+    <SurfaceRuntimeProvider
+      surfaceName={CRM_RECORD_SURFACE_NAME}
+      getScope={getScope}
+    >
       <RouteHeader
         left={
           <>
@@ -145,72 +159,82 @@ export function PartyRecordPage({ partyId }: Props) {
         )}
 
         {detail && party && (
-          <div
-            className={cn(
-              "grid items-start gap-3",
-              "lg:grid-cols-[minmax(280px,26rem)_1fr]",
-            )}
+          <NonEditableContextMenu
+            {...CRM_RECORD_CONTEXT_MENU_PROPS}
+            getApplicationScope={getScope}
+            entity={{
+              type: "party",
+              id: party.id,
+              title: party.display_name,
+            }}
           >
-            {/* Identity rail */}
-            <div className="space-y-3">
-              {/* Dedup status: merged-into banner, duplicate suggestions,
-                  absorbed merges — renders nothing when clean. */}
-              <MergeStatusCard party={party} onChanged={refresh} />
-              <PartyIdentityCard party={party} onChanged={refresh} />
-              <ContactPointsCard
-                partyId={party.id}
-                orgId={party.organization_id}
-                points={detail.contactPoints}
-                onChanged={refresh}
-              />
-              <AddressesCard
-                partyId={party.id}
-                orgId={party.organization_id}
-                addresses={detail.addresses}
-                onChanged={refresh}
-              />
-              {isPerson ? (
-                <EmploymentCard
-                  mode="person"
-                  partyId={party.id}
-                  orgId={party.organization_id}
-                  affiliations={detail.affiliations}
-                  onChanged={refresh}
-                />
-              ) : (
-                <EmploymentCard
-                  mode="company"
-                  partyId={party.id}
-                  orgId={party.organization_id}
-                  members={detail.members}
-                  onChanged={refresh}
-                />
+            <div
+              className={cn(
+                "grid items-start gap-3",
+                "lg:grid-cols-[minmax(280px,26rem)_1fr]",
               )}
-            </div>
+            >
+              {/* Identity rail */}
+              <div className="space-y-3">
+                {/* Dedup status: merged-into banner, duplicate suggestions,
+                  absorbed merges — renders nothing when clean. */}
+                <MergeStatusCard party={party} onChanged={refresh} />
+                <PartyIdentityCard party={party} onChanged={refresh} />
+                <ContactPointsCard
+                  partyId={party.id}
+                  orgId={party.organization_id}
+                  points={detail.contactPoints}
+                  onChanged={refresh}
+                />
+                <AddressesCard
+                  partyId={party.id}
+                  orgId={party.organization_id}
+                  addresses={detail.addresses}
+                  onChanged={refresh}
+                />
+                {isPerson ? (
+                  <EmploymentCard
+                    mode="person"
+                    partyId={party.id}
+                    orgId={party.organization_id}
+                    affiliations={detail.affiliations}
+                    onChanged={refresh}
+                  />
+                ) : (
+                  <EmploymentCard
+                    mode="company"
+                    partyId={party.id}
+                    orgId={party.organization_id}
+                    members={detail.members}
+                    onChanged={refresh}
+                  />
+                )}
+              </div>
 
-            {/* Activity main */}
-            <div className="min-w-0 space-y-3">
-              <InteractionTimeline
-                partyId={party.id}
-                orgId={party.organization_id}
-                interactions={detail.interactions}
-                onChanged={refresh}
-              />
-              <PartyNotes partyId={party.id} orgId={party.organization_id} />
-              <PrimaryEntityProvider
-                value={{
-                  type: "party",
-                  id: party.id,
-                  orgId: party.organization_id,
-                  label: party.display_name,
-                }}
-              >
-                <AssociationCardGrid tokens={["task", "file"]} />
-              </PrimaryEntityProvider>
+              {/* Activity main */}
+              <div className="min-w-0 space-y-3">
+                <InteractionTimeline
+                  partyId={party.id}
+                  orgId={party.organization_id}
+                  interactions={detail.interactions}
+                  onChanged={refresh}
+                />
+                <PartyNotes partyId={party.id} orgId={party.organization_id} />
+                <PrimaryEntityProvider
+                  value={{
+                    type: "party",
+                    id: party.id,
+                    orgId: party.organization_id,
+                    label: party.display_name,
+                  }}
+                >
+                  <AssociationCardGrid tokens={["task", "file"]} />
+                </PrimaryEntityProvider>
+              </div>
             </div>
-          </div>
+          </NonEditableContextMenu>
         )}
       </div>
-    </>
+    </SurfaceRuntimeProvider>
   );
 }

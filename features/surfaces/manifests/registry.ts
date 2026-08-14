@@ -181,6 +181,7 @@ import { shapesManifest } from "./shapes.manifest";
 import { crmManifest } from "./crm.manifest";
 import { crmManagerManifest } from "./crm-manager.manifest";
 import { crmCreatePartyManifest } from "./crm-create-party.manifest";
+import { crmRecordManifest } from "./crm-record.manifest";
 import { adminKnowledgeManifest } from "./admin-knowledge.manifest";
 import { adminKindRegistryManifest } from "./admin-kind-registry.manifest";
 import { adminSkillsManifest } from "./admin-skills.manifest";
@@ -360,6 +361,7 @@ const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   crmManifest,
   crmManagerManifest,
   crmCreatePartyManifest,
+  crmRecordManifest,
   adminKnowledgeManifest,
   adminKindRegistryManifest,
   adminSkillsManifest,

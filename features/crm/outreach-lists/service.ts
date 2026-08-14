@@ -25,6 +25,7 @@ import {
   fetchPartyDetail,
   updateParty,
 } from "../service";
+import { contactPointBlockReason } from "../reachability";
 import type {
   CrmQueryContext,
   PartyDetail,
@@ -460,14 +461,9 @@ export function computeDialTargets(detail: PartyDetail): DialTarget[] {
   const targets: DialTarget[] = [];
   for (const point of detail.contactPoints) {
     if (point.medium.channel !== "phone") continue;
-    let blocked: DialTarget["blocked"] = null;
-    if (detail.party.do_not_contact) blocked = "party_dnc";
-    else if (point.opt_out_at) blocked = "point_opted_out";
-    else if (point.medium.dnc_state === "listed") blocked = "medium_dnc_listed";
-    else if (point.medium.verification_status === "invalid")
-      blocked = "medium_invalid";
-    else if (point.medium.suppressed_at || point.medium.is_contactable === false)
-      blocked = "medium_suppressed";
+    // ONE suppression rule, shared with every other surface that asks whether a
+    // contact point may be used (features/crm/reachability.ts).
+    const blocked = contactPointBlockReason(detail.party, point);
     targets.push({
       point,
       medium: point.medium,

@@ -15,6 +15,7 @@ import type {
   PartyContactPointRow,
   PartyRow,
 } from "../types";
+import type { ContactBlockReason } from "../reachability";
 
 // ── Generated row aliases ───────────────────────────────────────────────────
 
@@ -180,12 +181,12 @@ export type MemberStatusCounts = Partial<Record<MemberStatus, number>> & {
 // ── Dial targets (suppression resolved BEFORE a number is offered) ──────────
 
 /** Why a phone number may not be dialed. Shown, never silently hidden. */
-export type DialBlockReason =
-  | "party_dnc"
-  | "medium_suppressed"
-  | "medium_dnc_listed"
-  | "point_opted_out"
-  | "medium_invalid";
+/**
+ * Alias of the platform-wide contact block reason — the rule and its labels
+ * live in `features/crm/reachability.ts` and are shared with every surface
+ * that asks whether a contact point may be used. Never re-declare the union.
+ */
+export type DialBlockReason = ContactBlockReason;
 
 export interface DialTarget {
   point: PartyContactPointRow;

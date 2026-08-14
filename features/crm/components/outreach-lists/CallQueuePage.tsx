@@ -57,12 +57,13 @@ import {
   EMPTY_SESSION_STATS,
 } from "../../outreach-lists/types";
 import { ListStatusBadge } from "./badges";
+import { CONTACT_BLOCK_REASON_LABELS } from "../../reachability";
 
+// Labels come from the ONE reachability map (features/crm/reachability.ts);
+// the dialer only overrides the two that should say "number" on a phone screen.
 const BLOCK_LABELS: Record<DialBlockReason, string> = {
-  party_dnc: "Record is do-not-contact",
+  ...CONTACT_BLOCK_REASON_LABELS,
   medium_suppressed: "Number is suppressed",
-  medium_dnc_listed: "On a DNC list",
-  point_opted_out: "Opted out",
   medium_invalid: "Number invalid",
 };
 

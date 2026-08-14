@@ -82,10 +82,8 @@ import { PARTY_COLUMNS } from "./columns";
 import { AddToOutreachListDialog } from "./outreach-lists/AddToOutreachListDialog";
 import { useOpenCrmCreatePartyWindow } from "@/features/overlays/openers/crmCreatePartyWindow";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import {
-  CRM_SURFACE_NAME,
-  createCrmScope,
-} from "@/features/surfaces/manifests/crm.manifest";
+import { CRM_SURFACE_NAME } from "@/features/surfaces/manifests/crm.manifest";
+import { buildCrmListContextData } from "../agent-context/buildCrmListContextData";
 
 const SURFACE_KEY = "crm-parties";
 const SURFACE_DEFAULTS = {
@@ -657,29 +655,25 @@ export function CrmListPage({
     <SurfaceRuntimeProvider
       surfaceName={surfaceName}
       getScope={() =>
-        createCrmScope({
-          scope_kind: list.query.scope.kind,
-          selected_organization_id:
+        buildCrmListContextData({
+          scopeKind: list.query.scope.kind,
+          scopeOrganizationId:
             list.query.scope.kind === "orgs"
-              ? (list.query.scope.organizationId ?? undefined)
-              : undefined,
-          search_query: list.query.search,
-          party_kind_filter: list.query.kind,
-          column_filters: list.query.filters,
-          sort_key: prefs.sort,
-          sort_direction: prefs.direction,
-          page_number: list.query.page,
-          page_size: prefs.pageSize,
-          visible_records: list.rows,
-          visible_record_ids: list.rows.map((row) => row.id),
-          visible_record_count: list.rows.length,
-          total_record_count: list.total,
-          scope_counts: list.counts,
-          available_organizations: Object.entries(list.ctx?.orgNames ?? {}).map(
-            ([id, name]) => ({ id, name }),
-          ),
-          is_loading: list.isLoading || list.isFetching,
-          load_error: list.error ?? undefined,
+              ? (list.query.scope.organizationId ?? null)
+              : null,
+          search: list.query.search,
+          partyKindFilter: list.query.kind,
+          columnFilters: list.query.filters,
+          sortKey: prefs.sort,
+          sortDirection: prefs.direction,
+          page: list.query.page,
+          pageSize: prefs.pageSize,
+          rows: list.rows,
+          totalCount: list.total,
+          scopeCounts: list.counts,
+          orgNames: list.ctx?.orgNames ?? {},
+          isLoading: list.isLoading || list.isFetching,
+          loadError: list.error,
         })
       }
       getWriteHandlers={buildCrmWriteHandlers}
