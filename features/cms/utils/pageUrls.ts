@@ -30,13 +30,33 @@
  * `pageUrls.test.ts` — both the aidream Python suite and this one test the same
  * bytes, so either side drifting turns one suite red.
  *
- * W2-E (2026-07-14): a site with `client_sites.domain` set serves at that host
- * with NO `/c/{slug}` prefix. Pass `domain` to build domain-rooted live URLs;
+ * W2-E (2026-07-14): a traffic-active `client_sites.domain` serves at that host
+ * with NO `/c/{slug}` prefix. Pass `activeSiteDomain(site)` to build domain-rooted live URLs;
  * preview URLs ALWAYS stay on the platform `/c/` form (they must work before
  * DNS is attached). See `my-matrx/docs/DOMAIN_ROUTING_DESIGN.md`.
  */
 
 const HTML_SITE_URL = process.env.NEXT_PUBLIC_HTML_SITE_URL || "https://mymatrx.com";
+
+/**
+ * Return the custom domain only when it is allowed to receive generated traffic.
+ * Rows without `domain_traffic` are legacy and retain their pre-activation behavior.
+ * A newly saved/changed domain is explicitly seeded to `mode=platform`; verification
+ * is the only path that stamps the current domain and switches it to `custom`.
+ */
+export function activeSiteDomain(site: {
+  domain?: string | null;
+  settings?: unknown;
+} | null | undefined): string | undefined {
+  const domain = site?.domain?.trim();
+  if (!domain) return undefined;
+  const settings = site?.settings;
+  if (!settings || typeof settings !== "object") return domain;
+  const traffic = (settings as Record<string, unknown>)["domain_traffic"];
+  if (!traffic || typeof traffic !== "object") return domain;
+  const state = traffic as Record<string, unknown>;
+  return state.mode === "custom" && state.verified_domain === domain ? domain : undefined;
+}
 
 export function htmlPageUrl(pageId: string): string {
   return `${HTML_SITE_URL}/p/${pageId}`;

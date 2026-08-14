@@ -8,9 +8,19 @@
 // Default is `blocked` for existing sites, `full` for `dev-website` (F4).
 export type AgentWritePolicy = 'blocked' | 'draft_only' | 'full';
 
+export interface DomainTrafficSettings {
+  mode: 'platform' | 'custom';
+  verified_domain?: string | null;
+  verified_at?: string | null;
+  last_checked_at?: string | null;
+  last_error?: string | null;
+  provider?: string | null;
+}
+
 export interface ClientSiteSettings {
   agent_write_policy?: AgentWritePolicy;
   policy_overrides?: Record<string, unknown>;
+  domain_traffic?: DomainTrafficSettings;
   [key: string]: unknown;
 }
 

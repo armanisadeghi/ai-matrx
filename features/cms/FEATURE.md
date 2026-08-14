@@ -195,6 +195,18 @@ aidream's canonical `services/cms/url-rules.json`, and `pageUrls.test.ts` assert
 it. **Never edit one copy** — change the canonical file in aidream and re-copy, or one of the two
 suites goes red on purpose.
 
+**Desired domain is separate from active traffic (2026-08-13).** `client_sites.domain` records the
+host the site should ultimately use. Newly created or changed domains receive
+`settings.domain_traffic.mode = "platform"`; generated live links continue to use
+`https://mymatrx.com/c/{site}`. The Settings screen's `verify_domain` action is the only human path
+that activates a domain: it rejects private/IP targets, resolves DNS, fetches the public my-matrx
+marker over HTTPS without redirects, and requires the returned site slug + domain to match the
+owned row exactly. Success stamps `mode="custom"` + `verified_domain`; failure records the reason
+and keeps Matrx traffic active. `activeSiteDomain()` is the one frontend resolver. Rows without a
+`domain_traffic` object are legacy and retain their existing custom-domain behavior during rollout.
+The settings surface always links both identities and provides direct DNS dashboards + exact steps
+for Vercel, GoDaddy, Namecheap, Cloudflare, Squarespace Domains, IONOS, Route 53, and Wix.
+
 ### `client_pages.route` — the page's URL is a column, not a computation
 
 **Read this before writing anything that builds, stores, or matches a CMS page URL.**

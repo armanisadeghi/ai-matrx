@@ -12,16 +12,83 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { lookup, resolveNs } from "node:dns/promises";
+import { isIP } from "node:net";
 import { createClient as createMainSupabaseClient } from "@/utils/supabase/server";
 import { requireSuperAdmin } from "@/utils/auth/adminUtils";
-import {
-  getCmsClient,
-  verifySiteOwnership,
-} from "../_lib/cmsDb";
+import { getCmsClient } from "../_lib/cmsDb";
 import { logCmsActivity } from "../_lib/activityLog";
 
 const AGENT_WRITE_POLICIES = ["blocked", "draft_only", "full"] as const;
 type AgentWritePolicy = (typeof AGENT_WRITE_POLICIES)[number];
+
+type SiteSettings = Record<string, unknown>;
+
+function asSettings(value: unknown): SiteSettings {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? { ...(value as SiteSettings) }
+    : {};
+}
+
+function isPublicAddress(address: string): boolean {
+  if (address.includes(":")) {
+    const lower = address.toLowerCase();
+    return !(
+      lower === "::" ||
+      lower === "::1" ||
+      lower.startsWith("fc") ||
+      lower.startsWith("fd") ||
+      lower.startsWith("fe8") ||
+      lower.startsWith("fe9") ||
+      lower.startsWith("fea") ||
+      lower.startsWith("feb")
+    );
+  }
+  const octets = address.split(".").map(Number);
+  if (octets.length !== 4 || octets.some((part) => !Number.isInteger(part))) return false;
+  const [a, b] = octets;
+  return !(
+    a === 0 ||
+    a === 10 ||
+    a === 127 ||
+    (a === 100 && b >= 64 && b <= 127) ||
+    (a === 169 && b === 254) ||
+    (a === 172 && b >= 16 && b <= 31) ||
+    (a === 192 && b === 168) ||
+    a >= 224
+  );
+}
+
+async function assertPublicDns(domain: string): Promise<void> {
+  if (isIP(domain)) throw new Error("Enter a domain name, not an IP address.");
+  const addresses = await lookup(domain, { all: true, verbatim: true });
+  if (addresses.length === 0 || addresses.some(({ address }) => !isPublicAddress(address))) {
+    throw new Error("The domain does not resolve to a public website.");
+  }
+}
+
+function providerFromNameservers(nameservers: string[]): string | null {
+  const joined = nameservers.join(" ").toLowerCase();
+  if (joined.includes("cloudflare")) return "cloudflare";
+  if (joined.includes("domaincontrol")) return "godaddy";
+  if (joined.includes("registrar-servers")) return "namecheap";
+  if (joined.includes("vercel-dns")) return "vercel";
+  if (joined.includes("googledomains") || joined.includes("squarespacedns")) return "squarespace";
+  if (joined.includes("ui-dns")) return "ionos";
+  if (joined.includes("awsdns")) return "route53";
+  if (joined.includes("wixdns")) return "wix";
+  return null;
+}
+
+async function detectDnsProvider(domain: string): Promise<string | null> {
+  try {
+    const labels = domain.split(".");
+    const root = labels.length > 2 ? labels.slice(-2).join(".") : domain;
+    return providerFromNameservers(await resolveNs(root));
+  } catch {
+    return null;
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -134,6 +201,17 @@ export async function POST(request: NextRequest) {
           );
         }
 
+        const initialSettings = asSettings(settings);
+        if (domain && !("domain_traffic" in initialSettings)) {
+          initialSettings.domain_traffic = {
+            mode: "platform",
+            verified_domain: null,
+            verified_at: null,
+            last_checked_at: null,
+            last_error: "Connection has not been checked for this domain yet.",
+          };
+        }
+
         const { data, error } = await db
           .from("client_sites")
           .insert({
@@ -147,7 +225,7 @@ export async function POST(request: NextRequest) {
             meta_defaults: metaDefaults || {},
             contact_info: contactInfo || {},
             social_links: socialLinks || {},
-            settings: settings || {},
+            settings: initialSettings,
             global_css: globalCss || null,
             favicon: favicon || null,
           })
@@ -184,7 +262,7 @@ export async function POST(request: NextRequest) {
         // Verify ownership before updating
         const { data: existing } = await db
           .from("client_sites")
-          .select("id")
+          .select("id, domain, settings")
           .eq("id", siteId)
           .eq("owner_user_id", user.id)
           .single();
@@ -219,6 +297,26 @@ export async function POST(request: NextRequest) {
           }
         }
 
+        if (Object.prototype.hasOwnProperty.call(updateData, "domain")) {
+          const currentDomain = existing.domain ?? null;
+          const nextDomain = typeof updateData.domain === "string" && updateData.domain
+            ? updateData.domain
+            : null;
+          if (nextDomain !== currentDomain) {
+            const nextSettings = asSettings(updateData.settings ?? existing.settings);
+            nextSettings.domain_traffic = {
+              mode: "platform",
+              verified_domain: null,
+              verified_at: null,
+              last_checked_at: null,
+              last_error: nextDomain
+                ? "Connection has not been checked for this domain yet."
+                : null,
+            };
+            updateData.settings = nextSettings;
+          }
+        }
+
         const { data, error } = await db
           .from("client_sites")
           .update(updateData)
@@ -244,6 +342,120 @@ export async function POST(request: NextRequest) {
         });
 
         return NextResponse.json({ success: true, site: data });
+      }
+
+      case "use_platform_domain": {
+        const { siteId } = params;
+        if (!siteId) return NextResponse.json({ error: "siteId is required" }, { status: 400 });
+        const { data: site } = await db
+          .from("client_sites")
+          .select("id, slug, domain, settings")
+          .eq("id", siteId)
+          .eq("owner_user_id", user.id)
+          .single();
+        if (!site) return NextResponse.json({ error: "Site not found or access denied" }, { status: 403 });
+        const settings = asSettings(site.settings);
+        const prior = asSettings(settings.domain_traffic);
+        settings.domain_traffic = { ...prior, mode: "platform" };
+        const { data, error } = await db
+          .from("client_sites")
+          .update({ settings })
+          .eq("id", siteId)
+          .eq("owner_user_id", user.id)
+          .select()
+          .single();
+        if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+        await logCmsActivity(db, {
+          siteId,
+          activityType: "site.domain_platform",
+          entityType: "site",
+          entityId: siteId,
+          description: `Sent generated traffic to the Matrx URL for ${site.domain || site.slug}`,
+          userId: user.id,
+          userEmail: user.email,
+        });
+        return NextResponse.json({ success: true, site: data });
+      }
+
+      case "verify_domain": {
+        const { siteId } = params;
+        if (!siteId) return NextResponse.json({ error: "siteId is required" }, { status: 400 });
+        const { data: site } = await db
+          .from("client_sites")
+          .select("id, slug, domain, settings")
+          .eq("id", siteId)
+          .eq("owner_user_id", user.id)
+          .single();
+        if (!site) return NextResponse.json({ error: "Site not found or access denied" }, { status: 403 });
+        const domain = typeof site.domain === "string" ? site.domain : "";
+        if (!domain) {
+          return NextResponse.json({ error: "Save the desired domain before checking it." }, { status: 400 });
+        }
+        const checkedAt = new Date().toISOString();
+        const provider = await detectDnsProvider(domain);
+        let verified = false;
+        let verificationError: string | null = null;
+        try {
+          await assertPublicDns(domain);
+          const response = await fetch(`https://${domain}/__matrx-domain-verification`, {
+            cache: "no-store",
+            redirect: "manual",
+            signal: AbortSignal.timeout(8_000),
+            headers: { Accept: "application/json" },
+          });
+          if (!response.ok) {
+            throw new Error(`The verification page returned HTTP ${response.status}.`);
+          }
+          const marker = (await response.json()) as Record<string, unknown>;
+          if (
+            marker.service !== "mymatrx" ||
+            marker.siteSlug !== site.slug ||
+            marker.domain !== domain
+          ) {
+            throw new Error("The domain reached a website, but not this Matrx site.");
+          }
+          verified = true;
+        } catch (error) {
+          verificationError = error instanceof Error ? error.message : "The domain could not be verified.";
+        }
+
+        const settings = asSettings(site.settings);
+        settings.domain_traffic = {
+          mode: verified ? "custom" : "platform",
+          verified_domain: verified ? domain : null,
+          verified_at: verified ? checkedAt : null,
+          last_checked_at: checkedAt,
+          last_error: verificationError,
+          provider,
+        };
+        const { data, error } = await db
+          .from("client_sites")
+          .update({ settings })
+          .eq("id", siteId)
+          .eq("owner_user_id", user.id)
+          .select()
+          .single();
+        if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+        await logCmsActivity(db, {
+          siteId,
+          activityType: verified ? "site.domain_verified" : "site.domain_check_failed",
+          entityType: "site",
+          entityId: siteId,
+          description: verified
+            ? `Verified ${domain}; generated traffic now uses the custom domain`
+            : `Could not verify ${domain}; generated traffic remains on the Matrx URL`,
+          userId: user.id,
+          userEmail: user.email,
+          changes: { domain, provider, error: verificationError },
+        });
+        return NextResponse.json({
+          verified,
+          domain,
+          provider,
+          checkedAt,
+          error: verificationError,
+          site: data,
+        });
       }
 
       // ── Delete site (guarded) ──────────────────────────────────────

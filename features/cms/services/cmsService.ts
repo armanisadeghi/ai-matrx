@@ -118,6 +118,15 @@ export const CmsSiteService = {
         return res.site;
     },
 
+    async verifyDomain(siteId: string): Promise<DomainVerificationResult> {
+        return callApi<DomainVerificationResult>('sites', 'verify_domain', { siteId });
+    },
+
+    async routeTrafficToPlatform(siteId: string): Promise<ClientSite> {
+        const res = await callApi<{ site: ClientSite }>('sites', 'use_platform_domain', { siteId });
+        return res.site;
+    },
+
     /**
      * Refuses (HTTP 409) if the site has pages unless `force` is set. On refusal
      * throws `SiteNotEmptyError` carrying `pageCount` so the caller can re-prompt.
@@ -167,6 +176,15 @@ export const CmsSiteService = {
         return res.activity;
     },
 };
+
+export interface DomainVerificationResult {
+    verified: boolean;
+    domain: string;
+    provider: string | null;
+    checkedAt: string;
+    error: string | null;
+    site?: ClientSite;
+}
 
 // ── Pages ────────────────────────────────────────────────────────────────────
 

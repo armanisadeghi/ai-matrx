@@ -279,9 +279,8 @@ export default function SiteSettingsPage() {
                 className="text-sm"
               />
               <p className="text-xs text-muted-foreground mt-1.5">
-                Canonical serving host (lowercase). The site then serves at this
-                domain with no /c/ prefix. Attach this domain (and its www/apex
-                counterpart) to the my-matrx Vercel project + DNS to go live.
+                Desired serving host (lowercase). Saving it does not redirect
+                traffic; use the connection check below after DNS is ready.
               </p>
             </div>
             <div>

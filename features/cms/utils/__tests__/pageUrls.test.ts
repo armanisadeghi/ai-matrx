@@ -11,7 +11,7 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import fixture from "./url-rules.json";
-import { clientPageUrl, clientPageRoute, htmlPageUrl, clientSiteRootUrl, normalizeDomainInput } from "../pageUrls";
+import { activeSiteDomain, clientPageUrl, clientPageRoute, htmlPageUrl, clientSiteRootUrl, normalizeDomainInput } from "../pageUrls";
 
 /**
  * SHA-256 of `url-rules.json`, pinned IDENTICALLY in both repos — aidream's
@@ -161,5 +161,14 @@ describe("normalizeDomainInput", () => {
     expect(normalizeDomainInput("")).toBe("");
     expect(normalizeDomainInput("   ")).toBe("");
     expect(normalizeDomainInput("www.clientsite.com")).toBe("www.clientsite.com");
+  });
+});
+
+describe("custom-domain traffic activation", () => {
+  it("preserves legacy live domains but suppresses pending or stale verification", () => {
+    expect(activeSiteDomain({ domain: "x.com", settings: {} })).toBe("x.com");
+    expect(activeSiteDomain({ domain: "x.com", settings: { domain_traffic: { mode: "platform" } } })).toBeUndefined();
+    expect(activeSiteDomain({ domain: "x.com", settings: { domain_traffic: { mode: "custom", verified_domain: "old.com" } } })).toBeUndefined();
+    expect(activeSiteDomain({ domain: "x.com", settings: { domain_traffic: { mode: "custom", verified_domain: "x.com" } } })).toBe("x.com");
   });
 });

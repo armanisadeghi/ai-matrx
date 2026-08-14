@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { CmsPageService } from '../../services/cmsService';
-import { clientPageUrl, clientSiteRootUrl, sitePreviewToken } from '../../utils/pageUrls';
+import { activeSiteDomain, clientPageUrl, clientSiteRootUrl, sitePreviewToken } from '../../utils/pageUrls';
 import type { ClientPageSummary, ClientSiteSummary } from '../../types';
 import {
     Select,
@@ -68,7 +68,7 @@ export default function SitePageTreePanel({ sites }: { sites: ClientSiteSummary[
                 </Select>
                 {site && (
                     <a
-                        href={clientSiteRootUrl(site.slug, false, site.domain)}
+                        href={clientSiteRootUrl(site.slug, false, activeSiteDomain(site))}
                         target="_blank"
                         rel="noreferrer"
                         className="text-xs text-muted-foreground hover:text-primary inline-flex items-center gap-1"
@@ -133,7 +133,7 @@ export default function SitePageTreePanel({ sites }: { sites: ClientSiteSummary[
                                             {site && (
                                                 <>
                                                     <a
-                                                        href={clientPageUrl({ siteSlug: site.slug, slug: page.slug, route: page.route, category: page.category, domain: site.domain })}
+                                                        href={clientPageUrl({ siteSlug: site.slug, slug: page.slug, route: page.route, category: page.category, domain: activeSiteDomain(site) })}
                                                         target="_blank"
                                                         rel="noreferrer"
                                                         className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary"

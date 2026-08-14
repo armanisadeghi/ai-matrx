@@ -21,7 +21,7 @@ import type {
   ClientPageSummary,
   ClientSite,
 } from "../types";
-import { clientPageRoute, clientPageUrl, sitePreviewToken } from "../utils/pageUrls";
+import { activeSiteDomain, clientPageRoute, clientPageUrl, sitePreviewToken } from "../utils/pageUrls";
 import { buildSiteStructureXml } from "../utils/buildSiteStructureXml";
 
 export type CmsPageEditorTab =
@@ -150,6 +150,7 @@ export function buildCmsPageContextData(
         slug: page.slug,
         route: page.route,
         category: page.category,
+        domain: activeSiteDomain(site),
       })
     : undefined;
   const previewUrl = page
