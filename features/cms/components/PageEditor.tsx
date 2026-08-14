@@ -1,6 +1,13 @@
 "use client";
 
-import React, { useState, useCallback, useEffect, useRef } from "react";
+import React, {
+  lazy,
+  Suspense,
+  useState,
+  useCallback,
+  useEffect,
+  useRef,
+} from "react";
 import type {
   ClientComponent,
   ClientPage,
@@ -10,6 +17,7 @@ import type {
 } from "@/features/cms/types";
 import { useCmsVersions } from "@/features/cms/hooks/useCmsVersions";
 import { useCmsPageSurfaceScope } from "@/features/cms/hooks/useCmsPageSurfaceScope";
+import type { CmsPageEditorTab } from "@/features/cms/agent-context/buildCmsPageContextData";
 import { useCmsResearchLineage } from "@/features/cms/hooks/useCmsResearchLineage";
 import { ResearchLineagePanel } from "@/features/cms/components/ResearchLineagePanel";
 import { CmsPageService } from "@/features/cms/services/cmsService";
@@ -51,7 +59,12 @@ import {
   XCircle,
   RotateCcw,
   ArrowLeft,
+  Map as MapIcon,
+  Gauge,
+  ExternalLink,
 } from "lucide-react";
+import { usePageLocation } from "@/features/marketing/data/hooks";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import {
   countSeoCharacters,
   DESCRIPTION_LIMITS,
@@ -80,6 +93,12 @@ interface PageEditorProps {
   onRollback?: (pageId: string, versionNumber: number) => Promise<void>;
   onCreate: (params: Record<string, unknown>) => Promise<ClientPage>;
   onClose: () => void;
+  /**
+   * Reload the page row from the DB. The Plan tab's adopt writes
+   * `plan_node_id` server-side, so the editor must re-read to see it. Absent on
+   * `/pages/new` (nothing to reload yet).
+   */
+  onRefetchPage?: () => Promise<void>;
 }
 
 /** How a `history.row_versions` operation reads to a human. */
@@ -89,8 +108,27 @@ const VERSION_OPERATION_LABEL: Record<VersionOperation, string> = {
   DELETE: "Page deleted",
 };
 
-type EditorTab =
-  "html" | "css" | "js" | "preview" | "seo" | "settings" | "versions";
+type EditorTab = CmsPageEditorTab;
+
+/**
+ * The Plan tab is the page's BEFORE (docs/handoffs/cms-page-hub.md W1): the
+ * plan node this page was built from, plus the adopt flow for pages that were
+ * never planned. Lazy because it pulls the whole content-plan data layer —
+ * `React.lazy`, NOT `next/dynamic`: this editor is already one chunk behind the
+ * route, and a new `next/dynamic` edge here would be another chunk group (THE
+ * FRAGMENTATION LAW).
+ */
+const PagePlanTab = lazy(() => import("./PagePlanTab"));
+
+/**
+ * The Measure tab is the page's AFTER (docs/handoffs/cms-page-hub.md W2): the
+ * measured page this CMS page is joined to — Page Analyzer, open findings,
+ * snapshots, Search Console. It mounts the canonical `PageWorkspace` from the
+ * marketing route wholesale; a tab that reuses a route component is free, and
+ * rebuilding a poorer copy of it is the Inventory Law violation this avoids.
+ * `React.lazy` for the same reason as the Plan tab above.
+ */
+const CmsPageMeasure = lazy(() => import("./measure/CmsPageMeasure"));
 
 // ── Surface write-target input validation ──────────────────────────────
 // The writeback seam (`features/surfaces/runtime/surface-writeback.ts`)
@@ -126,7 +164,9 @@ const TABS: { id: EditorTab; label: string; icon: React.ElementType }[] = [
   { id: "css", label: "CSS", icon: Paintbrush },
   { id: "js", label: "JS", icon: FileCode2 },
   { id: "preview", label: "Preview", icon: Eye },
+  { id: "plan", label: "Plan", icon: MapIcon },
   { id: "seo", label: "SEO", icon: SearchIcon },
+  { id: "measure", label: "Measure", icon: Gauge },
   { id: "settings", label: "Settings", icon: Settings2 },
   { id: "versions", label: "History", icon: History },
 ];
@@ -146,10 +186,22 @@ export default function PageEditor({
   onRollback,
   onCreate,
   onClose,
+  onRefetchPage,
 }: PageEditorProps) {
   const isNew = !page;
   const [activeTab, setActiveTab] = useState<EditorTab>("html");
   const versions = useCmsVersions();
+  // THE DOOR LAW: when this page is joined to its measured page, the marketing
+  // workspace for that page is one click away (new tab — the editor's unsaved
+  // buffers must survive). Disabled query until the join exists.
+  const measuredPage = usePageLocation(page?.web_page_id ?? null);
+  const measuredPageHref = measuredPage.data
+    ? marketingRoutes.sitePage(
+        measuredPage.data.brandId,
+        measuredPage.data.siteId,
+        measuredPage.data.pageId,
+      )
+    : null;
   // Shared ref: only one Pro editor is mounted at a time (gated by
   // `activeTab` — the HTML/CSS/JS textareas or the SEO meta-description
   // textarea), so a single ref always points at whichever one is live.
@@ -638,6 +690,26 @@ export default function PageEditor({
                     roleName="page_editor"
                     label="Edit with AI"
                   />
+                  {measuredPageHref && (
+                    <Button
+                      asChild
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs gap-1.5 text-muted-foreground"
+                    >
+                      <a
+                        href={measuredPageHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="Open page workspace"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        <span className="hidden xl:inline">
+                          Open page workspace
+                        </span>
+                      </a>
+                    </Button>
+                  )}
                   {page?.has_draft && (
                     <Button
                       variant="ghost"
@@ -690,7 +762,11 @@ export default function PageEditor({
 
           {/* ── Tabs ─────────────────────────────────────────────── */}
           <div className="flex items-center gap-0.5 px-4 overflow-x-auto scrollbar-none">
-            {TABS.filter((t) => !isNew || !(t.id === "versions")).map((tab) => {
+            {TABS.filter(
+              (t) =>
+                !isNew ||
+                (t.id !== "versions" && t.id !== "plan" && t.id !== "measure"),
+            ).map((tab) => {
               const Icon = tab.icon as React.FC<{ className?: string }>;
               const isActive = activeTab === tab.id;
               return (
@@ -784,6 +860,76 @@ export default function PageEditor({
                     className="absolute inset-0 w-full h-full border-0"
                     sandbox="allow-scripts"
                   />
+                </div>
+              )}
+
+              {/* Plan — the page's BEFORE (plan node, brief, keyword, pipeline) */}
+              {activeTab === "plan" && page && (
+                <Suspense
+                  fallback={
+                    <div className="flex h-full items-center justify-center gap-2 text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span className="text-sm">Loading the plan…</span>
+                    </div>
+                  }
+                >
+                  <PagePlanTab
+                    page={page}
+                    site={site}
+                    onPageChanged={async () => {
+                      await onRefetchPage?.();
+                    }}
+                  />
+                </Suspense>
+              )}
+
+              {/* Measure — the page's AFTER, the measured page it is joined to */}
+              {activeTab === "measure" && page && (
+                <div className="h-full overflow-hidden">
+                  {page.web_page_id ? (
+                    <Suspense
+                      fallback={
+                        <div className="flex h-full items-center justify-center gap-2 text-muted-foreground">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span className="text-sm">
+                            Loading the measured page…
+                          </span>
+                        </div>
+                      }
+                    >
+                      <CmsPageMeasure webPageId={page.web_page_id} />
+                    </Suspense>
+                  ) : (
+                    <div className="flex h-full items-center justify-center p-6">
+                      <div className="max-w-md text-center">
+                        <Gauge className="mx-auto h-5 w-5 text-muted-foreground" />
+                        <p className="mt-2 text-sm font-medium text-foreground">
+                          This page isn&apos;t joined to a measured page yet
+                        </p>
+                        <p className="mt-1.5 text-xs text-muted-foreground">
+                          Measurement lives on the page as it exists on the web.
+                          Publishing this page and letting the site&apos;s crawl
+                          reach its URL makes the join, and this tab then shows
+                          that page&apos;s analysis, findings, snapshots, and
+                          Search Console data.
+                        </p>
+                        {site.web_site_id ? (
+                          <a
+                            href={marketingRoutes.site(
+                              null,
+                              site.web_site_id,
+                              "/pages",
+                            )}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-3 inline-block text-xs font-medium text-primary hover:underline"
+                          >
+                            See this site&apos;s measured pages
+                          </a>
+                        ) : null}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1133,7 +1279,11 @@ export default function PageEditor({
               )}
             </div>
           );
-          return activeTab === "preview" ? (
+          // Preview and Plan are read-only regions (no text buffer to mutate),
+          // so they mount the NonEditable menu; every other tab is editable.
+          return activeTab === "preview" ||
+            activeTab === "plan" ||
+            activeTab === "measure" ? (
             <NonEditableContextMenu
               {...CMS_PAGE_CONTEXT_MENU_PROPS}
               extraSections={pageExtraSections}

@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { updateSiteSettings } from "@/features/marketing/data/settings-service";
 import { useDeleteSite } from "@/features/marketing/data/hooks";
 import { marketingRoutes } from "@/features/marketing/lib/routes";

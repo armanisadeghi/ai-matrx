@@ -11,7 +11,7 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingSitemapsScope } from "@/features/surfaces/manifests/marketing-sitemaps.manifest";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import { useSitemap, useSitemapPages } from "@/features/marketing/data/hooks";
 import type { SitemapPagesFilter } from "@/features/marketing/data/service";

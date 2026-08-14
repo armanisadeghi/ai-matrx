@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { useSnapshot } from "@/features/marketing/data/hooks";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import type { Json } from "@/types/database.types";

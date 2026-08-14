@@ -5,7 +5,7 @@ import { ArrowUpRight, Grid3x3, SearchCheck } from "lucide-react";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingCoverageScope } from "@/features/surfaces/manifests/marketing-coverage.manifest";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { useCoverageMatrix } from "@/features/marketing/data/hooks";
 import type {
   PageCoverageFilter,

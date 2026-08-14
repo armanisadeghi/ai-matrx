@@ -12,7 +12,7 @@ import {
   Share2,
   ShieldCheck,
 } from "lucide-react";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingAuditScope } from "@/features/surfaces/manifests/marketing-audit.manifest";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";

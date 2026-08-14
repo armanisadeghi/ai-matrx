@@ -35,7 +35,7 @@ import {
   tableFilterValues,
   tableViewState,
 } from "@/features/marketing/lib/scopes/table-view-values";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import {
   useCrawlLinks,
   useLinkGraphEdges,

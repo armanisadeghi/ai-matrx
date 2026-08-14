@@ -10,7 +10,7 @@ import { ShareWithUserTab } from "@/features/sharing/components/tabs/ShareWithUs
 import { ShareWithOrgTab } from "@/features/sharing/components/tabs/ShareWithOrgTab";
 import { PublicAccessTab } from "@/features/sharing/components/tabs/PublicAccessTab";
 import { AccessSummaryPanel } from "@/features/sharing/components/AccessSummaryPanel";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 
 type ShareSubTab = "users" | "organizations" | "public";
 

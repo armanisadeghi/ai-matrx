@@ -23,7 +23,7 @@ import type { ReferringDomainProfileRow } from "@/features/marketing/data/backli
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import { supabase } from "@/utils/supabase/client";
 import type { Json } from "@/types/database.types";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import {
   humanLines,
   webLocation,

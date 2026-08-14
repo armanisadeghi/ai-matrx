@@ -34,7 +34,15 @@ import { buildSiteStructureXml } from "../utils/buildSiteStructureXml";
 import type { ResearchLineageEntry } from "../hooks/useCmsResearchLineage";
 
 export type CmsPageEditorTab =
-  "html" | "css" | "js" | "preview" | "seo" | "settings" | "versions";
+  | "html"
+  | "css"
+  | "js"
+  | "preview"
+  | "plan"
+  | "seo"
+  | "measure"
+  | "settings"
+  | "versions";
 
 const TEXT_NEIGHBOR_CHARS = 500;
 

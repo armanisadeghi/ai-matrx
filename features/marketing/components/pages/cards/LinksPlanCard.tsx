@@ -29,7 +29,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { SectionCard } from "@/features/marketing/components/shared/MarketingUi";
 import { DesiredSection } from "@/features/marketing/components/pages/desired/DesiredSection";
 import { useDesiredValueSlice } from "@/features/marketing/components/pages/desired/useDesiredValueSlice";

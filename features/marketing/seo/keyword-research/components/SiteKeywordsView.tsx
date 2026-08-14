@@ -15,7 +15,7 @@
 import { useCallback } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { KeywordClassificationWorkspace } from "@/features/marketing/search-console/components/classification/KeywordClassificationWorkspace";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { cn } from "@/styles/themes/utils";
 import { SiteKeywordPerformanceWorkspace } from "./SiteKeywordPerformanceWorkspace";
 

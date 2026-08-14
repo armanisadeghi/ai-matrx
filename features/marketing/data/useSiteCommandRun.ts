@@ -47,7 +47,7 @@ import {
   siteCommandTargetFromSession,
   type SiteCommandMode,
 } from "@/features/marketing/crawler/site-commands";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { marketingKeys, useRecentLiveCrawlEvents } from "@/features/marketing/data/hooks";
 import { getCrawl } from "@/features/marketing/data/service";
 import { useOpenSiteCommandRunWindow } from "@/features/overlays/openers/siteCommandRunWindow";

@@ -13,7 +13,7 @@ import { BrainCircuit, ExternalLink, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import DataRowWindow from "@/components/official/matrx-data-table/DataRowWindow.dynamic";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import {
   CondensedFieldGrid,
   QueryError,

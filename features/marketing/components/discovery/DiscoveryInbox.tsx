@@ -57,7 +57,7 @@ import {
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingDiscoveryScope } from "@/features/surfaces/manifests/marketing-discovery.manifest";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import {
   useBulkConfirmDiscoveredItems,
   useBulkDeleteDiscoveredItems,

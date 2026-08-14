@@ -23,11 +23,10 @@
  */
 
 import { useCallback, type ReactNode } from "react";
-import { useParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingSiteScope } from "@/features/surfaces/manifests/marketing-site.manifest";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { marketingKeys, useBrand } from "@/features/marketing/data/hooks";
 import {
   buildBrandContextXml,
@@ -67,12 +66,12 @@ export function useMarketingSiteSurfaceBase(): {
   /** Build the inherited base values from whatever is loaded RIGHT NOW. */
   getBaseValues: () => MarketingSiteBaseValues;
 } {
-  const { site } = useMarketingSite();
-  // The layout guarantees the URL brand owns this site (cross-brand URLs are
-  // rejected before children render), so the route param IS the brand id —
-  // and unlike `site.brand_id` it is never null.
-  const params = useParams<{ brandId: string }>();
-  const brandId = params.brandId;
+  // The provider supplies the brand id: the route layout takes it from the URL
+  // (and guarantees that brand owns this site — cross-brand URLs are rejected
+  // before children render), and an embedded host resolves it from the site
+  // row. Reading `useParams()` here would have broken every host outside
+  // `/marketing/brands/[brandId]/...` — e.g. the CMS editor's Measure tab.
+  const { site, brandId } = useMarketingSite();
   const brand = useBrand(brandId);
   const brandRow = brand.data ?? null;
   const queryClient = useQueryClient();

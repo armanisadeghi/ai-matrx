@@ -11,7 +11,7 @@ import {
   LoadingSurface,
   QueryError,
 } from "@/features/marketing/components/shared/MarketingUi";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { useCrawlSnapshots } from "@/features/marketing/data/inspection-hooks";
 import type { InspectionSnapshotRow } from "@/features/marketing/data/inspection-types";
 import { useCrawl } from "@/features/marketing/data/hooks";

@@ -24,7 +24,7 @@ import {
   useLatestPagespeedFailure,
   usePagePerformance,
 } from "@/features/marketing/data/hooks";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import type { MarketingPage } from "@/features/marketing/types";
 import {

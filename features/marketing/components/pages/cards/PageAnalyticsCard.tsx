@@ -4,7 +4,7 @@ import { useState } from "react";
 import { LineChart, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import {
   marketingKeys,
   useLatestAnalyticsFailure,

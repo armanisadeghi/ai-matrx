@@ -3,7 +3,7 @@
 import { ListTree } from "lucide-react";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { CrawlSubnav } from "@/features/marketing/components/crawls/CrawlSubnav";
 import { CrawlSurfaceProvider } from "@/features/marketing/lib/scopes/crawl-surface";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";

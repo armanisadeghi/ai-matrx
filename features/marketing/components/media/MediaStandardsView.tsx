@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { useSaveSiteMediaStandards } from "@/features/marketing/data/hooks";
 import { MARKETING_SITE_MEDIA_SURFACE_NAME } from "@/features/marketing/lib/scopes/site-media-scope";
 import {

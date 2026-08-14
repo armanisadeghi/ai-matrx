@@ -13,7 +13,7 @@ import { ShieldCheck, TriangleAlert } from "lucide-react";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { cn } from "@/styles/themes/utils";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { useBacklinkAnchorsFull } from "@/features/marketing/data/backlinks-hooks";
 import {
   InlineQueryError,

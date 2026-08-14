@@ -8,7 +8,7 @@ import type { MatrxColumnDef } from "@/components/official/matrx-data-table/type
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SnapshotCompare } from "@/features/marketing/components/pages/SnapshotCompare";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import { useSnapshots } from "@/features/marketing/data/hooks";
 import {

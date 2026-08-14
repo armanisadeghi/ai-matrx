@@ -41,7 +41,7 @@ import type { BacklinkDimensionKind } from "@/features/marketing/data/backlinks-
 import type { BacklinkDimensionRow } from "@/features/marketing/data/backlinks-types";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import { webLocation } from "@/features/marketing/lib/copy-payloads";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 
 const INTERSECTIONS_EXPLAINER =
   "Websites that link to both you and this competitor. They already know your space, so they are the easiest places to ask for a link.";

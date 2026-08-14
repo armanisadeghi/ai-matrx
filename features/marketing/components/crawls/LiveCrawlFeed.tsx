@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import Link from "next/link";
 import {
   Activity,

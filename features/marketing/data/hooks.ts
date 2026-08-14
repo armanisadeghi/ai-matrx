@@ -52,6 +52,7 @@ import {
   getCoverageMatrix,
   getCrawl,
   getHomepageObservedMeta,
+  getPageLocation,
   getPageWorkspace,
   getSite,
   getSiteHeroScreenshot,
@@ -312,6 +313,19 @@ export function usePageWorkspace(siteId: string, pageId: string) {
     queryKey: marketingKeys.page(siteId, pageId),
     queryFn: ({ signal }) => getPageWorkspace(siteId, pageId, signal),
     enabled: Boolean(siteId && pageId),
+  });
+}
+
+/**
+ * Resolve a bare `web.page` id to its site + brand — the read a host outside
+ * `/marketing` needs before it can link to (or mount) the page workspace.
+ */
+export function usePageLocation(pageId: string | null) {
+  return useQuery({
+    queryKey: [...marketingKeys.root, "page-location", pageId] as const,
+    queryFn: ({ signal }) => getPageLocation(pageId as string, signal),
+    enabled: Boolean(pageId),
+    staleTime: 5 * 60_000,
   });
 }
 

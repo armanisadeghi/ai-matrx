@@ -81,7 +81,7 @@ import type { BacklinkObservationRow } from "@/features/marketing/data/backlinks
 import type { BacklinkEnrichmentRunState } from "@/features/marketing/components/backlinks/lib/enrichment-run";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import { webLocation } from "@/features/marketing/lib/copy-payloads";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { useOpenFilePreviewWindow } from "@/features/overlays/openers/filePreviewWindow";
 
 /**

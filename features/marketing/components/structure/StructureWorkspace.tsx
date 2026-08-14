@@ -14,7 +14,7 @@ import {
   Network,
   Search,
 } from "lucide-react";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { useSiteStructure } from "@/features/marketing/data/hooks";
 import {
   flattenRouteTree,

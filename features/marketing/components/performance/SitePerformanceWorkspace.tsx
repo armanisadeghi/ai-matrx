@@ -26,7 +26,7 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 import { Progress } from "@/components/ui/progress";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import {
   LoadingSurface,
   QueryError,

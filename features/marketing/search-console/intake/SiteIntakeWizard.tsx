@@ -36,7 +36,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { extractErrorMessage } from "@/utils/errors";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { siteConnectionStatuses } from "@/features/marketing/lib/site-status";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import {
   useGscBackfillStatus,
   useGscFreshness,

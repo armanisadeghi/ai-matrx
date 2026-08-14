@@ -24,7 +24,7 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 import { createMarketingSitePagesScope } from "@/features/surfaces/manifests/marketing-site-pages.manifest";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import { marketingListQuery } from "@/features/marketing/lib/scopes/marketing-hub-scope";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { FetchPageButton } from "@/features/marketing/components/pages/FetchPageButton";
 import { fetchPageNow } from "@/features/marketing/crawler/direct-client";
 import { startSiteCommandRun } from "@/features/marketing/crawler/command-run-store";

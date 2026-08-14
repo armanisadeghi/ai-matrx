@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { usePageSitemapMemberships } from "@/features/marketing/data/hooks";
 import type { MarketingPage } from "@/features/marketing/types";
 import { marketingPageManifest } from "@/features/surfaces/manifests/marketing-page.manifest";

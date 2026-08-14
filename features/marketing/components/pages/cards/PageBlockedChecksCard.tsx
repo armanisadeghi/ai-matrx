@@ -7,7 +7,7 @@ import { CheckCircle2, Loader2, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import {
   QueryError,
   SectionCard,

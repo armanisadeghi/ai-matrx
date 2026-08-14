@@ -1,6 +1,5 @@
 "use client";
 
-import { createContext, useContext } from "react";
 import { useParams, usePathname } from "next/navigation";
 import { ExternalLink, ListTree, Loader2, ScanSearch } from "lucide-react";
 import Link from "next/link";
@@ -14,7 +13,7 @@ import {
   useSite,
   useSiteOptions,
 } from "@/features/marketing/data/hooks";
-import type { MarketingSite } from "@/features/marketing/types";
+import { MarketingSiteProvider } from "@/features/marketing/components/site/MarketingSiteContext";
 import {
   jsonNumber,
   LoadingSurface,
@@ -23,10 +22,7 @@ import {
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { MarketingSiteSurfaceProvider } from "@/features/marketing/lib/scopes/site-surface-base";
 import { MarketingSiteWriteTargets } from "@/features/marketing/components/site/MarketingSiteWriteTargets";
-import {
-  useSiteCrawlActivity,
-  type SiteCrawlActivity,
-} from "@/features/marketing/data/useSiteCrawlActivity";
+import { useSiteCrawlActivity } from "@/features/marketing/data/useSiteCrawlActivity";
 import {
   SITE_COMMAND_COPY,
   siteCommandModeFromSession,
@@ -37,26 +33,6 @@ import {
   marketingSiteSectionSuffix,
 } from "@/features/marketing/lib/route-sections";
 import { MARKETING_SITE_SECTION_ICONS } from "@/features/marketing/lib/site-section-icons";
-
-interface MarketingSiteContextValue {
-  site: MarketingSite;
-  /** Canonical brand-first base path for this site (no trailing slash). */
-  sitePath: string;
-  crawlActivity: SiteCrawlActivity;
-}
-
-const MarketingSiteContext = createContext<MarketingSiteContextValue | null>(
-  null,
-);
-
-export function useMarketingSite() {
-  const value = useContext(MarketingSiteContext);
-  if (!value)
-    throw new Error(
-      "useMarketingSite must be used inside MarketingSiteLayoutClient.",
-    );
-  return value;
-}
 
 /**
  * A site reached through the wrong brand's URL is a broken link, not a locked
@@ -206,8 +182,8 @@ export function MarketingSiteLayoutClient({
         .map(siteCommandModeFromSession)
         .find((mode): mode is SiteCommandMode => mode !== null) ?? null);
   return (
-    <MarketingSiteContext.Provider
-      value={{ site: current, sitePath: base, crawlActivity }}
+    <MarketingSiteProvider
+      value={{ site: current, sitePath: base, brandId, crawlActivity }}
     >
       <EntityModeHeader
         backHref={marketingRoutes.brand(brandId)}
@@ -274,6 +250,6 @@ export function MarketingSiteLayoutClient({
           </MarketingSiteSurfaceProvider>
         </div>
       </div>
-    </MarketingSiteContext.Provider>
+    </MarketingSiteProvider>
   );
 }

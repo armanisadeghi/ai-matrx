@@ -51,7 +51,7 @@ import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextM
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import type { ContextMenuEntityRef } from "@/features/context-menu-v3/types";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import {
   marketingKeys,
   usePendingDiscoveredCount,

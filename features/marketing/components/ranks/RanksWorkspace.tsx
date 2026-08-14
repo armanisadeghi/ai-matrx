@@ -56,7 +56,7 @@ import {
   SectionCard,
   formatDate,
 } from "@/features/marketing/components/shared/MarketingUi";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingRanksScope } from "@/features/surfaces/manifests/marketing-ranks.manifest";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";

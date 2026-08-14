@@ -36,7 +36,7 @@ import { Switch } from "@/components/ui/switch";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingIntegrationsScope } from "@/features/surfaces/manifests/marketing-integrations.manifest";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import {
   buildSiteIntegrations,
   credentialAuthorities,

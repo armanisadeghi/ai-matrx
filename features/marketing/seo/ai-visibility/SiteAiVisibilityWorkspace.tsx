@@ -1,6 +1,6 @@
 "use client";
 
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 
 import { AiVisibilityWorkspace } from "./AiVisibilityWorkspace";
 import type { AiVisibilityEvidenceView } from "./evidence-views";

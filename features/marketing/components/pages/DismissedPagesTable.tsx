@@ -4,7 +4,7 @@ import { EyeOff, RotateCcw } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import {
   useDismissedPages,

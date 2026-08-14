@@ -29,7 +29,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import {
   InlineQueryError,
   LoadingSurface,

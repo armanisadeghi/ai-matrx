@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowRight, Database, Gauge, SearchCheck } from "lucide-react";
 
 import { CatalogueAnalysisPanel } from "@/features/marketing/components/analysis/CatalogueAnalysisPanel";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import {
   LoadingSurface,
   QueryError,

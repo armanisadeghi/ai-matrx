@@ -24,7 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useFloatingLiveRun } from "@/features/overlays/openers/liveRunWindow";
 import { QueryError } from "@/features/marketing/components/shared/MarketingUi";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import { createMarketingAuthorityScope } from "@/features/surfaces/manifests/marketing-authority.manifest";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";

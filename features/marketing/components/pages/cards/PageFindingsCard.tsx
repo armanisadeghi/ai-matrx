@@ -6,7 +6,7 @@ import {
   FindingStatusBadge,
   SeverityBadge,
 } from "@/features/marketing/components/analysis/AnalysisBadges";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import {
   formatCompactDate,
   QueryError,

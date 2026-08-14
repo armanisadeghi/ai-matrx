@@ -37,7 +37,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import { VideoPublishDate } from "@/features/files/blocks/video/VideoPublishDate";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { MediaEmptyState } from "@/features/marketing/components/media/SnapshotMediaGallery";
 import {
   LoadingSurface,

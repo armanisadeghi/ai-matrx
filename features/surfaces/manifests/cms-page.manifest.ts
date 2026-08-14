@@ -364,7 +364,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "active_tab",
     label: "Active editor tab",
     description:
-      '"html" | "css" | "js" | "preview" | "plan" | "seo" | "settings" | "versions" — which region the user is in. Gates what `content`/`selection` read from. Always populated.',
+      '"html" | "css" | "js" | "preview" | "plan" | "seo" | "measure" | "settings" | "versions" — which region the user is in. Gates what `content`/`selection` read from. Always populated.',
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 10,
@@ -706,7 +706,7 @@ agent_write_policy governs everything you may do: "blocked" means propose only, 
 This system has draft/live twins. The editor buffers you receive (html_content, css_content, js_content, and every SEO/settings value) already resolve to the draft when one exists and include the user's unsaved edits — has_draft and is_published tell you how that relates to what the live site serves, and preview_url is how a human checks unpublished work.
 html_content is a BODY FRAGMENT, not a whole document: the site's chrome, shared header/footer (see page_layout) and site_global_css wrap it. Do not emit doctype/head/html tags into it. Page CSS/JS are page-specific additions on top of the site-wide stylesheet.
 You can also WRITE here, through apply_surface_write: the targets stage values into the editor the user is looking at (title, HTML body, SEO metadata, excerpt, tags) and the user is asked before each one lands. Staging is not saving and never publishing — the human still clicks Save Draft or Save & Publish, so this path is available even under a "blocked" or "draft_only" agent_write_policy. Read the matching value first when you are replacing a set rather than adding to one.
-active_tab says where the user is and therefore what content and selection contain — the matching HTML/CSS/JS buffer on those tabs, the meta description on the SEO tab, nothing on preview/plan/settings/versions. A brand-new page (is_new_page true) has no page_id and no history; the only write available there is a create.
+active_tab says where the user is and therefore what content and selection contain — the matching HTML/CSS/JS buffer on those tabs, the meta description on the SEO tab, nothing on preview/plan/measure/settings/versions. A brand-new page (is_new_page true) has no page_id and no history; the only write available there is a create.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(

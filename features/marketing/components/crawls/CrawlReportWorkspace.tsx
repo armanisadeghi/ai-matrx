@@ -15,7 +15,7 @@ import {
   QueryError,
   StatusBadge,
 } from "@/features/marketing/components/shared/MarketingUi";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import {
   useCrawlCanonicalMap,
   useCrawlChainEvidence,

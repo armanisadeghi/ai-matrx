@@ -7,7 +7,7 @@ import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { cancelCrawl } from "@/features/marketing/crawler/direct-client";
 import { extractErrorMessage } from "@/utils/errors";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { CrawlSurfaceProvider } from "@/features/marketing/lib/scopes/crawl-surface";
 import { CrawlSubnav } from "@/features/marketing/components/crawls/CrawlSubnav";
 import {

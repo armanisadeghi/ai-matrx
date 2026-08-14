@@ -19,7 +19,7 @@ import { CrawlSubnav } from "@/features/marketing/components/crawls/CrawlSubnav"
 import {
   LoadingSurface,
 } from "@/features/marketing/components/shared/MarketingUi";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { useCrawl } from "@/features/marketing/data/hooks";
 import {
   CRAWL_REPORTS,

@@ -563,6 +563,57 @@ export async function getSite(
   );
 }
 
+/**
+ * Where a canonical page LIVES — its site, and the brand that owns that site.
+ *
+ * The one read that turns a bare `web.page` id into a route (and into the
+ * context a host outside `/marketing` needs to mount `PageWorkspace`). Every
+ * caller that starts from a page id and nothing else — the CMS page editor's
+ * Measure tab, reached through `client_pages.web_page_id` — resolves it here
+ * rather than guessing the site from its own row.
+ */
+export async function getPageLocation(
+  pageId: string,
+  signal?: AbortSignal,
+): Promise<{ pageId: string; siteId: string; brandId: string | null }> {
+  const db = await authenticatedWebDb(supabase);
+  const abortSignal = signal ?? new AbortController().signal;
+  const pageResponse = await db
+    .from("page")
+    .select("id, site_id")
+    .eq("id", pageId)
+    .is("deleted_at", null)
+    .abortSignal(abortSignal)
+    .maybeSingle();
+  const page = await assertFoundOrProbeDeleted(
+    pageResponse.data,
+    pageResponse.error,
+    "page",
+    pageId,
+    () =>
+      db
+        .from("page")
+        .select("deleted_at")
+        .eq("id", pageId)
+        .abortSignal(abortSignal)
+        .maybeSingle(),
+    "web_page",
+  );
+  const siteResponse = await db
+    .from("site")
+    .select("brand_id")
+    .eq("id", page.site_id)
+    .is("deleted_at", null)
+    .abortSignal(abortSignal)
+    .maybeSingle();
+  if (siteResponse.error) throw siteResponse.error;
+  return {
+    pageId: page.id,
+    siteId: page.site_id,
+    brandId: siteResponse.data?.brand_id ?? null,
+  };
+}
+
 export async function getSiteOverview(
   siteId: string,
   signal?: AbortSignal,

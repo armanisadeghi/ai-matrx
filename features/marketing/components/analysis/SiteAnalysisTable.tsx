@@ -25,7 +25,7 @@ import {
   SeverityBadge,
 } from "@/features/marketing/components/analysis/AnalysisBadges";
 import { FindingsAssistStrip } from "@/features/marketing/components/analysis/FindingsAssistStrip";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingAnalysisScope } from "@/features/surfaces/manifests/marketing-analysis.manifest";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";

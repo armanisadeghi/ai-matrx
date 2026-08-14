@@ -41,7 +41,7 @@ import {
   QueryError,
   StatusBadge,
 } from "@/features/marketing/components/shared/MarketingUi";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { useLinkGraphEdges } from "@/features/marketing/data/inspection-hooks";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 

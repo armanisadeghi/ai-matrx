@@ -19,7 +19,7 @@ import {
   formatCompactDate,
   StatusBadge,
 } from "@/features/marketing/components/shared/MarketingUi";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import {
   MARKETING_CRAWL_SECTIONS,
   listMarketingCrawlModes,

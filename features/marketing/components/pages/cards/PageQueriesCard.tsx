@@ -21,7 +21,7 @@ import {
   QueryError,
   SectionCard,
 } from "@/features/marketing/components/shared/MarketingUi";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import { useUpdatePageIntent } from "@/features/marketing/data/hooks";
 import { usePageTopQueries } from "@/features/marketing/seo/keyword/hooks";
