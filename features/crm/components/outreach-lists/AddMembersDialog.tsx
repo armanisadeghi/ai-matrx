@@ -1,6 +1,6 @@
 "use client";
 
-// features/crm/components/campaigns/AddMembersDialog.tsx
+// features/crm/components/outreach-lists/AddMembersDialog.tsx
 //
 // Enroll members FROM A FILTER: the same predicates the /crm list serves
 // (`applyPartyListPredicates` — one predicate builder, so preview and
@@ -24,25 +24,25 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import type { CrmQueryContext, PartyKindFilter, PartyListQuery } from "../../types";
-import type { CampaignRow } from "../../campaigns/types";
+import type { OutreachListRow } from "../../outreach-lists/types";
 import {
   addMembersByPartyIds,
   fetchFilterPreview,
   fetchPartyIdsByFilter,
-} from "../../campaigns/service";
+} from "../../outreach-lists/service";
 
 type SourceScope = "org" | "mine";
 
 export function AddMembersDialog({
   open,
   onOpenChange,
-  campaign,
+  list,
   ctx,
   onAdded,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  campaign: CampaignRow;
+  list: OutreachListRow;
   ctx: CrmQueryContext;
   onAdded: () => void;
 }) {
@@ -58,21 +58,21 @@ export function AddMembersDialog({
   const [adding, setAdding] = useState(false);
 
   const orgName =
-    ctx.orgNames[campaign.organization_id] ?? "Campaign organization";
+    ctx.orgNames[list.organization_id] ?? "Outreach list organization";
 
   const query: PartyListQuery = useMemo(
     () => ({
       scope:
         source === "mine"
           ? { kind: "mine" }
-          : { kind: "orgs", organizationId: campaign.organization_id },
+          : { kind: "orgs", organizationId: list.organization_id },
       search,
       kind,
       filters: {},
       page: 1,
       view: "active",
     }),
-    [source, search, kind, campaign.organization_id],
+    [source, search, kind, list.organization_id],
   );
 
   useEffect(() => {
@@ -117,7 +117,7 @@ export function AddMembersDialog({
         return;
       }
       const { added, skippedExisting } = await addMembersByPartyIds({
-        campaign,
+        list,
         partyIds: ids,
       });
       onOpenChange(false);
@@ -127,7 +127,7 @@ export function AddMembersDialog({
           (skippedExisting > 0
             ? ` (${skippedExisting.toLocaleString()} already enrolled)`
             : ""),
-        { action: toastDoor("crm_campaign", campaign.id) },
+        { action: toastDoor("crm_outreach_list", list.id) },
       );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Enrollment failed");

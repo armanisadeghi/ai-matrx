@@ -783,15 +783,15 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     urlPathTemplate: "/shapes/instances/{id}",
     rlsUsesHasPermission: true,
   },
-  crm_campaign: {
-    resourceType: "crm_campaign",
-    tableName: "campaign",
+  crm_outreach_list: {
+    resourceType: "crm_outreach_list",
+    tableName: "outreach_list",
     schemaName: "crm",
     idColumn: "id",
     ownerColumn: "created_by",
     isPublicColumn: null,
-    displayLabel: "Campaign",
-    urlPathTemplate: "/crm/campaigns/{id}",
+    displayLabel: "Outreach List",
+    urlPathTemplate: "/crm/outreach-lists/{id}",
     rlsUsesHasPermission: true,
   },
   party: {
@@ -908,19 +908,15 @@ export const RESOURCE_TYPES = Object.keys(
 ) as ResourceType[];
 
 /**
- * Look up a registry entry by token OR physical table_name. Returns undefined
- * for unregistered types so callers can fail gracefully (the DB will reject any
- * subsequent write either way). Prefer the token; table_name lookup is a
- * best-effort convenience and is ambiguous when tokens share a physical name.
+ * Look up a registry entry by canonical entity token. A physical table name is
+ * never accepted as an identity key: names such as `definition` repeat across
+ * schemas, so a bare-name lookup cannot be made deterministic.
  */
 export function getShareableResource(
-  typeOrTable: string,
+  resourceType: string,
 ): ShareableResourceEntry | undefined {
-  if (typeOrTable in SHAREABLE_RESOURCE_REGISTRY) {
-    return SHAREABLE_RESOURCE_REGISTRY[typeOrTable as ResourceType];
-  }
-  for (const entry of Object.values(SHAREABLE_RESOURCE_REGISTRY)) {
-    if (entry.tableName === typeOrTable) return entry;
+  if (resourceType in SHAREABLE_RESOURCE_REGISTRY) {
+    return SHAREABLE_RESOURCE_REGISTRY[resourceType as ResourceType];
   }
   return undefined;
 }

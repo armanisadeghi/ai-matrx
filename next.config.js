@@ -358,6 +358,12 @@ const nextConfig = {
             // attribution. Renamed before it shipped, so no live destination is
             // lost — this redirect is what keeps that true.
             { source: '/marketing/campaigns', destination: '/marketing/initiatives', permanent: true },
+            // 2026-08-13, same ruling, the other half: CRM's `campaign` was the
+            // worked outreach list all along (a send/dial queue), so the table,
+            // the token, and the route all say `outreach_list` now. This route
+            // DID ship, so the redirect is load-bearing.
+            { source: '/crm/campaigns', destination: '/crm/outreach-lists', permanent: true },
+            { source: '/crm/campaigns/:path*', destination: '/crm/outreach-lists/:path*', permanent: true },
             // 2026-07-13: Relationships hub consolidation. /administration/sharing
             // (link policy) and /administration/action-catalog moved into the
             // route-tabbed hub at /administration/database/relationships/*.

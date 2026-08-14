@@ -1,6 +1,6 @@
-// features/crm/campaigns/types.ts
+// features/crm/outreach-lists/types.ts
 //
-// Types for the campaign builder + call queue. ALL row shapes derive from the
+// Types for the outreach list builder + call queue. ALL row shapes derive from the
 // generated `types/database.types.ts` (`crm` schema) — never hand-mirrored.
 //
 // Read features/crm/FEATURE.md before touching this: suppression lives on the
@@ -18,28 +18,28 @@ import type {
 
 // ── Generated row aliases ───────────────────────────────────────────────────
 
-export type CampaignRow = Database["crm"]["Tables"]["campaign"]["Row"];
-export type CampaignInsert = Database["crm"]["Tables"]["campaign"]["Insert"];
-export type CampaignUpdate = Database["crm"]["Tables"]["campaign"]["Update"];
+export type OutreachListRow = Database["crm"]["Tables"]["outreach_list"]["Row"];
+export type OutreachListInsert = Database["crm"]["Tables"]["outreach_list"]["Insert"];
+export type OutreachListUpdate = Database["crm"]["Tables"]["outreach_list"]["Update"];
 
-export type CampaignMemberRow =
-  Database["crm"]["Tables"]["campaign_member"]["Row"];
-export type CampaignMemberInsert =
-  Database["crm"]["Tables"]["campaign_member"]["Insert"];
+export type OutreachListMemberRow =
+  Database["crm"]["Tables"]["outreach_list_member"]["Row"];
+export type OutreachListMemberInsert =
+  Database["crm"]["Tables"]["outreach_list_member"]["Insert"];
 
 // ── Closed vocabularies (from the live CHECK constraints; crm_02_core.sql) ──
 
-export const CAMPAIGN_KINDS = ["list", "email", "call", "mixed"] as const;
-export type CampaignKind = (typeof CAMPAIGN_KINDS)[number];
+export const LIST_KINDS = ["list", "email", "call", "mixed"] as const;
+export type OutreachListKind = (typeof LIST_KINDS)[number];
 
-export const CAMPAIGN_STATUSES = [
+export const LIST_STATUSES = [
   "draft",
   "active",
   "paused",
   "completed",
   "archived",
 ] as const;
-export type CampaignStatus = (typeof CAMPAIGN_STATUSES)[number];
+export type OutreachListStatus = (typeof LIST_STATUSES)[number];
 
 export const MEMBER_STATUSES = [
   "queued",
@@ -152,13 +152,13 @@ export const SKIP_DEFER_MINUTES = 15;
 
 // ── Joined shapes ───────────────────────────────────────────────────────────
 
-/** One campaign list row with its live member count. */
-export type CampaignListRow = CampaignRow & {
+/** One outreach list row with its live member count. */
+export type OutreachListWithCount = OutreachListRow & {
   members: { count: number }[];
 };
 
 /** Member row joined to its party — the detail table's read shape. */
-export type CampaignMemberWithParty = CampaignMemberRow & {
+export type OutreachListMemberWithParty = OutreachListMemberRow & {
   party: Pick<
     PartyRow,
     | "id"
@@ -170,7 +170,7 @@ export type CampaignMemberWithParty = CampaignMemberRow & {
   > | null;
 };
 
-/** Per-status member counts for the campaign header rollup. */
+/** Per-status member counts for the outreach list header rollup. */
 export type MemberStatusCounts = Partial<Record<MemberStatus, number>> & {
   total: number;
   /** Claimable right now (dialable status + retry window passed). */
@@ -198,7 +198,7 @@ export interface DialTarget {
 
 /** Everything the dial card needs for one claimed member. */
 export interface QueueEntry {
-  member: CampaignMemberRow;
+  member: OutreachListMemberRow;
   detail: import("../types").PartyDetail;
   targets: DialTarget[];
   /** True when not a single target is dialable — the queue auto-suppresses. */

@@ -1,11 +1,11 @@
-// features/crm/campaigns/service.ts
+// features/crm/outreach-lists/service.ts
 //
-// Direct browser → Supabase (`supabase.schema("crm")`) for the campaign
+// Direct browser → Supabase (`supabase.schema("crm")`) for the outreach list
 // builder + call queue. No Next.js hop, no Python hop — plain DB reads/writes
 // (CLAUDE.md § Data flow); RLS is the authorization layer.
 //
 // THE THREE RULES THIS FILE ENFORCES:
-//   1. `crm.campaign_member` is a COMPONENT table — INSERT…RETURNING 42501s
+//   1. `crm.outreach_list_member` is a COMPONENT table — INSERT…RETURNING 42501s
 //      under the id-list std_select policy (D181). Every insert here is bare;
 //      needing the row means re-reading it. UPDATE…RETURNING is fine (the row
 //      already exists in the statement snapshot) and is exactly how the claim
@@ -31,12 +31,12 @@ import type {
   PartyListQuery,
 } from "../types";
 import type {
-  CampaignListRow,
-  CampaignMemberRow,
-  CampaignMemberWithParty,
-  CampaignRow,
-  CampaignStatus,
-  CampaignUpdate,
+  OutreachListWithCount,
+  OutreachListMemberRow,
+  OutreachListMemberWithParty,
+  OutreachListRow,
+  OutreachListStatus,
+  OutreachListUpdate,
   CallDisposition,
   DialTarget,
   MemberStatus,
@@ -44,13 +44,13 @@ import type {
   QueueEntry,
 } from "./types";
 import {
-  CAMPAIGN_KINDS,
+  LIST_KINDS,
   CLAIM_MINUTES,
   DIALABLE_STATUSES,
   MEMBER_STATUSES,
   SKIP_DEFER_MINUTES,
 } from "./types";
-import type { CampaignKind } from "./types";
+import type { OutreachListKind } from "./types";
 
 // ── Error mapping (same contract as ../service.ts) ──────────────────────────
 
@@ -67,20 +67,20 @@ function crm() {
   return supabase.schema("crm");
 }
 
-// ── Campaign CRUD ───────────────────────────────────────────────────────────
+// ── Outreach list CRUD ───────────────────────────────────────────────────────────
 
 /**
- * Campaigns this user can work: created by me OR in one of my orgs — the
- * declared scope of the campaign console (THE VIEW LAW; campaigns are a
+ * Outreach lists this user can work: created by me OR in one of my orgs — the
+ * declared scope of the outreach list console (THE VIEW LAW; outreach lists are a
  * sales-floor tool, not a browse surface, so one blended work scope).
  */
-export async function fetchCampaigns(ctx: CrmQueryContext): Promise<
-  CampaignListRow[]
+export async function fetchOutreachLists(ctx: CrmQueryContext): Promise<
+  OutreachListWithCount[]
 > {
   let q = crm()
-    .from("campaign")
+    .from("outreach_list")
     // Embedded count = live members only (soft-deleted rows excluded).
-    .select("*, members:campaign_member(count)")
+    .select("*, members:outreach_list_member(count)")
     .is("deleted_at", null)
     .is("members.deleted_at", null)
     .order("updated_at", { ascending: false })
@@ -92,12 +92,12 @@ export async function fetchCampaigns(ctx: CrmQueryContext): Promise<
     : q.eq("created_by", ctx.userId);
   const { data, error } = await q;
   if (error) throw pgError(error);
-  return (data ?? []) as CampaignListRow[];
+  return (data ?? []) as OutreachListWithCount[];
 }
 
-export async function fetchCampaign(id: string): Promise<CampaignRow> {
+export async function fetchOutreachList(id: string): Promise<OutreachListRow> {
   const { data, error } = await crm()
-    .from("campaign")
+    .from("outreach_list")
     .select("*")
     .eq("id", id)
     .single();
@@ -105,20 +105,20 @@ export async function fetchCampaign(id: string): Promise<CampaignRow> {
   return data;
 }
 
-export async function createCampaign(input: {
+export async function createOutreachList(input: {
   name: string;
-  kind: CampaignKind;
+  kind: OutreachListKind;
   description?: string;
   orgId: string;
-}): Promise<CampaignRow> {
-  if (!(CAMPAIGN_KINDS as readonly string[]).includes(input.kind)) {
-    throw new Error(`Unknown campaign kind: ${input.kind}`);
+}): Promise<OutreachListRow> {
+  if (!(LIST_KINDS as readonly string[]).includes(input.kind)) {
+    throw new Error(`Unknown outreach list kind: ${input.kind}`);
   }
   const { data, error } = await crm()
-    .from("campaign")
+    .from("outreach_list")
     .insert({
       name: input.name.trim(),
-      campaign_kind: input.kind,
+      list_kind: input.kind,
       description: input.description?.trim() || null,
       organization_id: input.orgId,
     })
@@ -128,37 +128,37 @@ export async function createCampaign(input: {
   return data;
 }
 
-export async function updateCampaign(
+export async function updateOutreachList(
   id: string,
   patch: { name?: string; description?: string | null },
 ): Promise<void> {
-  const { error } = await crm().from("campaign").update(patch).eq("id", id);
+  const { error } = await crm().from("outreach_list").update(patch).eq("id", id);
   if (error) throw pgError(error);
 }
 
 /** Status transitions stamp the lifecycle timestamps they imply. */
-export async function setCampaignStatus(
-  campaign: CampaignRow,
-  status: CampaignStatus,
+export async function setOutreachListStatus(
+  list: OutreachListRow,
+  status: OutreachListStatus,
 ): Promise<void> {
-  const patch: CampaignUpdate = { status };
-  if (status === "active" && !campaign.started_at) {
+  const patch: OutreachListUpdate = { status };
+  if (status === "active" && !list.started_at) {
     patch.started_at = new Date().toISOString();
   }
   if (status === "completed" || status === "archived") {
-    patch.ended_at = campaign.ended_at ?? new Date().toISOString();
+    patch.ended_at = list.ended_at ?? new Date().toISOString();
   }
   const { error } = await crm()
-    .from("campaign")
+    .from("outreach_list")
     .update(patch)
-    .eq("id", campaign.id);
+    .eq("id", list.id);
   if (error) throw pgError(error);
 }
 
 /** Soft-delete. Members stay (cascade is a hard-delete concern, not trash). */
-export async function deleteCampaign(id: string): Promise<void> {
+export async function deleteOutreachList(id: string): Promise<void> {
   const { error } = await crm()
-    .from("campaign")
+    .from("outreach_list")
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", id);
   if (error) throw pgError(error);
@@ -169,24 +169,24 @@ export async function deleteCampaign(id: string): Promise<void> {
 const MEMBER_EMBED =
   "*, party:party_id(id,display_name,party_kind,job_title,do_not_contact,primary_employer_party_id)";
 
-export async function fetchCampaignMembers(args: {
-  campaignId: string;
+export async function fetchOutreachListMembers(args: {
+  listId: string;
   page: number;
   pageSize: number;
   status?: MemberStatus | "all";
   /** Case-insensitive substring on the member's party name (inner join). */
   search?: string;
-}): Promise<{ rows: CampaignMemberWithParty[]; total: number }> {
+}): Promise<{ rows: OutreachListMemberWithParty[]; total: number }> {
   const term = args.search?.replace(/[,()]/g, " ").trim();
   let q = crm()
-    .from("campaign_member")
+    .from("outreach_list_member")
     .select(
       term
         ? "*, party:party_id!inner(id,display_name,party_kind,job_title,do_not_contact,primary_employer_party_id)"
         : MEMBER_EMBED,
       { count: "exact" },
     )
-    .eq("campaign_id", args.campaignId)
+    .eq("outreach_list_id", args.listId)
     .is("deleted_at", null);
   if (args.status && args.status !== "all") q = q.eq("status", args.status);
   if (term) q = q.ilike("party.display_name", `%${term}%`);
@@ -195,20 +195,20 @@ export async function fetchCampaignMembers(args: {
     .order("created_at", { ascending: true })
     .order("id", { ascending: true })
     .range(from, from + args.pageSize - 1)
-    .returns<CampaignMemberWithParty[]>();
+    .returns<OutreachListMemberWithParty[]>();
   if (error) throw pgError(error);
   return { rows: data ?? [], total: count ?? 0 };
 }
 
 /** Per-status totals + the live "claimable now" count for the header. */
 export async function fetchMemberStatusCounts(
-  campaignId: string,
+  listId: string,
 ): Promise<MemberStatusCounts> {
   const base = () =>
     crm()
-      .from("campaign_member")
+      .from("outreach_list_member")
       .select("id", { count: "exact", head: true })
-      .eq("campaign_id", campaignId)
+      .eq("outreach_list_id", listId)
       .is("deleted_at", null);
 
   const nowIso = new Date().toISOString();
@@ -234,15 +234,15 @@ export async function fetchMemberStatusCounts(
 
 /** Every live member's party_id — the enrollment dedup source. */
 export async function fetchExistingMemberPartyIds(
-  campaignId: string,
+  listId: string,
 ): Promise<Set<string>> {
   const out = new Set<string>();
   const pageSize = 1000;
   for (let from = 0; ; from += pageSize) {
     const { data, error } = await crm()
-      .from("campaign_member")
+      .from("outreach_list_member")
       .select("party_id")
-      .eq("campaign_id", campaignId)
+      .eq("outreach_list_id", listId)
       .is("deleted_at", null)
       .order("id", { ascending: true })
       .range(from, from + pageSize - 1);
@@ -257,15 +257,15 @@ export async function fetchExistingMemberPartyIds(
 
 /**
  * Enroll parties. Already-enrolled parties are skipped (the unique key is
- * `(campaign_id, party_id) where deleted_at is null` — one bare insert per
+ * `(outreach_list_id, party_id) where deleted_at is null` — one bare insert per
  * batch would abort the whole batch on a single duplicate). Bare inserts:
  * component RETURNING is forbidden (rule 1).
  */
 export async function addMembersByPartyIds(args: {
-  campaign: CampaignRow;
+  list: OutreachListRow;
   partyIds: string[];
 }): Promise<{ added: number; skippedExisting: number }> {
-  const existing = await fetchExistingMemberPartyIds(args.campaign.id);
+  const existing = await fetchExistingMemberPartyIds(args.list.id);
   const fresh = Array.from(new Set(args.partyIds)).filter(
     (id) => !existing.has(id),
   );
@@ -273,11 +273,11 @@ export async function addMembersByPartyIds(args: {
 
   for (let i = 0; i < fresh.length; i += 200) {
     const batch = fresh.slice(i, i + 200).map((partyId) => ({
-      campaign_id: args.campaign.id,
+      outreach_list_id: args.list.id,
       party_id: partyId,
-      organization_id: args.campaign.organization_id,
+      organization_id: args.list.organization_id,
     }));
-    const { error } = await crm().from("campaign_member").insert(batch);
+    const { error } = await crm().from("outreach_list_member").insert(batch);
     if (error) throw pgError(error);
   }
   return { added: fresh.length, skippedExisting };
@@ -343,10 +343,10 @@ export async function fetchPartyIdsByFilter(
   return out;
 }
 
-/** Remove a member from the campaign (soft — the party is untouched). */
+/** Remove a member from the outreach list (soft — the party is untouched). */
 export async function removeMember(memberId: string): Promise<void> {
   const { error } = await crm()
-    .from("campaign_member")
+    .from("outreach_list_member")
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", memberId);
   if (error) throw pgError(error);
@@ -355,7 +355,7 @@ export async function removeMember(memberId: string): Promise<void> {
 /** Put a worked member back at the front of the queue. */
 export async function requeueMember(memberId: string): Promise<void> {
   const { error } = await crm()
-    .from("campaign_member")
+    .from("outreach_list_member")
     .update({
       status: "queued",
       next_attempt_at: null,
@@ -374,20 +374,20 @@ export async function requeueMember(memberId: string): Promise<void> {
  *      absent/expired/ours) in queue order;
  *   2. take each with a CONDITIONAL update re-asserting every predicate —
  *      rule 2: zero rows back means another rep won that row; try the next.
- * Two reps power-dialing the same campaign therefore never hold the same
+ * Two reps power-dialing the same outreach list therefore never hold the same
  * person at once (within the CLAIM_MINUTES lease).
  */
 export async function claimNextMember(args: {
-  campaignId: string;
+  listId: string;
   userId: string;
-}): Promise<CampaignMemberRow | null> {
+}): Promise<OutreachListMemberRow | null> {
   const nowIso = new Date().toISOString();
   const claimFree = `claimed_until.is.null,claimed_until.lt.${nowIso},claimed_by.eq.${args.userId}`;
 
   const { data: candidates, error } = await crm()
-    .from("campaign_member")
+    .from("outreach_list_member")
     .select("id")
-    .eq("campaign_id", args.campaignId)
+    .eq("outreach_list_id", args.listId)
     .is("deleted_at", null)
     .in("status", [...DIALABLE_STATUSES])
     .or(`next_attempt_at.is.null,next_attempt_at.lte.${nowIso}`)
@@ -401,7 +401,7 @@ export async function claimNextMember(args: {
   for (const candidate of candidates ?? []) {
     const until = new Date(Date.now() + CLAIM_MINUTES * 60_000).toISOString();
     const { data: claimed, error: claimError } = await crm()
-      .from("campaign_member")
+      .from("outreach_list_member")
       .update({ claimed_by: args.userId, claimed_until: until })
       .eq("id", candidate.id)
       .is("deleted_at", null)
@@ -422,7 +422,7 @@ export async function releaseClaim(args: {
   userId: string;
 }): Promise<void> {
   const { error } = await crm()
-    .from("campaign_member")
+    .from("outreach_list_member")
     .update({ claimed_by: null, claimed_until: null })
     .eq("id", args.memberId)
     .eq("claimed_by", args.userId);
@@ -435,7 +435,7 @@ export async function skipMember(args: {
   userId: string;
 }): Promise<void> {
   const { error } = await crm()
-    .from("campaign_member")
+    .from("outreach_list_member")
     .update({
       claimed_by: null,
       claimed_until: null,
@@ -489,7 +489,7 @@ export function computeDialTargets(detail: PartyDetail): DialTarget[] {
 
 /** Load everything the dial card needs for one claimed member. */
 export async function buildQueueEntry(
-  member: CampaignMemberRow,
+  member: OutreachListMemberRow,
 ): Promise<QueueEntry> {
   const detail = await fetchPartyDetail(member.party_id);
   const targets = computeDialTargets(detail);
@@ -512,7 +512,7 @@ export async function markMemberSuppressed(args: {
   reason: string;
 }): Promise<void> {
   const { error } = await crm()
-    .from("campaign_member")
+    .from("outreach_list_member")
     .update({
       status: "suppressed",
       notes: args.reason,
@@ -527,8 +527,8 @@ export async function markMemberSuppressed(args: {
 // ── Disposition (log the call + advance the member) ─────────────────────────
 
 export async function dispositionCall(args: {
-  campaign: CampaignRow;
-  member: CampaignMemberRow;
+  list: OutreachListRow;
+  member: OutreachListMemberRow;
   disposition: CallDisposition;
   userId: string;
   /** The number actually dialed (null when no call connected the UI). */
@@ -547,12 +547,12 @@ export async function dispositionCall(args: {
     const { error } = await crm().from("interaction").insert({
       party_id: args.member.party_id,
       organization_id: args.member.organization_id,
-      campaign_id: args.campaign.id,
+      outreach_list_id: args.list.id,
       contact_point_id: args.target?.point.id ?? null,
       channel_code: "call",
       direction: "outbound",
       status: "completed",
-      subject: `Call — ${args.campaign.name}`,
+      subject: `Call — ${args.list.name}`,
       body: notes,
       occurred_at: nowIso,
       attempt_number: attempt,
@@ -564,7 +564,7 @@ export async function dispositionCall(args: {
   // 2. Advance the member — guarded by OUR claim so an expired claim that a
   //    colleague re-took is never clobbered. Zero rows = claim lost: loud.
   const { data, error } = await crm()
-    .from("campaign_member")
+    .from("outreach_list_member")
     .update({
       status: args.disposition.memberStatus,
       attempt_count: args.disposition.logsCall
@@ -610,7 +610,7 @@ export async function dispositionCall(args: {
     }
     await updateParty(args.member.party_id, {
       do_not_contact: true,
-      do_not_contact_reason: `Requested during call (${args.campaign.name}, ${nowIso.slice(0, 10)})`,
+      do_not_contact_reason: `Requested during call (${args.list.name}, ${nowIso.slice(0, 10)})`,
     });
   }
 }

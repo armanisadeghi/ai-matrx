@@ -37,7 +37,7 @@ export type InteractionRow = Database["crm"]["Tables"]["interaction"]["Row"];
 export type InteractionInsert =
   Database["crm"]["Tables"]["interaction"]["Insert"];
 
-export type CampaignRow = Database["crm"]["Tables"]["campaign"]["Row"];
+export type OutreachListRow = Database["crm"]["Tables"]["outreach_list"]["Row"];
 
 export type MergeCandidateRow =
   Database["crm"]["Tables"]["merge_candidate"]["Row"];

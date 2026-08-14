@@ -154,10 +154,12 @@ cms-starter-kit`. Guarded CMS writes (agent_write_policy + activity log live
   `types.ts PIPELINE_STEPS` from aidream `content_plan/artifacts.py`, the ONE
   writer) and supersession-versioned artifacts (current = `valid_to IS NULL`).
   The client READS both direct under RLS (`listNodeSteps` /
-  `listNodeArtifacts` in `data/service.ts`) and writes neither; the NodePanel
-  "Pipeline" section renders `NodeStepRail`. A missing step row means "never
-  run" — pending is a deliberately visible state. Distinct from the editorial
-  `plan_status`.
+  `listNodeArtifacts` in `data/service.ts`) and writes neither. The workbench
+  calls `useNodeSteps(siteId)` once and projects the rows with
+  `lib/pipeline-progress.ts`: `NodeStepRail` renders the full NodePanel axis,
+  while tree/table badges reuse the same per-node summary. A missing step row
+  means "never run"; nodes with no rows render no badge. Distinct from the
+  editorial `plan_status`.
 - `plan.entity` — **source/media citations only** per site. Person/org rows
   folded into `crm.party` (2026-08-13; DB guard `plan._entity_kind_guard`
   rejects new live person/org rows, loudly). People/companies on a site's
@@ -206,13 +208,15 @@ cms-starter-kit`. Guarded CMS writes (agent_write_policy + activity log live
    drag, leaving Home as the first tree row. Subtle indent guides keep deep
    branches legible. While a search/filter is active the
    collapse set is bypassed so every match is visible; all of it is
-   client-side over the already-loaded plan.
+   client-side over the already-loaded plan. Nodes with any pipeline rows show
+   one dense semantic-color `done/7` badge; untouched nodes show nothing.
    1b. **Table view** (`PlanNodesTable.tsx`, `?view=table`): every planned URL
    as one `MatrxDataTable` row — CONTROLLED mode over the canonical local
    engine (`filterAndSortRows`) since the plan is fully client-loaded.
    Columns: Label, Route (mono), Type, Status (dot + name), Priority,
-   Keyword (Bound/Missing), Page, Alignment (the shared plan-vs-reality
-   verdict), Pillar, Cluster, Depth, Reviewer
+   Keyword (Bound/Missing), Page, Pipeline (ordered milestone + `done/7`, with
+   running and destructive failed counts), Alignment (the shared
+   plan-vs-reality verdict), Pillar, Cluster, Depth, Reviewer
    (default-hidden), Updated — every column sorts AND filters; finite
    columns get real option lists with counts (status options in pipeline
    order). Full-row click opens the canonical `NodePanel` in the table-owned
@@ -575,6 +579,15 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
 
+- 2026-08-13 — Codex: **Pipeline progress now appears in every plan
+  projection.** `ContentPlanWorkbench` owns the one site-wide `useNodeSteps`
+  read and projects it through tested `lib/pipeline-progress.ts`; the tree
+  renders a dense `done/7` badge only for touched nodes, and the table adds a
+  sortable/filterable Pipeline milestone column (prefs v4). Running, skipped,
+  pending, failed, and never-run remain distinct; failures render a
+  destructive count and untouched nodes stay visually silent. `NodeStepRail`
+  consumes the same workbench projection instead of mounting a second hook.
+
 - 2026-08-13 — Codex: **Mounted the plan-vs-reality repair loop.** Tree,
   table, and pillar map now keep `PlanDriftBar` at the bottom of the workspace;
   every count opens the filtered `PlanDriftSheet`, whose existing bridge
@@ -602,8 +615,8 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 - 2026-08-12 — **Pipeline rail (Website Factory P4).** `plan.node_step` /
   `node_artifact` reads + `NodeStepRail` in the NodePanel (see Data model).
   Server half: aidream `content_plan/artifacts.py` + producers (deepen →
-  research, cms_fill → build, publish flow-back). Next: step badges on
-  tree/table, per-step run actions.
+  research, cms_fill → build, publish flow-back). Tree/table badges followed
+  on 2026-08-13; per-step run actions remain.
 
 - 2026-08-13 — **the workspace is the platform's first surface to offer agents
   CLIENT TOOLS: an agent bound to this page can now move the user's view while

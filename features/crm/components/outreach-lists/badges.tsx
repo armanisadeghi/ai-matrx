@@ -1,17 +1,17 @@
-// features/crm/components/campaigns/badges.tsx
+// features/crm/components/outreach-lists/badges.tsx
 //
-// The ONE place campaign + member statuses map to visual treatment — the
+// The ONE place outreach list + member statuses map to visual treatment — the
 // list, the detail rollup, and the dialer all render these, so a status can
 // never wear two colors.
 
 import { cn } from "@/lib/utils";
 import type {
-  CampaignKind,
-  CampaignStatus,
+  OutreachListKind,
+  OutreachListStatus,
   MemberStatus,
-} from "../../campaigns/types";
+} from "../../outreach-lists/types";
 
-const CAMPAIGN_STATUS_CLASSES: Record<CampaignStatus, string> = {
+const CAMPAIGN_STATUS_CLASSES: Record<OutreachListStatus, string> = {
   draft: "bg-muted text-muted-foreground border-border",
   active:
     "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
@@ -22,9 +22,9 @@ const CAMPAIGN_STATUS_CLASSES: Record<CampaignStatus, string> = {
   archived: "bg-muted text-muted-foreground border-border",
 };
 
-export function CampaignStatusBadge({ status }: { status: string }) {
+export function ListStatusBadge({ status }: { status: string }) {
   const classes =
-    CAMPAIGN_STATUS_CLASSES[status as CampaignStatus] ??
+    CAMPAIGN_STATUS_CLASSES[status as OutreachListStatus] ??
     "bg-muted text-muted-foreground border-border";
   return (
     <span
@@ -38,7 +38,7 @@ export function CampaignStatusBadge({ status }: { status: string }) {
   );
 }
 
-export function CampaignKindBadge({ kind }: { kind: string }) {
+export function ListKindBadge({ kind }: { kind: string }) {
   const label =
     (
       {
@@ -46,8 +46,8 @@ export function CampaignKindBadge({ kind }: { kind: string }) {
         email: "Email",
         call: "Calling",
         mixed: "Mixed",
-      } as Record<CampaignKind, string>
-    )[kind as CampaignKind] ?? kind;
+      } as Record<OutreachListKind, string>
+    )[kind as OutreachListKind] ?? kind;
   return (
     <span className="inline-flex items-center rounded-full border border-border bg-muted/50 px-2 py-0.5 text-[11px] font-medium leading-none text-muted-foreground">
       {label}

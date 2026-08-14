@@ -169,8 +169,8 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
   "table": "context.context_items",
   "title_column": "display_name"
  },
- "crm_campaign": {
-  "table": "crm.campaign",
+ "crm_outreach_list": {
+  "table": "crm.outreach_list",
   "title_column": "name"
  },
  "data_store": {

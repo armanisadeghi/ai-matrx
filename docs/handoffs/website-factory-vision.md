@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-07-30
+updated: 2026-08-13
 repos: [matrx-frontend, aidream, my-matrx]
 vision: [this doc §Vision — Arman's words, 2026-07-30 chat]
 ---
@@ -117,8 +117,9 @@ writer module `aidream/services/content_plan/artifacts.py` (STEPS vocabulary, lo
 recording); wired producers: deepen → `p2_research` (+ research artifact), cms_fill →
 `p6_build` running/done/failed (+ `final` build artifact, preview-write included), publish
 flow-back → `p7_publish`. FE: direct RLS reads + the NodePanel "Pipeline" rail
-(`NodeStepRail.tsx`). NOT yet done: formal content-ir kind registration for the two envelope
-shapes, tree/table step badges, per-step run actions, and the p1/p3/p4/p5 specialist steps.
+(`NodeStepRail.tsx`) + tree/table progress badges from one site-wide query. NOT yet done: formal
+content-ir kind registration for the two envelope shapes, per-step run actions, and the
+p1/p3/p4/p5 specialist steps.
 
 ### The two tables (and why exactly two)
 
@@ -190,8 +191,8 @@ pipeline is just "run every non-done step in order".
 2. aidream: `node_artifact`/`node_step` write path in `services/content_plan/service.py` +
    tool actions; decompose `cms_fill._author_page()` so each phase reads/writes artifacts and
    stamps its step (thin steps first — same prompts, now persisted).
-3. FE: NodePanel gains the step rail + artifact viewer (structured draft = the human text-edit
-   surface); tree/table badges read `node_step`.
+3. **DONE 2026-08-13:** FE NodePanel step rail + artifact viewer and tree/table badges all read
+   the same site-wide `node_step` query; untouched nodes stay visually silent.
 4. Specialist agents replace the thin steps one at a time (writer, reviewer, fact-checker).
 
 ## Resources
@@ -241,7 +242,7 @@ output into `theme_config`, per-page bulk AI actions on the pages list.
 3. ~~Design + build the per-node content record (P4)~~ **DONE 2026-08-12** (see the P4 section — tables, writer, producers, FE rail all live; review the shape).
 4. **Decompose `cms_fill` into explicit pipeline steps** behind the SAME button. STARTED 2026-08-12: fill/deepen/publish now persist step state + artifacts (the steps exist in data); still monolithic per page — the author call is one prompt. Next: split context-assembly (`p3_family`), structured write (`p4_write`), review (`p5_review`) into separately re-runnable item types on the same durable queue.
 5. **Site design system (S3) + page templates (S4)**: template/block entities in the CMS DB, starter kit installs a default set, `page_type` binds node → template, per-site "templates required vs theme-only" setting. Page build step consumes them.
-6. **Plan UI shows the pipeline**: linked-CMS-page half DONE (2026-08-07, WF-11); NodePanel step rail DONE (2026-08-12, `NodeStepRail` + direct `node_step`/`node_artifact` reads). Remaining: step badges on tree/table views, and per-node "run step / generate this page" actions.
+6. **Plan UI shows the pipeline**: linked CMS pages DONE (2026-08-07, WF-11); NodePanel rail DONE (2026-08-12); tree/table progress badges DONE (2026-08-13 — one site-wide query, sortable/filterable table milestone, untouched nodes silent). Remaining: per-node "run step / generate this page" actions.
 7. **First specialist agents on the rails**: writer, reviewer/fact-checker, page-builder as saved agents; orchestrate per-page via AgentPlan; `cms_fill`'s inline prompt becomes the page-builder's starting prompt.
 8. Wire per-node keyword/content research (P1/P2) to store artifacts on the content record; connect `features/research/` pipeline as the P2 engine.
 

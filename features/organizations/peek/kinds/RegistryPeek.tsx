@@ -5,7 +5,7 @@
  *
  * THE DOOR LAW's third door is Peek: "whenever the user's next question is
  * 'wait, which one is that?'". Hand-written peeks answer that for 20 kinds and
- * left ~40 registered tokens with nothing — so an attached `crm_campaign`,
+ * left ~40 registered tokens with nothing — so an attached `crm_outreach_list`,
  * `seo_keyword`, `folder`, `code_repository` or `working_document` rendered as
  * plain text with no way to find out what it was. Writing 40 near-identical
  * fetch-and-show components would have been the wrong fix (and the exact

@@ -1,8 +1,8 @@
 "use client";
 
-// features/crm/components/campaigns/CallQueuePage.tsx
+// features/crm/components/outreach-lists/CallQueuePage.tsx
 //
-// /crm/campaigns/[campaignId]/dial — the power dialer. One member at a time:
+// /crm/outreach-lists/[listId]/dial — the power dialer. One member at a time:
 // claim (the conditional-update lock keeps two reps off the same person),
 // show the record, dial, log, disposition, next. Suppression is enforced
 // BEFORE a number is offered — a blocked number renders greyed WITH its
@@ -38,25 +38,25 @@ import {
   buildQueueEntry,
   claimNextMember,
   dispositionCall,
-  fetchCampaign,
+  fetchOutreachList,
   fetchMemberStatusCounts,
   markMemberSuppressed,
   releaseClaim,
   skipMember,
-} from "../../campaigns/service";
+} from "../../outreach-lists/service";
 import type {
   CallDisposition,
-  CampaignRow,
+  OutreachListRow,
   DialBlockReason,
   DialSessionStats,
   MemberStatusCounts,
   QueueEntry,
-} from "../../campaigns/types";
+} from "../../outreach-lists/types";
 import {
   CALL_DISPOSITIONS,
   EMPTY_SESSION_STATS,
-} from "../../campaigns/types";
-import { CampaignStatusBadge } from "./badges";
+} from "../../outreach-lists/types";
+import { ListStatusBadge } from "./badges";
 
 const BLOCK_LABELS: Record<DialBlockReason, string> = {
   party_dnc: "Record is do-not-contact",
@@ -81,9 +81,9 @@ const MAX_AUTO_SUPPRESS_PER_ADVANCE = 25;
 
 type Phase = "claiming" | "working" | "drained" | "error";
 
-export function CallQueuePage({ campaignId }: { campaignId: string }) {
+export function CallQueuePage({ listId }: { listId: string }) {
   const userId = useAppSelector(selectUserId);
-  const [campaign, setCampaign] = useState<CampaignRow | null>(null);
+  const [list, setOutreachList] = useState<OutreachListRow | null>(null);
   const [counts, setCounts] = useState<MemberStatusCounts | null>(null);
   const [phase, setPhase] = useState<Phase>("claiming");
   const [entry, setEntry] = useState<QueueEntry | null>(null);
@@ -98,11 +98,11 @@ export function CallQueuePage({ campaignId }: { campaignId: string }) {
 
   const refreshCounts = useCallback(async () => {
     try {
-      setCounts(await fetchMemberStatusCounts(campaignId));
+      setCounts(await fetchMemberStatusCounts(listId));
     } catch {
       // Counts are decoration on this surface; the claim path screams instead.
     }
-  }, [campaignId]);
+  }, [listId]);
 
   /** Claim → load → (auto-suppress undialables) → present. */
   const advance = useCallback(async () => {
@@ -112,7 +112,7 @@ export function CallQueuePage({ campaignId }: { campaignId: string }) {
     setNotes("");
     try {
       for (let i = 0; i <= MAX_AUTO_SUPPRESS_PER_ADVANCE; i++) {
-        const member = await claimNextMember({ campaignId, userId });
+        const member = await claimNextMember({ listId, userId });
         if (!member) {
           heldRef.current = null;
           setPhase("drained");
@@ -145,20 +145,20 @@ export function CallQueuePage({ campaignId }: { campaignId: string }) {
         return;
       }
       throw new Error(
-        `Stopped after auto-suppressing ${MAX_AUTO_SUPPRESS_PER_ADVANCE} undialable members in a row — review this campaign's roster before continuing.`,
+        `Stopped after auto-suppressing ${MAX_AUTO_SUPPRESS_PER_ADVANCE} undialable members in a row — review this outreach list's roster before continuing.`,
       );
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       setPhase("error");
     }
-  }, [campaignId, userId, refreshCounts]);
+  }, [listId, userId, refreshCounts]);
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       try {
-        const c = await fetchCampaign(campaignId);
-        if (!cancelled) setCampaign(c);
+        const c = await fetchOutreachList(listId);
+        if (!cancelled) setOutreachList(c);
       } catch (e) {
         if (!cancelled) {
           setError(e instanceof Error ? e.message : String(e));
@@ -169,7 +169,7 @@ export function CallQueuePage({ campaignId }: { campaignId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [campaignId]);
+  }, [listId]);
 
   useEffect(() => {
     if (userId) void advance();
@@ -190,7 +190,7 @@ export function CallQueuePage({ campaignId }: { campaignId: string }) {
   }, []);
 
   const disposition = async (d: CallDisposition) => {
-    if (!entry || !campaign || !userId || busy) return;
+    if (!entry || !list || !userId || busy) return;
     if (d.suppresses) {
       // "Do not call" writes tenant-level suppression — say so before doing it.
       const target = entry.targets.find((t) => !t.blocked) ?? null;
@@ -204,7 +204,7 @@ export function CallQueuePage({ campaignId }: { campaignId: string }) {
     try {
       const target = entry.targets.find((t) => !t.blocked) ?? null;
       await dispositionCall({
-        campaign,
+        list,
         member: entry.member,
         disposition: d,
         userId,
@@ -268,12 +268,12 @@ export function CallQueuePage({ campaignId }: { campaignId: string }) {
       {/* ── Session strip ──────────────────────────────────────────────── */}
       <div className="shrink-0 px-3 pt-[calc(var(--shell-header-h)+0.375rem)]">
         <div className="flex flex-wrap items-center gap-2">
-          {campaign && (
+          {list && (
             <>
               <span className="truncate text-sm font-semibold text-foreground">
-                {campaign.name}
+                {list.name}
               </span>
-              <CampaignStatusBadge status={campaign.status} />
+              <ListStatusBadge status={list.status} />
             </>
           )}
           {counts && (
@@ -310,8 +310,8 @@ export function CallQueuePage({ campaignId }: { campaignId: string }) {
                 Try again
               </Button>
               <Button size="sm" variant="ghost" asChild>
-                <Link href={`/crm/campaigns/${campaignId}`}>
-                  Back to campaign
+                <Link href={`/crm/outreach-lists/${listId}`}>
+                  Back to outreach list
                 </Link>
               </Button>
             </div>
@@ -338,9 +338,9 @@ export function CallQueuePage({ campaignId }: { campaignId: string }) {
                 Check again
               </Button>
               <Button size="sm" asChild>
-                <Link href={`/crm/campaigns/${campaignId}`}>
+                <Link href={`/crm/outreach-lists/${listId}`}>
                   <Megaphone className="mr-1 h-3.5 w-3.5" />
-                  Campaign overview
+                  Outreach list overview
                 </Link>
               </Button>
             </div>

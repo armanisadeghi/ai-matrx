@@ -33,8 +33,11 @@ import {
 import { cn } from "@/lib/utils";
 
 import { PIPELINE_STEPS } from "../types";
-import type { PlanNodeArtifactRow, PlanNodeStepRow } from "../types";
-import { useNodeArtifacts, useNodeSteps } from "../data/hooks";
+import type { PlanNodeArtifactRow } from "../types";
+import { useNodeArtifacts } from "../data/hooks";
+import type { NodePipelineProgress } from "../lib/pipeline-progress";
+
+const EMPTY_STEPS: ReadonlyMap<string, never> = new Map<string, never>();
 
 function StatusIcon({ status }: { status: string | undefined }) {
   switch (status) {
@@ -49,7 +52,9 @@ function StatusIcon({ status }: { status: string | undefined }) {
     case "skipped":
       return <Minus className="h-3 w-3 text-muted-foreground" aria-hidden />;
     default:
-      return <Circle className="h-3 w-3 text-muted-foreground/50" aria-hidden />;
+      return (
+        <Circle className="h-3 w-3 text-muted-foreground/50" aria-hidden />
+      );
   }
 }
 
@@ -61,7 +66,10 @@ function ArtifactDialog({
   onClose: () => void;
 }) {
   return (
-    <Dialog open={artifact !== null} onOpenChange={(open) => !open && onClose()}>
+    <Dialog
+      open={artifact !== null}
+      onOpenChange={(open) => !open && onClose()}
+    >
       <DialogContent className="max-w-2xl">
         {artifact ? (
           <>
@@ -93,24 +101,17 @@ function ArtifactDialog({
 
 export function NodeStepRail({
   nodeId,
-  siteId,
+  progress,
 }: {
   nodeId: string;
-  siteId: string;
+  progress: NodePipelineProgress | null;
 }) {
-  const steps = useNodeSteps(siteId);
   const artifacts = useNodeArtifacts(nodeId);
   const [openArtifact, setOpenArtifact] = useState<PlanNodeArtifactRow | null>(
     null,
   );
 
-  const byStep = useMemo(() => {
-    const map = new Map<string, PlanNodeStepRow>();
-    for (const row of steps.data ?? []) {
-      if (row.node_id === nodeId) map.set(row.step, row);
-    }
-    return map;
-  }, [steps.data, nodeId]);
+  const byStep = progress?.byStep ?? EMPTY_STEPS;
 
   const artifactsByStep = useMemo(() => {
     const map = new Map<string, PlanNodeArtifactRow[]>();
@@ -122,7 +123,7 @@ export function NodeStepRail({
     return map;
   }, [artifacts.data]);
 
-  const anyRun = byStep.size > 0 || (artifacts.data?.length ?? 0) > 0;
+  const anyRun = progress !== null || (artifacts.data?.length ?? 0) > 0;
 
   return (
     <div className="space-y-1.5">
@@ -160,7 +161,9 @@ export function NodeStepRail({
                   ×{stepArtifacts.length}
                 </span>
               ) : null}
-              {opens ? <FileText className="h-3 w-3 opacity-60" aria-hidden /> : null}
+              {opens ? (
+                <FileText className="h-3 w-3 opacity-60" aria-hidden />
+              ) : null}
             </Button>
           );
         })}

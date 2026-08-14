@@ -1,8 +1,8 @@
 "use client";
 
-// features/crm/components/campaigns/CampaignDetailPage.tsx
+// features/crm/components/outreach-lists/OutreachListDetailPage.tsx
 //
-// /crm/campaigns/[campaignId] — one campaign's workspace: lifecycle controls,
+// /crm/outreach-lists/[listId] — one outreach list's workspace: lifecycle controls,
 // the live status rollup (each chip filters the member table), the member
 // roster (server-paged), enrollment from filters, and the door into the call
 // queue. Dense by design — this is the sales floor's home base.
@@ -33,35 +33,35 @@ import { formatRelativeTime } from "@/utils/datetime";
 import { cn } from "@/lib/utils";
 import { useCrmContext } from "../../hooks/useCrmContext";
 import {
-  fetchCampaign,
-  fetchCampaignMembers,
+  fetchOutreachList,
+  fetchOutreachListMembers,
   fetchMemberStatusCounts,
   removeMember,
   requeueMember,
-  setCampaignStatus,
-} from "../../campaigns/service";
+  setOutreachListStatus,
+} from "../../outreach-lists/service";
 import type {
-  CampaignMemberWithParty,
-  CampaignRow,
+  OutreachListMemberWithParty,
+  OutreachListRow,
   MemberStatus,
   MemberStatusCounts,
-} from "../../campaigns/types";
-import { MEMBER_STATUSES } from "../../campaigns/types";
+} from "../../outreach-lists/types";
+import { MEMBER_STATUSES } from "../../outreach-lists/types";
 import {
-  CampaignKindBadge,
-  CampaignStatusBadge,
+  ListKindBadge,
+  ListStatusBadge,
   MemberStatusBadge,
 } from "./badges";
 import { AddMembersDialog } from "./AddMembersDialog";
 
 const PAGE_SIZE = 50;
 
-export function CampaignDetailPage({ campaignId }: { campaignId: string }) {
+export function OutreachListDetailPage({ listId }: { listId: string }) {
   const router = useRouter();
   const ctx = useCrmContext();
-  const [campaign, setCampaign] = useState<CampaignRow | null>(null);
+  const [list, setOutreachList] = useState<OutreachListRow | null>(null);
   const [counts, setCounts] = useState<MemberStatusCounts | null>(null);
-  const [members, setMembers] = useState<CampaignMemberWithParty[]>([]);
+  const [members, setMembers] = useState<OutreachListMemberWithParty[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -74,21 +74,21 @@ export function CampaignDetailPage({ campaignId }: { campaignId: string }) {
   const loadHeader = useCallback(async () => {
     try {
       const [c, sc] = await Promise.all([
-        fetchCampaign(campaignId),
-        fetchMemberStatusCounts(campaignId),
+        fetchOutreachList(listId),
+        fetchMemberStatusCounts(listId),
       ]);
-      setCampaign(c);
+      setOutreachList(c);
       setCounts(sc);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
-  }, [campaignId]);
+  }, [listId]);
 
   const loadMembers = useCallback(async () => {
     setIsFetching(true);
     try {
-      const { rows, total: t } = await fetchCampaignMembers({
-        campaignId,
+      const { rows, total: t } = await fetchOutreachListMembers({
+        listId,
         page,
         pageSize: PAGE_SIZE,
         status: statusFilter,
@@ -103,7 +103,7 @@ export function CampaignDetailPage({ campaignId }: { campaignId: string }) {
       setIsFetching(false);
       setIsLoading(false);
     }
-  }, [campaignId, page, statusFilter, search]);
+  }, [listId, page, statusFilter, search]);
 
   useEffect(() => {
     void loadHeader();
@@ -118,8 +118,8 @@ export function CampaignDetailPage({ campaignId }: { campaignId: string }) {
   }, [loadHeader, loadMembers]);
 
   const lifecycleButton = useMemo(() => {
-    if (!campaign) return null;
-    if (campaign.status === "draft" || campaign.status === "paused") {
+    if (!list) return null;
+    if (list.status === "draft" || list.status === "paused") {
       return (
         <Button
           size="sm"
@@ -127,7 +127,7 @@ export function CampaignDetailPage({ campaignId }: { campaignId: string }) {
           className="h-7 gap-1 px-2 text-xs"
           onClick={async () => {
             try {
-              await setCampaignStatus(campaign, "active");
+              await setOutreachListStatus(list, "active");
               refreshAll();
             } catch (e) {
               toast.error(e instanceof Error ? e.message : "Update failed");
@@ -135,11 +135,11 @@ export function CampaignDetailPage({ campaignId }: { campaignId: string }) {
           }}
         >
           <Play className="h-3.5 w-3.5" />
-          {campaign.status === "draft" ? "Start campaign" : "Resume"}
+          {list.status === "draft" ? "Start outreach list" : "Resume"}
         </Button>
       );
     }
-    if (campaign.status === "active") {
+    if (list.status === "active") {
       return (
         <>
           <Button
@@ -148,7 +148,7 @@ export function CampaignDetailPage({ campaignId }: { campaignId: string }) {
             className="h-7 gap-1 px-2 text-xs"
             onClick={async () => {
               try {
-                await setCampaignStatus(campaign, "paused");
+                await setOutreachListStatus(list, "paused");
                 refreshAll();
               } catch (e) {
                 toast.error(e instanceof Error ? e.message : "Update failed");
@@ -164,14 +164,14 @@ export function CampaignDetailPage({ campaignId }: { campaignId: string }) {
             className="h-7 gap-1 px-2 text-xs"
             onClick={async () => {
               const ok = await confirm({
-                title: `Complete ${campaign.name}?`,
+                title: `Complete ${list.name}?`,
                 description:
-                  "Marks the campaign finished. Members keep their state.",
+                  "Marks the outreach list finished. Members keep their state.",
                 confirmLabel: "Complete",
               });
               if (!ok) return;
               try {
-                await setCampaignStatus(campaign, "completed");
+                await setOutreachListStatus(list, "completed");
                 refreshAll();
               } catch (e) {
                 toast.error(e instanceof Error ? e.message : "Update failed");
@@ -185,9 +185,9 @@ export function CampaignDetailPage({ campaignId }: { campaignId: string }) {
       );
     }
     return null;
-  }, [campaign, refreshAll]);
+  }, [list, refreshAll]);
 
-  const memberColumns: MatrxColumnDef<CampaignMemberWithParty>[] = [
+  const memberColumns: MatrxColumnDef<OutreachListMemberWithParty>[] = [
     {
       id: "party",
       accessorFn: (row) => row.party?.display_name ?? "",
@@ -306,7 +306,7 @@ export function CampaignDetailPage({ campaignId }: { campaignId: string }) {
   ];
 
   const memberMenu =
-    (row: CampaignMemberWithParty): (() => ItemMenuConfig) =>
+    (row: OutreachListMemberWithParty): (() => ItemMenuConfig) =>
     () => ({
       sections: [
         {
@@ -345,7 +345,7 @@ export function CampaignDetailPage({ campaignId }: { campaignId: string }) {
           items: [
             {
               id: "remove",
-              label: "Remove from campaign",
+              label: "Remove from outreach list",
               tone: "destructive" as const,
               onSelect: async () => {
                 try {
@@ -414,17 +414,17 @@ export function CampaignDetailPage({ campaignId }: { campaignId: string }) {
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <div className="shrink-0 px-3 pt-[calc(var(--shell-header-h)+0.375rem)]">
-        {campaign ? (
+        {list ? (
           <div className="flex flex-wrap items-center gap-2">
             <Megaphone className="h-4 w-4 shrink-0 text-muted-foreground" />
             <span className="truncate text-sm font-semibold text-foreground">
-              {campaign.name}
+              {list.name}
             </span>
-            <CampaignStatusBadge status={campaign.status} />
-            <CampaignKindBadge kind={campaign.campaign_kind} />
-            {campaign.description && (
+            <ListStatusBadge status={list.status} />
+            <ListKindBadge kind={list.list_kind} />
+            {list.description && (
               <span className="hidden truncate text-xs text-muted-foreground lg:inline">
-                {campaign.description}
+                {list.description}
               </span>
             )}
             <div className="ml-auto flex items-center gap-1.5">
@@ -439,7 +439,7 @@ export function CampaignDetailPage({ campaignId }: { campaignId: string }) {
                 Add members
               </Button>
               <Button size="sm" className="h-7 gap-1 px-2 text-xs" asChild>
-                <Link href={`/crm/campaigns/${campaignId}/dial`}>
+                <Link href={`/crm/outreach-lists/${listId}/dial`}>
                   <PhoneCall className="h-3.5 w-3.5" />
                   Call queue
                   {counts && (
@@ -463,7 +463,7 @@ export function CampaignDetailPage({ campaignId }: { campaignId: string }) {
       </div>
 
       <div className="min-h-0 flex-1 px-3 pb-2 pt-2">
-        <MatrxDataTable<CampaignMemberWithParty>
+        <MatrxDataTable<OutreachListMemberWithParty>
           data={members}
           columns={memberColumns}
           getRowId={(row) => row.id}
@@ -502,11 +502,11 @@ export function CampaignDetailPage({ campaignId }: { campaignId: string }) {
             </ItemMenu>
           )}
           copy={{
-            label: "Campaign member",
-            listLabel: "Campaign members",
-            location: `/crm/campaigns/${campaignId}`,
-            rowKind: "crm-campaign-member",
-            listKind: "crm-campaign-member-list",
+            label: "Outreach list member",
+            listLabel: "Outreach list members",
+            location: `/crm/outreach-lists/${listId}`,
+            rowKind: "crm-outreach-list-member",
+            listKind: "crm-outreach-list-member-list",
             humanRow: (row) =>
               `${row.party?.display_name ?? row.party_id} — ${row.status}, ${row.attempt_count} attempts`,
             showRow: false,
@@ -520,7 +520,7 @@ export function CampaignDetailPage({ campaignId }: { campaignId: string }) {
                 : `No ${statusFilter.replace(/_/g, " ")} members`,
             description:
               statusFilter === "all"
-                ? "Add members from the CRM list (select rows → Add to campaign) or enroll everyone matching a filter."
+                ? "Add members from the CRM list (select rows → Add to list) or enroll everyone matching a filter."
                 : "Pick another status chip above, or clear the filter.",
             action:
               statusFilter === "all" ? (
@@ -537,11 +537,11 @@ export function CampaignDetailPage({ campaignId }: { campaignId: string }) {
         />
       </div>
 
-      {campaign && ctx && (
+      {list && ctx && (
         <AddMembersDialog
           open={addOpen}
           onOpenChange={setAddOpen}
-          campaign={campaign}
+          list={list}
           ctx={ctx}
           onAdded={refreshAll}
         />
