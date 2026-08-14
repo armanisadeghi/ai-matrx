@@ -67,7 +67,7 @@ function inheritedPlanNodeId(link: ContainerLink): string | null {
   ) {
     return null;
   }
-  const value = link.metadata.plan_node_id;
+  const value = (link.metadata as Record<string, unknown>).plan_node_id;
   return typeof value === "string" ? value : null;
 }
 
