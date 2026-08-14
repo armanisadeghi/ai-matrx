@@ -1,6 +1,7 @@
 ---
 status: active
 updated: 2026-08-13
+chips: [content_plan.rls_timeout.seo_search_performance_daily, content_plan.review_queue.mobile_headings_pass, content_plan.templates_library_unseeded]
 repos: [matrx-frontend, aidream]
 vision:
   - /Users/armanisadeghi/code/common-docs/systems/content-planning/FEATURE.md
@@ -113,6 +114,27 @@ research linking: start with the final report (the "Document"), user picks the t
 
 ## Remaining work
 
+> The top three are live assist chips in Arman's dock (`platform.assists`,
+> dedupe keys in the frontmatter) — each opens its own evidence. Delete the chip
+> when you finish the item.
+
+0. **🚨 BROKEN IN PRODUCTION RIGHT NOW — Keyword Intelligence 500s for every
+   signed-in user.** `seo.search_performance_daily` (13.2M rows) has an RLS
+   policy that materializes an array of EVERY accessible row id — 13,183,309
+   for a normal org member, **44.6s just to count**, against an 8s statement
+   timeout. Every `authenticated` read of that table, and of any
+   `security_invoker` view over it (`v_site_keyword_performance`, the only
+   caller being `listSitePerformanceForKeyword`,
+   `features/marketing/seo/keyword/data.ts:613`), times out — on every site,
+   including ones with no rows. The view is innocent: as `postgres` the same
+   query plans at cost 5.72 with `site_id` pushed into `idx_seo_sperf_site_date`.
+   **It is a CLASS**, not a table: the array-materializing kernel
+   (`iam.accessible_entity_ids`) is fine for ordinary entity tables and
+   catastrophic for any high-volume table registered in `platform.entity_types`.
+   **Deliberately not fixed by an agent** — CLAUDE.md forbids changing a
+   security layer on our own authority. Full evidence + both candidate fixes:
+   `FOUND_DEFECTS.md` D182. See also the Decisions section.
+
 1. **THE BLOCKER — 18 review-queue rows for this feature, 0 approved (12
    `changes_requested`, 6 `pending`), and the 12 rejections are mostly ONE defect repeated.**
    Counted 2026-08-13 across all 12: **no semantic page heading (9)**, **mobile controls under
@@ -129,16 +151,10 @@ research linking: start with the final report (the "Document"), user picks the t
    no CMS counterpart, so "Make it real" rungs 2–5 are uninspectable without mutating
    production — **supply a stable, already-linked review site**. One (`fbf59d2a`) just needs its
    URL corrected to the current canonical skills route.
-2. **The page-template system shipped but is INERT in production.** aidream
-   `services/content_plan/templates.py` (916 lines) resolves a per-node HTML scaffold from
-   `plan.profile.template_map.templates`, and `cms_reconciler` writes it into the page body on
-   realize. Verified live 2026-08-13: **no `plan.profile` row has a `templates` key** — all six
-   rows carry only `archetypes`/`concepts` — and nothing in either repo seeds one
-   (`BUILTIN_TEMPLATES`, its 18 templates, is referenced only by its own definition). So realize
-   still writes empty bodies and the `cms_fill` scaffold branch never fires. Seed the library
-   from `BUILTIN_TEMPLATES` via migration, then verify a realize writes a scaffold. It is also
-   undocumented — no `FEATURE.md` section, no Change Log entry, no `/templates` route in the
-   registration map, and **no test file**.
+2. **The page-template system shipped but is INERT in production** — built, paid for, and
+   switched off: no `plan.profile` row carries a `templates` key and nothing seeds one, so
+   realize still writes empty page bodies. Evidence + the seed-then-verify fix, plus its missing
+   docs and tests: `FOUND_DEFECTS.md` D183.
 3. **Generalize the grounding strip beyond research.** Still missing as grounding inputs:
    **competitor URLs**, **pasted content/notes**, **free-text guidance**. Persist each in
    `setup_draft` (`setup/draft.ts`), resolve to text at the call site (research-bundle pattern),
@@ -195,6 +211,12 @@ research linking: start with the final report (the "Document"), user picks the t
 - Header Agents popover shows role-bound agents platform-wide — `SurfaceBoundAgentsList`.
 - Nine adversarial review rounds plus an independent completeness sweep; all confirmed findings
   fixed — see the FEATURE.md change log.
+- Error-inspector classification fixed at the source so the real red on this route stops being
+  buried: a producer's own `level`/`recoverable` are now first-class capture fields the tier
+  rules can match (they were unreachable inside a stringified blob), a self-declared recoverable
+  stream warning lands orange, and the assists dedupe race — which `features/assists/service.ts`
+  already treats as success — lands yellow. Non-recoverable warnings and the statement timeout
+  stay RED, pinned by `lib/diagnostics/errorTierRules.test.ts`.
 - **Two orphaned agents to delete or leave dormant** (superseded, referenced by nothing):
   Keyword Binder `8ffb091c-dccf-4550-a14f-95807fd96b95`, Brief Writer
   `f9789816-91b9-4e64-a38d-aa4d2a8127be`.
