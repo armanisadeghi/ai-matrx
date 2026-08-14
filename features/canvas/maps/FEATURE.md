@@ -109,9 +109,10 @@ AI drafts, the person refines. Neither half needed a new system.
 **Extended, not copied**
 
 - `components/mardown-display/blocks/diagram/InteractiveDiagramBlock.tsx` gained
-  ONE optional prop, `onDiagramChange`. When set, the block shows an Edit
-  toggle and an authoring panel, and reports the whole updated `DiagramData` on
-  every change. Every other consumer is untouched and unaffected.
+  opt-in authoring (`onDiagramChange`) plus a `presentation` choice. The default
+  `card` presentation preserves chat and artifact embeds. The dedicated
+  `workspace` presentation uses the whole host surface, removes the repeated
+  title card and turns the authoring controls into a persistent inspector rail.
 
 ---
 
@@ -130,9 +131,11 @@ AI drafts, the person refines. Neither half needed a new system.
    (code-splitting skill, rule 3). No new entry is needed in
    `reactFlowStaticImportBan` — this surface adds no new static React Flow
    importer, which is itself the sign the decision was right.
-5. **The name lives in two places on purpose** — `canvas_items.title` (what the
-   library lists) and `DiagramData.title` (what the map displays). Every rename
-   path writes both; `saveMapRowEdit` exists for exactly this reason.
+5. **The name lives in two data fields on purpose** — `canvas_items.title` (what
+   the library lists) and `DiagramData.title` (portable diagram identity). Every
+   rename path writes both; `saveMapRowEdit` exists for exactly this reason. The
+   dedicated editor renders that identity once, in the shell header — never a
+   second time in a body card.
 6. **Zero jargon.** "Box", "arrow", "map". Never node, edge, graph, vertex,
    DAG, or schema — in labels, placeholders, empty states or toasts.
 7. **Authored positions are the document.** In authoring mode the block does not
@@ -147,6 +150,11 @@ AI drafts, the person refines. Neither half needed a new system.
    `SurfaceRuntimeProvider` exposes the complete current map through `map_json`;
    agents may only propose `replace_map`, which is user-confirmed, strictly
    parsed, relationship-validated, and saved through `saveMap`.
+10. **The editor is a workspace, not a card.** Its route wrapper is
+    `h-full overflow-hidden`, offsets its body with `var(--shell-header-h)` so content
+    starts below the glass shell header, and gives XYFlow every remaining pixel.
+    The renderer's embeddable card stays capped; only `presentation="workspace"`
+    removes the width/height cap and repeated metadata.
 
 ---
 
@@ -162,11 +170,14 @@ understood but never required.
 can be edited box by box. This path predates this feature; what is new is that
 the result is now editable and re-savable rather than frozen.
 
-**Edit.** Open a map — the dedicated editor starts ready to edit — then click a box to rename it or add notes,
-drag it to move it, drag from a box's dot onto another box to draw an arrow,
-click an arrow to label or remove it, "Add a box" for a new one. Autosaves
-1.2s after the last change; the header states `Unsaved changes` / `Saving…` /
-`All changes saved` / `Not saved` and never claims a failed save succeeded.
+**Edit.** Open a map — the dedicated full-screen workspace starts ready to edit.
+The canvas fills the route below the glass header; its right inspector reports
+box/section/arrow counts and changes with the current selection. Click a box to
+rename it or add notes, drag it to move it, drag from a box's dot onto another
+box to draw an arrow, click an arrow to label or remove it, or add boxes and
+sections from the inspector. Autosave runs 1.2s after the last change; the shell
+header states `Unsaved changes` / `Saving…` / `All changes saved` / `Not saved`
+and never claims a failed save succeeded.
 
 **Organize without turning it into a workflow.** Add a resizable visual section,
 choose solid/dashed/dotted framing, and place boxes inside it. Arrows may be
@@ -201,6 +212,12 @@ sees the standard in-place confirmation before the canonical save path runs.
 
 ## Change Log
 
+- **2026-08-14** — Promoted the dedicated editor from an embedded diagram card
+  to a true route workspace after live comparison with Growth Loop: full
+  available height and width below the glass shell header, a persistent right
+  inspector, visible object counts, centered JSON/print actions, accessible
+  layout/background/minimap/image controls, and no duplicated map title. The
+  compact `card` presentation remains the default for every existing consumer.
 - **2026-08-14** — Finished the previously unwired product surface: placed
   Visual Maps under Docs navigation; migrated the canonical renderer from
   legacy React Flow 11 to `@xyflow/react` 12.11.3; added resizable visual

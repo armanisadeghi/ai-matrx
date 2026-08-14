@@ -707,6 +707,8 @@ function buildReactFlowEdges(diagram: DiagramData): Edge[] {
 // ─────────────────────────────────────────────────────────────────────────────
 const DiagramFlow: React.FC<{
   diagram: DiagramData;
+  /** Dedicated route workspace: full-height canvas with a persistent inspector. */
+  workspace?: boolean;
   showMiniMap: boolean;
   setShowMiniMap: (v: boolean) => void;
   backgroundVariant: BackgroundVariant;
@@ -722,6 +724,7 @@ const DiagramFlow: React.FC<{
   onDiagramChange?: (next: DiagramData) => void;
 }> = ({
   diagram,
+  workspace = false,
   showMiniMap,
   setShowMiniMap,
   backgroundVariant,
@@ -1277,10 +1280,10 @@ const DiagramFlow: React.FC<{
   const fitViewAfterLayout = useCallback(() => {
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        fitView({ duration: 800, padding: 0.2 });
+        fitView({ duration: 800, padding: workspace ? 0.12 : 0.2 });
       });
     });
-  }, [fitView]);
+  }, [fitView, workspace]);
 
   // ── Layout helpers ──
   const applyAutoLayout = useCallback(() => {
@@ -1368,7 +1371,12 @@ const DiagramFlow: React.FC<{
     ) {
       hasAutoLayoutApplied.current = true;
       autoLayoutFrameRef.current = requestAnimationFrame(() => {
-        fitView({ duration: 450, padding: 0.22 });
+        // The dedicated workspace changes React Flow's measured width to make
+        // room for the inspector. Wait through the next layout pass so the
+        // first fit uses the canvas width, not the full route width.
+        autoLayoutFrameRef.current = requestAnimationFrame(() => {
+          fitView({ duration: 450, padding: workspace ? 0.12 : 0.22 });
+        });
       });
       return () => {
         if (autoLayoutFrameRef.current !== null) {
@@ -1398,6 +1406,7 @@ const DiagramFlow: React.FC<{
     getNodes,
     diagram,
     onDiagramChange,
+    workspace,
   ]);
 
   return (
@@ -1424,9 +1433,11 @@ const DiagramFlow: React.FC<{
       edgesReconnectable={editing}
       elementsSelectable={editing || Boolean(onNodeClick)}
       deleteKeyCode={null}
+      minZoom={workspace ? 0.2 : 0.5}
+      maxZoom={2}
       fitView={false}
       proOptions={{ hideAttribution: true }}
-      className={`bg-gray-50 dark:bg-gray-900 ${onNodeClick || editing ? "[&_.react-flow__node]:cursor-pointer" : ""}`}
+      className={`bg-gray-50 dark:bg-gray-900 ${workspace ? "!w-[calc(100%-min(320px,48vw))] !overflow-visible" : ""} ${onNodeClick || editing ? "[&_.react-flow__node]:cursor-pointer" : ""}`}
     >
       <Background
         variant={backgroundVariant}
@@ -1467,20 +1478,31 @@ const DiagramFlow: React.FC<{
           and a total novice at diagram tools. */}
       {editing && (
         <Panel
-          position="top-left"
-          className="max-h-[calc(100%-24px)] w-[286px] overflow-y-auto rounded-xl border border-border/80 bg-card/95 p-3 shadow-xl backdrop-blur"
+          position={workspace ? "top-right" : "top-left"}
+          className={
+            workspace
+              ? "!m-0 h-full w-[min(320px,48vw)] translate-x-full overflow-y-auto rounded-none border-l border-border/80 bg-card/95 p-4 shadow-[-8px_0_24px_-18px_rgba(15,23,42,0.45)] backdrop-blur-xl"
+              : "max-h-[calc(100%-24px)] w-[286px] overflow-y-auto rounded-xl border border-border/80 bg-card/95 p-3 shadow-xl backdrop-blur"
+          }
         >
-          <div className="mb-2.5 flex items-center gap-2">
-            <div className="rounded-lg bg-primary/10 p-1.5 text-primary">
-              <Pencil className="h-3.5 w-3.5" />
+          <div className="mb-3 flex items-center gap-2.5">
+            <div className="rounded-lg bg-primary/10 p-2 text-primary">
+              <Pencil className="h-4 w-4" />
             </div>
-            <div>
-              <p className="text-xs font-semibold text-foreground">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-foreground">
                 Build your map
               </p>
-              <p className="text-[10px] text-muted-foreground">
-                Everything saves as you work
-              </p>
+              <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                <span>
+                  {nodes.filter((node) => node.data.isGroup !== true).length}{" "}
+                  boxes
+                </span>
+                <span aria-hidden="true">·</span>
+                <span>{sections.length} sections</span>
+                <span aria-hidden="true">·</span>
+                <span>{edges.length} arrows</span>
+              </div>
             </div>
           </div>
 
@@ -1488,6 +1510,7 @@ const DiagramFlow: React.FC<{
             <button
               type="button"
               onClick={addBox}
+              aria-label="Add box"
               className="flex items-center justify-center gap-1.5 rounded-lg bg-primary px-2 py-2 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
             >
               <Plus className="h-3.5 w-3.5" />
@@ -1496,6 +1519,7 @@ const DiagramFlow: React.FC<{
             <button
               type="button"
               onClick={addSection}
+              aria-label="Add section"
               className="flex items-center justify-center gap-1.5 rounded-lg border border-border bg-background px-2 py-2 text-xs font-medium text-foreground transition-colors hover:bg-muted"
             >
               <Boxes className="h-3.5 w-3.5" />
@@ -1619,6 +1643,11 @@ const DiagramFlow: React.FC<{
               <button
                 type="button"
                 onClick={deleteSelectedNode}
+                aria-label={
+                  selectedIsSection
+                    ? "Remove section and keep its boxes"
+                    : "Remove box"
+                }
                 className="flex w-full items-center justify-center gap-1.5 rounded-md border border-destructive/40 px-2 py-1.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10"
               >
                 <Trash2 className="h-3.5 w-3.5" />
@@ -1703,6 +1732,7 @@ const DiagramFlow: React.FC<{
                   onClick={() =>
                     patchSelectedEdge({ animated: !selectedEdge.animated })
                   }
+                  aria-pressed={selectedEdge.animated}
                   className={`rounded-md border px-2 py-1.5 text-[11px] font-medium transition-colors ${
                     selectedEdge.animated
                       ? "border-primary/40 bg-primary/10 text-primary"
@@ -1718,6 +1748,7 @@ const DiagramFlow: React.FC<{
                       arrow: selectedEdge.data?.arrow === false,
                     })
                   }
+                  aria-pressed={selectedEdge.data?.arrow !== false}
                   className={`rounded-md border px-2 py-1.5 text-[11px] font-medium transition-colors ${
                     selectedEdge.data?.arrow !== false
                       ? "border-primary/40 bg-primary/10 text-primary"
@@ -1732,6 +1763,7 @@ const DiagramFlow: React.FC<{
               <button
                 type="button"
                 onClick={deleteSelectedEdge}
+                aria-label="Remove arrow"
                 className="flex w-full items-center justify-center gap-1.5 rounded-md border border-destructive/40 px-2 py-1.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10"
               >
                 <Trash2 className="h-3.5 w-3.5" />
@@ -1743,20 +1775,24 @@ const DiagramFlow: React.FC<{
       )}
 
       <Panel
-        position="top-right"
-        className="bg-textured rounded-lg shadow-lg border-border p-1"
+        position={workspace ? "top-left" : "top-right"}
+        className={`${workspace ? "m-3" : ""} rounded-xl border border-border/70 bg-card/90 p-1.5 shadow-lg backdrop-blur-xl`}
       >
         <div className="flex flex-col gap-2">
           <div className="flex gap-2">
             <button
+              type="button"
               onClick={applyAutoLayout}
+              aria-label="Tidy into rows"
               className="p-2 hover:bg-blue-100 dark:hover:bg-blue-900/30 bg-blue-50 dark:bg-blue-950/20 rounded-lg transition-colors border border-blue-200 dark:border-blue-800"
               title="Auto Layout"
             >
               <Shuffle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
             </button>
             <button
+              type="button"
               onClick={applyRadialLayout}
+              aria-label="Arrange in a circle"
               className="p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 bg-purple-50 dark:bg-purple-950/20 rounded-lg transition-colors border border-purple-200 dark:border-purple-800"
               title="Radial Layout"
             >
@@ -1765,19 +1801,27 @@ const DiagramFlow: React.FC<{
           </div>
           <div className="flex gap-2">
             <button
+              type="button"
               onClick={resetLayout}
+              aria-label="Restore saved layout"
               className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
               title="Reset Layout"
             >
               <RotateCcw className="h-4 w-4 text-gray-600 dark:text-gray-400" />
             </button>
             <button
+              type="button"
               onClick={() =>
                 setBackgroundVariant(
                   backgroundVariant === BackgroundVariant.Dots
                     ? BackgroundVariant.Lines
                     : BackgroundVariant.Dots,
                 )
+              }
+              aria-label={
+                backgroundVariant === BackgroundVariant.Dots
+                  ? "Use lined background"
+                  : "Use dotted background"
               }
               className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
               title="Toggle Background"
@@ -1787,14 +1831,19 @@ const DiagramFlow: React.FC<{
           </div>
           <div className="flex gap-2 justify-center">
             <button
+              type="button"
               onClick={() => setShowMiniMap(!showMiniMap)}
+              aria-label={showMiniMap ? "Hide mini map" : "Show mini map"}
+              aria-pressed={showMiniMap}
               className={`p-2 rounded-lg transition-colors ${showMiniMap ? "bg-blue-100 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/50" : "hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400"}`}
               title="Toggle Mini Map"
             >
               <Layers className="h-4 w-4" />
             </button>
             <button
+              type="button"
               onClick={exportImage}
+              aria-label="Export map as image"
               className="p-2 hover:bg-green-100 dark:hover:bg-green-900/30 bg-green-50 dark:bg-green-950/20 rounded-lg transition-colors border border-green-200 dark:border-green-800"
               title="Export as Image"
             >
@@ -1996,6 +2045,12 @@ interface InteractiveDiagramBlockProps {
   diagram: DiagramData;
   taskId?: string;
   /**
+   * `card` is the compact embeddable response block. `workspace` is the
+   * dedicated, full-height authoring surface: no repeated title card, no
+   * artificial width/height cap, and editing controls become an inspector rail.
+   */
+  presentation?: "card" | "workspace";
+  /**
    * Opt-in: called with the original `DiagramNode` when a node is clicked.
    * When set, nodes render with a pointer cursor. Omit for the default
    * (non-interactive) behavior every existing consumer relies on. Used by the
@@ -2025,11 +2080,13 @@ interface InteractiveDiagramBlockProps {
 const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
   diagram,
   taskId,
+  presentation = "card",
   onNodeClick,
   defaultEditing = false,
   onSelectionChange,
   onDiagramChange,
 }) => {
+  const isWorkspace = presentation === "workspace";
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [editing, setEditing] = useState(defaultEditing);
   const canEdit = Boolean(onDiagramChange);
@@ -2145,7 +2202,7 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
 
   return (
     <>
-      {isFullScreen && (
+      {!isWorkspace && isFullScreen && (
         <div
           className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
           onClick={() => setIsFullScreen(false)}
@@ -2153,12 +2210,20 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
       )}
 
       <div
-        className={`w-full border border-border rounded-xl ${isFullScreen ? "fixed inset-0 z-50 flex items-center justify-center p-2" : "py-2"}`}
+        className={
+          isWorkspace
+            ? "relative h-full min-h-0 w-full overflow-hidden bg-background"
+            : `w-full rounded-xl border border-border ${isFullScreen ? "fixed inset-0 z-50 flex items-center justify-center p-2" : "py-2"}`
+        }
       >
         <div
-          className={`max-w-6xl mx-auto w-full ${isFullScreen ? "bg-textured rounded-xl shadow-2xl h-full max-h-[95dvh] flex flex-col overflow-hidden border border-border" : ""}`}
+          className={
+            isWorkspace
+              ? "h-full min-h-0 w-full overflow-hidden"
+              : `mx-auto w-full max-w-6xl ${isFullScreen ? "bg-textured flex h-full max-h-[95dvh] flex-col overflow-hidden rounded-xl border border-border shadow-2xl" : ""}`
+          }
         >
-          {isFullScreen && (
+          {!isWorkspace && isFullScreen && (
             <div className="flex-shrink-0 px-3 py-2 border-b border-border flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30">
               <div className="flex items-center gap-2 min-w-0">
                 <div className="text-blue-600 dark:text-blue-400 flex-shrink-0 [&_svg]:h-4 [&_svg]:w-4">
@@ -2173,6 +2238,7 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
                   <IconButton
                     icon={editing ? Check : Pencil}
                     tooltip={editing ? "Done editing" : "Edit this map"}
+                    aria-label={editing ? "Done editing" : "Edit this map"}
                     onClick={toggleEditing}
                     size="sm"
                     className={
@@ -2186,6 +2252,7 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
                 <IconButton
                   icon={Printer}
                   tooltip="Print / Save as PDF"
+                  aria-label="Print or save as PDF"
                   onClick={triggerPrint}
                   size="sm"
                   className="bg-slate-500 dark:bg-slate-600 text-white hover:bg-slate-600 dark:hover:bg-slate-700"
@@ -2193,6 +2260,7 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
                 <IconButton
                   icon={Download}
                   tooltip="Export as JSON"
+                  aria-label="Export map as JSON"
                   onClick={exportDiagramJSON}
                   size="sm"
                   variant="outline"
@@ -2200,6 +2268,7 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
                 <IconButton
                   icon={Minimize2}
                   tooltip="Exit full screen"
+                  aria-label="Exit full screen"
                   onClick={() => setIsFullScreen(false)}
                   size="sm"
                   variant="outline"
@@ -2209,9 +2278,15 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
           )}
 
           <div
-            className={`${isFullScreen ? "flex-1 flex flex-col min-h-0 overflow-hidden p-2" : "p-2"}`}
+            className={
+              isWorkspace
+                ? "relative flex h-full min-h-0 flex-col overflow-hidden"
+                : isFullScreen
+                  ? "flex min-h-0 flex-1 flex-col overflow-hidden p-2"
+                  : "p-2"
+            }
           >
-            {!isFullScreen && (
+            {!isWorkspace && !isFullScreen && (
               <div className="bg-gradient-to-br from-blue-100 via-indigo-50 to-purple-100 dark:from-blue-950/40 dark:via-indigo-950/30 dark:to-purple-950/40 rounded-xl p-2 border border-blue-200 dark:border-blue-800/50 mb-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-start gap-2 flex-1 min-w-0">
@@ -2245,6 +2320,7 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
                       <IconButton
                         icon={editing ? Check : Pencil}
                         tooltip={editing ? "Done editing" : "Edit this map"}
+                        aria-label={editing ? "Done editing" : "Edit this map"}
                         onClick={toggleEditing}
                         size="sm"
                         className={
@@ -2258,6 +2334,7 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
                     <IconButton
                       icon={Printer}
                       tooltip="Print / Save as PDF"
+                      aria-label="Print or save as PDF"
                       onClick={triggerPrint}
                       size="sm"
                       className="bg-slate-500 dark:bg-slate-600 text-white hover:bg-slate-600 dark:hover:bg-slate-700"
@@ -2265,6 +2342,7 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
                     <IconButton
                       icon={ExternalLink}
                       tooltip="Open Canvas"
+                      aria-label="Open in Canvas"
                       onClick={() =>
                         openCanvas({
                           type: "diagram",
@@ -2281,6 +2359,7 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
                     <IconButton
                       icon={Maximize2}
                       tooltip="Expand to full screen"
+                      aria-label="Expand to full screen"
                       onClick={() => setIsFullScreen(true)}
                       size="sm"
                       className="bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700"
@@ -2288,6 +2367,7 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
                     <IconButton
                       icon={Download}
                       tooltip="Export as JSON"
+                      aria-label="Export map as JSON"
                       onClick={exportDiagramJSON}
                       size="sm"
                       variant="outline"
@@ -2297,14 +2377,42 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
               </div>
             )}
 
+            {isWorkspace && (
+              <div className="pointer-events-none absolute left-1/2 top-3 z-20 -translate-x-1/2">
+                <div className="pointer-events-auto flex items-center gap-1 rounded-xl border border-border/70 bg-card/90 p-1 shadow-lg backdrop-blur-xl">
+                  <IconButton
+                    icon={Printer}
+                    tooltip="Print or save as PDF"
+                    aria-label="Print or save as PDF"
+                    onClick={triggerPrint}
+                    size="sm"
+                    variant="ghost"
+                  />
+                  <IconButton
+                    icon={Download}
+                    tooltip="Export map as JSON"
+                    aria-label="Export map as JSON"
+                    onClick={exportDiagramJSON}
+                    size="sm"
+                    variant="ghost"
+                  />
+                </div>
+              </div>
+            )}
+
             {/* ReactFlow Container */}
             <div
               id={diagramContainerId}
-              className={`${isFullScreen ? "flex-1 min-h-0" : "h-[600px]"} bg-textured rounded-xl border border-border overflow-hidden`}
+              className={
+                isWorkspace
+                  ? "min-h-0 flex-1 overflow-hidden bg-textured"
+                  : `${isFullScreen ? "min-h-0 flex-1" : "h-[600px]"} overflow-hidden rounded-xl border border-border bg-textured`
+              }
             >
               <ReactFlowProvider>
                 <DiagramFlow
                   diagram={diagram}
+                  workspace={isWorkspace}
                   showMiniMap={showMiniMap}
                   setShowMiniMap={setShowMiniMap}
                   backgroundVariant={backgroundVariant}
@@ -2319,7 +2427,7 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
             </div>
 
             {/* Legend */}
-            {legend && (
+            {!isWorkspace && legend && (
               <div
                 className={
                   isFullScreen

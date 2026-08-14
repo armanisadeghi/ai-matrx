@@ -16,7 +16,7 @@ import {
 } from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   MAPS_SURFACE_NAME,
@@ -189,30 +189,43 @@ export function MapEditor({ mapId }: { mapId: string }) {
   });
 
   const header = (
-    <div className="flex min-w-0 flex-1 items-center gap-2">
-      <Button asChild variant="ghost" size="sm" className="h-7 shrink-0 px-2">
-        <Link href="/maps" aria-label="Back to maps">
-          <ArrowLeft className="h-4 w-4" />
-          <span className="max-sm:sr-only">Maps</span>
-        </Link>
-      </Button>
-      <Input
-        data-surface-value="map_title"
-        value={diagram?.title ?? ""}
-        onChange={(e) => renameMap(e.target.value)}
-        disabled={!diagram}
-        aria-label="Map name"
-        className="h-7 max-w-xs border-transparent bg-transparent px-1.5 text-sm font-semibold hover:border-border focus:border-border"
-      />
-      <SaveIndicator state={saveState} />
-    </div>
+    <RouteHeader
+      left={
+        <Button asChild variant="ghost" size="sm" className="h-8 shrink-0 px-2">
+          <Link href="/maps" aria-label="Back to maps">
+            <ArrowLeft className="h-4 w-4" />
+            <span className="max-sm:sr-only">Maps</span>
+          </Link>
+        </Button>
+      }
+      center={
+        <div className="mx-auto w-[min(44vw,28rem)] px-2">
+          <Input
+            data-surface-value="map_title"
+            value={diagram?.title ?? ""}
+            onChange={(e) => renameMap(e.target.value)}
+            disabled={!diagram}
+            aria-label="Map name"
+            className="h-8 w-full border-border/50 bg-background/65 px-2.5 text-center text-sm font-semibold shadow-sm backdrop-blur-xl hover:border-border focus:border-primary"
+          />
+        </div>
+      }
+      right={
+        <div className="flex w-28 justify-end pr-1">
+          <SaveIndicator state={saveState} />
+        </div>
+      }
+    />
   );
 
   if (loadError) {
     return (
       <>
-        <PageHeader>{header}</PageHeader>
-        <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
+        {header}
+        <div
+          className="flex h-full flex-col items-center justify-center gap-3 overflow-hidden p-6 text-center"
+          style={{ paddingTop: "var(--shell-header-h)" }}
+        >
           <TriangleAlert className="h-6 w-6 text-destructive" />
           <p className="text-sm text-foreground">{loadError}</p>
           <Button asChild size="sm">
@@ -226,8 +239,11 @@ export function MapEditor({ mapId }: { mapId: string }) {
   if (!diagram) {
     return (
       <>
-        <PageHeader>{header}</PageHeader>
-        <div className="flex h-full items-center justify-center">
+        {header}
+        <div
+          className="flex h-full items-center justify-center overflow-hidden"
+          style={{ paddingTop: "var(--shell-header-h)" }}
+        >
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         </div>
       </>
@@ -241,11 +257,16 @@ export function MapEditor({ mapId }: { mapId: string }) {
       isEditable
       getWriteHandlers={getSurfaceWriteHandlers}
     >
-      <PageHeader>{header}</PageHeader>
-      <div className="h-full overflow-auto" data-surface-value="map_json">
+      {header}
+      <div
+        className="h-full overflow-hidden"
+        style={{ paddingTop: "var(--shell-header-h)" }}
+        data-surface-value="map_json"
+      >
         <MapCanvas
           diagram={diagram}
           defaultEditing
+          presentation="workspace"
           onDiagramChange={handleChange}
           onSelectionChange={setSelection}
         />
