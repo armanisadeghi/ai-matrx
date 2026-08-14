@@ -5604,6 +5604,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/cms/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Validate Cms Content
+         * @description Return content-guard findings without writing or translating policy.
+         *
+         *     The endpoint deliberately uses the same injected validator, canonical
+         *     field-to-profile resolver, and approved-exception store as CMS service
+         *     writes. A blocked report is data here (``allowed=false``), not an HTTP
+         *     error, so frontend write routes can return their own structured 422.
+         */
+        post: operations["validate_cms_content_cms_validate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/growth-loop/runs": {
         parameters: {
             query?: never;
@@ -7354,30 +7379,6 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/dev/login-as": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Dev Login As
-         * @description Mint a Supabase-shaped JWT for the given user_id.
-         *
-         *     Validates the user exists in auth.users, then signs a token with the
-         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
-         *     The auth middleware verifies the result like any other Supabase token.
-         */
-        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -12942,13 +12943,13 @@ export interface paths {
         put?: never;
         /**
          * Run Suggestions
-         * @description Workflow Copilot v1 (OPERATING_PRIORITIES #18): analyze the run's
-         *     failed node server-side, run the ``workflow_copilot_fix_suggester`` DB
+         * @description Run Assists (OPERATING_PRIORITIES #18): analyze the run's
+         *     failed node server-side, run the ``workflow_assist_fix_suggester`` DB
          *     agent, and STREAM back 1-3 one-click fix suggestions (the studio renders
          *     them as chips and applies them through the existing recovery funnel).
          *
-         *     Streams (the agent call takes seconds): a ``workflow_copilot_status``
-         *     heartbeat, then ONE terminal ``workflow_copilot_suggestions`` data event.
+         *     Streams (the agent call takes seconds): a ``workflow_run_assists_status``
+         *     heartbeat, then ONE terminal ``workflow_run_assists`` data event.
          *     Agent-side failures never error the stream — the terminal event carries
          *     ``fallback=true`` so the user is never left powerless (priority #4).
          */
@@ -23733,6 +23734,22 @@ export interface components {
             /** Errors */
             errors?: string[];
         };
+        /**
+         * CmsFieldValidationReport
+         * @description The guard's real report for one content buffer.
+         */
+        CmsFieldValidationReport: {
+            /** Blocked */
+            blocked: boolean;
+            /** Violations */
+            violations: components["schemas"]["CmsValidationFinding"][];
+            /** Warnings */
+            warnings: components["schemas"]["CmsValidationFinding"][];
+            /** Excepted */
+            excepted: components["schemas"]["CmsValidationFinding"][];
+            /** Profile */
+            profile: string;
+        };
         /** CmsFillCancelBody */
         CmsFillCancelBody: {
             /** Organization Id */
@@ -24207,6 +24224,63 @@ export interface components {
              * @default false
              */
             dry_run?: boolean;
+        };
+        /**
+         * CmsValidationContent
+         * @description Content buffers accepted by the shared CMS validation boundary.
+         */
+        CmsValidationContent: {
+            /** Html */
+            html?: string | null;
+            /** Css */
+            css?: string | null;
+            /** Js */
+            js?: string | null;
+        };
+        /**
+         * CmsValidationFinding
+         * @description One unmodified finding emitted by ``matrx-content-guard``.
+         */
+        CmsValidationFinding: {
+            /** Rule Id */
+            rule_id: string;
+            /** Node Path */
+            node_path: string;
+            /** Excerpt */
+            excerpt: string;
+            /**
+             * Severity
+             * @enum {string}
+             */
+            severity: "warning" | "block";
+            /** Fix Hint */
+            fix_hint: string;
+        };
+        /**
+         * CmsValidationReport
+         * @description Field-keyed reports preserve which buffer produced each finding.
+         */
+        CmsValidationReport: {
+            html?: components["schemas"]["CmsFieldValidationReport"] | null;
+            css?: components["schemas"]["CmsFieldValidationReport"] | null;
+            js?: components["schemas"]["CmsFieldValidationReport"] | null;
+        };
+        /**
+         * CmsValidationRequest
+         * @description Validate CMS content with the approved exceptions in the supplied scope.
+         */
+        CmsValidationRequest: {
+            content: components["schemas"]["CmsValidationContent"];
+            /** Site Id */
+            site_id?: string | null;
+            /** Page Id */
+            page_id?: string | null;
+        };
+        /** CmsValidationResponse */
+        CmsValidationResponse: {
+            /** Allowed */
+            allowed: boolean;
+            report: components["schemas"]["CmsValidationReport"];
         };
         /**
          * CodeAgentUsage
@@ -27008,33 +27082,6 @@ export interface components {
             /** Error */
             error?: string | null;
         };
-        /** DevLoginRequest */
-        DevLoginRequest: {
-            /**
-             * User Id
-             * @description UUID of an existing row in auth.users.
-             */
-            user_id: string;
-            /**
-             * Ttl Seconds
-             * @description JWT expiry. Default 2h, min 60s, max 24h.
-             * @default 7200
-             */
-            ttl_seconds?: number;
-        };
-        /** DevLoginResponse */
-        DevLoginResponse: {
-            /** Access Token */
-            access_token: string;
-            /** User Id */
-            user_id: string;
-            /** Expires At */
-            expires_at: number;
-            /** Issued At */
-            issued_at: number;
-            /** Jti */
-            jti: string;
-        };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
             /** Ok */
@@ -27535,23 +27582,30 @@ export interface components {
         DocBlock: {
             /**
              * Type
+             * @description Block kind: 'heading'/'paragraph'/'bullet'/'numbered'/'quote' render `text`; 'table' renders `rows`; 'page_break' starts a new page and uses no other field.
              * @enum {string}
              */
             type: "heading" | "paragraph" | "bullet" | "numbered" | "table" | "page_break" | "quote";
             /**
              * Text
+             * @description Body text for heading/paragraph/quote blocks, or ONE list line for a bullet/numbered block (one block per line). Ignored by table/page_break.
              * @default
              */
             text?: string;
             /**
              * Level
+             * @description Heading depth 1-6 for 'heading' blocks (1 = chapter title). Ignored elsewhere.
              * @default 1
              */
             level?: number;
-            /** Rows */
+            /**
+             * Rows
+             * @description Table cells for 'table' blocks, outer list = rows, inner list = one row's cell strings. The first row is styled as the header when `header` is true.
+             */
             rows?: string[][];
             /**
              * Header
+             * @description For 'table' blocks: treat the first row of `rows` as a styled header row.
              * @default true
              */
             header?: boolean;
@@ -27709,9 +27763,15 @@ export interface components {
          * @description Canonical AI-authorable shape for a Word document (.docx).
          */
         DocumentSpec: {
-            /** Title */
+            /**
+             * Title
+             * @description Document title rendered as the top-level heading. Omit for an untitled document.
+             */
             title?: string | null;
-            /** Blocks */
+            /**
+             * Blocks
+             * @description Ordered content blocks (headings, paragraphs, lists, tables, quotes, page breaks) rendered top to bottom.
+             */
             blocks?: components["schemas"]["DocBlock"][];
         };
         /** DomainUpsertRequest */
@@ -30961,17 +31021,25 @@ export interface components {
              * @description Optional associated task selected by the caller.
              */
             task_id?: string | null;
-            /** Window Days */
+            /**
+             * Window Days
+             * @description Explicit number of recent days (1-90) to sync in incremental mode. Omitted, the window is computed from the site's last successful sync.
+             */
             window_days?: number | null;
             /**
              * Force Refresh
+             * @description Re-fetch days already stored instead of skipping them (repairs partial or stale data).
              * @default false
              */
             force_refresh?: boolean;
-            /** Request Id */
+            /**
+             * Request Id
+             * @description Optional caller correlation id stamped onto the collection run for later lookup.
+             */
             request_id?: string | null;
             /**
              * Mode
+             * @description 'incremental' pulls recent days forward from the last successful sync; 'backfill' extends history backward toward Google's ~16-month limit.
              * @default incremental
              * @enum {string}
              */
@@ -33649,7 +33717,7 @@ export interface components {
          * @description The loop's own narrative vocabulary — NOT a mirror of workflow events.
          * @enum {string}
          */
-        LoopEventType: "loop_started" | "stage_entered" | "stage_blocked" | "stage_unblocked" | "stage_escalated" | "stage_completed" | "stage_failed" | "stage_skipped" | "cycle_advanced" | "loop_paused" | "loop_resumed" | "loop_completed" | "loop_cancelled" | "wf_run_attached" | "wf_run_detached";
+        LoopEventType: "loop_started" | "stage_entered" | "stage_blocked" | "stage_unblocked" | "stage_escalated" | "stage_completed" | "stage_failed" | "stage_skipped" | "cycle_advanced" | "loop_paused" | "loop_resumed" | "loop_completed" | "loop_cancelled" | "wf_run_attached" | "wf_run_detached" | "supervisor_decision";
         /** LoopEventView */
         LoopEventView: {
             /** Id */
@@ -35306,22 +35374,41 @@ export interface components {
          * @description AI-facing markdown view of an existing Office file.
          */
         OfficeExtractionResponse: {
-            /** File Id */
+            /**
+             * File Id
+             * @description cld_files id of the Office file that was read.
+             */
             file_id: string;
-            /** Office Kind */
+            /**
+             * Office Kind
+             * @description Office family detected from the bytes: 'docx', 'pptx', 'xlsx' (or legacy 'doc'/'ppt'/'xls').
+             */
             office_kind: string;
-            /** Mime Type */
+            /**
+             * Mime Type
+             * @description MIME type recorded for the file, when known.
+             */
             mime_type?: string | null;
-            /** File Name */
+            /**
+             * File Name
+             * @description Stored display filename of the file, when known.
+             */
             file_name?: string | null;
             /**
              * Markdown
+             * @description Whole-document markdown (all portions joined) — the main AI-facing body.
              * @default
              */
             markdown?: string;
-            /** Portions */
+            /**
+             * Portions
+             * @description Per-slide / per-sheet / per-section breakdown of the document, in order.
+             */
             portions?: components["schemas"]["OfficePortionOut"][];
-            /** Warnings */
+            /**
+             * Warnings
+             * @description Non-fatal extraction problems (unreadable elements, truncation) worth surfacing to the user.
+             */
             warnings?: string[];
         };
         /**
@@ -35343,26 +35430,54 @@ export interface components {
          * @description FileRef-shaped result the client binds to directly.
          */
         OfficeGenerationResponse: {
-            /** File Id */
+            /**
+             * File Id
+             * @description cld_files id of the stored Office file — the durable identity; keep this, not a URL.
+             */
             file_id: string;
-            /** Office Kind */
+            /**
+             * Office Kind
+             * @description Office family of the generated file: 'docx', 'pptx', or 'xlsx'.
+             */
             office_kind: string;
-            /** Mime Type */
+            /**
+             * Mime Type
+             * @description Exact OpenXML MIME type of the stored bytes.
+             */
             mime_type: string;
-            /** File Name */
+            /**
+             * File Name
+             * @description Stored display filename of the generated asset.
+             */
             file_name?: string | null;
-            /** Byte Size */
+            /**
+             * Byte Size
+             * @description Size of the generated file in bytes.
+             */
             byte_size: number;
-            /** Url */
+            /**
+             * Url
+             * @description Always-renderable URL for the file per the platform URL contract; bind UIs to this.
+             */
             url?: string | null;
-            /** Signed Url */
+            /**
+             * Signed Url
+             * @description Short-lived inline-view URL. A handoff, never an identity — do not store it.
+             */
             signed_url?: string | null;
-            /** Download Url */
+            /**
+             * Download Url
+             * @description Short-lived attachment-download URL (Content-Disposition: attachment).
+             */
             download_url?: string | null;
-            /** Cdn Url */
+            /**
+             * Cdn Url
+             * @description Permanent CDN URL, present only when the file is public.
+             */
             cdn_url?: string | null;
             /**
              * Visibility
+             * @description Access level of the stored file ('personal' by default; 'public' when requested).
              * @default personal
              */
             visibility?: string;
@@ -35372,16 +35487,29 @@ export interface components {
          * @description One slide / sheet / section of an extracted document (FE-facing).
          */
         OfficePortionOut: {
-            /** Index */
+            /**
+             * Index
+             * @description 0-based position of this portion within the document.
+             */
             index: number;
-            /** Number */
+            /**
+             * Number
+             * @description 1-based portion number (the slide/sheet/page number a person would cite).
+             */
             number: number;
-            /** Kind */
+            /**
+             * Kind
+             * @description What this portion is: 'slide' (pptx), 'sheet' (xlsx), 'section' (docx), or 'page'.
+             */
             kind: string;
-            /** Title */
+            /**
+             * Title
+             * @description Portion title when the document declares one (slide title, sheet name, section heading).
+             */
             title?: string | null;
             /**
              * Markdown
+             * @description AI-ready markdown rendering of just this portion's content.
              * @default
              */
             markdown?: string;
@@ -36021,6 +36149,10 @@ export interface components {
             screenshot_failure_reason?: string | null;
             /** Failure Reason */
             failure_reason?: string | null;
+            /** Failure Details */
+            failure_details?: {
+                [key: string]: string;
+            }[];
         };
         /** PageDetail */
         PageDetail: {
@@ -37472,7 +37604,7 @@ export interface components {
             number_of_speakers?: number;
             /**
              * Host Count
-             * @description Number of hosts, from one solo speaker through a 20-person roundtable.
+             * @description Number of hosts, from one solo speaker through a 10-person roundtable.
              */
             host_count?: number | null;
             /**
@@ -37757,11 +37889,20 @@ export interface components {
          * @description Canonical AI-authorable shape for a PowerPoint deck (.pptx).
          */
         PresentationSpec: {
-            /** Title */
+            /**
+             * Title
+             * @description Deck title rendered on the opening title slide.
+             */
             title?: string | null;
-            /** Subtitle */
+            /**
+             * Subtitle
+             * @description Subtitle rendered under the title on the opening slide.
+             */
             subtitle?: string | null;
-            /** Slides */
+            /**
+             * Slides
+             * @description Ordered slides after the title slide, rendered in list order.
+             */
             slides?: components["schemas"]["SlideSpec"][];
         };
         /**
@@ -42453,15 +42594,23 @@ export interface components {
         SheetSpec: {
             /**
              * Name
+             * @description Worksheet tab name shown at the bottom of the workbook.
              * @default Sheet1
              */
             name?: string;
-            /** Columns */
+            /**
+             * Columns
+             * @description Column header labels written as the sheet's first row.
+             */
             columns?: string[];
-            /** Rows */
+            /**
+             * Rows
+             * @description Data rows below the header, outer list = rows, inner list = one row's cell values in column order (strings, numbers, booleans, or null for blank).
+             */
             rows?: (string | number | boolean | null)[][];
             /**
              * Freeze Header
+             * @description Freeze the header row so it stays visible while scrolling.
              * @default true
              */
             freeze_header?: boolean;
@@ -43100,22 +43249,31 @@ export interface components {
          * @description One slide of a generated presentation.
          */
         SlideSpec: {
-            /** Title */
+            /**
+             * Title
+             * @description Slide title shown in the slide's title placeholder.
+             */
             title?: string | null;
-            /** Bullets */
+            /**
+             * Bullets
+             * @description Bullet lines for the slide body, one string per bullet (no nesting). When set, `body` is not used.
+             */
             bullets?: string[];
             /**
              * Body
+             * @description Free-text slide body used when `bullets` is empty.
              * @default
              */
             body?: string;
             /**
              * Notes
+             * @description Speaker notes attached to the slide (visible in presenter view only).
              * @default
              */
             notes?: string;
             /**
              * Layout
+             * @description Slide layout: 'title' (title slide), 'title_content' (title + body/bullets), 'section' (section divider), or 'blank'.
              * @default title_content
              * @enum {string}
              */
@@ -43685,7 +43843,10 @@ export interface components {
          * @description Canonical AI-authorable shape for an Excel workbook (.xlsx).
          */
         SpreadsheetSpec: {
-            /** Sheets */
+            /**
+             * Sheets
+             * @description Worksheets of the workbook, one tab per entry, in tab order.
+             */
             sheets?: components["schemas"]["SheetSpec"][];
         };
         /**
@@ -43726,7 +43887,7 @@ export interface components {
          *     detail and the authority.
          * @enum {string}
          */
-        StageRefKind: "workflow_run" | "runtime_execution" | "sch_run" | "chat_request" | "agent_run" | "research_topic" | "cms_fill_job" | "crawl_session" | "analysis_result" | "finding" | "assist" | "agent_usage";
+        StageRefKind: "workflow_run" | "runtime_execution" | "sch_run" | "chat_request" | "agent_run" | "research_topic" | "cms_page" | "cms_fill_job" | "seo_collection_run" | "crawl_session" | "analysis_result" | "finding" | "assist" | "agent_usage";
         /**
          * StageRunStatus
          * @description Processing outcome of one stage attempt. One meaning per status column.
@@ -59686,6 +59847,39 @@ export interface operations {
             };
         };
     };
+    validate_cms_content_cms_validate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CmsValidationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CmsValidationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     start_growth_loop_runs_post: {
         parameters: {
             query?: never;
@@ -62853,41 +63047,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
-                };
-            };
-        };
-    };
-    dev_login_as_dev_login_as_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Dev-Login-Secret"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DevLoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DevLoginResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

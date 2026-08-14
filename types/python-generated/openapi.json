@@ -14208,6 +14208,49 @@
         }
       }
     },
+    "/cms/validate": {
+      "post": {
+        "tags": [
+          "CMS",
+          "CMS"
+        ],
+        "summary": "Validate Cms Content",
+        "description": "Return content-guard findings without writing or translating policy.\n\nThe endpoint deliberately uses the same injected validator, canonical\nfield-to-profile resolver, and approved-exception store as CMS service\nwrites. A blocked report is data here (``allowed=false``), not an HTTP\nerror, so frontend write routes can return their own structured 422.",
+        "operationId": "validate_cms_content_cms_validate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CmsValidationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CmsValidationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/growth-loop/runs": {
       "post": {
         "tags": [
@@ -18988,66 +19031,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/JsonRpcResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/dev/login-as": {
-      "post": {
-        "tags": [
-          "Dev Login"
-        ],
-        "summary": "Dev Login As",
-        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
-        "operationId": "dev_login_as_dev_login_as_post",
-        "parameters": [
-          {
-            "name": "X-Dev-Login-Secret",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Dev-Login-Secret"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DevLoginRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DevLoginResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -34550,7 +34533,7 @@
           "Workflow Recovery"
         ],
         "summary": "Run Suggestions",
-        "description": "Workflow Copilot v1 (OPERATING_PRIORITIES #18): analyze the run's\nfailed node server-side, run the ``workflow_copilot_fix_suggester`` DB\nagent, and STREAM back 1-3 one-click fix suggestions (the studio renders\nthem as chips and applies them through the existing recovery funnel).\n\nStreams (the agent call takes seconds): a ``workflow_copilot_status``\nheartbeat, then ONE terminal ``workflow_copilot_suggestions`` data event.\nAgent-side failures never error the stream — the terminal event carries\n``fallback=true`` so the user is never left powerless (priority #4).",
+        "description": "Run Assists (OPERATING_PRIORITIES #18): analyze the run's\nfailed node server-side, run the ``workflow_assist_fix_suggester`` DB\nagent, and STREAM back 1-3 one-click fix suggestions (the studio renders\nthem as chips and applies them through the existing recovery funnel).\n\nStreams (the agent call takes seconds): a ``workflow_run_assists_status``\nheartbeat, then ONE terminal ``workflow_run_assists`` data event.\nAgent-side failures never error the stream — the terminal event carries\n``fallback=true`` so the user is never left powerless (priority #4).",
         "operationId": "run_suggestions_runs__run_id__suggestions_post",
         "parameters": [
           {
@@ -64030,6 +64013,49 @@
         ],
         "title": "CmsAlignResult"
       },
+      "CmsFieldValidationReport": {
+        "properties": {
+          "blocked": {
+            "type": "boolean",
+            "title": "Blocked"
+          },
+          "violations": {
+            "items": {
+              "$ref": "#/components/schemas/CmsValidationFinding"
+            },
+            "type": "array",
+            "title": "Violations"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/CmsValidationFinding"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "excepted": {
+            "items": {
+              "$ref": "#/components/schemas/CmsValidationFinding"
+            },
+            "type": "array",
+            "title": "Excepted"
+          },
+          "profile": {
+            "type": "string",
+            "title": "Profile"
+          }
+        },
+        "type": "object",
+        "required": [
+          "blocked",
+          "violations",
+          "warnings",
+          "excepted",
+          "profile"
+        ],
+        "title": "CmsFieldValidationReport",
+        "description": "The guard's real report for one content buffer."
+      },
       "CmsFillCancelBody": {
         "properties": {
           "organization_id": {
@@ -65372,6 +65398,175 @@
         "additionalProperties": false,
         "type": "object",
         "title": "CmsStarterKitBody"
+      },
+      "CmsValidationContent": {
+        "properties": {
+          "html": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Html"
+          },
+          "css": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Css"
+          },
+          "js": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Js"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "CmsValidationContent",
+        "description": "Content buffers accepted by the shared CMS validation boundary."
+      },
+      "CmsValidationFinding": {
+        "properties": {
+          "rule_id": {
+            "type": "string",
+            "title": "Rule Id"
+          },
+          "node_path": {
+            "type": "string",
+            "title": "Node Path"
+          },
+          "excerpt": {
+            "type": "string",
+            "title": "Excerpt"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "warning",
+              "block"
+            ],
+            "title": "Severity"
+          },
+          "fix_hint": {
+            "type": "string",
+            "title": "Fix Hint"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rule_id",
+          "node_path",
+          "excerpt",
+          "severity",
+          "fix_hint"
+        ],
+        "title": "CmsValidationFinding",
+        "description": "One unmodified finding emitted by ``matrx-content-guard``."
+      },
+      "CmsValidationReport": {
+        "properties": {
+          "html": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CmsFieldValidationReport"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "css": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CmsFieldValidationReport"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "js": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CmsFieldValidationReport"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "CmsValidationReport",
+        "description": "Field-keyed reports preserve which buffer produced each finding."
+      },
+      "CmsValidationRequest": {
+        "properties": {
+          "content": {
+            "$ref": "#/components/schemas/CmsValidationContent"
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
+          "page_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "title": "CmsValidationRequest",
+        "description": "Validate CMS content with the approved exceptions in the supplied scope."
+      },
+      "CmsValidationResponse": {
+        "properties": {
+          "allowed": {
+            "type": "boolean",
+            "title": "Allowed"
+          },
+          "report": {
+            "$ref": "#/components/schemas/CmsValidationReport"
+          }
+        },
+        "type": "object",
+        "required": [
+          "allowed",
+          "report"
+        ],
+        "title": "CmsValidationResponse"
       },
       "CodeAgentUsage": {
         "properties": {
@@ -72815,61 +73010,6 @@
         "type": "object",
         "title": "DetectorRunInfo"
       },
-      "DevLoginRequest": {
-        "properties": {
-          "user_id": {
-            "type": "string",
-            "title": "User Id",
-            "description": "UUID of an existing row in auth.users."
-          },
-          "ttl_seconds": {
-            "type": "integer",
-            "maximum": 86400,
-            "minimum": 60,
-            "title": "Ttl Seconds",
-            "description": "JWT expiry. Default 2h, min 60s, max 24h.",
-            "default": 7200
-          }
-        },
-        "type": "object",
-        "required": [
-          "user_id"
-        ],
-        "title": "DevLoginRequest"
-      },
-      "DevLoginResponse": {
-        "properties": {
-          "access_token": {
-            "type": "string",
-            "title": "Access Token"
-          },
-          "user_id": {
-            "type": "string",
-            "title": "User Id"
-          },
-          "expires_at": {
-            "type": "integer",
-            "title": "Expires At"
-          },
-          "issued_at": {
-            "type": "integer",
-            "title": "Issued At"
-          },
-          "jti": {
-            "type": "string",
-            "title": "Jti"
-          }
-        },
-        "type": "object",
-        "required": [
-          "access_token",
-          "user_id",
-          "expires_at",
-          "issued_at",
-          "jti"
-        ],
-        "title": "DevLoginResponse"
-      },
       "DiagSpawnDetachedResponse": {
         "properties": {
           "ok": {
@@ -74106,16 +74246,19 @@
               "page_break",
               "quote"
             ],
-            "title": "Type"
+            "title": "Type",
+            "description": "Block kind: 'heading'/'paragraph'/'bullet'/'numbered'/'quote' render `text`; 'table' renders `rows`; 'page_break' starts a new page and uses no other field."
           },
           "text": {
             "type": "string",
             "title": "Text",
+            "description": "Body text for heading/paragraph/quote blocks, or ONE list line for a bullet/numbered block (one block per line). Ignored by table/page_break.",
             "default": ""
           },
           "level": {
             "type": "integer",
             "title": "Level",
+            "description": "Heading depth 1-6 for 'heading' blocks (1 = chapter title). Ignored elsewhere.",
             "default": 1
           },
           "rows": {
@@ -74126,11 +74269,13 @@
               "type": "array"
             },
             "type": "array",
-            "title": "Rows"
+            "title": "Rows",
+            "description": "Table cells for 'table' blocks, outer list = rows, inner list = one row's cell strings. The first row is styled as the header when `header` is true."
           },
           "header": {
             "type": "boolean",
             "title": "Header",
+            "description": "For 'table' blocks: treat the first row of `rows` as a styled header row.",
             "default": true
           }
         },
@@ -74560,14 +74705,16 @@
                 "type": "null"
               }
             ],
-            "title": "Title"
+            "title": "Title",
+            "description": "Document title rendered as the top-level heading. Omit for an untitled document."
           },
           "blocks": {
             "items": {
               "$ref": "#/components/schemas/DocBlock"
             },
             "type": "array",
-            "title": "Blocks"
+            "title": "Blocks",
+            "description": "Ordered content blocks (headings, paragraphs, lists, tables, quotes, page breaks) rendered top to bottom."
           }
         },
         "type": "object",
@@ -83067,11 +83214,13 @@
                 "type": "null"
               }
             ],
-            "title": "Window Days"
+            "title": "Window Days",
+            "description": "Explicit number of recent days (1-90) to sync in incremental mode. Omitted, the window is computed from the site's last successful sync."
           },
           "force_refresh": {
             "type": "boolean",
             "title": "Force Refresh",
+            "description": "Re-fetch days already stored instead of skipping them (repairs partial or stale data).",
             "default": false
           },
           "request_id": {
@@ -83083,7 +83232,8 @@
                 "type": "null"
               }
             ],
-            "title": "Request Id"
+            "title": "Request Id",
+            "description": "Optional caller correlation id stamped onto the collection run for later lookup."
           },
           "mode": {
             "type": "string",
@@ -83092,6 +83242,7 @@
               "backfill"
             ],
             "title": "Mode",
+            "description": "'incremental' pulls recent days forward from the last successful sync; 'backfill' extends history backward toward Google's ~16-month limit.",
             "default": "incremental"
           }
         },
@@ -90398,7 +90549,8 @@
           "loop_completed",
           "loop_cancelled",
           "wf_run_attached",
-          "wf_run_detached"
+          "wf_run_detached",
+          "supervisor_decision"
         ],
         "title": "LoopEventType",
         "description": "The loop's own narrative vocabulary — NOT a mirror of workflow events."
@@ -94177,11 +94329,13 @@
         "properties": {
           "file_id": {
             "type": "string",
-            "title": "File Id"
+            "title": "File Id",
+            "description": "cld_files id of the Office file that was read."
           },
           "office_kind": {
             "type": "string",
-            "title": "Office Kind"
+            "title": "Office Kind",
+            "description": "Office family detected from the bytes: 'docx', 'pptx', 'xlsx' (or legacy 'doc'/'ppt'/'xls')."
           },
           "mime_type": {
             "anyOf": [
@@ -94192,7 +94346,8 @@
                 "type": "null"
               }
             ],
-            "title": "Mime Type"
+            "title": "Mime Type",
+            "description": "MIME type recorded for the file, when known."
           },
           "file_name": {
             "anyOf": [
@@ -94203,11 +94358,13 @@
                 "type": "null"
               }
             ],
-            "title": "File Name"
+            "title": "File Name",
+            "description": "Stored display filename of the file, when known."
           },
           "markdown": {
             "type": "string",
             "title": "Markdown",
+            "description": "Whole-document markdown (all portions joined) — the main AI-facing body.",
             "default": ""
           },
           "portions": {
@@ -94215,14 +94372,16 @@
               "$ref": "#/components/schemas/OfficePortionOut"
             },
             "type": "array",
-            "title": "Portions"
+            "title": "Portions",
+            "description": "Per-slide / per-sheet / per-section breakdown of the document, in order."
           },
           "warnings": {
             "items": {
               "type": "string"
             },
             "type": "array",
-            "title": "Warnings"
+            "title": "Warnings",
+            "description": "Non-fatal extraction problems (unreadable elements, truncation) worth surfacing to the user."
           }
         },
         "type": "object",
@@ -94296,15 +94455,18 @@
         "properties": {
           "file_id": {
             "type": "string",
-            "title": "File Id"
+            "title": "File Id",
+            "description": "cld_files id of the stored Office file — the durable identity; keep this, not a URL."
           },
           "office_kind": {
             "type": "string",
-            "title": "Office Kind"
+            "title": "Office Kind",
+            "description": "Office family of the generated file: 'docx', 'pptx', or 'xlsx'."
           },
           "mime_type": {
             "type": "string",
-            "title": "Mime Type"
+            "title": "Mime Type",
+            "description": "Exact OpenXML MIME type of the stored bytes."
           },
           "file_name": {
             "anyOf": [
@@ -94315,11 +94477,13 @@
                 "type": "null"
               }
             ],
-            "title": "File Name"
+            "title": "File Name",
+            "description": "Stored display filename of the generated asset."
           },
           "byte_size": {
             "type": "integer",
-            "title": "Byte Size"
+            "title": "Byte Size",
+            "description": "Size of the generated file in bytes."
           },
           "url": {
             "anyOf": [
@@ -94330,7 +94494,8 @@
                 "type": "null"
               }
             ],
-            "title": "Url"
+            "title": "Url",
+            "description": "Always-renderable URL for the file per the platform URL contract; bind UIs to this."
           },
           "signed_url": {
             "anyOf": [
@@ -94341,7 +94506,8 @@
                 "type": "null"
               }
             ],
-            "title": "Signed Url"
+            "title": "Signed Url",
+            "description": "Short-lived inline-view URL. A handoff, never an identity — do not store it."
           },
           "download_url": {
             "anyOf": [
@@ -94352,7 +94518,8 @@
                 "type": "null"
               }
             ],
-            "title": "Download Url"
+            "title": "Download Url",
+            "description": "Short-lived attachment-download URL (Content-Disposition: attachment)."
           },
           "cdn_url": {
             "anyOf": [
@@ -94363,11 +94530,13 @@
                 "type": "null"
               }
             ],
-            "title": "Cdn Url"
+            "title": "Cdn Url",
+            "description": "Permanent CDN URL, present only when the file is public."
           },
           "visibility": {
             "type": "string",
             "title": "Visibility",
+            "description": "Access level of the stored file ('personal' by default; 'public' when requested).",
             "default": "personal"
           }
         },
@@ -94385,15 +94554,18 @@
         "properties": {
           "index": {
             "type": "integer",
-            "title": "Index"
+            "title": "Index",
+            "description": "0-based position of this portion within the document."
           },
           "number": {
             "type": "integer",
-            "title": "Number"
+            "title": "Number",
+            "description": "1-based portion number (the slide/sheet/page number a person would cite)."
           },
           "kind": {
             "type": "string",
-            "title": "Kind"
+            "title": "Kind",
+            "description": "What this portion is: 'slide' (pptx), 'sheet' (xlsx), 'section' (docx), or 'page'."
           },
           "title": {
             "anyOf": [
@@ -94404,11 +94576,13 @@
                 "type": "null"
               }
             ],
-            "title": "Title"
+            "title": "Title",
+            "description": "Portion title when the document declares one (slide title, sheet name, section heading)."
           },
           "markdown": {
             "type": "string",
             "title": "Markdown",
+            "description": "AI-ready markdown rendering of just this portion's content.",
             "default": ""
           }
         },
@@ -96223,6 +96397,16 @@
               }
             ],
             "title": "Failure Reason"
+          },
+          "failure_details": {
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Failure Details"
           }
         },
         "type": "object",
@@ -99711,7 +99895,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 20,
+                "maximum": 10,
                 "minimum": 1
               },
               {
@@ -99719,7 +99903,7 @@
               }
             ],
             "title": "Host Count",
-            "description": "Number of hosts, from one solo speaker through a 20-person roundtable."
+            "description": "Number of hosts, from one solo speaker through a 10-person roundtable."
           },
           "format": {
             "type": "string",
@@ -100337,7 +100521,8 @@
                 "type": "null"
               }
             ],
-            "title": "Title"
+            "title": "Title",
+            "description": "Deck title rendered on the opening title slide."
           },
           "subtitle": {
             "anyOf": [
@@ -100348,14 +100533,16 @@
                 "type": "null"
               }
             ],
-            "title": "Subtitle"
+            "title": "Subtitle",
+            "description": "Subtitle rendered under the title on the opening slide."
           },
           "slides": {
             "items": {
               "$ref": "#/components/schemas/SlideSpec"
             },
             "type": "array",
-            "title": "Slides"
+            "title": "Slides",
+            "description": "Ordered slides after the title slide, rendered in list order."
           }
         },
         "type": "object",
@@ -112327,6 +112514,7 @@
           "name": {
             "type": "string",
             "title": "Name",
+            "description": "Worksheet tab name shown at the bottom of the workbook.",
             "default": "Sheet1"
           },
           "columns": {
@@ -112334,7 +112522,8 @@
               "type": "string"
             },
             "type": "array",
-            "title": "Columns"
+            "title": "Columns",
+            "description": "Column header labels written as the sheet's first row."
           },
           "rows": {
             "items": {
@@ -112360,11 +112549,13 @@
               "type": "array"
             },
             "type": "array",
-            "title": "Rows"
+            "title": "Rows",
+            "description": "Data rows below the header, outer list = rows, inner list = one row's cell values in column order (strings, numbers, booleans, or null for blank)."
           },
           "freeze_header": {
             "type": "boolean",
             "title": "Freeze Header",
+            "description": "Freeze the header row so it stays visible while scrolling.",
             "default": true
           }
         },
@@ -114052,23 +114243,27 @@
                 "type": "null"
               }
             ],
-            "title": "Title"
+            "title": "Title",
+            "description": "Slide title shown in the slide's title placeholder."
           },
           "bullets": {
             "items": {
               "type": "string"
             },
             "type": "array",
-            "title": "Bullets"
+            "title": "Bullets",
+            "description": "Bullet lines for the slide body, one string per bullet (no nesting). When set, `body` is not used."
           },
           "body": {
             "type": "string",
             "title": "Body",
+            "description": "Free-text slide body used when `bullets` is empty.",
             "default": ""
           },
           "notes": {
             "type": "string",
             "title": "Notes",
+            "description": "Speaker notes attached to the slide (visible in presenter view only).",
             "default": ""
           },
           "layout": {
@@ -114080,6 +114275,7 @@
               "blank"
             ],
             "title": "Layout",
+            "description": "Slide layout: 'title' (title slide), 'title_content' (title + body/bullets), 'section' (section divider), or 'blank'.",
             "default": "title_content"
           }
         },
@@ -115561,7 +115757,8 @@
               "$ref": "#/components/schemas/SheetSpec"
             },
             "type": "array",
-            "title": "Sheets"
+            "title": "Sheets",
+            "description": "Worksheets of the workbook, one tab per entry, in tab order."
           }
         },
         "type": "object",
@@ -115637,7 +115834,9 @@
           "chat_request",
           "agent_run",
           "research_topic",
+          "cms_page",
           "cms_fill_job",
+          "seo_collection_run",
           "crawl_session",
           "analysis_result",
           "finding",
