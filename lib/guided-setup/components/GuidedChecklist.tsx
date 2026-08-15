@@ -35,6 +35,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
+import { checklistSteps } from "../engine";
 import { useGuidedChecklist } from "../useGuidedChecklist";
 import type {
   ChecklistDefinition,
@@ -356,7 +357,9 @@ export function GuidedChecklist<Ctx>({
 
   if (resolved.complete && hideWhenComplete) return null;
 
-  const byId = new Map(definition.steps.map((step) => [step.id, step]));
+  const byId = new Map(
+    checklistSteps(definition, context).map((step) => [step.id, step]),
+  );
 
   return (
     <div className={cn("rounded-lg border p-3", className)}>

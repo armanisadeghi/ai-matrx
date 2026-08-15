@@ -32,15 +32,19 @@ export function registerChecklist<Ctx>(
         `Keys are persistence keys — the second one will read the first one's saved state.`,
     );
   }
-  const ids = new Set<string>();
-  for (const step of definition.steps) {
-    if (ids.has(step.id)) {
-      console.error(
-        `[guided-setup] Checklist "${definition.key}" declares step id "${step.id}" twice — ` +
-          `step ids are persistence keys and must be unique.`,
-      );
+  // A factory's output cannot be inspected without a context, so that form is
+  // checked for duplicate ids at read time instead — see `checklistSteps`.
+  if (Array.isArray(definition.steps)) {
+    const ids = new Set<string>();
+    for (const step of definition.steps) {
+      if (ids.has(step.id)) {
+        console.error(
+          `[guided-setup] Checklist "${definition.key}" declares step id "${step.id}" twice — ` +
+            `step ids are persistence keys and must be unique.`,
+        );
+      }
+      ids.add(step.id);
     }
-    ids.add(step.id);
   }
   registry.set(definition.key, definition as ChecklistDefinition<never>);
   return definition;

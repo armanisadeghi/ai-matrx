@@ -25,9 +25,14 @@
  */
 import { callApi, type ApiCallResult } from "@/lib/api/call-api";
 import { describeBackendFailure, parseStreamError } from "@/lib/api/errors";
+import { CmsSiteService } from "@/features/cms/services/cmsService";
 import { supabase } from "@/utils/supabase/client";
 import { authenticatedWebDb } from "@/utils/supabase/webDb";
 import type { AppDispatch } from "@/lib/redux/store";
+
+import { slugify } from "./archetypes";
+import { fetchFreshSite } from "./draft";
+import { normalizeDomain } from "./readiness";
 
 // ── report shapes (narrowed from the server's per-bucket dict rows) ─────────
 
@@ -577,6 +582,50 @@ export async function bridgeStarterKit(
     componentCount: Array.isArray(data.components) ? data.components.length : 0,
     notes: Array.isArray(data.notes) ? data.notes.map(String) : [],
   };
+}
+
+/**
+ * Create this plan site's CMS counterpart and record the link on BOTH sides —
+ * `web.site.settings.cms` here, and `client_sites.web_site_id` through the
+ * first reconcile.
+ *
+ * ONE implementation, two entry points: the guided setup checklist's "Set it
+ * up for me" step (which only ever creates) and the "Make it real" rung (which
+ * ALSO offers linking a website that already exists — a choice only a human can
+ * make, so it stays there).
+ */
+export async function createAndLinkCmsSite(
+  dispatch: AppDispatch,
+  site: { id: string; name: string; domain: string | null },
+): Promise<{ cmsSiteId: string; cmsSlug: string }> {
+  const slug =
+    slugify(normalizeDomain(site.domain).replace(/\./g, "-")) ||
+    slugify(site.name);
+  if (!slug) {
+    throw new Error(
+      "This site has neither a name nor a web address we can build a website from.",
+    );
+  }
+  const created = await CmsSiteService.createSite({
+    name: site.name,
+    slug,
+    domain: normalizeDomain(site.domain) || undefined,
+    // The rungs below (starter kit, realize) write through aidream's guarded
+    // seams, where an unset agent_write_policy means BLOCKED.
+    settings: { agent_write_policy: "full" },
+  });
+  // FRESH row, not a query cache copy: Setup's draft autosaves bump `version`
+  // continuously, so a cached version deterministically fails the guard.
+  const fresh = await fetchFreshSite(site.id);
+  await recordCmsLink({
+    siteId: site.id,
+    expectedVersion: fresh.version,
+    currentSettings: fresh.settings,
+    cmsSiteId: created.id,
+    cmsSlug: created.slug,
+  });
+  await bridgeReconcile(dispatch, site.id, { cmsSite: created.id });
+  return { cmsSiteId: created.id, cmsSlug: created.slug };
 }
 
 // ── node→page map (WF-11: the plan workspace's CMS-page overlay) ────────────

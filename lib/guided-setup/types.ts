@@ -162,6 +162,26 @@ export type ChecklistStep<Ctx> =
   | VerifiedStep<Ctx>
   | ConfirmedStep<Ctx>;
 
+/**
+ * A definition whose step LIST is decided by the outside world.
+ *
+ * Added 2026-08-14 for `billing.creator_payouts`. Stripe answers "what is
+ * still missing from this account" with an open-ended list of requirement
+ * codes — we cannot know at build time whether a creator will be asked for a
+ * photo ID, a bank account, or a business URL, and a fixed array can only
+ * express the codes somebody happened to think of. Anything Stripe names that
+ * we did not anticipate would then have NO row, which is the dead end this
+ * whole primitive exists to delete.
+ *
+ * The escape hatch is deliberately narrow: the factory is part of the
+ * DECLARATION (law 6 — a checklist is declared, never hand-built at the mount
+ * site), it is pure, and it must be STABLE — the same world state has to
+ * produce the same step ids, because step ids are persistence keys. Generating
+ * an id from a timestamp, an array index, or a random value silently abandons
+ * saved state on every render.
+ */
+export type ChecklistStepsFactory<Ctx> = (ctx: Ctx) => ChecklistStep<Ctx>[];
+
 export interface ChecklistDefinition<Ctx = unknown> {
   /** Registry key. Stable — it is the persistence key. */
   key: string;
@@ -172,7 +192,12 @@ export interface ChecklistDefinition<Ctx = unknown> {
   /** Shown once every required step passes. */
   completeTitle?: string;
   completeDescription?: string;
-  steps: ChecklistStep<Ctx>[];
+  /**
+   * A fixed list, or — when the steps themselves depend on what a third party
+   * says is outstanding — a pure function of the context. Read it through
+   * `checklistSteps()` (engine.ts), never directly.
+   */
+  steps: ChecklistStep<Ctx>[] | ChecklistStepsFactory<Ctx>;
 }
 
 // ── Persisted state ────────────────────────────────────────────────────────

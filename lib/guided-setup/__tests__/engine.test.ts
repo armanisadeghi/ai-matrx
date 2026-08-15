@@ -5,6 +5,7 @@
 
 import {
   autoRunnableSteps,
+  checklistSteps,
   resolveChecklist,
   withConfirmation,
   withLastResult,
@@ -40,6 +41,7 @@ const definition: ChecklistDefinition<Ctx> = {
   ],
 };
 
+const ctx: Ctx = {};
 const emptyState: ChecklistRunState = { steps: {} };
 
 describe("resolveChecklist", () => {
@@ -49,6 +51,7 @@ describe("resolveChecklist", () => {
     };
     const resolved = resolveChecklist({
       definition,
+      ctx,
       state,
       live: { connect: { status: "fail", reason: "The connection was removed." } },
     });
@@ -64,7 +67,7 @@ describe("resolveChecklist", () => {
     const state: ChecklistRunState = {
       steps: { connect: { lastResult: { status: "pass", at: "2026-01-01T00:00:00Z" } } },
     };
-    const resolved = resolveChecklist({ definition, state, live: {} });
+    const resolved = resolveChecklist({ definition, ctx, state, live: {} });
     const connect = resolved.steps.find((s) => s.id === "connect")!;
     expect(connect.status).toBe("done");
     expect(connect.stale).toBe(true);
@@ -76,6 +79,7 @@ describe("resolveChecklist", () => {
   it("renders 'we could not check' as neutral, never as a failure", () => {
     const resolved = resolveChecklist({
       definition,
+      ctx,
       state: emptyState,
       live: { connect: { status: "unknown", reason: "Google didn't answer." } },
     });
@@ -85,6 +89,7 @@ describe("resolveChecklist", () => {
   it("blocks a step whose dependency is not done, and unblocks it when it is", () => {
     const blocked = resolveChecklist({
       definition,
+      ctx,
       state: emptyState,
       live: { connect: { status: "fail" }, import: { status: "fail" } },
     });
@@ -94,6 +99,7 @@ describe("resolveChecklist", () => {
 
     const unblocked = resolveChecklist({
       definition,
+      ctx,
       state: emptyState,
       live: { connect: { status: "pass" }, import: { status: "fail" } },
     });
@@ -106,6 +112,7 @@ describe("resolveChecklist", () => {
     // (The UI's matching rule: a blocked step never renders its fix button.)
     const resolved = resolveChecklist({
       definition,
+      ctx,
       state: withConfirmation(emptyState, "own", true, "u1", new Date().toISOString()),
       live: { connect: { status: "pass" }, import: { status: "fail" } },
     });
@@ -113,6 +120,7 @@ describe("resolveChecklist", () => {
 
     const blocked = resolveChecklist({
       definition,
+      ctx,
       state: withConfirmation(emptyState, "own", true, "u1", new Date().toISOString()),
       live: { connect: { status: "fail" }, import: { status: "fail" } },
     });
@@ -125,14 +133,14 @@ describe("resolveChecklist", () => {
     const now = Date.parse("2026-06-01T00:00:00Z");
     const fresh = withConfirmation(emptyState, "own", true, "u1", "2026-05-25T00:00:00Z");
     expect(
-      resolveChecklist({ definition, state: fresh, live: {}, now }).steps.find(
+      resolveChecklist({ definition, ctx, state: fresh, live: {}, now }).steps.find(
         (s) => s.id === "own",
       )!.status,
     ).toBe("done");
 
     const old = withConfirmation(emptyState, "own", true, "u1", "2026-01-01T00:00:00Z");
     expect(
-      resolveChecklist({ definition, state: old, live: {}, now }).steps.find(
+      resolveChecklist({ definition, ctx, state: old, live: {}, now }).steps.find(
         (s) => s.id === "own",
       )!.status,
     ).toBe("action");
@@ -142,6 +150,7 @@ describe("resolveChecklist", () => {
     const state = withConfirmation(emptyState, "own", true, "u1", new Date().toISOString());
     const resolved = resolveChecklist({
       definition,
+      ctx,
       state,
       live: { connect: { status: "pass" }, import: { status: "pass" } },
     });
@@ -158,9 +167,9 @@ describe("autoRunnableSteps", () => {
 
   it("runs an unblocked auto step whose LIVE check failed", () => {
     const live = { connect: { status: "pass" as const }, import: { status: "fail" as const } };
-    const resolved = resolveChecklist({ definition, state: emptyState, live });
+    const resolved = resolveChecklist({ definition, ctx, state: emptyState, live });
     expect(
-      runnable({ definition, resolved, live, alreadyRan: new Set() }),
+      runnable({ definition, ctx, resolved, live, alreadyRan: new Set() }),
     ).toEqual(["import"]);
   });
 
@@ -172,8 +181,8 @@ describe("autoRunnableSteps", () => {
       "2026-01-01T00:00:00Z",
     );
     const live = { connect: { status: "pass" as const } };
-    const resolved = resolveChecklist({ definition, state, live });
-    expect(runnable({ definition, resolved, live, alreadyRan: new Set() })).toEqual([]);
+    const resolved = resolveChecklist({ definition, ctx, state, live });
+    expect(runnable({ definition, ctx, resolved, live, alreadyRan: new Set() })).toEqual([]);
   });
 
   it("never acts when we could not check", () => {
@@ -181,21 +190,88 @@ describe("autoRunnableSteps", () => {
       connect: { status: "pass" as const },
       import: { status: "unknown" as const },
     };
-    const resolved = resolveChecklist({ definition, state: emptyState, live });
-    expect(runnable({ definition, resolved, live, alreadyRan: new Set() })).toEqual([]);
+    const resolved = resolveChecklist({ definition, ctx, state: emptyState, live });
+    expect(runnable({ definition, ctx, resolved, live, alreadyRan: new Set() })).toEqual([]);
   });
 
   it("never acts on a blocked step", () => {
     const live = { connect: { status: "fail" as const }, import: { status: "fail" as const } };
-    const resolved = resolveChecklist({ definition, state: emptyState, live });
-    expect(runnable({ definition, resolved, live, alreadyRan: new Set() })).toEqual([]);
+    const resolved = resolveChecklist({ definition, ctx, state: emptyState, live });
+    expect(runnable({ definition, ctx, resolved, live, alreadyRan: new Set() })).toEqual([]);
   });
 
   it("does not run the same step twice", () => {
     const live = { connect: { status: "pass" as const }, import: { status: "fail" as const } };
-    const resolved = resolveChecklist({ definition, state: emptyState, live });
+    const resolved = resolveChecklist({ definition, ctx, state: emptyState, live });
     expect(
-      runnable({ definition, resolved, live, alreadyRan: new Set(["import"]) }),
+      runnable({ definition, ctx, resolved, live, alreadyRan: new Set(["import"]) }),
     ).toEqual([]);
+  });
+});
+
+/**
+ * A definition whose step LIST comes from the outside world — Stripe answering
+ * "what is still missing from this account". The point is that a requirement
+ * nobody anticipated still gets its own row instead of vanishing.
+ */
+describe("steps declared as a factory", () => {
+  interface OutstandingCtx {
+    outstanding: string[];
+  }
+
+  const dynamic: ChecklistDefinition<OutstandingCtx> = {
+    key: "test.dynamic",
+    title: "Finish setting up",
+    steps: (context) => [
+      {
+        kind: "verified" as const,
+        id: "account",
+        title: "Account exists",
+        check: async () => ({ status: "pass" as const }),
+      },
+      ...context.outstanding.map((code) => ({
+        kind: "verified" as const,
+        id: `need.${code}`,
+        title: `They still need ${code}`,
+        dependsOn: ["account"],
+        check: async () => ({ status: "fail" as const, reason: "Outstanding." }),
+      })),
+    ],
+  };
+
+  it("grows a step per outstanding item and drops it when it clears", () => {
+    expect(
+      checklistSteps(dynamic, { outstanding: ["id_document", "bank"] }).map(
+        (s) => s.id,
+      ),
+    ).toEqual(["account", "need.id_document", "need.bank"]);
+    expect(checklistSteps(dynamic, { outstanding: [] }).map((s) => s.id)).toEqual([
+      "account",
+    ]);
+  });
+
+  it("resolves and counts the generated steps like any other", () => {
+    const resolved = resolveChecklist({
+      definition: dynamic,
+      ctx: { outstanding: ["bank"] },
+      state: emptyState,
+      live: {
+        account: { status: "pass" },
+        "need.bank": { status: "fail", reason: "Outstanding." },
+      },
+    });
+    expect(resolved.requiredCount).toBe(2);
+    expect(resolved.doneCount).toBe(1);
+    expect(resolved.currentStepId).toBe("need.bank");
+  });
+
+  it("is complete the moment nothing is outstanding", () => {
+    const resolved = resolveChecklist({
+      definition: dynamic,
+      ctx: { outstanding: [] },
+      state: emptyState,
+      live: { account: { status: "pass" } },
+    });
+    expect(resolved.complete).toBe(true);
   });
 });

@@ -68,11 +68,21 @@ rebuilt as the canonical entry list. **What's missing:** the three-surface wayfi
 on the list page. Port it as a header/empty-state affordance on `/transcripts` (feature entry pages are
 LIST views — do not restore a forced landing), then rule on the file.
 
-### 6. `features/content-manager/PageListView` — stranded fork of a live CMS component
-`features/content-manager/components/PageListView.tsx` (393 lines) is the only file in
-`features/content-manager/`. `features/cms/components/PageListView.tsx` is mounted at `/cms/[siteId]` and
-declared on the CMS admin map. **What's missing:** a diff of the two. Merge anything the fork has into the
-live CMS component (reuse-first: extend ours, never keep a second), then rule on the stranded directory.
+### 6. `features/content-manager/PageListView` — DIFFED 2026-08-14, nothing to port; awaiting Arman's ruling
+Hunted: `features/content-manager/` **is** the CMS feature under its original name. Commit `31285ffe5`
+(2026-03-27) created it with `index.ts`, `types.ts`, `services/cmsService.ts` and three `useCms*` hooks;
+`b134d1b05` (2026-05-13, "Updates to cms and agent context") renamed every one of those to `features/cms/`
+and re-added a copy of `PageListView.tsx` at the old path. It is the residue of a completed rename, not the
+start of a broader feature — no `common-docs/`, `features/cms/FEATURE.md`, `.matrx/`, or `FOUND_DEFECTS.md`
+entry describes a "content manager" feature, and the fork imports `@/features/cms/types` for its own props.
+
+Diff verdict: the fork is a **strict subset**. Its only unique code is the pre-`ItemMenu` inline dropdown
+(Edit / Preview / Delete), and all three are already in `buildCmsPageMenu` — where Preview is a real
+`previewHref` in a new tab instead of the fork's dead-end re-`onOpenPage(page.id)`. The live component adds
+publish, AI build/review, live-page and content-plan doors, the Content-volume column, and the
+`matrx-user/cms-site` agent button. **Zero ports.** Separate finding filed as D197 (the live component is
+bespoke, not on `lib/entity-list/`). **Remaining:** Arman rules on the stranded directory — recommendation is
+delete, and only he may say so (unfinished-work alarm).
 
 ### 7. `NotesLayout` + `NotesTreeView` — the legacy notes shell
 `features/notes/components/NotesLayout.tsx` (431), `features/notes/actions/NotesTreeView.tsx` (287).

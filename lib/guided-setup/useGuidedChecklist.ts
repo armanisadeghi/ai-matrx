@@ -26,6 +26,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
   autoRunnableSteps,
+  checklistSteps,
   EMPTY_RUN_STATE,
   resolveChecklist,
   withAutoRun,
@@ -113,6 +114,19 @@ export function useGuidedChecklist<Ctx>(args: {
     ? `${args.scope.organizationId}::${args.scope.targetKey ?? ""}`
     : null;
 
+  /**
+   * The step list, which a definition may derive from the context (Stripe's
+   * outstanding-requirement list is the reason that form exists). `stepsKey`
+   * drives the check effect: when the world grows a step we have never
+   * checked, it must be checked, and depending on the whole context object
+   * would instead re-check everything on every render.
+   */
+  const steps = useMemo(
+    () => checklistSteps(definition, context),
+    [definition, context],
+  );
+  const stepsKey = steps.map((step) => step.id).join("|");
+
   // ── Load (or create) the persisted run ──────────────────────────────────
   useEffect(() => {
     if (!ready || !args.scope) return;
@@ -194,7 +208,7 @@ export function useGuidedChecklist<Ctx>(args: {
     const gen = ++generation.current;
     lastCheckAt.current = Date.now();
 
-    const checkable = definition.steps.filter(
+    const checkable = checklistSteps(definition, contextRef.current).filter(
       (step) => step.kind === "auto" || step.kind === "verified",
     );
     setLive((prev) => {
@@ -237,7 +251,7 @@ export function useGuidedChecklist<Ctx>(args: {
           }
         });
     }
-  }, [definition.key, scopeKey, ready, checkNonce]);
+  }, [definition.key, scopeKey, ready, checkNonce, stepsKey]);
 
   const recheck = useCallback(() => setCheckNonce((n) => n + 1), []);
 
@@ -258,8 +272,11 @@ export function useGuidedChecklist<Ctx>(args: {
   }, [ready, recheck]);
 
   const resolved = useMemo(
-    () => (ready ? resolveChecklist({ definition, state, live, busy }) : null),
-    [definition, state, live, busy, ready],
+    () =>
+      ready
+        ? resolveChecklist({ definition, ctx: context, state, live, busy })
+        : null,
+    [definition, context, state, live, busy, ready],
   );
 
   const withBusy = useCallback(
@@ -291,7 +308,9 @@ export function useGuidedChecklist<Ctx>(args: {
 
   const runStep = useCallback(
     (stepId: string) => {
-      const step = definition.steps.find((s) => s.id === stepId);
+      const step = checklistSteps(definition, contextRef.current).find(
+        (s) => s.id === stepId,
+      );
       if (!step || step.kind !== "auto") return;
       void withBusy(stepId, async () => {
         await step.run(contextRef.current);
@@ -305,14 +324,10 @@ export function useGuidedChecklist<Ctx>(args: {
   const runFix = useCallback(
     (stepId: string) => {
       const fix = live[stepId]?.fix;
-      const declared =
-        definition.steps.find((s) => s.id === stepId)?.kind === "verified"
-          ? (
-              definition.steps.find((s) => s.id === stepId) as {
-                fix?: { run?: () => Promise<void> };
-              }
-            ).fix
-          : undefined;
+      const step = checklistSteps(definition, contextRef.current).find(
+        (s) => s.id === stepId,
+      );
+      const declared = step?.kind === "verified" ? step.fix : undefined;
       const action = fix?.run ?? declared?.run;
       if (!action) return;
       void withBusy(stepId, action);
@@ -325,6 +340,7 @@ export function useGuidedChecklist<Ctx>(args: {
     if (!resolved) return;
     const ids = autoRunnableSteps({
       definition,
+      ctx: contextRef.current,
       resolved,
       live,
       busy,

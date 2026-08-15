@@ -29,6 +29,7 @@ import { ProInput } from "@/components/official/ProInput";
 import { cn } from "@/utils/cn";
 import { TaskCopyForAiButton } from "@/features/tasks/components/TaskCopyForAiButton";
 import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
+import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { useTaskEditorController } from "./editor/useTaskEditorController";
 import { TaskEditorControllerProvider } from "./editor/TaskEditorControllerContext";
 import { TaskEditorBody } from "./editor/TaskEditorBody";
@@ -262,6 +263,16 @@ function TaskEditorInner({
                 label={effective.title}
                 toastLabel={effective.title || "Task"}
                 size="sm"
+              />
+              {/* Sharing — the one capability the unreachable TaskDetailPage had
+                  and this editor did not. ShareButton owns its own ShareModal
+                  and resolves ownership itself, so no owner gate is needed. */}
+              <ShareButton
+                resourceType="task"
+                resourceId={taskId}
+                resourceName={effective.title || "Task"}
+                variant="ghost"
+                size="icon"
               />
               {isDirty && (
                 <>

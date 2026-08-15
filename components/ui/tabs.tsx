@@ -47,15 +47,35 @@ const TabsTrigger = React.forwardRef<
 ))
 TabsTrigger.displayName = TabsPrimitive.Trigger.displayName
 
+/**
+ * INACTIVE PANELS UNMOUNT — Radix's default, restored 2026-08-15 (D193).
+ *
+ * This wrapper used to hardcode `forceMount`, so every tab panel in the app was
+ * live at all times: its effects ran, its fetches fired, its subscriptions
+ * opened, and it registered whatever a mounted component registers — while
+ * invisible. That is not a theoretical cost. On the agent-apps executions page
+ * both tabs' tables registered a `SurfaceRuntimeProvider` for the same surface
+ * at the same depth, and the HIDDEN tab won the tie-break, so agents on the
+ * visible tab were handed the other tab's rows (D194).
+ *
+ * `forceMount` is now OPT-IN: pass it on the panels that genuinely must survive
+ * a tab switch — an in-flight editor, a scroll position, a live stream that
+ * must not be torn down. The `data-[state=inactive]:hidden` class stays
+ * unconditionally (it is inert when the panel unmounts), so passing the prop is
+ * the whole opt-in; you do not also have to restore the hiding.
+ *
+ * Do NOT reach for `forceMount` to preserve a form draft. Lift that state to
+ * the component that owns the `<Tabs>` — the panel is then free to unmount and
+ * the draft survives a close/reopen too, which force-mounting never gave you.
+ */
 const TabsContent = React.forwardRef<
   React.ComponentRef<typeof TabsPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof TabsPrimitive.Content>
 >(({ className, ...props }, ref) => (
   <TabsPrimitive.Content
     ref={ref}
-    forceMount //<=======Add this line
     className={cn(
-      "data-[state=inactive]:hidden", //<=========Add this line
+      "data-[state=inactive]:hidden",
       "mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
       className
     )}

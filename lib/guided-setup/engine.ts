@@ -26,6 +26,45 @@ export type LiveResults = Record<string, CheckResult | undefined>;
 /** Step ids whose `run` is currently in flight. */
 export type BusySet = ReadonlySet<string>;
 
+/** Checklist keys we have already screamed about, so we scream once, not per render. */
+const warnedDuplicates = new Set<string>();
+
+/**
+ * THE ONE WAY to read a definition's steps.
+ *
+ * A definition may declare a fixed array or a pure factory over the context
+ * (see `ChecklistStepsFactory`). Everything downstream — the engine, the hook,
+ * the UI — goes through here so neither form is a special case anywhere else.
+ *
+ * The duplicate-id check `registerChecklist` performs statically cannot see a
+ * factory's output, so it happens here instead: two steps on one id means one
+ * of them is reading and writing the other's persisted state.
+ */
+export function checklistSteps<Ctx>(
+  definition: ChecklistDefinition<Ctx>,
+  ctx: Ctx,
+): ChecklistStep<Ctx>[] {
+  const steps =
+    typeof definition.steps === "function"
+      ? definition.steps(ctx)
+      : definition.steps;
+  if (!warnedDuplicates.has(definition.key)) {
+    const seen = new Set<string>();
+    for (const step of steps) {
+      if (seen.has(step.id)) {
+        warnedDuplicates.add(definition.key);
+        console.error(
+          `[guided-setup] Checklist "${definition.key}" produced step id "${step.id}" twice — ` +
+            `step ids are persistence keys and must be unique.`,
+        );
+        break;
+      }
+      seen.add(step.id);
+    }
+  }
+  return steps;
+}
+
 function daysBetween(fromIso: string, now: number): number {
   const then = Date.parse(fromIso);
   if (Number.isNaN(then)) return Number.POSITIVE_INFINITY;
@@ -64,6 +103,8 @@ export function confirmationIsCurrent(
  */
 export function resolveChecklist<Ctx>(args: {
   definition: ChecklistDefinition<Ctx>;
+  /** The context the definition's checks and step factory read. */
+  ctx: Ctx;
   state: ChecklistRunState;
   live: LiveResults;
   busy?: BusySet;
@@ -72,14 +113,15 @@ export function resolveChecklist<Ctx>(args: {
   const { definition, state, live } = args;
   const busy = args.busy ?? new Set<string>();
   const now = args.now ?? Date.now();
+  const definedSteps = checklistSteps(definition, args.ctx);
 
   const byId = new Map<string, ResolvedStep>();
   const titleById = new Map<string, string>();
-  for (const step of definition.steps) titleById.set(step.id, step.title);
+  for (const step of definedSteps) titleById.set(step.id, step.title);
 
   const steps: ResolvedStep[] = [];
 
-  for (const step of definition.steps) {
+  for (const step of definedSteps) {
     const persisted = state.steps[step.id];
     const liveResult = live[step.id];
 
@@ -189,6 +231,7 @@ export function resolveChecklist<Ctx>(args: {
  */
 export function autoRunnableSteps<Ctx>(args: {
   definition: ChecklistDefinition<Ctx>;
+  ctx: Ctx;
   resolved: ResolvedChecklist;
   live: LiveResults;
   busy?: BusySet;
@@ -196,7 +239,7 @@ export function autoRunnableSteps<Ctx>(args: {
 }): string[] {
   const busy = args.busy ?? new Set<string>();
   const byId = new Map(args.resolved.steps.map((s) => [s.id, s]));
-  return args.definition.steps
+  return checklistSteps(args.definition, args.ctx)
     .filter((step) => {
       if (step.kind !== "auto") return false;
       if (step.autoRun === false) return false;

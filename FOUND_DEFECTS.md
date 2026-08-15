@@ -14,6 +14,26 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D197 — CMS `PageListView` is a bespoke list, not on the canonical entry-list shell (2026-08-14)
+
+**Surface:** `/cms/[siteId]` (Pages tab). **Action:** try to switch to cards/dense, persist a sort, filter by
+Status or Content, or scope to Shared/Public. **Wrong outcome:** none of it exists — the surface hand-rolls
+its own `<table>`, its own search/sort/category state, and its own toolbar.
+
+`features/cms/components/PageListView.tsx` predates `lib/entity-list/` (`<EntityListPage config={...}/>`,
+[`lib/entity-list/FEATURE.md`](./lib/entity-list/FEATURE.md)) and never moved onto it. Consequences the shell
+would give for free: view-style persistence via `useListViewPrefs` (today nothing persists), per-column sort
+**and** filter (today Status and Content sort/filter not at all, and Category filters only through bespoke
+chips), Mine / My Orgs / Shared / Public scopes with true counts, and the canonical column registry. Its row
+actions are already correct and portable — `buildCmsPageMenu` + `ItemMenu` is exactly the one-`ItemMenuConfig`-per-entity
+shape the shell expects, so the action layer needs no work.
+
+Not fixed in the 2026-08-14 content-manager reconciliation because a shell migration is a rewrite of the
+surface, not a port. **Fix:** write a CMS-page list config (service RPCs per `lib/list-scope/FEATURE.md` +
+column registry + the existing `buildCmsPageMenu` row-actions hook) and render `EntityListPage`, keeping the
+Content-volume column and the `matrx-user/cms-site` `SurfaceRoleAgentButton` + `onFocusPage` hover handoff —
+those are CMS-specific and must survive the move.
+
 ### D195 — `TransformableCard` silently ignores `initialPosition` when more than one is mounted (2026-08-14)
 
 **Surface:** `/demos/draggable-cards` (demos.aimatrx.com). **Action:** mount two `<TransformableCard>` with

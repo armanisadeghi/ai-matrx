@@ -33,10 +33,13 @@ export function TranscriptsModeController() {
   return (
     <NavTooltipProvider>
       <div className="pointer-events-auto matrx-glass-thin-border flex min-w-0 items-center gap-0 rounded-full p-0.5">
-        {TRANSCRIPTS_MODES.map(({ id, label, icon: Icon, href }) => {
+        {TRANSCRIPTS_MODES.map(({ id, label, icon: Icon, href, blurb }) => {
           const isActive = id === mode;
           return (
-            <NavItemTooltip key={id} label={label} contentClassName="lg:hidden">
+            // No breakpoint gate: below lg the tooltip supplies the hidden
+            // label, and at lg+ it supplies what the label alone never says —
+            // what "Studio" / "Scribe" / "Clean" actually DO.
+            <NavItemTooltip key={id} label={label} description={blurb}>
               <Link
                 href={href}
                 onClick={(e) => {

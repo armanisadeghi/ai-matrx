@@ -34,6 +34,12 @@ interface NavItemTooltipProps {
   /** The item's full name — what the hidden label would have said. */
   label: string;
   /**
+   * One line saying what the destination is FOR. Use it when the label alone
+   * is a name the user has to already know ("Scribe", "Studio"). Renders under
+   * the label and widens the tooltip; omit it for self-evident items.
+   */
+  description?: string;
+  /**
    * Gate the tooltip to the range where the label is hidden, e.g. "xl:hidden"
    * for a `hidden xl:inline` label. Omit when the item is always icon-only.
    */
@@ -45,6 +51,7 @@ interface NavItemTooltipProps {
 
 export function NavItemTooltip({
   label,
+  description,
   contentClassName,
   disabled,
   children,
@@ -56,9 +63,18 @@ export function NavItemTooltip({
       <TooltipContent
         side="bottom"
         sideOffset={6}
-        className={cn("px-2 py-1 font-medium", contentClassName)}
+        className={cn(
+          "px-2 py-1 font-medium",
+          description && "max-w-[16rem]",
+          contentClassName,
+        )}
       >
         {label}
+        {description && (
+          <p className="mt-0.5 text-[0.6875rem] font-normal leading-snug opacity-80">
+            {description}
+          </p>
+        )}
       </TooltipContent>
     </Tooltip>
   );

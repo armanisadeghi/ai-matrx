@@ -9,6 +9,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Share2, Globe, Lock } from "lucide-react";
+import { cn } from "@/utils/cn";
 import { useSharingStatus } from "@/utils/permissions/hooks";
 import type { ResourceType } from "@/utils/permissions/types";
 import { ShareModal } from "./ShareModal";
@@ -22,6 +23,8 @@ interface ShareButtonProps {
   variant?: "default" | "outline" | "ghost";
   size?: "default" | "sm" | "lg" | "icon";
   showStatus?: boolean;
+  /** Sizing/spacing override for dense chrome (compact toolbars, header rows). */
+  className?: string;
 }
 
 /**
@@ -45,6 +48,7 @@ export function ShareButton({
   variant = "outline",
   size = "default",
   showStatus = true,
+  className,
 }: ShareButtonProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { isPublic, loading, error, refresh } = useSharingStatus(
@@ -70,7 +74,7 @@ export function ShareButton({
       variant={variant}
       size={size}
       onClick={() => setIsModalOpen(true)}
-      className="gap-2"
+      className={cn("gap-2", className)}
     >
       <Icon className="w-4 h-4" />
       {size !== "icon" && <span>{label}</span>}
