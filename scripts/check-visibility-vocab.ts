@@ -1,8 +1,8 @@
 #!/usr/bin/env tsx
 /**
  * Visibility vocabulary check — the guard that keeps the ONE visibility
- * vocabulary from re-collapsing (docs/handoffs/access-truth-and-visibility-vocabulary.md,
- * features/sharing/FEATURE.md).
+ * vocabulary from re-collapsing (features/sharing/FEATURE.md — the durable
+ * contract; FOUND_DEFECTS.md D106b — the remaining surfaces).
  *
  * The DB vocabulary is `personal | internal | link | public` — exactly four
  * values, one meaning each (docs/official/db-rules.md §6). Two failure classes
@@ -179,8 +179,23 @@ function isCommentLine(trimmed: string): boolean {
   return (
     trimmed.startsWith("//") ||
     trimmed.startsWith("*") ||
-    trimmed.startsWith("/*")
+    trimmed.startsWith("/*") ||
+    // JSX comment bodies — `{/* … */}` across lines. Documenting this rule
+    // beside a fixed surface must not re-trip the rule (VaultItemDetail cited
+    // the doctrine in a comment and the checker flagged its own fix).
+    trimmed.startsWith("{/*") ||
+    trimmed.endsWith("*/}") ||
+    trimmed.endsWith("*/")
   );
+}
+
+/**
+ * "Only you, people you share with, and members of your org…" is the CORRECT
+ * form — an enumeration that names every path is exactly what this check asks
+ * for. Only the absolute claim ("Only you." / "Only you can see this") lies.
+ */
+function isHonestEnumeration(line: string): boolean {
+  return /\bOnly you\s*,/.test(line);
 }
 
 function scanFile(rel: string, text: string, allow: Allowlist): void {
@@ -232,7 +247,7 @@ function scanFile(rel: string, text: string, allow: Allowlist): void {
     }
 
     // Detector 3 — unprovable privacy claims in user-visible strings.
-    if (!inComment && /\bOnly you\b/.test(line)) {
+    if (!inComment && /\bOnly you\b/.test(line) && !isHonestEnumeration(line)) {
       if (!isAllowed(allow.onlyYouClaim, rel, lineNo)) {
         findings.push({
           detector: "onlyYouClaim",
