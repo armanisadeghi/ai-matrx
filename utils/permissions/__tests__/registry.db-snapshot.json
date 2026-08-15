@@ -22,6 +22,17 @@
     "is_active": true
   },
   {
+    "resource_type": "agent_run",
+    "table_name": "agent_run",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Agent Run",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "app",
     "table_name": "definition",
     "id_column": "id",
@@ -99,6 +110,17 @@
     "is_active": true
   },
   {
+    "resource_type": "comparison_set",
+    "table_name": "cmp_comparison_sets",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Comparison Set",
+    "url_path_template": "/agents/compare?set={id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "content_ir_kind_instance",
     "table_name": "kind_instance",
     "id_column": "id",
@@ -139,6 +161,17 @@
     "is_public_column": null,
     "display_label": "Outreach List",
     "url_path_template": "/crm/outreach-lists/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "crm_sending_identity",
+    "table_name": "sending_identity",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Sending Mailbox",
+    "url_path_template": "/crm/sending-identities/{id}",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -308,6 +341,17 @@
     "is_active": true
   },
   {
+    "resource_type": "global_request",
+    "table_name": "global_request",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Runtime Request",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "growth_loop_run",
     "table_name": "loop_run",
     "id_column": "id",
@@ -315,6 +359,17 @@
     "is_public_column": null,
     "display_label": "Growth Loop Run",
     "url_path_template": "/marketing/growth-loop/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "hindsight_enrollment",
+    "table_name": "enrollment",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Hindsight Enrollment",
+    "url_path_template": "/administration/agents/hindsight?enrollment={id}",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -393,6 +448,17 @@
     "display_label": "Redaction Audit",
     "url_path_template": "/files/{id}",
     "rls_uses_has_permission": false,
+    "is_active": true
+  },
+  {
+    "resource_type": "plan_node",
+    "table_name": "node",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Plan Page",
+    "url_path_template": "/marketing/content-plan/nodes/{id}",
+    "rls_uses_has_permission": true,
     "is_active": true
   },
   {
@@ -484,6 +550,17 @@
     "is_active": true
   },
   {
+    "resource_type": "sch_task",
+    "table_name": "sch_task",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Scheduled Task",
+    "url_path_template": "/administration/automation/scheduling/tasks?task={id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "scope",
     "table_name": "scopes",
     "id_column": "id",
@@ -550,6 +627,17 @@
     "is_active": true
   },
   {
+    "resource_type": "seo_rank_target",
+    "table_name": "rank_target",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "SEO Rank Target",
+    "url_path_template": "/marketing/ranks?target={id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "shared_canvas_item",
     "table_name": "shared_canvas_items",
     "id_column": "id",
@@ -568,6 +656,17 @@
     "is_public_column": null,
     "display_label": "Skill",
     "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "sms_conversation",
+    "table_name": "sms_conversations",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "SMS Conversation",
+    "url_path_template": "/sms?conversation={id}",
     "rls_uses_has_permission": true,
     "is_active": true
   },
