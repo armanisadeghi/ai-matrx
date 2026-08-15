@@ -109,6 +109,10 @@ injection of triggers/runs).
    `/scheduler/tasks`). The server atomically inserts `sch_task` +
    `sch_agent_task` + `sch_trigger`, computes `next_due_at`, and
    returns the hydrated `TaskDetailResponse` — no separate re-fetch.
+   **The create is IDEMPOTENT on identity** — if the caller already owns
+   a live schedule doing the same work on the same trigger, the server
+   returns THAT schedule with `deduplicated: true` and HTTP 200 instead
+   of inserting a twin (see Invariant 9).
 2. **Pause / resume** — `toggleTaskEnabled` thunk; PATCH
    `/scheduler/tasks/{id}` with `{ enabled }`; optimistic-then-reconcile.
 3. **Run now** — POST `/scheduler/tasks/{id}/run-now`. Server invokes
@@ -155,6 +159,18 @@ injection of triggers/runs).
 7. **matrx-frontend doesn't execute** — `'web'` is observe-only.
 8. **All status-writing updates inside the runner are gated by
    `claim_token`** so a lapsed-and-re-claimed run can't be stomped on.
+9. **THE SCHEDULER DUPLICATE GUARD — never mirror the fingerprint here.**
+   What makes two schedules "the same" is decided in ONE place,
+   `matrx_scheduler.duplicate_guard` (agent + prompt + variables + queue
+   + enabled triggers, deliberately NOT the title). A TypeScript copy
+   would drift the first time either side changed, so the FE only ever
+   renders what `GET /scheduler/tasks/duplicates` already decided.
+   Corollaries: a create that came back `deduplicated: true` must never
+   be reported as "created" — it is a lie the user acts on; the banner
+   offers **pause**, never delete, because pausing stops the cost
+   immediately, changes no results and is reversible; and the duplicates
+   lookup fails SILENTLY (an advisory layer must never turn a working
+   schedule list into an error page).
 
 ## Related features
 
@@ -185,6 +201,8 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
   errors yet.
 
 ## Change log
+
+- **2026-08-14** — claude: **THE SCHEDULER DUPLICATE GUARD — one job, one schedule.** "Human Baseline Schedule" existed twice in `scheduler.sch_task` (`515dcc49-…` / `da07e6c6-…`), created 36 seconds apart by one user, identical in every field that decides what runs. Both enabled, both firing hourly for FIVE DAYS, doubling agent spend. Nothing was broken, which is exactly why nobody caught it: two healthy schedules running perfectly are indistinguishable from one unless something is explicitly looking for the pair. Root cause was that the CREATE path had no notion of identity, so a double-click or a retried `create_scheduled_task` MCP call inserted a second complete schedule and an always-on trigger turned that one instant into open-ended recurring cost. Four layers, ONE key: (1) `matrx_scheduler.duplicate_guard.task_fingerprint` defines identity as what a schedule DOES — kind, queue, agent, prompt, variables, enabled triggers — and deliberately **ignores the title**, because two differently-named schedules on the same agent and cron cost exactly as much as two identically-named ones; (2) create is now idempotent on that key, returning the EXISTING schedule (`deduplicated: true`, HTTP 200) rather than a twin, with `force: true` as the escape hatch for a genuinely-wanted second schedule (which then still raises the alarm, so a deliberate pair is visible rather than silent); (3) a `platform.assists` chip names the twin and carries the door, routed through the SAME `escalation_sink` THE REPEAT GUARD uses — one alarm path out of the package, dispatched on payload type in `aidream/services/scheduling/escalation.py`, so a host can never wire one guard and leave the other log-only; (4) `DuplicateScheduleBanner` on `/schedules` **and** the admin tasks console renders the groups above the list (duplication is a property of the SET — no row can show it), links every named schedule per THE DOOR LAW, and ships the one-click **pause** fix. `can_fire` gates all of it: a paused or trigger-less schedule bills nothing and duplicates nothing — a rule found by an existing API test that caught two trigger-less `ping` tasks being grouped, and the reason "pause the extra" is an honest resolution. Validated against the live table before shipping: across all 39 rows the fingerprint produced exactly ONE group (the incident pair) and zero false positives, notably NOT collapsing the two distinct schedules both titled "Weekly Marketing Recap". The guard never picks a winner and never deletes. 129 package tests pass; `pnpm type-check` clean.
 
 - **2026-08-15** — claude: **Scheduling surfaces carry Copy / Copy-for-AI / export (agent-copy rollout).** New `lib/copy.ts` is the ONE place this feature builds copy payloads, and it builds them by REUSING the scope fragments in `lib/schedules-scope.ts` — the same `buildScheduleRosterValues` / `buildOpenScheduleValues` / `buildScheduleRunValues` that feed the `matrx-user/schedules` agent surface — so a copy payload and the surface context can never drift into two different views of one page. Wired: the `/schedules` route header (view pair + `ExportMenu` JSON+CSV, covering ALL schedules rather than a visible slice, placed in the page's own header row so no second near-empty toolbar appears above the list); `ScheduleRow` (hover-reveal icon pair — the row is a `Link`, so `CopyButtons`' `stopPropagation` keeps copying from navigating); `ScheduleDetail` (record pair sized to the data — plain click is the what-I-see payload of spec + trigger + run history with errors verbatim, and the menu grades it into the two reasons this page gets copied, "Spec + trigger" and "Run history", with Everything as the never-lossy escape hatch — plus record-JSON and runs-CSV export); `SpecCard` / `TriggerCard` (`xs` hover pairs, prompt carried in FULL — a truncated prompt is the least useful thing to hand an agent debugging a schedule); `RunHistoryCard` (list pair + `ExportMenu`) and `RunRow` (`xs` pair rendered as a SIBLING of the expand button, never nested inside it). The route header's KPI line (`N schedules · M enabled`) rides in every payload's attributes and body. `ScheduleForm` is deliberately skipped — a composer is not a record. `pnpm type-check` clean.
 
