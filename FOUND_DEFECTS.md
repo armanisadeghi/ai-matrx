@@ -46,6 +46,40 @@ surfaceName that already has a live entry at the SAME depth, naming both call si
 independent layer the loud-recovery doctrine requires. Filed as AI Dream feedback
 `ebed27b8-8544-4a6a-92f3-3dabdebe2ad0`.
 
+### D195 — `append_rows_to_user_table`'s only caller is in matrx-extend and still reads the old error text (2026-08-15)
+
+The D167 honest-access-error sweep (`migrations/invoker_fns_honest_access_error.sql`, applied live
+2026-08-15) rewrote 17 SECURITY INVOKER functions to raise an honest ambiguous message under
+errcode **P0002**. Sixteen had their frontend callers rewired in the same commit. The seventeenth,
+`append_rows_to_user_table`, has **zero** callers in this repo — its only consumer is
+`matrx-extend/src/lib/supabase/user-tables.ts:257`, which this repo cannot edit.
+
+Nothing is broken today (that caller does not string-match the message), but the extension now
+receives an access answer it does not route. **Relay prompt for the matrx-extend agent:**
+
+> `append_rows_to_user_table` (public, SECURITY INVOKER) no longer raises `'table not found or not
+> owned by caller'`. Its zero-row gate is ambiguous under RLS, so it now raises an honest message
+> under errcode `P0002`. In `src/lib/supabase/user-tables.ts:257`, branch on `error.code ===
+> "P0002"` and surface it as an access-unresolved state (never as "not found" / "not yours"). Do
+> not match the message text.
+
+### D196 — two SECURITY DEFINER functions embed the access predicate in the lookup, then say "not found" (2026-08-15)
+
+The weak twin of D167, found during that sweep. A definer bypasses RLS, so its zero-row branch is
+normally genuine — but when the access test is written **inside** the lookup's `WHERE`, the branch
+conflates denial with absence again:
+
+- `public.edu_resolve_suggestion` — filters `(owner_id = v_uid or public.is_super_admin())` in the
+  lookup, then raises `'suggestion % not found or not yours'`. Text is honest; it carries **no
+  errcode**, so no client can route it.
+- `public.mbr_update_role` — `'membership container not found'` fires when `iam._container_authz()`
+  returns no row, which includes "the actor has no role in that container". Already P0002.
+
+**Fix:** split each into an explicit access check that raises its own denial (the pattern
+`version_snapshot` / `version_restore` already use — `iam.has_access(...)` → `'access denied'`),
+leaving the not-found branch to mean only absence. Spot-check scope: 12 of the 155 definers that
+raise "not found" were read (agx_/crm_/edu_/mbr_/version_); the other 143 are unaudited.
+
 ### D192 — CRM "Save as contact" cannot complete its save until aidream deploys (2026-08-14)
 
 The frontend half is live and browser-verified up to the server call; the governed save is blocked
