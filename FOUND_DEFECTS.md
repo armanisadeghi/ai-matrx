@@ -14,6 +14,25 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D193 — Four user-content entities can't be shared with an organization at all (2026-08-15)
+
+**Found by the platform-wide scope audit Arman asked for** after the CMS finding ("everything in our database should essentially be the same unless it's truly a private personal thing"). Good news first: of **193 active entity tables**, only 5 lack `organization_id` and 4 of those are correct (`iam.organizations` IS the org; `public.app_log` is a system log; `runtime.global_origin` is D100; `ui.ui_surface` is a registry, chipped). The platform is broadly consistent.
+
+The real gap is `visibility`. These four are **registered as shareable**, are user-created work product, already carry `organization_id` — and have **no `visibility` column**, so they sit on the legacy boolean `is_public` + `user_id` model. There is no way to express "share with my org": every row is private-or-world.
+
+| token | table | live rows |
+|---|---|---|
+| `workbook` | `workbench.udt_workbooks` | 17 |
+| `udt_document` | `workbench.udt_documents` | 24 |
+| `dataset` | `workbench.udt_datasets` | 140 |
+| `structured_list` | `workbench.udt_structured_lists` | 28 |
+
+Their `shareable_resource_registry` rows say `is_public_column='is_public'`, `owner_column='user_id'` — the legacy `make_resource_public` path, not the canonical `setVisibilityColumn` enum path. **Chip fired 2026-08-15.**
+
+**Separate, smaller, same audit — `context_item` sharing is half-wired:** `platform.shareable_resource_registry.context_item` declares `is_public_column='visibility'`, but `context.context_items` **has no `visibility` column** (D117's exact class, which was fixed once for `content_ir_kind_instance`), and its `url_path_template` is an empty string. 203 live rows. So the public toggle writes a column that does not exist and the sharing UI cannot link to one. Fix the registry row (live + TS mirror + snapshot together, parity test) and decide whether context items should carry canonical visibility — they are scope data belonging to an org, so per Arman's ruling they probably should.
+
+The other 51 `visibility`-less entities were reviewed and are legitimately non-shareable (user preferences, memberships, invitations, likes/views, system errors, job runs).
+
 ### D193 — the shared `TabsContent` hardcodes `forceMount`: every tab panel in the app is always mounted (2026-08-15)
 
 `components/ui/tabs.tsx` (~line 69) carries `forceMount //<=======Add this line` plus
@@ -313,7 +332,9 @@ Measured live against the CMS project (`viyklljfdhtidwecakwx`): all **7** `web.s
 
 **The real cause is ownership scoping.** `app/api/cms/sites/route.ts:147` scopes `listSites` to `.eq("owner_user_id", user.id)`, and `resolveCmsLink` only searches the list it was handed. The CMS sites that resolve are owned by the signed-in account; Titanium Marketing and PBW Law Website are owned by `4cf62e4e-…`, a different user. So the refusal message ("not a CMS site you can see") is literally ACCURATE, and every fix on that site correctly falls back to desired-metadata only.
 
-**The gap is that `client_sites` has no org or sharing model at all** — just `owner_user_id`. A marketing site owned by an org can therefore point at a CMS site only one person can reach, and nothing surfaces WHY. **Decides: Arman** — should CMS sites become org-scoped/shareable like the rest of the platform (we-are-our-own-customer would say yes), or should the marketing site tell the user plainly "this CMS site belongs to <owner>, ask them to share it"? The validating picker from the original entry is still worth building, but it must validate against *reachability*, not existence — a picker that only checks the id exists would have called this link healthy.
+**The gap is that `client_sites` has no org or sharing model at all** — just `owner_user_id`. A marketing site owned by an org can therefore point at a CMS site only one person can reach, and nothing surfaces WHY.
+
+✅ **DECIDED — Arman 2026-08-15: "of course they should be ORG scoped and shareable."** CMS sites get `organization_id` + canonical `visibility` + `created_by` like every other entity. ⚠️ The CMS is the one declared SEPARATE database (`viyklljfdhtidwecakwx`), so how org identity crosses the two projects must follow existing precedent — and if none exists, that is an architecture call for Arman, not an invention. **Chip fired 2026-08-15.** Still worth building afterwards: the validating picker, which must validate *reachability*, not existence — a picker that only checked the id exists would have called this link healthy.
 
 ### D186 — ~~The CMS-draft leg is unexercised~~ **FALSE — same root cause as D185 (re-measured 2026-08-15)**
 
@@ -323,13 +344,9 @@ Measured directly against the CMS project: **"PBW Law Website" has 27 real pages
 
 So the CMS-draft leg is **exercisable today** on pbw-law, and the join is not empty. Nothing needs building here; the blocker is the D185 visibility gap. **When D185 is decided, re-run the write-back on `www.pbw-law.com` as the CMS site's owner — that is the real end-to-end test this entry was asking for.** The page-identity idea in the original entry (a measured page naming its CMS twin by id rather than by route string) is still a genuine improvement, but it is an enhancement, not a repair — `client_pages.web_page_id` already exists for exactly that and is worth wiring.
 
-### D164 — `keyword_set` and `keyword_variant_set` are byte-identical kinds (2026-08-11)
+### D164 (remainder) — nothing stops `kind_create` minting a duplicate shape (2026-08-11)
 
-Same `emitted_json_schema`, same fingerprint (`9q-183lvc51ku2s37`); `matchKindForSchema` is first-writer-wins so an agent bound to `keyword_variant_set` displays as `keyword_set`.
-
-🚨 **ARMAN'S RULING 2026-08-14 — DELETING EITHER ONE IS FORBIDDEN** until documentation PROVES they were the same thing from birth and an agent merely made two copies. Duplicates like this are rarely accidental: usually two genuinely different intents got collapsed, and deleting one deepens the damage. Required work is investigation, not cleanup — compare every column and asset, compare all UI/consumers/bindings, then do a full documentation review for original intent (the names suggest "the keywords for a page" vs "variants of one keyword"). **Chip fired 2026-08-14.**
-
-✅ **INVESTIGATED 2026-08-14 — identical from birth; no second intent exists.** `history.row_versions` shows each row has exactly two versions (v1 `INSERT`, v2 = the `is_active` flip), and **both v1 rows already carry the same schema, fingerprint, and byte-identical `sample_data`** — neither was ever renamed or ever differed in shape, so nothing was collapsed. `INSERT`ed 32ms apart by the same actor via `created_via='kind_create'` in a batch of only these two; the consuming agent `Keyword Extractor` predates both by 13 minutes and emits `keyword_variant_set`. A full doc sweep found **no prose anywhere** stating either kind's purpose, while every deliberately-designed sibling has both a `kinds/*.ts`/migration and authored prose. `keyword_set` has **zero** consumers of any kind. Blast radius is smaller than stated above: the reverse lookup lives only in the agent Output Schema admin tab — render routing reads `__kind` off the payload, so no user-facing surface renders the wrong component. **No deletion needed:** `isKindBindable` requires `isActive === true`, so deactivating the loser resolves the collision reversibly. **OPEN — awaiting Arman: which slug survives** (schema semantics + all consumers favor `keyword_variant_set`; the generic name and the v2 card's own `keyword-set:add-to-page` event favor `keyword_set`). Full evidence with citations: [`features/content-ir/FEATURE.md`](features/content-ir/FEATURE.md) Change Log 2026-08-14.
+The duplicate itself is **RESOLVED** (see Resolved). What is still open is the class: the two kinds were minted 32ms apart, byte-identical, and nothing objected — found three weeks later by an unrelated tool. **The rule: `kind_create` must REFUSE a slug whose `emitted_fingerprint` already belongs to an ACTIVE `user_authored` kind.** Scope it exactly that way — fingerprint collisions are endemic and legitimate among the ~665 machine-minted `is_contract_artifact` snapshots, which must keep working. Verified live 2026-08-15: with `keyword_set` deactivated there are **0** collisions between active user-authored kinds, so the guard can be enabled today without touching existing data. **Chip fired 2026-08-15.**
 
 ### D163 — 12 stored `emitted_block_schema` rows are stale against the live emitter (2026-08-11)
 
@@ -667,6 +684,7 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 One line per fix — title, date, pointer. History lives in git. Entries older than ~2 weeks get deleted.
 
 - **D191** — the orphan-trigger retirement's kept-set assertion now names BOTH deliberate keeps (`platform.dead_relation_write()` + `workflow.plan_touch_row()`); `retire_orphan_updated_at_trigger_helpers.sql` applied live and the shared applier is unblocked. The assertion did its job — it refused to retire 19 functions while an un-triaged 20th orphan existed, and `workflow.plan_touch_row()` turned out to be matrx-graph's standalone-deployment fallback that must NOT be retired. 2026-08-14.
+- **D164 (the duplicate)** — `keyword_set` deactivated via the canonical `content_ir.set_kind_activation` gate (reversible, not deleted) after the investigation proved both kinds identical from birth; `keyword_variant_set` survives — it holds the only real component and the only bound agent, `keyword_set` had zero consumers. Verified live: **0** fingerprint collisions remain between active `user_authored` kinds. Arman's call, 2026-08-15. Mint-time guard → D164 remainder.
 - **D187** — platform-wide public-ancestor → internal-descendant cross-tenant read closed in all four IAM kernels (`iam_public_visibility_boundary`); stranger growth loop/stage/view = `0/0/0`, creators and explicit descendant shares preserved. 2026-08-13.
 - **D144** — 14 Radix Root wrappers ungated (false SSR-id premise disproven against node_modules; `05d6d53d5`); type-check green. 2026-08-12.
 - **D143** — upload-ban lint message points at the real `uploadGuardOpeners` path; internals stay banned (`460ff2dcc`). 2026-08-12.
