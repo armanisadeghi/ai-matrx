@@ -5,6 +5,7 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 **Rules**
 
 - File only defects you can't fully fix in the moment, and only UNRELATED findings — a bug related to your current task gets **fixed**, not filed. Enough context to act cold: what, where, the fix.
+- **Claim the next free ID by grepping `^### D` first.** Duplicate IDs have collided four times (two D138s, two D150s, two D167s, two D183s, two D184s) — an entry other docs cite by number must keep its number, so the LATER filing is the one that gets renumbered.
 - **When you fix one: collapse it to a one-line bullet in Resolved (title + date + commit/file pointer) — or delete it outright.** No histories, no verification narratives, no journeys. An entry earns lines only while it is open.
 - Keep open entries compressed to load-bearing facts: what's broken, exact paths, the fix, who decides. A partially-fixed entry keeps only the open remainder.
 - CLAUDE.md links here. Read both before touching files, media, or persistence.
@@ -93,7 +94,7 @@ uses. Fixed 2026-08-13; each function is now checked under its own effective sea
 path, every finding carries a `severity`, and the actionable count is **0**. A `real`
 row today is a real runtime failure — treat it as one.
 
-### D184 — `growth.v_loop_state` is exposed to nobody, and would leak every org if it were (2026-08-13)
+### D193 (was a second D184) — `growth.v_loop_state` is exposed to nobody, and would leak every org if it were (2026-08-13)
 
 Found while building the growth loop's human pipe. Two halves, both must land together:
 
@@ -219,7 +220,7 @@ Remaining durability defects from that incident:
   and nothing dispatches a resume on it — against the repo's own
   `detach_on_disconnect` doctrine.
 
-### D183 — The page-template system shipped but is INERT in production (2026-08-13)
+### D194 (was a second D183) — The page-template system shipped but is INERT in production (2026-08-13)
 
 aidream `services/content_plan/templates.py` (916 lines) resolves a per-node HTML
 scaffold from `plan.profile.template_map.templates`, and `cms_reconciler`
