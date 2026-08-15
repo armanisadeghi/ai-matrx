@@ -4198,6 +4198,51 @@ export type Database = {
   }
   billing: {
     Tables: {
+      account_addon: {
+        Row: {
+          capability: string
+          created_at: string
+          effective_from: string
+          expires_at: string | null
+          granted_by: string | null
+          id: string
+          limit_value: number | null
+          note: string | null
+          organization_id: string
+          period: Database["billing"]["Enums"]["meter_period"] | null
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          capability: string
+          created_at?: string
+          effective_from?: string
+          expires_at?: string | null
+          granted_by?: string | null
+          id?: string
+          limit_value?: number | null
+          note?: string | null
+          organization_id: string
+          period?: Database["billing"]["Enums"]["meter_period"] | null
+          source?: string
+          updated_at?: string
+        }
+        Update: {
+          capability?: string
+          created_at?: string
+          effective_from?: string
+          expires_at?: string | null
+          granted_by?: string | null
+          id?: string
+          limit_value?: number | null
+          note?: string | null
+          organization_id?: string
+          period?: Database["billing"]["Enums"]["meter_period"] | null
+          source?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       capability: {
         Row: {
           capability: string
@@ -4205,6 +4250,7 @@ export type Database = {
           min_tier: Database["billing"]["Enums"]["tier"]
           period: Database["billing"]["Enums"]["meter_period"] | null
           updated_at: string
+          usage_source: string
         }
         Insert: {
           capability: string
@@ -4212,6 +4258,7 @@ export type Database = {
           min_tier?: Database["billing"]["Enums"]["tier"]
           period?: Database["billing"]["Enums"]["meter_period"] | null
           updated_at?: string
+          usage_source?: string
         }
         Update: {
           capability?: string
@@ -4219,6 +4266,7 @@ export type Database = {
           min_tier?: Database["billing"]["Enums"]["tier"]
           period?: Database["billing"]["Enums"]["meter_period"] | null
           updated_at?: string
+          usage_source?: string
         }
         Relationships: []
       }
@@ -4376,6 +4424,7 @@ export type Database = {
           granted_by: string | null
           note: string | null
           organization_id: string
+          plan_id: string | null
           source: string
           tier: Database["billing"]["Enums"]["tier"]
           updated_at: string
@@ -4389,6 +4438,7 @@ export type Database = {
           granted_by?: string | null
           note?: string | null
           organization_id: string
+          plan_id?: string | null
           source?: string
           tier?: Database["billing"]["Enums"]["tier"]
           updated_at?: string
@@ -4402,13 +4452,117 @@ export type Database = {
           granted_by?: string | null
           note?: string | null
           organization_id?: string
+          plan_id?: string | null
           source?: string
           tier?: Database["billing"]["Enums"]["tier"]
           updated_at?: string
           updated_by?: string | null
           version?: number
         }
+        Relationships: [
+          {
+            foreignKeyName: "org_plan_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plan"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plan: {
+        Row: {
+          active: boolean
+          annual_cents: number | null
+          audience: string
+          badge: string | null
+          created_at: string
+          id: string
+          is_default: boolean
+          is_public: boolean
+          metadata: Json
+          min_seats: number | null
+          monthly_cents: number | null
+          name: string
+          per_seat: boolean
+          rank: number
+          tagline: string | null
+          tier: Database["billing"]["Enums"]["tier"]
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          annual_cents?: number | null
+          audience?: string
+          badge?: string | null
+          created_at?: string
+          id: string
+          is_default?: boolean
+          is_public?: boolean
+          metadata?: Json
+          min_seats?: number | null
+          monthly_cents?: number | null
+          name: string
+          per_seat?: boolean
+          rank: number
+          tagline?: string | null
+          tier?: Database["billing"]["Enums"]["tier"]
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          annual_cents?: number | null
+          audience?: string
+          badge?: string | null
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          is_public?: boolean
+          metadata?: Json
+          min_seats?: number | null
+          monthly_cents?: number | null
+          name?: string
+          per_seat?: boolean
+          rank?: number
+          tagline?: string | null
+          tier?: Database["billing"]["Enums"]["tier"]
+          updated_at?: string
+        }
         Relationships: []
+      }
+      plan_limit: {
+        Row: {
+          capability: string
+          limit_value: number | null
+          note: string | null
+          period: Database["billing"]["Enums"]["meter_period"]
+          plan_id: string
+          updated_at: string
+        }
+        Insert: {
+          capability: string
+          limit_value?: number | null
+          note?: string | null
+          period: Database["billing"]["Enums"]["meter_period"]
+          plan_id: string
+          updated_at?: string
+        }
+        Update: {
+          capability?: string
+          limit_value?: number | null
+          note?: string | null
+          period?: Database["billing"]["Enums"]["meter_period"]
+          plan_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_limit_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plan"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       price: {
         Row: {
@@ -4592,6 +4746,7 @@ export type Database = {
           created_at: string
           id: string
           metadata: Json
+          organization_id: string | null
           quantity: number
           user_id: string
         }
@@ -4601,6 +4756,7 @@ export type Database = {
           created_at?: string
           id?: string
           metadata?: Json
+          organization_id?: string | null
           quantity?: number
           user_id: string
         }
@@ -4610,6 +4766,7 @@ export type Database = {
           created_at?: string
           id?: string
           metadata?: Json
+          organization_id?: string | null
           quantity?: number
           user_id?: string
         }
@@ -4620,15 +4777,45 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      addon_grant: {
+        Args: {
+          p_capability: string
+          p_expires_at: string
+          p_limit: number
+          p_note: string
+          p_org: string
+          p_period: Database["billing"]["Enums"]["meter_period"]
+          p_source: string
+        }
+        Returns: Json
+      }
       entitlement_check:
         | { Args: { p_capability: string }; Returns: Json }
         | { Args: { p_capability: string; p_org: string }; Returns: Json }
-      entitlement_consume: {
-        Args: { p_capability: string; p_check_id?: string; p_quantity?: number }
-        Returns: Json
-      }
+      entitlement_consume:
+        | {
+            Args: {
+              p_capability: string
+              p_check_id?: string
+              p_quantity?: number
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_capability: string
+              p_check_id: string
+              p_org: string
+              p_quantity: number
+            }
+            Returns: Json
+          }
       entitlement_snapshot: { Args: never; Returns: Json }
       org_capability_status: { Args: { p_org: string }; Returns: Json }
+      org_plan_assign: {
+        Args: { p_note: string; p_org: string; p_plan: string }
+        Returns: Json
+      }
       org_plan_list: {
         Args: never
         Returns: {
@@ -4638,6 +4825,7 @@ export type Database = {
           granted_by: string | null
           note: string | null
           organization_id: string
+          plan_id: string | null
           source: string
           tier: Database["billing"]["Enums"]["tier"]
           updated_at: string
@@ -4669,6 +4857,8 @@ export type Database = {
         Args: { p_period: Database["billing"]["Enums"]["meter_period"] }
         Returns: string
       }
+      plan_status: { Args: { p_org: string }; Returns: Json }
+      public_plans: { Args: never; Returns: Json }
       resolve_capability:
         | { Args: { p_capability: string; p_user: string }; Returns: Json }
         | {
@@ -4679,10 +4869,24 @@ export type Database = {
         Args: { p_org: string; p_user: string }
         Returns: Database["billing"]["Enums"]["tier"]
       }
+      resolve_limit: {
+        Args: {
+          p_capability: string
+          p_org: string
+          p_period: Database["billing"]["Enums"]["meter_period"]
+        }
+        Returns: {
+          from_addon: boolean
+          limit_value: number
+          plan_id: string
+          unlimited: boolean
+        }[]
+      }
       resolve_org_tier: {
         Args: { p_org: string }
         Returns: Database["billing"]["Enums"]["tier"]
       }
+      resolve_plan: { Args: { p_org: string }; Returns: string }
       resolve_tier: {
         Args: { p_user: string }
         Returns: Database["billing"]["Enums"]["tier"]
@@ -5408,7 +5612,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      _require_actor: { Args: { p_user_id: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never
@@ -29486,6 +29690,94 @@ export type Database = {
     Enums: {
       wc_finger_type: "index" | "middle" | "ring" | "little" | "thumb"
       wc_side: "right" | "left" | "default"
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+  marketing: {
+    Tables: {
+      initiative: {
+        Row: {
+          brand_id: string | null
+          budget_amount: number | null
+          budget_currency: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          details: Json
+          ends_on: string | null
+          goal: string | null
+          id: string
+          metadata: Json
+          name: string
+          objective: string
+          organization_id: string
+          starts_on: string | null
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          brand_id?: string | null
+          budget_amount?: number | null
+          budget_currency?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          details?: Json
+          ends_on?: string | null
+          goal?: string | null
+          id?: string
+          metadata?: Json
+          name: string
+          objective?: string
+          organization_id: string
+          starts_on?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          brand_id?: string | null
+          budget_amount?: number | null
+          budget_currency?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          details?: Json
+          ends_on?: string | null
+          goal?: string | null
+          id?: string
+          metadata?: Json
+          name?: string
+          objective?: string
+          organization_id?: string
+          starts_on?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -60673,6 +60965,9 @@ export const Constants = {
       wc_finger_type: ["index", "middle", "ring", "little", "thumb"],
       wc_side: ["right", "left", "default"],
     },
+  },
+  marketing: {
+    Enums: {},
   },
   meta: {
     Enums: {},

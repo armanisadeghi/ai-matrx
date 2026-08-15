@@ -92,6 +92,19 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
       "aidream has five video providers (Veo/Sora/Kling/Wan/grok-imagine) reachable only via an agent pinned to a video model or the ai.generate_video workflow node — video runs take minutes and the marketing headless-agent shell (5-min client deadline, dies on navigation) needs a durable job path before the order UX is honest.",
     surfaces: ["/marketing/brands/[brandId]/sites/[siteId]/media?view=videos"],
   },
+  "cms.site-images": {
+    id: "cms.site-images",
+    label: "Add pictures to a website",
+    owner: "cms",
+    promise:
+      "Upload a logo, a hero picture, or a picture per service straight from the website, and have the site shape's picture requirements tick off on their own.",
+    stage: "blocked",
+    blockedBy:
+      "The asset library exists end to end (client_assets + /api/cms/assets + CmsAssetService.createAsset), but its ONLY UI is AssetsPanel inside the super-admin surface /administration/knowledge/cms-agents — there is no per-site tab a normal owner can reach, so the content-plan setup checklist can measure the gap and not close it.",
+    surfaces: [
+      "/marketing/content-plan/[siteId]?view=setup — 'Your website has the pictures it needs'",
+    ],
+  },
   "marketing.initiatives": {
     id: "marketing.initiatives",
     label: "Initiatives",
@@ -115,7 +128,7 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
     label: "Audience & Personas",
     owner: "marketing",
     promise:
-      "Define segments, ICPs, and personas once so every brief, campaign, and agent writes for a named audience instead of a guess.",
+      "Define segments, ICPs, and personas once so every brief, initiative, and agent writes for a named audience instead of a guess.",
     stage: "planned",
     surfaces: ["/marketing hub card", "/marketing/audience route"],
   },
@@ -160,7 +173,7 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
     label: "Paid Ads",
     owner: "marketing",
     promise:
-      "Pull Google, Meta, and LinkedIn spend into one place with creative, keyword, and ROAS rollups against each campaign.",
+      "Pull Google, Meta, and LinkedIn spend into one place with creative, keyword, and ROAS rollups against each ad campaign.",
     stage: "planned",
     surfaces: ["/marketing hub card", "/marketing/ads route"],
   },
