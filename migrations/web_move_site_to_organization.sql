@@ -172,7 +172,7 @@ begin
     v_brand_action := p_brand_action;
 
     if v_brand_action is null then
-        raise exception using errcode = '22023',
+      raise exception using errcode = '22023',
         message = format('%s belongs to the brand "%s", which stays in %s.',
                          v_site.name, v_brand.name,
                          coalesce(v_brand_organization_name, 'another organization')),
