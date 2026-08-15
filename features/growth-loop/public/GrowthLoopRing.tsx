@@ -143,52 +143,77 @@ export function GrowthLoopRing({ variant = "story" }: { variant?: GrowthLoopRing
                 </div>
             </div>
 
-            {/* ── The selected step ─────────────────────────────────────── */}
+            {/* ── The selected step ─────────────────────────────────────────
+                🚨 ZERO LAYOUT SHIFT. Every one of the twelve panels is rendered
+                into the SAME grid cell, so this box is always exactly as tall as
+                the LONGEST step and never resizes as the pointer moves. Only the
+                active panel is visible; the rest are `invisible` (still laid out,
+                which is the whole point) and hidden from assistive tech.
+
+                A `min-h-[…]` was tried first and is NOT good enough: it is a
+                floor, so a longer sentence or a second row of chips still grew
+                the box, which re-centered the whole column and made the RING
+                itself jump under the cursor. Never reintroduce one here. -->  */}
             <div
-                className={
-                    isGlance
-                        ? "flex min-h-[124px] max-w-md flex-col items-center gap-2 text-center"
-                        : "flex min-h-[210px] flex-col justify-center gap-3"
-                }
+                className={`grid ${
+                    isGlance ? "max-w-md text-center" : ""
+                }`}
             >
-                <h3
-                    className={`text-balance font-semibold tracking-tight ${
-                        isGlance ? "text-xl" : "text-2xl"
-                    }`}
-                >
-                    {active.stage.publicInfo.title}
-                </h3>
-                <p
-                    className={`text-pretty leading-relaxed text-muted-foreground ${
-                        isGlance ? "text-sm" : "text-base"
-                    }`}
-                >
-                    {active.stage.publicInfo.plain}
-                </p>
-                {active.capabilities.length > 0 && (
-                    <div
-                        className={`flex flex-wrap items-center gap-2 pt-1 ${
-                            isGlance ? "justify-center" : ""
-                        }`}
-                    >
-                        {active.capabilities.map((capability) => {
-                            const Icon = CAPABILITY_ICON[capability];
-                            return (
-                                <span
-                                    key={capability}
-                                    className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/60 px-2.5 py-1 text-xs font-medium text-muted-foreground"
+                {STAGE_CARDS.map((card) => {
+                    const isActive = card.step === activeStep;
+                    return (
+                        <div
+                            key={card.stage.id}
+                            aria-hidden={!isActive}
+                            className={`col-start-1 row-start-1 flex flex-col gap-2 ${
+                                isGlance ? "items-center" : "justify-center gap-3"
+                            } ${isActive ? "" : "invisible"}`}
+                        >
+                            <h3
+                                className={`text-balance font-semibold tracking-tight ${
+                                    isGlance ? "text-xl" : "text-2xl"
+                                }`}
+                            >
+                                {card.stage.publicInfo.title}
+                            </h3>
+                            <p
+                                className={`text-pretty leading-relaxed text-muted-foreground ${
+                                    isGlance ? "text-sm" : "text-base"
+                                }`}
+                            >
+                                {card.stage.publicInfo.plain}
+                            </p>
+                            {card.capabilities.length > 0 && (
+                                <div
+                                    className={`flex flex-wrap items-center gap-2 pt-1 ${
+                                        isGlance ? "justify-center" : ""
+                                    }`}
                                 >
-                                    <Icon className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
-                                    {PUBLIC_CAPABILITY[capability].label}
-                                </span>
-                            );
-                        })}
-                    </div>
-                )}
-                <p className="pt-1 text-xs text-muted-foreground">
-                    {isGlance
-                        ? `Select any step. Step ${STAGE_CARDS.length} feeds step 1 — so it never stops.`
-                        : `Hover or select any step to read it. Step ${STAGE_CARDS.length} feeds step 1 — that is why it is drawn as a circle.`}
+                                    {card.capabilities.map((capability) => {
+                                        const Icon = CAPABILITY_ICON[capability];
+                                        return (
+                                            <span
+                                                key={capability}
+                                                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/60 px-2.5 py-1 text-xs font-medium text-muted-foreground"
+                                            >
+                                                <Icon className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
+                                                {PUBLIC_CAPABILITY[capability].label}
+                                            </span>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
+
+                {/* Constant text, so it sits OUTSIDE the stacked cell and cannot shift. */}
+                <p
+                    className={`col-start-1 row-start-2 pt-3 text-xs text-muted-foreground ${
+                        isGlance ? "" : "max-w-sm"
+                    }`}
+                >
+                    Step {STAGE_CARDS.length} feeds step 1 — so it never stops.
                 </p>
             </div>
         </div>
