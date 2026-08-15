@@ -64,6 +64,7 @@ import {
   selectPrimaryRequest,
   selectRequest,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { useRetainRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
 
 import {
   selectStreamPhase,
@@ -383,6 +384,13 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
   const request = useAppSelector((state) =>
     requestId ? selectRequest(requestId)(state) : undefined,
   );
+
+  // Agent-app shells render `response` (accumulated text) rather than
+  // `MarkdownStream requestId=`, so the canonical viewer retention never
+  // applies — retain here for the hook's mount lifetime.
+  // Doctrine: features/agents/docs/LIVE_RUN_RETENTION.md.
+  useRetainRequestForViewer(requestId, "useAgentApp");
+
   const isExecuting = useAppSelector((state) =>
     conversationId ? selectIsExecuting(conversationId)(state) : false,
   );

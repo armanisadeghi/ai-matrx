@@ -50,6 +50,7 @@ import {
   selectAccumulatedText,
   selectRequestStatus,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { useRetainRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
 import { VoiceTextarea } from "@/components/official/VoiceTextarea";
 import MarkdownStream from "@/components/MarkdownStream";
 
@@ -232,6 +233,14 @@ function AutoCreateAgentAppFormWithAgent({
   const liveMetadataText = useAppSelector((state) =>
     metadataTaskId ? selectAccumulatedText(metadataTaskId)(state) : "",
   );
+
+  // Both live texts are rendered straight from their request rows (no
+  // `MarkdownStream requestId=`), so each row is retained here for this
+  // form's mount lifetime — an owner reap mid-stream would blank the
+  // generation view permanently.
+  // Doctrine: features/agents/docs/LIVE_RUN_RETENTION.md.
+  useRetainRequestForViewer(codeTaskId, "AutoCreateAgentAppForm:code");
+  useRetainRequestForViewer(metadataTaskId, "AutoCreateAgentAppForm:metadata");
   const isCodeStreamEnded = useAppSelector((state) => {
     if (!codeTaskId) return false;
     const status = selectRequestStatus(codeTaskId)(state);

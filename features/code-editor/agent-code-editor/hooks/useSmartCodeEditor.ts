@@ -30,6 +30,7 @@ import {
   selectAccumulatedText,
   selectRequestStatus,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { useRetainRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
 import {
   selectIsExecuting,
   selectLatestRequestId,
@@ -98,6 +99,12 @@ export function useSmartCodeEditor({
   const streamingText = useAppSelector(
     requestId ? selectAccumulatedText(requestId) : () => "",
   );
+
+  // Renders live stream output straight from the request row (no
+  // `MarkdownStream requestId=`), so retention is this viewer's own job —
+  // an owner reap mid-stream would otherwise blank it permanently.
+  // Doctrine: features/agents/docs/LIVE_RUN_RETENTION.md.
+  useRetainRequestForViewer(requestId, "useSmartCodeEditor");
 
   // Keep latest-values refs for effects that shouldn't re-fire on every
   // streaming token (those effects want to read final values at stream end).

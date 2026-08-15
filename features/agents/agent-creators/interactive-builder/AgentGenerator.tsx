@@ -23,6 +23,7 @@ import {
   selectJsonExtractionComplete,
   selectJsonExtractionRevision,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { useRetainRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
 import {
   extractAgentConfig,
   extractAgentName,
@@ -209,6 +210,12 @@ export function AgentGenerator({ onComplete }: AgentGeneratorProps) {
   const jsonExtractionRevision = useAppSelector(
     requestId ? selectJsonExtractionRevision(requestId) : () => 0,
   );
+
+  // This surface renders the live run from selectors rather than through
+  // `MarkdownStream requestId=` (the raw stream only appears in the error
+  // boundary), so it must retain the row itself or a reap mid-stream blanks
+  // the builder. Doctrine: features/agents/docs/LIVE_RUN_RETENTION.md.
+  useRetainRequestForViewer(requestId, "AgentGenerator");
 
   // ── Derived state ─────────────────────────────────────────────────────────
 

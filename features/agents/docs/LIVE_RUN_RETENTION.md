@@ -30,6 +30,21 @@ So the entire defense is: **the row must outlive every mounted viewer.**
      retention **for free** by rendering canonically.
    - Owner cleanup (`removeRequest`, conversation cleanup) **defers** while viewers exist
      (`pendingRemovalByRequestId`); the last release completes the delete.
+   - 🚨 **`MarkdownStream content={text}` retains NOTHING.** Only the `requestId=` form routes
+     through `StreamAwareChatMarkdown`. A surface that reads the text itself
+     (`selectAccumulatedText` / `selectLatestAccumulatedText`) and passes the string in is a
+     direct row reader and owns its own retention, however canonical the component looks.
+   - **Direct row readers call the hook themselves** — a surface rendering from
+     `selectKindEnvelope`, `selectFirstExtractedObject`, `selectAccumulatedText`, or a
+     `toolLifecycle`/timeline read is a viewer even though no `MarkdownStream` is involved.
+     Viewers keyed by conversation rather than request use the sibling
+     `useRetainLatestRequestForViewer(conversationId, label)`, which follows the conversation's
+     newest request across re-runs. A long-lived `store.getState()` **poll** on a row is a viewer
+     too: retain/release around it with the slice actions (exemplar: `useImageStudio`'s
+     `waitForExtraction`).
+   - The shared headless-JSON seam `useHeadlessAgentJson` retains for every consumer that reads
+     its `activeRequestId` (flashcards, quiz generation, `useKindRequest`, content-plan setup),
+     the same way `StreamAwareChatMarkdown` covers every `MarkdownStream`.
 2. **Non-destructive `createRequest`** — creating a request under an **existing** id keeps the
    row (and cancels any deferred removal); it never resets streamed state. A rejoin or a second
    surface adopting the same server-side pipeline run (same `X-Request-ID`) continues into the
@@ -119,6 +134,17 @@ Redux devtools before touching retention seams.
 
 ## Change Log
 
+- 2026-08-14 — Swept every surface that renders a live run WITHOUT the canonical viewers and
+  gave each one retention: the shared `useHeadlessAgentJson` seam (covers flashcards create,
+  quiz generation, `useKindRequest`, content-plan setup AI), `AgentGenerator`, both agent-app
+  renderers (`useAgentApp`, `AgentAppPublicRendererImpl`, `AutoCreateAgentAppForm`), the AI code
+  editors (`useSmartCodeEditor`, `useAICodeEditor`, both `ContextAwareCodeEditor*`,
+  `useApplyAIPatchesToActiveTab`), both `useAiPostProcess` copies, `useMermaidAgentEdit`,
+  `useToolComponentAgent`, `AgentToastOverlay`, `SystemPromptOptimizer`,
+  `AgentExecutionTestModal`, and `useImageStudio`'s extraction poll. Added the conversation-keyed
+  sibling `useRetainLatestRequestForViewer`. The `adoptForeignStream` marketing family was
+  audited and is already covered by `LiveRunDisplay` / `RunSetDisplay` / `MarkdownStream
+  requestId=`.
 - 2026-08-15 — A dropped socket now reattaches instead of dead-ending (D183 defect 2):
   `StreamTransportError` / `isStreamTransportLost` classify it, `run-ai-stream`
   reconnects on it like a heartbeat loss, and `createTransportLossReattacher`

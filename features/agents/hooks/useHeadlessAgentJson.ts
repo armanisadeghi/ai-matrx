@@ -22,6 +22,7 @@
 import { useCallback, useState } from "react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectConversationRequestIds } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { useRetainRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
 import {
   runHeadlessAgentJson,
   type HeadlessAgentJsonOptions,
@@ -65,6 +66,14 @@ export function useHeadlessAgentJson(): UseHeadlessAgentJson {
     const ids = selectConversationRequestIds(conversationId)(state);
     return ids.length > 0 ? ids[ids.length - 1] : null;
   });
+
+  // Consumers of `activeRequestId` render the live run from selectors
+  // (`selectKindEnvelope`, `selectFirstExtractedObject`) instead of through
+  // `MarkdownStream`, so they get none of the retention that the canonical
+  // viewers carry. Retain here and the whole headless-JSON family is covered:
+  // an owner reap landing mid-stream defers instead of blanking the surface.
+  // Doctrine: features/agents/docs/LIVE_RUN_RETENTION.md.
+  useRetainRequestForViewer(activeRequestId, "useHeadlessAgentJson");
 
   async function run<T = unknown>(
     opts: HeadlessAgentJsonRunOptions<T>,

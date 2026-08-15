@@ -14,6 +14,7 @@ import {
   selectConversationMessages,
   EMPTY_CONVERSATION_MESSAGES,
 } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import { useRetainLatestRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
 import { selectPromptsPreferences } from "@/lib/redux/preferences/userPreferenceSelectors";
 import {
   parseCodeEdits,
@@ -131,6 +132,12 @@ export function useAICodeEditor({
     [conversationId],
   );
   const streamingText = useAppSelector(streamingTextSelector);
+
+  // Live output is read straight off the conversation's newest request row
+  // (no `MarkdownStream requestId=`), so this viewer retains the row for its
+  // own mount lifetime — otherwise an owner reap mid-stream blanks it for good.
+  // Doctrine: features/agents/docs/LIVE_RUN_RETENTION.md.
+  useRetainLatestRequestForViewer(conversationId, "useAICodeEditor");
 
   const streamPhase = useAppSelector((state) =>
     conversationId ? selectStreamPhase(conversationId)(state) : "idle",

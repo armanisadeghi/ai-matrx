@@ -32,6 +32,7 @@ import {
   selectRequest,
   selectPrimaryRequest,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { useRetainRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
 import { useWarmAgent } from "@/features/agents/hooks/useWarmAgent";
 import { SHELL_REGISTRY } from "./shells";
 import { AgentAppFullyCustomShell } from "./shells/AgentAppFullyCustomShell";
@@ -137,6 +138,13 @@ function CustomComponentRenderer({
   const request = useAppSelector((state) =>
     requestId ? selectRequest(requestId)(state) : undefined,
   );
+
+  // `responseText` is rendered through `MarkdownStream content=`, which is the
+  // plain-text form and carries no retention (only `requestId=` routes through
+  // StreamAwareChatMarkdown). Retain the row for this viewer's lifetime.
+  // Doctrine: features/agents/docs/LIVE_RUN_RETENTION.md.
+  useRetainRequestForViewer(requestId, "AgentAppPublicRenderer");
+
   const requestStatus = request?.status;
   const isStreaming = requestStatus === "streaming";
   const isStreamComplete = requestStatus === "complete";

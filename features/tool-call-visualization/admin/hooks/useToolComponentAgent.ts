@@ -30,6 +30,7 @@ import {
   selectLatestError,
   type StreamPhase,
 } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+import { useRetainLatestRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -85,6 +86,12 @@ export function useToolComponentAgent(): UseToolComponentAgentReturn {
   const accumulatedText = useAppSelector(
     conversationId ? selectLatestAccumulatedText(conversationId) : () => "",
   );
+
+  // Live output is read straight off the conversation's newest request row
+  // (no `MarkdownStream requestId=`), so this viewer retains the row for its
+  // own mount lifetime — otherwise an owner reap mid-stream blanks it for good.
+  // Doctrine: features/agents/docs/LIVE_RUN_RETENTION.md.
+  useRetainLatestRequestForViewer(conversationId, "useToolComponentAgent");
 
   const isStreaming = useAppSelector(
     conversationId ? selectIsStreaming(conversationId) : () => false,

@@ -26,6 +26,7 @@ import {
   selectLatestAccumulatedText,
   selectLatestRequestStatus,
 } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+import { useRetainLatestRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
 import {
   Dialog,
   DialogContent,
@@ -92,6 +93,18 @@ function DirectTestMode({
   const responseText = useAppSelector(
     conversationId ? selectLatestAccumulatedText(conversationId) : () => "",
   );
+
+  // Live output is read straight off the conversation's newest request row
+  // (no `MarkdownStream requestId=`), so this viewer retains the row for its
+  // own mount lifetime — otherwise an owner reap mid-stream blanks it for good.
+  // Doctrine: features/agents/docs/LIVE_RUN_RETENTION.md.
+  useRetainLatestRequestForViewer(conversationId, "InlineTestMode");
+
+  // Live output is read straight off the conversation's newest request row
+  // (no `MarkdownStream requestId=`), so this viewer retains the row for its
+  // own mount lifetime — otherwise an owner reap mid-stream blanks it for good.
+  // Doctrine: features/agents/docs/LIVE_RUN_RETENTION.md.
+  useRetainLatestRequestForViewer(conversationId, "DirectTestMode");
   const status = useAppSelector(
     conversationId
       ? selectLatestRequestStatus(conversationId)

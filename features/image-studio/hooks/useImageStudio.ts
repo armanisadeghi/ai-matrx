@@ -57,6 +57,10 @@ import {
   selectFirstExtractedObject,
   selectJsonExtractionComplete,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import {
+  releaseRequestForViewer,
+  retainRequestForViewer,
+} from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
 
 /**
  * Folder-segment sanitizer. Cloud-files folder names tolerate spaces, but
@@ -964,12 +968,11 @@ export function useImageStudio(
     [],
   );
 
-  /** Wait until the active-requests slice flips `jsonExtractionComplete` true. */
-  const waitForExtraction = useCallback(
+  const pollForExtraction = useCallback(
     async (
       requestId: string,
-      timeoutMs = 120_000,
-      intervalMs = 200,
+      timeoutMs: number,
+      intervalMs: number,
     ): Promise<ImageMetadata | null> => {
       const start = Date.now();
       while (Date.now() - start < timeoutMs) {
@@ -991,6 +994,29 @@ export function useImageStudio(
       return null;
     },
     [store],
+  );
+
+  /** Wait until the active-requests slice flips `jsonExtractionComplete` true. */
+  const waitForExtraction = useCallback(
+    async (
+      requestId: string,
+      timeoutMs = 120_000,
+      intervalMs = 200,
+    ): Promise<ImageMetadata | null> => {
+      // This poll IS a viewer of the request row for as long as it runs: an
+      // owner reap landing mid-run makes the extraction it is waiting for
+      // unreachable, and the wait silently times out into `null`. Hold the row
+      // for the poll, release it in `finally`.
+      // Doctrine: features/agents/docs/LIVE_RUN_RETENTION.md.
+      const viewerId = `useImageStudio:waitForExtraction:${requestId}`;
+      dispatch(retainRequestForViewer({ requestId, viewerId }));
+      try {
+        return await pollForExtraction(requestId, timeoutMs, intervalMs);
+      } finally {
+        dispatch(releaseRequestForViewer({ requestId, viewerId }));
+      }
+    },
+    [dispatch, pollForExtraction],
   );
 
   const describeFile = useCallback(

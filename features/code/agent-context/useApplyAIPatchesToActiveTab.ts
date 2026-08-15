@@ -39,6 +39,7 @@ import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAccumulatedText } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { selectLatestRequestId } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+import { useRetainRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
 import { parseCodeEdits } from "@/features/code-editor/agent-code-editor/utils/parseCodeEdits";
 import { applyCodeEdits } from "@/features/code-editor/agent-code-editor/utils/applyCodeEdits";
 import { selectCodeTabs, type CodeTabsState } from "../redux/tabsSlice";
@@ -109,6 +110,12 @@ export function useApplyAIPatchesToActiveTab({
   const streamingText = useAppSelector(
     requestId ? selectAccumulatedText(requestId) : () => "",
   );
+
+  // Renders live stream output straight from the request row (no
+  // `MarkdownStream requestId=`), so retention is this viewer's own job —
+  // an owner reap mid-stream would otherwise blank it permanently.
+  // Doctrine: features/agents/docs/LIVE_RUN_RETENTION.md.
+  useRetainRequestForViewer(requestId, "useApplyAIPatchesToActiveTab");
 
   useEffect(() => {
     if (!conversationId || !requestId) return;

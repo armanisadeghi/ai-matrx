@@ -46,6 +46,7 @@ import {
   selectAccumulatedText,
   selectRequestStatus,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { useRetainRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
 import type { AiPostProcessAgent } from "../ai-agents";
 
 export type AiProcessPhase =
@@ -84,6 +85,12 @@ export function useAiPostProcess() {
   const accumulatedText = useAppSelector((s) =>
     requestId ? selectAccumulatedText(requestId)(s) : "",
   );
+
+  // Renders live stream output straight from the request row (no
+  // `MarkdownStream requestId=`), so retention is this viewer's own job —
+  // an owner reap mid-stream would otherwise blank it permanently.
+  // Doctrine: features/agents/docs/LIVE_RUN_RETENTION.md.
+  useRetainRequestForViewer(requestId, "useAiPostProcess");
 
   const phase: AiProcessPhase = launching
     ? "launching"

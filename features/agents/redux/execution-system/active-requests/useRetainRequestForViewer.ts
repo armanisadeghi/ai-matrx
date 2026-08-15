@@ -31,8 +31,9 @@
 
 import { useEffect, useId } from "react";
 
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 
+import { selectConversationRequestIds } from "./active-requests.selectors";
 import {
   releaseRequestForViewer,
   retainRequestForViewer,
@@ -52,4 +53,23 @@ export function useRetainRequestForViewer(
       dispatch(releaseRequestForViewer({ requestId, viewerId }));
     };
   }, [dispatch, requestId, viewerId]);
+}
+
+/**
+ * Conversation-keyed form of the same contract, for the many viewers that read
+ * live output by conversation (`selectLatestAccumulatedText`,
+ * `selectStreamPhase`, …) and never hold a requestId of their own. It retains
+ * the conversation's newest request; when a re-run mints a new one, retention
+ * follows it (release old, retain new) exactly like the requestId form.
+ */
+export function useRetainLatestRequestForViewer(
+  conversationId: string | null | undefined,
+  viewerLabel: string,
+): void {
+  const latestRequestId = useAppSelector((state) => {
+    if (!conversationId) return null;
+    const ids = selectConversationRequestIds(conversationId)(state);
+    return ids.length > 0 ? ids[ids.length - 1] : null;
+  });
+  useRetainRequestForViewer(latestRequestId, viewerLabel);
 }

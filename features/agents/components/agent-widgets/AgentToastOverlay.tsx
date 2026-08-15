@@ -7,6 +7,7 @@ import {
   selectLatestAccumulatedText,
   selectIsExecuting,
 } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+import { useRetainLatestRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
 import { Button } from "@/components/ui/button";
 import { Check, Loader2, Minimize2, X } from "lucide-react";
 import { AgentRunner } from "../smart/AgentRunner";
@@ -25,6 +26,12 @@ export function AgentToastOverlay({
   const [expanded, setExpanded] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
   const text = useAppSelector(selectLatestAccumulatedText(conversationId));
+
+  // Live output is read straight off the conversation's newest request row
+  // (no `MarkdownStream requestId=`), so this viewer retains the row for its
+  // own mount lifetime — otherwise an owner reap mid-stream blanks it for good.
+  // Doctrine: features/agents/docs/LIVE_RUN_RETENTION.md.
+  useRetainLatestRequestForViewer(conversationId, "AgentToastOverlay");
   const isExecuting = useAppSelector(selectIsExecuting(conversationId));
   const title = useAppSelector(selectInstanceDisplayTitle(conversationId));
 
