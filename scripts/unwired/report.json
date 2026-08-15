@@ -1,16 +1,16 @@
 {
-  "generatedAt": "2026-08-15T06:10:47.862Z",
-  "commit": "b0cdb9ae6c3325041166a9144873d6476c608ce7",
-  "aidreamCommit": "bb6c6e321288c22b522b14e0e07d7a3a4213f79a",
+  "generatedAt": "2026-08-15T06:13:14.466Z",
+  "commit": "27d1f58a520dc1951700653c05c69d55451657a6",
+  "aidreamCommit": "47e3cb512354223814d604d9ab00ebfd8ec19dfb",
   "totals": {
-    "findings": 985,
-    "lines": 41907,
+    "findings": 988,
+    "lines": 41911,
     "filesWithFindings": 688,
-    "filesScanned": 13527,
+    "filesScanned": 13534,
     "suppressed": 5,
     "byDetector": {
-      "react-component-unmounted": 368,
-      "export-unimported": 606,
+      "react-component-unmounted": 367,
+      "export-unimported": 610,
       "router-unmounted": 2,
       "host-installer-unset": 1,
       "scheduler-handler-unregistered": 0,
@@ -18,7 +18,7 @@
     },
     "byRepository": {
       "matrx-frontend": 719,
-      "aidream": 266
+      "aidream": 269
     }
   },
   "partial": [],
@@ -27,6 +27,11 @@
       "key": "matrx-frontend:features/tasks/components/TaskDetailPage.tsx",
       "findings": 1,
       "lines": 778
+    },
+    {
+      "key": "aidream:aidream/services/crm/kind_resolution.py",
+      "findings": 5,
+      "lines": 682
     },
     {
       "key": "matrx-frontend:features/code/terminal/TerminalTab.tsx",
@@ -42,11 +47,6 @@
       "key": "matrx-frontend:components/debug/PromptExecutionDebugPanel.tsx",
       "findings": 1,
       "lines": 517
-    },
-    {
-      "key": "matrx-frontend:features/agent-shortcuts/components/LinkAgentToShortcutModal.tsx",
-      "findings": 1,
-      "lines": 483
     },
     {
       "key": "matrx-frontend:features/notes/components/NotesLayout.tsx",
@@ -304,6 +304,20 @@
       "feature": "features/code"
     },
     {
+      "repository": "aidream",
+      "detector": "python-module-unreached",
+      "file": "aidream/services/crm/kind_resolution.py",
+      "line": 1,
+      "column": 1,
+      "symbol": "aidream/services/crm/kind_resolution.py",
+      "lines": 617,
+      "title": "aidream/services/crm/kind_resolution.py — a whole service module nothing in the repo ever loads (5 public function(s))",
+      "evidence": "no chain of imports reaches it from any server entry point (aidream/api/app.py, app_init.py, run.py, initialize_systems.py) or from any of the 465 operator entry points (top-level scripts/*.py, plus every module with its own __main__) — every line in it is unreachable in production",
+      "intent": "its own docstring: \"Settle the ``possible_person`` review queue with the platform's own AI.\"",
+      "remains": "wire its entry point: import and call it from the router, sweeper, graph node or service that was meant to drive it (its own docstring usually names the seam), then prove one real request reaches it",
+      "feature": "aidream/services/crm"
+    },
+    {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
       "file": "features/transcript-studio/components/landing/TranscriptionLanding.tsx",
@@ -330,20 +344,6 @@
       "intent": "an exported component with 517 implementation line(s)",
       "remains": "mount it from the page, panel, overlay, or parent surface it was built for, then exercise that user path",
       "feature": "components"
-    },
-    {
-      "repository": "matrx-frontend",
-      "detector": "react-component-unmounted",
-      "file": "features/agent-shortcuts/components/LinkAgentToShortcutModal.tsx",
-      "line": 64,
-      "column": 1,
-      "symbol": "LinkAgentToShortcutModal",
-      "lines": 483,
-      "title": "LinkAgentToShortcutModal appears unfinished — it is built but has no runtime consumer",
-      "evidence": "no JSX tag in the runtime TypeScript graph resolves to this exported component",
-      "intent": "an exported component with 483 implementation line(s)",
-      "remains": "mount it from the page, panel, overlay, or parent surface it was built for, then exercise that user path",
-      "feature": "features/agent-shortcuts"
     },
     {
       "repository": "matrx-frontend",
@@ -1152,7 +1152,7 @@
       "symbol": "aidream/services/ai_execution/block_stream.py",
       "lines": 140,
       "title": "aidream/services/ai_execution/block_stream.py — a whole service module nothing in the repo ever loads (1 public function(s))",
-      "evidence": "no chain of imports reaches it from any server entry point (aidream/api/app.py, app_init.py, run.py, initialize_systems.py) or from any of the 204 top-level scripts/*.py operator entry points — every line in it is unreachable in production",
+      "evidence": "no chain of imports reaches it from any server entry point (aidream/api/app.py, app_init.py, run.py, initialize_systems.py) or from any of the 465 operator entry points (top-level scripts/*.py, plus every module with its own __main__) — every line in it is unreachable in production",
       "intent": "named in FOUND_DEFECTS.md, docs/handoffs/canonical-stream-and-surface-writeback.md",
       "remains": "wire its entry point: import and call it from the router, sweeper, graph node or service that was meant to drive it (its own docstring usually names the seam), then prove one real request reaches it",
       "feature": "aidream/services/ai_execution"
@@ -1460,7 +1460,7 @@
       "symbol": "aidream/services/context_catalog.py",
       "lines": 118,
       "title": "aidream/services/context_catalog.py — a whole service module nothing in the repo ever loads (2 public function(s))",
-      "evidence": "no chain of imports reaches it from any server entry point (aidream/api/app.py, app_init.py, run.py, initialize_systems.py) or from any of the 204 top-level scripts/*.py operator entry points — every line in it is unreachable in production",
+      "evidence": "no chain of imports reaches it from any server entry point (aidream/api/app.py, app_init.py, run.py, initialize_systems.py) or from any of the 465 operator entry points (top-level scripts/*.py, plus every module with its own __main__) — every line in it is unreachable in production",
       "intent": "named in FOUND_DEFECTS.md",
       "remains": "wire its entry point: import and call it from the router, sweeper, graph node or service that was meant to drive it (its own docstring usually names the seam), then prove one real request reaches it",
       "feature": "aidream/services"
@@ -1604,20 +1604,6 @@
       "intent": "an exported component with 109 implementation line(s)",
       "remains": "mount it from the page, panel, overlay, or parent surface it was built for, then exercise that user path",
       "feature": "features/scope-system"
-    },
-    {
-      "repository": "aidream",
-      "detector": "python-module-unreached",
-      "file": "aidream/services/catalogs/seeds/load_credential_definitions.py",
-      "line": 1,
-      "column": 1,
-      "symbol": "aidream/services/catalogs/seeds/load_credential_definitions.py",
-      "lines": 108,
-      "title": "aidream/services/catalogs/seeds/load_credential_definitions.py — a whole service module nothing in the repo ever loads (2 public function(s))",
-      "evidence": "no chain of imports reaches it from any server entry point (aidream/api/app.py, app_init.py, run.py, initialize_systems.py) or from any of the 204 top-level scripts/*.py operator entry points — every line in it is unreachable in production",
-      "intent": "named in FOUND_DEFECTS.md, aidream/services/catalogs/FEATURE.md",
-      "remains": "wire its entry point: import and call it from the router, sweeper, graph node or service that was meant to drive it (its own docstring usually names the seam), then prove one real request reaches it",
-      "feature": "aidream/services/catalogs"
     },
     {
       "repository": "matrx-frontend",
@@ -2896,20 +2882,6 @@
     {
       "repository": "aidream",
       "detector": "export-unimported",
-      "file": "aidream/services/crm/social_fold.py",
-      "line": 239,
-      "column": 1,
-      "symbol": "infer_party_kind",
-      "lines": 58,
-      "title": "aidream/services/crm/social_fold.py:239 `infer_party_kind` has no runtime caller",
-      "evidence": "no module outside its own package names it; only non-runtime paths do (aidream/services/crm/tests/test_social_fold.py)",
-      "intent": "its own docstring: \"Person or organization from a public account name alone.\"",
-      "remains": "wire the caller its module was written for — a router endpoint, a sweeper/scheduler registration, a graph node, or the service that should invoke it — then prove it runs end to end. If it is a seam meant for a consumer that does not exist yet, say so in scripts/unwired_allowlist.json with a reason",
-      "feature": "aidream/services/crm"
-    },
-    {
-      "repository": "aidream",
-      "detector": "export-unimported",
       "file": "aidream/services/sending_identity/service.py",
       "line": 120,
       "column": 1,
@@ -3424,6 +3396,20 @@
       "intent": "an exported component with 49 implementation line(s)",
       "remains": "mount it from the page, panel, overlay, or parent surface it was built for, then exercise that user path",
       "feature": "components"
+    },
+    {
+      "repository": "aidream",
+      "detector": "export-unimported",
+      "file": "aidream/services/crm/kind_resolution.py",
+      "line": 533,
+      "column": 1,
+      "symbol": "handle_kind_resolution_result",
+      "lines": 48,
+      "title": "aidream/services/crm/kind_resolution.py:533 `handle_kind_resolution_result` has no runtime caller",
+      "evidence": "no module outside its own package names it",
+      "intent": "its own docstring: \"matrx-batch result handler: batch output → slot honesty core → the ONE\"",
+      "remains": "wire the caller its module was written for — a router endpoint, a sweeper/scheduler registration, a graph node, or the service that should invoke it — then prove it runs end to end. If it is a seam meant for a consumer that does not exist yet, say so in scripts/unwired_allowlist.json with a reason",
+      "feature": "aidream/services/crm"
     },
     {
       "repository": "matrx-frontend",
@@ -4334,20 +4320,6 @@
       "intent": "an exported hook with 38 implementation line(s)",
       "remains": "wire the runtime consumer it was built for, then prove a real page, action, producer, or workflow reaches it",
       "feature": "utils"
-    },
-    {
-      "repository": "aidream",
-      "detector": "export-unimported",
-      "file": "aidream/services/seo/rank_tracking.py",
-      "line": 175,
-      "column": 1,
-      "symbol": "canonical_location_name",
-      "lines": 37,
-      "title": "aidream/services/seo/rank_tracking.py:175 `canonical_location_name` has no runtime caller",
-      "evidence": "no module outside its own package names it; only non-runtime paths do (aidream/services/seo/test_rank_tracking.py)",
-      "intent": "its own docstring: \"Resolve a free-text place name to the form the provider actually accepts.\"",
-      "remains": "wire the caller its module was written for — a router endpoint, a sweeper/scheduler registration, a graph node, or the service that should invoke it — then prove it runs end to end. If it is a seam meant for a consumer that does not exist yet, say so in scripts/unwired_allowlist.json with a reason",
-      "feature": "aidream/services/seo"
     },
     {
       "repository": "matrx-frontend",
@@ -7886,7 +7858,7 @@
       "symbol": "aidream/services/rag/awareness.py",
       "lines": 17,
       "title": "aidream/services/rag/awareness.py — a whole service module nothing in the repo ever loads",
-      "evidence": "no chain of imports reaches it from any server entry point (aidream/api/app.py, app_init.py, run.py, initialize_systems.py) or from any of the 204 top-level scripts/*.py operator entry points — every line in it is unreachable in production",
+      "evidence": "no chain of imports reaches it from any server entry point (aidream/api/app.py, app_init.py, run.py, initialize_systems.py) or from any of the 465 operator entry points (top-level scripts/*.py, plus every module with its own __main__) — every line in it is unreachable in production",
       "intent": "named in .arman/junk/WARNING_RESOLUTION_GUIDE.md, .cursor/plans/agentic_code_editor_roadmap_d80f9b5c.plan.md",
       "remains": "wire its entry point: import and call it from the router, sweeper, graph node or service that was meant to drive it (its own docstring usually names the seam), then prove one real request reaches it",
       "feature": "aidream/services/rag"
@@ -7900,7 +7872,7 @@
       "symbol": "aidream/services/rag/code_chunker.py",
       "lines": 17,
       "title": "aidream/services/rag/code_chunker.py — a whole service module nothing in the repo ever loads",
-      "evidence": "no chain of imports reaches it from any server entry point (aidream/api/app.py, app_init.py, run.py, initialize_systems.py) or from any of the 204 top-level scripts/*.py operator entry points — every line in it is unreachable in production",
+      "evidence": "no chain of imports reaches it from any server entry point (aidream/api/app.py, app_init.py, run.py, initialize_systems.py) or from any of the 465 operator entry points (top-level scripts/*.py, plus every module with its own __main__) — every line in it is unreachable in production",
       "intent": "named in FOUND_DEFECTS.md, docs/rag_and_ner/reality/01_RAG_REALITY.md",
       "remains": "wire its entry point: import and call it from the router, sweeper, graph node or service that was meant to drive it (its own docstring usually names the seam), then prove one real request reaches it",
       "feature": "aidream/services/rag"
@@ -7914,7 +7886,7 @@
       "symbol": "aidream/services/rag/db.py",
       "lines": 17,
       "title": "aidream/services/rag/db.py — a whole service module nothing in the repo ever loads",
-      "evidence": "no chain of imports reaches it from any server entry point (aidream/api/app.py, app_init.py, run.py, initialize_systems.py) or from any of the 204 top-level scripts/*.py operator entry points — every line in it is unreachable in production",
+      "evidence": "no chain of imports reaches it from any server entry point (aidream/api/app.py, app_init.py, run.py, initialize_systems.py) or from any of the 465 operator entry points (top-level scripts/*.py, plus every module with its own __main__) — every line in it is unreachable in production",
       "intent": "named in .claude/skills/add-ai-provider/SKILL.md, .claude/skills/add-ai-provider/references/provider-onboarding-failure-modes.md",
       "remains": "wire its entry point: import and call it from the router, sweeper, graph node or service that was meant to drive it (its own docstring usually names the seam), then prove one real request reaches it",
       "feature": "aidream/services/rag"
@@ -7928,7 +7900,7 @@
       "symbol": "aidream/services/rag/image_pipeline.py",
       "lines": 17,
       "title": "aidream/services/rag/image_pipeline.py — a whole service module nothing in the repo ever loads",
-      "evidence": "no chain of imports reaches it from any server entry point (aidream/api/app.py, app_init.py, run.py, initialize_systems.py) or from any of the 204 top-level scripts/*.py operator entry points — every line in it is unreachable in production",
+      "evidence": "no chain of imports reaches it from any server entry point (aidream/api/app.py, app_init.py, run.py, initialize_systems.py) or from any of the 465 operator entry points (top-level scripts/*.py, plus every module with its own __main__) — every line in it is unreachable in production",
       "intent": "named in .cursor/plans/rag_orm_ownership_and_raw_sql_eradication.plan.md, FOUND_DEFECTS.md",
       "remains": "wire its entry point: import and call it from the router, sweeper, graph node or service that was meant to drive it (its own docstring usually names the seam), then prove one real request reaches it",
       "feature": "aidream/services/rag"
@@ -7942,7 +7914,7 @@
       "symbol": "aidream/services/rag/progress.py",
       "lines": 17,
       "title": "aidream/services/rag/progress.py — a whole service module nothing in the repo ever loads",
-      "evidence": "no chain of imports reaches it from any server entry point (aidream/api/app.py, app_init.py, run.py, initialize_systems.py) or from any of the 204 top-level scripts/*.py operator entry points — every line in it is unreachable in production",
+      "evidence": "no chain of imports reaches it from any server entry point (aidream/api/app.py, app_init.py, run.py, initialize_systems.py) or from any of the 465 operator entry points (top-level scripts/*.py, plus every module with its own __main__) — every line in it is unreachable in production",
       "intent": "named in .claude/skills/accurate-download-progress.md, .claude/skills/error-capture/SKILL.md",
       "remains": "wire its entry point: import and call it from the router, sweeper, graph node or service that was meant to drive it (its own docstring usually names the seam), then prove one real request reaches it",
       "feature": "aidream/services/rag"
@@ -10190,6 +10162,20 @@
     {
       "repository": "aidream",
       "detector": "export-unimported",
+      "file": "aidream/services/crm/kind_resolution.py",
+      "line": 420,
+      "column": 1,
+      "symbol": "apply_kind_verdict",
+      "lines": 9,
+      "title": "aidream/services/crm/kind_resolution.py:420 `apply_kind_verdict` has no runtime caller",
+      "evidence": "no module outside its own package names it",
+      "intent": "its own docstring: \"Write ONE verdict onto the party that already exists.\"",
+      "remains": "wire the caller its module was written for — a router endpoint, a sweeper/scheduler registration, a graph node, or the service that should invoke it — then prove it runs end to end. If it is a seam meant for a consumer that does not exist yet, say so in scripts/unwired_allowlist.json with a reason",
+      "feature": "aidream/services/crm"
+    },
+    {
+      "repository": "aidream",
+      "detector": "export-unimported",
       "file": "aidream/services/legal/opinion_text.py",
       "line": 118,
       "column": 1,
@@ -11940,6 +11926,20 @@
     {
       "repository": "matrx-frontend",
       "detector": "export-unimported",
+      "file": "features/education/creators/service.ts",
+      "line": 203,
+      "column": 1,
+      "symbol": "ensureConnectAccount",
+      "lines": 6,
+      "title": "ensureConnectAccount appears unfinished — it is built but has no runtime consumer",
+      "evidence": "no runtime import resolves to this exported hook, service, or producer; tests and re-export barrels do not count",
+      "intent": "an exported service with 6 implementation line(s)",
+      "remains": "wire the runtime consumer it was built for, then prove a real page, action, producer, or workflow reaches it",
+      "feature": "features/education"
+    },
+    {
+      "repository": "matrx-frontend",
+      "detector": "export-unimported",
       "file": "features/files/handler/hooks/useFileMediaBlock.ts",
       "line": 15,
       "column": 1,
@@ -12734,6 +12734,34 @@
       "intent": "a purpose-built service-unreached artifact",
       "remains": "wire the caller its module was written for — a router endpoint, a sweeper/scheduler registration, a graph node, or the service that should invoke it — then prove it runs end to end. If it is a seam meant for a consumer that does not exist yet, say so in scripts/unwired_allowlist.json with a reason",
       "feature": "aidream/services/conversation_context"
+    },
+    {
+      "repository": "aidream",
+      "detector": "export-unimported",
+      "file": "aidream/services/crm/kind_resolution.py",
+      "line": 202,
+      "column": 1,
+      "symbol": "pending_parties",
+      "lines": 4,
+      "title": "aidream/services/crm/kind_resolution.py:202 `pending_parties` has no runtime caller",
+      "evidence": "no module outside its own package names it",
+      "intent": "its own docstring: \"Every party still sitting in the ``possible_person`` review queue.\"",
+      "remains": "wire the caller its module was written for — a router endpoint, a sweeper/scheduler registration, a graph node, or the service that should invoke it — then prove it runs end to end. If it is a seam meant for a consumer that does not exist yet, say so in scripts/unwired_allowlist.json with a reason",
+      "feature": "aidream/services/crm"
+    },
+    {
+      "repository": "aidream",
+      "detector": "export-unimported",
+      "file": "aidream/services/crm/kind_resolution.py",
+      "line": 295,
+      "column": 1,
+      "symbol": "submit_kind_resolutions",
+      "lines": 4,
+      "title": "aidream/services/crm/kind_resolution.py:295 `submit_kind_resolutions` has no runtime caller",
+      "evidence": "no module outside its own package names it",
+      "intent": "its own docstring: \"Enqueue a batch judgement for every party in the review queue.\"",
+      "remains": "wire the caller its module was written for — a router endpoint, a sweeper/scheduler registration, a graph node, or the service that should invoke it — then prove it runs end to end. If it is a seam meant for a consumer that does not exist yet, say so in scripts/unwired_allowlist.json with a reason",
+      "feature": "aidream/services/crm"
     },
     {
       "repository": "aidream",
@@ -13824,6 +13852,20 @@
       "title": "aidream/services/seo/finding_fix.py:138 `build_finding_fix_context` has no runtime caller",
       "evidence": "no module outside its own package names it",
       "intent": "its own docstring: \"Assemble the fixer's input from canonical rows only.\"",
+      "remains": "wire the caller its module was written for — a router endpoint, a sweeper/scheduler registration, a graph node, or the service that should invoke it — then prove it runs end to end. If it is a seam meant for a consumer that does not exist yet, say so in scripts/unwired_allowlist.json with a reason",
+      "feature": "aidream/services/seo"
+    },
+    {
+      "repository": "aidream",
+      "detector": "export-unimported",
+      "file": "aidream/services/seo/rank_tracking.py",
+      "line": 175,
+      "column": 1,
+      "symbol": "canonical_location_name",
+      "lines": 2,
+      "title": "aidream/services/seo/rank_tracking.py:175 `canonical_location_name` has no runtime caller",
+      "evidence": "no module outside its own package names it; only non-runtime paths do (aidream/services/seo/test_rank_tracking.py, scripts/check_rank_target_locations.py)",
+      "intent": "named in aidream/services/seo/FEATURE.md",
       "remains": "wire the caller its module was written for — a router endpoint, a sweeper/scheduler registration, a graph node, or the service that should invoke it — then prove it runs end to end. If it is a seam meant for a consumer that does not exist yet, say so in scripts/unwired_allowlist.json with a reason",
       "feature": "aidream/services/seo"
     },

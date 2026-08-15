@@ -84,14 +84,12 @@ publish, AI build/review, live-page and content-plan doors, the Content-volume c
 bespoke, not on `lib/entity-list/`). **Remaining:** Arman rules on the stranded directory — recommendation is
 delete, and only he may say so (unfinished-work alarm).
 
-### 7. `NotesLayout` + `NotesTreeView` — the legacy notes shell
-`features/notes/components/NotesLayout.tsx` (431), `features/notes/actions/NotesTreeView.tsx` (287).
-`features/notes/FEATURE.md` 2026-07-10 records the deliberate migration of Utilities + Quick Notes to the
-canonical `NotesView`, and 2026-06-24 already names the canonical stack "a strict superset". The
-`/demos/notes-salvage` page now only *mentions* `NotesLayout` in prose — it does not render it, so the
-FEATURE.md claim that it renders there is stale. **What's missing:** confirm the superset claim item by
-item (the 2026-06-24 entry names RAG indexing, sidebar drag-edge auto-scroll, mobile New Folder, and the
-declarative single/split frame as salvage targets), land the survivors on `NotesView`, then rule.
+### 7. `NotesLayout` + `NotesTreeView` — VERIFIED 2026-08-14, awaiting Arman's ruling
+Superset claim confirmed item by item; all four salvage targets were already landed and the diff found
+nothing left to port. Stale doc claims fixed in `features/notes/FEATURE.md`, the notes-salvage demo page,
+and `features/context-menu-v3/FEATURE.md` §248. Full evidence: `features/notes/FEATURE.md` 2026-08-14.
+**Nothing left for an agent to do** — retiring the subtree is Arman's call in writing (unfinished-work
+alarm), so this row stays only as the pointer to that decision.
 
 ### 8. `TransformableCard` / `EnhancedDraggableCardBody` — DONE 2026-08-14
 Their only mounter was `/legacy/demo/component-demo/draggables/transformable-cards-demo`, which died with
@@ -99,11 +97,11 @@ the `(legacy)` route group. `app/(dev)/demos/draggable-cards/page.dev.tsx` now m
 `DraggableCardProvider`, exercising free drag + pill collapse, snap points, drop-container assignment, and
 live position state.
 
-### 9. `useVoiceChatWithAutoSleep` + `useVoiceChatCdn` — unclaimed TTS voice-chat hooks
-`hooks/tts/useVoiceChatWithAutoSleep.ts` (366), `hooks/tts/useVoiceChatCdn.ts` (314). Not yet hunted.
-**Before touching:** read `features/audio/FEATURE.md` and the Cartesia token primitive rule — there is ONE
-sanctioned auth path (`accessToken.ts` + `connectCartesiaTts`), so any wiring must go through it and must
-not become a second connection path.
+### 9. `useVoiceChatWithAutoSleep` + `useVoiceChatCdn` — HUNTED 2026-08-15, moved to its own handoff
+Not wirable: all three `useVoiceChat*` hooks call `processAiRequest`, a retirement stub that throws
+unconditionally, and `useVoiceChatCdn` is a byte-identical copy of `useVoiceChat`. No auth finding — none
+of this code touches Cartesia or the broker. Blocked on Arman's call on hands-free VAD voice chat; nothing
+deleted (unfinished-work alarm). Full brief: `docs/handoffs/voice-chat-vad-revival.md`, FOUND_DEFECTS D198.
 
 ## Category false positives — fixed in the scanner, not allowlisted
 
