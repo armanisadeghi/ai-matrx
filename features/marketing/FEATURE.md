@@ -435,6 +435,37 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-08-14 — Claude: **The item surfaces show the whole record, and every id on it opens (D150 P0).**
+  Three surfaces named records they had already loaded and would not let the user reach, and dropped
+  stored columns the user had paid for. **Findings:** the evidence inspector showed 6 of
+  `web.analysis_result`'s 28 columns — the VERDICT itself (status/severity/score/issues/confidence)
+  was missing, along with identity, subject and every stamp. One `AnalysisResultInspector` now
+  renders the whole row, used by BOTH the row detail and the window (a shape has one renderer); the
+  finding's subject stops being a tooltip, and `first_result_id` / `last_result_id` stop being eight
+  characters of text — both rows are already in `getFindingDetail`'s payload, so they open the full
+  inspector. **Snapshots:** the page called itself "the full immutable record" while hiding
+  `seo_metrics`, `audit_metrics`, `metadata`, the page, and both file refs, and printed the crawl as
+  an inert 8 chars; all shown, and page + crawl + site open. Its header also stacked on mobile — at
+  375px the identity column squeezed to ~1ch and printed "IMMUTABLE SNAPSHOT" one letter per line.
+  **Videos:** the metadata agent persists a title, description, keyword set and schema.org
+  `VideoObject`, and the UI exposed the title plus a badge; the new `BrandAssetDetail` (consumed by
+  the videos view AND the brand library) renders the whole row with a copy-as-JSON-LD action, and
+  crawled-video page lists became real page doors. Reader extracted to `lib/video-metadata.ts` and
+  pinned by `video-metadata.test.ts` — a reader wrong about the shape silently hides bought work.
+  New primitives rather than inline fixes: `components/official/record-stamps` (created/updated/
+  deleted/version with actors RESOLVED to people via `useRecordActors`, costing nothing when both
+  actor ids are null — the normal shape of a server-written row) and
+  `components/shared/MarketingRefs` (subject, crawl session, analyzer, analysis run).
+  `analysis_result.run_id` carries no FK, so `getCrawlSessionRef` ASKS whether it is a crawl before
+  offering a door and says plainly when it is not; `getAnalysisProvider` turns the provider uuid
+  into its catalogue label. `web_crawl_session` registered in `entityRegistry` with no flat route —
+  a crawl is only meaningful inside its site, so callers pass the href. `features/marketing` is now
+  clean on `pnpm check:dead-ends` (read that script's *Known limits* — attribute-position names and
+  `r`/`row`-bound rows are invisible to it, so clean is a floor, not a proof). The fourth D150 P0,
+  `BatchDetailWorkspace`, was deleted in `c42828dc7` when the whole `web.batch_*` surface was
+  retired; there is no surface left to fix and rebuilding one over `batch.provider_batch` remains
+  the product decision that commit recorded.
+
 - 2026-08-14 — **"Edit in CMS" from the page workspace (cms-page-hub W3).** The measured page
   now opens where it is EDITED: the workspace header shows an "Edit in CMS" door (new tab)
   whenever the push lane resolves a concrete CMS page. It rides the SAME react-query entry and

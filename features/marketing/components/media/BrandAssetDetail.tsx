@@ -43,7 +43,8 @@ import {
 } from "@/features/marketing/components/shared/MarketingUi";
 import { useBrand } from "@/features/marketing/data/hooks";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
-import { isJsonRecord, type BrandAsset } from "@/features/marketing/types";
+import { type BrandAsset } from "@/features/marketing/types";
+import { readVideoMetadata } from "@/features/marketing/lib/video-metadata";
 import type { Json } from "@/types/database.types";
 import { toast } from "@/lib/toast";
 
@@ -51,32 +52,6 @@ export interface AssetPageRef {
   pageId: string;
   url: string;
   path: string | null;
-}
-
-/** The agent-written block, read defensively — it is free-form JSON on the row. */
-export interface VideoMetadataView {
-  title: string | null;
-  description: string | null;
-  keywords: string[];
-  schemaOrg: Json | null;
-  generatedAt: string | null;
-}
-
-export function readVideoMetadata(data: Json): VideoMetadataView | null {
-  if (!isJsonRecord(data)) return null;
-  const block = data.video_metadata;
-  if (!isJsonRecord(block)) return null;
-  return {
-    title: typeof block.title === "string" ? block.title : null,
-    description:
-      typeof block.description === "string" ? block.description : null,
-    keywords: Array.isArray(block.keywords)
-      ? block.keywords.filter((k): k is string => typeof k === "string")
-      : [],
-    schemaOrg: isJsonRecord(block.schema_org) ? block.schema_org : null,
-    generatedAt:
-      typeof block.generated_at === "string" ? block.generated_at : null,
-  };
 }
 
 export function BrandAssetDetail({

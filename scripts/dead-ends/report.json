@@ -1,17 +1,17 @@
 {
-  "generatedAt": "2026-08-15T01:23:16.813Z",
-  "commit": "de6840c229b383cdbbc180bf8626a11f019ef23c",
+  "generatedAt": "2026-08-15T03:39:31.741Z",
+  "commit": "607edb4bd79863c866b170882964d37b614779f5",
   "totals": {
-    "findings": 97,
+    "findings": 96,
     "high": 66,
-    "medium": 31,
+    "medium": 30,
     "low": 0,
-    "filesWithFindings": 61,
-    "filesScanned": 6586,
+    "filesWithFindings": 60,
+    "filesScanned": 6609,
     "allowlisted": 2
   },
   "byRule": {
-    "bare-id-text": 50,
+    "bare-id-text": 49,
     "unlinked-entity-name": 34,
     "unlinked-count": 4,
     "no-doors-in-file": 9
@@ -415,7 +415,7 @@
       "high": 0
     },
     {
-      "key": "features/marketing",
+      "key": "features/research",
       "count": 1,
       "high": 0
     }
@@ -1035,7 +1035,7 @@
     },
     {
       "file": "features/scheduling/components/detail/SpecCard.tsx",
-      "line": 26,
+      "line": 103,
       "column": 14,
       "rule": "bare-id-text",
       "severity": "high",
@@ -1047,7 +1047,7 @@
     },
     {
       "file": "features/scheduling/components/detail/SpecCard.tsx",
-      "line": 93,
+      "line": 170,
       "column": 16,
       "rule": "bare-id-text",
       "severity": "high",
@@ -1499,18 +1499,6 @@
       "entityHasRoute": false,
       "expression": "c.cardId",
       "feature": "features/flashcards",
-      "route": null
-    },
-    {
-      "file": "features/marketing/components/pages/cards/PushToCmsCard.tsx",
-      "line": 367,
-      "column": 53,
-      "rule": "bare-id-text",
-      "severity": "medium",
-      "entity": "?matched",
-      "entityHasRoute": false,
-      "expression": "matched.plan_node_id",
-      "feature": "features/marketing",
       "route": null
     },
     {
