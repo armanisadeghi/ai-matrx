@@ -3884,6 +3884,7 @@ export type Database = {
         Returns: string
       }
       is_m2m_shape: { Args: { p_rel: unknown }; Returns: boolean }
+      probe_library_grant_publish: { Args: never; Returns: number }
       refresh: { Args: never; Returns: string }
       refresh_log_recount: { Args: never; Returns: undefined }
       refresh_static: { Args: never; Returns: string }
@@ -12663,6 +12664,20 @@ export type Database = {
       }
       compute_sending_health: {
         Args: { p_identity_id: string; p_window?: string }
+        Returns: Json
+      }
+      evaluate_outreach_list_quality: {
+        Args: { p_list_id: string }
+        Returns: Json
+      }
+      honor_reply_opt_out: {
+        Args: {
+          p_detected_phrase: string
+          p_identity_id: string
+          p_in_reply_to_provider_message_id: string
+          p_received_at?: string
+          p_reply_provider_message_id: string
+        }
         Returns: Json
       }
       issue_unsubscribe_token: {
@@ -31262,6 +31277,75 @@ export type Database = {
         }
         Relationships: []
       }
+      domain_classification: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          entity_role: string
+          id: string
+          industry_hint: string | null
+          is_active: boolean
+          metadata: Json
+          notes: string | null
+          observed_hits: number | null
+          organization_id: string
+          pattern: string
+          pattern_kind: string
+          reason: string | null
+          source: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          entity_role: string
+          id?: string
+          industry_hint?: string | null
+          is_active?: boolean
+          metadata?: Json
+          notes?: string | null
+          observed_hits?: number | null
+          organization_id: string
+          pattern: string
+          pattern_kind?: string
+          reason?: string | null
+          source?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          entity_role?: string
+          id?: string
+          industry_hint?: string | null
+          is_active?: boolean
+          metadata?: Json
+          notes?: string | null
+          observed_hits?: number | null
+          organization_id?: string
+          pattern?: string
+          pattern_kind?: string
+          reason?: string | null
+          source?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
       edge_payload_kind: {
         Row: {
           created_at: string
@@ -48625,6 +48709,75 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      landscape_brief: {
+        Row: {
+          agent_confidence: number | null
+          agent_run_id: string | null
+          auto_accept_at: string | null
+          brief_markdown: string
+          confidence_reason: string | null
+          created_at: string
+          facts: Json
+          generated_at: string | null
+          guidance: string
+          human_corrections: Json
+          id: string
+          metadata: Json
+          organization_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          service_lines: Json
+          site_id: string
+          status: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          agent_confidence?: number | null
+          agent_run_id?: string | null
+          auto_accept_at?: string | null
+          brief_markdown?: string
+          confidence_reason?: string | null
+          created_at?: string
+          facts?: Json
+          generated_at?: string | null
+          guidance?: string
+          human_corrections?: Json
+          id?: string
+          metadata?: Json
+          organization_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          service_lines?: Json
+          site_id: string
+          status?: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          agent_confidence?: number | null
+          agent_run_id?: string | null
+          auto_accept_at?: string | null
+          brief_markdown?: string
+          confidence_reason?: string | null
+          created_at?: string
+          facts?: Json
+          generated_at?: string | null
+          guidance?: string
+          human_corrections?: Json
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          service_lines?: Json
+          site_id?: string
+          status?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
       }
       link_gap_domain: {
         Row: {

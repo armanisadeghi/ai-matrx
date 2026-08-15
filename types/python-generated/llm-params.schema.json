@@ -1075,6 +1075,36 @@
       "default": null,
       "title": "Store"
     },
+    "previous_interaction_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Previous Interaction Id"
+    },
+    "task": {
+      "anyOf": [
+        {
+          "enum": [
+            "text_to_video",
+            "image_to_video",
+            "reference_to_video",
+            "edit"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Task"
+    },
     "verbosity": {
       "anyOf": [
         {
