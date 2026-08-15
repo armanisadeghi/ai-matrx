@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P10",
+  "runId": "2026-08-15T191639Z",
+  "baseSha": "3093ef0cb2b7bc973a51cf2ed2c854e54c3b47d3",
+  "createdAt": "2026-08-15T19:16:39Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-15T19:16:39Z",
+      "actor": "codex-p10-worker",
+      "summary": "Opened the 2026-08-15 full-repository P10 suppression-debt patrol on current origin/main.",
+      "evidence": [
+        "Manifest and generated prompt agree on P10 Tier R, schedule, recipe, and full-pass scope.",
+        "Isolated worktree clean at origin/main 3093ef0cb after replacing the stale detached launch snapshot.",
+        "No prior P10 permanent run record exists; the 2026-08-12 report and automation memory show the approved batch fully delivered."
+      ],
+      "previousEventHash": null,
+      "eventHash": "f21b31be0404b98e4b7c302edfee5f8dbf97e87defe3eb26716a34ce29895c2b"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-15T19:20:06Z",
+      "actor": "codex-p10-worker",
+      "summary": "Started one proven finite-union suppression repair in the shared microphone control.",
+      "evidence": [
+        "MicrophoneIconButtonCore accepts xs but TranscriptionLoader and RecordingIndicator accept only sm, md, or lg.",
+        "Two as-any casts pass xs into missing child size-map keys; xs is used by live Voice Pad and transcription-cleanup consumers.",
+        "Repair is bounded to normalize xs to the existing smallest child size sm; sm, md, and lg remain unchanged."
+      ],
+      "previousEventHash": "f21b31be0404b98e4b7c302edfee5f8dbf97e87defe3eb26716a34ce29895c2b",
+      "eventHash": "fa27a952bc54a7cb192edb64c6c0cf53e30d6837f2c4d7013cc179bdb8f12e0d"
+    },
+    {
+      "sequence": 3,
+      "state": "certifying",
+      "at": "2026-08-15T19:22:43Z",
+      "actor": "codex-p10-worker",
+      "summary": "Finished the bounded microphone suppression repair and entered exact-candidate certification.",
+      "evidence": [
+        "Whole-repo as-any count 83 to 81; active eslint-disable count 483 to 482 and files 356 to 355.",
+        "Scoped ESLint is clean after removing the unused directive.",
+        "Type-check baseline and post-edit both report the same 16 unrelated landscapeBrief diagnostics.",
+        "No generated file, chunk boundary, data contract, or unrelated product behavior changed."
+      ],
+      "previousEventHash": "fa27a952bc54a7cb192edb64c6c0cf53e30d6837f2c4d7013cc179bdb8f12e0d",
+      "eventHash": "6fe83589159a910dfb609beaef9e38e36bc3cd5f81740207871ae6ee7a4058cb"
+    }
+  ]
+}

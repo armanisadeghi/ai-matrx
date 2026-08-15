@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P10",
+  "runId": "2026-08-15T191639Z",
+  "state": "certifying",
+  "updatedAt": "2026-08-15T19:22:43Z",
+  "summary": "Finished the bounded microphone suppression repair and entered exact-candidate certification.",
+  "source": "2026-08-15T191639Z.json",
+  "eventHash": "6fe83589159a910dfb609beaef9e38e36bc3cd5f81740207871ae6ee7a4058cb"
+}

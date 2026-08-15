@@ -1,5 +1,41 @@
 # P10 — Type suppression debt
 
+## Full pass — 2026-08-15
+
+### Scope and lifecycle
+
+- Scanned current `origin/main` at `3093ef0cb2b7bc973a51cf2ed2c854e54c3b47d3` from the isolated automation worktree. The detached launch snapshot had diverged from main, so the patrol replaced it before opening run `2026-08-15T191639Z`; no product edit was carried across that boundary.
+- No unfinished P10 permanent record existed. The prior approved batch was already certified and delivered; the only P10 ledger sighting was already closed as `resolved-before-batch`.
+- Ran the required full-repository hatch count, active `eslint-disable` scan, manifest check, and pre-edit type-check. Scope did not use Git churn.
+
+### Outcome and routing
+
+- Findings: **4 ratchet-breach categories / 152 occurrences above the frozen baseline**: `as unknown as` +11, non-null assertions +3, `?? {}` +11, and `?? ""` +127.
+- Standing-authority fix: **1 verified finding / 3 suppression occurrences / 1 source file**. `MicrophoneIconButtonCore` accepted `size="xs"` while `TranscriptionLoader` and `RecordingIndicator` accepted only `sm | md | lg`; two `as any` casts let `xs` reach missing child size-map entries. The shared control now maps only `xs → sm`, preserves `sm` / `md` / `lg`, and drops one ESLint suppression that the scoped lint proved unnecessary.
+- Genuine human decisions: **0**. Exceptions proposed or approved: **0**.
+- Unresolved evidence/machinery: the four repository-wide growth categories remain open for focused contract proofs. No other candidate matched a proven bounded recipe strongly enough for this batch.
+
+### Baseline → candidate diagnostics
+
+| Check | Before | Candidate | Delta |
+|---|---:|---:|---:|
+| `as any` | 83 | 81 | -2 |
+| active `eslint-disable*` | 483 in 356 files | 482 in 355 files | -1 occurrence / -1 file |
+| full type-check | 16 errors in `features/marketing/competitors/landscapeBrief.ts` | same 16 errors | unchanged baseline |
+| scoped ESLint | 1 unused-disable warning | clean | fixed |
+| `pnpm check:patrol-contracts` | PASS | pending final rerun | — |
+
+- The whole-repo hatch ratchet remains red on the unchanged four growth categories; reductions never offset those breaches.
+- Candidate certification: **PENDING**. Exact candidate SHA and adversarial verdict will replace this line after the batch is committed and pushed.
+
+### Current explicit-suppression inventory
+
+- Executable `as any`: **81**; `@ts-ignore`: **20**; `@ts-nocheck`: **2**; production `@ts-expect-error`: **1**; active `eslint-disable*`: **482**. Combined explicit total: **586**.
+- Active ESLint suppressions now occupy **355 eligible files**, down from 363 in the prior P10 report. The detector's compile-time contract-test exclusion is now built in, so intentional negative assertions no longer inflate this patrol.
+- Cadence remains unchanged. This is the second full P10 cycle, not a month of clean runs, and no repeated rejection exists.
+
+---
+
 ## Approved batch follow-up — 2026-08-12
 
 ### Scope scanned
