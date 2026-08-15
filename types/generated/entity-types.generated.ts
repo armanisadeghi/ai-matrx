@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 363 active entity tokens. A token here is FK-valid for
+// 366 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -116,6 +116,8 @@ export type EntityTypeToken =
   | "conversation_value"
   | "crm_address"
   | "crm_affiliation"
+  | "crm_contact_candidate"
+  | "crm_enrichment_call"
   | "crm_interaction"
   | "crm_merge_candidate"
   | "crm_outreach_list"
@@ -253,6 +255,7 @@ export type EntityTypeToken =
   | "seo_ai_visibility_response"
   | "seo_ai_visibility_signal"
   | "seo_backlink"
+  | "seo_backlink_change_event"
   | "seo_backlink_dimension_snapshot"
   | "seo_backlink_observation"
   | "seo_backlink_snapshot"
@@ -526,6 +529,7 @@ export type ComponentEntityToken =
   | "conversation_value"
   | "crm_address"
   | "crm_affiliation"
+  | "crm_contact_candidate"
   | "crm_interaction"
   | "crm_merge_candidate"
   | "crm_outreach_list_member"
@@ -587,6 +591,7 @@ export type ComponentEntityToken =
   | "seo_ai_visibility_response"
   | "seo_ai_visibility_signal"
   | "seo_backlink"
+  | "seo_backlink_change_event"
   | "seo_backlink_dimension_snapshot"
   | "seo_backlink_observation"
   | "seo_backlink_snapshot"
@@ -744,6 +749,8 @@ export type ScopeableEntityToken =
   | "conversation"
   | "crm_address"
   | "crm_affiliation"
+  | "crm_contact_candidate"
+  | "crm_enrichment_call"
   | "crm_interaction"
   | "crm_merge_candidate"
   | "crm_outreach_list"
@@ -866,6 +873,7 @@ export type ScopeableEntityToken =
   | "seo_ai_visibility_response"
   | "seo_ai_visibility_signal"
   | "seo_backlink"
+  | "seo_backlink_change_event"
   | "seo_backlink_dimension_snapshot"
   | "seo_backlink_observation"
   | "seo_backlink_snapshot"
@@ -1131,6 +1139,8 @@ export const ENTITY_TYPE_METADATA = {
   "conversation_value": { token: "conversation_value", schema: "chat", table: "conversation_value", label: "Conversation Value", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: false, category: null, referencePickable: false, titleColumn: "key", contentRole: null, referenceCategory: null },
   "crm_address": { token: "crm_address", schema: "crm", table: "address", label: "Address", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "label", contentRole: null, referenceCategory: null },
   "crm_affiliation": { token: "crm_affiliation", schema: "crm", table: "affiliation", label: "Affiliation", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "title", contentRole: null, referenceCategory: null },
+  "crm_contact_candidate": { token: "crm_contact_candidate", schema: "crm", table: "contact_candidate", label: "Contact Candidate", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "crm_enrichment_call": { token: "crm_enrichment_call", schema: "crm", table: "enrichment_call", label: "Enrichment Call", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "crm_interaction": { token: "crm_interaction", schema: "crm", table: "interaction", label: "Interaction", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "subject", contentRole: null, referenceCategory: null },
   "crm_merge_candidate": { token: "crm_merge_candidate", schema: "crm", table: "merge_candidate", label: "Merge Candidate", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "crm_outreach_list": { token: "crm_outreach_list", schema: "crm", table: "outreach_list", label: "Outreach List", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: "container", referenceCategory: null },
@@ -1268,6 +1278,7 @@ export const ENTITY_TYPE_METADATA = {
   "seo_ai_visibility_response": { token: "seo_ai_visibility_response", schema: "seo", table: "ai_visibility_response", label: "AI Visibility Response", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_ai_visibility_signal": { token: "seo_ai_visibility_signal", schema: "seo", table: "ai_visibility_signal", label: "AI Visibility Signal", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_backlink": { token: "seo_backlink", schema: "seo", table: "backlink", label: "SEO Backlink", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_backlink_change_event": { token: "seo_backlink_change_event", schema: "seo", table: "backlink_change_event", label: "Backlink Change Event", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_backlink_dimension_snapshot": { token: "seo_backlink_dimension_snapshot", schema: "seo", table: "backlink_dimension_snapshot", label: "Backlink Dimension Snapshot", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_backlink_observation": { token: "seo_backlink_observation", schema: "seo", table: "backlink_observation", label: "Backlink Observation", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_backlink_snapshot": { token: "seo_backlink_snapshot", schema: "seo", table: "backlink_snapshot", label: "Backlink Snapshot", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1498,6 +1509,8 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "conversation_value",
   "crm_address",
   "crm_affiliation",
+  "crm_contact_candidate",
+  "crm_enrichment_call",
   "crm_interaction",
   "crm_merge_candidate",
   "crm_outreach_list",
@@ -1635,6 +1648,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "seo_ai_visibility_response",
   "seo_ai_visibility_signal",
   "seo_backlink",
+  "seo_backlink_change_event",
   "seo_backlink_dimension_snapshot",
   "seo_backlink_observation",
   "seo_backlink_snapshot",
