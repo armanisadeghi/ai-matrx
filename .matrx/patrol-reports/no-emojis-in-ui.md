@@ -117,7 +117,7 @@ Each item remains open because an exact Lucide repair has not yet been proven to
 - Scoped ESLint: existing same-file React Compiler/dead-end debt remains outside edited lines; no P6 edit introduced a diagnostic.
 - Managed preview: exact-worktree start was attempted twice and correctly refused because `/Users/armanisadeghi/code/matrx-frontend` owns the machine-wide lease. The foreign preview was never used.
 - Allowed focused fallback: server-rendered markup PASS for `WelcomeEmail`, `FixedInputPage`, and `IconResolverDisplay`; all preserve their text, render the expected Lucide icons where applicable, and contain no P6 glyph. `CanvasShareSheet` server rendering requires its Redux provider; its changed close control is covered by the exact detector, type gate, source audit, and unchanged screen-reader `Close` label.
-- Independent adversarial certifier: candidate `3df1bd89b` was **REJECTED** because this report and the ledger prematurely claimed certification while the permanent record still said `certifying`. The product edits remained clean. Those projection claims are corrected here; exact-SHA certification of the corrected candidate is pending and will be authoritative only when appended to the permanent run record.
+- Independent adversarial certifier: candidate `3df1bd89b` was **REJECTED** because this report and the ledger prematurely claimed certification while the permanent record still said `certifying`; the product edits remained clean. Corrected candidate `441071746eb918349cfc33029a215be0e1fbf837` is **CERTIFIED** with no concrete batch-caused defect. The exact verdict and checklist are event 7 in the permanent record.
 
 ## Structural baseline for the next run
 
