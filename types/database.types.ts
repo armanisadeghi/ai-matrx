@@ -38756,6 +38756,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      move_site_to_organization: {
+        Args: {
+          p_brand_action?: string
+          p_expected_version?: number
+          p_site_id: string
+          p_target_organization_id: string
+        }
+        Returns: Json
+      }
       mtx_is_durable_media_url: { Args: { url: string }; Returns: boolean }
       mtx_media_durability_health: {
         Args: never
@@ -39169,6 +39178,10 @@ export type Database = {
               type: string
             }[]
           }
+      preview_site_organization_move: {
+        Args: { p_site_id: string }
+        Returns: Json
+      }
       promote_version: {
         Args: { p_entity_id: string; p_entity_type: string; p_version: number }
         Returns: Json
@@ -42606,6 +42619,15 @@ export type Database = {
       fn_purge_library_document: { Args: { p_id: string }; Returns: Json }
       fn_purge_library_file: { Args: { p_file_id: string }; Returns: Json }
       fn_restore_library_document: { Args: { p_id: string }; Returns: Json }
+      kg_chunk_sources_cld_readable: { Args: never; Returns: string[] }
+      kg_chunk_sources_library_granted: {
+        Args: never
+        Returns: {
+          source_id: string
+          source_kind: string
+        }[]
+      }
+      kg_chunk_sources_note_visible: { Args: never; Returns: string[] }
       library_grant_publish: {
         Args: {
           p_actor?: string
