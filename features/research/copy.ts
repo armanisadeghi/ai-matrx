@@ -43,6 +43,10 @@ export function researchKpis(
   progress: ResearchProgress | null | undefined,
   costSummary: TopicCostSummary | null | undefined,
 ) {
+  // Cost-derived numbers are NULL, never 0, when no cost summary is in scope.
+  // A surface that does not load costs must not assert "$0 spent" — that is a
+  // fabricated KPI, and the agent would read it as fact.
+  const hasCost = costSummary != null;
   const inputTokens = costSummary?.total_input_tokens ?? 0;
   const outputTokens = costSummary?.total_output_tokens ?? 0;
   return {
@@ -56,9 +60,9 @@ export function researchKpis(
     topic_syntheses: progress?.topic_syntheses ?? 0,
     documents: progress?.total_documents ?? 0,
     // Same proxy the hero rail renders (~4 chars / token).
-    characters_processed: (inputTokens + outputTokens) * 4,
-    llm_calls: costSummary?.total_llm_calls ?? 0,
-    estimated_cost_usd: costSummary?.total_estimated_cost_usd ?? 0,
+    characters_processed: hasCost ? (inputTokens + outputTokens) * 4 : null,
+    llm_calls: hasCost ? costSummary.total_llm_calls : null,
+    estimated_cost_usd: hasCost ? costSummary.total_estimated_cost_usd : null,
     // Failures are the highest-value content on the page — never omitted.
     failed_analyses: progress?.failed_analyses ?? 0,
     failed_keyword_syntheses: progress?.failed_keyword_syntheses ?? 0,

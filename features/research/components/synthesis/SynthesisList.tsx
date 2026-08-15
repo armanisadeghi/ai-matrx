@@ -43,6 +43,19 @@ import {
 // Universal v3 context menu — lightweight shell, imported statically;
 // MenuContent lazy-loads on first open.
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
+import type { AiOptionValues } from "@/components/agent-copy/AiCopyMenu";
+import {
+  researchKpiAttributes,
+  researchKpis,
+  researchLocation,
+  synthesesListSummary,
+  synthesisBrief,
+  synthesisSummary,
+  SYNTHESIS_CSV_COLUMNS,
+} from "@/features/research/copy";
 
 const hasText = (s: string | null | undefined): s is string =>
   !!s && s.trim().length > 0;
@@ -111,11 +124,14 @@ function SynthesisCard({
     failed: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
   };
 
+  const kpis = researchKpis(progress, null);
+
   return (
-    <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm overflow-hidden">
+    <div className="group/synthesis rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm overflow-hidden">
+      <div className="flex items-center">
       <button
         onClick={() => setExpanded((v) => !v)}
-        className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-accent/30 transition-colors min-h-[44px]"
+        className="flex-1 min-w-0 flex items-center gap-2.5 px-3 py-2 text-left hover:bg-accent/30 transition-colors min-h-[44px]"
       >
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
@@ -157,6 +173,32 @@ function SynthesisCard({
           <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
         )}
       </button>
+        {/* Record pair — sibling of the toggle, never nested inside it. */}
+        <CopyButtons
+          size="icon"
+          className="pr-2 opacity-0 transition-opacity group-hover/synthesis:opacity-100 focus-within:opacity-100"
+          label={`Synthesis — ${label}`}
+          human={() => synthesisSummary(synthesis)}
+          agent={() => ({
+            kind: "research-synthesis",
+            location: researchLocation("Synthesis"),
+            description: `A single research synthesis (${synthesis.scope}) as rendered on the synthesis page.`,
+            // Full result, never the 20k display clip — the card truncates for
+            // the screen, the payload must not lie to the agent.
+            data: { synthesis, page_kpis: kpis },
+            summary: synthesisSummary(synthesis),
+            attributes: {
+              ...researchKpiAttributes(kpis),
+              synthesis_id: synthesis.id,
+              scope: synthesis.scope,
+              status: synthesis.status,
+              version: synthesis.version,
+              result_chars: synthesis.result?.length ?? 0,
+            },
+          })}
+          json={() => synthesis}
+        />
+      </div>
 
       {expanded && (
         <div className="border-t border-border/50 px-3 py-3">
@@ -440,6 +482,176 @@ export default function SynthesisList() {
     </button>
   );
 
+  // ── Copy / export ───────────────────────────────────────────────────────
+  //
+  // Syntheses are long-form documents, so this list can easily reach tens of
+  // thousands of chars — the sized-to-data call here is a dropdown PLUS a
+  // custom composer whose main lever is a per-synthesis char cap.
+  const listKpis = researchKpis(progress, null);
+  const listAttributes = () => ({
+    ...researchKpiAttributes(listKpis),
+    shown: filtered.length,
+    total: synthList.length,
+    topic_syntheses: topicSyntheses.length,
+    keyword_syntheses: keywordSyntheses.length,
+    scope_filter: scopeFilter ?? "all",
+    status_filter: statusFilter ?? "all",
+    keyword_filter: keywordFilter ?? "all",
+    search: search || undefined,
+  });
+
+  /** The custom composer's row set — shared by `build` and `wrap` so the
+   *  preview the user sizes is exactly what lands on the clipboard. */
+  const customRows = (opts: AiOptionValues) => {
+    const resultChars = Number(opts.resultChars ?? 800);
+    let rows = filtered;
+    if (opts.failedOnly) rows = rows.filter((s) => !!s.error);
+    if (opts.currentOnly) rows = rows.filter((s) => s.is_current);
+    return rows.map((s) => synthesisBrief(s, resultChars));
+  };
+
+  const copyControls = (
+    <>
+      <CopyButtons
+        size="icon"
+        label="Syntheses"
+        human={() => synthesesListSummary(filtered)}
+        agent={() => ({
+          kind: "research-syntheses",
+          location: researchLocation("Synthesis"),
+          description:
+            "Every synthesis matching the current filters, with full result text.",
+          data: {
+            filters: {
+              scope: scopeFilter ?? "all",
+              status: statusFilter ?? "all",
+              keyword: keywordFilter ?? "all",
+              search: search || null,
+            },
+            page_kpis: listKpis,
+            topic_syntheses: topicSyntheses,
+            keyword_syntheses: keywordSyntheses,
+          },
+          summary: synthesesListSummary(filtered),
+          attributes: listAttributes(),
+        })}
+        agentVariant={{ position: "last" }}
+        aiVariants={[
+          {
+            id: "briefs",
+            label: "Briefs",
+            hint: "Every synthesis, result clipped to 800 chars",
+            build: () => ({
+              kind: "research-syntheses",
+              location: researchLocation("Synthesis"),
+              description:
+                "Every synthesis matching the current filters, results clipped to 800 chars each.",
+              data: {
+                page_kpis: listKpis,
+                syntheses: filtered.map((s) => synthesisBrief(s, 800)),
+              },
+              attributes: { ...listAttributes(), detail: "briefs" },
+            }),
+          },
+          {
+            id: "index",
+            label: "Index only",
+            hint: "Identity, status and sizes — no result text",
+            build: () => ({
+              kind: "research-syntheses",
+              location: researchLocation("Synthesis"),
+              description:
+                "Index of the syntheses matching the current filters — no result bodies.",
+              data: {
+                page_kpis: listKpis,
+                syntheses: filtered.map((s) => {
+                  const { result, ...rest } = synthesisBrief(s, 0);
+                  return rest;
+                }),
+              },
+              attributes: { ...listAttributes(), detail: "index" },
+            }),
+          },
+        ]}
+        aiCustom={{
+          label: "Open custom view…",
+          hint: "Tune how much of each synthesis comes along",
+          options: [
+            {
+              kind: "number",
+              key: "resultChars",
+              label: "Chars per synthesis",
+              hint: "0 = unlimited. Each clipped result states how much it dropped.",
+              min: 0,
+              step: 100,
+              presets: [
+                { label: "400", value: 400 },
+                { label: "800", value: 800 },
+                { label: "2k", value: 2000 },
+                { label: "8k", value: 8000 },
+                { label: "All", value: 0 },
+              ],
+              default: 800,
+            },
+            {
+              kind: "toggle",
+              key: "failedOnly",
+              label: "Failed only",
+              hint: "Just the syntheses that errored.",
+              default: false,
+            },
+            {
+              kind: "toggle",
+              key: "currentOnly",
+              label: "Current versions only",
+              default: false,
+            },
+          ],
+          build: (opts) => {
+            const rows = customRows(opts);
+            return {
+              text: JSON.stringify(rows, null, 2),
+              meta: {
+                rows: rows.length,
+                chars_per_synthesis: Number(opts.resultChars ?? 800) || "all",
+              },
+            };
+          },
+          wrap: (_text, opts, meta) => ({
+            kind: "research-syntheses",
+            location: researchLocation("Synthesis"),
+            description: "A custom slice of the syntheses on this page.",
+            // Shortened variants are lossy in DATA only — the ambient context
+            // (page KPIs, filters) is identical to every other variant.
+            data: { page_kpis: listKpis, syntheses: customRows(opts) },
+            attributes: {
+              ...listAttributes(),
+              detail: "custom",
+              rows: Number(meta?.rows ?? 0),
+              chars_per_synthesis: meta?.chars_per_synthesis,
+            },
+          }),
+        }}
+      />
+      <ExportMenu
+        label="Syntheses"
+        items={[
+          // Export covers ALL rows in scope, with full result text.
+          jsonExportItem(() => ({
+            page_kpis: listKpis,
+            syntheses: filtered,
+          })),
+          csvExportItem(
+            () => filtered.map((s) => synthesisBrief(s, 0)),
+            "CSV (all matching)",
+            SYNTHESIS_CSV_COLUMNS,
+          ),
+        ]}
+      />
+      {runButton}
+    </>
+  );
+
   return (
     <div className="h-full flex flex-col overflow-hidden">
       <div className="flex-shrink-0 px-3 sm:px-4 pt-3 pb-2">
@@ -450,7 +662,7 @@ export default function SynthesisList() {
           search={search}
           onSearchChange={setSearch}
           searchPlaceholder="Search content, keywords..."
-          trailing={runButton}
+          trailing={copyControls}
         />
       </div>
 
