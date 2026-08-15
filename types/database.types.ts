@@ -9342,6 +9342,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _configure_my_sms_assistant: {
+        Args: {
+          p_agent_id: string
+          p_agent_version_id: string
+          p_enabled: boolean
+          p_program_key: string
+        }
+        Returns: undefined
+      }
       claim_pending_sms_agent_turns: {
         Args: {
           p_lease_seconds?: number
@@ -9376,6 +9385,82 @@ export type Database = {
           provider_account_id: string
           to_number: string
         }[]
+      }
+      configure_my_sms_assistant: {
+        Args: { p_agent_id: string; p_enabled: boolean; p_program_key: string }
+        Returns: {
+          blocked_reasons: string[]
+          chat_conversation_id: string
+          consent_status: string
+          destination_id: string
+          global_assistant_enabled: boolean
+          identity_status: string
+          masked_phone: string
+          number_active: boolean
+          preferred_agent_id: string
+          preferred_agent_version_id: string
+          program_key: string
+          ready: boolean
+          sms_conversation_id: string
+          sms_enabled: boolean
+          user_assistant_enabled: boolean
+          verified_user_phone: string
+        }[]
+      }
+      configure_my_sms_assistant_version: {
+        Args: {
+          p_agent_id: string
+          p_agent_version_id: string
+          p_enabled: boolean
+          p_program_key: string
+        }
+        Returns: {
+          blocked_reasons: string[]
+          chat_conversation_id: string
+          consent_status: string
+          destination_id: string
+          global_assistant_enabled: boolean
+          identity_status: string
+          masked_phone: string
+          number_active: boolean
+          preferred_agent_id: string
+          preferred_agent_version_id: string
+          program_key: string
+          ready: boolean
+          sms_conversation_id: string
+          sms_enabled: boolean
+          user_assistant_enabled: boolean
+          verified_user_phone: string
+        }[]
+      }
+      disconnect_my_sms_assistant: {
+        Args: { p_program_key: string }
+        Returns: {
+          blocked_reasons: string[]
+          chat_conversation_id: string
+          consent_status: string
+          destination_id: string
+          global_assistant_enabled: boolean
+          identity_status: string
+          masked_phone: string
+          number_active: boolean
+          preferred_agent_id: string
+          preferred_agent_version_id: string
+          program_key: string
+          ready: boolean
+          sms_conversation_id: string
+          sms_enabled: boolean
+          user_assistant_enabled: boolean
+          verified_user_phone: string
+        }[]
+      }
+      enqueue_my_sms_assistant_test: {
+        Args: {
+          p_body: string
+          p_idempotency_key: string
+          p_program_key: string
+        }
+        Returns: string
       }
       enqueue_sms_assistant_test: {
         Args: {
@@ -9412,6 +9497,27 @@ export type Database = {
           p_worker_id: string
         }
         Returns: boolean
+      }
+      get_my_sms_assistant_program: {
+        Args: { p_program_key: string }
+        Returns: {
+          blocked_reasons: string[]
+          chat_conversation_id: string
+          consent_status: string
+          destination_id: string
+          global_assistant_enabled: boolean
+          identity_status: string
+          masked_phone: string
+          number_active: boolean
+          preferred_agent_id: string
+          preferred_agent_version_id: string
+          program_key: string
+          ready: boolean
+          sms_conversation_id: string
+          sms_enabled: boolean
+          user_assistant_enabled: boolean
+          verified_user_phone: string
+        }[]
       }
     }
     Enums: {

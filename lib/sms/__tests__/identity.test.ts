@@ -1,6 +1,7 @@
 import {
   normalizeSmsEndpoint,
   smsInboundProviderEventKey,
+  smsVerifiedPreferenceScope,
 } from "@/lib/sms/identity";
 
 describe("SMS identity contract", () => {
@@ -31,5 +32,23 @@ describe("SMS identity contract", () => {
         destination: "+14155559999",
       }),
     ).toThrow("provider account and message identifiers");
+  });
+
+  test("scopes verified phone identity to the destination tenant", () => {
+    expect(
+      smsVerifiedPreferenceScope(
+        {
+          provider: "twilio",
+          providerAccountId: "AC123",
+          providerMessageId: "SM123",
+          source: "+14155551234",
+          destination: "+14155559999",
+        },
+        "org-destination",
+      ),
+    ).toEqual({
+      phoneNumber: "+14155551234",
+      organizationId: "org-destination",
+    });
   });
 });

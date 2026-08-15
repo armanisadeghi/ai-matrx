@@ -31,7 +31,9 @@ export interface ResolvedSmsInboundContext extends SmsInboundContextBase {
   smsConversationId: string;
   chatConversationId: string;
   chatConversationIsNew: boolean;
-  agentId: string;
+  assistantEnabled: boolean;
+  agentMessagesEnabled: boolean;
+  agentId: string | null;
   agentVersionId: string | null;
 }
 
@@ -59,6 +61,11 @@ export interface ClaimedSmsInboundReceipt {
   providerEventKey: string;
 }
 
+export interface SmsVerifiedPreferenceScope {
+  phoneNumber: string;
+  organizationId: string;
+}
+
 /** Normalize a transport endpoint with the same E.164 rules as CRM contact media. */
 export function normalizeSmsEndpoint(raw: string): string {
   return normalizeMediumValue("phone", raw).valueKey;
@@ -72,4 +79,16 @@ export function smsInboundProviderEventKey(input: SmsInboundContextInput): strin
     throw new Error("Inbound SMS requires provider account and message identifiers");
   }
   return `${input.provider}:inbound:${account}:${message}`;
+}
+
+/** Exact tenant + endpoint scope required before a verified phone can identify a user. */
+export function smsVerifiedPreferenceScope(
+  input: SmsInboundContextInput,
+  destinationOrganizationId: string,
+): SmsVerifiedPreferenceScope {
+  const organizationId = destinationOrganizationId.trim();
+  if (!organizationId) {
+    throw new Error("Inbound SMS destination requires an organization identity");
+  }
+  return { phoneNumber: input.source, organizationId };
 }
