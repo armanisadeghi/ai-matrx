@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P8",
+  "runId": "01a001b0-1582-7fc2-935e-299e2d1d4826",
+  "baseSha": "3a650ee9a6de6c29c4c8a382c678469c2b61f80e",
+  "createdAt": "2026-08-14T19:11:52.222Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-14T19:11:52.222Z",
+      "actor": "p8-retrospective-reconciler",
+      "summary": "Reconstructed the missing audit receipt for the August 14 Real Loading States patrol from its task log, report, Git history, and automation memory.",
+      "evidence": [
+        "Scheduled patrol task completed at 2026-08-14T19:52:56.499Z.",
+        "The report and memory both identify the same three repaired screens and delivery facts."
+      ],
+      "previousEventHash": null,
+      "eventHash": "b7f2f746197506bc388cc55e7041e7c4bc4953871f28250f7a8dc8f8bef739ac"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-14T19:18:00.000Z",
+      "actor": "p8-patrol-worker",
+      "summary": "Applied the approved mechanical loading-indicator repair to three Suspense fallbacks.",
+      "evidence": [
+        "Model-provider sync, comprehensive agent builder, and main prompt builder were the only product files changed.",
+        "Each bare Loading message was replaced with the shared SuspenseLoader; wrappers and behavior stayed unchanged."
+      ],
+      "previousEventHash": "b7f2f746197506bc388cc55e7041e7c4bc4953871f28250f7a8dc8f8bef739ac",
+      "eventHash": "8e71eb7b755cc448ec241e8fcbda416d18f6387b4292b64e4188566d05b04cb0"
+    },
+    {
+      "sequence": 3,
+      "state": "certifying",
+      "at": "2026-08-14T19:19:18.514Z",
+      "actor": "p8-patrol-worker",
+      "summary": "Sent the exact three-screen candidate to an independent adversarial reviewer.",
+      "evidence": [
+        "Independent certifier task /root/p8_certifier was created at this timestamp."
+      ],
+      "previousEventHash": "8e71eb7b755cc448ec241e8fcbda416d18f6387b4292b64e4188566d05b04cb0",
+      "eventHash": "dfcf0201bc63f4a0bc50f19ba5b3e29c2868d372889d231f646750ca49253ee2"
+    },
+    {
+      "sequence": 4,
+      "state": "certified",
+      "at": "2026-08-14T19:26:24.934Z",
+      "actor": "p8-adversarial-certifier",
+      "summary": "CERTIFIED: the three Real Loading States repairs introduced no batch-caused defect.",
+      "evidence": [
+        "Certifier task completed with CERTIFIED at 2026-08-14T19:26:24.934Z."
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "40fe1be4a5fea20971065bb3a35f675e5896d016",
+        "certifierTaskId": "/root/p8_certifier",
+        "checks": [
+          "Pre/post TypeScript and doctrine checks passed.",
+          "The focused detector fell from 183 to 180 matches, with zero bare literals in changed files.",
+          "Static accessibility markup and representative mobile-dark rendering passed both layout classes.",
+          "Scoped lint differences were unchanged baseline issues."
+        ]
+      },
+      "previousEventHash": "dfcf0201bc63f4a0bc50f19ba5b3e29c2868d372889d231f646750ca49253ee2",
+      "eventHash": "80f340cf33750a52226fe0efa85ff6201ea1a7db5399eeb07895a1112f7ef9a4"
+    },
+    {
+      "sequence": 5,
+      "state": "delivery_queued",
+      "at": "2026-08-15T18:33:12.740Z",
+      "actor": "fleet-health-controller",
+      "summary": "Delivery reconciliation: the certified Real Loading States cleanup was already integrated and shipped; recording the missing delivery receipt without creating another release.",
+      "evidence": [
+        "authority-ref:refs/heads/patrol-runs/P8/01a001b0-1582-7fc2-935e-299e2d1d4826"
+      ],
+      "delivery": {
+        "candidateSha": "40fe1be4a5fea20971065bb3a35f675e5896d016",
+        "preservedRef": "refs/heads/patrol-runs/P8/01a001b0-1582-7fc2-935e-299e2d1d4826"
+      },
+      "previousEventHash": "80f340cf33750a52226fe0efa85ff6201ea1a7db5399eeb07895a1112f7ef9a4",
+      "eventHash": "9f6529ff13471f5abe9cc7993c641c51e479d00c1117c508a2fa5ebc5b67c4e1"
+    },
+    {
+      "sequence": 6,
+      "state": "delivered",
+      "at": "2026-08-15T18:33:16.700Z",
+      "actor": "fleet-health-controller",
+      "summary": "DELIVERED: the independently certified Real Loading States cleanup is on origin/main and shipped in v0.4.603.",
+      "evidence": [
+        "Certified worker candidate and integrated commit have the same stable patch id ff79fc57c945dbbd8812739a406674dd2a8254b4.",
+        "Integrated commit: 2476168b39a35d6ee9a7ed0daf1c0e1e46066687.",
+        "Release commit: df792b77227a4a012e5427ce419519d096b478f5 (v0.4.603); Vercel targets succeeded."
+      ],
+      "delivery": {
+        "candidateSha": "40fe1be4a5fea20971065bb3a35f675e5896d016",
+        "preservedRef": "refs/heads/patrol-runs/P8/01a001b0-1582-7fc2-935e-299e2d1d4826",
+        "integratedSha": "2476168b39a35d6ee9a7ed0daf1c0e1e46066687",
+        "release": "v0.4.603"
+      },
+      "previousEventHash": "9f6529ff13471f5abe9cc7993c641c51e479d00c1117c508a2fa5ebc5b67c4e1",
+      "eventHash": "1578473f74808701a5da0e5cde00d10c2da3c2b61b8a2fe0282f5f0b547a30b3"
+    }
+  ]
+}
