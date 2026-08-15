@@ -7,8 +7,7 @@
 // when you take the feature out, and it is deliberately small: a row type
 // derived from the RPC, an edit payload, and this surface's declared scopes.
 //
-// See ./FEATURE.md, and docs/handoffs/canonical-entity-list-extraction.md for
-// the extraction in progress.
+// See ./FEATURE.md, and lib/entity-list/FEATURE.md for the shell's contract.
 
 import type { Database } from "@/types/database.types";
 import type { ListScopeKind } from "@/lib/list-scope/types";
