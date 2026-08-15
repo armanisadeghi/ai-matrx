@@ -93,6 +93,10 @@ function DimensionRow({ d }: { d: PlanDimension }) {
               <InfinityIcon className="h-3.5 w-3.5" aria-hidden />
               Unlimited
             </span>
+          ) : d.limit === 0 ? (
+            // "0 of 0" is technically true and reads like a bug. A plan that
+            // includes none of something should say so in words.
+            <span className="text-muted-foreground">Not included</span>
           ) : measured ? (
             <>
               <span className="text-foreground">
@@ -126,11 +130,17 @@ function DimensionRow({ d }: { d: PlanDimension }) {
             })}
           </span>
         ) : null}
-        {!measured && !unlimited ? (
-          <span>Usage is tracked where the files live, not here</span>
+        {/* Say WHICH system knows the number, so "we don't count it here" reads
+            as a pointer rather than a shrug. */}
+        {!measured && !unlimited && d.limit !== 0 ? (
+          <span>
+            {d.capability.endsWith("_bytes")
+              ? "Current usage is tracked with your files"
+              : "Counted live by the agent system"}
+          </span>
         ) : null}
         {/* The honest disclosure: is this limit real today, or just visible? */}
-        {!d.enforced && !unlimited ? (
+        {!d.enforced && !unlimited && d.limit !== 0 ? (
           <span>Shown for planning — not enforced yet</span>
         ) : null}
         {d.nextPlanLimit != null && !unlimited && d.limit != null &&

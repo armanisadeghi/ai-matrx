@@ -105,6 +105,31 @@ full snapshot refresh.
 | [`components/CapabilityPaywallDialog.tsx`](./components/CapabilityPaywallDialog.tsx) | Contextual cap-hit paywall (helpful, never hostage). Never a `toast.error`. |
 | [`components/CapabilityGate.tsx`](./components/CapabilityGate.tsx) | The TIER gate surface — tier held + tier required + one click there. Fails open while loading/on error. The ONLY tier-lock UI; never hand-roll a second. |
 
+## Plans — everything about a plan is DATA (2026-08-14)
+
+🚨 **No plan name, price, or limit may be hardcoded.** They live in
+`billing.plan` / `billing.plan_limit`; changing a plan is one row, never a
+deploy. `features/pricing/data.ts` was the old hardcoded ladder and is
+superseded — a constant describing a plan is a bug. Full model + the change
+table: `common-docs/systems/entitlements-and-tiers/PLAN_MODEL.md`.
+
+| Piece | Role |
+|---|---|
+| [`plan-service.ts`](./plan-service.ts) | `fetchPlanStatus(org)` — "where am I at": plan + every dimension + what the next plan gives. `fetchPublicPlans()` — the pricing page, from the DB. |
+| [`components/PlanUsagePanel.tsx`](./components/PlanUsagePanel.tsx) | The usage screen. Mounted at Settings → **Plan & usage** (`/user-settings/plan`). |
+| `registry.ts` | The human WORDS for each dimension (label, description, run-out copy). The NUMBERS are never here. |
+
+**Two dimensions are measured elsewhere** (`platform.storage_bytes`,
+`platform.active_agents`): the resolver reports the limit and `used: null`.
+Render that as unknown — **a confident 0 on a usage screen is a lie**, and the
+panel says which system owns the real number instead.
+
+**Running out and being locked out are different messages.** `cap_reached` leads
+with *when it comes back* ("resets on September 1 — you don't have to do
+anything") plus a link to the usage screen; `tier_locked` names the tier that
+unlocks it. Telling someone to upgrade when they only need to wait until Tuesday
+is the hostage-taking the TRUST mandate bans — `CapabilityGate` handles both.
+
 ## Org-scoped capabilities — "is this ORGANIZATION allowed to do X?" (2026-08-14)
 
 Every capability above meters a PERSON's own AI usage. Some capabilities belong
