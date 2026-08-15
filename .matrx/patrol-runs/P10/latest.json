@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P10",
   "runId": "2026-08-15T191639Z",
-  "state": "certifying",
-  "updatedAt": "2026-08-15T19:22:43Z",
-  "summary": "Finished the bounded microphone suppression repair and entered exact-candidate certification.",
+  "state": "escaped_delivery",
+  "updatedAt": "2026-08-15T20:16:22.246Z",
+  "summary": "Recorded the uncertified P10 candidate that entered main before the delivery controller; v0.4.703 will be its first release.",
   "source": "2026-08-15T191639Z.json",
-  "eventHash": "6fe83589159a910dfb609beaef9e38e36bc3cd5f81740207871ae6ee7a4058cb"
+  "eventHash": "05ba22bd3bd4c457874b6dfd519b41a4c76f1ed4a084fe9cbf67361ce521a5ce"
 }
