@@ -9,6 +9,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { docprocDb } from "@/utils/supabase/docprocDb";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type {
   PageExtractionJob,
   PageExtractionJobInsert,
@@ -137,5 +138,21 @@ export async function clearJobResults(jobId: string): Promise<void> {
   const { error } = await supabase.rpc("page_extraction_clear_job_results", {
     p_job_id: jobId,
   });
-  if (error) throw error;
+  if (error) {
+    // P0002 is the RPC's honest "this extraction dataset is not available to
+    // you" — the SECURITY INVOKER update matched zero rows, which under RLS is
+    // an ACCESS answer just as often as a missing one. The user is looking at
+    // the Results tab of this very job, so "not found" is the one answer that
+    // is definitely wrong; hand it to AccessGate instead.
+    if (error.code === "P0002") {
+      throw recordUnavailable({
+        entity: "extraction dataset",
+        reason: "unknown",
+        recordId: jobId,
+        token: "page_extraction_job",
+        relation: "docproc.page_extraction_jobs",
+      });
+    }
+    throw error;
+  }
 }

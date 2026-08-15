@@ -25,6 +25,7 @@ import { supabase } from "@/utils/supabase/client";
 
 import type { FieldFormatConfig } from "@/lib/field-formats/types";
 
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { parseTableMetadata } from "./types";
 import type {
   BulkOp,
@@ -55,10 +56,13 @@ import type {
 // Two traps it carries, both handled by `getTableMetadata` below:
 //   - the key is `columns`, not `fields` (its sibling RPC's name for the same
 //     thing);
-//   - it has NO `{success:false}` envelope. It RAISES ('Table not found or name
-//     mismatch'), which arrives as a PostgREST error. Never translate that into
-//     an empty state — a thrown error means the dataset is missing or the name
-//     did not match, not that the dataset has no columns.
+//   - it has NO `{success:false}` envelope. It RAISES, which arrives as a
+//     PostgREST error. Never translate that into an empty state — a thrown
+//     error never means "the dataset has no columns". And never translate it
+//     into ABSENCE either: `get_full_table` is SECURITY INVOKER, so its gate
+//     sees zero rows just as readily when RLS hid the dataset from this caller.
+//     That case arrives as errcode P0002 with an honest ambiguous message and
+//     is handed to AccessGate to resolve (the D167 class).
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
@@ -88,7 +92,24 @@ export async function getTableMetadata(
   const { data, error } = await supabase.rpc("get_full_table", {
     ref: ref as never,
   });
-  if (error) return { success: false, error: error.message };
+  if (error) {
+    // P0002 is the RPC's honest "this dataset is not available to you" — RLS
+    // hid the row from a SECURITY INVOKER read, which for a user opening a
+    // dataset they can see listed is an ACCESS answer, not a missing one.
+    if (error.code === "P0002") {
+      return {
+        success: false,
+        error: recordUnavailable({
+          entity: "dataset",
+          reason: "unknown",
+          recordId: args.tableId,
+          token: "dataset",
+          relation: "workbench.udt_datasets",
+        }).message,
+      };
+    }
+    return { success: false, error: error.message };
+  }
   try {
     return { success: true, data: parseTableMetadata(data) };
   } catch (err) {

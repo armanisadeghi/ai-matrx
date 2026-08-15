@@ -21,6 +21,7 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type { Json } from "@/types/database.types";
 import type { ConversationVisibility } from "@/features/cx-chat/types/cx-tables";
 import {
@@ -113,6 +114,21 @@ export const forkConversation = createAsyncThunk<
     });
 
     if (error) {
+      // P0002 is the RPC's honest "this conversation is not available to you"
+      // — the SECURITY INVOKER read was hidden by RLS (or the row is
+      // soft-deleted), which for a user forking a thread they can SEE is an
+      // access answer, not a missing one. Let AccessGate resolve which.
+      if (error.code === "P0002") {
+        return rejectWithValue({
+          message: recordUnavailable({
+            entity: "conversation",
+            reason: "unknown",
+            recordId: conversationId,
+            token: "conversation",
+            relation: "chat.conversation",
+          }).message,
+        });
+      }
       return rejectWithValue({ message: error.message });
     }
     if (!data) {

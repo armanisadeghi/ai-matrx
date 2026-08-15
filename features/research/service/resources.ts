@@ -14,6 +14,7 @@ import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
 import type { Database } from "@/types/database.types";
 import { isJsonObject } from "@/types/json";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { fetchTopicExperts } from "@/features/crm/service";
 import { parseManifest } from "../resources/manifest";
 import type {
@@ -55,7 +56,21 @@ export async function getResourceManifest(
     supabase.rpc("research_topic_resource_manifest", { p_topic_id: topicId }),
     loadTopicExperts(topicId),
   ]);
-  if (manifest.error) throw manifest.error;
+  if (manifest.error) {
+    // P0002 is the RPC's honest "this topic is not available to you" — RLS hid
+    // the row from a SECURITY INVOKER read. Same class as `appendTopicOutput`
+    // (D167): the user is inside the topic, so absence is the wrong answer.
+    if (manifest.error.code === "P0002") {
+      throw recordUnavailable({
+        entity: "research topic",
+        reason: "unknown",
+        recordId: topicId,
+        token: "research_topic",
+        relation: "research.rs_topic",
+      });
+    }
+    throw manifest.error;
+  }
   return parseManifest(manifest.data, topicId, experts);
 }
 

@@ -62,6 +62,7 @@ import {
 } from "@/features/rag/components/source-inspector/useOpenCitation";
 import { createClient } from "@/utils/supabase/client";
 import { ragDb } from "@/utils/supabase/ragDb";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type { components } from "@/types/python-generated/api-types";
 import { StatusBadge } from "./StatusBadge";
 import { StageStatusPills } from "./StageStatusPills";
@@ -1214,7 +1215,21 @@ function SheetFullPagePreviews({
           { p_id: documentId, p_page_index: pageIndex },
         );
         if (cancelled) return;
-        if (rpcError) throw new Error("We couldn't load this page's text.");
+        if (rpcError) {
+          // P0002 is the RPC's honest "this document is not available to you" —
+          // RLS hid it from a SECURITY INVOKER read. Never flatten that into
+          // generic load-failure copy; AccessGate resolves the real state.
+          if (rpcError.code === "P0002") {
+            throw recordUnavailable({
+              entity: "document",
+              reason: "unknown",
+              recordId: documentId,
+              token: "processed_document",
+              relation: "docproc.processed_documents",
+            });
+          }
+          throw new Error("We couldn't load this page's text.");
+        }
         const page = data as unknown as {
           cleaned_text: string;
           raw_text: string;
@@ -1360,6 +1375,17 @@ function SheetChunksPanel({
         );
         if (cancelled) return;
         if (rpcError) {
+          // P0002 — see the note in the page-text effect above. An access
+          // answer must not be rendered as a generic load failure.
+          if (rpcError.code === "P0002") {
+            throw recordUnavailable({
+              entity: "document",
+              reason: "unknown",
+              recordId: documentId,
+              token: "processed_document",
+              relation: "docproc.processed_documents",
+            });
+          }
           throw new Error(
             `We couldn't load this document's ${RAG_VOCAB.segmentsShort.toLowerCase()}.`,
           );

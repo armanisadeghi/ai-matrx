@@ -3,6 +3,7 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import { pgErrorToError } from "@/utils/supabase/pg-error";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type { AgentShortcut } from "../types";
 import { fetchFullShortcut } from "../thunks";
@@ -91,7 +92,23 @@ export const createShortcutFromAgentSurface = createAsyncThunk<
     rpcArgs,
   );
 
-  if (error) throw pgErrorToError(error);
+  if (error) {
+    // P0002 is the RPC's honest "this binding is not available to you" — the
+    // association (or the agent behind it) was hidden from a SECURITY INVOKER
+    // read by RLS, which is an ACCESS answer, not a missing one. There is no
+    // canonical entity token for an association row, so no `token` is passed:
+    // the ambiguous message stands rather than pointing AccessGate at an id it
+    // would resolve as the wrong entity.
+    if (error.code === "P0002") {
+      throw recordUnavailable({
+        entity: "agent-surface binding",
+        reason: "unknown",
+        recordId: args.agentSurfaceId,
+        relation: "platform.associations",
+      });
+    }
+    throw pgErrorToError(error);
+  }
 
   const newShortcutId = data as string;
   await dispatch(fetchFullShortcut(newShortcutId));

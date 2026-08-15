@@ -12,6 +12,10 @@
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import {
+  isRecordUnavailableError,
+  recordUnavailable,
+} from "@/lib/records/recordUnavailable";
 import type { Database } from "@/types/database.types";
 import type { ArtifactSourceRef } from "@/features/canvas/artifact-types/persistence/artifact-adapters";
 
@@ -253,6 +257,20 @@ export const canvasArtifactService = {
       });
 
       if (error) {
+        // P0002 is the RPC's honest "this canvas item is not available to you"
+        // — RLS hid the parent item from a SECURITY INVOKER read, which for a
+        // user staring at the artifact is an ACCESS answer, not a missing one.
+        // Surface it so AccessGate can resolve the real state instead of
+        // logging a console error and returning a silent null.
+        if (error.code === "P0002") {
+          throw recordUnavailable({
+            entity: "canvas item",
+            reason: "unknown",
+            recordId: input.originalCanvasId,
+            token: "canvas_item",
+            relation: "canvas.canvas_items",
+          });
+        }
         console.error(
           "[canvasArtifactService.createVersion] RPC error:",
           error,
@@ -262,6 +280,9 @@ export const canvasArtifactService = {
 
       return data as CanvasArtifactRow;
     } catch (err) {
+      // An access answer must reach the caller. Collapsing it into `null` here
+      // is what turns "you can't reach this item" into a silent no-op.
+      if (isRecordUnavailableError(err)) throw err;
       console.error("[canvasArtifactService.createVersion] Error:", err);
       return null;
     }
