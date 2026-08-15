@@ -20,7 +20,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import {
   useCreateBrandAsset,
   useResearchImages,
@@ -43,14 +42,21 @@ function hostnameOf(url: string | null): string | null {
 
 export function ResearchMediaView({
   brandId,
+  organizationId,
+  siteRootUrls,
   onUseAsBrief,
 }: {
   brandId: string;
+  organizationId: string;
+  /**
+   * The brand's website root URLs. "Own" is a match against ANY of them — a
+   * brand owns several sites, and this view sits at the brand level.
+   */
+  siteRootUrls: ReadonlyArray<string | null>;
   /** Hand this image to the Generate view as a creative brief. */
   onUseAsBrief: (image: ResearchImageRow) => void;
 }) {
-  const { site } = useMarketingSite();
-  const images = useResearchImages(site.organization_id);
+  const images = useResearchImages(organizationId);
   const createAsset = useCreateBrandAsset();
   const [topicFilter, setTopicFilter] = useState("all");
   const [originFilter, setOriginFilter] = useState<"all" | "own" | "external">(
@@ -59,7 +65,13 @@ export function ResearchMediaView({
   const [search, setSearch] = useState("");
   const [promotingId, setPromotingId] = useState<string | null>(null);
 
-  const siteHost = hostnameOf(site.root_url);
+  const siteHosts = useMemo(
+    () =>
+      siteRootUrls
+        .map(hostnameOf)
+        .filter((host): host is string => Boolean(host)),
+    [siteRootUrls],
+  );
   const rows = useMemo(() => images.data ?? [], [images.data]);
 
   const topics = useMemo(() => {
@@ -72,12 +84,14 @@ export function ResearchMediaView({
 
   const isOwn = useMemo(() => {
     return (row: ResearchImageRow) => {
-      if (!siteHost) return false;
+      if (siteHosts.length === 0) return false;
       const sourceHost = (row.sourceHostname ?? "").replace(/^www\./, "");
       const imageHost = hostnameOf(row.url);
-      return sourceHost === siteHost || imageHost === siteHost;
+      return siteHosts.some(
+        (host) => host === sourceHost || host === imageHost,
+      );
     };
-  }, [siteHost]);
+  }, [siteHosts]);
 
   const filtered = useMemo(() => {
     let items = rows;
@@ -106,7 +120,7 @@ export function ResearchMediaView({
     setPromotingId(row.id);
     try {
       await createAsset.mutateAsync({
-        organizationId: site.organization_id,
+        organizationId,
         brandId,
         kind: "image",
         sourceUrl: row.url,
@@ -181,7 +195,7 @@ export function ResearchMediaView({
           </SelectTrigger>
           <SelectContent className="text-[11px]">
             <SelectItem value="all">Any origin</SelectItem>
-            <SelectItem value="own">This site&apos;s domain</SelectItem>
+            <SelectItem value="own">This brand&apos;s domains</SelectItem>
             <SelectItem value="external">External (inspiration)</SelectItem>
           </SelectContent>
         </Select>
@@ -191,7 +205,7 @@ export function ResearchMediaView({
       </div>
 
       <p className="px-1 text-[10px] text-muted-foreground/70">
-        Images from this site&apos;s own domain can be reused directly.
+        Images from this brand&apos;s own websites can be reused directly.
         External images are competitor/reference material — use them as
         inspiration for a generated original, never verbatim.
       </p>

@@ -13,6 +13,23 @@
  * hierarchy can't drift per call site.
  */
 
+/** The brand asset desk's four views, in display order. */
+export const MARKETING_BRAND_ASSETS_VIEWS = [
+  { id: "library", label: "Library" },
+  { id: "research", label: "Research" },
+  { id: "sources", label: "Sources" },
+  { id: "generate", label: "Generate" },
+] as const;
+
+export type MarketingBrandAssetsView =
+  (typeof MARKETING_BRAND_ASSETS_VIEWS)[number]["id"];
+
+export function isMarketingBrandAssetsView(
+  value: string | null | undefined,
+): value is MarketingBrandAssetsView {
+  return MARKETING_BRAND_ASSETS_VIEWS.some((view) => view.id === value);
+}
+
 export type MarketingSiteSettingsView =
   | "site"
   | "integrations"
@@ -83,6 +100,30 @@ export const marketingRoutes = {
   brand: (brandId: string) => `/marketing/brands/${brandId}`,
   /** Brand-wide review inbox for discovered assets, properties, and facts. */
   brandDiscovery: (brandId: string) => `/marketing/brands/${brandId}/discovery`,
+  /**
+   * The brand's asset desk — Library, Research, Sources, Generate.
+   *
+   * These four views used to live in the WEBSITE's Media section, where they
+   * were a lie: all four read brand- or org-scoped data, so two sites under
+   * one brand rendered the same rows and editing "this site's library" edited
+   * everything under the brand (Arman's ruling, 2026-08-15). The website keeps
+   * what is genuinely its own — Crawled, Videos, Standards.
+   *
+   * `brief` seeds the Generate view's order, which is how the site's crawled
+   * inventory hands a replacement order across the level boundary.
+   */
+  brandAssets: (
+    brandId: string,
+    view: MarketingBrandAssetsView = "library",
+    brief?: string,
+  ) => {
+    const base = `/marketing/brands/${brandId}/assets`;
+    const params = new URLSearchParams();
+    if (view !== "library") params.set("view", view);
+    if (brief?.trim()) params.set("brief", brief.trim());
+    const query = params.toString();
+    return query ? `${base}?${query}` : base;
+  },
   sites: () => "/marketing/sites",
   /** Pass a brandId to pre-bind the new site to that brand (`?brand=`). */
   newSite: (brandId?: string) =>

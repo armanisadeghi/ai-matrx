@@ -2,11 +2,16 @@
  * Surface manifest — Site media workspace (`matrx-user/marketing-site-media`).
  *
  * Drives `/marketing/brands/[brandId]/sites/[siteId]/media` —
- * `SiteMediaWorkspace`, the site's media command center: five views on one
- * route (`?view=`): the crawled image inventory (evidence), the brand's owned
- * asset library (`web.brand_asset`), research-captured images (inspiration /
- * reuse), AI image ordering off the preset menu, and the site's media
- * standards (persisted at `web.site.settings.media_standards`).
+ * `SiteMediaWorkspace`, THIS WEBSITE's own media: three views on one route
+ * (`?view=`): the crawled image inventory (evidence), the crawled video /
+ * embed evidence plus owned video assets, and the site's media standards
+ * (persisted at `web.site.settings.media_standards`).
+ *
+ * Library / Research / Sources / Generate left this surface on 2026-08-15 for
+ * `matrx-user/marketing-brand-assets` (`/marketing/brands/[brandId]/assets`).
+ * All four read brand- or organization-scoped data, so two sites under one
+ * brand emitted identical values and an agent writing "this site's library"
+ * was writing the brand's. What remains here is genuinely per-site.
  *
  * Inherits brand + site context from `matrx-user/marketing-site`. The views
  * load their data lazily (React Query), so beyond `media_view` and
@@ -24,7 +29,6 @@ import type {
   SurfaceValueGroup,
   SurfaceWriteTarget,
 } from "@/features/surfaces/types";
-import { MEDIA_ORDER_PRESET_IDS } from "@/features/marketing/lib/media-order-presets";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
@@ -32,14 +36,7 @@ const groups: SurfaceValueGroup[] = [
     key: "workspace_view",
     label: "Workspace view",
     sortOrder: 100,
-    description: "Which of the five media views the user is looking at.",
-  },
-  {
-    key: "generation_order",
-    label: "Image order draft",
-    sortOrder: 150,
-    description:
-      "The unsent AI image order on the Generate view — type, brief, style, dimension overrides.",
+    description: "Which of the three media views the user is looking at.",
   },
   {
     key: "crawled_inventory",
@@ -49,25 +46,11 @@ const groups: SurfaceValueGroup[] = [
       "The observed evidence: every image found across the site's canonical page snapshots.",
   },
   {
-    key: "owned_library",
-    label: "Owned library",
-    sortOrder: 300,
-    description:
-      "The brand's own assets — uploaded, discovered, promoted, or AI-generated.",
-  },
-  {
     key: "standards",
     label: "Media standards",
     sortOrder: 400,
     description:
       "The site's target image sizes and rules, feeding every generation order.",
-  },
-  {
-    key: "research_inspiration",
-    label: "Research inspiration",
-    sortOrder: 500,
-    description:
-      "Images captured by the research system — reuse candidates and creative references.",
   },
 ];
 
@@ -77,25 +60,12 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "media_view",
     label: "Active media view",
     description:
-      "Which media view is open, from the URL's `?view=`: crawled | library | research | generate | standards. Always present — defaults to crawled when the URL carries no view.",
+      "Which media view is open, from the URL's `?view=`: crawled | videos | standards. Always present — defaults to crawled when the URL carries no view. The brand's library, research, stock sources and image generation are NOT here — they are the brand asset desk, at /marketing/brands/[brandId]/assets.",
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 9,
     group: "workspace_view",
     sortOrder: 300,
-  },
-
-  // ── Image order draft ──────────────────────────────────────────────────
-  {
-    name: "media_order_draft",
-    label: "Image order draft",
-    description:
-      "The AI image order currently staged on the Generate view, owned by the workspace so it survives view switches: { type (preset id), brief (what the image should show), style (override; empty = the preset's own style), width, height (pixel overrides as strings; empty = inherit from the matching media standard, else the preset default), resolved_width, resolved_height, resolved_from ('standard' | 'preset'), resolved_slot_name }. Always present — an empty brief means nothing has been ordered yet. NOTHING is generated until the user presses “Order this image”.",
-    valueType: "object",
-    alwaysAvailable: true,
-    typicalCharCount: 300,
-    group: "generation_order",
-    sortOrder: 350,
   },
 
   // ── Crawled inventory ──────────────────────────────────────────────────
@@ -111,20 +81,6 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 400,
   },
 
-  // ── Owned library ──────────────────────────────────────────────────────
-  {
-    name: "brand_library_assets",
-    label: "Brand library assets",
-    description:
-      "Every `web.brand_asset` owned by this brand — id, kind (logo, hero_image, og_image, color…), source (uploaded / discovered / generated / research), title, is_primary, whether a stored file backs it, its external source_url, and created_at. Empty until the Library or Generate view has loaded the assets this session. Bindable only — not auto-shipped.",
-    valueType: "array",
-    alwaysAvailable: false,
-    typicalCharCount: 3000,
-    autoContext: false,
-    group: "owned_library",
-    sortOrder: 500,
-  },
-
   // ── Media standards ────────────────────────────────────────────────────
   {
     name: "media_standards",
@@ -138,51 +94,23 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 600,
   },
 
-  // ── Research inspiration ───────────────────────────────────────────────
-  {
-    name: "research_images_summary",
-    label: "Research images summary",
-    description:
-      "Rollup of the organization's research-captured images: total (bounded to the newest 600), own_domain vs external counts (own = source or image host matches this site), and per-topic counts for the most common topics. Empty until the Research view's query has loaded this session.",
-    valueType: "object",
-    alwaysAvailable: false,
-    typicalCharCount: 500,
-    group: "research_inspiration",
-    sortOrder: 700,
-  },
 ];
 
 /**
- * Write targets — all `draft`, all `ask`. The judgment line on this surface is
- * ORDER vs FIRE: an agent may author the image order and propose the site's
- * standards, and the USER presses "Order this image" / "Save standards".
+ * Write targets — both `draft`, both `ask`. An agent may PROPOSE the site's
+ * image standards; the USER presses "Save standards".
  *
- * Deliberately NOT writable: generating an image (it costs money and mints a
- * `web.brand_asset` row), promoting/uploading/deleting library assets, and
- * `is_primary` — ownership, spend, and destruction stay human. Crawled alt
- * text is observed EVIDENCE, not editable state; authoring alt text belongs to
- * `matrx-user/marketing-page`'s `page_image_alts` target, not here.
+ * Deliberately NOT writable: crawled alt text is observed EVIDENCE, not
+ * editable state — authoring alt text belongs to
+ * `matrx-user/marketing-page`'s `page_image_alts` target, not here. The
+ * `media_order` target moved with the Generate view to
+ * `matrx-user/marketing-brand-assets` on 2026-08-15.
  *
- * Handlers: `features/marketing/components/media/SiteMediaWriteTargets.tsx`
- * (`media_order`, mounted for the whole workspace) and `MediaStandardsView`
- * (`media_standards_*`, which owns the standards draft — so those two are
- * offered only while the Standards view is open). Validation core:
+ * Handler: `MediaStandardsView`, which owns the standards draft — so both are
+ * offered only while the Standards view is open. Validation core:
  * `features/marketing/lib/site-media-write-targets.ts`.
  */
 const writeTargets: SurfaceWriteTarget[] = [
-  {
-    name: "media_order",
-    label: "Image order draft",
-    description: `Stage the AI image order on the Generate view. Value: a partial object with any of { type?: ${MEDIA_ORDER_PRESET_IDS.join(
-      " | ",
-    )}, brief?: string, style?: string, width?: number, height?: number }. Omitted keys keep their current value. \`brief\` is the subject — what the image should show, its mood and key elements — and cannot be set to an empty string. \`style\` overrides the preset's own style ("" falls back to it). \`width\`/\`height\` are pixel overrides ("" clears them, and dimensions then come from the site's matching media standard, else the preset default) — omit them unless this order is genuinely special, because media_standards already carries the site's intended sizes. Ground the brief in brand_context and the site's media standards. This ONLY fills the form: nothing is generated and nothing is charged until the user presses "Order this image".`,
-    valueType: "object",
-    updatesValue: "media_order_draft",
-    mode: "draft",
-    applyPolicy: "ask",
-    group: "generation_order",
-    sortOrder: 100,
-  },
   {
     name: "media_standards_slots",
     label: "Media standard slots",
@@ -216,13 +144,13 @@ export const marketingSiteMediaManifest: SurfaceManifest = {
   inheritsFrom: "matrx-user/marketing-site",
   readiness: "partial",
   readinessNote:
-    "Manifest, emitter, registry, route mapping, and DB sync are in place. The Generate view's order fields are now lifted into the workspace and emitted as media_order_draft, and the three write targets were verified with a live agent run (2026-08-10). The live non-matching-name binding verification has not been run.",
+    "Manifest, emitter, registry, route mapping, and DB sync are in place; the standards write targets were verified with a live agent run (2026-08-10). Narrowed to the three per-site views on 2026-08-15 when Library / Research / Sources / Generate moved to matrx-user/marketing-brand-assets — the DB sync for that removal and the live non-matching-name binding verification have not been run.",
   intro: `<surface_intro>
 Read brand_context and site_context first — they tell you whose site this is and what it sells.
-You are on the media command center for ONE managed website: five views on one route. media_view tells you which one is open: crawled (every image observed across the site's canonical page snapshots — evidence, not owned files), library (the brand's OWNED assets), research (images the research system captured — reuse and inspiration), generate (order AI images off preset types), and standards (the site's target image sizes and rules).
+You are on the media desk for ONE managed website: three views on one route. media_view tells you which one is open: crawled (every image observed across the site's canonical page snapshots — evidence, not owned files), videos (crawled video and embed evidence plus the brand's owned video assets), and standards (the site's target image sizes and rules).
+Everything the BRAND owns — its asset library, research-captured images, stock sources, and AI image generation — is a level up, on the brand asset desk at /marketing/brands/[brandId]/assets. Say so plainly when the user asks for it here; do not pretend those actions exist on this surface.
 media_inventory_summary is stored crawl evidence — trust its counts as given, and read an empty value as "not loaded or not crawled yet", never as "the site has no images". Missing alt text and images far off the site's standards are the highest-value things to point out. media_standards is the contract every generated or replaced image should meet; when it is empty, recommending standards is itself useful work.
-brand_library_assets are the assets the brand actually owns; crawled images are only observed on the site and may not be in the library. Research images are inspiration — third-party ones must never be copied, only used as creative direction.
-You can WRITE here, and the line is ORDER vs FIRE: media_order fills in the Generate view's image order (type, brief, style, size overrides) and media_standards_slots / media_standards_notes propose the site's standards — all three stage a draft the USER reviews and commits. You never generate an image, promote or delete an asset, or save the standards yourself. Read media_order_draft before writing it: your value merges over what is already staged.
+You can WRITE here, and only one thing: media_standards_slots / media_standards_notes propose the site's standards as unsaved changes the USER reviews and saves. You never save the standards yourself.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
@@ -244,7 +172,7 @@ You can WRITE here, and the line is ORDER vs FIRE: media_order fills in the Gene
       name: "art_director",
       label: "Art director",
       description:
-        "Turns gaps in the inventory and research references into concrete creative briefs for the Generate view, grounded in the brand context and media standards.",
+        "Turns gaps in the crawled inventory into concrete creative briefs — grounded in the brand context and this site's media standards — for ordering on the brand asset desk.",
       kind: "single",
       defaultAgentId: null,
       sortOrder: 110,
@@ -264,7 +192,6 @@ export function createMarketingSiteMediaScope(values: {
   // alwaysAvailable: true → required (own)
   media_view: string;
   media_standards: Record<string, unknown>;
-  media_order_draft: Record<string, unknown>;
   // Inherited optionals (marketing-brand + marketing-site)
   brand_name?: string;
   brand_context?: string;
@@ -275,8 +202,6 @@ export function createMarketingSiteMediaScope(values: {
   gsc_synced_at?: string;
   // alwaysAvailable: false → optional
   media_inventory_summary?: Record<string, unknown>;
-  brand_library_assets?: Array<Record<string, unknown>>;
-  research_images_summary?: Record<string, unknown>;
   selection?: string;
   context?: Record<string, unknown>;
 }): SurfaceScopePayload {

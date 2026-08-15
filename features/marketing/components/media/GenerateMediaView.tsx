@@ -3,13 +3,16 @@
 /**
  * GenerateMediaView — order images "off the menu": pick a predetermined image
  * type (hero, share card, infographic…), describe the subject, and the
- * dimensions/style resolve from the site's media standards + the preset.
+ * dimensions/style resolve from the brand's websites' media standards + the
+ * preset. Brand-level since 2026-08-15: a generated image is a `brand_asset`,
+ * owned by the brand and usable by every site under it.
  * Generation runs the SAME headless two-step pipeline as the page image plan
  * (prompt generator → Matrx Image Ultra); results persist immediately as
  * `web.brand_asset` rows (source `generated`) — never a chat-only artifact.
  */
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { Loader2, Sparkles } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +23,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { CaptureThumb } from "@/features/marketing/components/shared/CaptureThumb";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import {
   useBrandAssets,
   useCreateBrandAsset,
@@ -36,7 +38,7 @@ import {
   type MediaOrderPreset,
   type MediaOrderPresetId,
 } from "@/features/marketing/lib/media-order-presets";
-import { MARKETING_SITE_MEDIA_SURFACE_NAME } from "@/features/marketing/lib/scopes/site-media-scope";
+import { MARKETING_BRAND_ASSETS_SURFACE_NAME } from "@/features/marketing/lib/scopes/brand-assets-scope";
 import type { MediaOrderDraft } from "@/features/marketing/lib/site-media-write-targets";
 import type { SiteMediaStandards } from "@/features/marketing/data/media-library";
 import type { BrandAssetKind } from "@/features/marketing/types";
@@ -50,23 +52,40 @@ const PRESET_ASSET_KIND: Partial<Record<MediaOrderPresetId, BrandAssetKind>> = {
 /**
  * The order form is CONTROLLED by `SiteMediaWorkspace`, which owns the draft so
  * it survives view switches and can be read (`media_order_draft`) and written
- * (`media_order`) by agents. Only the in-flight generation state is local.
+ * (`media_order`) by agents on `matrx-user/marketing-brand-assets`. Only the
+ * in-flight generation state is local.
  */
 export function GenerateMediaView({
   brandId,
+  brandName,
+  brandUrl,
+  organizationId,
   standards,
+  resolveStandardsDoor,
   order,
   onOrderChange,
 }: {
   brandId: string;
+  /** Who the image is FOR — the brand, since the asset belongs to the brand. */
+  brandName: string;
+  /** The brand's own public URL, when it has one; grounds the image spec. */
+  brandUrl: string | null;
+  organizationId: string;
   standards: SiteMediaStandards;
+  /**
+   * THE DOOR LAW: standards are declared per WEBSITE, one level down. When a
+   * dimension comes from one, this resolves the website that owns it so the
+   * hint can open it instead of naming a place the user has to hunt for.
+   */
+  resolveStandardsDoor?: (
+    slotName: string | null,
+  ) => { href: string; siteName: string } | null;
   order: MediaOrderDraft;
   onOrderChange: (
     updater: (current: MediaOrderDraft) => MediaOrderDraft,
   ) => void;
 }) {
   const dispatch = useAppDispatch();
-  const { site } = useMarketingSite();
   const createAsset = useCreateBrandAsset();
   const assetsQuery = useBrandAssets(brandId);
 
@@ -93,6 +112,10 @@ export function GenerateMediaView({
     () => resolveOrderDimensions(preset, standards),
     [preset, standards],
   );
+  const standardsDoor =
+    resolved.source === "standard"
+      ? (resolveStandardsDoor?.(resolved.slotName) ?? null)
+      : null;
   const width = widthOverride ? Number(widthOverride) : resolved.width;
   const height = heightOverride ? Number(heightOverride) : resolved.height;
 
@@ -126,8 +149,8 @@ export function GenerateMediaView({
     setGenerating(true);
     try {
       const spec = buildSiteImageSpec({
-        siteName: site.name,
-        siteUrl: site.root_url,
+        siteName: brandName,
+        siteUrl: brandUrl,
         preset,
         subject: subject.trim(),
         dimensions: {
@@ -143,10 +166,10 @@ export function GenerateMediaView({
           generatePageImageTwoStep({
             spec,
             style: styleOverride.trim() || preset.style,
-            surfaceKey: MARKETING_SITE_MEDIA_SURFACE_NAME,
-            // One window per site's media desk — a re-order replaces the run
+            surfaceKey: MARKETING_BRAND_ASSETS_SURFACE_NAME,
+            // One window per brand's asset desk — a re-order replaces the run
             // in the window the user is already watching.
-            liveInstanceId: `site-media-image:${site.id}`,
+            liveInstanceId: `brand-assets-image:${brandId}`,
           }),
         ),
         new Promise<PageImageResult>((resolve) =>
@@ -172,13 +195,13 @@ export function GenerateMediaView({
         return;
       }
       await createAsset.mutateAsync({
-        organizationId: site.organization_id,
+        organizationId,
         brandId,
         kind: PRESET_ASSET_KIND[preset.id] ?? "image",
         sourceUrl: null,
         fileId: result.fileId,
         title: subject.trim().slice(0, 120),
-        notes: `AI-generated ${preset.label.toLowerCase()} (${width}×${height}) for ${site.name}.`,
+        notes: `AI-generated ${preset.label.toLowerCase()} (${width}×${height}) for ${brandName}.`,
         isPrimary: false,
         source: "generated",
       });
@@ -282,13 +305,26 @@ export function GenerateMediaView({
         </div>
         {resolved.source === "standard" ? (
           <p className="px-1 text-[10px] text-muted-foreground/70">
-            Dimensions come from this site&apos;s “{resolved.slotName}” media
-            standard — override only if this order is special.
+            Dimensions come from the “{resolved.slotName}” media standard
+            {standardsDoor ? (
+              <>
+                {" "}
+                on{" "}
+                <Link
+                  href={standardsDoor.href}
+                  className="underline underline-offset-2 hover:text-primary"
+                >
+                  {standardsDoor.siteName}
+                </Link>
+              </>
+            ) : null}{" "}
+            — override only if this order is special.
           </p>
         ) : (
           <p className="px-1 text-[10px] text-muted-foreground/70">
-            No matching media standard — using the preset default. Define
-            standards in the Standards view and every order inherits them.
+            No matching media standard — using the preset default. Standards
+            are declared per website, in that site&apos;s Media → Standards
+            view, and every order here inherits them.
           </p>
         )}
       </section>

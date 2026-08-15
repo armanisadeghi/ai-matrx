@@ -1,6 +1,10 @@
 /**
- * Pure validation + merge core for the `matrx-user/marketing-site-media` write
- * targets (`media_order`, `media_standards_slots`, `media_standards_notes`).
+ * Pure validation + merge core for two surfaces' media write targets:
+ * `media_order` on `matrx-user/marketing-brand-assets` (the brand asset desk's
+ * Generate view) and `media_standards_slots` / `media_standards_notes` on
+ * `matrx-user/marketing-site-media` (the website's Standards view). The file
+ * keeps its name because both halves are the same media contract; the levels
+ * split on 2026-08-15, the validation did not fork.
  * Kept free of React/services so the failure modes that matter — an agent
  * silently widening the preset vocabulary, or a slots write quietly dropping
  * the site's existing standards — are provable in unit tests

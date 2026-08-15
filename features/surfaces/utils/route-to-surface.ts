@@ -316,6 +316,11 @@ function resolveMarketingSurface(stripped: string): string | null {
     if (segments[3] === "discovery") {
       return "matrx-user/marketing-discovery";
     }
+    // The brand's asset desk — library / research / sources / generate, split
+    // out of the site's media section on 2026-08-15.
+    if (segments[3] === "assets") {
+      return "matrx-user/marketing-brand-assets";
+    }
     // /marketing/brands/[brandId]/sites/[siteId][...]
     if (segments[3] === "sites" && segments.length >= 5) {
       const vertical = segments[5];
