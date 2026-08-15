@@ -36,6 +36,7 @@ import type {
   FieldDataType,
   ServiceResult,
   TableMetadata,
+  ValidationMode,
 } from "./types";
 
 // ─── READS ───────────────────────────────────────────────────────────────────
@@ -454,7 +455,7 @@ export type UpdatedTableMetadata = {
  * surfaces here as a failure envelope.
  *
  * This is the ONE path for table metadata: `EditTableModal`,
- * `TableSettingsModal` and the surface `table_description` write target all go
+ * `TableConfigModal` and the surface `table_description` write target all go
  * through it, so a UI edit and an agent edit can never disagree.
  */
 export async function updateTableMetadata(
@@ -483,4 +484,53 @@ export async function updateTableMetadata(
     };
   }
   return { success: true, data: envelope.table };
+}
+
+// ─── validation_mode ─────────────────────────────────────────────────────────
+
+export type SetValidationModeArgs = {
+  tableId: string;
+  mode: ValidationMode;
+};
+
+/**
+ * Flip a dataset between permissive and strict validation.
+ *
+ * `validation_mode` is NOT carried by `update_user_table_metadata` (its
+ * signature predates the column), so this writes the column directly through
+ * the standard RLS UPDATE path on `workbench.udt_datasets` — owner OR editor.
+ * Strict mode is what arms the server-side write trigger added in
+ * `migrations/udt_v2_backbone.sql`; enforcement has shipped since then, and
+ * until this service existed the ONLY way to arm it was raw SQL.
+ *
+ * The `.select()` is load-bearing: an RLS refusal on UPDATE is a zero-row
+ * result, not an error, and reporting "Saved" on a write that touched nothing
+ * is exactly the silent lie the governance-column doctrine forbids.
+ */
+export async function setValidationMode(
+  args: SetValidationModeArgs,
+): Promise<ServiceResult<{ validation_mode: ValidationMode }>> {
+  const { data, error } = await supabase
+    .schema("workbench")
+    .from("udt_datasets")
+    .update({ validation_mode: args.mode })
+    .eq("id", args.tableId)
+    .select("id, validation_mode")
+    .maybeSingle();
+
+  if (error) return { success: false, error: error.message };
+  if (!data) {
+    return {
+      success: false,
+      error:
+        "Validation mode was not saved — this table is no longer available to you, or you do not have edit access to it.",
+    };
+  }
+  return {
+    success: true,
+    data: {
+      validation_mode:
+        data.validation_mode === "strict" ? "strict" : "permissive",
+    },
+  };
 }

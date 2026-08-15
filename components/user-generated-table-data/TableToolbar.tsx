@@ -87,7 +87,7 @@ interface TableToolbarProps {
   showAddColumnModal: boolean;
   showAddRowModal: boolean;
   showExportModal: boolean;
-  showTableSettingsModal: boolean;
+  showTableConfigModal: boolean;
   showReferenceOverlay: boolean;
   showRowOrderingModal: boolean;
   showPasteRowsDialog: boolean;
@@ -98,7 +98,7 @@ interface TableToolbarProps {
   setShowAddColumnModal: (show: boolean) => void;
   setShowAddRowModal: (show: boolean) => void;
   setShowExportModal: (show: boolean) => void;
-  setShowTableSettingsModal: (show: boolean) => void;
+  setShowTableConfigModal: (show: boolean) => void;
   setShowReferenceOverlay: (show: boolean) => void;
   setShowRowOrderingModal: (show: boolean) => void;
   setShowPasteRowsDialog: (show: boolean) => void;
@@ -149,7 +149,7 @@ export default function TableToolbar({
   showAddColumnModal,
   showAddRowModal,
   showExportModal,
-  showTableSettingsModal,
+  showTableConfigModal,
   showReferenceOverlay,
   showRowOrderingModal,
   showPasteRowsDialog,
@@ -160,7 +160,7 @@ export default function TableToolbar({
   setShowAddColumnModal,
   setShowAddRowModal,
   setShowExportModal,
-  setShowTableSettingsModal,
+  setShowTableConfigModal,
   setShowReferenceOverlay,
   setShowRowOrderingModal,
   setShowPasteRowsDialog,
@@ -349,7 +349,7 @@ export default function TableToolbar({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setShowTableSettingsModal(true)}
+              onClick={() => setShowTableConfigModal(true)}
               className="h-7 w-7 p-0"
               title="Table settings"
             >
@@ -441,7 +441,7 @@ export default function TableToolbar({
               label="Table Settings"
               onClick={() => {
                 setShowMobileActions(false);
-                setShowTableSettingsModal(true);
+                setShowTableConfigModal(true);
               }}
             />
           )}
@@ -496,8 +496,8 @@ export default function TableToolbar({
             tableId={tableId}
             tableInfo={tableInfo}
             fields={fields}
-            isOpen={showTableSettingsModal}
-            onClose={() => setShowTableSettingsModal(false)}
+            isOpen={showTableConfigModal}
+            onClose={() => setShowTableConfigModal(false)}
             onSuccess={() => loadTableData(true)}
           />
           <RowOrderingModal

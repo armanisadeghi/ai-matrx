@@ -108,6 +108,8 @@ export interface TableInfo {
   description?: string;
   user_id?: string;
   row_ordering_config?: RowOrderingConfig;
+  /** `permissive` | `strict` — read by TableConfigModal's Strict Validation switch. */
+  validation_mode?: string;
 }
 
 interface UserTable {
@@ -317,7 +319,7 @@ const UserTableViewer = ({
   const [showAddRowModal, setShowAddRowModal] = useState(false);
   const [showPasteRowsDialog, setShowPasteRowsDialog] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
-  const [showTableSettingsModal, setShowTableSettingsModal] = useState(false);
+  const [showTableConfigModal, setShowTableConfigModal] = useState(false);
   const [showReferenceOverlay, setShowReferenceOverlay] = useState(false);
 
   // Text expansion modal state
@@ -1740,7 +1742,7 @@ const UserTableViewer = ({
         showAddColumnModal={showAddColumnModal}
         showAddRowModal={showAddRowModal}
         showExportModal={showExportModal}
-        showTableSettingsModal={showTableSettingsModal}
+        showTableConfigModal={showTableConfigModal}
         showReferenceOverlay={showReferenceOverlay}
         showRowOrderingModal={showRowOrderingModal}
         showPasteRowsDialog={showPasteRowsDialog}
@@ -1750,7 +1752,7 @@ const UserTableViewer = ({
         setShowAddColumnModal={setShowAddColumnModal}
         setShowAddRowModal={setShowAddRowModal}
         setShowExportModal={setShowExportModal}
-        setShowTableSettingsModal={setShowTableSettingsModal}
+        setShowTableConfigModal={setShowTableConfigModal}
         setShowReferenceOverlay={setShowReferenceOverlay}
         setShowRowOrderingModal={setShowRowOrderingModal}
         setShowPasteRowsDialog={setShowPasteRowsDialog}
@@ -1856,7 +1858,7 @@ const UserTableViewer = ({
                         onConfigure={
                           isReadOnly
                             ? undefined
-                            : () => setShowTableSettingsModal(true)
+                            : () => setShowTableConfigModal(true)
                         }
                         onDelete={
                           isReadOnly || fields.length <= 1

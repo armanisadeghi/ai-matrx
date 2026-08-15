@@ -7,6 +7,7 @@ import {
   changeFieldType,
   deleteField,
   setFieldFormat,
+  setValidationMode,
 } from "@/features/data-tables/service";
 import { FieldFormatPicker } from "@/lib/field-formats/FieldFormatPicker";
 import { resolveFieldFormat } from "@/lib/field-formats/format";
@@ -14,6 +15,7 @@ import type { FieldFormatConfig } from "@/lib/field-formats/types";
 import {
   isServiceFailure,
   type FieldDataType,
+  type ValidationMode,
 } from "@/features/data-tables/types";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/components/ui/use-toast";
@@ -29,6 +31,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -48,6 +51,8 @@ import {
   AlertTriangle,
   Loader2,
   Save,
+  Shield,
+  ShieldCheck,
   Trash2,
   X,
 } from "lucide-react";
@@ -75,7 +80,16 @@ interface TableInfo {
   description: string;
   is_public: boolean;
   version: number;
+  /**
+   * Optional because the callsites hand this component a cast of the full
+   * `udt_datasets` row, whose TS shape is narrower than what it carries at
+   * runtime. Absent/unknown reads as "permissive", which is the column default.
+   */
+  validation_mode?: string;
 }
+
+const toValidationMode = (raw: unknown): ValidationMode =>
+  raw === "strict" ? "strict" : "permissive";
 
 interface TableConfigModalProps {
   isOpen: boolean;
@@ -486,6 +500,27 @@ export default function TableConfigModal({
       if (rpcError) throw rpcError;
       unwrapUserTableMutation(data ?? null);
 
+      // `validation_mode` is not part of update_user_table_config's table
+      // updates — it goes through its own service (direct RLS UPDATE). Only
+      // sent when it actually changed, and a refusal is surfaced, never
+      // swallowed: arming strict mode is the whole point of this control.
+      const nextMode = toValidationMode(tableInfo.validation_mode);
+      if (nextMode !== toValidationMode(initialTableInfo.validation_mode)) {
+        const modeResult = await setValidationMode({ tableId, mode: nextMode });
+        if (isServiceFailure(modeResult)) throw new Error(modeResult.error);
+        toast({
+          title:
+            nextMode === "strict"
+              ? "Strict validation is on"
+              : "Strict validation is off",
+          description:
+            nextMode === "strict"
+              ? "New and edited rows must match the column types and carry every required field."
+              : "Rows are accepted even when they do not match the column types.",
+          variant: "success",
+        });
+      }
+
       // After the metadata flip lands, walk rows for each type-changed field
       // and coerce their JSONB cell values to the new type via the dedicated
       // SECURITY DEFINER RPC. cast_or_null is the safer default — un-castable
@@ -805,7 +840,11 @@ export default function TableConfigModal({
           </TabsContent>
 
           <TabsContent value="table" className="flex-1 overflow-hidden mt-4">
-            <div className="space-y-6">
+            {/* Own scroll area, same as the Fields tab: this tab's content is
+                taller than the dialog on a laptop, and the parent's
+                `overflow-hidden` clips the tail with no scrollbar — which is
+                how the Data Validation section arrived unreachable. */}
+            <div className="space-y-6 max-h-[50dvh] overflow-y-auto pr-2">
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="table-name">Table Name</Label>
@@ -857,6 +896,45 @@ export default function TableConfigModal({
                       }
                     />
                   </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium">Data Validation</h3>
+                <div className="flex items-center justify-between gap-4 p-3 border rounded-lg">
+                  <div className="flex items-center gap-3">
+                    {toValidationMode(tableInfo.validation_mode) === "strict" ? (
+                      <ShieldCheck className="h-4 w-4 shrink-0 text-green-600" />
+                    ) : (
+                      <Shield className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    )}
+                    <div>
+                      <Label
+                        htmlFor="strict-validation"
+                        className="font-medium text-sm"
+                      >
+                        Strict Validation
+                      </Label>
+                      <div className="text-xs text-muted-foreground">
+                        Reject writes that violate the column types or drop a
+                        required field. Existing rows are grandfathered (their
+                        other fields stay editable). Recommended for newly
+                        imported tables where column types are well-defined.
+                      </div>
+                    </div>
+                  </div>
+                  <Switch
+                    id="strict-validation"
+                    checked={
+                      toValidationMode(tableInfo.validation_mode) === "strict"
+                    }
+                    onCheckedChange={(checked) =>
+                      handleTableInfoChange(
+                        "validation_mode",
+                        checked ? "strict" : "permissive",
+                      )
+                    }
+                  />
                 </div>
               </div>
             </div>
