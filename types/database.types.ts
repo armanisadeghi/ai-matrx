@@ -11430,6 +11430,229 @@ export type Database = {
           },
         ]
       }
+      blocklist_entry: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          expires_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          party_id: string | null
+          reason: string | null
+          source: string
+          subject_kind: string
+          subject_value: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          expires_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          party_id?: string | null
+          reason?: string | null
+          source?: string
+          subject_kind: string
+          subject_value: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          expires_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          party_id?: string | null
+          reason?: string | null
+          source?: string
+          subject_kind?: string
+          subject_value?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blocklist_entry_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: false
+            referencedRelation: "party"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contact_candidate: {
+        Row: {
+          channel: string
+          confidence: number
+          confirmed_at: string | null
+          confirmed_by: string | null
+          confirmed_contact_point_id: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          engagement_breakdown: Json
+          engagement_score: number | null
+          enrichment_call_id: string | null
+          first_seen_at: string
+          id: string
+          is_role_address: boolean
+          last_seen_at: string
+          metadata: Json
+          mx_valid: boolean | null
+          organization_id: string
+          party_id: string
+          person_name: string | null
+          person_party_id: string | null
+          provenance: Json
+          provider_confidence: number | null
+          rejected_at: string | null
+          rejected_by: string | null
+          rejection_reason: string | null
+          role_title: string | null
+          source: string
+          source_detail: string | null
+          source_url: string | null
+          status: string
+          updated_at: string
+          updated_by: string | null
+          value_key: string
+          value_raw: string
+          verification: Json
+          verification_status: string
+          verified_at: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          channel?: string
+          confidence?: number
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          confirmed_contact_point_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          engagement_breakdown?: Json
+          engagement_score?: number | null
+          enrichment_call_id?: string | null
+          first_seen_at?: string
+          id?: string
+          is_role_address?: boolean
+          last_seen_at?: string
+          metadata?: Json
+          mx_valid?: boolean | null
+          organization_id: string
+          party_id: string
+          person_name?: string | null
+          person_party_id?: string | null
+          provenance?: Json
+          provider_confidence?: number | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
+          role_title?: string | null
+          source: string
+          source_detail?: string | null
+          source_url?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          value_key: string
+          value_raw: string
+          verification?: Json
+          verification_status?: string
+          verified_at?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          channel?: string
+          confidence?: number
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          confirmed_contact_point_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          engagement_breakdown?: Json
+          engagement_score?: number | null
+          enrichment_call_id?: string | null
+          first_seen_at?: string
+          id?: string
+          is_role_address?: boolean
+          last_seen_at?: string
+          metadata?: Json
+          mx_valid?: boolean | null
+          organization_id?: string
+          party_id?: string
+          person_name?: string | null
+          person_party_id?: string | null
+          provenance?: Json
+          provider_confidence?: number | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
+          role_title?: string | null
+          source?: string
+          source_detail?: string | null
+          source_url?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          value_key?: string
+          value_raw?: string
+          verification?: Json
+          verification_status?: string
+          verified_at?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_candidate_confirmed_contact_point_id_fkey"
+            columns: ["confirmed_contact_point_id"]
+            isOneToOne: false
+            referencedRelation: "party_contact_point"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_candidate_enrichment_call_id_fkey"
+            columns: ["enrichment_call_id"]
+            isOneToOne: false
+            referencedRelation: "enrichment_call"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_candidate_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: false
+            referencedRelation: "party"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_candidate_person_party_id_fkey"
+            columns: ["person_party_id"]
+            isOneToOne: false
+            referencedRelation: "party"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contact_medium: {
         Row: {
           bounce_count: number
@@ -11582,6 +11805,92 @@ export type Database = {
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
+      }
+      enrichment_call: {
+        Row: {
+          cache_key: string
+          created_at: string
+          created_by: string | null
+          credits_used: number | null
+          deleted_at: string | null
+          error: string | null
+          estimated_cost_usd: number | null
+          expires_at: string | null
+          id: string
+          latency_ms: number | null
+          metadata: Json
+          operation: string
+          organization_id: string
+          party_id: string | null
+          provider: string
+          request: Json
+          response: Json
+          result_count: number
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          cache_key: string
+          created_at?: string
+          created_by?: string | null
+          credits_used?: number | null
+          deleted_at?: string | null
+          error?: string | null
+          estimated_cost_usd?: number | null
+          expires_at?: string | null
+          id?: string
+          latency_ms?: number | null
+          metadata?: Json
+          operation: string
+          organization_id: string
+          party_id?: string | null
+          provider: string
+          request?: Json
+          response?: Json
+          result_count?: number
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          cache_key?: string
+          created_at?: string
+          created_by?: string | null
+          credits_used?: number | null
+          deleted_at?: string | null
+          error?: string | null
+          estimated_cost_usd?: number | null
+          expires_at?: string | null
+          id?: string
+          latency_ms?: number | null
+          metadata?: Json
+          operation?: string
+          organization_id?: string
+          party_id?: string | null
+          provider?: string
+          request?: Json
+          response?: Json
+          result_count?: number
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enrichment_call_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: false
+            referencedRelation: "party"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       interaction: {
         Row: {
@@ -37910,6 +38219,45 @@ export type Database = {
         }
         Returns: Json
       }
+      crm_chasebox_counts: {
+        Args: { p_org_id?: string; p_scope?: string }
+        Returns: {
+          queue: string
+          total: number
+        }[]
+      }
+      crm_chasebox_items: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_org_id?: string
+          p_queue: string
+          p_scope?: string
+        }
+        Returns: {
+          detail: string
+          employer_name: string
+          id: string
+          interaction_id: string
+          member_id: string
+          occurred_at: string
+          organization_id: string
+          outreach_list_id: string
+          outreach_list_name: string
+          outreach_list_status: string
+          party_id: string
+          party_name: string
+          problem_code: string
+          problem_fix: string
+          problem_message: string
+          queue: string
+          sending_identity_id: string
+          sending_identity_label: string
+          step: number
+          subject: string
+          total_count: number
+        }[]
+      }
       crm_check_send_eligibility: {
         Args: {
           p_identity_id?: string
@@ -37922,6 +38270,98 @@ export type Database = {
       crm_dismiss_merge_candidate: {
         Args: { p_id: string }
         Returns: undefined
+      }
+      crm_inbound_evidence: { Args: { p_attributes: Json }; Returns: string }
+      crm_inbound_label: { Args: { p_attributes: Json }; Returns: string }
+      crm_inbox_list_facets: {
+        Args: {
+          p_deep?: boolean
+          p_org_id?: string
+          p_scope?: string
+          p_search?: string
+        }
+        Returns: {
+          kind: string
+          total: number
+          value: string
+        }[]
+      }
+      crm_inbox_list_scope_counts: {
+        Args: { p_deep?: boolean; p_filters?: Json; p_search?: string }
+        Returns: {
+          label: string
+          narrow_id: string
+          scope: string
+          total: number
+        }[]
+      }
+      crm_inbox_list_scoped: {
+        Args: {
+          p_deep?: boolean
+          p_dir?: string
+          p_filters?: Json
+          p_limit?: number
+          p_offset?: number
+          p_org_id?: string
+          p_scope?: string
+          p_search?: string
+          p_sort?: string
+        }
+        Returns: {
+          backlink_id: string
+          backlink_label: string
+          channel_code: string
+          classification: string
+          created_at: string
+          employer_id: string
+          employer_name: string
+          evidence: string
+          handled: boolean
+          handled_at: string
+          id: string
+          is_owner: boolean
+          member_id: string
+          member_status: string
+          occurred_at: string
+          organization_id: string
+          organization_name: string
+          outbound_id: string
+          outbound_sent_at: string
+          outbound_subject: string
+          outreach_list_id: string
+          outreach_list_name: string
+          outreach_list_status: string
+          party_id: string
+          party_kind: string
+          party_name: string
+          reputation_case_id: string
+          reputation_case_label: string
+          sending_identity_id: string
+          sending_identity_label: string
+          snippet: string
+          step: number
+          subject: string
+          thread_key: string
+          total_count: number
+        }[]
+      }
+      crm_inbox_search_score: {
+        Args: {
+          p_classification: string
+          p_deep_hit?: boolean
+          p_employer: string
+          p_id: string
+          p_list_name: string
+          p_party_name: string
+          p_query: string
+          p_snippet: string
+          p_subject: string
+        }
+        Returns: number
+      }
+      crm_inbox_set_handled: {
+        Args: { p_handled?: boolean; p_interaction_id: string }
+        Returns: string
       }
       crm_list_scope_counts:
         | {
@@ -37964,6 +38404,10 @@ export type Database = {
       crm_set_primary_contact_point: {
         Args: { p_id: string }
         Returns: undefined
+      }
+      crm_step_matches: {
+        Args: { p_bucket: string; p_step: number }
+        Returns: boolean
       }
       crm_unmerge_parties: { Args: { p_merge_id: string }; Returns: undefined }
       ctx_seed_template: { Args: { p_template: Json }; Returns: string }
@@ -47415,6 +47859,109 @@ export type Database = {
             columns: ["referring_domain_profile_id"]
             isOneToOne: false
             referencedRelation: "referring_domain_profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      backlink_change_event: {
+        Row: {
+          alerted_at: string | null
+          backlink_id: string
+          change_kind: string
+          created_at: string
+          created_by: string | null
+          current_observation_id: string | null
+          current_value: Json
+          dedupe_key: string
+          detected_at: string
+          id: string
+          metadata: Json
+          observed_at: string
+          organization_id: string
+          previous_observation_id: string | null
+          previous_value: Json
+          severity: number
+          site_id: string
+          source_domain: string
+          source_url: string
+          target_url: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          alerted_at?: string | null
+          backlink_id: string
+          change_kind: string
+          created_at?: string
+          created_by?: string | null
+          current_observation_id?: string | null
+          current_value?: Json
+          dedupe_key: string
+          detected_at?: string
+          id?: string
+          metadata?: Json
+          observed_at: string
+          organization_id: string
+          previous_observation_id?: string | null
+          previous_value?: Json
+          severity: number
+          site_id: string
+          source_domain: string
+          source_url: string
+          target_url?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          alerted_at?: string | null
+          backlink_id?: string
+          change_kind?: string
+          created_at?: string
+          created_by?: string | null
+          current_observation_id?: string | null
+          current_value?: Json
+          dedupe_key?: string
+          detected_at?: string
+          id?: string
+          metadata?: Json
+          observed_at?: string
+          organization_id?: string
+          previous_observation_id?: string | null
+          previous_value?: Json
+          severity?: number
+          site_id?: string
+          source_domain?: string
+          source_url?: string
+          target_url?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "backlink_change_event_backlink_id_fkey"
+            columns: ["backlink_id"]
+            isOneToOne: false
+            referencedRelation: "backlink"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "backlink_change_event_current_observation_id_fkey"
+            columns: ["current_observation_id"]
+            isOneToOne: false
+            referencedRelation: "backlink_observation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "backlink_change_event_previous_observation_id_fkey"
+            columns: ["previous_observation_id"]
+            isOneToOne: false
+            referencedRelation: "backlink_observation"
             referencedColumns: ["id"]
           },
         ]
