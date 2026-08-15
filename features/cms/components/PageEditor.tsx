@@ -166,10 +166,32 @@ function optionalWriteString(
   return raw;
 }
 
-const TABS: { id: EditorTab; label: string; icon: React.ElementType }[] = [
-  { id: "html", label: "HTML", icon: Code2 },
-  { id: "css", label: "CSS", icon: Paintbrush },
-  { id: "js", label: "JS", icon: FileCode2 },
+/**
+ * Tab governance (docs/handoffs/cms-page-hub.md item 5): the three code
+ * buffers are ONE "Code" tab with an inner switcher, keeping the strip at 7
+ * tabs. The URL's `?tab=` stays at the finer grain (`html`/`css`/`js` while on
+ * Code) so deep links land on the exact buffer and every pre-fold link keeps
+ * working.
+ */
+type CodeSubTab = "html" | "css" | "js";
+type TopTab =
+  | "code"
+  | "preview"
+  | "plan"
+  | "seo"
+  | "measure"
+  | "settings"
+  | "versions";
+
+const CODE_SUB_TABS: { id: CodeSubTab; label: string; icon: React.ElementType }[] =
+  [
+    { id: "html", label: "HTML", icon: Code2 },
+    { id: "css", label: "CSS", icon: Paintbrush },
+    { id: "js", label: "JS", icon: FileCode2 },
+  ];
+
+const TABS: { id: TopTab; label: string; icon: React.ElementType }[] = [
+  { id: "code", label: "Code", icon: Code2 },
   { id: "preview", label: "Preview", icon: Eye },
   { id: "plan", label: "Plan", icon: MapIcon },
   { id: "seo", label: "SEO", icon: SearchIcon },
@@ -178,7 +200,11 @@ const TABS: { id: EditorTab; label: string; icon: React.ElementType }[] = [
   { id: "versions", label: "History", icon: History },
 ];
 
-function isEditorTab(value: string | null): value is EditorTab {
+function isCodeSubTab(value: string | null): value is CodeSubTab {
+  return value === "html" || value === "css" || value === "js";
+}
+
+function isTopTab(value: string | null): value is TopTab {
   return TABS.some((tab) => tab.id === value);
 }
 
@@ -201,10 +227,38 @@ export default function PageEditor({
 }: PageEditorProps) {
   const isNew = !page;
   const searchParams = useSearchParams();
-  const [activeTab, setActiveTab] = useState<EditorTab>(() => {
+  const [activeTab, setActiveTabState] = useState<TopTab>(() => {
     const requestedTab = searchParams.get("tab");
-    return isEditorTab(requestedTab) ? requestedTab : "html";
+    if (isCodeSubTab(requestedTab)) return "code";
+    return isTopTab(requestedTab) ? requestedTab : "code";
   });
+  const [codeTab, setCodeTabState] = useState<CodeSubTab>(() => {
+    const requestedTab = searchParams.get("tab");
+    return isCodeSubTab(requestedTab) ? requestedTab : "html";
+  });
+  // The tab the rest of the system reasons about (agent scope, context menus,
+  // text replace): the Code tab resolves to whichever buffer is showing.
+  const effectiveTab: EditorTab = activeTab === "code" ? codeTab : activeTab;
+  // Tabs are URL state ("routes are free") — every switch lands in `?tab=` so
+  // any tab is shareable/deep-linkable. `replaceState` keeps history clean and
+  // never re-runs the server component.
+  const syncTabToUrl = (value: EditorTab) => {
+    const params = new URLSearchParams(window.location.search);
+    params.set("tab", value);
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}?${params.toString()}`,
+    );
+  };
+  const setActiveTab = (tab: TopTab) => {
+    setActiveTabState(tab);
+    syncTabToUrl(tab === "code" ? codeTab : tab);
+  };
+  const setCodeTab = (sub: CodeSubTab) => {
+    setCodeTabState(sub);
+    syncTabToUrl(sub);
+  };
   const versions = useCmsVersions();
   // THE DOOR LAW: when this page is joined to its measured page, the marketing
   // workspace for that page is one click away (new tab — the editor's unsaved
@@ -442,7 +496,7 @@ export default function PageEditor({
     pages,
     components,
     page,
-    activeTab,
+    activeTab: effectiveTab,
     title,
     slug,
     category,
@@ -827,51 +881,69 @@ export default function PageEditor({
         {(() => {
           const tabPanels = (
             <div className="flex-1 min-h-0 overflow-hidden">
-              {/* HTML */}
-              {activeTab === "html" && (
-                <div className="relative h-full">
-                  <ProTextarea
-                    ref={textareaRef}
-                    value={htmlContent}
-                    onChange={(e) => setHtmlContent(e.target.value)}
-                    placeholder="<div>\n  <h1>Your page content here…</h1>\n</div>"
-                    className="absolute inset-0 rounded-none border-0 resize-none font-mono text-sm leading-relaxed focus-visible:ring-0"
-                    wrapperClassName="absolute inset-0"
-                    surfaceName={CMS_PAGE_CONTEXT_MENU_PROPS.surfaceName}
-                    getApplicationScope={getApplicationScope}
-                  />
-                </div>
-              )}
-
-              {/* CSS */}
-              {activeTab === "css" && (
-                <div className="relative h-full">
-                  <ProTextarea
-                    ref={textareaRef}
-                    value={cssContent}
-                    onChange={(e) => setCssContent(e.target.value)}
-                    placeholder="/* Page-specific styles */\n\nh1 {\n  color: #333;\n}"
-                    className="absolute inset-0 rounded-none border-0 resize-none font-mono text-sm leading-relaxed focus-visible:ring-0"
-                    wrapperClassName="absolute inset-0"
-                    surfaceName={CMS_PAGE_CONTEXT_MENU_PROPS.surfaceName}
-                    getApplicationScope={getApplicationScope}
-                  />
-                </div>
-              )}
-
-              {/* JS */}
-              {activeTab === "js" && (
-                <div className="relative h-full">
-                  <ProTextarea
-                    ref={textareaRef}
-                    value={jsContent}
-                    onChange={(e) => setJsContent(e.target.value)}
-                    placeholder="// Page-specific JavaScript\n\nconsole.log('Page loaded');"
-                    className="absolute inset-0 rounded-none border-0 resize-none font-mono text-sm leading-relaxed focus-visible:ring-0"
-                    wrapperClassName="absolute inset-0"
-                    surfaceName={CMS_PAGE_CONTEXT_MENU_PROPS.surfaceName}
-                    getApplicationScope={getApplicationScope}
-                  />
+              {/* Code — HTML/CSS/JS behind one tab with an inner switcher */}
+              {activeTab === "code" && (
+                <div className="flex h-full flex-col">
+                  <div className="flex flex-none items-center gap-0.5 border-b border-border/50 bg-muted/10 px-4">
+                    {CODE_SUB_TABS.map((sub) => {
+                      const SubIcon = sub.icon as React.FC<{
+                        className?: string;
+                      }>;
+                      const isSubActive = codeTab === sub.id;
+                      return (
+                        <button
+                          key={sub.id}
+                          onClick={() => setCodeTab(sub.id)}
+                          className={`flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium border-b-2 transition-colors ${
+                            isSubActive
+                              ? "border-primary text-primary"
+                              : "border-transparent text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          <SubIcon className="h-3 w-3" />
+                          {sub.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="relative flex-1 min-h-0">
+                    {codeTab === "html" && (
+                      <ProTextarea
+                        ref={textareaRef}
+                        value={htmlContent}
+                        onChange={(e) => setHtmlContent(e.target.value)}
+                        placeholder="<div>\n  <h1>Your page content here…</h1>\n</div>"
+                        className="absolute inset-0 rounded-none border-0 resize-none font-mono text-sm leading-relaxed focus-visible:ring-0"
+                        wrapperClassName="absolute inset-0"
+                        surfaceName={CMS_PAGE_CONTEXT_MENU_PROPS.surfaceName}
+                        getApplicationScope={getApplicationScope}
+                      />
+                    )}
+                    {codeTab === "css" && (
+                      <ProTextarea
+                        ref={textareaRef}
+                        value={cssContent}
+                        onChange={(e) => setCssContent(e.target.value)}
+                        placeholder="/* Page-specific styles */\n\nh1 {\n  color: #333;\n}"
+                        className="absolute inset-0 rounded-none border-0 resize-none font-mono text-sm leading-relaxed focus-visible:ring-0"
+                        wrapperClassName="absolute inset-0"
+                        surfaceName={CMS_PAGE_CONTEXT_MENU_PROPS.surfaceName}
+                        getApplicationScope={getApplicationScope}
+                      />
+                    )}
+                    {codeTab === "js" && (
+                      <ProTextarea
+                        ref={textareaRef}
+                        value={jsContent}
+                        onChange={(e) => setJsContent(e.target.value)}
+                        placeholder="// Page-specific JavaScript\n\nconsole.log('Page loaded');"
+                        className="absolute inset-0 rounded-none border-0 resize-none font-mono text-sm leading-relaxed focus-visible:ring-0"
+                        wrapperClassName="absolute inset-0"
+                        surfaceName={CMS_PAGE_CONTEXT_MENU_PROPS.surfaceName}
+                        getApplicationScope={getApplicationScope}
+                      />
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -1323,10 +1395,10 @@ export default function PageEditor({
               getApplicationScope={getApplicationScope}
               contextData={buildSurfaceScope() as Record<string, unknown>}
               onTextReplace={(text) => {
-                if (activeTab === "html") setHtmlContent(text);
-                else if (activeTab === "css") setCssContent(text);
-                else if (activeTab === "js") setJsContent(text);
-                else if (activeTab === "seo") setMetaDescription(text);
+                if (effectiveTab === "html") setHtmlContent(text);
+                else if (effectiveTab === "css") setCssContent(text);
+                else if (effectiveTab === "js") setJsContent(text);
+                else if (effectiveTab === "seo") setMetaDescription(text);
               }}
               onSave={isNew ? undefined : () => void handleSaveDraft()}
             >

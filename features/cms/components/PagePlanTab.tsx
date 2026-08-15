@@ -39,7 +39,13 @@ import {
   useKeywordLabels,
   useNodeSteps,
   usePlanNode,
+  usePlanNodes,
 } from "@/features/marketing/content-plan/data/hooks";
+import {
+  readNodeKeywordStrategy,
+  type NodeKeywordStrategy,
+} from "@/features/marketing/content-plan/setup/keyword-strategy";
+import type { PlanNodeRow } from "@/features/marketing/content-plan/types";
 import { buildNodePipelineProgress } from "@/features/marketing/content-plan/lib/pipeline-progress";
 import { NodeStepRail } from "@/features/marketing/content-plan/components/NodeStepRail";
 import { planStatusColor } from "@/features/marketing/content-plan/constants";
@@ -51,6 +57,121 @@ interface PagePlanTabProps {
   site: ClientSite;
   /** Reload the CMS page row — after an adopt it carries a `plan_node_id`. */
   onPageChanged: () => void | Promise<void>;
+}
+
+/**
+ * The page's SEO plan (docs/handoffs/cms-page-hub.md item 4) — the applied
+ * keyword strategy from `attributes.keyword_strategy`: the page's role in the
+ * site-wide plan, which money routes it feeds, and the internal links the
+ * strategist planned so the writer can actually place them. A section of the
+ * Plan tab (not its own tab) until it grows an editor.
+ */
+function SeoPlanSection({
+  planNode,
+  siteNodes,
+  workspaceHref,
+}: {
+  planNode: PlanNodeRow;
+  siteNodes: readonly PlanNodeRow[];
+  workspaceHref: string;
+}) {
+  const strategy: NodeKeywordStrategy | null =
+    readNodeKeywordStrategy(planNode);
+
+  // THE DOOR LAW: a strategy route that IS a plan node opens that node in the
+  // plan workspace; a route the plan doesn't know renders as plain text.
+  const nodeByRoute = new Map<string, PlanNodeRow>();
+  for (const node of siteNodes) {
+    if (node.route) nodeByRoute.set(node.route, node);
+  }
+  const routeDoor = (route: string) => {
+    const target = nodeByRoute.get(route);
+    return target ? (
+      <Link
+        href={`/marketing/content-plan/${target.site_id}?node=${target.id}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="font-mono text-primary underline underline-offset-2"
+      >
+        {route}
+      </Link>
+    ) : (
+      <span className="font-mono" title="This route is not in the plan">
+        {route}
+      </span>
+    );
+  };
+
+  return (
+    <section className="space-y-1.5">
+      <h3 className="text-xs font-semibold text-foreground">SEO plan</h3>
+      {strategy ? (
+        <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-4">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Badge variant="secondary" className="text-[10px] capitalize">
+              {strategy.page_role.replace(/[_-]/g, " ")} page
+            </Badge>
+            {strategy.secondary_keywords.map((phrase) => (
+              <Badge key={phrase} variant="outline" className="text-[10px]">
+                {phrase}
+              </Badge>
+            ))}
+          </div>
+          {strategy.reason ? (
+            <p className="text-xs text-muted-foreground">{strategy.reason}</p>
+          ) : null}
+          {strategy.supports_routes.length > 0 ? (
+            <div className="space-y-1">
+              <p className="text-[11px] font-medium text-foreground">
+                Feeds authority to
+              </p>
+              <ul className="space-y-0.5 text-xs text-muted-foreground">
+                {strategy.supports_routes.map((route) => (
+                  <li key={route}>{routeDoor(route)}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          {strategy.internal_links.length > 0 ? (
+            <div className="space-y-1">
+              <p className="text-[11px] font-medium text-foreground">
+                Planned internal links — place these while writing
+              </p>
+              <ul className="space-y-1 text-xs text-muted-foreground">
+                {strategy.internal_links.map((link) => (
+                  <li
+                    key={`${link.to_route}-${link.anchor_text}`}
+                    className="flex flex-wrap items-baseline gap-1.5"
+                  >
+                    <span className="text-foreground">
+                      &ldquo;{link.anchor_text}&rdquo;
+                    </span>
+                    <span aria-hidden="true">&rarr;</span>
+                    {routeDoor(link.to_route)}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground">
+          No site-wide keyword strategy has been applied to this page. The
+          strategist assigns each page a role, keywords, and planned internal
+          links — run it from the{" "}
+          <Link
+            href={workspaceHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary underline underline-offset-2"
+          >
+            plan workspace
+          </Link>
+          .
+        </p>
+      )}
+    </section>
+  );
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
@@ -72,6 +193,9 @@ function LinkedPlanNode({
   const node = usePlanNode(planNodeId);
   const planSiteId = node.data?.site_id ?? fallbackSiteId;
   const nodeSteps = useNodeSteps(node.data?.site_id ?? null);
+  // Whole-site node list: resolves the SEO plan's routes to real plan nodes so
+  // each one is a door, not a string.
+  const siteNodes = usePlanNodes(node.data?.site_id ?? null);
   const keywordLabels = useKeywordLabels(
     node.data?.primary_keyword_id ? [node.data.primary_keyword_id] : [],
   );
@@ -200,6 +324,12 @@ function LinkedPlanNode({
           </p>
         )}
       </section>
+
+      <SeoPlanSection
+        planNode={planNode}
+        siteNodes={siteNodes.data ?? []}
+        workspaceHref={workspaceHref}
+      />
 
       <section className="space-y-1.5">
         <h3 className="text-xs font-semibold text-foreground">Brief</h3>
