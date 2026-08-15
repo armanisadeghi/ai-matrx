@@ -35,6 +35,7 @@ import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 
 import { buildContentPlanScope } from "../lib/content-plan-scope";
+import { contentPlanKpis } from "../format";
 import {
   planKeys,
   usePlanEntities,
@@ -207,6 +208,36 @@ export function ContentPlanWorkbench({
   const nodeRows = useMemo(() => nodes.data ?? [], [nodes.data]);
   const pipelineByNodeId = buildNodePipelineProgress(nodeSteps.data ?? []);
   const drift = usePlanDrift(siteId, resolvedCmsSiteId, nodeRows);
+
+  // 🚨 THE WHAT-I-SEE LAW. The numbers the workspace LEADS with — the website
+  // bar's built/live counts and the drift bar's difference counts — computed
+  // ONCE here and handed to every payload on this page (panel included), so a
+  // copied payload and the strips above it can never disagree.
+  const builtCount = Math.min(cmsPages.pagesByNodeId.size, nodeRows.length);
+  const liveCount = [...cmsPages.pagesByNodeId.values()].filter(
+    (page) => page.isPublished,
+  ).length;
+  const unplannedCount = (cmsPages.map?.pages ?? []).filter(
+    (page) => !page.planNodeId,
+  ).length;
+  const pageKpis = useMemo(
+    () =>
+      contentPlanKpis({
+        plannedCount: nodeRows.length,
+        builtCount: resolvedCmsSiteId ? builtCount : null,
+        liveCount: resolvedCmsSiteId ? liveCount : null,
+        unplannedCount: resolvedCmsSiteId ? unplannedCount : null,
+        drift: drift.model,
+      }),
+    [
+      nodeRows.length,
+      resolvedCmsSiteId,
+      builtCount,
+      liveCount,
+      unplannedCount,
+      drift.model,
+    ],
+  );
   // Bulk-deepen candidates: pages whose brief is empty (route order, so the
   // run walks the site top-down like a reader would).
   const emptyBriefNodes = useMemo(
@@ -628,6 +659,7 @@ export function ContentPlanWorkbench({
                   cmsSiteId={resolvedCmsSiteId}
                   cmsPagesByNodeId={cmsPages.pagesByNodeId}
                   pipelineProgress={pipelineByNodeId.get(node.id) ?? null}
+                  pageKpis={pageKpis}
                   hosted
                 />
               )}
@@ -701,6 +733,7 @@ export function ContentPlanWorkbench({
                       pipelineProgress={
                         pipelineByNodeId.get(selectedNode.id) ?? null
                       }
+                      pageKpis={pageKpis}
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center p-6">
@@ -776,6 +809,7 @@ export function ContentPlanWorkbench({
               cmsSiteId={resolvedCmsSiteId}
               cmsPagesByNodeId={cmsPages.pagesByNodeId}
               pipelineProgress={pipelineByNodeId.get(selectedNode.id) ?? null}
+              pageKpis={pageKpis}
               hosted
             />
           </SidePanelSurface>

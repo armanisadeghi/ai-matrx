@@ -46,6 +46,10 @@ import type {
 } from "@/components/official/matrx-data-table/types";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";
+import {
+  keyFieldsAiVariant,
+  webLocation,
+} from "@/features/marketing/lib/copy-payloads";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
 import { useCategories } from "@/features/scopes/hooks/useCategories";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
@@ -65,6 +69,7 @@ import { resolveCmsLink } from "../setup/readiness";
 import { planStatusColor } from "../constants";
 import { countBy, formatUpdated, withCounts } from "../utils";
 import { usePlanSiteStats } from "../data/hooks";
+import { planSiteStatusMix, planSiteSummary } from "../format";
 import type { PlanSiteStats } from "../data/service";
 import { useContentPlanSites } from "./ContentPlanHeader";
 
@@ -75,6 +80,9 @@ const SURFACE_PREFS: Partial<ListViewPrefs> = {
   direction: "desc",
   hiddenColumns: [],
 };
+
+/** Status chips that fit the column; the rest reach the user via "+N more". */
+const STATUS_CHIP_CAP = 4;
 
 const COLUMN_LABELS: Record<string, string> = {
   site: "Site",
@@ -388,10 +396,20 @@ export function PlanSitesList() {
           if (!row.stats || row.stats.totalNodes === 0) {
             return <span className="text-sm text-muted-foreground">—</span>;
           }
-          const entries = Object.entries(row.stats.byStatusId)
+          const all = Object.entries(row.stats.byStatusId)
             .filter(([, count]) => count > 0)
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 4);
+            .sort((a, b) => b[1] - a[1]);
+          const entries = all.slice(0, STATUS_CHIP_CAP);
+          // A truncated list must always say what it is hiding. The full mix
+          // rides every copy/export path; this is the visual acknowledgement
+          // that four chips are not the whole story.
+          const hidden = all.slice(STATUS_CHIP_CAP);
+          const hiddenTitle = hidden
+            .map(
+              ([statusId, count]) =>
+                `${statusMetaById.get(statusId)?.name ?? "No status"}: ${count}`,
+            )
+            .join("\n");
           return (
             <span className="flex items-center gap-2">
               {entries.map(([statusId, count]) => {
@@ -412,6 +430,14 @@ export function PlanSitesList() {
                   </span>
                 );
               })}
+              {hidden.length > 0 ? (
+                <span
+                  className="text-xs tabular-nums text-muted-foreground"
+                  title={`Also on this plan:\n${hiddenTitle}`}
+                >
+                  +{hidden.length} more
+                </span>
+              ) : null}
             </span>
           );
         },
@@ -588,12 +614,70 @@ export function PlanSitesList() {
       copy={{
         label: "Plan site",
         listLabel: "Plan sites",
-        location: "/marketing/content-plan",
+        location: webLocation("Content Plan — all plans"),
         rowKind: "plan_site",
         listKind: "plan_site_list",
+        rowDescription:
+          "One site on the Content Plan list, with its plan aggregates as rendered.",
+        listDescription:
+          "The Content Plan list — every site you can plan, with its plan aggregates.",
         humanRow: (row) =>
-          `${row.site.domain ?? row.site.name} — ${row.stats?.totalNodes ?? 0} pages planned`,
-        showRow: false,
+          planSiteSummary({
+            name: row.site.name,
+            domain: row.site.domain,
+            stats: row.stats,
+          }),
+        // The row cell shows the top four status chips; the payload carries
+        // the WHOLE mix, named rather than id'd — a truncated view must never
+        // become a truncated payload.
+        agentRow: (row) => ({
+          id: row.id,
+          domain: row.site.domain,
+          name: row.site.name,
+          has_brand: row.site.brand_id !== null,
+          vertical: planVertical(row.site.settings),
+          pages_planned: row.stats?.totalNodes ?? 0,
+          pages_with_keyword: row.stats?.keywordBound ?? 0,
+          pages_published: publishedCount(row),
+          status_mix: planSiteStatusMix(
+            row.stats,
+            (statusId) => statusMetaById.get(statusId)?.name ?? "No status",
+          ),
+          last_activity: row.stats?.lastUpdatedAt ?? null,
+        }),
+        rowAttributes: (row) => ({
+          site_id: row.id,
+          domain: row.site.domain,
+          pages_planned: row.stats?.totalNodes ?? 0,
+        }),
+        listAttributes: (visible, all) => ({
+          rows: visible.length,
+          sites_total: all.length,
+          pages_planned_total: all.reduce(
+            (sum, row) => sum + (row.stats?.totalNodes ?? 0),
+            0,
+          ),
+          sites_without_a_plan: all.filter(
+            (row) => (row.stats?.totalNodes ?? 0) === 0,
+          ).length,
+        }),
+        aiVariants: (visible) => [
+          keyFieldsAiVariant({
+            kind: "plan_site_list",
+            location: webLocation("Content Plan — all plans"),
+            description:
+              "The sites in the current view, projected to their plan aggregates.",
+            visible,
+            project: (row: PlanSiteRow) => ({
+              domain: row.site.domain ?? row.site.name,
+              pages_planned: row.stats?.totalNodes ?? 0,
+              pages_with_keyword: row.stats?.keywordBound ?? 0,
+              pages_published: publishedCount(row),
+              last_activity: row.stats?.lastUpdatedAt ?? null,
+            }),
+            query,
+          }),
+        ],
       }}
       toolbar={{
         searchPlaceholder: "Search site name or domain…",
