@@ -37,6 +37,7 @@ import { AddressesCard } from "./AddressesCard";
 import { EmploymentCard } from "./EmploymentCard";
 import { InteractionTimeline } from "./InteractionTimeline";
 import { PartyNotes } from "./PartyNotes";
+import { OutreachContactCandidatesCard } from "./OutreachContactCandidatesCard";
 
 interface Props {
   partyId: string;
@@ -217,6 +218,9 @@ export function PartyRecordPage({ partyId }: Props) {
 
               {/* Activity main */}
               <div className="min-w-0 space-y-3">
+                {!isPerson && party.primary_domain && (
+                  <OutreachContactCandidatesCard outletPartyId={party.id} />
+                )}
                 <InteractionTimeline
                   partyId={party.id}
                   orgId={party.organization_id}
