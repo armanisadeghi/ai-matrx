@@ -124,13 +124,11 @@ inline action so the admin resolves it without navigating. Org-level competitor
 
 ---
 
-### T6 — Wire the domain registry (BLOCKING, small) ⬅ built-and-unwired
-`platform.domain_classification` is LIVE with 166 seeded rows and measured coverage
-(**34.7%** of our 12,322-URL research corpus, **23%** of the commercial SERP sample, up from
-15% hardcoded). **Nothing reads it yet.** Point
-`matrx_seo.competitor_classification` at it: the requesting org's row wins, else the
-system-org row (`Matrx System`, `39c38960-d30c-4840-b0c1-c9960de95582`). Keep the pure
-derive/default functions unchanged. First task of the ground-truth chip.
+### T6 — Wire the domain registry ✅ DONE 2026-08-15
+`classify_entity_role` takes a `DomainRuleset`; the hardcoded frozensets are gone.
+`aidream/services/seo/domain_registry.py` loads + caches system rows plus the asking org's own
+(org row wins, either load order). Live-verified: 12 of an 18-domain real sample settled with zero
+AI, every real business declined to the agent layer.
 
 ### T7 — Service lines (NEW, design agreed, not built)
 Market overlap is a property of **(service line × geography)**, not of a company or a
@@ -140,11 +138,31 @@ Supersedes the location-only join in the earlier T4 sketch; the location detail 
 *beneath* the service line. Also adds `entity_role='franchise_sibling'` — same brand,
 separate P&L, real competition, never folded into "us".
 
-### T8 — Ground truth with Arman (NEW)
-Owner: background task chip, 2026-08-15. Zero human rulings exist anywhere in the system, so
-every threshold is provisional and more API data does not help — the missing thing is
-labels. Arman is the subject; his site ids and the session protocol are in SoR §10. Must
-follow the staged-confidence pattern (SoR §8d), not be a taxonomy quiz.
+### T8 — Ground truth with Arman ⬅ **BUILT AND SEEDED; AWAITING HIS RULINGS**
+The whole path is live and there are real rows waiting for him. What was built: SoR §8e.
+
+**Where he goes:** `/marketing/competitors` → pick a site → the **Review** tab.
+1. The brief card — what we think the business is, our own 1-5 certainty, the service lines with
+   a footprint each. He corrects anything wrong in one sentence; that text becomes the guidance
+   every later agent reads.
+2. The ruling queue — our most confident calls first, Right / Wrong, optional "why".
+
+**Nothing blocks on him.** A brief lapses to `auto_accepted` after 24h and downstream work
+continues on its assumptions; a later correction still overrides them everywhere.
+
+**Seeded** (all `proposed` / `awaiting_review`, under his own user id): brief + ~12 classified
+competitors each for allgreenrecycling, datadestruction, cosmeticinjectables, prpinjectionmd,
+titaniummarketing, titaniumsuccess, pbwlaw, blancacleaningdfw.
+
+**Watch the All Green case.** The analyst called commercial e-waste pickup *national*; his own
+account is that small-business pickup is SoCal only. Get his words on that split — it is the
+canonical multi-service-line case and it decides how T7 gets built.
+
+**Still open after his session:**
+- Read the rulings back (`seo.competitor.human_ruling`) and re-derive the PROVISIONAL band
+  thresholds against real labels. That is what the whole exercise was for.
+- `entity_role='franchise_sibling'` is agreed in SoR §8a but is NOT in the live CHECK constraint
+  yet — add it with T7.
 
 ---
 
