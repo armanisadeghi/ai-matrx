@@ -27,6 +27,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { agentFileRef, mediaSafe } from "@/lib/media/agent-payload";
 import { cn } from "@/lib/utils";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -155,7 +156,15 @@ export function FileInfoTab({ fileId, className }: FileInfoTabProps) {
               location: "AI Matrx — Cloud Files — Info tab",
               description:
                 "Complete metadata for the file currently shown in the Info tab.",
-              data: infoSnapshot,
+              // `infoSnapshot.file` is a whole CloudFile, which carries
+              // `signedUrl`/`url`/`downloadUrl` (expiring) and `filePath` (a
+              // raw storage path). An agent reads this payload long after the
+              // click, so those are dead weight at best — `mediaSafe` strips
+              // them and `file_ref` carries the durable identity instead.
+              data: {
+                file_ref: agentFileRef(file),
+                ...(mediaSafe(infoSnapshot) as Record<string, unknown>),
+              },
               summary: fileInfoHumanSummary(infoSnapshot),
               attributes: {
                 id: file.id,
