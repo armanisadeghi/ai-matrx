@@ -49,6 +49,44 @@
       ],
       "previousEventHash": "2e62d879479fcca94185f99255624b59e587b04469e25d1225da41fd21313a9a",
       "eventHash": "a8666c0a80fb0e36b60631f270041dd456284b1bce072e112f0cec78fe1a63e4"
+    },
+    {
+      "sequence": 4,
+      "state": "rejected",
+      "at": "2026-08-15T13:33:33.293Z",
+      "actor": "p6-adversarial-certifier",
+      "summary": "Rejected candidate 3df1bd89b because report and ledger claimed certification before the authoritative run record.",
+      "evidence": [
+        "Concrete defect: .matrx/patrol-reports/no-emojis-in-ui.md and .matrx/PATROL_SIGHTINGS.md claimed CERTIFIED while the permanent record remained certifying and did not name candidate 3df1bd89b.",
+        "Product-code checks remained clean; rejection is limited to the batch's premature projection claims."
+      ],
+      "previousEventHash": "a8666c0a80fb0e36b60631f270041dd456284b1bce072e112f0cec78fe1a63e4",
+      "eventHash": "a29cb1249410cfc098acc718f927daa81324362a12ccb0c3ce2fc7e3eb719430"
+    },
+    {
+      "sequence": 5,
+      "state": "fixing",
+      "at": "2026-08-15T13:33:33.926Z",
+      "actor": "codex-patrol-worker",
+      "summary": "Correcting premature certification claims before resubmitting the exact candidate.",
+      "evidence": [
+        "Report and ledger will state certification pending until the permanent record receives an exact-SHA CERTIFIED event."
+      ],
+      "previousEventHash": "a29cb1249410cfc098acc718f927daa81324362a12ccb0c3ce2fc7e3eb719430",
+      "eventHash": "34aec6000fb489521bccda6150f77cd4de5e7f37002b4d1ae1865e7db3a2ed7a"
+    },
+    {
+      "sequence": 6,
+      "state": "certifying",
+      "at": "2026-08-15T13:34:30.994Z",
+      "actor": "codex-patrol-worker",
+      "summary": "Resubmitted the corrected projection and unchanged 15-file product batch for exact-SHA certification.",
+      "evidence": [
+        "Candidate 3df1bd89b rejection is recorded; report and ledger now state exact-SHA certification pending instead of claiming it prematurely.",
+        "Product diff and all prior detector/type/doctrine/render checks are unchanged."
+      ],
+      "previousEventHash": "34aec6000fb489521bccda6150f77cd4de5e7f37002b4d1ae1865e7db3a2ed7a",
+      "eventHash": "b80da9c65e854b8f973d79b5f0567a0e101f4a40a1cc180ade04aefaa0b7aff6"
     }
   ]
 }

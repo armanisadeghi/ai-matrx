@@ -3,8 +3,8 @@
   "patrolId": "P6",
   "runId": "01a0058c-d8db-74d3-b638-f59fbb0a9407",
   "state": "certifying",
-  "updatedAt": "2026-08-15T13:27:51.359Z",
-  "summary": "Entered independent adversarial certification for the exact 15-file candidate batch.",
+  "updatedAt": "2026-08-15T13:34:30.994Z",
+  "summary": "Resubmitted the corrected projection and unchanged 15-file product batch for exact-SHA certification.",
   "source": "01a0058c-d8db-74d3-b638-f59fbb0a9407.json",
-  "eventHash": "a8666c0a80fb0e36b60631f270041dd456284b1bce072e112f0cec78fe1a63e4"
+  "eventHash": "b80da9c65e854b8f973d79b5f0567a0e101f4a40a1cc180ade04aefaa0b7aff6"
 }
