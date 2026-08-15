@@ -50,6 +50,6 @@ export async function GET(): Promise<NextResponse> {
     contentType: "application/x-www-form-urlencoded",
     recordingStarted: false,
     conversationRelayConnected: false,
-    statusCallback: "https://aimatrx.com/api/webhooks/twilio/voice/status",
+    statusCallback: "https://www.aimatrx.com/api/webhooks/twilio/voice/status",
   });
 }

@@ -9,5 +9,5 @@ export function getTwilioAuthToken(): string {
 }
 
 export function getApplicationBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_APP_URL ?? "https://aimatrx.com";
+  return process.env.NEXT_PUBLIC_APP_URL ?? "https://www.aimatrx.com";
 }

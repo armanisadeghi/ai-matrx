@@ -20,8 +20,8 @@ SMS-only validator was removed after all consumers moved atomically.
 
 ## Static inbound Voice proof
 
-- Production inbound URL: `https://aimatrx.com/api/webhooks/twilio/voice`
-- Lifecycle callback URL: `https://aimatrx.com/api/webhooks/twilio/voice/status`
+- Production inbound URL: `https://www.aimatrx.com/api/webhooks/twilio/voice`
+- Lifecycle callback URL: `https://www.aimatrx.com/api/webhooks/twilio/voice/status`
 - Runtime: short Node.js route handler on Vercel; no long-lived WebSocket.
 - Response: branded `<Say>` disclosure that this is an AI-powered internal test, calls may be
   recorded/reviewed, live AI is not connected yet, and the webhook is working; then `<Hangup>`.
@@ -40,9 +40,9 @@ After the code is deployed:
 
 1. In Twilio Console, open the owned voice-capable number.
 2. Set **A call comes in** to Webhook, HTTP POST,
-   `https://aimatrx.com/api/webhooks/twilio/voice`.
+   `https://www.aimatrx.com/api/webhooks/twilio/voice`.
 3. Set the call status callback to HTTP POST,
-   `https://aimatrx.com/api/webhooks/twilio/voice/status`, with initiated, ringing, answered, and
+   `https://www.aimatrx.com/api/webhooks/twilio/voice/status`, with initiated, ringing, answered, and
    completed selected if the number surface exposes those options.
 4. Call the number from a consenting internal test phone. Confirm the complete disclosure plays,
    the webhook-working sentence is audible, and the call hangs up cleanly.

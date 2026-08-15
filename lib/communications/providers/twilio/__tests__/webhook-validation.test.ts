@@ -24,7 +24,7 @@ describe("shared Twilio webhook validation", () => {
       {
         headers: {
           host: "internal-vercel-host",
-          "x-forwarded-host": "aimatrx.com",
+          "x-forwarded-host": "www.aimatrx.com",
           "x-forwarded-proto": "https",
         },
       },
@@ -32,11 +32,11 @@ describe("shared Twilio webhook validation", () => {
 
     expect(
       buildTwilioWebhookUrl(request, "/api/webhooks/twilio/voice"),
-    ).toBe("https://aimatrx.com/api/webhooks/twilio/voice?region=us1");
+    ).toBe("https://www.aimatrx.com/api/webhooks/twilio/voice?region=us1");
   });
 
   test("accepts a correctly signed form webhook", async () => {
-    const url = "https://aimatrx.com/api/webhooks/twilio/voice";
+    const url = "https://www.aimatrx.com/api/webhooks/twilio/voice";
     const params = {
       AccountSid: "AC123",
       CallSid: "CA123",
@@ -63,7 +63,7 @@ describe("shared Twilio webhook validation", () => {
   });
 
   test("fails safely for missing and malformed signatures", async () => {
-    const url = "https://aimatrx.com/api/webhooks/twilio/voice";
+    const url = "https://www.aimatrx.com/api/webhooks/twilio/voice";
     const unsigned = new Request(url, {
       method: "POST",
       body: new URLSearchParams({ CallSid: "CA123" }),

@@ -4,7 +4,7 @@ import twilio from "twilio";
 
 import { POST } from "./route";
 
-const URL = "https://aimatrx.com/api/webhooks/twilio/voice";
+const URL = "https://www.aimatrx.com/api/webhooks/twilio/voice";
 const AUTH_TOKEN = "voice-route-test-auth-token";
 const originalAuthToken = process.env.TWILIO_AUTH_TOKEN;
 
