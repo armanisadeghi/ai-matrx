@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P8",
   "runId": "01a001b0-1582-7fc2-935e-299e2d1d4826",
-  "state": "certified",
-  "updatedAt": "2026-08-14T19:26:24.934Z",
-  "summary": "CERTIFIED: the three Real Loading States repairs introduced no batch-caused defect.",
+  "state": "delivery_queued",
+  "updatedAt": "2026-08-15T18:33:12.740Z",
+  "summary": "Delivery reconciliation: the certified Real Loading States cleanup was already integrated and shipped; recording the missing delivery receipt without creating another release.",
   "source": "01a001b0-1582-7fc2-935e-299e2d1d4826.json",
-  "eventHash": "80f340cf33750a52226fe0efa85ff6201ea1a7db5399eeb07895a1112f7ef9a4"
+  "eventHash": "9f6529ff13471f5abe9cc7993c641c51e479d00c1117c508a2fa5ebc5b67c4e1"
 }

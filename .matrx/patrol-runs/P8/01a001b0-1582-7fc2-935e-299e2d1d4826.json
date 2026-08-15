@@ -65,6 +65,22 @@
       },
       "previousEventHash": "dfcf0201bc63f4a0bc50f19ba5b3e29c2868d372889d231f646750ca49253ee2",
       "eventHash": "80f340cf33750a52226fe0efa85ff6201ea1a7db5399eeb07895a1112f7ef9a4"
+    },
+    {
+      "sequence": 5,
+      "state": "delivery_queued",
+      "at": "2026-08-15T18:33:12.740Z",
+      "actor": "fleet-health-controller",
+      "summary": "Delivery reconciliation: the certified Real Loading States cleanup was already integrated and shipped; recording the missing delivery receipt without creating another release.",
+      "evidence": [
+        "authority-ref:refs/heads/patrol-runs/P8/01a001b0-1582-7fc2-935e-299e2d1d4826"
+      ],
+      "delivery": {
+        "candidateSha": "40fe1be4a5fea20971065bb3a35f675e5896d016",
+        "preservedRef": "refs/heads/patrol-runs/P8/01a001b0-1582-7fc2-935e-299e2d1d4826"
+      },
+      "previousEventHash": "80f340cf33750a52226fe0efa85ff6201ea1a7db5399eeb07895a1112f7ef9a4",
+      "eventHash": "9f6529ff13471f5abe9cc7993c641c51e479d00c1117c508a2fa5ebc5b67c4e1"
     }
   ]
 }
