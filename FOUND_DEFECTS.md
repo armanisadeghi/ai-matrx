@@ -611,7 +611,7 @@ One line per fix — title, date, pointer. History lives in git. Entries older t
 - **D125** — 13 stale entity_types rows repointed + `entity-registry-drift` guard. Graveyard-4 remainder → D125 open entry. 2026-08-04.
 - **D130** — headless image-gen promise always settles on terminal (terminal-settlement guard in `process-stream.ts`). Server remainder → D130 open entry. 2026-08-08.
 - **D64** — `ContainerResourceSheet` keyed derived-state refactor. 2026-08-09.
-- **D106 / D106b** — BudgetMeter verdict headline; honest "Only you" copy on 4 surfaces. 2026-08-09.
+- **D106 / D106b** — BudgetMeter verdict headline; honest "Only you" copy (ShapeOwnerEditor, VaultItemDetail, education FAQ). 2026-08-09. ⚠️ **2 surfaces still carry the claim** — `features/canvas/social/CanvasShareSheet.tsx` and `features/structured-lists/StructuredListManagerV2.tsx`; both pinned in `scripts/visibility-vocab/allowlist.json`, which `pnpm check:visibility-vocab` enforces. That allowlist is the LIVE list — delete an entry in the same change that fixes its surface. Unblocked (D105b ruled `internal` stays).
 - **D137-seo** — public /seo analyzers work signed-out via `/seo/public/page-audit`. 2026-08-09.
 - **D76 / D61** — `errorCaptureStore.emit()` deferred to a microtask (render-safety test pinned). 2026-08-09.
 - **D129 (tasks)** — `operatingTaskIds` set; `nowMinute` tick; month-end recurrence anchor (`utils/recurrence.ts`). 2026-08-09.
