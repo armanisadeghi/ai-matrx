@@ -128,6 +128,26 @@
       },
       "previousEventHash": "44a5cfea2c75ce34f6ca64ac4121fd7de6fde6175eed93bf8eccf02976f31755",
       "eventHash": "6becd0763e6b1f58429722f6abb939aa073bb19dc2c3cbfa07670d7c66ac48ad"
+    },
+    {
+      "sequence": 9,
+      "state": "delivered",
+      "at": "2026-08-15T18:29:54.584Z",
+      "actor": "fleet-health-controller",
+      "summary": "DELIVERED: the independently certified No Emojis cleanup is on origin/main and was shipped in v0.4.673.",
+      "evidence": [
+        "Certified candidate 441071746eb918349cfc33029a215be0e1fbf837 is an ancestor of origin/main.",
+        "Integration merge: 2f865998163e6342de62a25d3349f606b1caa67c.",
+        "Release commit: a41c406591143645359546c4446d0b93a5f32af5 (v0.4.673)."
+      ],
+      "delivery": {
+        "candidateSha": "441071746eb918349cfc33029a215be0e1fbf837",
+        "preservedRef": "refs/heads/patrol-runs/P6/01a0058c-d8db-74d3-b638-f59fbb0a9407",
+        "integratedSha": "2f865998163e6342de62a25d3349f606b1caa67c",
+        "release": "v0.4.673"
+      },
+      "previousEventHash": "6becd0763e6b1f58429722f6abb939aa073bb19dc2c3cbfa07670d7c66ac48ad",
+      "eventHash": "b575befbb13142b0935c3d3666e93bb91e593c1edc98ada7783c721be0c71b2a"
     }
   ]
 }

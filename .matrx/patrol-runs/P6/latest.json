@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P6",
   "runId": "01a0058c-d8db-74d3-b638-f59fbb0a9407",
-  "state": "delivery_queued",
-  "updatedAt": "2026-08-15T18:29:33.810Z",
-  "summary": "Delivery reconciliation: the certified No Emojis cleanup was integrated into main and shipped in v0.4.673; recording the delivery queue before closing the shipped state.",
+  "state": "delivered",
+  "updatedAt": "2026-08-15T18:29:54.584Z",
+  "summary": "DELIVERED: the independently certified No Emojis cleanup is on origin/main and was shipped in v0.4.673.",
   "source": "01a0058c-d8db-74d3-b638-f59fbb0a9407.json",
-  "eventHash": "6becd0763e6b1f58429722f6abb939aa073bb19dc2c3cbfa07670d7c66ac48ad"
+  "eventHash": "b575befbb13142b0935c3d3666e93bb91e593c1edc98ada7783c721be0c71b2a"
 }
