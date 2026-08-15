@@ -44,12 +44,15 @@ import { loadConversation } from "../redux/execution-system/thunks/load-conversa
 import { recoverDroppedStream } from "../redux/execution-system/thunks/recover-dropped-stream.thunk";
 import { resolveBackendForConversation } from "../redux/execution-system/thunks/resolve-base-url";
 import { surfaceColdPendingCalls } from "../redux/execution-system/thunks/surface-cold-pending-calls.thunk";
+import { resumeInstance } from "../redux/execution-system/thunks/resume-instance.thunk";
+import { selectActivePendingAsksForConversation } from "../ui-first-tools/redux/pending-asks.slice";
 import { fetchOperationsByLink, followOperationStream } from "./api";
 import type {
   RuntimeExecutionStatus,
   RuntimeOperationView,
   ServerOperationState,
 } from "./types";
+import { decideWaitingInputRecovery } from "./waiting-input-recovery";
 
 export interface ReconnectServerOperationArgs {
   conversationId: string;
@@ -100,9 +103,7 @@ export const reconnectServerOperation = createAsyncThunk<
       const rid =
         requestId ?? selectLatestRequestId(conversationId)(getState());
       if (!rid) return;
-      void dispatch(
-        recoverDroppedStream({ conversationId, requestId: rid }),
-      );
+      void dispatch(recoverDroppedStream({ conversationId, requestId: rid }));
     };
 
     // Ephemeral conversations have no DB row to refetch — the runtime surface
@@ -166,22 +167,110 @@ export const reconnectServerOperation = createAsyncThunk<
     const stampOperation = (
       status: RuntimeExecutionStatus,
       waitingInput: boolean,
+      recoveryState?: ServerOperationState["recoveryState"],
     ) => {
       const serverOperation: ServerOperationState = {
         executionId: op.execution_id,
+        userRequestId: op.request_id,
         status,
         waitingInput,
+        ...(recoveryState ? { recoveryState } : {}),
         startedAt: op.started_at,
         checkedAt: new Date().toISOString(),
       };
       dispatch(patchConversation({ conversationId, serverOperation }));
     };
 
-    stampOperation(op.status, op.waiting_input);
+    let waitingRecoveryInFlight = false;
+    const recoverWaitingInput = async () => {
+      if (waitingRecoveryInFlight) return;
+      waitingRecoveryInFlight = true;
+      stampOperation("waiting_input", true, "checking_for_prompt");
+      try {
+        const surfaced = await dispatch(
+          surfaceColdPendingCalls(conversationId, { strict: true }),
+        );
+        const asks =
+          selectActivePendingAsksForConversation(conversationId)(getState());
+        const decision = decideWaitingInputRecovery({
+          pendingCallCount: surfaced,
+          pendingAskCount: asks.length,
+          userRequestId: op.request_id,
+        });
+        if (decision === "prompt_visible") {
+          stampOperation("waiting_input", true, "prompt_visible");
+          return;
+        }
+        if (decision === "pending_tool") {
+          // A non-interactive client handler (or a schema-error recovery) is
+          // processing the durable call now. Its tool-result POST owns resume.
+          // Never race it with a speculative /resume request.
+          stampOperation("waiting_input", true, "pending_tool");
+          return;
+        }
+        if (decision === "needs_action") {
+          console.error(
+            "[runtime-reconnect] waiting operation has no pending prompt and no request_id; user action is required.",
+            { conversationId, executionId: op.execution_id },
+          );
+          stampOperation("waiting_input", true, "needs_action");
+          return;
+        }
+
+        const userRequestId = op.request_id;
+        if (!userRequestId) {
+          // Defensive narrowing for mixed-version deployments. The decision
+          // above already routed this shape to needs_action.
+          stampOperation("waiting_input", true, "needs_action");
+          return;
+        }
+
+        // `continue`: the durable answer already landed but its client-side continuation
+        // handoff was lost (refresh, crash, or the fast-tool stream-close race).
+        // There is nothing for the user to answer: resume from server truth.
+        console.warn(
+          "[runtime-reconnect] waiting operation has zero pending calls — continuing the resolved request.",
+          {
+            conversationId,
+            executionId: op.execution_id,
+            userRequestId,
+          },
+        );
+        stampOperation("waiting_input", true, "continuing");
+        void dispatch(
+          resumeInstance({
+            conversationId,
+            userRequestId,
+          }),
+        ).then((action) => {
+          if (!resumeInstance.rejected.match(action)) return;
+          const reason = String(action.payload ?? action.error.message ?? "");
+          if (reason.includes("retry") && reason.includes("scheduled")) return;
+          const current =
+            getState().conversations.byConversationId[conversationId]
+              ?.serverOperation;
+          if (current?.executionId === op.execution_id) {
+            stampOperation("waiting_input", true, "needs_action");
+          }
+        });
+      } catch (err) {
+        console.error(
+          "[runtime-reconnect] pending-call recovery check failed; preserving an explicit retry affordance.",
+          { conversationId, executionId: op.execution_id, err },
+        );
+        stampOperation("waiting_input", true, "needs_action");
+      } finally {
+        waitingRecoveryInFlight = false;
+      }
+    };
+
+    stampOperation(
+      op.status,
+      op.waiting_input,
+      op.waiting_input ? "checking_for_prompt" : undefined,
+    );
     if (op.waiting_input) {
-      // The turn is suspended on a client-delegated tool — resurface the
-      // pending prompt(s) through the existing delegated-resume flow.
-      void dispatch(surfaceColdPendingCalls(conversationId));
+      void recoverWaitingInput();
     }
 
     const result = await followOperationStream({
@@ -197,8 +286,7 @@ export const reconnectServerOperation = createAsyncThunk<
           return;
         }
         if (event.kind === "waiting_input") {
-          stampOperation("waiting_input", true);
-          void dispatch(surfaceColdPendingCalls(conversationId));
+          void recoverWaitingInput();
         } else if (RUNNING_KINDS.has(event.kind)) {
           stampOperation("running", false);
         } else if (event.kind === "paused") {
@@ -213,6 +301,10 @@ export const reconnectServerOperation = createAsyncThunk<
 
     if (ctrl.signal.aborted) {
       // Stood down — a live stream took over. It owns status from here.
+      // A manual Check again can also replace this follower with a newer one;
+      // in that case the newer follower already owns the banner and this stale
+      // task must not erase its freshly-stamped recovery state.
+      if (followers.has(conversationId)) return noFollow;
       dispatch(patchConversation({ conversationId, serverOperation: null }));
       return noFollow;
     }
@@ -247,7 +339,8 @@ export const reconnectServerOperation = createAsyncThunk<
     if (finalStatus === "completed") {
       const rid =
         requestId ?? selectLatestRequestId(conversationId)(getState());
-      if (rid) dispatch(setRequestStatus({ requestId: rid, status: "complete" }));
+      if (rid)
+        dispatch(setRequestStatus({ requestId: rid, status: "complete" }));
       dispatch(setInstanceStatus({ conversationId, status: "complete" }));
       if (source === "stream-loss") {
         toast.success("Connection recovered", {

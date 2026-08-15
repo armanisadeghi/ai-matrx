@@ -323,6 +323,13 @@ server-side; the same Realtime subscription updates the panel with no delegation
   share the channel via the module-level `activeChannels` map.
 - **The dispatcher never throws.** Schema fail / handler throw / unknown
   tool all POST a `{is_error: true}` envelope; the stream stays alive.
+- **Every delegated call is paused before routing, including schema errors and
+  fast handlers.** The server stream has hard-suspended regardless of whether
+  the client eventually renders a card. `surfaceDelegatedToolCall` stamps the
+  instance before dispatch, so stream finalization cannot overwrite the truth
+  as `complete`. A `user` call that supplies a known ask kind under `action`
+  instead of canonical `type` is recovered narrowly and logged; unknown or
+  ambiguous shapes still return the normal loud schema error.
 
 ---
 
@@ -342,6 +349,17 @@ server-side; the same Realtime subscription updates the panel with no delegation
 
 ## Change Log
 
+- `2026-08-15` — **Failed `user` calls can no longer strand a phantom prompt.**
+  Reproduced from conversation `f659f218…`: `action:"notify"` failed the
+  canonical `type` schema, its error result landed, and the immediate resume
+  was discarded while the original AbortController was still closing. The
+  shared executor repairs schema-proven `action`→`type` aliases before the
+  event (the client keeps the same narrow defense), stamps every
+  delegated call paused before validation, and retains the continuation with
+  bounded stream-close retries. Runtime reconnect distinguishes real pending
+  asks from a resolved/no-row park: real asks get **Show question(s)**;
+  zero-row waits auto-continue from the durable request id and retain a
+  **Continue agent** escape if recovery fails.
 - `2026-08-15` — **Ask card scroll: question + answers now scroll as ONE region.**
   `AgentCardShell` previously gave the title its own capped `max-h-[28dvh]` scroll
   and the body a separate `flex-1` scroll, so a long question starved the answers

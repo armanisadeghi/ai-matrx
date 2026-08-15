@@ -29,6 +29,8 @@ export const TERMINAL_RUNTIME_STATUSES: ReadonlySet<RuntimeExecutionStatus> =
 /** One root execution as the reconnecting client sees it (`OperationView`). */
 export interface RuntimeOperationView {
   execution_id: string;
+  /** Durable runtime/chat request identity used by the resume endpoint. */
+  request_id: string | null;
   type: string;
   status: RuntimeExecutionStatus;
   is_terminal: boolean;
@@ -75,8 +77,16 @@ export interface RuntimeOperationEvent {
  */
 export interface ServerOperationState {
   executionId: string;
+  /** Durable request identity; enables no-prompt continuation recovery. */
+  userRequestId: string | null;
   status: RuntimeExecutionStatus;
   waitingInput: boolean;
+  recoveryState?:
+    | "checking_for_prompt"
+    | "prompt_visible"
+    | "pending_tool"
+    | "continuing"
+    | "needs_action";
   startedAt: string | null;
   /** ISO timestamp of the status fetch that produced this record. */
   checkedAt: string;

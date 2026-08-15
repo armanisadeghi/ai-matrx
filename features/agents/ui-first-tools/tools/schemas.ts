@@ -67,6 +67,38 @@ const USER_ASK_TYPES = [
   "notify",
 ] as const;
 
+const USER_ASK_TYPE_SET: ReadonlySet<string> = new Set(USER_ASK_TYPES);
+
+export interface UserArgsRecovery {
+  args: Record<string, unknown>;
+  recoveredAlias: "action_to_type" | null;
+}
+
+/**
+ * Recover the one discriminator slip that is both common and unambiguous:
+ * models sometimes emit the platform-wide `action` key for this tool even
+ * though the canonical `user` contract calls it `type`. Keep the published
+ * schema strict; normalize only a known ask type when neither canonical form
+ * (`type` or `questions[]`) is present. Everything else still fails loudly.
+ */
+export function recoverUserArgs(
+  raw: Record<string, unknown>,
+): UserArgsRecovery {
+  if (
+    raw.type === undefined &&
+    raw.questions === undefined &&
+    typeof raw.action === "string" &&
+    USER_ASK_TYPE_SET.has(raw.action)
+  ) {
+    const { action, ...rest } = raw;
+    return {
+      args: { ...rest, type: action },
+      recoveredAlias: "action_to_type",
+    };
+  }
+  return { args: raw, recoveredAlias: null };
+}
+
 /**
  * Inner shape used when batching — same fields as the top-level args
  * minus the `questions` discriminator.
@@ -158,7 +190,7 @@ export const userArgsSchema = z
           path: [stray[0]],
         });
       }
-      v.questions!.forEach((q, i) => validateSingle(q, ctx, ["questions", i]));
+      v.questions?.forEach((q, i) => validateSingle(q, ctx, ["questions", i]));
       return;
     }
     if (!v.type) {
