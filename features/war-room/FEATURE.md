@@ -171,6 +171,38 @@ Dev-login → `/war-room/all`. Create a room; add threads. **Stage mode:** the l
 
 ## Change Log
 
+- 2026-08-15 — claude: **The War Room has full copy coverage — tile pair, rooms
+  gallery, and a page-level Groomer (agent-copy rollout).** The only prior
+  affordance was `ThreadCopyForAiButton`, which exports a tile's ANCHORED
+  project or task and renders `null` when the tile has neither — so a canvas
+  tile full of notes, files and recordings had no copy path at all, and no
+  surface here had a human Copy, a JSON copy or an export. New `lib/copy.ts`
+  builds every payload from what the surfaces render. `ThreadCopyButtons`
+  replaces the tile's AI-only button with ONE control whose default is the
+  TILE as rendered (identity, anchor, active tab, every attached resource) and
+  whose variant is the anchored project/task full tree — same
+  `aiExportService` bundle and serializer, preserved rather than deleted. The
+  room page gained `RoomCopyControls`: a quick pair, an `ExportMenu`, and an
+  `AgentCopyGroomerLauncher`. A room is threads × attached resources, which
+  reaches the massive size class fast, so a single button here would be a
+  defect; `roomGroomerConfig` declares the section list ONCE (room · thread
+  tiles · room resources · parked threads) and the Groomer window, the quick
+  Everything payload and the Balanced/Minimal variants all derive from it
+  through the shared `groomerPresetVariants` / `buildGroomerPresetPayload`
+  helpers — never a second section list. Section levels are shaped by what
+  actually costs tokens here: full carries every attached row, compact carries
+  per-type counts, brief carries tile titles.
+  `RoomProjectCopyForAiButton` still renders beside it, unchanged.
+  `/war-room/all` gained a view pair + `ExportMenu` in the search row and an
+  `xs` hover pair on each `SessionCard`, backed by a new memoized
+  `selectAllRoomCardStats` so the list payload covers ALL rooms without
+  calling the per-id stats selector in a loop. `WarRoomThreadsTable` was
+  already wired through `MatrxDataTable`'s `copy` config; it was upgraded to
+  the sized-to-data shape — row/list descriptions and attributes, the view's
+  KPIs, and a "Key fields" variant built with the SHARED `keyFieldsAiVariant`
+  rather than a local fork. Master and room agent panels are deliberately
+  skipped — chat is not a record. `pnpm type-check` clean.
+
 - 2026-08-11 — **The THREAD surface is agent-writable too (4 ask-policy
   targets).** `matrx-user/war-room-thread` declares `thread_note_content` /
   `append_to_thread_note` (DRAFT — replace/append over the note anchored to
