@@ -34,9 +34,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { GuidedChecklist } from "@/lib/guided-setup/components/GuidedChecklist";
 import { useSendingIdentity } from "@/features/crm/sending-identities/hooks";
+import { sendingIdentityChecklist } from "@/features/crm/sending-identities/sendingIdentityChecklist";
 import { STATUS_COPY } from "@/features/crm/sending-identities/types";
-import type { SendingEventRecord } from "@/features/crm/sending-identities/types";
+import type {
+  SendingEventRecord,
+  SendingIdentityDetail,
+} from "@/features/crm/sending-identities/types";
 import { DnsRecordCard } from "./DnsRecordCard";
 import { HealthPanel } from "./HealthPanel";
 import { IssueList } from "./IssueList";
@@ -129,6 +134,58 @@ export function SendingIdentityDetailPage({ identityId }: { identityId: string }
   } = useSendingIdentity(identityId);
   const dnsRef = useRef<HTMLDivElement | null>(null);
   const [showAllEvents, setShowAllEvents] = useState(false);
+
+  /**
+   * Context for the `outreach.sending_identity` checklist. The DNS card and the
+   * warm-up bar are passed in as nodes so the checklist hosts the existing
+   * components rather than a second copy of them.
+   */
+  const checklistContext = useMemo(
+    () => ({
+      identity: identity as SendingIdentityDetail,
+      checkDomain: async () => void (await checkDomain()),
+      checkAuthentication: async () => void (await checkAuthentication()),
+      startWarmup: async () => void (await startWarmup()),
+      dnsCard: identity ? (
+        <div ref={dnsRef}>
+          <DnsRecordCard
+            record={identity.dns_record}
+            domain={identity.sending_domain}
+            verified={identity.domain_verified}
+            lastCheckedAt={identity.domain_checked_at}
+            checking={busy === "check_domain"}
+            onCheck={() => void checkDomain()}
+          />
+        </div>
+      ) : null,
+      warmupPanel:
+        identity?.warmup != null ? (
+          <div className="space-y-2">
+            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                className={cn(
+                  "h-full rounded-full transition-all",
+                  identity.warmup.completed_at
+                    ? "bg-emerald-500"
+                    : "bg-amber-500",
+                )}
+                style={{ width: `${identity.warmup.percent_complete}%` }}
+              />
+            </div>
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>
+                Today&apos;s limit: {identity.effective_daily_cap} messages
+                {identity.sends_today > 0
+                  ? ` · ${identity.remaining_today} left`
+                  : ""}
+              </span>
+              <span>{identity.warmup.percent_complete}%</span>
+            </div>
+          </div>
+        ) : null,
+    }),
+    [identity, busy, checkDomain, checkAuthentication, startWarmup],
+  );
 
   const runFix = useMemo(
     () => (fixAction: string) => {
@@ -262,107 +319,32 @@ export function SendingIdentityDetailPage({ identityId }: { identityId: string }
           </Card>
         ) : null}
 
-        {/* Gate 1 — domain ownership */}
-        <div ref={dnsRef}>
-          <DnsRecordCard
-            record={identity.dns_record}
-            domain={identity.sending_domain}
-            verified={identity.domain_verified}
-            lastCheckedAt={identity.domain_checked_at}
-            checking={busy === "check_domain"}
-            onCheck={() => void checkDomain()}
-          />
-        </div>
+        {/*
+          THE THREE GATES — domain → authentication → warm-up.
 
-        {/* Gate 2 — authentication */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold">
-              Email authentication for {identity.sending_domain}
-            </CardTitle>
-            <p className="text-xs text-muted-foreground">
-              Gmail and Outlook throw away bulk mail from domains that do not
-              have all three. We read them straight from your DNS.
-            </p>
-          </CardHeader>
-          <CardContent>
-            <div className="divide-y divide-border/60">
-              <AuthRow
-                name="SPF"
-                pass={identity.spf_pass}
-                explanation="Says this mail provider is allowed to send for your domain."
-              />
-              <AuthRow
-                name="DKIM"
-                pass={identity.dkim_pass}
-                explanation="Signs each message so it cannot be forged or altered."
-              />
-              <AuthRow
-                name="DMARC"
-                pass={identity.dmarc_pass}
-                explanation="Tells receiving servers what to do with mail that fails the first two."
-              />
-            </div>
-            <div className="mt-3 flex items-center gap-3">
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={busy !== null}
-                onClick={() => void checkAuthentication()}
-              >
-                {busy === "check_authentication" ? (
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
-                )}
-                Check again
-              </Button>
-              {identity.auth_checked_at ? (
-                <span className="text-xs text-muted-foreground">
-                  Last checked {new Date(identity.auth_checked_at).toLocaleString()}
-                </span>
-              ) : null}
-            </div>
-          </CardContent>
-        </Card>
+          These were three hand-coded "Gate" cards in gate order. They are now
+          the declared `outreach.sending_identity` checklist on the ONE guided-
+          setup primitive (`lib/guided-setup/`), which adds what hand-rolling
+          could not: it remembers that the customer said they published the DNS
+          record, it re-verifies every gate when they come back days later, it
+          shows how far along they are, and it splits "not passing" from "not
+          checked yet" so a resolver timeout never reads as a broken domain.
 
-        {/* Gate 3 — warmup */}
-        {identity.warmup ? (
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold">
-                {identity.warmup.completed_at
-                  ? "Warm-up finished"
-                  : `Warming up — day ${identity.warmup.day} of ${identity.warmup.total_days}`}
-              </CardTitle>
-              <p className="text-xs text-muted-foreground">
-                A brand-new mailbox that sends at full volume gets its domain
-                blocked within days. It sends a little more each day until it has
-                a reputation.
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                <div
-                  className={cn(
-                    "h-full rounded-full transition-all",
-                    identity.warmup.completed_at ? "bg-emerald-500" : "bg-amber-500",
-                  )}
-                  style={{ width: `${identity.warmup.percent_complete}%` }}
-                />
-              </div>
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>
-                  Today&apos;s limit: {identity.effective_daily_cap} messages
-                  {identity.sends_today > 0
-                    ? ` · ${identity.remaining_today} left`
-                    : ""}
-                </span>
-                <span>{identity.warmup.percent_complete}%</span>
-              </div>
-            </CardContent>
-          </Card>
-        ) : null}
+          The copy, the DNS card and the warm-up bar are unchanged — they are
+          hosted inside their steps rather than replaced.
+        */}
+        <GuidedChecklist
+          definition={sendingIdentityChecklist}
+          context={checklistContext}
+          scope={
+            identity.organization_id
+              ? {
+                  organizationId: identity.organization_id,
+                  targetKey: identity.id,
+                }
+              : null
+          }
+        />
 
         {/* Health */}
         <HealthPanel health={identity.health} />

@@ -206,11 +206,16 @@ generic, and wanted by several features that are already built.
    unbypassable by construction. Consent is not paperwork: it is the **eligibility key** that
    decides whether a contact is reachable in lane A at all (§5.1).
 6. **Outcome attribution** (G8) — did the thing we wanted actually happen in the world?
-7. **Persistent guided checklist** (§5.3b) — a resumable checklist mixing machine-verified steps
-   with human-confirmed ones, that re-verifies on return. **The most reusable thing in this
-   document.** Wanted by: DNS/domain setup, mailbox warmup, Search Console connection, CMS site
-   launch, org onboarding, payment setup — every one of which is currently a hand-rolled worse
-   version or a dead-end error. Build it generic in `lib/`; outreach is merely its first consumer.
+7. **Persistent guided checklist** (§5.3b) — ✅ **BUILT AND LIVE 2026-08-14, in `lib/guided-setup/`.**
+   Three step kinds and no others — **auto** (we do it for them, unasked), **verified** (they do
+   it, we machine-check it live and show the reason AND the one-click fix), **confirmed** (exact
+   copy-paste values + a how-to + a tick). Declared as config, persisted per org in
+   `platform.guided_checklist_run`, survives days away, and **re-verifies on return** because a
+   step that passed can regress. Contract, laws, and the migration map for every other
+   hand-rolled setup flow: [`lib/guided-setup/FEATURE.md`](../../lib/guided-setup/FEATURE.md).
+   First consumer is `marketing.site_setup` (Search Console), NOT outreach — so the primitive is
+   already proven generic before sending identity touches it. **Sending identity (§5.2) declares
+   its steps and mounts `<GuidedChecklist>`; it does not build a wizard.**
 8. **Entitlement/tier gate** (§5.6) — "is this org allowed to do this?" as one authority every
    surface asks, rather than each feature inventing a check.
 
@@ -367,11 +372,29 @@ So every gate in §5.2 ships as a **guided step**, in this order of preference:
 3. **Guide + confirm** only where we genuinely cannot act or check: exact copy-paste values, the
    registrar-specific how-to, and an explicit "I've done this" the user checks off.
 
-**The primitive this forces out (see §4.7): a persistent, resumable guided checklist** that mixes
-machine-verified steps with human-confirmed steps, remembers where the user is, and re-verifies on
-return. **This is NOT an outreach-local wizard** — DNS setup, Search Console connection, CMS site
-launch, org onboarding and payment setup all want the same thing, and each has been hand-rolling a
-worse version. Build it generic in `lib/`, consume it here.
+**The primitive this forced out is BUILT — `lib/guided-setup/` (live 2026-08-14).** Those three
+preference levels ARE its three step kinds (`auto` / `verified` / `confirmed`), and it already
+carries the persistence, the re-verification on return, the "we couldn't check ≠ you didn't do it"
+distinction, and the rule that every failure ships its one-click fix. It was deliberately proven
+on a NON-outreach consumer first (`marketing.site_setup`, Search Console) so it could not come out
+shaped like one feature. Read [`lib/guided-setup/FEATURE.md`](../../lib/guided-setup/FEATURE.md)
+before building §5.2.
+
+**So the sending-identity work does not build a wizard.** It declares a
+`ChecklistDefinition` and mounts `<GuidedChecklist>`:
+
+| §5.2 gate | Kind | Notes |
+|---|---|---|
+| Mailbox connected (OAuth / SMTP) | **verified** | `fix.href` = the connect flow; extend `send_reviewed_gmail`'s auth, don't fork it |
+| Domain-ownership TXT challenge | **confirmed** for the record we generate (we cannot log into their registrar) + **verified** for the lookup that proves it landed | The generated value goes in `values()` with a Copy button — a hand-typed DNS record is how a non-technical expert gets a silent typo |
+| SPF / DKIM / DMARC each pass | **verified**, one step each | Each needs its OWN reason and fix; a single "authentication" step that fails tells the user nothing they can act on |
+| Warmup ramp | **auto** | State machine on the identity row; the step shows live ramp progress. `autoRun` stays true — warmup starting itself is the point |
+| "Only send from this mailbox for this business" | **confirmed** | Genuinely un-checkable |
+
+Two traps the primitive's laws already close, worth restating because outreach is where they
+bite hardest: an `unknown` check (DNS resolver timed out) must NEVER read as "your SPF is
+broken", and an `auto` step must never fire off a stale or unknown result — starting a warmup
+because a lookup failed is a real-world side effect on a real domain.
 
 ## 5.4 Compliance posture — US first, rest of world documented (Arman, 2026-08-14)
 

@@ -43,6 +43,7 @@ contract via `@/lib/api/typed-client` so a backend rename is a compile error.
 | Fetch + mutate hooks | `sending-identities/hooks.ts` |
 | List + org emergency stop | `../components/sending-identities/SendingIdentitiesPage.tsx` |
 | One mailbox: gates, health, audit | `../components/sending-identities/SendingIdentityDetailPage.tsx` |
+| **The three setup gates, as a DECLARED checklist** (domain → SPF/DKIM/DMARC → warm-up) | `sending-identities/sendingIdentityChecklist.tsx` on `lib/guided-setup/` — see [its FEATURE.md](../../../lib/guided-setup/FEATURE.md). **Do not add a fourth gate as another card**: add a step to that definition, or the surface goes back to having two checklist systems |
 | **Every problem beside its one-click fix** | `../components/sending-identities/IssueList.tsx` |
 | Copy-and-paste DNS proof record | `../components/sending-identities/DnsRecordCard.tsx` |
 | Deliverability tiles with verdicts | `../components/sending-identities/HealthPanel.tsx` |

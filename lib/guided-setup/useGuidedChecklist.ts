@@ -147,7 +147,6 @@ export function useGuidedChecklist<Ctx>(args: {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [definition.key, scopeKey, ready]);
 
   /** Save one mutation, queued behind whatever is already in flight. */
@@ -238,7 +237,6 @@ export function useGuidedChecklist<Ctx>(args: {
           }
         });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [definition.key, scopeKey, ready, checkNonce]);
 
   const recheck = useCallback(() => setCheckNonce((n) => n + 1), []);
