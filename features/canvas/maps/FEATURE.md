@@ -24,13 +24,13 @@ existing diagram renderer running in authoring mode.
 
 ### What already existed (the inventory that forced this answer)
 
-| Piece                                        | Where it already lives                                                                                                                                                                                                                                           |
-| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The data shape                               | `DiagramData` (`components/mardown-display/blocks/diagram/parseDiagramJSON.ts`)                                                                                                                                                                                  |
-| The AI-emittable form of that shape          | `diagram_spec` content-IR kind (`features/content-ir/kinds/diagram-spec.ts`) — an agent already emits maps in chat                                                                                                                                               |
-| The renderer                                 | `InteractiveDiagramBlock` — XYFlow 12, resizable boxes and visual sections, six shapes, chosen colors/icons/borders, dagre/radial/org/pedigree layouts, configurable arrows, snapping/background/minimap controls, PNG + JSON export, print/PDF, canvas hand-off |
-| Persistence, versioning, favourites, sharing | `canvas.canvas_items` + `canvasItemsService` (+ `canvas_save_user_version`, `canvas_publish`, `canvas_get_version_history` RPCs)                                                                                                                                 |
-| The list shell                               | `lib/entity-list` (`/agents/all`, `/transcripts`)                                                                                                                                                                                                                |
+| Piece                                        | Where it already lives                                                                                                                                                                                                                                                                |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The data shape                               | `DiagramData` (`components/mardown-display/blocks/diagram/parseDiagramJSON.ts`)                                                                                                                                                                                                       |
+| The AI-emittable form of that shape          | `diagram_spec` content-IR kind (`features/content-ir/kinds/diagram-spec.ts`) — an agent already emits maps in chat                                                                                                                                                                    |
+| The renderer                                 | `InteractiveDiagramBlock` — XYFlow 12, resizable boxes and visual sections, six shapes, chosen colors/icons/borders, four directional layouts plus grid/radial/org/pedigree, configurable arrows, snapping/background/minimap controls, PNG + JSON export, print/PDF, canvas hand-off |
+| Persistence, versioning, favourites, sharing | `canvas.canvas_items` + `canvasItemsService` (+ `canvas_save_user_version`, `canvas_publish`, `canvas_get_version_history` RPCs)                                                                                                                                                      |
+| The list shell                               | `lib/entity-list` (`/agents/all`, `/transcripts`)                                                                                                                                                                                                                                     |
 
 Four of the five pieces of "let users make maps" were already built. The only
 missing piece was **authoring**: nothing let a person rename a box, add one,
@@ -168,6 +168,19 @@ AI drafts, the person refines. Neither half needed a new system.
     its embedded title and real object counts. It is never hidden or deleted.
     Its next ordinary save canonicalizes it to object data through the same save
     path as every new map.
+13. **Organization choices are map data, not temporary view state.** The compact
+    Arrange menu offers top-to-bottom, left-to-right, bottom-to-top,
+    right-to-left, balanced grid, and around-a-center. It persists the chosen
+    algorithm and direction together with the measured-size-aware positions, so
+    long labels cannot overlap merely because the layout guessed a fixed box
+    width. Boxes inside sections keep their section-relative placement in grid
+    mode.
+14. **Right-click is the universal v3 menu.** The workspace wraps its XYFlow
+    host in `NonEditableContextMenu`; it never implements a second menu. Opening
+    it on a box or section makes that item the live surface selection, adds map
+    shortcuts through `extraSections`, and passes `matrx-user/maps` plus the same
+    `getApplicationScope` used by the shell header. Bound agents therefore read
+    the complete current map and the exact acting item from either entry point.
 
 ---
 
@@ -199,6 +212,14 @@ still; and point forward, backward, both ways, or nowhere. Boxes may use any of
 six shapes, a chosen semantic or custom color, an explicit icon, border style,
 alignment, and size. The map may use dots, lines, or crosses; snapping and the
 minimap are optional. These are presentation choices only.
+The small Arrange menu keeps the toolbar compact while offering four flow
+directions, a balanced grid, and a center-out layout; every choice persists.
+
+**Right-click a box.** The universal context menu selects the acting box or
+section, offers Duplicate and Add connected box where applicable, and includes
+the standard Copy/Export/Convert/Quick Actions plus the agents bound to
+`matrx-user/maps`. This is the same menu system used elsewhere, not map-only
+chrome.
 
 **Work with an agent.** The open editor is the declared `matrx-user/maps`
 surface. Its agent context includes `map_json`, convenient box/arrow lists,
@@ -228,6 +249,13 @@ sees the standard in-place confirmation before the canonical save path runs.
 
 ## Change Log
 
+- **2026-08-14** — Added a compact six-choice Arrange menu (four directions,
+  balanced grid, center-out), persisted layout algorithms/directions, and made
+  dagre/org/grid organization use XYFlow's measured dimensions so long labels
+  do not overlap. Added node-aware universal v3 right-click with map shortcuts
+  and full `matrx-user/maps` bound-agent context. Re-verified the code manifest,
+  route resolver, live DB value/write-target mirrors, authoring tests, and the
+  default chat-card contract.
 - **2026-08-14** — Made automatic diagram styling an explicit, overrideable part
   of the canonical document before render/persistence: colors, icons, shapes,
   borders, alignment, dimensions, arrow markers/weight/style/motion, layout,
