@@ -42,7 +42,10 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { studyService } from "@/features/education/study/service/studyService";
-import type { ItemMasteryRow } from "@/features/education/study/types";
+import type {
+  ItemMasteryRow,
+  SessionAiJournal,
+} from "@/features/education/study/types";
 import type { CardWithDetails } from "../../data/types";
 import type { ReviewResult } from "../../types";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
@@ -260,6 +263,48 @@ export function StudyDeck(props: StudyDeckProps) {
   const [helpLoading, setHelpLoading] = useState(false);
   const [helpAsked, setHelpAsked] = useState(false);
   const cardShownAtRef = useRef<number>(0);
+
+  // D151 — the session's AI journal (`study_session.metadata.ai`). The tutor
+  // answers and coaching tips this session paid for are written there on
+  // arrival by the lanes themselves; reading them back is what makes coming
+  // BACK to a card show the answer instead of an empty panel.
+  const [journal, setJournal] = useState<SessionAiJournal>({});
+  useEffect(() => {
+    if (!sessionId) return;
+    let cancelled = false;
+    void studyService.getSession(sessionId).then((res) => {
+      if (cancelled || !res.data?.session) return;
+      setJournal(studyService.readSessionJournal(res.data.session));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionId]);
+
+  /** The newest journalled tutor answer for a card, or null. */
+  const storedHelpFor = (cardId: string): HelpLiveResult | null => {
+    const rows = journal.helpAnswers ?? [];
+    for (let i = rows.length - 1; i >= 0; i--) {
+      if (rows[i].cardId !== cardId) continue;
+      return {
+        answer: rows[i].answer,
+        hintLevel: rows[i].hintLevel as HelpLiveResult["hintLevel"],
+        followups: rows[i].followups,
+        trust: coerceTrustEnvelope(rows[i].trust),
+      };
+    }
+    return null;
+  };
+
+  /** The newest journalled coaching tip for a card, or null. */
+  const storedTipFor = (cardId: string): string | null => {
+    const rows = journal.coachTips ?? [];
+    for (let i = rows.length - 1; i >= 0; i--) {
+      if (rows[i].cardId === cardId) return rows[i].tip;
+    }
+    return null;
+  };
+
   useEffect(() => {
     cardShownAtRef.current = Date.now();
     setHelp(null);
@@ -267,6 +312,11 @@ export function StudyDeck(props: StudyDeckProps) {
     setAskOpen(false);
     setQuestion("");
   }, [current?.id]);
+
+  // What the panel actually shows: this card's live answer, else the one this
+  // session already paid for.
+  const shownHelp = help ?? (current ? storedHelpFor(current.id) : null);
+  const shownTip = current ? storedTipFor(current.id) : null;
 
   const askAi = async (): Promise<void> => {
     if (!current) return;
@@ -291,6 +341,9 @@ export function StudyDeck(props: StudyDeckProps) {
           onConversationCreated: live.bind,
           front: current.front,
           back: current.back,
+          // D151 — the lane journals the answer on arrival against this session.
+          cardId: current.id,
+          sessionId,
           question: question.trim() || undefined,
           sessionScore:
             progress.done > 0 ? progress.correct / progress.done : null,
@@ -303,6 +356,25 @@ export function StudyDeck(props: StudyDeckProps) {
         }),
       );
       setHelp(result);
+      // Mirror it into the local journal so navigating away and back shows the
+      // answer immediately, without a refetch.
+      if (result) {
+        setJournal((prev) => ({
+          ...prev,
+          helpAnswers: [
+            ...(prev.helpAnswers ?? []),
+            {
+              cardId: current.id,
+              question: question.trim(),
+              answer: result.answer,
+              hintLevel: result.hintLevel,
+              followups: result.followups,
+              trust: result.trust,
+              at: new Date().toISOString(),
+            },
+          ],
+        }));
+      }
     } finally {
       setHelpLoading(false);
     }
@@ -434,9 +506,30 @@ export function StudyDeck(props: StudyDeckProps) {
       // fc_micro_coach agent is authored (features/flashcards/data/agents.ts).
       if (ok && card) {
         void dispatch(
-          microCoach({ front: card.front, back: card.back, result }),
+          microCoach({
+            front: card.front,
+            back: card.back,
+            result,
+            // D151 — the tip is journalled on the session by the lane itself,
+            // so it survives the card advance that the toast never did.
+            cardId: card.id,
+            sessionId,
+          }),
         ).then((tip) => {
-          if (tip) toast.info(tip, { duration: 8000 });
+          if (!tip) return;
+          toast.info(tip, { duration: 8000 });
+          setJournal((prev) => ({
+            ...prev,
+            coachTips: [
+              ...(prev.coachTips ?? []),
+              {
+                cardId: card.id,
+                result,
+                tip,
+                at: new Date().toISOString(),
+              },
+            ],
+          }));
         });
       }
       return ok;
@@ -632,6 +725,8 @@ export function StudyDeck(props: StudyDeckProps) {
                 trust={coerceTrustEnvelope(current.metadata)}
                 front={current.front}
                 back={current.back ?? ""}
+                cardId={current.id}
+                cardMetadata={current.metadata}
                 className="mt-2"
               />
             )}
@@ -711,7 +806,8 @@ export function StudyDeck(props: StudyDeckProps) {
                 onToggle={() => setAskOpen((o) => !o)}
                 onAsk={() => void askAi()}
                 loading={helpLoading}
-                result={help}
+                result={shownHelp}
+                tip={shownTip}
                 unavailable={helpAsked && !helpLoading && !help}
               />
               {/* P2 AskTutor — escalate from the one-shot nudge above into the
@@ -736,9 +832,11 @@ export function StudyDeck(props: StudyDeckProps) {
               fires until tapped; skipped for matching cards (no single answer). */}
           {enableMemoryAids && current && currentKind !== CARD_KIND.matching && (
             <MemoryAidButton
+              cardId={current.id}
               front={current.front}
               back={current.back ?? ""}
               topic={current.topic}
+              existingDetails={current.details}
             />
           )}
         </div>
@@ -780,6 +878,7 @@ function AskAiPanel({
   onAsk,
   loading,
   result,
+  tip,
   unavailable,
 }: {
   open: boolean;
@@ -789,6 +888,8 @@ function AskAiPanel({
   onAsk: () => void;
   loading: boolean;
   result: HelpLiveResult | null;
+  /** The coaching tip this session already produced for this card (D151). */
+  tip: string | null;
   unavailable: boolean;
 }) {
   return (
@@ -858,6 +959,14 @@ function AskAiPanel({
             )}
           </div>
         )
+      )}
+      {/* D151 — the per-card coaching tip this session paid for. It used to be
+          an 8-second toast and nothing else; now it stays with its card. */}
+      {tip && (
+        <div className="flex items-start gap-1.5 rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+          <GraduationCap className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <span className="text-foreground">{tip}</span>
+        </div>
       )}
       {unavailable && (
         <div className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">

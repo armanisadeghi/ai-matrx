@@ -9,14 +9,17 @@
 // session is unaffected.
 //
 // The agent round-trip runs through the canonical headless primitive
-// (`runHeadlessAgentJson`, D126) — this lane only owns context variables and
-// result coercion. Nothing is persisted; the answer surfaces transiently.
+// (`runHeadlessAgentJson`, D126) — this lane owns context variables, result
+// coercion, and (D151) PERSISTENCE: given a `sessionId`, the answer is written
+// to the session's AI journal by the primitive's `onResult` seam the instant it
+// lands, so advancing the card can no longer destroy a paid tutor answer.
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import {
   livePosture,
   runHeadlessAgentJson,
 } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
+import { studyService } from "@/features/education/study/service/studyService";
 import { getFcTutorAgentConfig } from "./config";
 import {
   coerceTrustEnvelope,
@@ -46,6 +49,16 @@ export interface HelpLiveContext {
   agentId?: string | null;
   /** Live handle — the tutor's answer streams where the caller mounts it. */
   onConversationCreated?: (conversationId: string) => void;
+  /** The card being asked about — the key the answer is journalled under. */
+  cardId?: string | null;
+  /**
+   * The open `study_session`. With it, the tutor's answer is written to
+   * `study_session.metadata.ai.helpAnswers` the instant it arrives (D151).
+   * This is the most expensive single-card lane in the product — it is built
+   * from a DB round-trip for the due count plus this card's attempt history —
+   * and it used to be erased by the next card with no trace anywhere.
+   */
+  sessionId?: string | null;
 }
 
 export interface HelpLiveResult {
@@ -55,6 +68,32 @@ export interface HelpLiveResult {
   /** P0 TrustEnvelope — how grounded this answer is; null on refusal render
    *  the honest-refusal presentation instead of a normal answer bubble. */
   trust: TrustEnvelope | null;
+}
+
+/**
+ * Narrow the agent's raw JSON to the lane's contract. Shared by the awaited
+ * return AND the persistence seam so the row we store and the object we render
+ * can never be two different readings of the same run.
+ */
+function readHelp(data: unknown): HelpLiveResult | null {
+  if (!data || typeof data !== "object") return null;
+  const r = data as Record<string, unknown>;
+  const answer = typeof r.answer === "string" ? r.answer : "";
+  if (!answer) return null;
+  const hintLevel =
+    r.hint_level === "nudge" ||
+    r.hint_level === "partial" ||
+    r.hint_level === "full"
+      ? r.hint_level
+      : "partial";
+  return {
+    answer,
+    hintLevel,
+    followups: Array.isArray(r.followups)
+      ? r.followups.filter((x): x is string => typeof x === "string")
+      : [],
+    trust: coerceTrustEnvelope(r.trust),
+  };
 }
 
 /** Returns help, or null when no help agent is configured / it failed. */
@@ -89,28 +128,42 @@ export function helpLive(ctx: HelpLiveContext) {
         },
         timeoutMs: 60_000,
         pollIntervalMs: 150,
+        // 🚨 D151 — persist on arrival, not on the caller's `.then`. The learner
+        // routinely advances the card while this is in flight; the answer must
+        // outlive the component that asked for it.
+        ...(ctx.sessionId
+          ? {
+              onResult: async (run) => {
+                const help = readHelp(run.data);
+                if (!help) return;
+                const saved = await studyService.appendSessionArtifact(
+                  ctx.sessionId as string,
+                  {
+                    kind: "helpAnswer",
+                    entry: {
+                      cardId: ctx.cardId ?? "",
+                      question: ctx.question?.trim() ?? "",
+                      answer: help.answer,
+                      hintLevel: help.hintLevel,
+                      followups: help.followups,
+                      trust: help.trust,
+                      at: new Date().toISOString(),
+                    },
+                  },
+                );
+                if (saved.error) {
+                  console.error(
+                    "[flashcards.helpLive] answer generated but NOT saved:",
+                    saved.error,
+                  );
+                }
+              },
+            }
+          : {}),
       });
 
       // Partial-tolerant: an errored stream may still carry a usable object.
-      const raw = result.data;
-      if (!raw || typeof raw !== "object") return null;
-      const r = raw as Record<string, unknown>;
-      const answer = typeof r.answer === "string" ? r.answer : "";
-      if (!answer) return null;
-      const hintLevel =
-        r.hint_level === "nudge" ||
-        r.hint_level === "partial" ||
-        r.hint_level === "full"
-          ? r.hint_level
-          : "partial";
-      return {
-        answer,
-        hintLevel,
-        followups: Array.isArray(r.followups)
-          ? r.followups.filter((x): x is string => typeof x === "string")
-          : [],
-        trust: coerceTrustEnvelope(r.trust),
-      };
+      return readHelp(result.data);
     } catch (err) {
       console.error("[flashcards.helpLive] failed:", err);
       return null;

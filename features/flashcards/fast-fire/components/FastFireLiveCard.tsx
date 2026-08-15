@@ -24,6 +24,9 @@ import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { getFastFireAgentConfig } from "../config";
 import { helpLive, type HelpLiveResult } from "../agents/helpLive.thunk";
+import { studyService } from "@/features/education/study/service/studyService";
+import type { SessionAiJournal } from "@/features/education/study/types";
+import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import {
   selectFastFirePhase,
   selectFastFireCurrentCard,
@@ -32,6 +35,7 @@ import {
   selectFastFireConfig,
   selectFastFireScoreboard,
   selectPendingGradeCount,
+  selectFastFireSessionId,
 } from "../redux/fastFire.selectors";
 import { FastFireTimerBar } from "./FastFireTimerBar";
 import { SpokenFrontPlayer } from "./SpokenFrontPlayer";
@@ -63,6 +67,7 @@ export function FastFireLiveCard({
   const config = useAppSelector(selectFastFireConfig);
   const board = useAppSelector(selectFastFireScoreboard);
   const pending = useAppSelector(selectPendingGradeCount);
+  const sessionId = useAppSelector(selectFastFireSessionId);
 
   const [help, setHelp] = useState<HelpLiveResult | null>(null);
   const [helpLoading, setHelpLoading] = useState(false);
@@ -72,11 +77,45 @@ export function FastFireLiveCard({
   // L3: clear any help text when the card changes, so the previous card's help
   // doesn't linger over the next card. Keyed on the card id. Also resets the
   // "time on card" clock the help lane reports as real context.
+  //
+  // D151: clearing the DISPLAY is correct; it used to also destroy the answer.
+  // The lane now journals every answer on the drill's session the instant it
+  // lands, and `journal` below reads it back — so a timed-out card whose help
+  // arrived a beat late is still recoverable instead of simply gone.
   useEffect(() => {
     setHelp(null);
     setHelpUnavailable(false);
     cardShownAtRef.current = Date.now();
   }, [card?.id]);
+
+  const [journal, setJournal] = useState<SessionAiJournal>({});
+  useEffect(() => {
+    if (!sessionId) return;
+    let cancelled = false;
+    void studyService.getSession(sessionId).then((res) => {
+      if (cancelled || !res.data?.session) return;
+      setJournal(studyService.readSessionJournal(res.data.session));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionId]);
+
+  // This card's live answer, else the one this drill already paid for.
+  const storedHelp = ((): HelpLiveResult | null => {
+    const rows = journal.helpAnswers ?? [];
+    for (let i = rows.length - 1; i >= 0; i--) {
+      if (rows[i].cardId !== card?.id) continue;
+      return {
+        answer: rows[i].answer,
+        hintLevel: rows[i].hintLevel as HelpLiveResult["hintLevel"],
+        followups: rows[i].followups,
+        trust: coerceTrustEnvelope(rows[i].trust),
+      };
+    }
+    return null;
+  })();
+  const shownHelp = help ?? storedHelp;
 
   if (!card) return null;
 
@@ -187,20 +226,20 @@ export function FastFireLiveCard({
             settings to enable it.
           </div>
         )}
-        {help && help.trust?.confidence === "not_in_material" ? (
-          <RefusalNotice message={help.answer} />
+        {shownHelp && shownHelp.trust?.confidence === "not_in_material" ? (
+          <RefusalNotice message={shownHelp.answer} />
         ) : (
-          help && (
+          shownHelp && (
             <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
-              {help.trust && (
+              {shownHelp.trust && (
                 <div className="mb-1.5 flex items-center gap-2">
-                  <ConfidenceBadge confidence={help.trust.confidence} />
+                  <ConfidenceBadge confidence={shownHelp.trust.confidence} />
                 </div>
               )}
-              {help.answer}
-              {help.trust && help.trust.citations.length > 0 && (
+              {shownHelp.answer}
+              {shownHelp.trust && shownHelp.trust.citations.length > 0 && (
                 <div className="mt-1.5">
-                  <SourceCitations trust={help.trust} label="Sources" />
+                  <SourceCitations trust={shownHelp.trust} label="Sources" />
                 </div>
               )}
             </div>

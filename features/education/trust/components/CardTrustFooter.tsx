@@ -12,7 +12,7 @@
 
 import { ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { TrustEnvelope } from "../types";
+import { readStoredVerification, type TrustEnvelope } from "../types";
 import { ConfidenceBadge } from "./ConfidenceBadge";
 import { SourceCitations } from "./SourceCitations";
 import { VerifyAgainstSourceButton } from "./VerifyAgainstSourceButton";
@@ -24,6 +24,14 @@ export interface CardTrustFooterProps {
   className?: string;
   /** Hide the "Verify against source" action (e.g. read-only public viewer). */
   hideVerify?: boolean;
+  /**
+   * The card this footer belongs to (D151). Pass both and the verify verdict is
+   * persisted on the card, shown on return instead of re-run, and its suggested
+   * correction becomes one-click applicable.
+   */
+  cardId?: string;
+  /** The card's raw `metadata` — where the stored verdict lives. */
+  cardMetadata?: unknown;
 }
 
 export function CardTrustFooter({
@@ -32,6 +40,8 @@ export function CardTrustFooter({
   back,
   className,
   hideVerify,
+  cardId,
+  cardMetadata,
 }: CardTrustFooterProps) {
   if (!trust) return null;
   const citations = trust.citations ?? [];
@@ -55,7 +65,15 @@ export function CardTrustFooter({
 
       <SourceCitations trust={trust} label={citations.length > 0 ? "Sources" : null} />
 
-      {!hideVerify && <VerifyAgainstSourceButton trust={trust} front={front} back={back} />}
+      {!hideVerify && (
+        <VerifyAgainstSourceButton
+          trust={trust}
+          front={front}
+          back={back}
+          {...(cardId ? { subject: { kind: "fc_card" as const, id: cardId } } : {})}
+          stored={readStoredVerification(cardMetadata)}
+        />
+      )}
     </div>
   );
 }

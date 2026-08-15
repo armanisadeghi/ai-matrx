@@ -278,6 +278,68 @@ export interface VerifyResult {
   suggestedFix: string | null;
 }
 
+/**
+ * The durable row a verdict is ABOUT (FOUND_DEFECTS D151). A verification that
+ * lives only in component state means the same card is re-verified — and re-paid
+ * for — forever, and a `suggestedFix` the learner can't apply is a paid answer
+ * thrown away twice over. Pass a subject and the verdict is persisted the
+ * instant it lands, and the correction becomes a one-click action.
+ *
+ * Only `fc_card` today: it is the only verified item with a durable row and an
+ * editable answer field. Adding a kind means adding its read/write pair beside
+ * the flashcard one — never a second verification shape.
+ */
+export interface VerifySubject {
+  kind: "fc_card";
+  id: string;
+}
+
+/** A verdict as persisted on the subject row (`fc_card.metadata.trust_verification`). */
+export interface StoredVerification {
+  status: VerifyStatus;
+  explanation: string;
+  suggestedFix: string | null;
+  /**
+   * The answer text that was checked. A later edit to the card makes the stored
+   * verdict stale — the UI says so rather than showing a verdict about text
+   * that no longer exists.
+   */
+  verifiedBack: string;
+  verifiedAt: string;
+  /** Set when the learner applied `suggestedFix` onto the card. */
+  appliedAt: string | null;
+}
+
+/** The `fc_card.metadata` key a stored verification lives under. */
+export const VERIFICATION_KEY = "trust_verification";
+
+/** Read a persisted verdict off a subject row's `metadata` (null when absent). */
+export function readStoredVerification(
+  metadata: unknown,
+): StoredVerification | null {
+  if (!isRecord(metadata)) return null;
+  const raw = metadata[VERIFICATION_KEY];
+  if (!isRecord(raw)) return null;
+  const statusRaw = asString(raw.status);
+  if (
+    statusRaw !== "verified" &&
+    statusRaw !== "drifted" &&
+    statusRaw !== "unverifiable"
+  ) {
+    return null;
+  }
+  const suggestedFix = asString(raw.suggestedFix);
+  const appliedAt = asString(raw.appliedAt);
+  return {
+    status: statusRaw,
+    explanation: asString(raw.explanation),
+    suggestedFix: suggestedFix ? suggestedFix : null,
+    verifiedBack: asString(raw.verifiedBack),
+    verifiedAt: asString(raw.verifiedAt),
+    appliedAt: appliedAt ? appliedAt : null,
+  };
+}
+
 // ── Coercion helpers (never throw; narrow agent output → the contract) ───────
 
 const isRecord = (v: unknown): v is Record<string, unknown> =>

@@ -16,6 +16,7 @@
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
+import { studyService } from "@/features/education/study/service/studyService";
 import type { ReviewResult } from "@/features/flashcards/types";
 import { getFcTutorAgentConfig } from "./config";
 
@@ -23,9 +24,25 @@ export interface MicroCoachContext {
   front: string;
   back: string;
   result: ReviewResult;
+  /** The card this tip is about — the key it is journalled under. */
+  cardId: string;
+  /**
+   * The open `study_session` this grade belongs to. With it, the tip lands in
+   * `study_session.metadata.ai.coachTips` the instant it arrives (D151) — the
+   * learner can re-read every tip from the session afterwards instead of having
+   * one 8-second toast and nothing else. Omit ONLY for a sessionless surface.
+   */
+  sessionId?: string | null;
   /** This learner's prior attempts on this card (newest first), if any. */
   priorAttempts?: unknown[];
   agentId?: string | null;
+}
+
+/** The tip text this lane's agent produced, or null when there is no signal. */
+function readTip(data: unknown): string | null {
+  if (!data || typeof data !== "object") return null;
+  const tip = (data as Record<string, unknown>).tip;
+  return typeof tip === "string" && tip.trim().length > 0 ? tip : null;
 }
 
 /** One-line coaching tip after a grade, or null when unconfigured / no-signal. */
@@ -52,12 +69,38 @@ export function microCoach(ctx: MicroCoachContext) {
         },
         timeoutMs: 20_000,
         pollIntervalMs: 100,
+        // 🚨 D151 — this lane fires on EVERY graded card and the learner has
+        // almost certainly advanced by the time it answers. Persist on arrival,
+        // inside the primitive, so the tip survives the card that triggered it.
+        ...(ctx.sessionId
+          ? {
+              onResult: async (run) => {
+                const tip = readTip(run.data);
+                if (!tip) return;
+                const saved = await studyService.appendSessionArtifact(
+                  ctx.sessionId as string,
+                  {
+                    kind: "coachTip",
+                    entry: {
+                      cardId: ctx.cardId,
+                      result: ctx.result,
+                      tip,
+                      at: new Date().toISOString(),
+                    },
+                  },
+                );
+                if (saved.error) {
+                  console.error(
+                    "[flashcards.microCoach] tip generated but NOT saved:",
+                    saved.error,
+                  );
+                }
+              },
+            }
+          : {}),
       });
 
-      const raw = result.data;
-      if (!raw || typeof raw !== "object") return null;
-      const tip = (raw as Record<string, unknown>).tip;
-      return typeof tip === "string" && tip.trim().length > 0 ? tip : null;
+      return readTip(result.data);
     } catch (err) {
       console.error("[flashcards.microCoach] failed:", err);
       return null;

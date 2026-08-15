@@ -999,6 +999,8 @@ function CardEditor({
         trust={coerceTrustEnvelope(card.metadata)}
         front={front}
         back={back ?? ""}
+        cardId={card.id}
+        cardMetadata={card.metadata}
         className="mt-2"
       />
     </div>

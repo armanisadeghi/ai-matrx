@@ -23,6 +23,7 @@ import {
   selectFastFireScoreboard,
   selectGradesInOrder,
   selectFastFireCards,
+  selectFastFireSessionId,
 } from "../redux/fastFire.selectors";
 
 export type { HelpLiveResult };
@@ -79,6 +80,11 @@ export function helpLive(args: HelpLiveArgs) {
         back: args.back,
         question: args.question,
         agentId: helpAgentId,
+        // D151: the drill advances on a timer, so the asking card is usually
+        // gone before the answer arrives. Journal it against the drill's own
+        // session so nothing paid for is lost to the deadline.
+        cardId: args.cardId,
+        sessionId: selectFastFireSessionId(state),
         sessionScore: board.avgScorePct != null ? board.avgScorePct / 100 : null,
         recentCorrect,
         recentWrong,
