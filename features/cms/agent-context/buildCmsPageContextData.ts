@@ -32,6 +32,7 @@ import {
 } from "../utils/pageUrls";
 import { buildSiteStructureXml } from "../utils/buildSiteStructureXml";
 import type { ResearchLineageEntry } from "../hooks/useCmsResearchLineage";
+import type { CmsPagePlanContext } from "../hooks/useCmsPagePlanContext";
 
 export type CmsPageEditorTab =
   | "html"
@@ -82,6 +83,8 @@ export interface BuildCmsPageContextDataArgs {
   researchLineage: readonly ResearchLineageEntry[];
   researchLineageStatus: "idle" | "loading" | "ready" | "error";
   researchLineageError?: string | null;
+  /** Full plan input, not merely the provenance id. */
+  planContext: CmsPagePlanContext;
 }
 
 function activeTabContent(
@@ -133,6 +136,7 @@ export function buildCmsPageContextData(
     researchLineage,
     researchLineageStatus,
     researchLineageError,
+    planContext,
   } = args;
 
   const activeContent = activeTabContent(
@@ -301,6 +305,7 @@ export function buildCmsPageContextData(
       error: researchLineageError ?? null,
       items: researchLineage,
     },
+    plan_context: { ...planContext },
     content: activeContent || undefined,
     editor_error: editorError || undefined,
     meta_title: metaTitle || undefined,

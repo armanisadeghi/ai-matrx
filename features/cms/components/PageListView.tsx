@@ -2,7 +2,11 @@
 
 import React, { useState, useMemo } from "react";
 import { idMatchesQuery } from "@/utils/search-scoring";
-import type { ClientPageSummary } from "@/features/cms/types";
+import type {
+  ClientComponent,
+  ClientPageSummary,
+  ClientSite,
+} from "@/features/cms/types";
 import {
   classifyContentVolume,
   type ContentVolume,
@@ -12,13 +16,19 @@ import { SurfaceRoleAgentButton } from "@/features/surfaces/components/chrome/Su
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { ItemMenu } from "@/components/official/item/ItemMenu";
+import { buildCmsPageMenu } from "@/features/cms/actions/buildCmsPageMenu";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  CmsPageAiActionDialog,
+  type CmsPageAiIntent,
+} from "@/features/cms/components/CmsPageAiActionDialog";
+import {
+  activeSiteDomain,
+  clientPageUrl,
+  sitePreviewToken,
+} from "@/features/cms/utils/pageUrls";
+import { cmsPageEditorHref } from "@/features/cms/utils/cmsRoutes";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import {
   Search,
   X,
@@ -26,9 +36,6 @@ import {
   AlertCircle,
   FileText,
   MoreHorizontal,
-  Pencil,
-  Trash2,
-  Eye,
   ArrowUpDown,
   RefreshCw,
   Home,
@@ -42,11 +49,14 @@ import {
 } from "lucide-react";
 
 interface PageListViewProps {
+  site: ClientSite;
   pages: ClientPageSummary[];
+  components: readonly ClientComponent[];
   isLoading: boolean;
   error: string | null;
   onOpenPage: (pageId: string) => void;
   onDeletePage: (pageId: string) => void;
+  onPublishPage: (pageId: string) => void | Promise<void>;
   onRefresh: () => void;
   /**
    * Row the user is pointing at, so the `matrx-user/cms-site` surface can emit
@@ -91,11 +101,14 @@ type SortField = "title" | "category" | "updated_at" | "sort_order";
 type SortDir = "asc" | "desc";
 
 export default function PageListView({
+  site,
   pages,
+  components,
   isLoading,
   error,
   onOpenPage,
   onDeletePage,
+  onPublishPage,
   onRefresh,
   onFocusPage,
 }: PageListViewProps) {
@@ -106,6 +119,14 @@ export default function PageListView({
   const [deleteTarget, setDeleteTarget] = useState<ClientPageSummary | null>(
     null,
   );
+  const [aiTarget, setAiTarget] = useState<{
+    page: ClientPageSummary;
+    intent: CmsPageAiIntent;
+  } | null>(null);
+  const [publishTarget, setPublishTarget] = useState<ClientPageSummary | null>(
+    null,
+  );
+  const [isPublishing, setIsPublishing] = useState(false);
 
   // ── Derive categories from data ──────────────────────────────────────
   const categories = useMemo(() => {
@@ -331,6 +352,28 @@ export default function PageListView({
                   const typeColor =
                     PAGE_TYPE_COLORS[page.page_type ?? ""] ??
                     PAGE_TYPE_COLORS.standard;
+                  const editorHref = cmsPageEditorHref(site.id, page.id);
+                  const previewHref = clientPageUrl({
+                    siteSlug: site.slug,
+                    slug: page.slug,
+                    route: page.route,
+                    category: page.category,
+                    preview: true,
+                    previewToken: sitePreviewToken(site),
+                  });
+                  const liveHref = page.is_published
+                    ? clientPageUrl({
+                        siteSlug: site.slug,
+                        slug: page.slug,
+                        route: page.route,
+                        category: page.category,
+                        domain: activeSiteDomain(site),
+                      })
+                    : null;
+                  const planHref =
+                    site.web_site_id && page.plan_node_id
+                      ? `${marketingRoutes.contentPlanSite(site.web_site_id)}?node=${encodeURIComponent(page.plan_node_id)}`
+                      : null;
 
                   return (
                     <tr
@@ -447,49 +490,35 @@ export default function PageListView({
                         </span>
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-40">
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onOpenPage(page.id);
-                              }}
-                            >
-                              <Pencil className="h-3.5 w-3.5 mr-2" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onOpenPage(page.id);
-                              }}
-                            >
-                              <Eye className="h-3.5 w-3.5 mr-2" />
-                              Preview
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              className="text-destructive"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setDeleteTarget(page);
-                              }}
-                            >
-                              <Trash2 className="h-3.5 w-3.5 mr-2" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <ItemMenu
+                          align="end"
+                          contentMinWidth="15rem"
+                          config={() =>
+                            buildCmsPageMenu({
+                              page,
+                              editorHref,
+                              previewHref,
+                              liveHref,
+                              planHref,
+                              onAi: () =>
+                                setAiTarget({ page, intent: "build-edit" }),
+                              onReview: () =>
+                                setAiTarget({ page, intent: "review" }),
+                              onPublish: () => setPublishTarget(page),
+                              onDelete: () => setDeleteTarget(page),
+                            })
+                          }
+                        >
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            aria-label={`Actions for ${page.title}`}
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </ItemMenu>
                       </td>
                     </tr>
                   );
@@ -528,6 +557,47 @@ export default function PageListView({
           }
         }}
       />
+      <ConfirmDialog
+        open={!!publishTarget}
+        onOpenChange={(open) => {
+          if (!open && !isPublishing) setPublishTarget(null);
+        }}
+        title="Publish pending draft"
+        description={
+          <>
+            Publish the saved draft for <b>{publishTarget?.title}</b> to the
+            live website?
+          </>
+        }
+        confirmLabel="Publish"
+        busy={isPublishing}
+        onConfirm={async () => {
+          if (!publishTarget) return;
+          setIsPublishing(true);
+          try {
+            await onPublishPage(publishTarget.id);
+            setPublishTarget(null);
+          } finally {
+            setIsPublishing(false);
+          }
+        }}
+      />
+      {aiTarget ? (
+        <CmsPageAiActionDialog
+          open
+          onOpenChange={(next) => {
+            if (!next) setAiTarget(null);
+          }}
+          intent={aiTarget.intent}
+          site={site}
+          pages={pages}
+          components={components}
+          page={aiTarget.page}
+          editorHref={cmsPageEditorHref(site.id, aiTarget.page.id)}
+          planHref={`${cmsPageEditorHref(site.id, aiTarget.page.id)}?tab=plan`}
+          onPageChanged={onRefresh}
+        />
+      ) : null}
     </div>
   );
 }

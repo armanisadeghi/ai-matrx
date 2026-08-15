@@ -197,6 +197,17 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 175,
     group: "site_framing",
   },
+  {
+    name: "plan_context",
+    label: "Linked content plan",
+    description:
+      "The complete plan.node behind this CMS page, not merely its id. Object: { status, error, node }; node includes label, route, type, status, resolved target keyword, brief lines, planned meta, attributes, and updated_at. Always emitted, with status 'unlinked', 'loading', 'ready', or 'error'. Read this before building or editing the page.",
+    valueType: "object",
+    alwaysAvailable: true,
+    typicalCharCount: 2400,
+    sortOrder: 180,
+    group: "site_framing",
+  },
 
   // ── Page identity ─────────────────────────────────────────────────────
   {
@@ -702,6 +713,7 @@ export const cmsPageManifest: SurfaceManifest = {
   urlPattern: "/cms/[siteId]/pages/[pageId]",
   intro: `<surface_intro>
 You are in the CMS page editor — the primary authoring surface for one page of a multi-page client website. Start from site_structure: it is the entire site in compact XML (every page's routing and status, every shared component) with this page marked current="true", so you can orient and navigate without asking the user.
+Before writing, read plan_context and research_lineage. plan_context contains the linked page brief, target keyword, and planned metadata; research_lineage contains the evidence available to ground claims. Never treat plan_node_id alone as planning context.
 agent_write_policy governs everything you may do: "blocked" means propose only, "draft_only" means you may save a draft but a human must publish, "full" means you may publish directly. Never publish under draft_only.
 This system has draft/live twins. The editor buffers you receive (html_content, css_content, js_content, and every SEO/settings value) already resolve to the draft when one exists and include the user's unsaved edits — has_draft and is_published tell you how that relates to what the live site serves, and preview_url is how a human checks unpublished work.
 html_content is a BODY FRAGMENT, not a whole document: the site's chrome, shared header/footer (see page_layout) and site_global_css wrap it. Do not emit doctype/head/html tags into it. Page CSS/JS are page-specific additions on top of the site-wide stylesheet.
@@ -778,6 +790,7 @@ export function createCmsPageScope(values: {
   show_in_nav: boolean;
   sort_order: number;
   research_lineage: Record<string, unknown>;
+  plan_context: Record<string, unknown>;
   // alwaysAvailable: false → optional
   site_domain?: string;
   site_global_css?: string;

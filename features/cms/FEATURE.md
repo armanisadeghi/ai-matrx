@@ -93,13 +93,13 @@ Five `ui_surface` rows under `matrx-user/` give every CMS/HTML-page route a cano
 context menu with live agent context — see the `surface-authoring` and `surface-pro-rollout` skills
 for the general contract this section instantiates.
 
-| Surface                    | Route(s)                                        | Menu                                                                                                      | Notes                                                                                                                                                                  |
-| -------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `matrx-user/cms`           | `/cms`                                          | `NonEditableContextMenu` (page + per-card)                                                                | List/entry hub — `owned_sites_summary`, no `site_structure`. **`readiness: verified`**                                                                                 |
-| `matrx-user/cms-site`      | `/cms/[siteId]` + all four tabs                 | `NonEditableContextMenu`                                                                                  | Site workspace; first surface to emit `site_structure`. **Inherits `matrx-user/cms`** (the layout genuinely loads the switcher's site list). **`readiness: verified`** |
-| `matrx-user/cms-page`      | `/cms/[siteId]/pages/[pageId]`, `.../pages/new` | `EditableContextMenu` + `ProTextarea` on HTML/CSS/JS tabs                                                 | **Primary editor** — `agentRoles`: `page_editor`, `seo_editor`, `publish_reviewer`                                                                                     |
+| Surface                    | Route(s)                                        | Menu                                                                                                      | Notes                                                                                                                                                                                                        |
+| -------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `matrx-user/cms`           | `/cms`                                          | `NonEditableContextMenu` (page + per-card)                                                                | List/entry hub — `owned_sites_summary`, no `site_structure`. **`readiness: verified`**                                                                                                                       |
+| `matrx-user/cms-site`      | `/cms/[siteId]` + all four tabs                 | `NonEditableContextMenu`                                                                                  | Site workspace; first surface to emit `site_structure`. **Inherits `matrx-user/cms`** (the layout genuinely loads the switcher's site list). **`readiness: verified`**                                       |
+| `matrx-user/cms-page`      | `/cms/[siteId]/pages/[pageId]`, `.../pages/new` | `EditableContextMenu` + `ProTextarea` on HTML/CSS/JS tabs                                                 | **Primary editor** — `agentRoles`: `page_editor`, `seo_editor`, `publish_reviewer`; `plan_context` carries the complete linked brief + keyword rather than an ID alone                                       |
 | `matrx-user/cms-component` | `/cms/[siteId]/components`                      | `EditableContextMenu` + `ProTextarea` (HTML/CSS) + `NonEditableContextMenu` (cards)                       | Shared header/footer editor. Agent-**writable**: 2 ask-policy draft `writeTargets` (`component_html_content`, `component_css_content`), provider + handlers in `app/(core)/cms/[siteId]/components/page.tsx` |
-| `matrx-user/html-page`     | `/cms/html-pages`, `/cms/html-pages/[pageId]`   | `EditableContextMenu` (meta description `ProTextarea` + Monaco body) + `NonEditableContextMenu` (preview) | Standalone quick-publish — `html_pages_structure`, not `site_structure`; `agentRoles`: `html_page_editor`                                                              |
+| `matrx-user/html-page`     | `/cms/html-pages`, `/cms/html-pages/[pageId]`   | `EditableContextMenu` (meta description `ProTextarea` + Monaco body) + `NonEditableContextMenu` (preview) | Standalone quick-publish — `html_pages_structure`, not `site_structure`; `agentRoles`: `html_page_editor`                                                                                                    |
 
 **The framing idea:** every website surface (`cms-site`/`cms-page`/`cms-component`) emits the _same_
 compact `site_structure` XML — `features/cms/utils/buildSiteStructureXml.ts` (pure, size-capped at
@@ -130,6 +130,16 @@ Components tab, the Collections tab, and PageEditor's main toolbar, SEO-tab head
 controls. A new human-editable control on any CMS surface MUST ship with its role button — the
 header Agents chrome is the overflow, never the only door. History + remaining spread:
 `docs/handoffs/website-factory-vision.md` § AI-everywhere.
+
+**Page completion gate (2026-08-14):** the page editor and every page-list `…` menu share
+`CmsPageAiActionDialog`. An empty page says **Build with AI**, not Edit, and reads the linked
+`plan.node` through `useCmsPagePlanContext` so the writer receives the actual brief, resolved target
+keyword, planned metadata, and attributes in the `plan_context` Surface Value. The dialog reports
+plan / keyword / brief / research readiness, offers the existing plan Deepen agent for each missing
+input, and keeps a direct skippable AI door. Generation reuses `useNodeReality.write` — the same
+content-plan → CMS writer — including the one-click write-policy repair. The list menu is the one
+`buildCmsPageMenu` registry for AI build/edit, review, editor, preview, live page, content plan,
+publish-draft confirmation, and delete; do not fork a second row action inventory.
 
 **Agent skill:** `skill.definition` row `cms-authoring` (migration `migrations/cms_surfaces_seed.sql`)
 teaches CMS-bound agents the two-content-system model, draft/publish twins, `site_structure`/
@@ -396,6 +406,17 @@ UI-complete here but only take effect once P1's service layer reads them.
 ---
 
 ## Change log
+
+- `2026-08-14` — **CMS pages can now finish the plan instead of merely displaying it.** Empty pages
+  show **Build with AI** in the editor and page-row menu; one shared readiness dialog checks the
+  linked plan, keyword, brief, and inherited/direct research while leaving every warning skippable.
+  Missing inputs can launch the existing Deepen agent, and the build action reuses the canonical
+  plan writer. The `matrx-user/cms-page` scope now emits full `plan_context` (not just
+  `plan_node_id`) beside `research_lineage`. Page-row `…` menus now expose the complete AI,
+  review/publish, editor, preview/live, plan, and delete inventory through canonical `ItemMenu`.
+  CMS browser titles now use `Page | Website — AI Matrx` (or the website name on list/settings
+  routes), the site favicon is installed for the active workspace, and the editor title input gets
+  the remaining toolbar width instead of truncating at the old narrow cap.
 
 - `2026-08-15` — **The site list became copyable (`agent-copy` rollout).** New
   [`copy.ts`](./copy.ts) holds the CMS human/agent copy formatters. The site

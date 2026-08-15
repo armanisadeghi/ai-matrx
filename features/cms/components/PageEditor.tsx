@@ -8,6 +8,7 @@ import React, {
   useEffect,
   useRef,
 } from "react";
+import { useSearchParams } from "next/navigation";
 import type {
   ClientComponent,
   ClientPage,
@@ -19,7 +20,12 @@ import { useCmsVersions } from "@/features/cms/hooks/useCmsVersions";
 import { useCmsPageSurfaceScope } from "@/features/cms/hooks/useCmsPageSurfaceScope";
 import type { CmsPageEditorTab } from "@/features/cms/agent-context/buildCmsPageContextData";
 import { useCmsResearchLineage } from "@/features/cms/hooks/useCmsResearchLineage";
+import { useCmsPagePlanContext } from "@/features/cms/hooks/useCmsPagePlanContext";
 import { ResearchLineagePanel } from "@/features/cms/components/ResearchLineagePanel";
+import {
+  CmsPageAiActionDialog,
+  type CmsPageAiIntent,
+} from "@/features/cms/components/CmsPageAiActionDialog";
 import { CmsPageService } from "@/features/cms/services/cmsService";
 import { CMS_PAGE_CONTEXT_MENU_PROPS } from "@/features/cms/agent-context/cmsPageContextMenuProps";
 import { createCmsPageExtraSections } from "@/features/cms/agent-context/cmsPageExtraSections";
@@ -62,6 +68,7 @@ import {
   Map as MapIcon,
   Gauge,
   ExternalLink,
+  FilePenLine,
 } from "lucide-react";
 import { usePageLocation } from "@/features/marketing/data/hooks";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
@@ -171,6 +178,10 @@ const TABS: { id: EditorTab; label: string; icon: React.ElementType }[] = [
   { id: "versions", label: "History", icon: History },
 ];
 
+function isEditorTab(value: string | null): value is EditorTab {
+  return TABS.some((tab) => tab.id === value);
+}
+
 export default function PageEditor({
   siteId,
   site,
@@ -189,7 +200,11 @@ export default function PageEditor({
   onRefetchPage,
 }: PageEditorProps) {
   const isNew = !page;
-  const [activeTab, setActiveTab] = useState<EditorTab>("html");
+  const searchParams = useSearchParams();
+  const [activeTab, setActiveTab] = useState<EditorTab>(() => {
+    const requestedTab = searchParams.get("tab");
+    return isEditorTab(requestedTab) ? requestedTab : "html";
+  });
   const versions = useCmsVersions();
   // THE DOOR LAW: when this page is joined to its measured page, the marketing
   // workspace for that page is one click away (new tab — the editor's unsaved
@@ -209,6 +224,9 @@ export default function PageEditor({
   const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false);
   const [rollbackTarget, setRollbackTarget] = useState<number | null>(null);
   const [isRollingBack, setIsRollingBack] = useState(false);
+  const [aiDialogIntent, setAiDialogIntent] = useState<CmsPageAiIntent | null>(
+    null,
+  );
 
   // ── Local editor state ───────────────────────────────────────────────
   const [title, setTitle] = useState("");
@@ -243,6 +261,7 @@ export default function PageEditor({
       await CmsPageService.setResearchLineage(page.id, topicIds, tagIds);
     },
   });
+  const planContext = useCmsPagePlanContext(page?.plan_node_id);
 
   // ── Sync from page prop ──────────────────────────────────────────────
   useEffect(() => {
@@ -446,6 +465,7 @@ export default function PageEditor({
     researchLineage: researchLineage.entries,
     researchLineageStatus: researchLineage.adapter.status,
     researchLineageError: researchLineage.adapter.error,
+    planContext,
   });
 
   // ── Write half of the surface (manifest `writeTargets`) ──────────────
@@ -625,7 +645,7 @@ export default function PageEditor({
         {/* ── Editor header ────────────────────────────────────────── */}
         <div className="flex-none border-b border-border/50 bg-muted/20">
           <div className="flex items-center justify-between px-4 py-2">
-            <div className="flex items-center gap-3 min-w-0">
+            <div className="flex min-w-0 flex-1 items-center gap-3">
               <Button
                 variant="ghost"
                 size="icon"
@@ -639,7 +659,7 @@ export default function PageEditor({
                 value={title}
                 onChange={(e) => handleTitleChange(e.target.value)}
                 placeholder="Page title…"
-                className="text-sm font-semibold bg-transparent border-0 outline-none text-foreground placeholder:text-muted-foreground min-w-0 flex-1"
+                className="min-w-0 w-full max-w-2xl flex-1 border-0 bg-transparent text-sm font-semibold text-foreground outline-none placeholder:text-muted-foreground"
               />
               {page && (
                 <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -685,11 +705,15 @@ export default function PageEditor({
                 </Button>
               ) : (
                 <>
-                  <SurfaceRoleAgentButton
-                    surfaceName={CMS_PAGE_CONTEXT_MENU_PROPS.surfaceName}
-                    roleName="page_editor"
-                    label="Edit with AI"
-                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10 hover:text-primary"
+                    onClick={() => setAiDialogIntent("build-edit")}
+                  >
+                    <FilePenLine className="h-3.5 w-3.5" />
+                    {htmlContent.trim() ? "Edit with AI" : "Build with AI"}
+                  </Button>
                   {measuredPageHref && (
                     <Button
                       asChild
@@ -1334,6 +1358,22 @@ export default function PageEditor({
           busy={isRollingBack}
           onConfirm={confirmRollback}
         />
+        {page && aiDialogIntent ? (
+          <CmsPageAiActionDialog
+            open
+            onOpenChange={(next) => {
+              if (!next) setAiDialogIntent(null);
+            }}
+            intent={aiDialogIntent}
+            site={site}
+            pages={pages}
+            components={components}
+            page={page}
+            editorHref={`/cms/${siteId}/pages/${page.id}`}
+            planHref={`/cms/${siteId}/pages/${page.id}?tab=plan`}
+            onPageChanged={onRefetchPage}
+          />
+        ) : null}
       </div>
     </SurfaceRuntimeProvider>
   );

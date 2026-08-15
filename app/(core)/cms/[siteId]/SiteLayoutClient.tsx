@@ -44,6 +44,7 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 import { useCmsSiteSurfaceScope } from "@/features/cms/hooks/useCmsSiteSurfaceScope";
 import { CMS_SITE_CONTEXT_MENU_PROPS } from "@/features/cms/agent-context/cmsSiteContextMenuProps";
 import type { CmsSiteMode } from "@/features/cms/agent-context/buildCmsSiteContextData";
+import { cmsDocumentTitle } from "@/features/cms/utils/cmsDocumentMetadata";
 
 interface SiteContextValue {
   site: ClientSite;
@@ -242,6 +243,29 @@ export default function SiteLayoutClient({
         setAllSites([]);
       });
   }, []);
+
+  // Authenticated CMS metadata cannot be resolved in the server layout without
+  // inventing a second data gateway. Once the direct owner-scoped reads land,
+  // replace the neutral loading title with the real site/page identity and use
+  // the site's own favicon when it has one.
+  useEffect(() => {
+    if (!site) return;
+    const title = cmsDocumentTitle(site, pages, pathname);
+    document.title = title;
+
+    const favicon = site.favicon?.trim();
+    let managedIcon: HTMLLinkElement | null = null;
+    if (favicon) {
+      managedIcon = document.createElement("link");
+      managedIcon.rel = "icon";
+      managedIcon.href = favicon;
+      managedIcon.dataset.cmsSiteIcon = site.id;
+      document.head.appendChild(managedIcon);
+    }
+    return () => {
+      managedIcon?.remove();
+    };
+  }, [site, pages, pathname]);
 
   const buildStructureXml = useCallback(
     (current?: SiteStructureCurrent) => {

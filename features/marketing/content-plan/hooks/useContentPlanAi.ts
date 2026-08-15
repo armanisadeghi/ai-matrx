@@ -298,6 +298,9 @@ export function usePlanDeepen(siteId: string | null) {
       // the stream — always refetch.
       void queryClient.invalidateQueries({ queryKey: planKeys.nodes(siteId) });
       void queryClient.invalidateQueries({
+        queryKey: planKeys.node(targetNodeId),
+      });
+      void queryClient.invalidateQueries({
         queryKey: planKeys.nodeEdges(targetNodeId),
       });
 
@@ -479,7 +482,9 @@ export function usePlanBulkDeepen(siteId: string | null) {
           failures: [...failures],
         }));
         // Each deepen writes brief + sources — keep the tree live per node.
-        void queryClient.invalidateQueries({ queryKey: planKeys.nodes(siteId) });
+        void queryClient.invalidateQueries({
+          queryKey: planKeys.nodes(siteId),
+        });
         void queryClient.invalidateQueries({
           queryKey: planKeys.nodeEdges(target.id),
         });

@@ -35,6 +35,7 @@ import type {
   ClientSite,
 } from "../types";
 import type { ResearchLineageEntry } from "./useCmsResearchLineage";
+import type { CmsPagePlanContext } from "./useCmsPagePlanContext";
 
 export interface UseCmsPageSurfaceScopeParams {
   site: ClientSite;
@@ -69,6 +70,7 @@ export interface UseCmsPageSurfaceScopeParams {
   researchLineage: readonly ResearchLineageEntry[];
   researchLineageStatus: "idle" | "loading" | "ready" | "error";
   researchLineageError?: string | null;
+  planContext: CmsPagePlanContext;
 }
 
 export function useCmsPageSurfaceScope(
@@ -102,6 +104,7 @@ export function useCmsPageSurfaceScope(
     researchLineage,
     researchLineageStatus,
     researchLineageError,
+    planContext,
   } = params;
 
   return useCallback(() => {
@@ -138,6 +141,7 @@ export function useCmsPageSurfaceScope(
       researchLineage,
       researchLineageStatus,
       researchLineageError,
+      planContext,
     }) as SurfaceScopePayload;
   }, [
     site,
@@ -167,5 +171,6 @@ export function useCmsPageSurfaceScope(
     researchLineage,
     researchLineageStatus,
     researchLineageError,
+    planContext,
   ]);
 }
