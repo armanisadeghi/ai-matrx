@@ -6,11 +6,12 @@ export async function generateMetadata({
 }: {
   params: Promise<{ siteId: string }>;
 }) {
-  const { siteId } = await params;
-  const shortLabel = siteId.length > 16 ? `${siteId.slice(0, 10)}…` : siteId;
+  await params;
 
   return createDynamicRouteMetadata("/cms", {
-    title: shortLabel,
+    // The authenticated client resolves the owned site's real name and the
+    // current page name. Never expose a UUID in the browser tab while loading.
+    title: "Website",
     description: "Manage pages, components, and settings for this CMS site.",
     letter: "Si",
   });

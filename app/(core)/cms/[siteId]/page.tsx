@@ -11,7 +11,10 @@ import { createCmsSiteExtraSections } from "@/features/cms/agent-context/cmsSite
 import { useCmsSiteSurfaceScope } from "@/features/cms/hooks/useCmsSiteSurfaceScope";
 import { clientSiteRootUrl } from "@/features/cms/utils/pageUrls";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { slugifyTitle, SLUG_RE } from "@/features/html-pages/utils/promoteConvert";
+import {
+  slugifyTitle,
+  SLUG_RE,
+} from "@/features/html-pages/utils/promoteConvert";
 import type { AgentWritePolicy } from "@/features/cms/types";
 
 export default function SiteDashboardPage() {
@@ -73,7 +76,7 @@ export default function SiteDashboardPage() {
         site.settings?.agent_write_policy ?? "blocked";
       if (policy === "blocked")
         throw new Error(
-          'This site\'s agent_write_policy is "blocked", so agents may not create pages on it. A human can change that in the site\'s settings.',
+          "This site's agent_write_policy is \"blocked\", so agents may not create pages on it. A human can change that in the site's settings.",
         );
 
       const {
@@ -125,6 +128,16 @@ export default function SiteDashboardPage() {
     }
   };
 
+  const handlePublishPage = async (pageId: string) => {
+    try {
+      await CmsPageService.publishDraft(pageId);
+      await refreshPages();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to publish page");
+      throw err;
+    }
+  };
+
   return (
     // Nested `matrx-user/cms-site` runtime: only this tab knows which row the
     // user is pointing at, so it re-emits the site scope with selected_page_id.
@@ -133,27 +146,30 @@ export default function SiteDashboardPage() {
       getScope={buildSurfaceScope}
       getWriteHandlers={getSurfaceWriteHandlers}
     >
-    <NonEditableContextMenu
-      {...CMS_SITE_CONTEXT_MENU_PROPS}
-      extraSections={siteExtraSections}
-      contextData={buildSurfaceScope() as Record<string, unknown>}
-    >
-      <div className="h-full flex flex-col overflow-hidden">
-        <div className="flex-1 overflow-auto">
-          <PageListView
-            pages={pages}
-            isLoading={pagesLoading}
-            error={error}
-            onOpenPage={(pageId) =>
-              router.push(`/cms/${siteId}/pages/${pageId}`)
-            }
-            onDeletePage={handleDeletePage}
-            onFocusPage={setFocusedPageId}
-            onRefresh={refreshPages}
-          />
+      <NonEditableContextMenu
+        {...CMS_SITE_CONTEXT_MENU_PROPS}
+        extraSections={siteExtraSections}
+        contextData={buildSurfaceScope() as Record<string, unknown>}
+      >
+        <div className="h-full flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-auto">
+            <PageListView
+              site={site}
+              pages={pages}
+              components={components}
+              isLoading={pagesLoading}
+              error={error}
+              onOpenPage={(pageId) =>
+                router.push(`/cms/${siteId}/pages/${pageId}`)
+              }
+              onDeletePage={handleDeletePage}
+              onPublishPage={handlePublishPage}
+              onFocusPage={setFocusedPageId}
+              onRefresh={refreshPages}
+            />
+          </div>
         </div>
-      </div>
-    </NonEditableContextMenu>
+      </NonEditableContextMenu>
     </SurfaceRuntimeProvider>
   );
 }
