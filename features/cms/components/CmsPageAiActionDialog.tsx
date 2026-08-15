@@ -309,7 +309,7 @@ export function CmsPageAiActionDialog({
                 label="Content plan"
                 detail={
                   hasPlan
-                    ? `${planContext.node?.label} is linked and its complete brief is available to the CMS agent.`
+                    ? `${planContext.node?.label} is linked and its plan record is available to the CMS agent.`
                     : "No usable plan is linked. You can still use the page agent directly, or connect this page from the Plan tab."
                 }
                 action={
