@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 366 active entity tokens. A token here is FK-valid for
+// 367 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -116,6 +116,7 @@ export type EntityTypeToken =
   | "conversation_value"
   | "crm_address"
   | "crm_affiliation"
+  | "crm_blocklist_entry"
   | "crm_contact_candidate"
   | "crm_enrichment_call"
   | "crm_interaction"
@@ -749,6 +750,7 @@ export type ScopeableEntityToken =
   | "conversation"
   | "crm_address"
   | "crm_affiliation"
+  | "crm_blocklist_entry"
   | "crm_contact_candidate"
   | "crm_enrichment_call"
   | "crm_interaction"
@@ -1039,6 +1041,7 @@ export type ListedEntityToken =
   | "assist"
   | "content_ir_kind"
   | "content_ir_kind_instance"
+  | "crm_blocklist_entry"
   | "crm_outreach_list"
   | "crm_saved_view"
   | "crm_sending_identity"
@@ -1139,6 +1142,7 @@ export const ENTITY_TYPE_METADATA = {
   "conversation_value": { token: "conversation_value", schema: "chat", table: "conversation_value", label: "Conversation Value", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: false, category: null, referencePickable: false, titleColumn: "key", contentRole: null, referenceCategory: null },
   "crm_address": { token: "crm_address", schema: "crm", table: "address", label: "Address", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "label", contentRole: null, referenceCategory: null },
   "crm_affiliation": { token: "crm_affiliation", schema: "crm", table: "affiliation", label: "Affiliation", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "title", contentRole: null, referenceCategory: null },
+  "crm_blocklist_entry": { token: "crm_blocklist_entry", schema: "crm", table: "blocklist_entry", label: "Blocklist Entry", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "crm_contact_candidate": { token: "crm_contact_candidate", schema: "crm", table: "contact_candidate", label: "Contact Candidate", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "crm_enrichment_call": { token: "crm_enrichment_call", schema: "crm", table: "enrichment_call", label: "Enrichment Call", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "crm_interaction": { token: "crm_interaction", schema: "crm", table: "interaction", label: "Interaction", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "subject", contentRole: null, referenceCategory: null },
@@ -1509,6 +1513,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "conversation_value",
   "crm_address",
   "crm_affiliation",
+  "crm_blocklist_entry",
   "crm_contact_candidate",
   "crm_enrichment_call",
   "crm_interaction",
