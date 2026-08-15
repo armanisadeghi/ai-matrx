@@ -302,6 +302,22 @@ first and emit the gap list; only then wire, batch by batch:
   `/marketing/brands/[id]/sites/[id]/backlinks` (the full-granularity + groomer
   reference page); relationships hub — all tabs; the planner is the
   what-I-see reference (`access-planner/copy.ts`).
+- **`features/marketing/content-plan` — the whole module (2026-08-15).** Wired
+  AFTER the MISSION section, so these are what-I-see payloads, not raw dumps:
+  node record (`NodePanel`, live draft state + `unsaved_changes` + blockers
+  verbatim), both tables' per-row copy turned on with graded view variants,
+  `PlanTree` (+ toolbar `trailing` slot) and `PillarMap` projections,
+  `EntityManager`'s two lists, the `PlanDriftBar` KPI strip and
+  `PlanDriftSheet` worklist, `PlanAiRunsView`, `NodeRealityCard`, the
+  form-heavy `BriefEditor` (payload from live `lines`, never the fetched row),
+  and the workbench's page-level pair + Groomer over six sections. Shared
+  summaries + the KPI mirror: `features/marketing/content-plan/format.ts`
+  (`contentPlanKpis` — the module's `auditPageKpis`). Fixed while there:
+  `PlanSitesList`'s `.slice(0, 4)` status chips now say "+N more".
+  Deliberately skipped: both route headers (their data is fully covered by the
+  body one level down — a second page-level AI button beside the first is the
+  anti-pattern), the input composers/toolbars, and `PlanRealityBar`, which is
+  **dead code** (declared, imported nowhere; `PlanDriftBar` superseded it).
 - Feature components: `features/ai-models` (AiModelTable + filter bar),
   `features/tool-registry/mcp-admin` + `mcp-tools` (incl. aiCustom export
   dialog; sanitized formatters), `feedback` (all four tabs + detail dialog,
