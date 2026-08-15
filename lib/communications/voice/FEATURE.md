@@ -19,6 +19,10 @@ long-lived media and agent execution stay in aidream.
   call.
 - The caller's full phone number is never returned by the policy and is absent from route logs and
   readiness output.
+- Admission returns only the program/destination decision. It deliberately does not return the
+  verified enrollment's organization or user as call ownership. Future call registration must
+  independently bind the program to the normal AI Matrx tenant and resolve a pre-existing
+  same-tenant CRM party; this gate never creates or infers either one.
 - The initial authorized response uses `<Gather input="dtmf speech">` with
   `actionOnEmptyResult="true"`. Only keypad `1` or a narrow explicit phrase such as `I agree`
   continues; no response, another digit/phrase, low-confidence speech, conflicting inputs, an

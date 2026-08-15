@@ -14,9 +14,7 @@ const destination = {
 };
 
 const verifiedCaller = {
-  organization_id: "organization-1",
   phone_number: "+14155550101",
-  user_id: "user-1",
 };
 
 const call = {
@@ -39,8 +37,6 @@ describe("owner Voice beta program", () => {
       status: "authorized",
       programKey: "ai_matrx_owner_beta",
       destinationId: "destination-1",
-      organizationId: "organization-1",
-      userId: "user-1",
     });
   });
 
@@ -90,7 +86,7 @@ describe("owner Voice beta program", () => {
     expect(
       evaluateVoiceOwnerBetaAdmission(call, {
         destinations: [destination],
-        verifiedCallers: [verifiedCaller, { ...verifiedCaller, user_id: "user-2" }],
+        verifiedCallers: [verifiedCaller, { ...verifiedCaller }],
       }),
     ).toEqual({ status: "denied", reason: "caller_binding_ambiguous" });
   });

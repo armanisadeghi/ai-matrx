@@ -13,7 +13,7 @@ type DestinationRow = Pick<
 
 type VerifiedCallerRow = Pick<
   Tables<{ schema: "communication" }, "sms_notification_preferences">,
-  "organization_id" | "phone_number" | "user_id"
+  "phone_number"
 >;
 
 export interface VoiceOwnerBetaCallIdentity {
@@ -40,8 +40,6 @@ export type VoiceOwnerBetaAdmission =
       status: "authorized";
       programKey: typeof VOICE_OWNER_BETA_PROGRAM_KEY;
       destinationId: string;
-      organizationId: string;
-      userId: string;
     }
   | { status: "denied"; reason: VoiceOwnerBetaAdmissionReason };
 
@@ -119,8 +117,6 @@ export function evaluateVoiceOwnerBetaAdmission(
     status: "authorized",
     programKey: VOICE_OWNER_BETA_PROGRAM_KEY,
     destinationId: destination.id,
-    organizationId: verifiedCaller.organization_id,
-    userId: verifiedCaller.user_id,
   };
 }
 
@@ -167,7 +163,7 @@ async function readVoiceOwnerBetaCandidates(): Promise<VoiceOwnerBetaCandidates>
   const { data: verifiedCallers, error: callerError } = await supabase
     .schema("communication")
     .from("sms_notification_preferences")
-    .select("organization_id, phone_number, user_id")
+    .select("phone_number")
     .eq("assistant_destination_id", destination.id)
     .eq("assistant_program_key", VOICE_OWNER_BETA_PROGRAM_KEY)
     .not("phone_number", "is", null)

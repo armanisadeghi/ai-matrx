@@ -44,8 +44,6 @@ describe("POST /api/webhooks/twilio/voice", () => {
       status: "authorized",
       programKey: "ai_matrx_owner_beta",
       destinationId: "destination-1",
-      organizationId: "organization-1",
-      userId: "user-1",
     });
     jest.mocked(inspectVoiceOwnerBetaProgram).mockResolvedValue({
       ready: true,
