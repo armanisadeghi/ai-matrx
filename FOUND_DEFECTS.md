@@ -211,26 +211,23 @@ conflates denial with absence again:
 leaving the not-found branch to mean only absence. Spot-check scope: 12 of the 155 definers that
 raise "not found" were read (agx_/crm_/edu_/mbr_/version_); the other 143 are unaudited.
 
-### D192 — CRM "Save as contact" cannot complete its save until aidream deploys (2026-08-14)
+### D192 — CRM "Save as contact" drops the selected employer affiliation (2026-08-15)
 
-The frontend half is live and browser-verified up to the server call; the governed save is blocked
-by **two server-side issues, both outside this repo**:
+The deploy blocker is gone: production aidream SHA `1adecedd5` contains `da0bcaba3`. Live on
+`www.aimatrx.com`, selecting `Morgan Alder / Director of Partnerships / Northstar Verification
+Labs / morgan.alder.d192.20260815@example.com` and running **Convert → Save as contact** completed
+the governed agent run and opened `/crm/cdc71135-038d-462c-a632-ff0d46c41da5`. The person and
+email contact point are correct, proving feedback `3efd1f7c-f9ec-45e3-bb43-bceea595db3c` was not
+the cause of this run. **Employment is empty (0), and no Northstar company record exists**; the
+company survived only inside `party.headline`. The review dialog also left the selected email
+blank, although the agent recovered it from the raw selection.
 
-1. **`source_feature: "crm"` 422s on the deployed server.** The FE now attributes CRM-launched runs
-   to `crm`, but `ScopedRequest._validate_source_feature` allow-lists the value. Added to aidream's
-   `SOURCE_FEATURES` and **pushed to `main` (da0bcaba3) — but NOT deployed**: `aidream/scripts/
-   release.sh` refuses a dirty tree, and another session has uncommitted work in `db/models/
-   workflow.py` + `db/managers/workflow/*`. **Anyone who lands next: run aidream's `release.sh`
-   once that tree is clean.** A plain push does not build (deployed `/health/version` stayed on
-   `98845bc3` for 10 minutes after the push).
-2. **Newly-created agents fail every run** on a turn-1 persistence barrier — filed as feedback
-   `3efd1f7c-f9ec-45e3-bb43-bceea595db3c` (critical, with the ruled-out list). This is what
-   prevented the live end-to-end proof, and it is not CRM-specific.
-
-Until both clear, `Convert → Save as contact` opens, parses, and reviews correctly, then reports
-"The agent failed before returning a result" — the failure is surfaced, never silent, and nothing
-is written.
-
+This cannot meet the documented signature-block acceptance yet: frontend
+`parseContactSelection` finds `companyLine` but drops it from `ParsedContactSelection`/agent
+`hints`, while aidream `services/crm/FEATURE.md` explicitly says the v1 resolver has no
+affiliation/employer handling. Finish the governed path by carrying an employer hint, resolving
+or creating the company through the party resolver, and writing `crm.affiliation`; keep the raw
+`database` tool blocked. Re-run the same production proof and require the Employer card/door.
 
 ### D158 remainder — persisted DataRef and legacy dynamic-table contracts still use bare names (2026-08-13)
 
