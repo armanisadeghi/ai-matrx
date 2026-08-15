@@ -6,7 +6,11 @@
 // emits as the `diagram_spec` content-IR kind and the same shape
 // InteractiveDiagramBlock renders. See ./FEATURE.md for why.
 
-import type { DiagramData } from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
+import {
+  materializeDiagramDefaults,
+  parseDiagramJSON,
+  type DiagramData,
+} from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
 import type { CanvasContentType } from "@/features/canvas/redux/canvasSlice";
 import type { ListScopeKind } from "@/lib/list-scope/types";
 
@@ -43,7 +47,7 @@ export function mapHref(row: Pick<MapListRow, "id">): string {
 
 /** A brand-new map: one box, named after the map, so the canvas is never blank. */
 export function starterMap(title: string): DiagramData {
-  return {
+  return materializeDiagramDefaults({
     title,
     type: "flowchart",
     nodes: [
@@ -55,7 +59,7 @@ export function starterMap(title: string): DiagramData {
     ],
     edges: [],
     layout: { direction: "TB" },
-  };
+  });
 }
 
 /**
@@ -122,33 +126,39 @@ export function draftMapFromLines(title: string, text: string): DiagramData {
 
   if (nodes.length === 0) return starterMap(title);
 
-  return {
+  return materializeDiagramDefaults({
     title,
     type: "flowchart",
     nodes,
     edges,
     layout: { direction: "TB" },
-  };
+  });
 }
 
-/** Defensive read of a canvas_items.content blob into a DiagramData. */
+/** Decode current object data and historical model-direct JSON string data. */
 export function diagramFromCanvasContent(
   content: unknown,
   fallbackTitle: string,
 ): DiagramData | null {
   if (!content || typeof content !== "object") return null;
-  const data = (content as { data?: unknown }).data;
-  if (!data || typeof data !== "object") return null;
-  const candidate = data as Partial<DiagramData>;
-  if (!Array.isArray(candidate.nodes)) return null;
-  return {
-    title:
-      typeof candidate.title === "string" ? candidate.title : fallbackTitle,
-    description: candidate.description,
-    type: typeof candidate.type === "string" ? candidate.type : "flowchart",
-    nodes: candidate.nodes,
-    edges: Array.isArray(candidate.edges) ? candidate.edges : [],
-    layout: candidate.layout,
-    renderHints: candidate.renderHints,
-  };
+  const wrapper = content as { data?: unknown };
+  const data = wrapper.data ?? content;
+  try {
+    if (typeof data === "string") return parseDiagramJSON(data);
+    if (!data || typeof data !== "object" || Array.isArray(data)) return null;
+    const candidate = data as Record<string, unknown>;
+    const diagramCandidate =
+      candidate.diagram &&
+      typeof candidate.diagram === "object" &&
+      !Array.isArray(candidate.diagram)
+        ? (candidate.diagram as Record<string, unknown>)
+        : candidate;
+    const withTitle =
+      typeof diagramCandidate.title === "string" && diagramCandidate.title
+        ? diagramCandidate
+        : { ...diagramCandidate, title: fallbackTitle };
+    return parseDiagramJSON(JSON.stringify(withTitle));
+  } catch {
+    return null;
+  }
 }

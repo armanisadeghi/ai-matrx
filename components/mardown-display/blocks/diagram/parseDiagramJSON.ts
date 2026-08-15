@@ -1,3 +1,16 @@
+import {
+  DEFAULT_DIAGRAM_RENDER_HINTS,
+  DIAGRAM_BACKGROUNDS,
+  DIAGRAM_BORDER_STYLES,
+  DIAGRAM_EDGE_MARKERS,
+  DIAGRAM_NODE_SHAPES,
+  inferDiagramNodeVisuals,
+  type DiagramBackground,
+  type DiagramBorderStyle,
+  type DiagramEdgeMarker,
+  type DiagramNodeShape,
+} from "./diagram-visual-defaults";
+
 export interface DiagramNode {
   id: string;
   label: string;
@@ -10,7 +23,7 @@ export interface DiagramNode {
   isGroup?: boolean;
   /** Parent section id. Positions are relative to the section when present. */
   parentId?: string;
-  /** Persisted section size; ignored for ordinary boxes. */
+  /** Persisted size. Ordinary boxes gain these values after a manual resize. */
   width?: number;
   height?: number;
   /** Border treatment for a visual section. */
@@ -28,6 +41,9 @@ export interface DiagramNode {
   // Visual overrides
   color?: string;
   icon?: string;
+  shape?: DiagramNodeShape;
+  borderStyle?: DiagramBorderStyle;
+  textAlign?: "left" | "center";
 }
 
 export interface DiagramEdge {
@@ -53,6 +69,8 @@ export interface DiagramEdge {
     | string;
   // Whether to show an arrowhead
   arrow?: boolean;
+  /** Marker placement. Supersedes `arrow` while preserving it for legacy data. */
+  marker?: DiagramEdgeMarker;
   animated?: boolean;
 }
 
@@ -85,6 +103,89 @@ export interface DiagramData {
     showEdgeLabels?: boolean;
     compactNodes?: boolean;
     hideArrows?: boolean;
+    background?: DiagramBackground;
+    showMiniMap?: boolean;
+    snapToGrid?: boolean;
+    showControls?: boolean;
+  };
+}
+
+function isOneOf<const T extends readonly string[]>(
+  value: unknown,
+  values: T,
+): value is T[number] {
+  return typeof value === "string" && values.includes(value as T[number]);
+}
+
+/** Make every renderer-chosen visual decision explicit in the document. */
+export function materializeDiagramDefaults(diagram: DiagramData): DiagramData {
+  const type = diagram.type || "flowchart";
+  const nodes = diagram.nodes.map((node, index) => {
+    const nodeType = node.nodeType || node.type || "default";
+    const inferred = inferDiagramNodeVisuals({
+      diagramType: type,
+      nodeType,
+      label: node.label,
+      description: node.description,
+      details: node.details,
+      isGroup: node.isGroup,
+    });
+    const isGroup = node.isGroup === true;
+    return {
+      ...node,
+      nodeType,
+      position: node.position ?? generateDefaultPosition(index, type),
+      isGroup,
+      ...(isGroup
+        ? {
+            width: node.width ?? 420,
+            height: node.height ?? 260,
+            groupStyle: node.groupStyle ?? "dashed",
+          }
+        : {}),
+      color: node.color || inferred.color,
+      icon: node.icon || inferred.icon,
+      shape: node.shape ?? inferred.shape,
+      borderStyle: node.borderStyle ?? inferred.borderStyle,
+      textAlign: node.textAlign ?? inferred.textAlign,
+    } satisfies DiagramNode;
+  });
+
+  const edges = (diagram.edges ?? []).map((edge, index) => {
+    const isMarriage =
+      edge.relationship === "marriage" || edge.relationship === "divorced";
+    const marker =
+      edge.marker ?? (edge.arrow === false || isMarriage ? "none" : "end");
+    return {
+      ...edge,
+      id: edge.id || `edge_${edge.source}_to_${edge.target}_${index}`,
+      type: !edge.type || edge.type === "default" ? "bezier" : edge.type,
+      color: edge.color || "gray",
+      lineStyle: edge.lineStyle ?? (edge.dashed ? "dashed" : "solid"),
+      dashed: edge.lineStyle === "dashed" || edge.dashed === true,
+      strokeWidth: edge.strokeWidth ?? 2,
+      marker,
+      arrow: marker !== "none",
+      animated: edge.animated === true,
+    } satisfies DiagramEdge;
+  });
+
+  return {
+    ...diagram,
+    type,
+    nodes,
+    edges,
+    layout: {
+      direction: diagram.layout?.direction ?? "TB",
+      spacing: diagram.layout?.spacing ?? 100,
+      algorithm:
+        diagram.layout?.algorithm ??
+        (type === "pedigree" ? "pedigree" : "dagre"),
+    },
+    renderHints: {
+      ...DEFAULT_DIAGRAM_RENDER_HINTS,
+      ...diagram.renderHints,
+    },
   };
 }
 
@@ -142,12 +243,9 @@ export function parseDiagramJSON(content: string): DiagramData {
             typeof node.parentId === "string" ? node.parentId : undefined,
           width: typeof node.width === "number" ? node.width : undefined,
           height: typeof node.height === "number" ? node.height : undefined,
-          groupStyle:
-            node.groupStyle === "solid" ||
-            node.groupStyle === "dashed" ||
-            node.groupStyle === "dotted"
-              ? node.groupStyle
-              : undefined,
+          groupStyle: isOneOf(node.groupStyle, DIAGRAM_BORDER_STYLES)
+            ? node.groupStyle
+            : undefined,
           // Pedigree fields
           gender: node.gender as DiagramNode["gender"],
           affected: node.affected as boolean | undefined,
@@ -160,6 +258,16 @@ export function parseDiagramJSON(content: string): DiagramData {
           metadata: node.metadata as Record<string, unknown> | undefined,
           color: node.color as string | undefined,
           icon: node.icon as string | undefined,
+          shape: isOneOf(node.shape, DIAGRAM_NODE_SHAPES)
+            ? node.shape
+            : undefined,
+          borderStyle: isOneOf(node.borderStyle, DIAGRAM_BORDER_STYLES)
+            ? node.borderStyle
+            : undefined,
+          textAlign:
+            node.textAlign === "left" || node.textAlign === "center"
+              ? node.textAlign
+              : undefined,
         };
       },
     );
@@ -195,12 +303,15 @@ export function parseDiagramJSON(content: string): DiagramData {
           strokeWidth: (edge.strokeWidth as number) || 2,
           relationship: edge.relationship as string | undefined,
           arrow: edge.arrow as boolean | undefined,
+          marker: isOneOf(edge.marker, DIAGRAM_EDGE_MARKERS)
+            ? edge.marker
+            : undefined,
           animated: edge.animated as boolean | undefined,
         };
       },
     );
 
-    return {
+    return materializeDiagramDefaults({
       title: diagramData.title as string,
       description: diagramData.description as string | undefined,
       type: (diagramData.type || "flowchart") as string,
@@ -210,8 +321,23 @@ export function parseDiagramJSON(content: string): DiagramData {
         direction: "TB",
         spacing: 100,
       },
-      renderHints: diagramData.renderHints as DiagramData["renderHints"],
-    };
+      renderHints:
+        diagramData.renderHints && typeof diagramData.renderHints === "object"
+          ? {
+              ...(diagramData.renderHints as DiagramData["renderHints"]),
+              ...(isOneOf(
+                (diagramData.renderHints as Record<string, unknown>).background,
+                DIAGRAM_BACKGROUNDS,
+              )
+                ? {
+                    background: (
+                      diagramData.renderHints as Record<string, unknown>
+                    ).background as DiagramBackground,
+                  }
+                : {}),
+            }
+          : undefined,
+    });
   } catch (error) {
     console.error("Error parsing diagram JSON:", error);
     throw new Error(
@@ -306,7 +432,7 @@ export function parseDiagramContent(content: string): DiagramData {
   try {
     return parseDiagramJSON(content);
   } catch {
-    return {
+    return materializeDiagramDefaults({
       title: "Simple Diagram",
       description: "Generated from content",
       type: "flowchart",
@@ -334,6 +460,6 @@ export function parseDiagramContent(content: string): DiagramData {
         { id: "edge1", source: "node1", target: "node2" },
         { id: "edge2", source: "node2", target: "node3" },
       ],
-    };
+    });
   }
 }

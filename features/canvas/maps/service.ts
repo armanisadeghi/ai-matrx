@@ -13,7 +13,10 @@
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { buildSearchOr } from "@/utils/supabase-search";
-import type { DiagramData } from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
+import {
+  materializeDiagramDefaults,
+  type DiagramData,
+} from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
 import type {
   EntityFacets,
   EntityListPage,
@@ -48,7 +51,7 @@ function toRow(raw: Record<string, unknown>): MapListRow {
   const diagram = diagramFromCanvasContent(raw.content, title);
   return {
     id: String(raw.id),
-    title,
+    title: diagram?.title ?? title,
     description: typeof raw.description === "string" ? raw.description : null,
     box_count: diagram?.nodes.filter((node) => !node.isGroup).length ?? 0,
     section_count: diagram?.nodes.filter((node) => node.isGroup).length ?? 0,
@@ -143,10 +146,11 @@ export async function createMap(
   title: string,
   diagram?: DiagramData,
 ): Promise<CreateMapResult> {
+  const normalized = materializeDiagramDefaults(diagram ?? starterMap(title));
   const content = {
     type: MAP_CANVAS_TYPE,
-    data: diagram ?? starterMap(title),
-    metadata: { title },
+    data: normalized,
+    metadata: { title: normalized.title },
   };
   const { data, isDuplicate, error } = await canvasItemsService.save({
     content,
@@ -159,9 +163,7 @@ export async function createMap(
   };
 }
 
-export async function getMap(
-  id: string,
-): Promise<{
+export async function getMap(id: string): Promise<{
   row: MapListRow | null;
   diagram: DiagramData | null;
   error: string | null;
@@ -197,12 +199,13 @@ export async function saveMap(
   id: string,
   diagram: DiagramData,
 ): Promise<{ error: string | null }> {
+  const normalized = materializeDiagramDefaults(diagram);
   const { error } = await canvasItemsService.update(id, {
-    title: diagram.title,
+    title: normalized.title,
     content: {
       type: MAP_CANVAS_TYPE,
-      data: diagram,
-      metadata: { title: diagram.title },
+      data: normalized,
+      metadata: { title: normalized.title },
     },
   });
   return { error: error ? (error.message ?? String(error)) : null };
