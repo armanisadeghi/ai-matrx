@@ -21,7 +21,9 @@ Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/commu
 
 - `app/(public)/sms/page.tsx` — public, carrier-reviewable opt-in description and disclosure.
 - `app/(public)/terms-and-conditions/page.tsx` — SMS program terms.
-- `features/settings/tabs/MessagingTab.tsx` — production user enrollment and opt-out surface.
+- `features/settings/tabs/MessagingTab.tsx` — production enrollment, opt-out, and personal text-assistant binding.
+- `features/sms/components/SmsAssistantSettingsSection.tsx` — saved-agent selection, per-user pause/disconnect, readiness, and safe-test controls.
+- `features/sms/hooks/useSmsAssistantProgram.ts` — direct authenticated RPC adapter for the selected assistant program.
 - `app/(dev)/demos/tests/sms/` — internal testing and diagnostics.
 - `app/api/sms/verify/route.ts` — Twilio Verify plus verified-consent persistence.
 - `app/api/sms/preferences/route.ts` — preference reads/writes; enabling requires existing verified consent.
@@ -37,9 +39,9 @@ Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/commu
 
 All SMS tables live in the `communication` schema. The enrollment contract primarily uses:
 
-- `sms_notification_preferences` — the user-selected destination and delivery switches.
+- `sms_notification_preferences` — the user-selected destination, notification switch, assistant-message switch, and preferred agent/version.
 - `sms_consent` — current SMS-local consent status, method, timestamp, source IP, and versioned disclosure metadata. It is transitional: its live uniqueness is only `(phone_number, consent_type)`, while `crm.contact_medium` is the intended organization/purpose-aware authority.
-- `sms_phone_numbers` — owned/assigned Twilio senders.
+- `sms_phone_numbers` — owned/assigned Twilio senders; `assistant_enabled` is the operator-wide program kill switch, never the user toggle.
 - `sms_conversations`, `sms_messages`, `sms_media` — durable messaging history.
 - `sms_webhook_logs` — webhook diagnostics.
 
@@ -62,11 +64,19 @@ All SMS tables live in the `communication` schema. The enrollment contract prima
 
 ### Outbound delivery
 
-1. A server-side caller sends through `lib/sms/send.ts` using an explicit assigned number or the configured Messaging Service.
-2. `formatSmsBody` adds the canonical `AI Matrx:` product-brand prefix before Twilio receives or the database logs the message.
-3. The current implementation calls Twilio first, then inserts the message with its Twilio SID and initial status. This is a production durability gap: provider acceptance can succeed before the local record exists.
-4. The send route reports Twilio's initial state as accepted/pending, never as confirmed delivery.
-5. Twilio posts later delivery states to `/api/webhooks/twilio/status`; the handler advances status monotonically and records carrier errors.
+1. Assistant/test replies are first enqueued in `sms_messages`, then claimed by the long-running aidream SMS dispatcher.
+2. The dispatcher calls Twilio once and finalizes an explicit provider-creation outcome: accepted, known-failed, or uncertain. An uncertain send is never automatically retried.
+3. The Twilio status callback includes the local outbound UUID. The signed webhook can safely correlate an early callback before the provider SID has been finalized, then advances delivery status monotonically.
+4. Legacy callers through `lib/sms/send.ts` still call Twilio before inserting the local message; that path retains a durability gap and must not replace the assistant outbox.
+
+### Personal text assistant
+
+1. A signed-in user enrolls a verified phone through the ordinary SMS settings flow.
+2. The Text assistant section calls program-scoped `communication.get_my_sms_assistant_program`, `configure_my_sms_assistant[_version]`, and `disconnect_my_sms_assistant` directly through the authenticated browser Supabase client.
+3. The user chooses one accessible saved agent, optionally pins a saved version, then explicitly enables assistant messages. Nothing is selected or enabled by default.
+4. The inbound webhook durably claims the provider event, gives STOP/HELP/START precedence, resolves the exact provider/account/source/destination/program/user/CRM/conversation binding, and queues only a resolved, ready assistant turn.
+5. Aidream runs the canonical agent against the reserved canonical chat conversation with tools disabled, atomically enqueues the reply, and delivers it through the durable outbound worker.
+6. Pause preserves the binding. Disconnect clears it. Both leave ordinary SMS-notification enrollment unchanged.
 
 ---
 
@@ -78,26 +88,28 @@ All SMS tables live in the `communication` schema. The enrollment contract prima
 - `siteConfig.legalOperatorName` is the single legal identity for AI Matrx public policies and carrier registration; the SMS program names both that operator and the AI Matrx product.
 - Every outbound body passes through `formatSmsBody`; callers do not hand-roll or omit the `AI Matrx:` brand prefix.
 - Every message recipient must have applicable consent unless the message is a system/administrative exception with its own lawful basis.
-- STOP-like keywords and the web settings control both produce a durable opt-out record. Reply-based START is currently broken because the webhook rejects opted-out senders before insertion; the cross-repo plan treats this as a launch blocker.
+- STOP, HELP, and START take precedence over agent execution and are durably recorded before opt-out enforcement.
+- **Phone number alone is not authorization.** Assistant execution requires the exact verified user/program binding returned by the canonical resolver; ambiguous or missing identity executes nothing.
+- **Global and user stops are distinct.** `sms_phone_numbers.assistant_enabled` is read-only health on user surfaces; `sms_notification_preferences.ai_agent_messages` is the user's pause/resume switch.
+- **Consequential tools stay disabled in the owner beta.** The SMS worker invokes the canonical agent with an empty replacement tool set.
+- A worker crash must not mint a second chat turn or Twilio send. Expired processing/sending claims become explicit stuck/uncertain work for repair, never automatic retries.
 - Twilio accepting an API request is not proof of delivery; delivery status comes from the status webhook.
 - Message reads page newest-first, but conversation surfaces render each page oldest-to-newest.
 
 ## Production gaps verified 2026-08-15
 
-- Inbound messages are marked `ai_processing_status='pending'`, but no worker consumes them.
-- Account resolution uses the raw sender/receiver phone pair plus an assigned user or preference row; it does not resolve provider tenant, organization, CRM party/contact medium, program, exact action, or canonical chat conversation.
-- Webhook application failures return HTTP 200 even when durable receipt is not guaranteed, so provider retries can be lost.
-- Outbound provider calls precede durable local intent/claim creation.
+- Legacy `lib/sms/send.ts` calls the provider before durable local intent/claim creation; assistant/test delivery already uses the durable outbox.
 - `max_messages_per_day` is stored but only the hourly cap is enforced.
 - The broad `system` category bypasses consent and quiet hours and needs a closed, allowlisted definition.
 - Notification rows are written with `message_id = null` after sending.
 - SMS consent has not converged on the canonical CRM contact-medium eligibility authority.
-- The reply-action processor, personal text assistant, tenant messaging, and PSTN voice layers are roadmap work in the cross-repo plan.
+- The reply-action processor, tenant messaging, and PSTN voice layers remain roadmap work in the cross-repo plan.
 
 ---
 
 ## Change log
 
+- `2026-08-15` — Added the production personal text-assistant binding to Messaging settings using direct authenticated, program-scoped RPCs; added durable provider-event claims, exact identity/conversation resolution, policy-keyword precedence, canonical agent execution with tools disabled, durable agent/outbound workers, crash fences, early status-callback correlation, and separate global/user kill switches.
 - `2026-08-15` — Moved the canonical Twilio signature validator to the shared communications
   provider adapter and removed the former SMS-only implementation after migrating every consumer.
 - `2026-08-15` — Linked the cross-repo communications record and corrected the feature truth after a live/source audit: documented the transitional consent authority, Twilio-before-ledger ordering, broken START path, pending messages without a worker, incomplete identity resolution, unenforced daily cap, broad system bypass, and unlinked notification receipts.

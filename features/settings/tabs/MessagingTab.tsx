@@ -16,6 +16,7 @@ import {
   getNotificationPermission,
 } from "@/features/messaging/utils/notificationSound";
 import { SmsEnrollmentSettingsSection } from "@/features/sms/components/SmsEnrollmentSettingsSection";
+import { SmsAssistantSettingsSection } from "@/features/sms/components/SmsAssistantSettingsSection";
 import { useIsMounted } from "@/hooks/use-is-mounted";
 
 type PermissionStatus = "granted" | "denied" | "default" | "unsupported";
@@ -44,7 +45,8 @@ export default function MessagingTab() {
   const [permissionOverride, setPermissionOverride] =
     useState<PermissionStatus | null>(null);
   const permission =
-    permissionOverride ?? (isMounted ? getNotificationPermission() : "unsupported");
+    permissionOverride ??
+    (isMounted ? getNotificationPermission() : "unsupported");
 
   const handleEnableDesktop = async () => {
     const granted = await requestNotificationPermission();
@@ -150,6 +152,7 @@ export default function MessagingTab() {
       )}
 
       <SmsEnrollmentSettingsSection />
+      <SmsAssistantSettingsSection />
     </>
   );
 }
