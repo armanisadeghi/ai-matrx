@@ -462,7 +462,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/BuiltinPromptCatalogResponse"
+                }
               }
             }
           }
@@ -1640,7 +1642,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/UserPromptCatalogResponse"
+                }
               }
             }
           }
@@ -1659,7 +1663,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/CombinedPromptCatalogResponse"
+                }
               }
             }
           }
@@ -10577,131 +10583,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/github-integrations/exchange": {
-      "post": {
-        "tags": [
-          "GitHub Integrations"
-        ],
-        "summary": "Exchange",
-        "operationId": "exchange_github_integrations_exchange_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/GitHubExchangeRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GitHubConnectionResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/github-integrations/sync": {
-      "post": {
-        "tags": [
-          "GitHub Integrations"
-        ],
-        "summary": "Sync",
-        "operationId": "sync_github_integrations_sync_post",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GitHubConnectionResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/github-integrations/connection": {
-      "delete": {
-        "tags": [
-          "GitHub Integrations"
-        ],
-        "summary": "Disconnect",
-        "operationId": "disconnect_github_integrations_connection_delete",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GitHubConnectionResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/github-integrations/internal/access-token": {
-      "get": {
-        "tags": [
-          "GitHub Integrations (internal)"
-        ],
-        "summary": "Internal Access Token",
-        "operationId": "internal_access_token_github_integrations_internal_access_token_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/github-integrations/webhook": {
-      "post": {
-        "tags": [
-          "GitHub Integrations (internal)"
-        ],
-        "summary": "Webhook",
-        "operationId": "webhook_github_integrations_webhook_post",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GitHubWebhookResponse"
                 }
               }
             }
@@ -21019,66 +20900,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/JsonRpcResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/dev/login-as": {
-      "post": {
-        "tags": [
-          "Dev Login"
-        ],
-        "summary": "Dev Login As",
-        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
-        "operationId": "dev_login_as_dev_login_as_post",
-        "parameters": [
-          {
-            "name": "X-Dev-Login-Secret",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Dev-Login-Secret"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DevLoginRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DevLoginResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -50298,152 +50119,6 @@
           }
         }
       }
-    },
-    "/outreach/single/drafts": {
-      "post": {
-        "tags": [
-          "Outreach / Single Send"
-        ],
-        "summary": "Create Message Draft",
-        "description": "Render a real target and persist the exact preview as a planned interaction.",
-        "operationId": "create_message_draft_outreach_single_drafts_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateDraftRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DraftResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/outreach/single/drafts/{draft_id}/approve": {
-      "post": {
-        "tags": [
-          "Outreach / Single Send"
-        ],
-        "summary": "Approve Message Draft",
-        "operationId": "approve_message_draft_outreach_single_drafts__draft_id__approve_post",
-        "parameters": [
-          {
-            "name": "draft_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Draft Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DraftActionRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DraftResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/outreach/single/drafts/{draft_id}/send": {
-      "post": {
-        "tags": [
-          "Outreach / Single Send"
-        ],
-        "summary": "Send Message Draft",
-        "operationId": "send_message_draft_outreach_single_drafts__draft_id__send_post",
-        "parameters": [
-          {
-            "name": "draft_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Draft Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DraftActionRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SendResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
     }
   },
   "components": {
@@ -61964,6 +61639,27 @@
         "title": "BuildRequest",
         "description": "Body for `POST /agent-factory/build`.\n\nThree trigger modes (callers pick one):\n  * `names` — list of `internal_agents/<name>.md` specs to build\n  * `name` (alone) — single spec to build\n  * `name` + `contents` — write the spec file first, then build"
       },
+      "BuiltinPromptCatalogResponse": {
+        "properties": {
+          "builtins": {
+            "items": {
+              "$ref": "#/components/schemas/AgentSummary"
+            },
+            "type": "array",
+            "title": "Builtins"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "builtins",
+          "count"
+        ],
+        "title": "BuiltinPromptCatalogResponse"
+      },
       "BulkCandidateAction": {
         "properties": {
           "result_id": {
@@ -69160,6 +68856,35 @@
           "test"
         ],
         "title": "CollectionTrigger"
+      },
+      "CombinedPromptCatalogResponse": {
+        "properties": {
+          "prompts": {
+            "items": {
+              "$ref": "#/components/schemas/AgentSummary"
+            },
+            "type": "array",
+            "title": "Prompts"
+          },
+          "builtins": {
+            "items": {
+              "$ref": "#/components/schemas/AgentSummary"
+            },
+            "type": "array",
+            "title": "Builtins"
+          },
+          "total_count": {
+            "type": "integer",
+            "title": "Total Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "prompts",
+          "builtins",
+          "total_count"
+        ],
+        "title": "CombinedPromptCatalogResponse"
       },
       "CombinedRatingItem": {
         "properties": {
@@ -76742,61 +76467,6 @@
         },
         "type": "object",
         "title": "DetectorRunInfo"
-      },
-      "DevLoginRequest": {
-        "properties": {
-          "user_id": {
-            "type": "string",
-            "title": "User Id",
-            "description": "UUID of an existing row in auth.users."
-          },
-          "ttl_seconds": {
-            "type": "integer",
-            "maximum": 86400,
-            "minimum": 60,
-            "title": "Ttl Seconds",
-            "description": "JWT expiry. Default 2h, min 60s, max 24h.",
-            "default": 7200
-          }
-        },
-        "type": "object",
-        "required": [
-          "user_id"
-        ],
-        "title": "DevLoginRequest"
-      },
-      "DevLoginResponse": {
-        "properties": {
-          "access_token": {
-            "type": "string",
-            "title": "Access Token"
-          },
-          "user_id": {
-            "type": "string",
-            "title": "User Id"
-          },
-          "expires_at": {
-            "type": "integer",
-            "title": "Expires At"
-          },
-          "issued_at": {
-            "type": "integer",
-            "title": "Issued At"
-          },
-          "jti": {
-            "type": "string",
-            "title": "Jti"
-          }
-        },
-        "type": "object",
-        "required": [
-          "access_token",
-          "user_id",
-          "expires_at",
-          "issued_at",
-          "jti"
-        ],
-        "title": "DevLoginResponse"
       },
       "DiagSpawnDetachedResponse": {
         "properties": {
@@ -87194,87 +86864,6 @@
           "related"
         ],
         "title": "GetToolResponse"
-      },
-      "GitHubConnectionResponse": {
-        "properties": {
-          "connection_id": {
-            "type": "string",
-            "title": "Connection Id"
-          },
-          "account_login": {
-            "type": "string",
-            "title": "Account Login"
-          },
-          "status": {
-            "type": "string",
-            "title": "Status"
-          },
-          "repository_count": {
-            "type": "integer",
-            "title": "Repository Count"
-          },
-          "installation_count": {
-            "type": "integer",
-            "title": "Installation Count"
-          },
-          "all_repositories": {
-            "type": "boolean",
-            "title": "All Repositories"
-          },
-          "mcp_connected": {
-            "type": "boolean",
-            "title": "Mcp Connected"
-          }
-        },
-        "type": "object",
-        "required": [
-          "connection_id",
-          "account_login",
-          "status",
-          "repository_count",
-          "installation_count",
-          "all_repositories",
-          "mcp_connected"
-        ],
-        "title": "GitHubConnectionResponse"
-      },
-      "GitHubExchangeRequest": {
-        "properties": {
-          "code": {
-            "type": "string",
-            "minLength": 1,
-            "title": "Code"
-          },
-          "redirect_uri": {
-            "type": "string",
-            "minLength": 1,
-            "title": "Redirect Uri"
-          }
-        },
-        "type": "object",
-        "required": [
-          "code",
-          "redirect_uri"
-        ],
-        "title": "GitHubExchangeRequest"
-      },
-      "GitHubWebhookResponse": {
-        "properties": {
-          "accepted": {
-            "type": "boolean",
-            "title": "Accepted"
-          },
-          "processed_connections": {
-            "type": "integer",
-            "title": "Processed Connections"
-          }
-        },
-        "type": "object",
-        "required": [
-          "accepted",
-          "processed_connections"
-        ],
-        "title": "GitHubWebhookResponse"
       },
       "GoogleConnectionCredentialResponse": {
         "properties": {
@@ -131681,6 +131270,27 @@
         "title": "UserOverrides",
         "description": "Per-request user-level inclusion / exclusion overrides.\n\nPer TOOL_ROUTING_RULES.md §5–§6, the user's add/remove pair has the\nhighest inclusion precedence: ``user.remove`` beats everything;\n``user.add`` beats ``agent.forbidden`` and surface defaults' implicit\nsilence on optional tools.\n\nValidation: ``add ∩ remove`` must be empty — the merge primitive\nrejects the request with HTTP 422 when the sets overlap."
       },
+      "UserPromptCatalogResponse": {
+        "properties": {
+          "prompts": {
+            "items": {
+              "$ref": "#/components/schemas/AgentSummary"
+            },
+            "type": "array",
+            "title": "Prompts"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "prompts",
+          "count"
+        ],
+        "title": "UserPromptCatalogResponse"
+      },
       "UserSecretBulkEnvRequest": {
         "properties": {
           "organization_id": {
@@ -139192,446 +138802,6 @@
           "running"
         ],
         "title": "ScannerStatusResponse"
-      },
-      "ApprovalDecision": {
-        "properties": {
-          "trust_stage": {
-            "type": "integer",
-            "maximum": 3,
-            "minimum": 0,
-            "title": "Trust Stage"
-          },
-          "requirement": {
-            "type": "string",
-            "enum": [
-              "every_message",
-              "sampled",
-              "none"
-            ],
-            "title": "Requirement"
-          },
-          "required_for_this_message": {
-            "type": "boolean",
-            "title": "Required For This Message"
-          },
-          "sample_percent": {
-            "type": "integer",
-            "maximum": 100,
-            "minimum": 0,
-            "title": "Sample Percent"
-          },
-          "source": {
-            "type": "string",
-            "enum": [
-              "organization_policy",
-              "safe_default"
-            ],
-            "title": "Source"
-          }
-        },
-        "type": "object",
-        "required": [
-          "trust_stage",
-          "requirement",
-          "required_for_this_message",
-          "sample_percent",
-          "source"
-        ],
-        "title": "ApprovalDecision"
-      },
-      "CreateDraftRequest": {
-        "properties": {
-          "organization_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Organization Id",
-            "description": "Organization context for the request; omitted to use the authenticated context."
-          },
-          "project_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Project Id",
-            "description": "Optional associated project selected by the caller."
-          },
-          "task_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Task Id",
-            "description": "Optional associated task selected by the caller."
-          },
-          "outreach_list_id": {
-            "type": "string",
-            "title": "Outreach List Id"
-          },
-          "member_id": {
-            "type": "string",
-            "title": "Member Id"
-          },
-          "template_id": {
-            "type": "string",
-            "title": "Template Id"
-          },
-          "contact_point_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Contact Point Id"
-          },
-          "reputation_case_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Reputation Case Id"
-          },
-          "backlink_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Backlink Id"
-          }
-        },
-        "type": "object",
-        "required": [
-          "outreach_list_id",
-          "member_id",
-          "template_id"
-        ],
-        "title": "CreateDraftRequest"
-      },
-      "DraftActionRequest": {
-        "properties": {
-          "organization_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Organization Id",
-            "description": "Organization context for the request; omitted to use the authenticated context."
-          },
-          "project_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Project Id",
-            "description": "Optional associated project selected by the caller."
-          },
-          "task_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Task Id",
-            "description": "Optional associated task selected by the caller."
-          }
-        },
-        "type": "object",
-        "title": "DraftActionRequest",
-        "description": "Typed empty body for approve/send actions in the generated contract."
-      },
-      "DraftResponse": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "status": {
-            "type": "string",
-            "title": "Status"
-          },
-          "outreach_list_id": {
-            "type": "string",
-            "title": "Outreach List Id"
-          },
-          "member_id": {
-            "type": "string",
-            "title": "Member Id"
-          },
-          "party_id": {
-            "type": "string",
-            "title": "Party Id"
-          },
-          "party_name": {
-            "type": "string",
-            "title": "Party Name"
-          },
-          "contact_point_id": {
-            "type": "string",
-            "title": "Contact Point Id"
-          },
-          "medium_id": {
-            "type": "string",
-            "title": "Medium Id"
-          },
-          "recipient": {
-            "type": "string",
-            "title": "Recipient"
-          },
-          "identity_id": {
-            "type": "string",
-            "title": "Identity Id"
-          },
-          "from_address": {
-            "type": "string",
-            "title": "From Address"
-          },
-          "template_id": {
-            "type": "string",
-            "title": "Template Id"
-          },
-          "subject": {
-            "type": "string",
-            "title": "Subject"
-          },
-          "body": {
-            "type": "string",
-            "title": "Body"
-          },
-          "variables": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Variables"
-          },
-          "eligibility": {
-            "$ref": "#/components/schemas/EligibilityVerdict"
-          },
-          "approval": {
-            "$ref": "#/components/schemas/ApprovalDecision"
-          },
-          "approved_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Approved At"
-          },
-          "approved_by": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Approved By"
-          },
-          "sent_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Sent At"
-          },
-          "provider_message_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Provider Message Id"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "status",
-          "outreach_list_id",
-          "member_id",
-          "party_id",
-          "party_name",
-          "contact_point_id",
-          "medium_id",
-          "recipient",
-          "identity_id",
-          "from_address",
-          "template_id",
-          "subject",
-          "body",
-          "variables",
-          "eligibility",
-          "approval"
-        ],
-        "title": "DraftResponse"
-      },
-      "EligibilityBlock": {
-        "properties": {
-          "code": {
-            "type": "string",
-            "title": "Code"
-          },
-          "message": {
-            "type": "string",
-            "title": "Message"
-          },
-          "fix": {
-            "type": "string",
-            "title": "Fix"
-          }
-        },
-        "type": "object",
-        "required": [
-          "code",
-          "message",
-          "fix"
-        ],
-        "title": "EligibilityBlock"
-      },
-      "EligibilityNotice": {
-        "properties": {
-          "code": {
-            "type": "string",
-            "title": "Code"
-          },
-          "message": {
-            "type": "string",
-            "title": "Message"
-          },
-          "fix": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Fix"
-          }
-        },
-        "type": "object",
-        "required": [
-          "code",
-          "message"
-        ],
-        "title": "EligibilityNotice"
-      },
-      "EligibilityVerdict": {
-        "properties": {
-          "allowed": {
-            "type": "boolean",
-            "title": "Allowed"
-          },
-          "lane": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Lane"
-          },
-          "blocks": {
-            "items": {
-              "$ref": "#/components/schemas/EligibilityBlock"
-            },
-            "type": "array",
-            "title": "Blocks"
-          },
-          "warnings": {
-            "items": {
-              "$ref": "#/components/schemas/EligibilityNotice"
-            },
-            "type": "array",
-            "title": "Warnings"
-          },
-          "resolved": {
-            "additionalProperties": {
-              "$ref": "#/components/schemas/JsonValue"
-            },
-            "type": "object",
-            "title": "Resolved"
-          }
-        },
-        "type": "object",
-        "required": [
-          "allowed"
-        ],
-        "title": "EligibilityVerdict"
-      },
-      "SendResponse": {
-        "properties": {
-          "draft": {
-            "$ref": "#/components/schemas/DraftResponse"
-          },
-          "interaction_id": {
-            "type": "string",
-            "title": "Interaction Id"
-          },
-          "provider_message_id": {
-            "type": "string",
-            "title": "Provider Message Id"
-          }
-        },
-        "type": "object",
-        "required": [
-          "draft",
-          "interaction_id",
-          "provider_message_id"
-        ],
-        "title": "SendResponse"
       }
     }
   }

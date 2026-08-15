@@ -4140,91 +4140,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/github-integrations/exchange": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Exchange */
-        post: operations["exchange_github_integrations_exchange_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/github-integrations/sync": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Sync */
-        post: operations["sync_github_integrations_sync_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/github-integrations/connection": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Disconnect */
-        delete: operations["disconnect_github_integrations_connection_delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/github-integrations/internal/access-token": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Internal Access Token */
-        get: operations["internal_access_token_github_integrations_internal_access_token_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/github-integrations/webhook": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Webhook */
-        post: operations["webhook_github_integrations_webhook_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/google-workspace/files/register": {
         parameters: {
             query?: never;
@@ -8224,30 +8139,6 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/dev/login-as": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Dev Login As
-         * @description Mint a Supabase-shaped JWT for the given user_id.
-         *
-         *     Validates the user exists in auth.users, then signs a token with the
-         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
-         *     The auth middleware verifies the result like any other Supabase token.
-         */
-        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -18569,60 +18460,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/outreach/single/drafts": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Create Message Draft
-         * @description Render a real target and persist the exact preview as a planned interaction.
-         */
-        post: operations["create_message_draft_outreach_single_drafts_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/outreach/single/drafts/{draft_id}/approve": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Approve Message Draft */
-        post: operations["approve_message_draft_outreach_single_drafts__draft_id__approve_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/outreach/single/drafts/{draft_id}/send": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Send Message Draft */
-        post: operations["send_message_draft_outreach_single_drafts__draft_id__send_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -23405,6 +23242,13 @@ export interface components {
              */
             dry_run?: boolean;
         };
+        /** BuiltinPromptCatalogResponse */
+        BuiltinPromptCatalogResponse: {
+            /** Builtins */
+            builtins: components["schemas"]["AgentSummary"][];
+            /** Count */
+            count: number;
+        };
         /** BulkCandidateAction */
         BulkCandidateAction: {
             /** Result Id */
@@ -25808,6 +25652,15 @@ export interface components {
          * @enum {string}
          */
         CollectionTrigger: "scheduled" | "on_demand" | "backfill" | "test";
+        /** CombinedPromptCatalogResponse */
+        CombinedPromptCatalogResponse: {
+            /** Prompts */
+            prompts: components["schemas"]["AgentSummary"][];
+            /** Builtins */
+            builtins: components["schemas"]["AgentSummary"][];
+            /** Total Count */
+            total_count: number;
+        };
         /**
          * CombinedRatingItem
          * @description One injury's per-row rating breakdown — what the FE renders in the
@@ -28657,33 +28510,6 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
-        };
-        /** DevLoginRequest */
-        DevLoginRequest: {
-            /**
-             * User Id
-             * @description UUID of an existing row in auth.users.
-             */
-            user_id: string;
-            /**
-             * Ttl Seconds
-             * @description JWT expiry. Default 2h, min 60s, max 24h.
-             * @default 7200
-             */
-            ttl_seconds?: number;
-        };
-        /** DevLoginResponse */
-        DevLoginResponse: {
-            /** Access Token */
-            access_token: string;
-            /** User Id */
-            user_id: string;
-            /** Expires At */
-            expires_at: number;
-            /** Issued At */
-            issued_at: number;
-            /** Jti */
-            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -32698,37 +32524,6 @@ export interface components {
             } | string;
         } & {
             [key: string]: unknown;
-        };
-        /** GitHubConnectionResponse */
-        GitHubConnectionResponse: {
-            /** Connection Id */
-            connection_id: string;
-            /** Account Login */
-            account_login: string;
-            /** Status */
-            status: string;
-            /** Repository Count */
-            repository_count: number;
-            /** Installation Count */
-            installation_count: number;
-            /** All Repositories */
-            all_repositories: boolean;
-            /** Mcp Connected */
-            mcp_connected: boolean;
-        };
-        /** GitHubExchangeRequest */
-        GitHubExchangeRequest: {
-            /** Code */
-            code: string;
-            /** Redirect Uri */
-            redirect_uri: string;
-        };
-        /** GitHubWebhookResponse */
-        GitHubWebhookResponse: {
-            /** Accepted */
-            accepted: boolean;
-            /** Processed Connections */
-            processed_connections: number;
         };
         /** GoogleConnectionCredentialResponse */
         GoogleConnectionCredentialResponse: {
@@ -50062,6 +49857,13 @@ export interface components {
             /** Apply Policy */
             apply_policy?: ("auto" | "ask" | "off") | null;
         };
+        /** UserPromptCatalogResponse */
+        UserPromptCatalogResponse: {
+            /** Prompts */
+            prompts: components["schemas"]["AgentSummary"][];
+            /** Count */
+            count: number;
+        };
         /** UserSecretBulkEnvRequest */
         UserSecretBulkEnvRequest: {
             /**
@@ -52971,160 +52773,6 @@ export interface components {
             /** Error Message */
             error_message?: string | null;
         };
-        /** ApprovalDecision */
-        ApprovalDecision: {
-            /** Trust Stage */
-            trust_stage: number;
-            /**
-             * Requirement
-             * @enum {string}
-             */
-            requirement: "every_message" | "sampled" | "none";
-            /** Required For This Message */
-            required_for_this_message: boolean;
-            /** Sample Percent */
-            sample_percent: number;
-            /**
-             * Source
-             * @enum {string}
-             */
-            source: "organization_policy" | "safe_default";
-        };
-        /** CreateDraftRequest */
-        CreateDraftRequest: {
-            /**
-             * Organization Id
-             * @description Organization context for the request; omitted to use the authenticated context.
-             */
-            organization_id?: string | null;
-            /**
-             * Project Id
-             * @description Optional associated project selected by the caller.
-             */
-            project_id?: string | null;
-            /**
-             * Task Id
-             * @description Optional associated task selected by the caller.
-             */
-            task_id?: string | null;
-            /** Outreach List Id */
-            outreach_list_id: string;
-            /** Member Id */
-            member_id: string;
-            /** Template Id */
-            template_id: string;
-            /** Contact Point Id */
-            contact_point_id?: string | null;
-            /** Reputation Case Id */
-            reputation_case_id?: string | null;
-            /** Backlink Id */
-            backlink_id?: string | null;
-        };
-        /**
-         * DraftActionRequest
-         * @description Typed empty body for approve/send actions in the generated contract.
-         */
-        DraftActionRequest: {
-            /**
-             * Organization Id
-             * @description Organization context for the request; omitted to use the authenticated context.
-             */
-            organization_id?: string | null;
-            /**
-             * Project Id
-             * @description Optional associated project selected by the caller.
-             */
-            project_id?: string | null;
-            /**
-             * Task Id
-             * @description Optional associated task selected by the caller.
-             */
-            task_id?: string | null;
-        };
-        /** DraftResponse */
-        DraftResponse: {
-            /** Id */
-            id: string;
-            /** Status */
-            status: string;
-            /** Outreach List Id */
-            outreach_list_id: string;
-            /** Member Id */
-            member_id: string;
-            /** Party Id */
-            party_id: string;
-            /** Party Name */
-            party_name: string;
-            /** Contact Point Id */
-            contact_point_id: string;
-            /** Medium Id */
-            medium_id: string;
-            /** Recipient */
-            recipient: string;
-            /** Identity Id */
-            identity_id: string;
-            /** From Address */
-            from_address: string;
-            /** Template Id */
-            template_id: string;
-            /** Subject */
-            subject: string;
-            /** Body */
-            body: string;
-            /** Variables */
-            variables: string[];
-            eligibility: components["schemas"]["EligibilityVerdict"];
-            approval: components["schemas"]["ApprovalDecision"];
-            /** Approved At */
-            approved_at?: string | null;
-            /** Approved By */
-            approved_by?: string | null;
-            /** Sent At */
-            sent_at?: string | null;
-            /** Provider Message Id */
-            provider_message_id?: string | null;
-        };
-        /** EligibilityBlock */
-        EligibilityBlock: {
-            /** Code */
-            code: string;
-            /** Message */
-            message: string;
-            /** Fix */
-            fix: string;
-        };
-        /** EligibilityNotice */
-        EligibilityNotice: {
-            /** Code */
-            code: string;
-            /** Message */
-            message: string;
-            /** Fix */
-            fix?: string | null;
-        };
-        /** EligibilityVerdict */
-        EligibilityVerdict: {
-            /** Allowed */
-            allowed: boolean;
-            /** Lane */
-            lane?: string | null;
-            /** Blocks */
-            blocks?: components["schemas"]["EligibilityBlock"][];
-            /** Warnings */
-            warnings?: components["schemas"]["EligibilityNotice"][];
-            /** Resolved */
-            resolved?: {
-                [key: string]: components["schemas"]["JsonValue"];
-            };
-        };
-        /** SendResponse */
-        SendResponse: {
-            draft: components["schemas"]["DraftResponse"];
-            /** Interaction Id */
-            interaction_id: string;
-            /** Provider Message Id */
-            provider_message_id: string;
-        };
     };
     responses: never;
     parameters: never;
@@ -53467,7 +53115,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["BuiltinPromptCatalogResponse"];
                 };
             };
         };
@@ -54335,7 +53983,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["UserPromptCatalogResponse"];
                 };
             };
         };
@@ -54355,7 +54003,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["CombinedPromptCatalogResponse"];
                 };
             };
         };
@@ -60451,119 +60099,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    exchange_github_integrations_exchange_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["GitHubExchangeRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GitHubConnectionResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    sync_github_integrations_sync_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GitHubConnectionResponse"];
-                };
-            };
-        };
-    };
-    disconnect_github_integrations_connection_delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GitHubConnectionResponse"];
-                };
-            };
-        };
-    };
-    internal_access_token_github_integrations_internal_access_token_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "text/plain": string;
-                };
-            };
-        };
-    };
-    webhook_github_integrations_webhook_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GitHubWebhookResponse"];
                 };
             };
         };
@@ -67511,41 +67046,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
-                };
-            };
-        };
-    };
-    dev_login_as_dev_login_as_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Dev-Login-Secret"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DevLoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DevLoginResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -86290,109 +85790,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LabelMetadata"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_message_draft_outreach_single_drafts_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateDraftRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DraftResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    approve_message_draft_outreach_single_drafts__draft_id__approve_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                draft_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DraftActionRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DraftResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    send_message_draft_outreach_single_drafts__draft_id__send_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                draft_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DraftActionRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SendResponse"];
                 };
             };
             /** @description Validation Error */
