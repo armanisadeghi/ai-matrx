@@ -1,120 +1,83 @@
+---
+status: blocked-on-decision
+updated: 2026-08-15
+repos: [matrx-frontend, aidream]
+---
+
 # Handoff — the unwired backlog, worst-first
 
-**Owner:** unclaimed · **Opened:** 2026-08-14 · **Scoreboard:** `/administration/reporting/unwired`
+**Scoreboard:** `/administration/reporting/unwired`
 **Governing law:** `/Users/armanisadeghi/code/common-docs/policies/unfinished-work-alarm.md` — nothing on this
 page may be deleted, dropped, or "cleaned up" on an agent's authority. Finish it, or report what finishing takes.
 
-`pnpm check:unwired` reports **981 findings** after the 2026-08-14 detector pass (was 1,270; the 289-finding
-drop was four false-positive *categories*, not triage — see `scripts/unwired/FEATURE.md` § Change Log).
-This doc carries the intent hunt already done on the largest items so the next builder does not repeat it.
+The nine largest findings from the 2026-08-14 sweep were hunted and dispatched. **Eight are worked through.
+What is left is not code — it is six written rulings only Arman can give.** That is the whole point of this
+page now; the per-item detail exists to make each ruling a one-line answer.
 
-## Done — wired 2026-08-14
+## 🚨 THE SIX RULINGS
 
-- **`AgentExecutionDebugPanel`** (777 lines) → mounted from `components/debug/DebugIndicatorManager.tsx`.
-  It is the strict superset successor of `PromptExecutionDebugPanel` (589 lines): same execution-system
-  selectors, same `onClose` contract, ten sections vs six (adds streaming, model-settings,
-  assembled-request, ui-state). `instanceId` is the same value `adminDebugSlice` stores as `runId`.
-- **`TransformableCard` + `EnhancedDraggableCardBody`** (430 + 337 lines) → mounted from the new
-  `/demos/draggable-cards` page, verified live on demos.aimatrx.com (drag moves the card and
-  `onPositionChange` fires). Their only consumer had been a `(legacy)` route that died with the group.
-  Mounting them immediately exposed a defect neither had ever been exercised enough to reveal —
-  `TransformableCard` ignored `initialPosition` with more than one card mounted (**D195**). Fixed and
-  verified live 2026-08-14: the cause was `transition-all` on the motion element, not the wrapper CSS the
-  original brief blamed. The demo now shows two cards at distinct positions.
+Each of these is finished-and-superseded, or hunted-and-blocked. None may be deleted until Arman names it
+dead **in writing**. Each row's value is already extracted, so "yes, retire it" costs one commit.
 
-## Dispatched — briefs 1, 3, 4, 5, 6, 7, 9 are live chips
+| Artifact | Lines | Why it is stuck | The question |
+|---|---|---|---|
+| `components/debug/PromptExecutionDebugPanel.tsx` | 517 | Superset successor `AgentExecutionDebugPanel` took its slot 2026-08-14 | Retire it, or does it earn a second debug slot? |
+| `features/code/terminal/TerminalTab.tsx` | 625 | `SimpleTerminal` replaced it after the xterm/SSE path silently emitted nothing | Retire it, or fund a working PTY upgrade so xterm can come back? |
+| `features/tasks/components/TaskDetailPage.tsx` + `TaskContent.tsx` | 778 + 338 | Sharing already ported into the live `TaskEditor` (v0.4.658); agents still pay upkeep on an unreachable screen | Retire both? |
+| `features/transcript-studio/.../TranscriptionLanding.tsx` | 528 | Its wayfinding already ported onto `/transcripts` (`transcriptsRoutes.ts` + `TranscriptsSurfaceGuide`) | Retire it? |
+| `features/content-manager/components/PageListView.tsx` | 393 | Reconciled against the live `features/cms` component 2026-08-14 — **nothing to port** | Retire it and the one-file `features/content-manager/` directory? |
+| `hooks/tts/useVoiceChat*.ts` | 1,106 | Hunted; the engine behind them is retired | **Do we still want hands-free VAD voice chat at all?** Full brief: [`voice-chat-vad-revival.md`](./voice-chat-vad-revival.md) |
 
-Briefs 3, 4, 5, 6, 7 and 9 below, plus the aidream `module-unreached` scope fix, were handed to focused
-sessions on 2026-08-14. Check with Arman before starting one of them from this page — you may be the second
-agent on it. Briefs 1 and 2 remain unclaimed and need a written ruling from Arman rather than code.
+## Done — cleared from the report
 
-## Briefs — real remaining work
+- **`AgentExecutionDebugPanel`** (777) → mounted from `components/debug/DebugIndicatorManager.tsx`. The strict
+  superset successor of `PromptExecutionDebugPanel`: same execution-system selectors, same `onClose`, ten
+  sections vs six. `instanceId` is the value `adminDebugSlice` stores as `runId`.
+- **`TransformableCard` + `EnhancedDraggableCardBody`** (430 + 337) → mounted at `/demos/draggable-cards`.
+  Mounting them immediately exposed a defect neither had ever been exercised enough to reveal (**D195**),
+  now fixed and verified live: the cause was Tailwind `transition-all` on the motion element — the browser
+  transitioned `transform` from `none` while motion rewrote it every frame, silently discarding the
+  translate. **Not** the wrapper CSS the original brief blamed; the twin component never carried
+  `transition-all`, which is why its half always laid out correctly. The demo shows two cards at distinct
+  positions.
+- **`LinkAgentToShortcutModal`** (483) → mounted on `AgentShortcutsPanel` (v0.4.659/660). It had sat
+  unreachable since April behind a phase doc that said *"No routes mounted; Phases 11/12/13 will consume."*
 
-Each brief is self-contained; paste one into a session and it can be worked without this page.
+## Done — value extracted, artifact awaiting a ruling above
 
-### 1. `PromptExecutionDebugPanel` — superseded predecessor, needs Arman's ruling
-`components/debug/PromptExecutionDebugPanel.tsx` (517 lines). Was the only mount in
-`DebugIndicatorManager` until 2026-08-14, when its superset successor `AgentExecutionDebugPanel` took the
-slot. It is now finished-and-superseded, not unfinished. **What's missing:** a decision. Either Arman names
-it dead in writing (then delete it and its `adminDebugSlice` remnants), or it earns a second debug slot.
-Do not delete on your own authority.
+- **Tasks** — sharing ported from the unreachable `TaskDetailPage` into `TaskEditor`; `/tasks/[id]` gained a
+  project door + `AccessGate` (v0.4.658).
+- **Transcripts** — `transcriptsRoutes.ts` is now the surface register, each mode carrying a blurb, so the
+  route no longer names Studio / Process / Scribe / Clean without decoding them (THE DOOR LAW).
+- **content-manager** — reconciled against `features/cms`; nothing to port. A related defect it could not fix
+  (a shell migration is a rewrite) is recorded in `FOUND_DEFECTS.md`.
+- **Voice chat** — hunted and handed to its own handoff, which owns the decision.
 
-### 2. `TerminalTab` — xterm terminal replaced by `SimpleTerminal`
-`features/code/terminal/TerminalTab.tsx` (625 lines). `SimpleTerminal`'s own docblock records why: the
-streaming `/exec/stream` path silently produced no output when the SSE stream completed with zero events,
-so the buffered `/exec` endpoint won. `BottomPanel` → `SessionsHost` → `SimpleTerminal` is the live chain.
-**What's missing:** either a working PTY upgrade end-to-end (`SandboxProcessAdapter.openPty` + a proxy that
-can complete the 101 handshake off Vercel) so xterm can be reattached, or Arman's written call. Doc lie
-corrected in `features/code/SYSTEM_STATE.md` §1.5 on 2026-08-14.
+## Still open — real work, not a ruling
 
-### 3. `LinkAgentToShortcutModal` — never-consumed Phase-1 build
-`features/agent-shortcuts/components/LinkAgentToShortcutModal.tsx` (483 lines). Textbook rung-2 death:
-`features/agents/migration/phases/phase-01-agent-shortcuts-foundation.md` states outright *"No routes
-mounted; Phases 11/12/13 will consume."* Those phases never landed. **What's missing:** the shortcut
-management surface that opens it. Before building one, run the Inventory Law — `features/agent-shortcuts/`
-already ships `ShortcutList` / `ShortcutForm` / `DuplicateShortcutModal` with the same `ScopeProps`
-contract, and `AddToSetDialog.tsx:96` cites this modal as its shape reference.
+**`NotesLayout` (431) + `NotesTreeView` (287)** — the legacy notes shell. `features/notes/FEATURE.md`
+2026-06-24 calls the canonical stack "a strict superset" but names four salvage targets that were never
+landed: RAG/knowledge indexing for a note (`ProcessForRagButton` + `useNoteIngestStatus`, explicitly *"the
+one thing the canonical /notes lacks"*), sidebar drag-edge auto-scroll, mobile "New Folder", and
+`NoteViewShell`'s declarative single/split frame. Verify the superset claim item by item, land the
+survivors on `NotesView`, and this becomes a seventh ruling. Note also that the FEATURE.md claim that these
+render in `/demos/notes-salvage` is **stale** — that page only mentions `NotesLayout` in prose.
 
-### 4. `TaskDetailPage` + `TaskContent` — a second tasks detail UI
-`features/tasks/components/TaskDetailPage.tsx` (778) and `TaskContent.tsx` (338). `/tasks/[id]` renders
-`TaskEditor`, not these. Both are still maintained — the 2026-08-12 label-vocabulary change lists
-`TaskDetailPage` among its six updated import sites, so agents keep paying upkeep on an unreachable screen.
-**What's missing:** a capability diff of `TaskDetailPage` vs `TaskEditor`. Anything the detail page has and
-the editor lacks gets ported into `TaskEditor`; then Arman rules on the shell.
+Read `features/notes/FEATURE.md` § Freeze-loop doctrine and invoke the `supabase-realtime` skill before
+touching any autosave/realtime path; this feature has a history of browser freezes.
 
-### 5. `TranscriptionLanding` — landing superseded by the entry list
-`features/transcript-studio/components/landing/TranscriptionLanding.tsx` (528 lines). `FEATURE.md`
-2026-05-22 describes it as the page linking Studio / Processor / Mobile Capture; `/transcripts` was then
-rebuilt as the canonical entry list. **What's missing:** the three-surface wayfinding it carried has no home
-on the list page. Port it as a header/empty-state affordance on `/transcripts` (feature entry pages are
-LIST views — do not restore a forced landing), then rule on the file.
+## The detector itself
 
-### 6. `features/content-manager/PageListView` — DIFFED 2026-08-14, nothing to port; awaiting Arman's ruling
-Hunted: `features/content-manager/` **is** the CMS feature under its original name. Commit `31285ffe5`
-(2026-03-27) created it with `index.ts`, `types.ts`, `services/cmsService.ts` and three `useCms*` hooks;
-`b134d1b05` (2026-05-13, "Updates to cms and agent context") renamed every one of those to `features/cms/`
-and re-added a copy of `PageListView.tsx` at the old path. It is the residue of a completed rename, not the
-start of a broader feature — no `common-docs/`, `features/cms/FEATURE.md`, `.matrx/`, or `FOUND_DEFECTS.md`
-entry describes a "content manager" feature, and the fork imports `@/features/cms/types` for its own props.
+The 2026-08-14 pass fixed four category-level false-positive classes in `scripts/unwired/scan.ts`
+(1,270 → 972 findings). Details and tests: [`scripts/unwired/FEATURE.md`](../../scripts/unwired/FEATURE.md).
 
-Diff verdict: the fork is a **strict subset**. Its only unique code is the pre-`ItemMenu` inline dropdown
-(Edit / Preview / Delete), and all three are already in `buildCmsPageMenu` — where Preview is a real
-`previewHref` in a new tab instead of the fork's dead-end re-`onOpenPage(page.id)`. The live component adds
-publish, AI build/review, live-page and content-plan doors, the Content-volume column, and the
-`matrx-user/cms-site` agent button. **Zero ports.** Separate finding filed as D197 (the live component is
-bespoke, not on `lib/entity-list/`). **Remaining:** Arman rules on the stranded directory — recommendation is
-delete, and only he may say so (unfinished-work alarm).
+aidream's half was **half** fixed. `module-unreached` now treats a top-level `scripts/*.py` as a real entry
+point and moves such modules to a labelled `cli_only` bucket — correct, and it cleared
+`services/runtime/workflow_ab.py`. Its sibling `service-unreached` did not get the same treatment: it still
+reports all 13 public functions of that same module, including `stable_sha256`, which is named six times
+across the two driver scripts, even though `scripts` is already in `CONSUMER_ROOTS`. **258 of the 268 aidream
+findings come from that one detector**, so the true aidream number is unknown until it is fixed. Chipped
+2026-08-15.
 
-### 7. `NotesLayout` + `NotesTreeView` — VERIFIED 2026-08-14, awaiting Arman's ruling
-Superset claim confirmed item by item; all four salvage targets were already landed and the diff found
-nothing left to port. Stale doc claims fixed in `features/notes/FEATURE.md`, the notes-salvage demo page,
-and `features/context-menu-v3/FEATURE.md` §248. Full evidence: `features/notes/FEATURE.md` 2026-08-14.
-**Nothing left for an agent to do** — retiring the subtree is Arman's call in writing (unfinished-work
-alarm), so this row stays only as the pointer to that decision.
-
-### 8. `TransformableCard` / `EnhancedDraggableCardBody` — DONE 2026-08-14
-Their only mounter was `/legacy/demo/component-demo/draggables/transformable-cards-demo`, which died with
-the `(legacy)` route group. `app/(dev)/demos/draggable-cards/page.dev.tsx` now mounts both under
-`DraggableCardProvider`, exercising free drag + pill collapse, snap points, drop-container assignment, and
-live position state.
-
-### 9. `useVoiceChatWithAutoSleep` + `useVoiceChatCdn` — HUNTED 2026-08-15, moved to its own handoff
-Not wirable: all three `useVoiceChat*` hooks call `processAiRequest`, a retirement stub that throws
-unconditionally, and `useVoiceChatCdn` is a byte-identical copy of `useVoiceChat`. No auth finding — none
-of this code touches Cartesia or the broker. Blocked on Arman's call on hands-free VAD voice chat; nothing
-deleted (unfinished-work alarm). Full brief: `docs/handoffs/voice-chat-vad-revival.md`, FOUND_DEFECTS D198.
-
-## Category false positives — fixed in the scanner, not allowlisted
-
-Recorded here because the same shapes will recur: directory-name exclusions hiding real mounters,
-intra-module singleton factories, components consumed by call or as a registry value, and SCREAMING_SNAKE
-constants classified as components. Details and tests: `scripts/unwired/FEATURE.md`.
-
-Genuinely allowlisted (5 rows, all one class): `features/agent-apps/sample-code/apps/*` — reference source
-for user-authored agent apps; the runtime compiles the equivalent source from the database.
-
-Still reported but **not** unfinished: `aidream/services/runtime/workflow_ab.py` (598 lines) has two
-documented consumers (`scripts/run_seo_workflow_ab.py`, `scripts/run_knowledge_workflow_ab.py`) and two
-test modules. aidream's `module-unreached` rule reaches only from *server* entry points, so an operator CLI
-harness is invisible to it. Fixing that belongs in `aidream/scripts/check_unwired.py`; it is already
-tracked in aidream's `FOUND_DEFECTS.md` row 11.
+**The report grows while it is worked.** 972 → 986 across one day of ~90 concurrent sessions. Clearing this
+backlog is not a finish line; the number *moving* is the signal, not the number itself.

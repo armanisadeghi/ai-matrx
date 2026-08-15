@@ -1,16 +1,16 @@
 {
-  "generatedAt": "2026-08-15T07:00:30.247Z",
-  "commit": "29dbc9a4d6f39f0b1ae28ba04f185be04af04445",
-  "aidreamCommit": "bdf7a68432330841edc148a088ffdeaa03048dd0",
+  "generatedAt": "2026-08-15T07:34:16.617Z",
+  "commit": "7aec92e0294afeea20786f5afee0a204ca4db6c7",
+  "aidreamCommit": "7633342b4abe8e01fe34c94511155f5457dcfb7a",
   "totals": {
-    "findings": 985,
-    "lines": 41284,
-    "filesWithFindings": 686,
-    "filesScanned": 13544,
+    "findings": 986,
+    "lines": 41311,
+    "filesWithFindings": 687,
+    "filesScanned": 13585,
     "suppressed": 5,
     "byDetector": {
       "react-component-unmounted": 367,
-      "export-unimported": 608,
+      "export-unimported": 609,
       "router-unmounted": 2,
       "host-installer-unset": 1,
       "scheduler-handler-unregistered": 0,
@@ -18,7 +18,7 @@
     },
     "byRepository": {
       "matrx-frontend": 718,
-      "aidream": 267
+      "aidream": 268
     }
   },
   "partial": [],
@@ -1138,7 +1138,7 @@
       "symbol": "aidream/services/ai_execution/block_stream.py",
       "lines": 140,
       "title": "aidream/services/ai_execution/block_stream.py — a whole service module nothing in the repo ever loads (1 public function(s))",
-      "evidence": "no chain of imports reaches it from any server entry point (aidream/api/app.py, app_init.py, run.py, initialize_systems.py) or from any of the 467 operator entry points (top-level scripts/*.py, plus every module with its own __main__) — every line in it is unreachable in production",
+      "evidence": "no chain of imports reaches it from any server entry point (aidream/api/app.py, app_init.py, run.py, initialize_systems.py) or from any of the 468 operator entry points (top-level scripts/*.py, plus every module with its own __main__) — every line in it is unreachable in production",
       "intent": "named in FOUND_DEFECTS.md, docs/handoffs/canonical-stream-and-surface-writeback.md",
       "remains": "wire its entry point: import and call it from the router, sweeper, graph node or service that was meant to drive it (its own docstring usually names the seam), then prove one real request reaches it",
       "feature": "aidream/services/ai_execution"
@@ -1446,7 +1446,7 @@
       "symbol": "aidream/services/context_catalog.py",
       "lines": 118,
       "title": "aidream/services/context_catalog.py — a whole service module nothing in the repo ever loads (2 public function(s))",
-      "evidence": "no chain of imports reaches it from any server entry point (aidream/api/app.py, app_init.py, run.py, initialize_systems.py) or from any of the 467 operator entry points (top-level scripts/*.py, plus every module with its own __main__) — every line in it is unreachable in production",
+      "evidence": "no chain of imports reaches it from any server entry point (aidream/api/app.py, app_init.py, run.py, initialize_systems.py) or from any of the 468 operator entry points (top-level scripts/*.py, plus every module with its own __main__) — every line in it is unreachable in production",
       "intent": "named in FOUND_DEFECTS.md",
       "remains": "wire its entry point: import and call it from the router, sweeper, graph node or service that was meant to drive it (its own docstring usually names the seam), then prove one real request reaches it",
       "feature": "aidream/services"
@@ -3384,6 +3384,20 @@
       "feature": "components"
     },
     {
+      "repository": "aidream",
+      "detector": "export-unimported",
+      "file": "aidream/services/agent_slots/package_slots.py",
+      "line": 85,
+      "column": 1,
+      "symbol": "resolve_package_slot",
+      "lines": 48,
+      "title": "aidream/services/agent_slots/package_slots.py:85 `resolve_package_slot` has no runtime caller",
+      "evidence": "no module outside its own package names it",
+      "intent": "its own docstring: \"Resolve package work and retain the exact pin for post-run honesty.\"",
+      "remains": "wire the caller its module was written for — a router endpoint, a sweeper/scheduler registration, a graph node, or the service that should invoke it — then prove it runs end to end. If it is a seam meant for a consumer that does not exist yet, say so in scripts/unwired_allowlist.json with a reason",
+      "feature": "aidream/services/agent_slots"
+    },
+    {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
       "file": "components/matrx/resizable/Panels.tsx",
@@ -4196,20 +4210,6 @@
       "feature": "aidream/services/agent_service"
     },
     {
-      "repository": "aidream",
-      "detector": "export-unimported",
-      "file": "aidream/services/agent_slots/package_slots.py",
-      "line": 75,
-      "column": 1,
-      "symbol": "resolve_package_slot",
-      "lines": 38,
-      "title": "aidream/services/agent_slots/package_slots.py:75 `resolve_package_slot` has no runtime caller",
-      "evidence": "no module outside its own package names it",
-      "intent": "its own docstring: \"Resolve package work and retain the exact pin for post-run honesty.\"",
-      "remains": "wire the caller its module was written for — a router endpoint, a sweeper/scheduler registration, a graph node, or the service that should invoke it — then prove it runs end to end. If it is a seam meant for a consumer that does not exist yet, say so in scripts/unwired_allowlist.json with a reason",
-      "feature": "aidream/services/agent_slots"
-    },
-    {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
       "file": "components/animated/demos/CanvasRevealEffectDemo3.tsx",
@@ -4297,7 +4297,7 @@
       "repository": "matrx-frontend",
       "detector": "export-unimported",
       "file": "utils/permissions/hooks.ts",
-      "line": 90,
+      "line": 92,
       "column": 1,
       "symbol": "useResourcePermissions",
       "lines": 38,
@@ -4955,7 +4955,7 @@
       "repository": "matrx-frontend",
       "detector": "export-unimported",
       "file": "utils/permissions/hooks.ts",
-      "line": 512,
+      "line": 546,
       "column": 1,
       "symbol": "useSharedWithMe",
       "lines": 31,
@@ -5809,7 +5809,7 @@
       "repository": "matrx-frontend",
       "detector": "export-unimported",
       "file": "utils/permissions/hooks.ts",
-      "line": 138,
+      "line": 140,
       "column": 1,
       "symbol": "usePermissionCheck",
       "lines": 25,
@@ -7824,6 +7824,20 @@
     {
       "repository": "aidream",
       "detector": "export-unimported",
+      "file": "aidream/services/agent_slots/code_truth.py",
+      "line": 138,
+      "column": 1,
+      "symbol": "import_code_truth_modules",
+      "lines": 17,
+      "title": "aidream/services/agent_slots/code_truth.py:138 `import_code_truth_modules` has no runtime caller",
+      "evidence": "no module outside its own package names it",
+      "intent": "a purpose-built service-unreached artifact",
+      "remains": "wire the caller its module was written for — a router endpoint, a sweeper/scheduler registration, a graph node, or the service that should invoke it — then prove it runs end to end. If it is a seam meant for a consumer that does not exist yet, say so in scripts/unwired_allowlist.json with a reason",
+      "feature": "aidream/services/agent_slots"
+    },
+    {
+      "repository": "aidream",
+      "detector": "export-unimported",
       "file": "aidream/services/content_plan/cms_reconciler.py",
       "line": 291,
       "column": 1,
@@ -7844,7 +7858,7 @@
       "symbol": "aidream/services/rag/awareness.py",
       "lines": 17,
       "title": "aidream/services/rag/awareness.py — a whole service module nothing in the repo ever loads",
-      "evidence": "no chain of imports reaches it from any server entry point (aidream/api/app.py, app_init.py, run.py, initialize_systems.py) or from any of the 467 operator entry points (top-level scripts/*.py, plus every module with its own __main__) — every line in it is unreachable in production",
+      "evidence": "no chain of imports reaches it from any server entry point (aidream/api/app.py, app_init.py, run.py, initialize_systems.py) or from any of the 468 operator entry points (top-level scripts/*.py, plus every module with its own __main__) — every line in it is unreachable in production",
       "intent": "named in .arman/junk/WARNING_RESOLUTION_GUIDE.md, .cursor/plans/agentic_code_editor_roadmap_d80f9b5c.plan.md",
       "remains": "wire its entry point: import and call it from the router, sweeper, graph node or service that was meant to drive it (its own docstring usually names the seam), then prove one real request reaches it",
       "feature": "aidream/services/rag"
@@ -7858,7 +7872,7 @@
       "symbol": "aidream/services/rag/code_chunker.py",
       "lines": 17,
       "title": "aidream/services/rag/code_chunker.py — a whole service module nothing in the repo ever loads",
-      "evidence": "no chain of imports reaches it from any server entry point (aidream/api/app.py, app_init.py, run.py, initialize_systems.py) or from any of the 467 operator entry points (top-level scripts/*.py, plus every module with its own __main__) — every line in it is unreachable in production",
+      "evidence": "no chain of imports reaches it from any server entry point (aidream/api/app.py, app_init.py, run.py, initialize_systems.py) or from any of the 468 operator entry points (top-level scripts/*.py, plus every module with its own __main__) — every line in it is unreachable in production",
       "intent": "named in FOUND_DEFECTS.md, docs/rag_and_ner/reality/01_RAG_REALITY.md",
       "remains": "wire its entry point: import and call it from the router, sweeper, graph node or service that was meant to drive it (its own docstring usually names the seam), then prove one real request reaches it",
       "feature": "aidream/services/rag"
@@ -7872,7 +7886,7 @@
       "symbol": "aidream/services/rag/db.py",
       "lines": 17,
       "title": "aidream/services/rag/db.py — a whole service module nothing in the repo ever loads",
-      "evidence": "no chain of imports reaches it from any server entry point (aidream/api/app.py, app_init.py, run.py, initialize_systems.py) or from any of the 467 operator entry points (top-level scripts/*.py, plus every module with its own __main__) — every line in it is unreachable in production",
+      "evidence": "no chain of imports reaches it from any server entry point (aidream/api/app.py, app_init.py, run.py, initialize_systems.py) or from any of the 468 operator entry points (top-level scripts/*.py, plus every module with its own __main__) — every line in it is unreachable in production",
       "intent": "named in .claude/skills/add-ai-provider/SKILL.md, .claude/skills/add-ai-provider/references/provider-onboarding-failure-modes.md",
       "remains": "wire its entry point: import and call it from the router, sweeper, graph node or service that was meant to drive it (its own docstring usually names the seam), then prove one real request reaches it",
       "feature": "aidream/services/rag"
@@ -7886,7 +7900,7 @@
       "symbol": "aidream/services/rag/image_pipeline.py",
       "lines": 17,
       "title": "aidream/services/rag/image_pipeline.py — a whole service module nothing in the repo ever loads",
-      "evidence": "no chain of imports reaches it from any server entry point (aidream/api/app.py, app_init.py, run.py, initialize_systems.py) or from any of the 467 operator entry points (top-level scripts/*.py, plus every module with its own __main__) — every line in it is unreachable in production",
+      "evidence": "no chain of imports reaches it from any server entry point (aidream/api/app.py, app_init.py, run.py, initialize_systems.py) or from any of the 468 operator entry points (top-level scripts/*.py, plus every module with its own __main__) — every line in it is unreachable in production",
       "intent": "named in .cursor/plans/rag_orm_ownership_and_raw_sql_eradication.plan.md, FOUND_DEFECTS.md",
       "remains": "wire its entry point: import and call it from the router, sweeper, graph node or service that was meant to drive it (its own docstring usually names the seam), then prove one real request reaches it",
       "feature": "aidream/services/rag"
@@ -7900,7 +7914,7 @@
       "symbol": "aidream/services/rag/progress.py",
       "lines": 17,
       "title": "aidream/services/rag/progress.py — a whole service module nothing in the repo ever loads",
-      "evidence": "no chain of imports reaches it from any server entry point (aidream/api/app.py, app_init.py, run.py, initialize_systems.py) or from any of the 467 operator entry points (top-level scripts/*.py, plus every module with its own __main__) — every line in it is unreachable in production",
+      "evidence": "no chain of imports reaches it from any server entry point (aidream/api/app.py, app_init.py, run.py, initialize_systems.py) or from any of the 468 operator entry points (top-level scripts/*.py, plus every module with its own __main__) — every line in it is unreachable in production",
       "intent": "named in .claude/skills/accurate-download-progress.md, .claude/skills/error-capture/SKILL.md",
       "remains": "wire its entry point: import and call it from the router, sweeper, graph node or service that was meant to drive it (its own docstring usually names the seam), then prove one real request reaches it",
       "feature": "aidream/services/rag"
@@ -9393,7 +9407,7 @@
       "repository": "matrx-frontend",
       "detector": "export-unimported",
       "file": "utils/permissions/hooks.ts",
-      "line": 170,
+      "line": 172,
       "column": 1,
       "symbol": "useCanEdit",
       "lines": 12,
@@ -9407,7 +9421,7 @@
       "repository": "matrx-frontend",
       "detector": "export-unimported",
       "file": "utils/permissions/hooks.ts",
-      "line": 189,
+      "line": 191,
       "column": 1,
       "symbol": "useCanAdmin",
       "lines": 12,
@@ -9421,7 +9435,7 @@
       "repository": "matrx-frontend",
       "detector": "export-unimported",
       "file": "utils/permissions/service.ts",
-      "line": 892,
+      "line": 955,
       "column": 1,
       "symbol": "batchShareWithUsers",
       "lines": 12,
@@ -11493,7 +11507,7 @@
       "repository": "matrx-frontend",
       "detector": "export-unimported",
       "file": "utils/permissions/service.ts",
-      "line": 794,
+      "line": 857,
       "column": 1,
       "symbol": "isResourceOwner",
       "lines": 7,
