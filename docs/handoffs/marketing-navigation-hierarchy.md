@@ -107,38 +107,29 @@ later phase is guesswork until this is declared.
 
 ## Remaining work, in order
 
-1. **Migrate the twelve components onto the registry.** The sub-views are
-   declared (`lib/site-subviews.ts`) but each component still owns its local copy
-   on one of five mechanisms. Move them all to `?view=` — the majority mechanism
-   and the one `WorkspaceViewToggle` already uses — consuming
-   `listMarketingSubViews(section)` instead of a local const. Drop each entry's
-   `legacyMechanism` / `legacyNotLinkable` as it lands, and delete that section's
-   drift guard in `site-subviews.test.ts`. **Start with the four that have no URL
-   at all** (`access`, `authority`, `changes`, `structure`) — those views cannot
-   be linked, shared, restored on reload, or opened by an agent.
-   `changes` is the deep one: it hides a whole level (tracked/untracked) plus a
-   third below it (six tabs on a selected change set, also not linkable).
-2. **Demote the top bar one level.** With the sidebar owning the 26,
-   `EntityModeHeader` renders the CURRENT SECTION's sub-views — 3-7 items, which
-   is where `RouteModeNav` reaches its icon+label variant. The top bar is kept,
-   not deleted, and the five competing sub-nav mechanisms collapse onto it.
-   Depends on 1. This also closes the board's parking-lot item "Header overlap at
-   1500-1700px: Marketing's mode pill renders over the site name."
-3. **Execute the promotions/demotions** ruled below: Discovery → brand,
-   Capabilities → marketing level, the Media library/research views → brand,
-   Access + Integrations + Intake folded into Settings, and collapse the
+1. **AI Visibility is the last section still drawing its own tabs.** It is the
+   one section whose views are REAL sub-routes (`ai-visibility/[view]`) rather
+   than query params, and it duplicates the same four as in-page Radix tabs.
+   Keep the routes, drop the tabs, and teach the registry a path-style href
+   (`hrefStyle: "path"`) so `marketingSubViewHref` stops forcing `?view=`. Its
+   `legacyMechanism: "sub-route"` is what keeps the header out of its way until
+   then. Adding an `overview` view for the section root changes the destination
+   counts — update them in the same commit. (Spun off as its own task.)
+2. **Execute the promotions/demotions** ruled below: Discovery → brand,
+   Capabilities → marketing level, the Media library/research/sources views →
+   brand, Access + Integrations + Intake folded into Settings, and collapse the
    duplicate `/marketing/ai-visibility` site-picker route. Each move updates the
-   destination counts in `site-subviews.test.ts` **in the same commit** — that is
-   what makes a deliberate move distinguishable from a lost surface.
-4. **Finish the shared-primitive cleanup.** Two smaller items remain: the switch
-   button loses its label when the sidebar is collapsed
-   (`styles/shell.css:1008-1027`), degrading to an unlabeled rail glyph; and
-   `NAV_ITEM_CLASS` / `ICON_SIZE` / `ICON_STROKE` are now copied into all five
-   consumer menus — extract them.
-5. **Verify in a browser after 1-3.** The sidebar was confirmed live (7 groups,
-   28 links, correct active section); the switch-logic refactor after that is
-   covered by unit tests but has NOT been re-confirmed visually, because this
-   machine's dev server died repeatedly mid-compile.
+   destination counts in `site-subviews.test.ts` **in the same commit** — that
+   is what makes a deliberate move distinguishable from a lost surface.
+3. **Finish the shared-primitive cleanup.** The switch button loses its label
+   when the sidebar is collapsed (`styles/shell.css:1008-1027`), degrading to an
+   unlabeled rail glyph; and `NAV_ITEM_CLASS` / `ICON_SIZE` / `ICON_STROKE` are
+   copied into all five consumer menus — extract them.
+4. **Visual pass on the new header.** Its behaviour is pinned by
+   `lib/site-subnav.test.ts` across all 26 sections, and the sidebar was
+   confirmed live, but the header itself has not been seen in a browser since
+   the sections were removed from it: this machine's dev server could not hold a
+   marketing route long enough (see Gotchas).
 
 ## Decisions needed
 
@@ -204,7 +195,14 @@ are client redirect shims; `/marketing/discovery/youtube` is an unrelated featur
 
 ## Done
 
-- The site's second level is declared and guarded — `features/marketing/lib/site-subviews.ts` (39 sub-views) + `site-subviews.test.ts`, which counts every destination (26 sections + 39 = 65) and fails when one disappears.
-- The 26 sections have a parent/child structure — seven groups on `MARKETING_SITE_SECTIONS`, ordered by priority within each, `pendingMoveTo` marking the two that are leaving.
-- Marketing is a sidebar mode — `features/marketing/components/shell/MarketingSidebarMenu.tsx` + one `route-menu-registry` entry; icons shared via `lib/site-section-icons.ts`.
-- The shared mode switch is deterministic and its view is derived, not synced — see `resolveSidebarView` + `route-menu-slot.test.ts`.
+- The site's second level is declared and guarded — `lib/site-subviews.ts` (39 sub-views) + `site-subviews.test.ts`, which counts every destination (26 + 39 = 65) and fails when one disappears.
+- The 26 sections have a parent/child structure — seven groups on `MARKETING_SITE_SECTIONS`, priority-ordered within each, `pendingMoveTo` marking the two that are leaving.
+- Marketing is a sidebar mode — `components/shell/MarketingSidebarMenu.tsx` + one `route-menu-registry` entry; icons in `lib/site-section-icons.ts`.
+- **The header shows sub-views, not sections** — nine sections migrated onto `useMarketingSubView` + the registry; five competing mechanisms collapsed to one; behaviour pinned by `lib/site-subnav.test.ts`.
+- **Every sub-view has a URL** — `structure/columns`, `authority/routes|evidence`, `access/organizations|public`, `changes/untracked` were component state and could not be linked, shared, restored, or opened by an agent.
+- Shared shell fixes: the mode switch is deterministic and its view derived (`resolveSidebarView`); `RouteModeNav` no longer rebuilds its ResizeObserver on every parent render.
+
+## Gotchas
+
+- **The dev server cannot hold a marketing route on this machine.** `scripts/agent-dev-server.sh` caps RSS at 8 GB; `/marketing` alone peaks ~9.7 GB and a site route far more, so the watchdog reaps it mid-compile leaving only a line in `<tmp>/matrx-frontend-preview-501/shared-next-dev.failed`. Start with `MATRX_PREVIEW_MAX_RSS_GB=24` and expect it still to struggle under parallel agent load. Spun off as its own task.
+- **Two sections keep a local switcher on purpose.** `LinksInspectionTable` serves the site's Links section AND a crawl's links page; on a crawl the header already carries that crawl's six modes, so its switcher stays local (keyed off `crawlId`). AI Visibility is item 1 above.
