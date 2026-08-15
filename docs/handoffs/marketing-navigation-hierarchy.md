@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-08-13
+updated: 2026-08-15
 repos: [matrx-frontend]
 vision:
   [
@@ -107,25 +107,17 @@ later phase is guesswork until this is declared.
 
 ## Remaining work, in order
 
-1. **AI Visibility is the last section still drawing its own tabs.** It is the
-   one section whose views are REAL sub-routes (`ai-visibility/[view]`) rather
-   than query params, and it duplicates the same four as in-page Radix tabs.
-   Keep the routes, drop the tabs, and teach the registry a path-style href
-   (`hrefStyle: "path"`) so `marketingSubViewHref` stops forcing `?view=`. Its
-   `legacyMechanism: "sub-route"` is what keeps the header out of its way until
-   then. Adding an `overview` view for the section root changes the destination
-   counts — update them in the same commit. (Spun off as its own task.)
-2. **Execute the promotions/demotions** ruled below: Discovery → brand,
+1. **Execute the promotions/demotions** ruled below: Discovery → brand,
    Capabilities → marketing level, the Media library/research/sources views →
    brand, Access + Integrations + Intake folded into Settings, and collapse the
    duplicate `/marketing/ai-visibility` site-picker route. Each move updates the
    destination counts in `site-subviews.test.ts` **in the same commit** — that
    is what makes a deliberate move distinguishable from a lost surface.
-3. **Finish the shared-primitive cleanup.** The switch button loses its label
+2. **Finish the shared-primitive cleanup.** The switch button loses its label
    when the sidebar is collapsed (`styles/shell.css:1008-1027`), degrading to an
    unlabeled rail glyph; and `NAV_ITEM_CLASS` / `ICON_SIZE` / `ICON_STROKE` are
    copied into all five consumer menus — extract them.
-4. **Visual pass on the new header.** Its behaviour is pinned by
+3. **Visual pass on the new header.** Its behaviour is pinned by
    `lib/site-subnav.test.ts` across all 26 sections, and the sidebar was
    confirmed live, but the header itself has not been seen in a browser since
    the sections were removed from it: this machine's dev server could not hold a
@@ -200,9 +192,12 @@ are client redirect shims; `/marketing/discovery/youtube` is an unrelated featur
 - Marketing is a sidebar mode — `components/shell/MarketingSidebarMenu.tsx` + one `route-menu-registry` entry; icons in `lib/site-section-icons.ts`.
 - **The header shows sub-views, not sections** — nine sections migrated onto `useMarketingSubView` + the registry; five competing mechanisms collapsed to one; behaviour pinned by `lib/site-subnav.test.ts`.
 - **Every sub-view has a URL** — `structure/columns`, `authority/routes|evidence`, `access/organizations|public`, `changes/untracked` were component state and could not be linked, shared, restored, or opened by an agent.
+- **AI Visibility has one path-style navigation** — the header owns Overview,
+  Claims, Sources, Decision signals, and History; both in-workspace switchers
+  are gone. Overview raises the guarded inventory to 26 + 40 = 66 destinations.
 - Shared shell fixes: the mode switch is deterministic and its view derived (`resolveSidebarView`); `RouteModeNav` no longer rebuilds its ResizeObserver on every parent render.
 
 ## Gotchas
 
 - **The dev server cannot hold a marketing route on this machine.** `scripts/agent-dev-server.sh` caps RSS at 8 GB; `/marketing` alone peaks ~9.7 GB and a site route far more, so the watchdog reaps it mid-compile leaving only a line in `<tmp>/matrx-frontend-preview-501/shared-next-dev.failed`. Start with `MATRX_PREVIEW_MAX_RSS_GB=24` and expect it still to struggle under parallel agent load. Spun off as its own task.
-- **Two sections keep a local switcher on purpose.** `LinksInspectionTable` serves the site's Links section AND a crawl's links page; on a crawl the header already carries that crawl's six modes, so its switcher stays local (keyed off `crawlId`). AI Visibility is item 1 above.
+- **One section keeps a local switcher on purpose.** `LinksInspectionTable` serves the site's Links section AND a crawl's links page; on a crawl the header already carries that crawl's six modes, so its switcher stays local (keyed off `crawlId`).

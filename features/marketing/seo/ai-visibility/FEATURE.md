@@ -1,6 +1,6 @@
 # AI Visibility
 
-**Status:** live · verified against code 2026-08-12
+**Status:** live · verified against code 2026-08-15
 
 ## One analysis, three surfaces
 
@@ -37,9 +37,14 @@
   renders brand, buyer question, provider coverage, mentions, and best position
   at 1200×630. Metadata uses `summary_large_image` and remains `noindex` because
   the opaque token is the authorization.
+- **The site header owns view navigation.** The root analyzer is Overview;
+  Claims, Sources, Decision signals, and History are real path children. Never
+  add an in-workspace tab bar over the same destinations.
 
 ## Change log
 
+- 2026-08-15 — Registered Overview plus the four evidence routes as path-style
+  site-header views and removed both duplicate in-workspace switchers.
 - 2026-08-12 — Added canonical row/view/window/field Copy, JSON, export, and
   Copy-for-AI controls to Claims, Sources, Signals, and History through
   `MatrxDataTable.copy`.

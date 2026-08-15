@@ -25,14 +25,16 @@
  */
 
 export interface MarketingSubView {
-  /** `?view=` value. The default view omits the param entirely. */
+  /** URL identity: a `?view=` value or path segment. */
   id: string;
   label: string;
 }
 
+export type MarketingSubViewHrefStyle = "query" | "path";
+
 /**
- * How a section's sub-views are wired TODAY, while the migration onto `?view=`
- * runs. Delete the field from an entry the moment that section is migrated —
+ * How a section's sub-views are wired TODAY, while the header migration runs.
+ * Delete the field from an entry the moment that section is migrated —
  * when every entry has lost it, delete the field from this interface too.
  */
 export type LegacySubViewMechanism =
@@ -45,8 +47,10 @@ export type LegacySubViewMechanism =
 export interface MarketingSectionSubViews {
   /** A `slug` from `MARKETING_SITE_SECTIONS`. */
   section: string;
-  /** In display order. The FIRST entry is the default (no `?view=` param). */
+  /** In display order. The FIRST entry is the bare section URL. */
   views: readonly MarketingSubView[];
+  /** Query params by default; path sections render children as `/[view]`. */
+  hrefStyle?: MarketingSubViewHrefStyle;
   legacyMechanism?: LegacySubViewMechanism;
   /**
    * The view is not in the URL today, so it cannot be linked, shared, restored
@@ -55,6 +59,14 @@ export interface MarketingSectionSubViews {
    */
   legacyNotLinkable?: true;
 }
+
+export const AI_VISIBILITY_SUBVIEWS = [
+  { id: "overview", label: "Overview" },
+  { id: "claims", label: "Claims" },
+  { id: "sources", label: "Sources" },
+  { id: "signals", label: "Decision signals" },
+  { id: "history", label: "History" },
+] as const satisfies readonly MarketingSubView[];
 
 export const MARKETING_SITE_SUBVIEWS = [
   {
@@ -135,17 +147,9 @@ export const MARKETING_SITE_SUBVIEWS = [
     ],
   },
   {
-    // The only section that already got this right: real sub-routes at
-    // `ai-visibility/[view]`. It ALSO renders the same four as Radix tabs
-    // inside the workspace — one of the two must go when this migrates.
     section: "ai-visibility",
-    views: [
-      { id: "claims", label: "Claims" },
-      { id: "sources", label: "Sources" },
-      { id: "signals", label: "Decision signals" },
-      { id: "history", label: "History" },
-    ],
-    legacyMechanism: "sub-route",
+    views: AI_VISIBILITY_SUBVIEWS,
+    hrefStyle: "path",
   },
   {
     section: "access",
@@ -185,7 +189,7 @@ export function isMarketingSubNavMigrated(section: string): boolean {
   return !!entry && !entry.legacyMechanism;
 }
 
-/** The view rendered when `?view=` is absent. */
+/** The view rendered at the bare section URL. */
 export function defaultMarketingSubView(
   section: string,
 ): MarketingSubView | undefined {
@@ -196,9 +200,15 @@ export function isMarketingSubView(section: string, value: string): boolean {
   return listMarketingSubViews(section).some((view) => view.id === value);
 }
 
+export function marketingSubViewHrefStyle(
+  section: string,
+): MarketingSubViewHrefStyle {
+  return ENTRIES.find((entry) => entry.section === section)?.hrefStyle ?? "query";
+}
+
 /**
- * The href for a sub-view. The default view omits the param so a section's
- * canonical URL never carries redundant state.
+ * The href for a sub-view. Query-style sections use `?view=`; path-style
+ * sections use `/[view]`. The default is always the bare section URL.
  */
 export function marketingSubViewHref(
   sectionHref: string,
@@ -206,8 +216,9 @@ export function marketingSubViewHref(
   viewId: string,
 ): string {
   const first = defaultMarketingSubView(section);
-  return !first || viewId === first.id
-    ? sectionHref
+  if (!first || viewId === first.id) return sectionHref;
+  return marketingSubViewHrefStyle(section) === "path"
+    ? `${sectionHref}/${viewId}`
     : `${sectionHref}?view=${viewId}`;
 }
 

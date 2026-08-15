@@ -3,10 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
-  ArrowLeft,
   AlertTriangle,
   ExternalLink,
-  Maximize2,
   MessageSquareQuote,
   PanelRightOpen,
   Play,
@@ -25,7 +23,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   InlineQueryError,
   StatusBadge,
@@ -49,11 +46,7 @@ import {
   type AiVisibilitySignal,
 } from "./types";
 import { useAiVisibility } from "./useAiVisibility";
-import {
-  AI_VISIBILITY_EVIDENCE_VIEWS,
-  isAiVisibilityEvidenceView,
-  type AiVisibilityEvidenceView,
-} from "./evidence-views";
+import type { AiVisibilityEvidenceView } from "./evidence-views";
 
 interface ClaimRow extends AiVisibilityClaim {
   engine: string;
@@ -243,8 +236,6 @@ export function AiVisibilityWorkspace({
   const [countryIso, setCountryIso] = useState("US");
   const [city, setCity] = useState("");
   const [forceRefresh, setForceRefresh] = useState(false);
-  const [activeEvidenceView, setActiveEvidenceView] =
-    useState<AiVisibilityEvidenceView>(evidenceView ?? "claims");
   const [openAnswer, setOpenAnswer] = useState<{
     engine: AiVisibilityEngine;
     answer: string;
@@ -718,31 +709,6 @@ export function AiVisibilityWorkspace({
   if (evidenceView) {
     return (
       <main className="flex h-full min-h-0 flex-col overflow-hidden bg-textured p-3 sm:p-4">
-        <header className="mb-2 flex shrink-0 flex-wrap items-center gap-2 border-b border-border pb-2">
-          <Button asChild size="sm" variant="ghost" className="gap-1.5">
-            <Link href={`${sitePath}/ai-visibility`}>
-              <ArrowLeft className="h-3.5 w-3.5" /> AI Visibility
-            </Link>
-          </Button>
-          <div className="h-5 w-px bg-border" aria-hidden />
-          <nav className="flex min-w-0 flex-1 flex-wrap items-center gap-1">
-            {AI_VISIBILITY_EVIDENCE_VIEWS.map((view) => (
-              <Button
-                key={view.id}
-                asChild
-                size="sm"
-                variant={view.id === evidenceView ? "secondary" : "ghost"}
-              >
-                <Link href={`${sitePath}/ai-visibility/${view.id}`}>
-                  {view.label}
-                </Link>
-              </Button>
-            ))}
-          </nav>
-          <span className="text-xs text-muted-foreground">
-            {site.name} · full-page evidence
-          </span>
-        </header>
         {evidence.isError ? (
           <div className="mb-2 shrink-0">
             <InlineQueryError
@@ -1006,39 +972,6 @@ export function AiVisibilityWorkspace({
           </div>
         </section>
       ) : null}
-
-      <Tabs
-        value={activeEvidenceView}
-        onValueChange={(value) => {
-          if (isAiVisibilityEvidenceView(value)) setActiveEvidenceView(value);
-        }}
-        className="flex min-h-[560px] flex-col"
-      >
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <TabsList className="w-fit max-w-full justify-start overflow-x-auto">
-            <TabsTrigger value="claims" className="gap-1.5">
-              <ShieldAlert className="h-3.5 w-3.5" /> Claims
-            </TabsTrigger>
-            <TabsTrigger value="sources" className="gap-1.5">
-              <SearchCheck className="h-3.5 w-3.5" /> Sources
-            </TabsTrigger>
-            <TabsTrigger value="signals" className="gap-1.5">
-              <ScanSearch className="h-3.5 w-3.5" /> Decision signals
-            </TabsTrigger>
-            <TabsTrigger value="history" className="gap-1.5">
-              <RefreshCw className="h-3.5 w-3.5" /> History
-            </TabsTrigger>
-          </TabsList>
-          <Button asChild size="sm" variant="outline" className="gap-1.5">
-            <Link href={`${sitePath}/ai-visibility/${activeEvidenceView}`}>
-              <Maximize2 className="h-3.5 w-3.5" /> Open full page
-            </Link>
-          </Button>
-        </div>
-        <TabsContent value={activeEvidenceView} className="min-h-0 flex-1">
-          {renderEvidenceTable(activeEvidenceView)}
-        </TabsContent>
-      </Tabs>
 
       {openAnswer ? (
         <SidePanelSurface

@@ -88,6 +88,7 @@ export const MARKETING_SUBVIEW_ICONS: Record<string, LucideIcon> = {
   "keywords:performance": TrendingUp,
   "keywords:classification": Tags,
 
+  "ai-visibility:overview": LayoutDashboard,
   "ai-visibility:claims": MessageSquareQuote,
   "ai-visibility:sources": BookOpen,
   "ai-visibility:signals": Radar,

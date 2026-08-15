@@ -80,22 +80,27 @@ describe("what the site header renders", () => {
     expect(navFor(`${SITE}/pages/page-1/snapshots`).section).toBe("pages");
   });
 
-  /**
-   * ai-visibility is the one section still carrying `legacyMechanism`: its
-   * views are real sub-routes rather than query params, and it duplicates them
-   * as in-page tabs. Until that is resolved the header must stay out of its
-   * way, or the user sees the same four tabs twice.
-   */
-  it("stays silent for a section that still draws its own switcher", () => {
-    expect(navFor(`${SITE}/ai-visibility`).modes).toEqual([]);
+  it("renders and activates AI Visibility's path-style sub-routes", () => {
+    const overview = navFor(`${SITE}/ai-visibility`);
+    expect(overview.modes.map((mode) => mode.name)).toEqual([
+      "Overview",
+      "Claims",
+      "Sources",
+      "Decision signals",
+      "History",
+    ]);
+    expect(overview.activeHref).toBe(`${SITE}/ai-visibility`);
+    expect(navFor(`${SITE}/ai-visibility/signals`).activeHref).toBe(
+      `${SITE}/ai-visibility/signals`,
+    );
   });
 
-  it("has migrated every section except that one", () => {
+  it("has migrated every declared section", () => {
     const unmigrated = MARKETING_SITE_SUBVIEWS.filter((entry) => {
       const pathname = entry.section ? `${SITE}/${entry.section}` : SITE;
       return navFor(pathname).modes.length === 0;
     }).map((entry) => entry.section);
-    expect(unmigrated).toEqual(["ai-visibility"]);
+    expect(unmigrated).toEqual([]);
   });
 });
 

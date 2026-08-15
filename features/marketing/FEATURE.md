@@ -125,8 +125,9 @@ from Supabase.
 - `MatrxDataTable` owns local sort/filter/pagination for claims, cited sources,
   decision signals, and history. “Unverified but influential” is an explicit critical
   claim state, not hidden in prose. Each table also has a dedicated full-height route at
-  `.../ai-visibility/[claims|sources|signals|history]`; the compact overview links to the
-  active table's page. Cited URLs always open the real source in a new tab.
+  `.../ai-visibility/[claims|sources|signals|history]`; the site header owns navigation
+  between those routes and the root Overview. Cited URLs always open the real source in a
+  new tab.
 - The browser never writes server-owned evidence. It reads
   `seo.ai_visibility_response/claim/citation/signal` under RLS; the Python brain owns
   provider calls, crawl-cache reuse, specialist analysis, cost accounting, and writes.
@@ -475,6 +476,11 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-08-15 — Codex: **AI Visibility has one view navigation.** The site
+  header now owns Overview plus the real Claims, Sources, Decision signals, and
+  History sub-routes through `hrefStyle: "path"`; both in-workspace switchers
+  are gone. Overview is the deliberate 66th site destination (26 sections + 40
+  sub-views), guarded by `site-subviews.test.ts`.
 - 2026-08-15 — Codex: **Exact-page competitor link gap now lives on the losing page.** The existing page Backlinks card reads accepted `seo.competitor_opportunity` rows directly from Supabase and exposes the run only when at least two linked competitors are human-confirmed and link-gap eligible. The paid action calls aidream's canonical `page_intersection` collection; persisted referring-page → exact competitor-page matches return through `seo.link_gap_match.page_id`. Every competitor page and referring page is a new-tab door, and every result stays visibly pending for human review—AI/provider scores order prospects but never approve them.
 
 - 2026-08-15 — Codex: **Initiatives shipped at its reserved URL.** `/marketing/initiatives` now uses the canonical `EntityListPage` with explicit Mine / My Orgs / Shared / Public scopes, true server counts, relevance-ranked search, server filtering/sorting for every declared column, and version-guarded inline edits. Create/edit share one form and the canonical brand-picker data path; `/marketing/initiatives/[id]` is the share destination and renders the related brand through `EntityRef`. The `marketing_initiative` share registry row, TS mirror, and generated snapshot moved together only after the detail route existed. `matrx-user/marketing-initiatives` is registered, synced, routed, and emits page context; the coming-soon promise and nav status are removed.

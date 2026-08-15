@@ -8,9 +8,9 @@
  * family — so four of them had no URL at all and could not be linked, shared,
  * restored on reload, or opened by an agent.
  *
- * Now the SITE HEADER renders the sub-views and owns navigation (it writes
- * `?view=`); a section only reads. Do not add a setter here — a section that
- * moves its own tab is re-implementing the header.
+ * Now the SITE HEADER renders the sub-views and owns navigation (`?view=` or a
+ * declared path segment); a section only reads. Do not add a setter here — a
+ * section that moves its own tab is re-implementing the header.
  */
 
 import { usePathname, useSearchParams } from "next/navigation";
@@ -22,6 +22,7 @@ import {
   isMarketingSubView,
   listMarketingSubViews,
   marketingSubViewHref,
+  marketingSubViewHrefStyle,
 } from "@/features/marketing/lib/site-subviews";
 import { listMarketingSiteModes } from "@/features/marketing/lib/route-sections";
 import { marketingSubViewIcon } from "@/features/marketing/lib/site-subview-icons";
@@ -71,8 +72,7 @@ export interface MarketingSiteSubNav {
    * so React Compiler can memoize it and the identity holds still.
    */
   modes: MarketingSubNavItem[];
-  /** Which of them is current. Sub-views differ only by query string, so the
-   *  header cannot resolve this from the pathname and must be told. */
+  /** Which of them is current, resolved from its query value or path segment. */
   activeHref: string;
 }
 
@@ -92,7 +92,11 @@ export function buildMarketingSubNav(
   );
   const section = active?.slug ?? "";
   const sectionHref = active?.href ?? sitePath;
-  const view = resolveMarketingSubView(section, rawViewParam);
+  const pathView =
+    marketingSubViewHrefStyle(section) === "path"
+      ? pathname.slice(sectionHref.length).split("/").filter(Boolean)[0] ?? null
+      : null;
+  const view = resolveMarketingSubView(section, pathView ?? rawViewParam);
   // Only a migrated section hands its sub-nav to the header; one that still
   // draws its own switcher would otherwise show the same tabs twice.
   const views = isMarketingSubNavMigrated(section)

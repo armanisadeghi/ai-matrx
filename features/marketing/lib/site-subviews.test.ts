@@ -1,6 +1,3 @@
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
-
 import { MARKETING_SITE_SECTIONS } from "./route-sections";
 import {
   MARKETING_SITE_SUBVIEWS,
@@ -13,10 +10,6 @@ import {
 } from "./site-subviews";
 
 const SITE_PATH = "/marketing/brands/brand-1/sites/site-1";
-
-function sourceOf(relativePath: string): string {
-  return readFileSync(resolve(process.cwd(), relativePath), "utf8");
-}
 
 describe("marketing site sub-view registry", () => {
   it("declares sub-views only for sections that exist", () => {
@@ -65,6 +58,17 @@ describe("marketing site sub-view registry", () => {
     );
   });
 
+  it("builds AI Visibility's real sub-routes from its path-style registry", () => {
+    const sectionHref = `${SITE_PATH}/ai-visibility`;
+    expect(defaultMarketingSubView("ai-visibility")?.id).toBe("overview");
+    expect(marketingSubViewHref(sectionHref, "ai-visibility", "overview")).toBe(
+      sectionHref,
+    );
+    expect(marketingSubViewHref(sectionHref, "ai-visibility", "claims")).toBe(
+      `${sectionHref}/claims`,
+    );
+  });
+
   it("returns an empty list for a section with no sub-views", () => {
     expect(listMarketingSubViews("settings")).toEqual([]);
     expect(defaultMarketingSubView("settings")).toBeUndefined();
@@ -99,9 +103,9 @@ describe("marketing site sub-view registry", () => {
         (total, entry) => total + entry.views.length,
         0,
       ),
-    ).toBe(39);
+    ).toBe(40);
     expect(countMarketingSiteDestinations(MARKETING_SITE_SECTIONS.length)).toBe(
-      65,
+      66,
     );
   });
 
@@ -121,21 +125,4 @@ describe("marketing site sub-view registry", () => {
     expect(listUnlinkableMarketingSections()).toEqual([]);
   });
 
-  /**
-   * Drift guards for the sections that still own a local copy of their view
-   * list. A component keeping its own list is fine ONLY while its entry still
-   * declares a `legacyMechanism`; these assertions make the copies visible so a
-   * label edited in one place cannot silently disagree with the registry.
-   * Each block is deleted when its section is migrated to consume the registry.
-   */
-  describe("legacy local copies still match the registry", () => {
-    it("ai-visibility", () => {
-      const source = sourceOf(
-        "features/marketing/seo/ai-visibility/evidence-views.ts",
-      );
-      for (const view of listMarketingSubViews("ai-visibility")) {
-        expect(source).toContain(`id: "${view.id}", label: "${view.label}"`);
-      }
-    });
-  });
 });
