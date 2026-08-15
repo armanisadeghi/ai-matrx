@@ -75,8 +75,31 @@ function SeoPlanSection({
   siteNodes: readonly PlanNodeRow[];
   workspaceHref: string;
 }) {
-  const strategy: NodeKeywordStrategy | null =
-    readNodeKeywordStrategy(planNode);
+  // `keyword_strategy` is agent-written jsonb and the reader only proves it is
+  // an object — normalize the array/string fields so one malformed record
+  // can't take down the whole Plan tab.
+  const raw: NodeKeywordStrategy | null = readNodeKeywordStrategy(planNode);
+  const strategy = raw
+    ? {
+        page_role: typeof raw.page_role === "string" ? raw.page_role : "page",
+        reason: typeof raw.reason === "string" ? raw.reason : "",
+        supports_routes: Array.isArray(raw.supports_routes)
+          ? raw.supports_routes.filter((r) => typeof r === "string")
+          : [],
+        internal_links: Array.isArray(raw.internal_links)
+          ? raw.internal_links.filter(
+              (l) =>
+                l &&
+                typeof l === "object" &&
+                typeof l.to_route === "string" &&
+                typeof l.anchor_text === "string",
+            )
+          : [],
+        secondary_keywords: Array.isArray(raw.secondary_keywords)
+          ? raw.secondary_keywords.filter((k) => typeof k === "string")
+          : [],
+      }
+    : null;
 
   // THE DOOR LAW: a strategy route that IS a plan node opens that node in the
   // plan workspace; a route the plan doesn't know renders as plain text.
