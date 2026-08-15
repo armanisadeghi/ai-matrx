@@ -35,6 +35,8 @@ export type LoopControlAction =
 
 type LoopStateRow = Database["growth"]["Views"]["v_loop_state"]["Row"];
 type StageRunRow = Database["growth"]["Tables"]["loop_stage_run"]["Row"];
+type PageMeasurementHealthRow =
+  Database["seo"]["Tables"]["page_measurement_health"]["Row"];
 
 /** The 200 JSON body of one contract operation — derived, never asserted. */
 type Json200<P extends keyof paths, M extends string> =
@@ -78,6 +80,11 @@ function unwrap<P extends keyof paths, M extends string>(
 async function growthDb() {
   await requireAuthenticatedSupabaseSession(supabase);
   return supabase.schema("growth");
+}
+
+async function seoDb() {
+  await requireAuthenticatedSupabaseSession(supabase);
+  return supabase.schema("seo");
 }
 
 function requiredString(value: unknown, field: string): string {
@@ -568,4 +575,30 @@ export async function reconcileLoop(
     result,
     "Reconcile loop",
   );
+}
+
+/** The canonical one-click door out of a PageSpeed page/strategy quarantine. */
+export async function releasePageMeasurementQuarantine(input: {
+  pageId: string;
+  strategy: string;
+  reason: string;
+}): Promise<PageMeasurementHealthRow> {
+  const response = await (
+    await seoDb()
+  ).rpc("release_page_measurement_quarantine", {
+    p_page_id: input.pageId,
+    p_strategy: input.strategy,
+    p_reason: input.reason,
+  });
+  if (response.error) {
+    throw new GrowthLoopApiError(
+      `PageSpeed quarantine could not be released: ${response.error.message}`,
+    );
+  }
+  if (!response.data) {
+    throw new GrowthLoopApiError(
+      "PageSpeed quarantine release returned no health record.",
+    );
+  }
+  return response.data;
 }
