@@ -193,7 +193,6 @@ const MicrophoneIconButtonCore = forwardRef<
   );
 
   // ── Auto-start on first mount ────────────────────────────────────────────
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!autoStart || autoStartFired.current) return;
     autoStartFired.current = true;
@@ -272,6 +271,7 @@ const MicrophoneIconButtonCore = forwardRef<
     buttonSizeMap[size],
     disabled && "opacity-50 cursor-not-allowed",
   );
+  const statusSize = size === "xs" ? "sm" : size;
 
   // ══════════════════════════════════════════════════════════════════════════
   // VARIANT: icon-only
@@ -359,7 +359,7 @@ const MicrophoneIconButtonCore = forwardRef<
     if (isTranscribing && !isRecording) {
       return (
         <>
-          <TranscriptionLoader duration={duration} size={size as any} />
+          <TranscriptionLoader duration={duration} size={statusSize} />
           <VoiceTroubleshootingModal
             isOpen={showTroubleshooting}
             onClose={() => setShowTroubleshooting(false)}
@@ -378,7 +378,7 @@ const MicrophoneIconButtonCore = forwardRef<
               <RecordingIndicator
                 duration={duration}
                 audioLevel={audioLevel}
-                size={size as any}
+                size={statusSize}
                 color="blue"
               />
               <Button

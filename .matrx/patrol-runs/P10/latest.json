@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P10",
+  "runId": "2026-08-15T191639Z",
+  "state": "infrastructure_blocked",
+  "updatedAt": "2026-08-15T19:29:56Z",
+  "summary": "Independent certification found no static regression but exact-worktree live interaction proof is blocked by a foreign preview lease.",
+  "source": "2026-08-15T191639Z.json",
+  "eventHash": "9cdbdce6a31920755524e5ae547cc679e52ca77f41112907abeeacf9e7d7c183"
+}

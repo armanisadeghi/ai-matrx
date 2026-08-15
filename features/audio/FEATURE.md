@@ -217,6 +217,8 @@ Unit tests cover `sinkAwarePlayer`, `captureLock`, the speech API boundary, and 
 
 ## Change log
 
+- `2026-08-15` — The shared microphone maps its `xs` shell size to the status components' smallest supported `sm` size. Recording and transcription states no longer pass `xs` through type casts into missing size-map entries; `sm` / `md` / `lg` behavior is unchanged. Removed the now-unnecessary exhaustive-deps suppression on its mount-only auto-start effect.
+
 - `2026-08-15` — **Lyria RealTime joined the one audio system.**
   `/chat/voice/music` is a persistent 48 kHz stereo PCM synthesizer with live
   weighted-prompt faders and play/pause/stop/reset controls. Its stream uses
