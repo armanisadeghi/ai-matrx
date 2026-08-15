@@ -8652,13 +8652,20 @@ export type Database = {
       }
       sms_conversations: {
         Row: {
+          agent_version_id: string | null
           ai_agent_id: string | null
+          chat_conversation_id: string | null
+          contact_medium_id: string | null
+          contact_point_id: string | null
           conversation_type: string
           created_at: string
           created_by: string | null
           deleted_at: string | null
+          destination_identity_id: string | null
           external_phone_number: string
           id: string
+          identity_status: string
+          interaction_id: string | null
           last_message_at: string | null
           last_message_direction: string | null
           last_message_preview: string | null
@@ -8666,6 +8673,10 @@ export type Database = {
           metadata: Json
           organization_id: string
           our_phone_number: string
+          party_id: string | null
+          program_key: string | null
+          provider: string
+          provider_account_id: string | null
           status: string
           unread_count: number
           updated_at: string
@@ -8675,13 +8686,20 @@ export type Database = {
           visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
+          agent_version_id?: string | null
           ai_agent_id?: string | null
+          chat_conversation_id?: string | null
+          contact_medium_id?: string | null
+          contact_point_id?: string | null
           conversation_type?: string
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          destination_identity_id?: string | null
           external_phone_number: string
           id?: string
+          identity_status?: string
+          interaction_id?: string | null
           last_message_at?: string | null
           last_message_direction?: string | null
           last_message_preview?: string | null
@@ -8689,6 +8707,10 @@ export type Database = {
           metadata?: Json
           organization_id: string
           our_phone_number: string
+          party_id?: string | null
+          program_key?: string | null
+          provider?: string
+          provider_account_id?: string | null
           status?: string
           unread_count?: number
           updated_at?: string
@@ -8698,13 +8720,20 @@ export type Database = {
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
+          agent_version_id?: string | null
           ai_agent_id?: string | null
+          chat_conversation_id?: string | null
+          contact_medium_id?: string | null
+          contact_point_id?: string | null
           conversation_type?: string
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          destination_identity_id?: string | null
           external_phone_number?: string
           id?: string
+          identity_status?: string
+          interaction_id?: string | null
           last_message_at?: string | null
           last_message_direction?: string | null
           last_message_preview?: string | null
@@ -8712,6 +8741,10 @@ export type Database = {
           metadata?: Json
           organization_id?: string
           our_phone_number?: string
+          party_id?: string | null
+          program_key?: string | null
+          provider?: string
+          provider_account_id?: string | null
           status?: string
           unread_count?: number
           updated_at?: string
@@ -8720,7 +8753,15 @@ export type Database = {
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sms_conversations_destination_identity_id_fkey"
+            columns: ["destination_identity_id"]
+            isOneToOne: false
+            referencedRelation: "sms_phone_numbers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sms_media: {
         Row: {
@@ -8795,7 +8836,9 @@ export type Database = {
           ai_processed: boolean
           ai_processing_status: string | null
           ai_response_id: string | null
+          attempt_count: number
           body: string | null
+          claimed_at: string | null
           conversation_id: string | null
           created_at: string
           created_by: string | null
@@ -8805,14 +8848,23 @@ export type Database = {
           error_message: string | null
           from_number: string
           id: string
+          idempotency_key: string | null
+          in_reply_to_message_id: string | null
+          interaction_id: string | null
+          lease_expires_at: string | null
           media_content_types: string[] | null
           media_urls: string[] | null
           metadata: Json | null
+          next_attempt_at: string
           num_media: number
           num_segments: number | null
           organization_id: string
           price: number | null
           price_unit: string | null
+          processing_worker_id: string | null
+          provider: string
+          provider_account_id: string | null
+          provider_status_at: string | null
           sent_by_type: string
           sent_by_user_id: string | null
           status: string
@@ -8821,12 +8873,15 @@ export type Database = {
           updated_at: string
           updated_by: string | null
           version: number
+          webhook_receipt_id: string | null
         }
         Insert: {
           ai_processed?: boolean
           ai_processing_status?: string | null
           ai_response_id?: string | null
+          attempt_count?: number
           body?: string | null
+          claimed_at?: string | null
           conversation_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -8836,14 +8891,23 @@ export type Database = {
           error_message?: string | null
           from_number: string
           id?: string
+          idempotency_key?: string | null
+          in_reply_to_message_id?: string | null
+          interaction_id?: string | null
+          lease_expires_at?: string | null
           media_content_types?: string[] | null
           media_urls?: string[] | null
           metadata?: Json | null
+          next_attempt_at?: string
           num_media?: number
           num_segments?: number | null
           organization_id: string
           price?: number | null
           price_unit?: string | null
+          processing_worker_id?: string | null
+          provider?: string
+          provider_account_id?: string | null
+          provider_status_at?: string | null
           sent_by_type?: string
           sent_by_user_id?: string | null
           status?: string
@@ -8852,12 +8916,15 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
+          webhook_receipt_id?: string | null
         }
         Update: {
           ai_processed?: boolean
           ai_processing_status?: string | null
           ai_response_id?: string | null
+          attempt_count?: number
           body?: string | null
+          claimed_at?: string | null
           conversation_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -8867,14 +8934,23 @@ export type Database = {
           error_message?: string | null
           from_number?: string
           id?: string
+          idempotency_key?: string | null
+          in_reply_to_message_id?: string | null
+          interaction_id?: string | null
+          lease_expires_at?: string | null
           media_content_types?: string[] | null
           media_urls?: string[] | null
           metadata?: Json | null
+          next_attempt_at?: string
           num_media?: number
           num_segments?: number | null
           organization_id?: string
           price?: number | null
           price_unit?: string | null
+          processing_worker_id?: string | null
+          provider?: string
+          provider_account_id?: string | null
+          provider_status_at?: string | null
           sent_by_type?: string
           sent_by_user_id?: string | null
           status?: string
@@ -8883,6 +8959,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
+          webhook_receipt_id?: string | null
         }
         Relationships: [
           {
@@ -8890,6 +8967,20 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "sms_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sms_messages_in_reply_to_message_id_fkey"
+            columns: ["in_reply_to_message_id"]
+            isOneToOne: false
+            referencedRelation: "sms_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sms_messages_webhook_receipt_id_fkey"
+            columns: ["webhook_receipt_id"]
+            isOneToOne: false
+            referencedRelation: "sms_webhook_logs"
             referencedColumns: ["id"]
           },
         ]
@@ -8909,6 +9000,8 @@ export type Database = {
           metadata: Json
           organization_id: string
           phone_number: string | null
+          preferred_ai_agent_id: string | null
+          preferred_ai_agent_version_id: string | null
           quiet_hours_enabled: boolean
           quiet_hours_end: string
           quiet_hours_start: string
@@ -8936,6 +9029,8 @@ export type Database = {
           metadata?: Json
           organization_id: string
           phone_number?: string | null
+          preferred_ai_agent_id?: string | null
+          preferred_ai_agent_version_id?: string | null
           quiet_hours_enabled?: boolean
           quiet_hours_end?: string
           quiet_hours_start?: string
@@ -8963,6 +9058,8 @@ export type Database = {
           metadata?: Json
           organization_id?: string
           phone_number?: string | null
+          preferred_ai_agent_id?: string | null
+          preferred_ai_agent_version_id?: string | null
           quiet_hours_enabled?: boolean
           quiet_hours_end?: string
           quiet_hours_start?: string
@@ -8986,6 +9083,8 @@ export type Database = {
           deleted_at: string | null
           failure_reason: string | null
           id: string
+          idempotency_key: string | null
+          interaction_id: string | null
           message_id: string | null
           metadata: Json
           notification_type: string
@@ -9008,6 +9107,8 @@ export type Database = {
           deleted_at?: string | null
           failure_reason?: string | null
           id?: string
+          idempotency_key?: string | null
+          interaction_id?: string | null
           message_id?: string | null
           metadata?: Json
           notification_type: string
@@ -9030,6 +9131,8 @@ export type Database = {
           deleted_at?: string | null
           failure_reason?: string | null
           id?: string
+          idempotency_key?: string | null
+          interaction_id?: string | null
           message_id?: string | null
           metadata?: Json
           notification_type?: string
@@ -9058,6 +9161,7 @@ export type Database = {
       sms_phone_numbers: {
         Row: {
           assigned_at: string | null
+          assistant_enabled: boolean
           capabilities: Json | null
           created_at: string
           created_by: string | null
@@ -9069,6 +9173,9 @@ export type Database = {
           number_type: string
           organization_id: string
           phone_number: string
+          program_key: string
+          provider: string
+          provider_account_id: string | null
           released_at: string | null
           twilio_sid: string
           updated_at: string
@@ -9079,6 +9186,7 @@ export type Database = {
         }
         Insert: {
           assigned_at?: string | null
+          assistant_enabled?: boolean
           capabilities?: Json | null
           created_at?: string
           created_by?: string | null
@@ -9090,6 +9198,9 @@ export type Database = {
           number_type?: string
           organization_id: string
           phone_number: string
+          program_key?: string
+          provider?: string
+          provider_account_id?: string | null
           released_at?: string | null
           twilio_sid: string
           updated_at?: string
@@ -9100,6 +9211,7 @@ export type Database = {
         }
         Update: {
           assigned_at?: string | null
+          assistant_enabled?: boolean
           capabilities?: Json | null
           created_at?: string
           created_by?: string | null
@@ -9111,6 +9223,9 @@ export type Database = {
           number_type?: string
           organization_id?: string
           phone_number?: string
+          program_key?: string
+          provider?: string
+          provider_account_id?: string | null
           released_at?: string | null
           twilio_sid?: string
           updated_at?: string
@@ -9147,40 +9262,142 @@ export type Database = {
       }
       sms_webhook_logs: {
         Row: {
+          claimed_at: string | null
           created_at: string
           id: string
+          lease_expires_at: string | null
+          message_id: string | null
           processed: boolean
+          processed_at: string | null
+          processing_attempts: number
           processing_error: string | null
+          provider: string
+          provider_account_id: string | null
+          provider_event_key: string | null
           raw_payload: Json
           twilio_sid: string | null
           webhook_type: string
         }
         Insert: {
+          claimed_at?: string | null
           created_at?: string
           id?: string
+          lease_expires_at?: string | null
+          message_id?: string | null
           processed?: boolean
+          processed_at?: string | null
+          processing_attempts?: number
           processing_error?: string | null
+          provider?: string
+          provider_account_id?: string | null
+          provider_event_key?: string | null
           raw_payload: Json
           twilio_sid?: string | null
           webhook_type: string
         }
         Update: {
+          claimed_at?: string | null
           created_at?: string
           id?: string
+          lease_expires_at?: string | null
+          message_id?: string | null
           processed?: boolean
+          processed_at?: string | null
+          processing_attempts?: number
           processing_error?: string | null
+          provider?: string
+          provider_account_id?: string | null
+          provider_event_key?: string | null
           raw_payload?: Json
           twilio_sid?: string | null
           webhook_type?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sms_webhook_logs_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "sms_messages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      claim_pending_sms_agent_turns: {
+        Args: {
+          p_lease_seconds?: number
+          p_limit?: number
+          p_worker_id: string
+        }
+        Returns: {
+          agent_id: string
+          agent_version_id: string
+          chat_conversation_id: string
+          chat_conversation_is_new: boolean
+          inbound_message_id: string
+          organization_id: string
+          sms_conversation_id: string
+          text: string
+          user_id: string
+        }[]
+      }
+      claim_pending_sms_outbound_attempts: {
+        Args: {
+          p_lease_seconds?: number
+          p_limit?: number
+          p_worker_id: string
+        }
+        Returns: {
+          attempt_count: number
+          body: string
+          from_number: string
+          idempotency_key: string
+          outbound_message_id: string
+          provider: string
+          provider_account_id: string
+          to_number: string
+        }[]
+      }
+      enqueue_sms_assistant_test: {
+        Args: {
+          p_body: string
+          p_destination_identity_id: string
+          p_idempotency_key: string
+          p_user_id: string
+        }
+        Returns: string
+      }
+      finalize_sms_agent_turn: {
+        Args: {
+          p_error_code?: string
+          p_inbound_message_id: string
+          p_operator_detail?: string
+          p_reply?: string
+          p_request_id?: string
+          p_retry_after_seconds?: number
+          p_retryable?: boolean
+          p_status: string
+          p_worker_id: string
+        }
+        Returns: string
+      }
+      finalize_sms_outbound_attempt: {
+        Args: {
+          p_error_code?: string
+          p_error_message?: string
+          p_outbound_message_id: string
+          p_provider_message_id?: string
+          p_retry_after_seconds?: number
+          p_retryable?: boolean
+          p_status: string
+          p_worker_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
