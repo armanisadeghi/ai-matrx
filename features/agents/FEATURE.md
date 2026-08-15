@@ -159,7 +159,7 @@ Find every place an agent is used and detect when a usage no longer matches the 
 - `app/(authenticated)/chat/...` — Chat (🚧 not yet built; legacy at `features/cx-conversation/` + `features/cx-chat/`, deprecated stub at `app/(authenticated)/deprecated/chat/`)
 - `app/(authenticated)/ai/agents/[id]/connections` — tool/integration config
 - `app/(authenticated)/ai/shortcuts/` — shortcut admin
-- `app/(core)/agents/orchestras/page.tsx` — Agent Sets list · `sets/[orchestratorId]/page.tsx` — Set Builder (React Flow canvas, code-split). See [`docs/ORCHESTRAS.md`](./docs/ORCHESTRAS.md)
+- `app/(core)/agents/orchestras/page.tsx` — Orchestras list · `orchestras/[orchestratorId]/page.tsx` — Orchestra Builder (React Flow canvas, code-split). See [`docs/ORCHESTRAS.md`](./docs/ORCHESTRAS.md)
 
 **API endpoints**
 
@@ -269,7 +269,7 @@ model overrides.
 - [`docs/AGENT_INVOCATION_LIFECYCLE.md`](./docs/AGENT_INVOCATION_LIFECYCLE.md) — endpoint routing, Builder vs Runner payloads, ephemeral branch
 - [`docs/AGENT_ORCHESTRATION.md`](./docs/AGENT_ORCHESTRATION.md) — maxIterations, retries, self-correction, state persistence
 - [`docs/AGENT_ASSIGNMENTS.md`](./docs/AGENT_ASSIGNMENTS.md) — secure random variables, coordinated batch plans, durable API sessions, and demo UI
-- [`docs/ORCHESTRAS.md`](./docs/ORCHESTRAS.md) — Agent Sets (Orchestrators): agent→agent M2M on `platform.associations` (no `agent_set` table), drag-drop React Flow set builder — + [`docs/ORCHESTRAS_ROADMAP.md`](./docs/ORCHESTRAS_ROADMAP.md) (path to full runtime delegation)
+- [`docs/ORCHESTRAS.md`](./docs/ORCHESTRAS.md) — Orchestras: agent→agent M2M on `platform.associations` (no `orchestra` table), drag-drop React Flow Orchestra builder — + [`docs/ORCHESTRAS_ROADMAP.md`](./docs/ORCHESTRAS_ROADMAP.md) (path to full runtime delegation)
 - [`docs/STREAMING_SYSTEM.md`](./docs/STREAMING_SYSTEM.md) — canonical NDJSON streaming contract (anchor for the whole app)
 - **Find Usages & Drift** — section above + the Agents admin map at `/agents/admin`; reports module at [`features/reports/FEATURE.md`](../reports/FEATURE.md)
 

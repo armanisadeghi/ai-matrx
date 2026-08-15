@@ -445,7 +445,7 @@ export interface OperationEntry {
   /**
    * The init event's `metadata` bag, verbatim. For `sub_agent` operations the
    * server stamps `{ label, conversation_id }` — the child conversation id is
-   * how the FE resolves which agent is running (agent-set live highlight).
+   * how the FE resolves which agent is running (Orchestra live member highlight).
    */
   metadata?: Record<string, unknown> | null;
   /**

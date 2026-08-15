@@ -1460,7 +1460,7 @@ export default [
                 ...contextMenuV3StaticImportBan,
                 // Heavy "*Impl" cores must be reached via their dynamic wrapper, never imported statically.
                 ...heavyImplStaticImportBan,
-                // React Flow is a heavy browser-only canvas — only the Agent Set builder Impl may import it.
+                // React Flow is a heavy browser-only canvas — only the Orchestra builder Impl may import it.
                 ...reactFlowStaticImportBan,
                 ...audioSystemStaticImportBan,
                 // getUserMedia({video}) only inside the camera stream manager.
