@@ -24,7 +24,9 @@ import {
   BACKLINK_ROW_CAP,
   rollupReferringDomains,
   usePageBacklinks,
+  usePageLinkGap,
 } from "@/features/marketing/data/page-links";
+import { collectPageLinkGap } from "@/features/marketing/seo/dataforseo/client";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import type { MarketingPage } from "@/features/marketing/types";
 import { BacklinkEnrichmentDetail } from "@/features/marketing/components/backlinks/BacklinkEnrichmentDetail";
@@ -35,6 +37,10 @@ import {
 } from "@/features/marketing/components/backlinks/lib/enrichment";
 import { useBacklinkAnalysis } from "@/features/marketing/components/backlinks/useBacklinkAnalysis";
 import { AuthorityRouterDoor } from "@/features/marketing/authority/AuthorityRouterDoor";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectApiServiceTargets } from "@/lib/redux/slices/apiConfigSlice";
+import { toast } from "@/lib/toast";
+import { supabase } from "@/utils/supabase/client";
 
 function ratioLabel(part: number, whole: number): string {
   if (whole === 0) return "—";
@@ -60,8 +66,14 @@ function maxDate(values: Array<string | null>): string | null {
 export function PageBacklinksCard({ page }: { page: MarketingPage }) {
   const { site, sitePath } = useMarketingSite();
   const backlinks = usePageBacklinks(site.id, page.id);
+  const pageGap = usePageLinkGap(site.id, page.id);
+  const serviceTargets = useAppSelector(selectApiServiceTargets);
+  const seoTargetUrl = serviceTargets.find(
+    (target) => target.service === "aidream",
+  )?.url;
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
   const [showAllRecords, setShowAllRecords] = useState(false);
+  const [pageGapRunning, setPageGapRunning] = useState(false);
   const {
     analysisDisabled,
     analysisRuns,
@@ -97,6 +109,35 @@ export function PageBacklinksCard({ page }: { page: MarketingPage }) {
   const visibleObservations = showAllRecords
     ? observations
     : observations.slice(0, 10);
+  const pageGapCandidates = pageGap.data?.candidates ?? [];
+  const pageGapMatches = pageGap.data?.matches ?? [];
+
+  const runPageGap = async () => {
+    if (!seoTargetUrl || pageGapCandidates.length < 2 || pageGapRunning) return;
+    setPageGapRunning(true);
+    try {
+      const session = await supabase.auth.getSession();
+      if (session.error) throw session.error;
+      const token = session.data.session?.access_token;
+      if (!token) throw new Error("Please sign in again before finding link prospects.");
+      await collectPageLinkGap(seoTargetUrl, token, site.id, page.id, {
+        opportunity_ids: pageGapCandidates.map((candidate) => candidate.id),
+        limit: 1000,
+        max_spam_score: 30,
+        force_refresh: true,
+      });
+      await pageGap.refetch();
+      toast.success("Link prospects found and queued for your review.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "The page link comparison could not be completed.",
+      );
+    } finally {
+      setPageGapRunning(false);
+    }
+  };
 
   const copy = webCopy({
     kind: "web-page-backlinks",
@@ -375,6 +416,99 @@ export function PageBacklinksCard({ page }: { page: MarketingPage }) {
       action={{ label: "View all", href: pageBacklinksHref }}
     >
       <AuthorityRouterDoor sitePath={sitePath} className="mb-3" />
+      <div className="mb-3 rounded-lg border border-border bg-card p-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-foreground">
+              Find sites linking to competing guides
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Compare human-approved competitor pages against this page, then
+              queue the strongest missing link sources for review.
+            </p>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            className="gap-1.5"
+            disabled={
+              pageGapRunning ||
+              pageGap.isLoading ||
+              pageGapCandidates.length < 2 ||
+              !seoTargetUrl
+            }
+            onClick={() => void runPageGap()}
+          >
+            {pageGapRunning ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <ExternalLink className="h-3.5 w-3.5" />
+            )}
+            {pageGapMatches.length > 0 ? "Refresh comparison" : "Find link prospects"}
+          </Button>
+        </div>
+        {pageGap.isError ? (
+          <QueryError error={pageGap.error} onRetry={() => void pageGap.refetch()} />
+        ) : pageGapCandidates.length < 2 ? (
+          <p className="mt-3 text-xs text-muted-foreground">
+            This becomes available after you accept at least two page-specific
+            opportunities from confirmed, link-gap-eligible competitors.
+          </p>
+        ) : (
+          <ul className="mt-3 grid gap-1.5">
+            {pageGapCandidates.map((candidate) => (
+              <li key={candidate.id} className="flex min-w-0 items-center gap-2 text-xs">
+                <Badge variant="outline">Approved</Badge>
+                <a
+                  href={candidate.competitorUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="min-w-0 truncate font-medium text-primary hover:underline"
+                >
+                  {candidate.competitorName}: {candidate.competitorUrl}
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
+        {pageGapMatches.length > 0 ? (
+          <div className="mt-3 rounded-md border border-border/60">
+            <div className="border-b border-border/60 px-3 py-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              {pageGapMatches.length} exact-page link opportunities · pending human review
+            </div>
+            <ul className="divide-y divide-border/60">
+              {pageGapMatches.slice(0, 10).map((match) => (
+                <li key={match.id} className="flex items-start justify-between gap-3 p-2">
+                  <div className="min-w-0 text-xs">
+                    <a
+                      href={match.sourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block truncate font-medium text-primary hover:underline"
+                    >
+                      {match.sourceUrl}
+                    </a>
+                    <a
+                      href={match.targetUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-0.5 block truncate text-[11px] text-muted-foreground hover:underline"
+                    >
+                      Links to {match.targetUrl}
+                    </a>
+                  </div>
+                  <div className="flex shrink-0 gap-1">
+                    <Badge variant="secondary">{match.reviewStatus}</Badge>
+                    {match.domainRank !== null ? (
+                      <Badge variant="outline">rank {match.domainRank}</Badge>
+                    ) : null}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+      </div>
       {body}
       {selectedRow ? (
         <DataRowWindow

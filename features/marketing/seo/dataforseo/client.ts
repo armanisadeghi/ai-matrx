@@ -3,6 +3,8 @@ import type {
   BacklinkRefreshReceipt,
   BacklinkEnrichmentResult,
   BacklinkEnrichmentBody,
+  PageLinkGapBody,
+  PageLinkGapReceipt,
   CollectionCreateBody,
   CollectionReceipt,
   DataForSeoOperationsResponse,
@@ -188,6 +190,25 @@ export function enrichSiteBacklinks(
     { ...body },
     "seo.backlink_enrichment_completed",
     (data) => (data.result as BacklinkEnrichmentResult | undefined) ?? null,
+    onEvent,
+  );
+}
+
+export function collectPageLinkGap(
+  serverUrl: string,
+  accessToken: string,
+  siteId: string,
+  pageId: string,
+  body: PageLinkGapBody,
+  onEvent?: (event: SeoStreamEvent) => void,
+): Promise<PageLinkGapReceipt> {
+  return seoStreamTerminal(
+    serverUrl,
+    accessToken,
+    `/seo/sites/${encodeURIComponent(siteId)}/pages/${encodeURIComponent(pageId)}/link-gap`,
+    { ...body },
+    "seo.page_link_gap_completed",
+    (data) => (data.receipt as PageLinkGapReceipt | undefined) ?? null,
     onEvent,
   );
 }

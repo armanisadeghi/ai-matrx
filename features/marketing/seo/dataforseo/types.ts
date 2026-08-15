@@ -134,6 +134,22 @@ export interface BacklinkRefreshReceipt {
   datasets: BacklinkDatasetReceipt[];
 }
 
+export interface PageLinkGapBody {
+  opportunity_ids: string[];
+  limit?: number;
+  max_spam_score?: number;
+  force_refresh?: boolean;
+  request_id?: string;
+}
+
+export interface PageLinkGapReceipt {
+  page_id: string;
+  page_url: string;
+  competitor_pages: string[];
+  opportunity_ids: string[];
+  receipt: CollectionReceipt;
+}
+
 export interface BacklinkEnrichmentResult {
   result_kind: "backlinks.enrich";
   site_id: string;

@@ -796,6 +796,32 @@ export interface PageBacklinksData {
   truncated: boolean;
 }
 
+export interface PageLinkGapCandidate {
+  id: string;
+  competitorId: string;
+  competitorName: string;
+  competitorUrl: string;
+  primaryKeyword: string | null;
+}
+
+export interface PageLinkGapMatch {
+  id: string;
+  sourceUrl: string;
+  targetUrl: string;
+  competitorDomain: string;
+  domainRank: number | null;
+  spamScore: number | null;
+  isDofollow: boolean | null;
+  domainId: string;
+  reviewStatus: string;
+  priorityScore: number | null;
+}
+
+export interface PageLinkGapData {
+  candidates: PageLinkGapCandidate[];
+  matches: PageLinkGapMatch[];
+}
+
 async function seoDb() {
   await requireAuthenticatedSupabaseSession(supabase);
   return supabase.schema("seo");
@@ -839,6 +865,112 @@ export async function getPageBacklinks(
     snapshot: snapshotResponse.data,
     observations,
     truncated: observations.length >= BACKLINK_ROW_CAP,
+  };
+}
+
+/** Accepted outranking-page proposals plus persisted page-gap evidence. */
+export async function getPageLinkGap(
+  siteId: string,
+  pageId: string,
+  signal?: AbortSignal,
+): Promise<PageLinkGapData> {
+  const db = await seoDb();
+  const abortSignal = signal ?? new AbortController().signal;
+  const [opportunityResponse, matchResponse] = await Promise.all([
+    db
+      .from("competitor_opportunity")
+      .select(
+        "id, competitor_id, competitor_url, primary_keyword, status, target_page_id",
+      )
+      .eq("site_id", siteId)
+      .eq("target_page_id", pageId)
+      .eq("status", "accepted")
+      .not("competitor_id", "is", null)
+      .not("competitor_url", "is", null)
+      .order("priority", { ascending: false })
+      .limit(20)
+      .abortSignal(abortSignal),
+    db
+      .from("link_gap_match")
+      .select(
+        "id, link_gap_domain_id, competitor_domain, source_url, target_url, domain_rank, spam_score, is_dofollow, page_id, link_gap_domain!inner(review_status, priority_score)",
+      )
+      .eq("page_id", pageId)
+      .not("source_url", "is", null)
+      .order("domain_rank", { ascending: false, nullsFirst: false })
+      .limit(250)
+      .abortSignal(abortSignal),
+  ]);
+  const opportunities = assertData(
+    opportunityResponse.data,
+    opportunityResponse.error,
+  );
+  const matches = assertData(matchResponse.data, matchResponse.error);
+  const competitorIds = opportunities.flatMap((row) =>
+    row.competitor_id ? [row.competitor_id] : [],
+  );
+  const competitorResponse = competitorIds.length
+    ? await db
+        .from("competitor")
+        .select(
+          "id, display_name, display_domain, classification_status, use_for_link_gap, entity_role, business_overlap",
+        )
+        .in("id", competitorIds)
+        .abortSignal(abortSignal)
+    : { data: [], error: null };
+  const competitors = assertData(
+    competitorResponse.data,
+    competitorResponse.error,
+  );
+  const eligibleById = new Map(
+    competitors
+      .filter((row) => {
+        if (row.classification_status !== "confirmed") return false;
+        if (row.use_for_link_gap !== null) return row.use_for_link_gap;
+        return (
+          row.entity_role === "business" &&
+          (row.business_overlap === "direct" ||
+            row.business_overlap === "adjacent")
+        );
+      })
+      .map((row) => [row.id, row]),
+  );
+  return {
+    candidates: opportunities.flatMap((row) => {
+      if (!row.competitor_id || !row.competitor_url) return [];
+      const competitor = eligibleById.get(row.competitor_id);
+      if (!competitor) return [];
+      return [
+        {
+          id: row.id,
+          competitorId: competitor.id,
+          competitorName:
+            competitor.display_name ?? competitor.display_domain,
+          competitorUrl: row.competitor_url,
+          primaryKeyword: row.primary_keyword,
+        },
+      ];
+    }),
+    matches: matches.flatMap((row) => {
+      if (!row.source_url || !row.target_url) return [];
+      const domain = Array.isArray(row.link_gap_domain)
+        ? row.link_gap_domain[0]
+        : row.link_gap_domain;
+      return [
+        {
+          id: row.id,
+          sourceUrl: row.source_url,
+          targetUrl: row.target_url,
+          competitorDomain: row.competitor_domain,
+          domainRank: row.domain_rank,
+          spamScore: row.spam_score,
+          isDofollow: row.is_dofollow,
+          domainId: row.link_gap_domain_id,
+          reviewStatus: domain?.review_status ?? "pending",
+          priorityScore: domain?.priority_score ?? null,
+        },
+      ];
+    }),
   };
 }
 
@@ -954,6 +1086,14 @@ export function usePageBacklinks(siteId: string, pageId: string) {
   return useQuery({
     queryKey: [...marketingKeys.page(siteId, pageId), "backlinks"] as const,
     queryFn: ({ signal }) => getPageBacklinks(siteId, pageId, signal),
+    enabled: Boolean(siteId && pageId),
+  });
+}
+
+export function usePageLinkGap(siteId: string, pageId: string) {
+  return useQuery({
+    queryKey: [...marketingKeys.page(siteId, pageId), "link-gap"] as const,
+    queryFn: ({ signal }) => getPageLinkGap(siteId, pageId, signal),
     enabled: Boolean(siteId && pageId),
   });
 }
