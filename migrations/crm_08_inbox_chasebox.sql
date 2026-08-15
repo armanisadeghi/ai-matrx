@@ -202,8 +202,15 @@ RETURNS TABLE(
   sending_identity_label text,
   reputation_case_id uuid,
   reputation_case_label text,
+  -- The motivating record is only a DOOR if it can be opened, and both of these
+  -- live at /marketing/brands/<brand>/sites/<site>/… — so the RPC resolves the
+  -- whole path rather than handing the client an id it cannot route.
+  reputation_case_site_id uuid,
+  reputation_case_brand_id uuid,
   backlink_id uuid,
   backlink_label text,
+  backlink_site_id uuid,
+  backlink_brand_id uuid,
   organization_id uuid,
   organization_name text,
   is_owner boolean,
@@ -319,7 +326,11 @@ BEGIN
       mem.id                         AS j_member_id,
       mem.status                     AS j_member_status,
       coalesce(nullif(rc.headline,''), nullif(rc.source_title,''), rc.source_domain) AS j_case_label,
+      rc.site_id                     AS j_case_site_id,
+      rcs.brand_id                   AS j_case_brand_id,
       coalesce(nullif(bl.source_url,''), bl.source_domain) AS j_backlink_label,
+      bl.site_id                     AS j_backlink_site_id,
+      bls.brand_id                   AS j_backlink_brand_id,
       -- HANDLED. Two independent, honest signals; neither is a new table:
       --   (a) a human pressed "Mark handled" -> attributes.inbox.handled_at
       --   (b) we already answered -> a later outbound in the same thread
@@ -342,7 +353,9 @@ BEGIN
     LEFT JOIN iam.organizations org     ON org.id = c.u_org_id
     LEFT JOIN crm.outreach_list_member mem ON mem.id = c.x_member_id AND mem.deleted_at IS NULL
     LEFT JOIN seo.reputation_case rc    ON rc.id  = c.x_reputation_case_id
+    LEFT JOIN web.site rcs              ON rcs.id = rc.site_id
     LEFT JOIN seo.backlink bl           ON bl.id  = c.x_backlink_id
+    LEFT JOIN web.site bls              ON bls.id = bl.site_id
   ),
   filtered AS (
     SELECT j.*,
@@ -401,7 +414,8 @@ BEGIN
     c.j_member_id, c.j_member_status::text, c.x_step,
     c.x_outbound_id, c.x_outbound_subject, c.x_outbound_sent_at,
     c.j_identity_id, c.j_identity_label,
-    c.x_reputation_case_id, c.j_case_label, c.x_backlink_id, c.j_backlink_label,
+    c.x_reputation_case_id, c.j_case_label, c.j_case_site_id, c.j_case_brand_id,
+    c.x_backlink_id, c.j_backlink_label, c.j_backlink_site_id, c.j_backlink_brand_id,
     c.u_org_id, c.j_org_name, c.s_is_owner, c.s_total
   FROM counted c
   ORDER BY

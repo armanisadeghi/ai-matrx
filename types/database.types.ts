@@ -38308,8 +38308,10 @@ export type Database = {
           p_sort?: string
         }
         Returns: {
+          backlink_brand_id: string
           backlink_id: string
           backlink_label: string
+          backlink_site_id: string
           channel_code: string
           classification: string
           created_at: string
@@ -38334,8 +38336,10 @@ export type Database = {
           party_id: string
           party_kind: string
           party_name: string
+          reputation_case_brand_id: string
           reputation_case_id: string
           reputation_case_label: string
+          reputation_case_site_id: string
           sending_identity_id: string
           sending_identity_label: string
           snippet: string
