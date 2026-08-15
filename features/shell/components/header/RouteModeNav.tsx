@@ -97,6 +97,7 @@ export function RouteModeNav({ items, activeHref }: RouteModeNavProps) {
   const compactRef = useRef<HTMLDivElement>(null);
 
   const canIcons = items.every((i) => i.icon);
+  const itemsKey = items.map((i) => i.href).join("|");
   const current = activeHref
     ? items.find((i) => i.href === activeHref)
     : resolveActiveRouteMode(items, pathname);
@@ -147,7 +148,13 @@ export function RouteModeNav({ items, activeHref }: RouteModeNavProps) {
     if (routeHeaderLeft) ro.observe(routeHeaderLeft);
     if (routeHeaderRight) ro.observe(routeHeaderRight);
     return () => ro.disconnect();
-  }, [items, canIcons, current?.href]);
+    // Keyed on WHAT the items are, not on the array's identity. Callers build
+    // this list inline, so a parent that re-renders often — a live agent run, a
+    // marketing site receiving crawl heartbeats — handed a fresh array every
+    // time and tore down and rebuilt six ResizeObserver targets on each one.
+    // The measurement only depends on the hrefs present and whether they all
+    // have icons.
+  }, [itemsKey, canIcons, current?.href]);
 
   // `withTooltip` is true only in the VISIBLE pill — the hidden measurers
   // render plain items so Radix triggers never join the measurement DOM.

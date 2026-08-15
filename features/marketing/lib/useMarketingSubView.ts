@@ -60,23 +60,22 @@ export interface MarketingSubNavItem {
 export interface MarketingSiteSubNav {
   /** The site section the URL is on (`""` for the site root). */
   section: string;
-  /** Header items for the ACTIVE section — empty when it has no sub-views. */
+  /**
+   * Header items for the ACTIVE section — empty when it has no sub-views.
+   *
+   * IDENTITY MATTERS HERE. `RouteModeNav` keys its measuring layout effect on
+   * the items array, tearing down and rebuilding a ResizeObserver whenever the
+   * identity changes. This layout re-renders on every realtime crawl
+   * heartbeat, so an array rebuilt per render means observer churn on a live
+   * site. Derived from the registry's own frozen array and the two URL strings,
+   * so React Compiler can memoize it and the identity holds still.
+   */
   modes: MarketingSubNavItem[];
   /** Which of them is current. Sub-views differ only by query string, so the
    *  header cannot resolve this from the pathname and must be told. */
   activeHref: string;
 }
 
-/**
- * What the site header renders. It used to render all 26 SECTIONS, which no
- * width could ever fit — `RouteModeNav` degraded them to bare icons, or on a
- * narrow window to a single 26-row dropdown. The sections now live in the
- * marketing sidebar, and the header shows one level down: the current
- * section's sub-views, a set of 2-7 that fits as icon + label.
- *
- * A section with no sub-views contributes nothing, and the header centre is
- * simply empty — the page's own title already says where you are.
- */
 /**
  * PURE core of the header's sub-nav. Kept free of Next's hooks so what the
  * header renders on any given URL is directly testable — the hook below is a
@@ -120,12 +119,19 @@ export function buildMarketingSubNav(
  * A section with no sub-views contributes nothing, and the header centre is
  * simply empty — the page's own title already says where you are.
  */
+/**
+ * What the site header renders. It used to render all 26 SECTIONS, which no
+ * width could ever fit — `RouteModeNav` degraded them to bare icons, or on a
+ * narrow window to a single 26-row dropdown. The sections now live in the
+ * marketing sidebar, and the header shows one level down: the current
+ * section's sub-views, a set of 2-7 that fits as icon + label.
+ *
+ * A section with no sub-views contributes nothing, and the header centre is
+ * simply empty — the page's own title already says where you are.
+ */
 export function useMarketingSiteSubNav(sitePath: string): MarketingSiteSubNav {
   const pathname = usePathname() ?? sitePath;
   const params = useSearchParams();
-  return buildMarketingSubNav(
-    sitePath,
-    pathname,
-    params.get("view") ?? params.get("tab"),
-  );
+  const viewParam = params.get("view") ?? params.get("tab");
+  return buildMarketingSubNav(sitePath, pathname, viewParam);
 }
