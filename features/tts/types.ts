@@ -5,9 +5,9 @@
  */
 
 // Import and re-export from userPreferencesSlice for consistency
-import type { GroqTtsVoice } from '@/lib/redux/preferences/userPreferencesSlice';
+import type { CatalogTtsVoice } from '@/lib/redux/preferences/userPreferencesSlice';
 
-export type EnglishVoice = GroqTtsVoice;
+export type EnglishVoice = CatalogTtsVoice;
 
 // Voices attached to the catalog's default Groq Orpheus offering.
 export const ENGLISH_VOICES = [

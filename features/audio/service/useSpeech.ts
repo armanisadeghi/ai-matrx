@@ -1,26 +1,34 @@
 /**
- * useTtsSpeak — convenience layer over `useAudioPlayback` for "speak this text"
- * surfaces (Speaker buttons, read-aloud menus).
+ * useSpeech — the React face of `speak()`.
  *
- * Resolves the user's Cartesia voice prefs from Redux, enqueues onto the single
- * playback queue, and tracks the id of THIS surface's most recent utterance so
- * the button can reflect its own status (queued / loading / playing / paused).
+ * Gives one surface (a Speaker button, a read-aloud menu) its OWN view of the
+ * shared playback queue: it speaks through the single service, then tracks the
+ * status of just its own utterance so the button can show queued / loading /
+ * playing / paused without knowing anything about the queue's other items.
+ *
+ * Engine choice is a prop (`engine`), not a hardcoded provider — that is the
+ * whole point of the service layer. Omit it and the app default applies.
+ *
+ * (Was `features/audio/playback/useTtsSpeak.ts`, which could only ever speak
+ * Cartesia because it resolved that engine's voice params inline.)
  */
 
 "use client";
 
 import { useCallback, useState } from "react";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectVoicePreferences } from "@/lib/redux/preferences/userPreferenceSelectors";
-import { resolveVoiceId, type VoicePurpose } from "@/lib/cartesia/config";
-import { useAudioPlayback } from "./useAudioPlayback";
-import type { PlaybackItemStatus } from "./types";
+import { useAudioPlayback } from "@/features/audio/playback/useAudioPlayback";
+import type { PlaybackItemStatus } from "@/features/audio/playback/types";
+import type { VoicePurpose } from "@/lib/cartesia/config";
+import { speak as speakText } from "./speak";
+import type { SpeakEngineId } from "./engines";
 
-export interface TtsSpeakOptions {
+export interface UseSpeechOptions {
   processMarkdown?: boolean;
   purpose?: VoicePurpose;
   dictionarySurfaceKey?: string;
   label?: string;
+  /** Which engine synthesizes. Omit for the app default. */
+  engine?: SpeakEngineId;
   /**
    * When set, on (re)mount this hook re-adopts the queue's currently-active item
    * if that item's text equals `adoptText` — so a Speak button that unmounted
@@ -31,16 +39,16 @@ export interface TtsSpeakOptions {
   adoptText?: string;
 }
 
-export function useTtsSpeak({
+export function useSpeech({
   processMarkdown = true,
   purpose = "assistant",
   dictionarySurfaceKey,
   label,
+  engine,
   adoptText,
-}: TtsSpeakOptions = {}) {
-  const { enqueue, items, pause, resume, skip, remove, playItem, currentId } =
+}: UseSpeechOptions = {}) {
+  const { items, pause, resume, skip, remove, playItem, currentId } =
     useAudioPlayback();
-  const prefs = useAppSelector(selectVoicePreferences);
   const [itemId, setItemId] = useState<string | null>(null);
 
   // Effective utterance = our own spoken item, OR (derived — no state/effect)
@@ -62,32 +70,18 @@ export function useTtsSpeak({
 
   const speak = useCallback(
     (text: string) => {
-      const voiceId = resolveVoiceId(prefs.voice, purpose);
-      const { id } = enqueue({
-        provider: "cartesia",
+      const { id } = speakText({
         text,
+        engine,
+        purpose,
         processMarkdown,
         label,
         dictionarySurfaceKey,
-        cartesia: {
-          voiceId,
-          language: prefs.language || "en",
-          speed: prefs.speed,
-        },
       });
       setItemId(id);
       return id;
     },
-    [
-      enqueue,
-      prefs.voice,
-      prefs.language,
-      prefs.speed,
-      purpose,
-      processMarkdown,
-      label,
-      dictionarySurfaceKey,
-    ],
+    [engine, purpose, processMarkdown, label, dictionarySurfaceKey],
   );
 
   const status: PlaybackItemStatus | null = effectiveId

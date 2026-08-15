@@ -5,7 +5,7 @@
  *
  * This button speaks a COMPLETE piece of text (a finished assistant message, a
  * document, a selection). It enqueues onto the app-wide `playbackQueue`
- * singleton via `useTtsSpeak` rather than owning a Cartesia SinkAwarePlayer in a React
+ * singleton via `useSpeech` rather than owning a Cartesia SinkAwarePlayer in a React
  * hook.
  *
  * That is the whole point: the queue lives OUTSIDE React (module scope), so
@@ -25,7 +25,7 @@
  *
  * ─── Voice preferences ──────────────────────────────────────────────────────
  *
- * `useTtsSpeak` resolves voiceId / language / speed from the Redux
+ * `useSpeech` resolves voiceId / language / speed from the Redux
  * `userPreferences.voice` slice, so the user's selected voice is always used.
  */
 
@@ -33,7 +33,7 @@
 
 import React, { useCallback } from 'react';
 import { Volume2TapButton, PauseTapButton } from '@/components/icons/tap-buttons';
-import { useTtsSpeak } from '@/features/audio/playback/useTtsSpeak';
+import { useSpeech } from "@/features/audio/service/useSpeech";
 import type { SpeakerVariant } from '../types';
 
 export interface StreamingSpeakerButtonProps {
@@ -66,7 +66,7 @@ export function StreamingSpeakerButton({
   label,
   dictionarySurfaceKey,
 }: StreamingSpeakerButtonProps) {
-  const { speak, pause, resume, status } = useTtsSpeak({
+  const { speak, pause, resume, status } = useSpeech({
     processMarkdown,
     label,
     dictionarySurfaceKey,

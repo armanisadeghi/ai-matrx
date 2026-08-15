@@ -8,8 +8,13 @@
  * queue stays engine-agnostic (Cartesia WebSocket, Groq WAV blob, …).
  */
 
-/** Which synthesis/playback engine renders an item. */
-export type PlaybackProvider = "cartesia" | "groq";
+/**
+ * Which synthesis engine renders an item. Declared with its capabilities in the
+ * AV engine registry (`features/audio/service/engines.ts`) — this union and
+ * `SpeakEngineId` are the same set by construction (see the type assertion
+ * there). Consumers call `speak()`, never these keys directly.
+ */
+export type PlaybackProvider = "cartesia" | "catalog";
 
 export type PlaybackItemStatus =
   | "queued" // waiting in line
@@ -29,10 +34,10 @@ export interface PlaybackRequest {
   label?: string;
   /** Opt this utterance into Custom Dictionary pronunciation (Cartesia). */
   dictionarySurfaceKey?: string;
-  /** Cartesia voice params, resolved by the consumer from Redux prefs. */
+  /** Cartesia voice params — resolved by `speak()` from the user's prefs. */
   cartesia?: { voiceId: string; language: string; speed: number };
-  /** Catalog speech voice params (legacy queue provider key: `groq`). */
-  groq?: { voice: string; model?: string };
+  /** Catalog speech voice params — resolved by `speak()`; server picks the vendor. */
+  catalog?: { voice?: string; model?: string };
 }
 
 export interface PlaybackItem extends PlaybackRequest {
