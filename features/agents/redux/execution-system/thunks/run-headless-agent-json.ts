@@ -121,6 +121,31 @@ export interface HeadlessAgentJsonOptions {
    * private reasoning. Only a builder/debugging surface flips this on.
    */
   showReasoning?: boolean;
+  /**
+   * 🚨 THE PERSISTENCE SEAM (FOUND_DEFECTS D151). Fires with the resolved
+   * result the INSTANT it lands, from inside this function, on every exit path
+   * — success, stream error, timeout, abort — and is awaited before the promise
+   * resolves.
+   *
+   * Why it exists: the returned promise is not a delivery guarantee. The money
+   * is spent the moment the agent runs; if the component that awaited it has
+   * unmounted (card advanced, dialog closed, route changed), the `.then` writes
+   * into a dead component and a paid answer is gone. A run whose result must
+   * survive the surface passes `onResult` and writes it to its durable column
+   * HERE, where nothing about the caller's lifecycle can intercept it.
+   *
+   * A throw inside the handler is captured (never swallowed silently) and never
+   * changes the run's own result — a failed persist is a loud defect, not a
+   * failed run.
+   */
+  onResult?: (result: HeadlessAgentJsonResult) => void | Promise<void>;
+  /**
+   * Stop WAITING for this run. It does NOT cancel the agent — the spend already
+   * happened — it stops the poll loop and settles immediately from whatever the
+   * run has produced so far, still firing `onResult`. Abort HARVESTS; it never
+   * discards. Pair it with `onResult` so an unmounting surface still persists.
+   */
+  signal?: AbortSignal;
   /** Fires with the conversation id BEFORE the stream runs (live UI handle). */
   onConversationCreated?: (conversationId: string) => void;
   /** Fires once the run's request id is known (progress / task tracking). */
@@ -202,7 +227,47 @@ const TERMINAL_STATUSES = new Set(["complete", "error", "timeout", "cancelled"])
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+/**
+ * Hand the resolved result to the caller's persistence seam. This is the ONE
+ * place a paid result becomes durable, and it runs whether or not anyone is
+ * still awaiting the promise. A handler that throws is captured loudly and
+ * never alters the run's own outcome.
+ */
+async function deliverResult(
+  opts: HeadlessAgentJsonOptions,
+  result: HeadlessAgentJsonResult,
+): Promise<void> {
+  if (!opts.onResult) return;
+  try {
+    await opts.onResult(result);
+  } catch (err: unknown) {
+    captureError({
+      source: "agent-json-result",
+      message: `Persisting a headless agent result threw — the paid result may be lost: ${
+        err instanceof Error ? err.message : "unknown error"
+      }`,
+      requestId: result.requestId,
+      conversationId: result.conversationId,
+      raw: {
+        surfaceKey: opts.surfaceKey,
+        agent: opts.agentId ?? opts.slotKey ?? "unknown",
+        success: result.success,
+      },
+    });
+  }
+}
+
 export async function runHeadlessAgentJson(
+  dispatch: AppDispatch,
+  getState: () => RootState,
+  opts: HeadlessAgentJsonOptions,
+): Promise<HeadlessAgentJsonResult> {
+  const result = await launchAndWait(dispatch, getState, opts);
+  await deliverResult(opts, result);
+  return result;
+}
+
+async function launchAndWait(
   dispatch: AppDispatch,
   getState: () => RootState,
   opts: HeadlessAgentJsonOptions,
@@ -306,6 +371,7 @@ export async function runHeadlessAgentJson(
       surfaceKey: opts.surfaceKey,
       agentRef: opts.agentId ?? opts.slotKey ?? "unknown",
       msgs,
+      ...(opts.signal ? { signal: opts.signal } : {}),
     });
   } catch (err: unknown) {
     // The thrown detail is for US, not for the user: a launch/transport
@@ -436,6 +502,8 @@ async function waitForExtraction(
     surfaceKey: string;
     agentRef: string;
     msgs: { streamError: string; noJson: string; timeout: string };
+    /** Stop waiting and settle from whatever landed (see `signal` on the options). */
+    signal?: AbortSignal;
   },
 ): Promise<HeadlessAgentJsonResult> {
   const { conversationId, requestId, msgs } = args;
@@ -449,11 +517,16 @@ async function waitForExtraction(
   });
 
   const settle = (
-    reason: "extraction-complete" | "stream-ended" | "timeout",
+    reason: "extraction-complete" | "stream-ended" | "timeout" | "aborted",
     message: string,
   ): HeadlessAgentJsonResult => {
     const { data } = resolveRunData(getState, requestId, conversationId);
     if (data != null) return { success: true, data, ...base() };
+    // An abort that harvested nothing is a caller decision, not a defect —
+    // reporting it would drown the real "we paid and got nothing" signal.
+    if (reason === "aborted") {
+      return { success: false, data: null, error: message, ...base() };
+    }
     reportNoResult(getState, {
       requestId,
       conversationId,
@@ -466,6 +539,13 @@ async function waitForExtraction(
   };
 
   while (Date.now() - start < args.timeoutMs) {
+    // Abort HARVESTS, never discards: settle from whatever the run has already
+    // produced (which `settle` still persists through `onResult`). A partial
+    // object already in Redux is a paid answer, not a cancellation.
+    if (args.signal?.aborted) {
+      return settle("aborted", msgs.noJson);
+    }
+
     const state = getState();
 
     if (selectJsonExtractionComplete(requestId)(state)) {
