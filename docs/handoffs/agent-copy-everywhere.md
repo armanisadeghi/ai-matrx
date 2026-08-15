@@ -92,7 +92,9 @@ Correctly left alone: `MarketingHub.tsx` (a nav map — non-record, plain pair i
 
 ## Decisions needed
 
-**None open.** Both prior items were ruled and are recorded here so they are not re-asked:
+- **Situation (opened 2026-08-15):** the MCP server→tools relationship is unrecorded in data, so the MCP servers console's Tools tab can never populate for any of the 38 servers. Found while wiring copy onto that page; NOT caused by that work. Two independent causes: `ToolsTab` passes `server.slug` into `listServerTools(serverId)`, which filters `managed_by_server_id` (a UUID) — and that column is NULL on all 412 `tool.definition` rows, while the legacy `${slug}:%` fallback isn't populated either (the only colon-prefixed tool names use a `bundle:` prefix). Fixing the one-line slug/UUID mismatch alone changes nothing. **Decide:** what is the source of truth for backfilling `managed_by_server_id`, or should the tab resolve a server's tools another way? Filed as review-queue item `10011a5a` (lane `database_data`, state `ready`); verified against production, no code changed pending the call.
+
+The prior items were ruled and are recorded here so they are not re-asked:
 
 - *Org membership for the real accounts* — RULED (FOUND_DEFECTS D133, 2026-08-11): AccessGate now splits denied / deleted / missing / signed-out and names the owner; aimatrx.com moved to the shared org; the outsider test account stays memberless by design. The only remainder is a product path to move a site between orgs, tracked as open D133 — not an agent-copy concern.
 - *Worktree isolation for fleets* — RULED against by CLAUDE.md § Shared checkout: one checkout, many agents, commit early and often. Do not re-propose it.
