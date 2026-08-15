@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-08-15T07:53:17.973Z",
-  "commit": "14304a6a820782c05385292b42dcaade7c4a7942",
-  "aidreamCommit": "e49d23027fc166b80376a74500b07d1e5f8b40de",
+  "generatedAt": "2026-08-15T07:54:41.180Z",
+  "commit": "c9d395985ef50cb19035510bf8c07d8241b2f8db",
+  "aidreamCommit": "95b508637494a44360e434d06bbe2bf49977a6e7",
   "totals": {
-    "findings": 762,
-    "lines": 35436,
-    "filesWithFindings": 574,
+    "findings": 761,
+    "lines": 34811,
+    "filesWithFindings": 573,
     "filesScanned": 13581,
     "suppressed": 5,
     "byDetector": {
-      "react-component-unmounted": 365,
+      "react-component-unmounted": 364,
       "export-unimported": 387,
       "router-unmounted": 2,
       "host-installer-unset": 1,
@@ -17,17 +17,12 @@
       "python-module-unreached": 7
     },
     "byRepository": {
-      "matrx-frontend": 716,
+      "matrx-frontend": 715,
       "aidream": 46
     }
   },
   "partial": [],
   "worstFiles": [
-    {
-      "key": "matrx-frontend:features/code/terminal/TerminalTab.tsx",
-      "findings": 1,
-      "lines": 625
-    },
     {
       "key": "matrx-frontend:features/notes/components/NotesLayout.tsx",
       "findings": 1,
@@ -272,23 +267,14 @@
       "key": "matrx-frontend:components/modals/TextActionResultModal.tsx",
       "findings": 1,
       "lines": 164
+    },
+    {
+      "key": "matrx-frontend:components/animated/ExpandableCards/GriddExpadableCards.tsx",
+      "findings": 1,
+      "lines": 163
     }
   ],
   "findings": [
-    {
-      "repository": "matrx-frontend",
-      "detector": "react-component-unmounted",
-      "file": "features/code/terminal/TerminalTab.tsx",
-      "line": 70,
-      "column": 14,
-      "symbol": "TerminalTab",
-      "lines": 625,
-      "title": "TerminalTab appears unfinished — it is built but has no runtime consumer",
-      "evidence": "no JSX tag in the runtime TypeScript graph resolves to this exported component",
-      "intent": "an exported component with 625 implementation line(s)",
-      "remains": "mount it from the page, panel, overlay, or parent surface it was built for, then exercise that user path",
-      "feature": "features/code"
-    },
     {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
