@@ -25,7 +25,6 @@ import type {
   PlanAiRunState,
 } from "../hooks/useContentPlanAi";
 import { ResearchTopicSelect } from "./ResearchTopicSelect";
-import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 
 export function PlanGenerateBar({
   nodeCount,
@@ -80,16 +79,6 @@ export function PlanGenerateBar({
             Stop
           </Button>
         </div>
-        {/* The current node's brief streams live — never a bare progress bar. */}
-        {bulkDeepen.requestId ? (
-          <div className="px-3 pb-2">
-            <LiveRunDisplay
-              requestId={bulkDeepen.requestId}
-              label={bulkDeepen.current ?? "Deepening"}
-              bodyClassName="max-h-40 overflow-y-auto px-2.5 py-2 text-sm"
-            />
-          </div>
-        ) : null}
       </div>
     );
   }
@@ -98,9 +87,8 @@ export function PlanGenerateBar({
     return (
       <div className="flex items-center gap-2 border-b border-destructive/40 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
         <span className="min-w-0 flex-1 truncate">
-          Bulk deepen: {bulkDeepen.failures.length} of {bulkDeepen.total}{" "}
-          failed — {bulkDeepen.failures[0]?.route}:{" "}
-          {bulkDeepen.failures[0]?.error}
+          Bulk deepen: {bulkDeepen.failures.length} of {bulkDeepen.total} failed
+          — {bulkDeepen.failures[0]?.route}: {bulkDeepen.failures[0]?.error}
         </span>
         <Button
           variant="ghost"
@@ -125,15 +113,6 @@ export function PlanGenerateBar({
             streams below; the tree updates when the plan is applied.
           </span>
         </div>
-        {run.requestId ? (
-          <div className="px-3 pb-2">
-            <LiveRunDisplay
-              requestId={run.requestId}
-              label="Generating plan"
-              bodyClassName="max-h-40 overflow-y-auto px-2.5 py-2 text-sm"
-            />
-          </div>
-        ) : null}
       </div>
     );
   }
@@ -200,8 +179,8 @@ export function PlanGenerateBar({
             />
             <p className="mt-1 text-xs text-muted-foreground">
               The topic&apos;s final research report is handed to the three
-              research agents — real services, locations, and topics instead
-              of guesses.
+              research agents — real services, locations, and topics instead of
+              guesses.
             </p>
           </div>
           <div>

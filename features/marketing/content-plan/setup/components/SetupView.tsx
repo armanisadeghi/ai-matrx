@@ -129,6 +129,7 @@ import {
 import { BuildWithAiDialog, type BuildLogEntry } from "./BuildWithAiDialog";
 import { SetupAiBar, type SetupAiRunSummary } from "./SetupAiBar";
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
+import { RunSetWindowController } from "@/features/agents/components/live-run/RunSetDisplay";
 import { SetupBridgeSection } from "./SetupBridgeSection";
 import { SetupPreviewColumn } from "./SetupPreviewColumn";
 import { SetupShapeColumn } from "./SetupShapeColumn";
@@ -1897,6 +1898,25 @@ export function SetupView() {
           onDismissError={() => setAiError(null)}
         />
 
+        <RunSetWindowController
+          setKey={passes.runSetKeys.keywords}
+          instanceId={`content-plan-setup-keywords:${siteId ?? "none"}`}
+          label="Planning keyword strategy"
+          active={passes.running === "keywords"}
+        />
+        <RunSetWindowController
+          setKey={passes.runSetKeys.entities}
+          instanceId={`content-plan-setup-entities:${siteId ?? "none"}`}
+          label="Attaching entities"
+          active={passes.running === "entities"}
+        />
+        <RunSetWindowController
+          setKey={passes.runSetKeys.review}
+          instanceId={`content-plan-setup-review:${siteId ?? "none"}`}
+          label="Reviewing the plan"
+          active={passes.running === "review"}
+        />
+
         {site ? (
           <div className="border-b border-border/50 bg-card px-3 py-2">
             <AssociationList
@@ -1923,24 +1943,6 @@ export function SetupView() {
               pending={agents.live.isRunning}
               onDismiss={agents.live.dismiss}
             />
-          </div>
-        ) : null}
-
-        {/* The three SERVER passes stream on aidream's own wire; the adopted
-          request id renders through the same ONE live pipeline. */}
-        {passes.live.requestId || passes.live.isRunning ? (
-          <div className="border-b border-border px-3 py-2">
-            <LiveRunDisplay
-              requestId={passes.live.requestId ?? undefined}
-              label={passes.live.label ?? "Running a whole-plan pass"}
-              pending={passes.live.isRunning}
-              onDismiss={passes.live.dismiss}
-            />
-            {passes.live.stage ? (
-              <p className="mt-1 text-xs text-muted-foreground">
-                {passes.live.stage}
-              </p>
-            ) : null}
           </div>
         ) : null}
 

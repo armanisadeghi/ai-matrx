@@ -70,7 +70,7 @@ import {
   readBriefDraft,
   useBriefWriter,
 } from "../hooks/useBriefWriter";
-import { LiveRunWindowController } from "@/features/overlays/openers/liveRunWindow";
+import { RunSetWindowController } from "@/features/agents/components/live-run/RunSetDisplay";
 import type { CmsPageMapEntry } from "../setup/bridge";
 import { useNodeReality } from "../hooks/useNodeReality";
 import { NodeRealityCard } from "./NodeRealityCard";
@@ -874,32 +874,17 @@ export function NodePanel({
           body is the canonical pipeline, a run whose output is a registered
           content-IR kind renders as that kind's COMPONENT, token by token,
           instead of a wall of raw JSON. */}
-        {briefWriter.run.status === "running" || briefWriter.run.requestId ? (
-          <LiveRunWindowController
-            instanceId={`brief:${node.id}`}
-            requestId={briefWriter.run.requestId ?? null}
-            label="Drafting brief"
-            pending={briefWriter.busy && !briefWriter.run.requestId}
-            // Measured, not guessed: a finished `page_brief` (angle + ~9 points
-            // + must-not-cover + concerns) fills ~90% of the viewport. At the
-            // 80vh default it scrolls for no reason; taller than this and the
-            // window stops being a floating panel over the page.
-            height="90vh"
-          />
-        ) : null}
-        {deepen.nodeId === node.id &&
-        (deepeningThisNode || deepen.run.requestId) ? (
-          <LiveRunWindowController
-            instanceId={`deepen:${node.id}`}
-            requestId={deepen.run.requestId ?? null}
-            label={
-              deepen.run.stage
-                ? `Deepening — ${deepen.run.stage}`
-                : "Deepening — brief + sources"
-            }
-            pending={deepeningThisNode && !deepen.run.requestId}
-          />
-        ) : null}
+        <RunSetWindowController
+          setKey={briefWriter.runSetKey}
+          instanceId={`brief:${node.id}`}
+          label="Drafting brief"
+          active={briefWriter.busy}
+          // Measured, not guessed: a finished `page_brief` (angle + ~9 points
+          // + must-not-cover + concerns) fills ~90% of the viewport. At the
+          // 80vh default it scrolls for no reason; taller than this and the
+          // window stops being a floating panel over the page.
+          height="90vh"
+        />
 
         <div className="min-h-0 flex-1 overflow-y-auto">
           <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-4">

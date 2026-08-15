@@ -21,6 +21,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { removeRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
+import {
+  addRunToSet,
+  clearRunSet,
+} from "@/features/agents/redux/execution-system/run-sets/run-sets.thunks";
 import { adoptForeignStream } from "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream";
 import { marketingKeys } from "@/features/marketing/data/hooks";
 import { callApi } from "@/lib/api/call-api";
@@ -64,6 +68,9 @@ const PASS_LABELS: Record<SetupPassKind, string> = {
   review: "Reviewing the plan",
 };
 
+const setupPassRunSetKey = (siteId: string | null, kind: SetupPassKind) =>
+  `content-plan-ai:${siteId ?? "none"}:setup-${kind}`;
+
 export interface SetupPassState {
   /** The pass currently running, or null. */
   running: SetupPassKind | null;
@@ -99,10 +106,21 @@ export function useSetupPasses(siteId: string | null) {
   // Adopted rows have no owning instance — nothing else reaps them.
   const adoptedRequestIdRef = useRef<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  /** A late pass completion may never reset a newer pass's local state. */
+  const runEpochRef = useRef(0);
+  const activeSetKeyRef = useRef<string | null>(null);
+  const runSetKeys: Record<SetupPassKind, string> = {
+    keywords: setupPassRunSetKey(siteId, "keywords"),
+    entities: setupPassRunSetKey(siteId, "entities"),
+    review: setupPassRunSetKey(siteId, "review"),
+  };
 
   useEffect(
     () => () => {
-      abortRef.current?.abort();
+      // The run-set hold keeps the adopted row alive while the detached hook's
+      // reader continues feeding Redux. Bump the epoch so that reader cannot
+      // write into this unmounted hook's local state.
+      runEpochRef.current += 1;
       if (adoptedRequestIdRef.current) {
         dispatch(removeRequest(adoptedRequestIdRef.current));
         adoptedRequestIdRef.current = null;
@@ -127,6 +145,14 @@ export function useSetupPasses(siteId: string | null) {
     ): Promise<PlanProposal<T>> => {
       if (!siteId) throw new Error("Pick a site first.");
       if (inFlight.current) throw new Error("An AI pass is already running.");
+      const epoch = ++runEpochRef.current;
+      const setStateForEpoch = (
+        updater: (current: SetupPassState) => SetupPassState,
+      ) => {
+        if (runEpochRef.current === epoch) setState(updater);
+      };
+      const runSetKey = setupPassRunSetKey(siteId, kind);
+      activeSetKeyRef.current = runSetKey;
       inFlight.current = true;
       setState({
         running: kind,
@@ -144,18 +170,32 @@ export function useSetupPasses(siteId: string | null) {
         dispatch(removeRequest(adoptedRequestIdRef.current));
         adoptedRequestIdRef.current = null;
       }
+      dispatch(clearRunSet(runSetKey));
       const streamAbort = new AbortController();
       abortRef.current = streamAbort;
       const consumeStream = dispatch(
         adoptForeignStream({
           onAdopted: ({ requestId }) => {
+            if (runEpochRef.current !== epoch) {
+              dispatch(removeRequest(requestId));
+              return;
+            }
             adoptedRequestIdRef.current = requestId;
-            setState((current) => ({ ...current, requestId }));
+            setStateForEpoch((current) => ({ ...current, requestId }));
+            dispatch(
+              addRunToSet({
+                setKey: runSetKey,
+                requestId,
+                label: PASS_LABELS[kind],
+              }),
+            );
           },
           abortController: streamAbort,
           onEvent: (event) => {
             const stage = readPhaseMessage(event);
-            if (stage) setState((current) => ({ ...current, stage }));
+            if (stage) {
+              setStateForEpoch((current) => ({ ...current, stage }));
+            }
             if (event.event === "error") {
               streamFailure = describeBackendFailure(
                 parseStreamError(event.data),
@@ -196,9 +236,11 @@ export function useSetupPasses(siteId: string | null) {
         }
         return proposal;
       } finally {
-        inFlight.current = false;
-        abortRef.current = null;
-        setState(IDLE);
+        if (runEpochRef.current === epoch) {
+          inFlight.current = false;
+          if (abortRef.current === streamAbort) abortRef.current = null;
+        }
+        setStateForEpoch(() => IDLE);
         // The site row changed (the proposal landed on it) and the run is now
         // in this site's AI history.
         void queryClient.invalidateQueries({
@@ -231,10 +273,17 @@ export function useSetupPasses(siteId: string | null) {
   );
 
   const dismiss = useCallback(() => {
+    runEpochRef.current += 1;
     abortRef.current?.abort();
+    abortRef.current = null;
+    inFlight.current = false;
     if (adoptedRequestIdRef.current) {
       dispatch(removeRequest(adoptedRequestIdRef.current));
       adoptedRequestIdRef.current = null;
+    }
+    if (activeSetKeyRef.current) {
+      dispatch(clearRunSet(activeSetKeyRef.current));
+      activeSetKeyRef.current = null;
     }
     setState(IDLE);
   }, [dispatch]);
@@ -256,6 +305,7 @@ export function useSetupPasses(siteId: string | null) {
     entitiesBusy: state.running === "entities",
     reviewBusy: state.running === "review",
     busy: state.running !== null,
+    runSetKeys,
   };
 }
 

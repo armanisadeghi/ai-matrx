@@ -44,7 +44,7 @@ lib/redux/slices/
 
 Arman's ruling, 2026-08-11. Two halves, both absolute:
 
-**1. Never a top-of-page block.** Inserting a live-run block above the page's content shifts everything down the instant a run starts and puts the model's output above the thing the user is editing. **Banned on every page, no size threshold.** The canonical surface is the floating [`windows/agents/LiveRunWindow.tsx`](windows/agents/LiveRunWindow.tsx) — opened via `useOpenLiveRunWindow()` / `<LiveRunWindowController>` ([`features/overlays/openers/liveRunWindow.tsx`](../overlays/openers/liveRunWindow.tsx)). Token output renders through [`LiveRunDisplay`](../agents/components/live-run/LiveRunDisplay.tsx). Non-token pipelines pass `progress` and render [`LiveRunProgress`](../agents/components/live-run/LiveRunProgress.tsx): stable rows update in place; event narration is banned.
+**1. Never a top-of-page block.** Inserting a live-run block above the page's content shifts everything down the instant a run starts and puts the model's output above the thing the user is editing. **Banned on every page, no size threshold.** The canonical surface is the floating [`windows/agents/LiveRunWindow.tsx`](windows/agents/LiveRunWindow.tsx) — opened via `useOpenLiveRunWindow()` / `<LiveRunWindowController>` ([`features/overlays/openers/liveRunWindow.tsx`](../overlays/openers/liveRunWindow.tsx)). Token output renders through [`LiveRunDisplay`](../agents/components/live-run/LiveRunDisplay.tsx). A multi-lane surface passes a stable `runSetKey` via [`RunSetWindowController`](../agents/components/live-run/RunSetDisplay.tsx), and the same window renders every retained entry through `RunSetDisplay`; a host remount therefore rebinds the set instead of forgetting component-local request ids. Non-token pipelines pass `progress` and render [`LiveRunProgress`](../agents/components/live-run/LiveRunProgress.tsx): stable rows update in place; event narration is banned.
 
 **THE ONE EXCEPTION — inline `LiveRunDisplay`, and it is earned, not assumed.** A surface may render the window's _internals_ inline only when ALL of these hold: the UI around it is purpose-built, more beautiful, and more specialized than the generic window; and it **guarantees zero page shift** — in practice, the content sits at the BOTTOM and the page only grows downward. This requires designing an entire interface around the kind. **Very few surfaces will ever qualify, and a coding agent's default output is nowhere near the bar.** When in doubt, float it.
 
@@ -58,6 +58,9 @@ Arman's ruling, 2026-08-11. Two halves, both absolute:
 
 ## Change Log
 
+- 2026-08-15 — **Floating windows gained canonical multi-run binding.**
+  `RunSetWindowController` passes a stable `runSetKey` through `liveRunWindow`; the window
+  renders the full `RunSetDisplay` and reopens from retained Redux entries after host remounts.
 - 2026-08-12 — **Retention widened to every MarkdownStream viewer + doctrine doc.** Retention moved into `StreamAwareChatMarkdown` via `useRetainRequestForViewer` (adopted-stream surfaces like the keyword Research tab were unprotected); `createRequest` made non-destructive for existing rows. Canonical doctrine: `features/agents/docs/LIVE_RUN_RETENTION.md`.
 - 2026-08-12 — **Live-run viewers retain canonical request state.** Authority,
   Keyword Research, and every other floating run survive host/query remounts

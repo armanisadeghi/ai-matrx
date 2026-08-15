@@ -323,6 +323,10 @@ If you find yourself adding window-specific concepts to the overlay system (or o
 
 ## Change log
 
+- **2026-08-15** — **`liveRunWindow` can bind a stable multi-run set.** Its typed opener and
+  explicit controller data path now carry `runSetKey`; `LiveRunWindow` renders the canonical
+  `RunSetDisplay` for that set, allowing remounted launch surfaces to recover every lane from
+  Redux without serializing component-local request ids into overlay state.
 - **2026-07-23** — **New `drillDeckContextWindow` overlay.** The compact Drill Deck Surface-A picker is a singleton WindowPanel with mobile drawer presentation, registered across the typed overlay ID, catalogue, static WindowPanel metadata, `lazyOverlay` controller import/selectors/gated render block, typed opener, and admin Tools-grid launcher. The official Drill Deck component page opens the real registered window.
 - **2026-07-17** — **New `contextPreviewPanel` overlay — server-truth "what the agent receives".** Singleton, `isWindow:false`, opened by `useOpenContextPreviewPanel({ conversationId?, agentId? })` from the composer's `ContextLensBar` "Context" segment. Renders `ContextPreviewPanel` (`features/agents/components/context-preview/`) in `SidePanelSurface`: the aidream `POST /ai/context/preview` response (exact injected context block + tiered variables, same code path as a real run) + an "Attached this turn" tab. Replaces + deletes the blocking `AgentSeesSheet`. Registered across all sites (overlay-ids, catalogue, controller selectors + gated block, opener).
 - **2026-07-16** — **Dynamic panel no longer buries the shell avatar.** `MatrxDynamicPanel` auto-claims a glass-layer elevated user menu (`ElevatedShellUserMenuRoot` in AppShell) when docked right/top or fullscreen/mobile — the shell header stacking context cannot win against `#glass-layer` `z-[100]`. See `components/matrx/resizable/FEATURE.md`.

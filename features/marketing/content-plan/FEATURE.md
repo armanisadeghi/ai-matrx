@@ -2,7 +2,7 @@
 
 **Status:** active
 **Tier:** 1
-**Last updated:** 2026-08-14
+**Last updated:** 2026-08-15
 
 ## Draft brief — SERVER-side, persisted on arrival
 
@@ -22,10 +22,11 @@ switch destroyed the whole paid run. Drafting PROPOSES; "Use this brief"
 research-and-commit sibling.
 
 **Live output renders in the floating `liveRunWindow`, never as a block at the
-top of the panel.** A block there shifts every field below it the instant a run
-starts and puts the model's output above the thing the user is editing. The
-window is generic (`features/window-panels/windows/agents/LiveRunWindow.tsx`) —
-use it for any live run rather than inserting one into a page.
+top of the panel.** Every content-plan lane registers its adopted request in a
+stable `content-plan-ai:{siteId}:{lane}` run set; per-node brief writers add the
+node id. `RunSetWindowController` reads those sets from Redux, so a panel or
+workspace remount re-shows every retained stream even though hook-local state
+starts idle. A block in the panel shifts every field below it and is forbidden.
 
 ## Purpose
 
@@ -62,9 +63,10 @@ plan CRUD through it.
   strip on tree/table/map, streams `/content-plan/sites/{id}/generate`) and
   Deepen (NodePanel header button, streams `/content-plan/nodes/{id}/deepen`).
   Both streams are ADOPTED into the canonical execution slice
-  (`adoptForeignStream`) and render live via `<LiveRunDisplay requestId>` —
-  server phase/info milestones drive the stage line (aidream emits them since
-  2026-08-10; `initial_message` now actually arrives as an info event).
+  (`adoptForeignStream`), registered in stable generate/deepen/bulk-deepen run
+  sets, and rendered together through `RunSetDisplay` inside the floating live
+  window. Server phase/info milestones drive the stage line (aidream emits
+  them since 2026-08-10; `initial_message` arrives as an info event).
 - **Setup step agents (`setup/ai.ts`)** — every Setup step has a real AI,
   grounded in the RESEARCH system's final report (the "Document",
   `research.rs_document.content`, picked by topic in the `SetupAiBar` strip).
@@ -93,6 +95,9 @@ plan CRUD through it.
   proposal to `web.site.settings.content_plan.*_proposal` BEFORE it streams.
   The hook reads that persisted proposal back (`setup/proposals.ts`) rather
   than the stream payload, so what the user reviews is what a refresh shows.
+  Each pass owns a stable lane-scoped run set and floats through
+  `RunSetWindowController`; remount cleanup invalidates only the local epoch and
+  leaves the adopted reader feeding the retained Redux row.
   The small per-step agents (shape planner, family namer, entity curator) still
   run client-side through `useSetupAgents`.
 - **A site's AI run history** (`?view=ai-runs`,
@@ -642,6 +647,12 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
 
+- 2026-08-15 — **Multi-lane AI runs now survive content-plan host remounts.**
+  Generate, single/bulk deepen, all three server Setup passes, and every per-node brief writer
+  register adopted requests in stable lane-scoped `runSets`. Their floating windows render the
+  whole set and reopen from Redux membership after remount; detached readers keep feeding
+  set-held rows, while run epochs guard every late post-await state/ref completion from
+  stomping a newer run. The old inline Setup and generate/deepen stream blocks are gone.
 - 2026-08-15 — **The `open_entity_editor` write-target contract says
   source/media, not generic entity.** The full roster still contains
   person/org CRM records, but this editor accepts only `plan.entity`

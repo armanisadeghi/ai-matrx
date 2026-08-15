@@ -32,7 +32,8 @@ function makeStore() {
 type Store = ReturnType<typeof makeStore>;
 
 /** House pattern for dispatching AppThunks on a partial test store. */
-const thunkDispatch = (store: Store) => store.dispatch as unknown as AppDispatch;
+const thunkDispatch = (store: Store) =>
+  store.dispatch as unknown as AppDispatch;
 
 const SET_KEY = "test-surface:phrase";
 
@@ -97,6 +98,45 @@ test("removing one entry releases only that run", () => {
   expect(store.getState().activeRequests.byRequestId["run-1"]).toBeUndefined();
   expect(store.getState().activeRequests.byRequestId["run-2"]).toBeDefined();
   expect(selectRunSetEntries(store.getState(), SET_KEY)).toHaveLength(1);
+});
+
+test("lane-scoped sets survive owner cleanup and clear independently", () => {
+  const store = makeStore();
+  const generateKey = "content-plan-ai:site-1:generate";
+  const deepenKey = "content-plan-ai:site-1:bulk-deepen";
+  seedRequest(store, "generate-run");
+  seedRequest(store, "deepen-run");
+
+  thunkDispatch(store)(
+    addRunToSet({
+      setKey: generateKey,
+      requestId: "generate-run",
+      label: "Generate",
+    }),
+  );
+  thunkDispatch(store)(
+    addRunToSet({
+      setKey: deepenKey,
+      requestId: "deepen-run",
+      label: "Deepen",
+    }),
+  );
+  store.dispatch(removeRequest("generate-run"));
+  store.dispatch(removeRequest("deepen-run"));
+
+  thunkDispatch(store)(clearRunSet(generateKey));
+  expect(
+    store.getState().activeRequests.byRequestId["generate-run"],
+  ).toBeUndefined();
+  expect(
+    store.getState().activeRequests.byRequestId["deepen-run"],
+  ).toBeDefined();
+  expect(selectRunSetEntries(store.getState(), deepenKey)).toHaveLength(1);
+
+  thunkDispatch(store)(clearRunSet(deepenKey));
+  expect(
+    store.getState().activeRequests.byRequestId["deepen-run"],
+  ).toBeUndefined();
 });
 
 test("overflow evicts oldest-first and releases evicted rows", () => {

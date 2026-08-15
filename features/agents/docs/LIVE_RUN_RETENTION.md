@@ -83,8 +83,8 @@ emits a typed `error` EVENT and closes the body cleanly, so **anything thrown
 out of the body reader is a transport loss**. `lib/api/stream-parser.ts` types it
 as `StreamTransportError` (`code: "stream_transport_lost"`, `resumable`); read it
 at any boundary with `isStreamTransportLost()` (it survives `callApi`'s
-normalization via `ApiCallError.code`). Resumable means *ask the server*, never
-*assume success* — a run that genuinely died reports `failed` on reattach and the
+normalization via `ApiCallError.code`). Resumable means _ask the server_, never
+_assume success_ — a run that genuinely died reports `failed` on reattach and the
 honest record replaces the optimistic one.
 
 Two reattach paths, both already built — never hand-roll a third:
@@ -120,9 +120,17 @@ the first call finishes" class). The canonical primitive:
   (`features/agents/components/live-run/RunSetDisplay.tsx`): maps entries to `LiveRunDisplay`
   per run and `MarkdownStream serverProcessedBlocks` per data payload. Renders null when empty;
   mount at the BOTTOM of a surface (FLOATING LAW: zero page shift).
+- **Floating component** `RunSetWindowController` binds that same stable `setKey` into
+  `LiveRunWindow`. It opens from set membership as well as local launch state, so a remounted
+  host whose hook has reset to idle still re-shows every retained lane.
 - Launcher hooks register runs from `adoptForeignStream`'s `onAdopted` and clear ONLY on a new
   logical session — never on unmount (surviving unmount is the point). Exemplar:
   `useKeywordResearch` (`runSetKey` option) + `KeywordResearchTab`.
+- An adopted client reader with no durable server rejoin path stays alive across launcher
+  unmount and keeps feeding the set-held Redux row. Cleanup may request owner removal (the
+  set hold defers it) and must invalidate the local run epoch; explicit dismiss/reset or a new
+  logical session aborts and clears. A server-owned run with a durable identifier should use
+  scoped rejoin instead of relying on the detached reader.
 - **Late-settling streams must not stomp state**: a hook that reuses one state object across
   sequential calls guards every write with a run EPOCH (see `useKeywordResearch`'s
   `runEpochRef`) so an older call resolving late no-ops instead of flipping the current run to
@@ -137,6 +145,10 @@ Redux devtools before touching retention seams.
 
 ## Change Log
 
+- 2026-08-15 — Content-plan's generate, deepen/bulk-deepen, three Setup passes, and per-node
+  brief writers moved onto stable lane-scoped run sets. `RunSetWindowController` makes the
+  floating window reopen from retained set state after a host remount; detached adopted readers
+  keep streaming into held rows, and epoch guards cover every late local-state/ref completion.
 - 2026-08-14 — Retention moved INTO the canonical headless-JSON primitive: the shared
   `waitForExtraction` in `run-headless-agent-json.ts` now retains/releases around its poll, and
   the new `adoptHeadlessAgentJson` entry (already-executed runs, e.g. shortcut-trigger +
@@ -152,7 +164,7 @@ Redux devtools before touching retention seams.
   `AgentExecutionTestModal`, and `useImageStudio`'s extraction poll. Added the conversation-keyed
   sibling `useRetainLatestRequestForViewer`. The `adoptForeignStream` marketing family was
   audited and is already covered by `LiveRunDisplay` / `RunSetDisplay` / `MarkdownStream
-  requestId=`.
+requestId=`.
 - 2026-08-15 — A dropped socket now reattaches instead of dead-ending (D183 defect 2):
   `StreamTransportError` / `isStreamTransportLost` classify it, `run-ai-stream`
   reconnects on it like a heartbeat loss, and `createTransportLossReattacher`
