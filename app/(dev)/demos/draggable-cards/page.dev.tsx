@@ -10,18 +10,22 @@
  * runtime consumer anywhere in the repo — `pnpm check:unwired` reported them as
  * unfinished for exactly that reason. This page is their new home.
  *
- * THE CONTRACT, learned the hard way (first version of this page got all three
- * wrong and looked broken in production):
+ * THE CONTRACT, learned the hard way (two production iterations got these wrong
+ * and the page looked broken):
  *
  *  1. Each card OWNS its chrome and its size — `min-h-80 w-80 p-6` plus its own
  *     background, border and shadow. Passing a `className` with more padding,
  *     another background or another border fights it; the card renders bare.
- *  2. Each card is a normal FLOW element wrapping an absolutely-positioned
- *     motion layer. Two siblings lay out like any two divs — so the demo places
- *     them with flex and lets drag move them from there. `initialPosition` is an
- *     offset from that home, not a coordinate in the container.
- *  3. A card is 320px wide and 320–384px tall before content. A container that
- *     clips shorter than that hides the primitive it is supposed to show.
+ *  2. Each card's wrapper contains ONLY an absolutely-positioned motion layer,
+ *     so the wrapper has ZERO height and collapses out of flow. Flex/grid
+ *     layout can never separate two cards — they all pile onto the same origin
+ *     and spill over whatever follows them on the page. The consumer MUST give
+ *     them a `relative` container with an explicit height and place each card
+ *     with `initialPosition`, which is a coordinate in that container.
+ *  3. A card is 320px wide and 320–384px tall before content, so the container
+ *     has to be tall enough to hold them or it hides the primitive it exists
+ *     to show — and it needs `overflow-hidden` or a dragged card escapes onto
+ *     the rest of the page.
  *
  * Both require `DraggableCardProvider`: it owns card registration, container
  * bounds, and group membership, and both components call `useDraggableCard()`.
@@ -41,10 +45,10 @@ import {
 } from "@/components/ui/enhanced-draggable-card";
 
 const SNAP_POINTS = [
-  { x: 0, y: 0 },
-  { x: 240, y: 0 },
-  { x: 0, y: 160 },
-  { x: 240, y: 160 },
+  { x: 24, y: 24 },
+  { x: 420, y: 24 },
+  { x: 24, y: 200 },
+  { x: 420, y: 200 },
 ];
 
 function SectionHeading({
@@ -110,10 +114,11 @@ export default function DraggableCardsDemoPage() {
               title="TransformableCard"
               note="drag to reposition; click the pill to collapse and restore"
             />
-            <TransformableCardContainer className="rounded-md border border-border bg-card p-6">
-              <div className="flex flex-wrap gap-8">
+            <TransformableCardContainer className="h-[520px] overflow-hidden rounded-md border border-border bg-card">
+              <div className="absolute inset-0">
                 <TransformableCard
                   id="transformable-brief"
+                  initialPosition={{ x: 24, y: 24 }}
                   onPositionChange={trackPosition("transformable-brief")}
                   pillView={
                     <span className="px-2 text-sm">Research brief</span>
@@ -127,6 +132,7 @@ export default function DraggableCardsDemoPage() {
 
                 <TransformableCard
                   id="transformable-notes"
+                  initialPosition={{ x: 420, y: 120 }}
                   onPositionChange={trackPosition("transformable-notes")}
                   pillView={<span className="px-2 text-sm">Notes</span>}
                 >
@@ -145,11 +151,12 @@ export default function DraggableCardsDemoPage() {
               title="EnhancedDraggableCardBody"
               note="snap points, plus drop containers that claim a card"
             />
-            <EnhancedDraggableCardContainer className="rounded-md border border-border bg-card p-6 space-y-6">
-              <div className="flex flex-wrap gap-8">
+            <EnhancedDraggableCardContainer className="h-[620px] overflow-hidden rounded-md border border-border bg-card">
+              <div className="absolute inset-0">
                 <EnhancedDraggableCardBody
                   id="enhanced-alpha"
                   group="demo"
+                  initialPosition={{ x: 24, y: 24 }}
                   snapPoints={SNAP_POINTS}
                   onPositionChange={trackPosition("enhanced-alpha")}
                 >
@@ -162,6 +169,7 @@ export default function DraggableCardsDemoPage() {
                 <EnhancedDraggableCardBody
                   id="enhanced-beta"
                   group="demo"
+                  initialPosition={{ x: 420, y: 24 }}
                   snapPoints={SNAP_POINTS}
                   onPositionChange={trackPosition("enhanced-beta")}
                 >
@@ -172,7 +180,7 @@ export default function DraggableCardsDemoPage() {
                 </EnhancedDraggableCardBody>
               </div>
 
-              <div className="flex gap-4">
+              <div className="absolute inset-x-4 bottom-4 flex gap-4">
                 <DropContainer
                   id="drop-inbox"
                   label="Inbox"
