@@ -10,7 +10,10 @@
  * components/membership/InvitationsPanel.tsx.
  */
 
-import { useProjectInvitations, useProjectInvitationOperations } from "../hooks";
+import {
+  useProjectInvitations,
+  useProjectInvitationOperations,
+} from "../hooks";
 import type { ProjectRole } from "../types";
 import { toast } from "@/lib/toast";
 import {
@@ -109,6 +112,7 @@ export function InvitationManager({
       refreshing={loading}
       canManage={canManage}
       inviteLabel={`Invite to ${projectName}`}
+      copyContainer={{ noun: "project", id: projectId, name: projectName }}
     />
   );
 }

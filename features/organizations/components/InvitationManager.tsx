@@ -38,6 +38,7 @@ function buildAcceptUrl(token: string): string {
 
 export function InvitationManager({
   organizationId,
+  organizationName,
   userRole,
 }: InvitationManagerProps) {
   const { invitations, loading, error, refresh } =
@@ -120,6 +121,11 @@ export function InvitationManager({
       onResend={handleResend}
       onRefresh={refresh}
       refreshing={loading}
+      copyContainer={{
+        noun: "organization",
+        id: organizationId,
+        name: organizationName,
+      }}
     />
   );
 }

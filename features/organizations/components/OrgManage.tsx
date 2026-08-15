@@ -278,6 +278,7 @@ export function OrgManage({
             >
               <MemberManagement
                 organizationId={displayOrganization.id}
+                organizationName={displayOrganization.name}
                 userRole={userRole}
                 isOwner={isOwner}
                 isPersonal={displayOrganization.isPersonal}

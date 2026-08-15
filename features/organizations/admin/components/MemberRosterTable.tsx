@@ -19,7 +19,23 @@ import {
 } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { OrgAdminMember } from "../types";
-import { activityBucket, formatBytes, formatMcents, formatRelativeTime } from "../utils";
+import {
+  activityBucket,
+  formatBytes,
+  formatMcents,
+  formatRelativeTime,
+} from "../utils";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
+import {
+  buildRosterListPayload,
+  buildRosterMemberPayload,
+  rosterCsvRows,
+  rosterListHuman,
+  rosterMemberRow,
+  rosterMemberSummary,
+} from "../copy";
 
 type SortKey = "name" | "role" | "lastActive" | "storage" | "spend";
 
@@ -46,7 +62,12 @@ function ActivityDot({ member }: { member: OrgAdminMember }) {
         : bucket === "dormant"
           ? "bg-orange-500"
           : "bg-muted-foreground/40";
-  return <span className={`inline-block h-2 w-2 rounded-full ${color}`} aria-hidden />;
+  return (
+    <span
+      className={`inline-block h-2 w-2 rounded-full ${color}`}
+      aria-hidden
+    />
+  );
 }
 
 interface Props {
@@ -83,14 +104,18 @@ export function MemberRosterTable({ orgSlug, members }: Props) {
         case "spend":
           return b.cost24hMcents - a.cost24hMcents;
         default:
-          return (a.displayName ?? a.email ?? "").localeCompare(b.displayName ?? b.email ?? "");
+          return (a.displayName ?? a.email ?? "").localeCompare(
+            b.displayName ?? b.email ?? "",
+          );
       }
     });
     return sorted;
   }, [members, query, sort]);
 
   const go = (userId: string) =>
-    startTransition(() => router.push(`/organizations/${orgSlug}/admin/users/${userId}`));
+    startTransition(() =>
+      router.push(`/organizations/${orgSlug}/admin/users/${userId}`),
+    );
 
   return (
     <div className="space-y-3">
@@ -118,13 +143,44 @@ export function MemberRosterTable({ orgSlug, members }: Props) {
               key={key}
               onClick={() => setSort(key)}
               className={`rounded px-2 py-1 transition-colors ${
-                sort === key ? "bg-accent text-foreground" : "hover:bg-accent/50"
+                sort === key
+                  ? "bg-accent text-foreground"
+                  : "hover:bg-accent/50"
               }`}
             >
               {label}
             </button>
           ))}
         </div>
+        {/* Copy/export cover ALL members, never the searched/sorted slice. */}
+        {members.length > 0 && (
+          <div className="flex items-center gap-1">
+            <CopyButtons
+              size="icon"
+              label="Member roster"
+              human={() => rosterListHuman(members)}
+              json={() => members.map(rosterMemberRow)}
+              agent={() =>
+                buildRosterListPayload({
+                  members,
+                  orgSlug,
+                  searchQuery: query,
+                  sort,
+                })
+              }
+            />
+            <ExportMenu
+              label={`${orgSlug} member roster`}
+              items={[
+                jsonExportItem(() => members.map(rosterMemberRow)),
+                csvExportItem(
+                  () => rosterCsvRows(members),
+                  "CSV (all members)",
+                ),
+              ]}
+            />
+          </div>
+        )}
       </div>
 
       <div className="rounded-lg border border-border">
@@ -144,7 +200,10 @@ export function MemberRosterTable({ orgSlug, members }: Props) {
           <TableBody>
             {rows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={8} className="py-10 text-center text-sm text-muted-foreground">
+                <TableCell
+                  colSpan={8}
+                  className="py-10 text-center text-sm text-muted-foreground"
+                >
                   {query ? "No members match your search." : "No members yet."}
                 </TableCell>
               </TableRow>
@@ -153,7 +212,7 @@ export function MemberRosterTable({ orgSlug, members }: Props) {
               <TableRow
                 key={m.userId}
                 onClick={() => go(m.userId)}
-                className="cursor-pointer"
+                className="group/row cursor-pointer"
               >
                 <TableCell>
                   <div className="flex items-center gap-2.5">
@@ -168,13 +227,18 @@ export function MemberRosterTable({ orgSlug, members }: Props) {
                         {m.displayName || m.email || "Unknown user"}
                       </div>
                       {m.displayName && m.email && (
-                        <div className="truncate text-xs text-muted-foreground">{m.email}</div>
+                        <div className="truncate text-xs text-muted-foreground">
+                          {m.email}
+                        </div>
                       )}
                     </div>
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant={ROLE_BADGE[m.role] ?? "outline"} className="gap-1 capitalize">
+                  <Badge
+                    variant={ROLE_BADGE[m.role] ?? "outline"}
+                    className="gap-1 capitalize"
+                  >
                     {m.role === "owner" && <ShieldCheck className="h-3 w-3" />}
                     {m.role}
                   </Badge>
@@ -194,7 +258,9 @@ export function MemberRosterTable({ orgSlug, members }: Props) {
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
                   <span className="text-foreground">{m.orgFilesCount}</span>{" "}
-                  <span className="text-xs">({formatBytes(m.orgBytesUsed)})</span>
+                  <span className="text-xs">
+                    ({formatBytes(m.orgBytesUsed)})
+                  </span>
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
                   {formatMcents(m.cost24hMcents)}
@@ -205,11 +271,29 @@ export function MemberRosterTable({ orgSlug, members }: Props) {
                       {m.memberLevel}
                     </Badge>
                   ) : (
-                    <span className="text-xs text-muted-foreground">Standard</span>
+                    <span className="text-xs text-muted-foreground">
+                      Standard
+                    </span>
                   )}
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center justify-end gap-1 text-muted-foreground">
+                    {/* The row navigates on click — CopyButtons stops
+                        propagation so copying never opens the member. */}
+                    <CopyButtons
+                      size="xs"
+                      label={m.displayName || m.email || "Member"}
+                      className="lg:opacity-0 lg:group-hover/row:opacity-100 lg:focus-within:opacity-100 transition-opacity"
+                      human={() => rosterMemberSummary(m)}
+                      json={() => rosterMemberRow(m)}
+                      agent={() =>
+                        buildRosterMemberPayload({
+                          member: m,
+                          orgSlug,
+                          totalMembers: members.length,
+                        })
+                      }
+                    />
                     <UserCog className="h-4 w-4" />
                     <ChevronRight className="h-4 w-4" />
                   </div>

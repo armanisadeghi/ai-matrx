@@ -26,6 +26,8 @@ import type {
 
 interface MemberManagementProps {
   organizationId: string;
+  /** Names the org in copy / export payloads. */
+  organizationName?: string;
   userRole: OrgRole;
   isOwner: boolean;
   isPersonal: boolean;
@@ -39,6 +41,7 @@ const ROLE_OPTIONS: MembershipRoleOption[] = [
 
 export function MemberManagement({
   organizationId,
+  organizationName,
   userRole,
   isOwner,
   isPersonal,
@@ -53,7 +56,10 @@ export function MemberManagement({
 
   const ownerCount = members.filter((m) => m.role === "owner").length;
 
-  const handleChangeRole = async (member: PanelMember, role: MembershipRole) => {
+  const handleChangeRole = async (
+    member: PanelMember,
+    role: MembershipRole,
+  ) => {
     const result = await updateRole(member.userId, role as OrgRole);
     if (result.success) {
       toast.success(`Updated ${member.user?.email}'s role to ${role}`);
@@ -106,6 +112,11 @@ export function MemberManagement({
       isLastOwner={(member) => member.role === "owner" && ownerCount === 1}
       onChangeRole={handleChangeRole}
       onRemove={handleRemove}
+      copyContainer={{
+        noun: "organization",
+        id: organizationId,
+        name: organizationName,
+      }}
       footerNotice={
         isPersonal ? (
           <div className="p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">

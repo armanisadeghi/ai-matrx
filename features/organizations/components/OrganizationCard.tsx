@@ -18,11 +18,20 @@ import type { OrganizationWithRole } from "../types";
 import { cn } from "@/lib/utils";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import { useSettingsNavigate } from "@/features/settings/components/SettingsPresentationContext";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import {
+  buildOrganizationCardPayload,
+  organizationRow,
+  organizationSummary,
+  type OrganizationKpis,
+} from "../lib/copy";
 import { OrganizationAbbreviation } from "./OrganizationAbbreviation";
 
 interface OrganizationCardProps {
   organization: OrganizationWithRole;
   onUpdate?: () => void;
+  /** The list's leading stats — carried into the card's copy payload. */
+  kpis?: OrganizationKpis;
 }
 
 /**
@@ -35,7 +44,10 @@ interface OrganizationCardProps {
  * - Explicit keyboard-accessible action to navigate to org settings
  * - Special styling for personal orgs
  */
-export function OrganizationCard({ organization }: OrganizationCardProps) {
+export function OrganizationCard({
+  organization,
+  kpis,
+}: OrganizationCardProps) {
   // Presentation-aware nav: dismisses the settings window/drawer
   // before pushing when this card is rendered inside the settings
   // overlay. Standalone /settings/organizations route navigates
@@ -202,6 +214,25 @@ export function OrganizationCard({ organization }: OrganizationCardProps) {
 
         {/* Right side - Actions */}
         <div className="flex flex-col gap-2 items-end">
+          {/* The card itself navigates on click, so CopyButtons' default
+              stopPropagation is what keeps copying from opening settings. */}
+          <CopyButtons
+            size="xs"
+            label={organization.name}
+            className="lg:opacity-0 lg:group-hover:opacity-100 lg:focus-within:opacity-100 transition-opacity"
+            human={() => organizationSummary(organization)}
+            json={() => organizationRow(organization)}
+            agent={() =>
+              buildOrganizationCardPayload({
+                org: organization,
+                kpis: kpis ?? {
+                  workspaces: 1,
+                  teams: organization.isPersonal ? 0 : 1,
+                  personal: organization.isPersonal ? 1 : 0,
+                },
+              })
+            }
+          />
           {canManageSettings && !isPersonal && (
             <Button
               asChild
