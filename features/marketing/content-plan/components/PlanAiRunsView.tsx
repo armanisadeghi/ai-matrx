@@ -19,9 +19,14 @@ import { useState } from "react";
 import { AlertTriangle, ChevronRight, Loader2, RefreshCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
+import { webLocation } from "@/features/marketing/lib/copy-payloads";
 import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 
 import { usePlanAiRun, usePlanAiRuns } from "../hooks/usePlanAiRuns";
+import { planAiRunSummary } from "../format";
 
 const STATUS_TONE: Record<string, string> = {
   completed: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
@@ -71,19 +76,100 @@ export function PlanAiRunsView({
             one to read exactly what the model was asked and what it answered.
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => void runs.refetch()}
-          disabled={runs.isFetching}
-        >
-          {runs.isFetching ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <RefreshCw className="mr-2 h-4 w-4" />
-          )}
-          Refresh
-        </Button>
+        <div className="flex shrink-0 items-center gap-1">
+          {(runs.data ?? []).length > 0 ? (
+            <>
+              <CopyButtons
+                size="icon"
+                label="AI runs"
+                human={() =>
+                  (runs.data ?? []).map(planAiRunSummary).join("\n")
+                }
+                json={() => runs.data ?? []}
+                agent={() => {
+                  const list = runs.data ?? [];
+                  return {
+                    kind: "plan_ai_runs",
+                    location: webLocation("Content Plan — AI runs"),
+                    description:
+                      "Every AI run recorded for this site — page briefs, deepens, plan generation, keyword strategy, entity attachment and reviews — as the list renders them.",
+                    data: { runs: list },
+                    attributes: {
+                      rows: list.length,
+                      failed: list.filter((run) => run.status === "failed")
+                        .length,
+                      total_cost: Number(
+                        list
+                          .reduce((sum, run) => sum + run.totalCost, 0)
+                          .toFixed(4),
+                      ),
+                    },
+                    context: { site_id: siteId },
+                  };
+                }}
+                aiVariants={[
+                  {
+                    id: "failures",
+                    label: "Failures only",
+                    hint: "The runs that did not complete, with their errors",
+                    build: () => {
+                      const failed = (runs.data ?? []).filter(
+                        (run) => run.status !== "completed",
+                      );
+                      return {
+                        kind: "plan_ai_runs_failures",
+                        location: webLocation("Content Plan — AI runs"),
+                        description:
+                          "The AI runs for this site that did not complete, with their recorded errors.",
+                        data: { runs: failed },
+                        attributes: {
+                          detail: "failures",
+                          rows: failed.length,
+                          runs_total: (runs.data ?? []).length,
+                        },
+                        context: { site_id: siteId },
+                      };
+                    },
+                  },
+                ]}
+              />
+              <ExportMenu
+                label="Content plan AI runs"
+                items={[
+                  jsonExportItem(() => runs.data ?? [], "JSON (all runs)"),
+                  csvExportItem(
+                    () =>
+                      (runs.data ?? []).map((run) => ({
+                        kind: run.kind,
+                        kind_label: run.kindLabel,
+                        status: run.status,
+                        created_at: run.createdAt,
+                        node_route: run.nodeRoute,
+                        model_id: run.modelId ?? "",
+                        headline: run.headline,
+                        error: run.error,
+                        total_cost: run.totalCost,
+                      })),
+                    "CSV (all runs)",
+                  ),
+                ]}
+              />
+            </>
+          ) : null}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void runs.refetch()}
+            disabled={runs.isFetching}
+          >
+            {runs.isFetching ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="mr-2 h-4 w-4" />
+            )}
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* An unreachable history is NOT an empty history — saying "no runs yet"
@@ -116,7 +202,7 @@ export function PlanAiRunsView({
         {(runs.data ?? []).map((run) => {
           const open = openRunId === run.runId;
           return (
-            <div key={run.runId} className="rounded-md border">
+            <div key={run.runId} className="group/run rounded-md border">
               <button
                 type="button"
                 className="flex w-full items-center gap-3 p-3 text-left hover:bg-muted/50"
@@ -145,6 +231,44 @@ export function PlanAiRunsView({
                   {money(run.totalCost)} {when(run.createdAt)}
                 </span>
               </button>
+
+              {/* Per-run pair. The row header is a <button>, so this sits
+                OUTSIDE it — nesting a button inside a button is invalid, and
+                CopyButtons already stops propagation. */}
+              <div className="flex items-center justify-end px-3 pb-1 opacity-0 transition-opacity focus-within:opacity-100 group-hover/run:opacity-100">
+                <CopyButtons
+                  size="xs"
+                  label={`AI run — ${run.kindLabel}`}
+                  human={() => planAiRunSummary(run)}
+                  json={() => (open && detail.data ? detail.data : run)}
+                  agent={() => ({
+                    kind: "plan_ai_run",
+                    location: webLocation("Content Plan — AI runs"),
+                    description: open
+                      ? "One recorded AI run for this site, opened in full: what the model was asked and what it answered."
+                      : "One recorded AI run for this site, as the list row states it. Open the run to copy its full request and result.",
+                    data: {
+                      summary: run,
+                      // Only the opened run has its full request/result
+                      // loaded — say so rather than implying an empty run.
+                      full_run: open ? (detail.data ?? null) : null,
+                      full_run_omitted: open
+                        ? undefined
+                        : "This run is collapsed; open it to include the complete request and result.",
+                    },
+                    summary: planAiRunSummary(run),
+                    attributes: {
+                      run_id: run.runId,
+                      kind: run.kind,
+                      status: run.status,
+                      node_route: run.nodeRoute || undefined,
+                      total_cost: run.totalCost,
+                      opened: open,
+                    },
+                    context: { site_id: siteId },
+                  })}
+                />
+              </div>
 
               {open ? (
                 <div className="border-t p-3 text-sm">
