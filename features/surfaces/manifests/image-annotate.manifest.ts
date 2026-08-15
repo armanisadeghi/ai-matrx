@@ -157,7 +157,7 @@ export const imageAnnotateManifest: SurfaceManifest = {
   surfaceName: IMAGE_ANNOTATE_SURFACE_NAME,
   readiness: "partial",
   readinessNote:
-    "Manifest + AnnotateModeShell emitter (covers page AND modal mounts). Remaining: the pre-source picker state mounts no provider, no `data-surface-value` anchors, no live non-matching-name binding test.",
+    "READ half: AnnotateModeShell emitter (covers page AND modal mounts). WRITE half: deliberately none — the header's WRITE DOCTRINE records why (callout text is inseparable from pixel geometry, restoreState is whole-set replace, no read twin); re-read it before scoping another pass. Remaining: no `data-surface-value` anchors, no live non-matching-name binding test. Known and accepted: the pre-source picker state mounts no provider — no image is chosen yet, so there is nothing to emit.",
   label: "Image Annotate",
   urlPattern: "/images/annotate",
   intro: `<surface_intro>
