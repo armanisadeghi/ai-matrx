@@ -9458,6 +9458,45 @@ export type Database = {
           user_id: string
         }[]
       }
+      claim_voice_call_lifecycle_event: {
+        Args: {
+          p_occurred_at?: string
+          p_provider: string
+          p_provider_account_id: string
+          p_provider_call_id: string
+          p_provider_event_key: string
+          p_sequence: number
+          p_status: string
+        }
+        Returns: {
+          disposition: string
+          effective_status: string
+          event_id: number
+          interaction_id: string
+        }[]
+      }
+      claim_voice_recording_lifecycle_event: {
+        Args: {
+          p_channels?: number
+          p_duration_seconds?: number
+          p_provider: string
+          p_provider_account_id: string
+          p_provider_call_id: string
+          p_provider_event_key: string
+          p_provider_media_url?: string
+          p_provider_recording_id: string
+          p_recording_started_at?: string
+          p_source?: string
+          p_status: string
+          p_track?: string
+        }
+        Returns: {
+          disposition: string
+          effective_status: string
+          event_id: number
+          interaction_id: string
+        }[]
+      }
       configure_my_sms_assistant: {
         Args: { p_agent_id: string; p_enabled: boolean; p_program_key: string }
         Returns: {
@@ -9595,6 +9634,21 @@ export type Database = {
         }
         Returns: boolean
       }
+      finalize_voice_recording_file: {
+        Args: {
+          p_file_id: string
+          p_provider: string
+          p_provider_account_id: string
+          p_provider_call_id: string
+          p_provider_recording_id: string
+          p_source_event_key: string
+        }
+        Returns: {
+          canonical_file_id: string
+          disposition: string
+          interaction_id: string
+        }[]
+      }
       get_my_sms_assistant_program: {
         Args: { p_program_key: string }
         Returns: {
@@ -9632,6 +9686,40 @@ export type Database = {
       has_exact_sms_task_done_offer: {
         Args: { p_inbound_message_id: string }
         Returns: boolean
+      }
+      register_voice_call_interaction: {
+        Args: {
+          p_contact_point_id: string
+          p_direction: string
+          p_from_address: string
+          p_occurred_at?: string
+          p_organization_id: string
+          p_party_id: string
+          p_program_key: string
+          p_provider: string
+          p_provider_account_id: string
+          p_provider_call_id: string
+          p_recording_owner_id: string
+          p_to_address: string
+        }
+        Returns: {
+          disposition: string
+          interaction_id: string
+        }[]
+      }
+      voice_recording_persistence_readiness: {
+        Args: never
+        Returns: {
+          ambiguous_call_count: number
+          call_claim_ready: boolean
+          event_idempotency_ready: boolean
+          file_binding_ready: boolean
+          provider_identity_unique: boolean
+          provider_url_violation_count: number
+          ready: boolean
+          recording_claim_ready: boolean
+          schema_ready: boolean
+        }[]
       }
     }
     Enums: {
@@ -11917,6 +12005,24 @@ export type Database = {
           outreach_list_id: string | null
           party_id: string
           performed_by: string | null
+          program_key: string | null
+          provider: string | null
+          provider_account_id: string | null
+          provider_interaction_id: string | null
+          provider_recording_id: string | null
+          provider_status: string | null
+          provider_status_at: string | null
+          provider_status_sequence: number | null
+          recording_channels: number | null
+          recording_custody_at: string | null
+          recording_duration_seconds: number | null
+          recording_file_id: string | null
+          recording_owner_id: string | null
+          recording_source: string | null
+          recording_started_at: string | null
+          recording_status: string | null
+          recording_status_at: string | null
+          recording_track: string | null
           recording_url: string | null
           scheduled_at: string | null
           status: string
@@ -11950,6 +12056,24 @@ export type Database = {
           outreach_list_id?: string | null
           party_id: string
           performed_by?: string | null
+          program_key?: string | null
+          provider?: string | null
+          provider_account_id?: string | null
+          provider_interaction_id?: string | null
+          provider_recording_id?: string | null
+          provider_status?: string | null
+          provider_status_at?: string | null
+          provider_status_sequence?: number | null
+          recording_channels?: number | null
+          recording_custody_at?: string | null
+          recording_duration_seconds?: number | null
+          recording_file_id?: string | null
+          recording_owner_id?: string | null
+          recording_source?: string | null
+          recording_started_at?: string | null
+          recording_status?: string | null
+          recording_status_at?: string | null
+          recording_track?: string | null
           recording_url?: string | null
           scheduled_at?: string | null
           status?: string
@@ -11983,6 +12107,24 @@ export type Database = {
           outreach_list_id?: string | null
           party_id?: string
           performed_by?: string | null
+          program_key?: string | null
+          provider?: string | null
+          provider_account_id?: string | null
+          provider_interaction_id?: string | null
+          provider_recording_id?: string | null
+          provider_status?: string | null
+          provider_status_at?: string | null
+          provider_status_sequence?: number | null
+          recording_channels?: number | null
+          recording_custody_at?: string | null
+          recording_duration_seconds?: number | null
+          recording_file_id?: string | null
+          recording_owner_id?: string | null
+          recording_source?: string | null
+          recording_started_at?: string | null
+          recording_status?: string | null
+          recording_status_at?: string | null
+          recording_track?: string | null
           recording_url?: string | null
           scheduled_at?: string | null
           status?: string
@@ -53059,6 +53201,7 @@ export type Database = {
           output_schema: Json | null
           parameters: Json
           semver: string | null
+          side_effect_class: string | null
           source_kind: string
           tags: string[] | null
           tier: string | null
@@ -53093,6 +53236,7 @@ export type Database = {
           output_schema?: Json | null
           parameters: Json
           semver?: string | null
+          side_effect_class?: string | null
           source_kind?: string
           tags?: string[] | null
           tier?: string | null
@@ -53127,6 +53271,7 @@ export type Database = {
           output_schema?: Json | null
           parameters?: Json
           semver?: string | null
+          side_effect_class?: string | null
           source_kind?: string
           tags?: string[] | null
           tier?: string | null

@@ -21,8 +21,9 @@ long-lived media and agent execution stay in aidream.
   readiness output.
 - Admission returns only the program/destination decision. It deliberately does not return the
   verified enrollment's organization or user as call ownership. Future call registration must
-  independently bind the program to the normal AI Matrx tenant and resolve a pre-existing
-  same-tenant CRM party; this gate never creates or infers either one.
+  independently bind the program to the normal AI Matrx tenant
+  `5dc930e9-bd65-44a1-8369-af773f6e1a5b` and resolve a pre-existing same-tenant CRM party and
+  caller contact point; this gate never creates or infers either one.
 - The initial authorized response uses `<Gather input="dtmf speech">` with
   `actionOnEmptyResult="true"`. Only keypad `1` or a narrow explicit phrase such as `I agree`
   continues; no response, another digit/phrase, low-confidence speech, conflicting inputs, an
@@ -41,18 +42,31 @@ long-lived media and agent execution stay in aidream.
   recording, and status. Terminal outcomes never regress.
 - `providers/twilio/voice.ts` parses Twilio callback fields into that contract. `RecordingUrl` is
   provider evidence only; durable playback uses an AI Matrx canonical file identity.
-- The recording callback POST route is intentionally absent until it can persist before
-  acknowledgement. Logging and returning success would lose retried callbacks.
+- `persistence.ts` reuses `crm.interaction` for the canonical call, `platform.activity_log` for
+  append-only provider evidence, and `files.files` for durable media. Its service-only RPCs
+  register one exact provider/account/call, durably claim call and recording callbacks,
+  monotonically preserve terminal state, reject mutated replays and ambiguity, and bind an adopted
+  file only to exact completed evidence with the same owner and organization.
+- The signed call-status and recording callback POST routes await the database claim before
+  returning success. Forged, malformed, uncorrelated, ambiguous, or persistence-failed requests
+  return non-success. Provider media URLs are retained only in evidence, never in
+  `crm.interaction.recording_url` or as playback identity.
 - The static Voice TwiML remains non-recording. External storage configuration is an account-wide
   provider mutation and stays off until the readiness response reports every gate passed.
 
 ## Visibility
 
-`GET /api/webhooks/twilio/voice` reports the live owner-beta binding state, consent contract, and
-complete recording gate ledger. It contains no phone number, provider credential, or storage
-secret.
+`GET /api/webhooks/twilio/voice`, `/status`, and `/recording` derive persistence visibility from
+the installed schema, unique indexes, service RPCs, ambiguity count, and provider-URL violation
+count. They contain no phone number, provider credential, or storage secret and fail closed if the
+database proof is unavailable.
 
 ## Change log
+
+- **2026-08-15** — Applied the provider-neutral call/recording persistence contract to Matrx Main:
+  canonical CRM interaction fields, uniquely keyed evidence, exact service-only claim/finalize
+  RPCs, monotonic/replay-safe callbacks, canonical file custody binding, live-derived readiness,
+  and rollback/forgery/crash/ambiguity/out-of-order coverage. Recording remains disabled.
 
 - **2026-08-15** — Replaced the open static proof with exact owner-program/verified-caller
   admission, an affirmative DTMF/speech consent gate, provider-neutral consent evidence, and

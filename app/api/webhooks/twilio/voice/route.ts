@@ -24,6 +24,7 @@ import {
   createCallConsentEvidence,
   isFreshCallDisclosure,
 } from "@/lib/communications/voice/consent";
+import { getVoiceRecordingPersistenceReadiness } from "@/lib/communications/voice/persistence";
 import { evaluateVoiceRecordingReadiness } from "@/lib/communications/voice/recording-readiness";
 
 export const runtime = "nodejs";
@@ -205,6 +206,14 @@ export async function GET(): Promise<NextResponse> {
   } catch {
     ownerBeta = { status: "unavailable", ready: false };
   }
+  let lifecyclePersistenceReady = false;
+  try {
+    lifecyclePersistenceReady = (
+      await getVoiceRecordingPersistenceReadiness()
+    ).ready;
+  } catch {
+    lifecyclePersistenceReady = false;
+  }
   const recordingReadiness = evaluateVoiceRecordingReadiness({
     owner_only_program_bound: ownerBeta.ready,
     disclosure_and_consent_verified: false,
@@ -212,7 +221,7 @@ export async function GET(): Promise<NextResponse> {
     dedicated_storage_identity_ready: false,
     external_storage_configured: false,
     external_storage_canary_passed: false,
-    lifecycle_persistence_ready: false,
+    lifecycle_persistence_ready: lifecyclePersistenceReady,
     canonical_file_ingest_ready: false,
     retention_access_deletion_ready: false,
   });

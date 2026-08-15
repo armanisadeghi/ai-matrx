@@ -6,6 +6,7 @@ import {
   authorizeVoiceOwnerBetaCall,
   inspectVoiceOwnerBetaProgram,
 } from "@/lib/communications/voice/owner-beta-program";
+import { getVoiceRecordingPersistenceReadiness } from "@/lib/communications/voice/persistence";
 import { OWNER_BETA_VOICE_DISCLOSURE_VERSION } from "@/lib/communications/providers/twilio/voice-twiml";
 
 import { GET, POST } from "./route";
@@ -13,6 +14,9 @@ import { GET, POST } from "./route";
 jest.mock("@/lib/communications/voice/owner-beta-program", () => ({
   authorizeVoiceOwnerBetaCall: jest.fn(),
   inspectVoiceOwnerBetaProgram: jest.fn(),
+}));
+jest.mock("@/lib/communications/voice/persistence", () => ({
+  getVoiceRecordingPersistenceReadiness: jest.fn(),
 }));
 
 const WEBHOOK_URL = "https://www.aimatrx.com/api/webhooks/twilio/voice";
@@ -50,6 +54,17 @@ describe("POST /api/webhooks/twilio/voice", () => {
       programKey: "ai_matrx_owner_beta",
       destinationBinding: "exact",
       verifiedCallerBinding: "exact",
+    });
+    jest.mocked(getVoiceRecordingPersistenceReadiness).mockResolvedValue({
+      ambiguous_call_count: 0,
+      call_claim_ready: true,
+      event_idempotency_ready: true,
+      file_binding_ready: true,
+      provider_identity_unique: true,
+      provider_url_violation_count: 0,
+      ready: true,
+      recording_claim_ready: true,
+      schema_ready: true,
     });
     jest.spyOn(console, "info").mockImplementation(() => undefined);
     jest.spyOn(console, "error").mockImplementation(() => undefined);
@@ -225,7 +240,7 @@ describe("POST /api/webhooks/twilio/voice", () => {
       mode: "blocked_until_all_gates_pass",
       readiness: {
         ready: false,
-        passedGateCount: 1,
+        passedGateCount: 2,
         totalGateCount: 9,
       },
     });
@@ -245,7 +260,7 @@ describe("POST /api/webhooks/twilio/voice", () => {
         }),
         expect.objectContaining({
           key: "lifecycle_persistence_ready",
-          passed: false,
+          passed: true,
         }),
       ]),
     );
