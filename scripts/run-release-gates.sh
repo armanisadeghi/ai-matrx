@@ -48,6 +48,12 @@ if $STRICT; then
         "UI primitives check|pnpm exec tsx scripts/check-ui-primitives.ts --strict"
         "Scroll-chain (clipped tables/lists)|pnpm exec tsx scripts/check-scroll-chain.ts --strict"
         "Migration ledger check|pnpm exec tsx scripts/check-migrations.ts --strict"
+        # PARTITION RUNWAY stays ADVISORY even in strict mode. It is the only
+        # gate whose subject is the CALENDAR, not the code: a release that has
+        # nothing to do with history.row_versions must not be blocked because a
+        # partition expires in seven weeks. It screams; a human provisions.
+        # (D122 — four days of lost writes; scripts/partition-runway/FEATURE.md.)
+        "Partition runway (time-bounded DDL)|pnpm check:partition-runway"
         "Dead relation references|pnpm exec tsx scripts/check-dead-relations.ts --strict"
         "URL identity twins (TS vs Python)|pnpm exec tsx scripts/check-url-identity.ts"
         "API contract ratchet|pnpm exec tsx scripts/check-api-contracts.ts --strict"
@@ -110,6 +116,10 @@ else
         "UI primitives check|pnpm exec tsx scripts/check-ui-primitives.ts"
         "Scroll-chain (clipped tables/lists)|pnpm exec tsx scripts/check-scroll-chain.ts"
         "Migration ledger check|pnpm exec tsx scripts/check-migrations.ts"
+        # Time-bounded DDL that can expire on the calendar — partition runway,
+        # catch-all partitions that started receiving rows, stalled pg_cron
+        # jobs. Loud, never blocking (D122).
+        "Partition runway (time-bounded DDL)|pnpm check:partition-runway"
         "Dead relation references|pnpm exec tsx scripts/check-dead-relations.ts"
         "API contract ratchet|pnpm exec tsx scripts/check-api-contracts.ts"
         "Backend boundary approvals|pnpm exec tsx scripts/check-backend-boundaries.ts"

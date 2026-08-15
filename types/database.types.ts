@@ -27425,6 +27425,10 @@ export type Database = {
         Args: { p_schema: string; p_table: string }
         Returns: undefined
       }
+      apply_governance_guard: {
+        Args: { p_schema: string; p_table: string; p_token: string }
+        Returns: undefined
+      }
       apply_reference_rls: {
         Args: { p_schema: string; p_table: string }
         Returns: undefined
@@ -27497,6 +27501,10 @@ export type Database = {
             }
             Returns: string[]
           }
+      drop_governance_guard: {
+        Args: { p_schema: string; p_table: string }
+        Returns: undefined
+      }
       fn_grant_resource_permission: {
         Args: {
           p_expires_at?: string
@@ -27521,6 +27529,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      governance_columns: { Args: { p_token: string }; Returns: string[] }
       has_access: {
         Args: {
           p_id: string
@@ -30174,6 +30183,7 @@ export type Database = {
           default_needs_approval: boolean
           default_scopeable: boolean
           default_visibility: Database["platform"]["Enums"]["visibility"] | null
+          governed_columns: string[] | null
           has_soft_delete: boolean
           is_active: boolean
           is_component: boolean
@@ -30209,6 +30219,7 @@ export type Database = {
           default_visibility?:
             | Database["platform"]["Enums"]["visibility"]
             | null
+          governed_columns?: string[] | null
           has_soft_delete?: boolean
           is_active?: boolean
           is_component?: boolean
@@ -30244,6 +30255,7 @@ export type Database = {
           default_visibility?:
             | Database["platform"]["Enums"]["visibility"]
             | null
+          governed_columns?: string[] | null
           has_soft_delete?: boolean
           is_active?: boolean
           is_component?: boolean
@@ -38291,6 +38303,7 @@ export type Database = {
         Args: { p_job_id: string }
         Returns: undefined
       }
+      partition_runway_snapshot: { Args: never; Returns: Json }
       pin_prompt_app_to_version: {
         Args: { p_app_id: string; p_version_id: string }
         Returns: Json

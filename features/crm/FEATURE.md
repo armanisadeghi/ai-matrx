@@ -447,6 +447,21 @@ not an expert) and `ExpertStatusCard` on the record page.
 
 ## Change log
 
+- 2026-08-15 — **Scope counts are ONE round trip** (D139). `fetchPartyScopeCounts`
+  fired `3 + N_orgs` `head:true` count queries — one per scope tab plus one per
+  organization — and `usePartyList` re-ran the whole fan-out on every 200ms
+  search-debounce tick, so a user in 8 orgs paid 11 requests per keystroke.
+  Replaced by `public.crm_list_scope_counts(p_view, p_kind, p_search)`
+  (`migrations/crm_list_scope_counts.sql`, applied + ledgered), built to the same
+  shape and conventions as its `agx_list_scope_counts` / `trx_list_scope_counts`
+  twins: SECURITY DEFINER, `auth.uid()`-gated, returning
+  `(scope, narrow_id, label, total)` so the My Orgs dropdown gets its labels from
+  the same query. The function **restates crm.party's `std_select` RLS predicate
+  internally** (a definer function bypasses RLS, and these numbers had to match
+  what the RLS-filtered client used to see); counts were verified identical
+  across every view × kind × search × per-org combination before the fan-out was
+  deleted. `fetchPartyScopeCounts` no longer takes a `CrmQueryContext`.
+
 - 2026-08-14 — **Smart views + the unsuppress affordance** (Wave 3 remainder).
   `crm.saved_view` applied live + ledgered (`migrations/crm_04_saved_views.sql`)
   — a named, re-runnable party-list query, shared through the platform

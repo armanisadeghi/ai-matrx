@@ -74,7 +74,8 @@ export function usePartyList(opts: PartySortOpts): UsePartyListResult {
       try {
         const [page, scopeCounts] = await Promise.all([
           fetchPartyPage(query, opts, resolvedCtx),
-          fetchPartyScopeCounts(query, resolvedCtx),
+          // ONE round trip, org labels included — no ctx needed (D139).
+          fetchPartyScopeCounts(query),
         ]);
         if (generationRef.current !== gen) return;
         setRows(page.rows);
