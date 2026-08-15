@@ -63,6 +63,11 @@ type Props = {
   fieldLabels?: Record<string, string>;
   /** Fires after any successful restore/revert so the owner can refetch. */
   onRowChanged?: () => void;
+  /**
+   * Fires when restoring a DELETED row re-inserts it under a new id. The
+   * owner should re-point the panel at `newRowId` — the old id is gone.
+   */
+  onRowReplaced?: (newRowId: string) => void;
 };
 
 const PAGE_SIZE_STEP = 50;
@@ -75,6 +80,7 @@ export function VersionHistoryViewer({
   editable,
   fieldLabels,
   onRowChanged,
+  onRowReplaced,
 }: Props) {
   const initialLimit = limit ?? PAGE_SIZE_STEP;
   const [effectiveLimit, setEffectiveLimit] = useState(initialLimit);
@@ -123,6 +129,10 @@ export function VersionHistoryViewer({
         const result = await upsertRow({ tableId, data: snapshot });
         if (isServiceFailure(result)) throw new Error(result.error);
         toast.success("Row restored as a new row.");
+        // The old rowId is dead now. Follow the restored row so the panel
+        // keeps showing the thing the user is looking at instead of the
+        // history of a row that no longer exists.
+        if (result.data?.id) onRowReplaced?.(result.data.id);
       });
       return;
     }

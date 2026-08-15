@@ -706,6 +706,14 @@ Decide before agent-heavy workloads land.
   restore is itself versioned. `UserTableViewer` passes `tableId`/`editable`/
   `fieldLabels`/`onRowChanged`, and the History row action now renders for READ-ONLY
   viewers of shared tables too (history is a read; write actions stay gated).
+  Shared **editors** were locked out of editing entirely (the gate was owner-only);
+  it now mirrors `/workbooks/[id]` — `has_permission('dataset', id, 'editor')`, keyed
+  by `tableId` so a grant never bleeds across datasets. `useRowVersions` clears its
+  list when `rowId` changes so a restore can never act on the previous row's snapshot.
+  2026-08-15: restoring a DELETED row now re-points the panel at the new row via
+  `onRowReplaced` (it used to keep showing a dead rowId). Open follow-ups are chips
+  **TASK-RH-1** (actor chips are bare UUIDs — needs the shared user-identity resolver
+  + a `user` door) and **TASK-RH-2** (compare any two versions) in `.matrx/AGENT_TASKS.md`.
 
 - 2026-08-08 — `univer-snapshot-rows.ts` added: `univerSnapshotToRows(snapshot)`
   reads a workbook snapshot back out as a plain string grid — the missing

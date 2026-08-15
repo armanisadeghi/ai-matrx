@@ -2350,6 +2350,7 @@ const UserTableViewer = ({
               searchTerm,
             );
           }}
+          onRowReplaced={(newRowId) => setHistoryRowId(newRowId)}
         />
       </MatrxDynamicPanelHost>
     </div>
