@@ -4,9 +4,11 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type { MatrxDataTableQueryState } from "@/components/official/matrx-data-table/types";
 import {
   crawlHasChainEvidence,
+  crawlHasLinkStatusEvidence,
   getHomepageScreenshot,
   getSnapshotScreenshots,
   listCrawlCanonicalMap,
+  listBrokenCrawlLinks,
   listCrawlFingerprints,
   listCrawlLinks,
   listCrawlSnapshots,
@@ -58,6 +60,14 @@ export const inspectionKeys = {
     [...marketingKeys.crawl(siteId, crawlId), "canonical-map"] as const,
   crawlChainEvidence: (siteId: string, crawlId: string) =>
     [...marketingKeys.crawl(siteId, crawlId), "chain-evidence"] as const,
+  crawlLinkStatusEvidence: (siteId: string, crawlId: string) =>
+    [...marketingKeys.crawl(siteId, crawlId), "link-status-evidence"] as const,
+  brokenCrawlLinks: (
+    siteId: string,
+    crawlId: string,
+    state: MatrxDataTableQueryState,
+  ) =>
+    [...marketingKeys.crawl(siteId, crawlId), "broken-links", state] as const,
 };
 
 /** Direct browser-to-Supabase query for the site's selected homepage preview. */
@@ -179,6 +189,37 @@ export function useCrawlChainEvidence(
     queryFn: ({ signal }) => crawlHasChainEvidence(siteId, crawlId, signal),
     enabled: enabled && Boolean(siteId && crawlId),
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** Whether a crawl contains link-status evidence (false means re-crawl). */
+export function useCrawlLinkStatusEvidence(
+  siteId: string,
+  crawlId: string,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: inspectionKeys.crawlLinkStatusEvidence(siteId, crawlId),
+    queryFn: ({ signal }) =>
+      crawlHasLinkStatusEvidence(siteId, crawlId, signal),
+    enabled: enabled && Boolean(siteId && crawlId),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** Controlled broken-link register for one immutable crawl session. */
+export function useBrokenCrawlLinks(
+  siteId: string,
+  crawlId: string,
+  state: MatrxDataTableQueryState,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: inspectionKeys.brokenCrawlLinks(siteId, crawlId, state),
+    queryFn: ({ signal }) =>
+      listBrokenCrawlLinks(siteId, crawlId, state, signal),
+    enabled: enabled && Boolean(siteId && crawlId),
+    placeholderData: keepPreviousData,
   });
 }
 

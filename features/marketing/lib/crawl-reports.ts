@@ -1,6 +1,7 @@
 /** Stable, URL-safe report identities for one crawl session. */
 export const CRAWL_REPORT_KEYS = [
   "response-codes",
+  "broken-links",
   "page-titles",
   "meta-descriptions",
   "headings",
@@ -14,7 +15,7 @@ export const CRAWL_REPORT_KEYS = [
 
 export type CrawlReportKey = (typeof CRAWL_REPORT_KEYS)[number];
 
-export type CrawlReportSource = "crawl-url" | "snapshot";
+export type CrawlReportSource = "crawl-url" | "link-edge" | "snapshot";
 
 export interface CrawlReportDefinition {
   key: CrawlReportKey;
@@ -40,6 +41,16 @@ export const CRAWL_REPORTS: readonly CrawlReportDefinition[] = [
       "Every encountered URL with its full redirect hop chain, loops, redirect-to-404 findings, failure reason, scope, and crawl depth.",
     source: "crawl-url",
     badge: "Rc",
+  },
+  {
+    key: "broken-links",
+    label: "Broken links",
+    shortLabel: "Broken links",
+    category: "Crawlability",
+    description:
+      "Every no-response, 4xx, or 5xx link with the source page that contains it and the exact target it names.",
+    source: "link-edge",
+    badge: "Bl",
   },
   {
     key: "page-titles",
