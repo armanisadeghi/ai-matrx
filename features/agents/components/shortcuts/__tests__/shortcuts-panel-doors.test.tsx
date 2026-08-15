@@ -77,6 +77,9 @@ jest.mock("@/features/agents/redux/agent-shortcuts/selectors", () => ({
 }));
 jest.mock("@/features/agents/redux/agent-shortcut-categories/selectors", () => ({
     selectCategoryById: jest.fn(() => null),
+    // The panel resolves every row's category up front, so the row, the
+    // copy-all payload, and the CSV export all share one projection.
+    selectAllCategoriesMap: jest.fn(() => ({})),
 }));
 jest.mock("@/lib/redux/hooks", () => ({
     useAppSelector: (sel: (s: unknown) => unknown) => sel({}),
