@@ -838,6 +838,9 @@ export default function FeedbackDetailDialog({
     const assignee = assignableAdmins.find((a) => a.user_id === assigneeId);
     return {
       item,
+      // The header chip shows the SAVED category, not the form's pick — the
+      // chip strip has to stay verbatim even when the form has moved on.
+      headerCategoryName: headerCategoryName ?? null,
       activeTab,
       isSaving,
       form: {
