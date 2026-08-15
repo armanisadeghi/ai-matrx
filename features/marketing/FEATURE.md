@@ -316,7 +316,7 @@ Arman's doctrine: every editable thing is editable in the UI, every level has pr
 | Entity                                                                                                          | Create                                                                                                                                | Edit                                                                                                                                                                                                                                                   | Delete                                                                                                     |
 | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
 | `web.brand`                                                                                                     | `BrandEditorDialog` (brands list)                                                                                                     | same dialog (list row + cockpit) — every editable field incl. the collapsible "Brand profile" section (audience, voice, positioning, value props, offerings, service area, competitors, keywords, guidelines, notes → `profile` jsonb)                 | list row + cockpit; refused while live sites OR properties remain (DB guard `web.brand_soft_delete_guard`) |
-| `web.site`                                                                                                      | `/marketing/sites/new` (`web.create_site`; idempotent per live org/domain; `?brand=` pre-binds — explicit brand ALWAYS wins over name-match for a new site) | `SiteEditorDialog` (sites list row + cockpit Websites row) — every editable field incl. status/visibility + brand reassignment via `web.move_site_brand`; root_url/domain read-only (registry migration); `/settings` keeps crawl policy + Danger zone | sites list row, cockpit Websites row, settings Danger zone                                                 |
+| `web.site`                                                                                                      | `/marketing/sites/new` (`web.create_site`; idempotent per live org/domain; `?brand=` pre-binds — explicit brand ALWAYS wins over name-match for a new site) | `SiteEditorDialog` (sites list row + cockpit Websites row) — every editable field incl. status/visibility + brand reassignment via `web.move_site_brand`; root_url/domain read-only (registry migration); `/settings` keeps crawl policy, **Organization (move between orgs)** and Danger zone | sites list row, cockpit Websites row, settings Danger zone                                                 |
 | `web.page`                                                                                                      | Pages table "Add page" (provenance `manual`; normalization+hash identical to the scraper via `lib/page-url.ts`)                       | `PageWorkspace` intent form                                                                                                                                                                                                                            | **Dismiss** (row action) + Restore from the `?scope=dismissed` view                                        |
 | `web.sitemap`                                                                                                   | system-written (sync)                                                                                                                 | is_active toggle (row action)                                                                                                                                                                                                                          | **Dismiss** (row action; cascades to its `page_sitemap` evidence) + Restore from the Dismissed view        |
 | `web.page_sitemap`                                                                                              | —                                                                                                                                     | —                                                                                                                                                                                                                                                      | **system-managed evidence — read-only by design** (only the sitemap-delete cascade touches it)             |
@@ -334,6 +334,43 @@ Grants: `migrations/web_marketing_crud_grants.sql` added the missing authenticat
 **Brand/site/property lifecycle is atomic at the DB** (`migrations/web_brand_asset_primary_and_site_property_lifecycle.sql`): soft-deleting/restoring a site cascades to its `property(kind='website')` row (`_cascade_website_property`; restore matches the exact cascade stamp so an independently-deleted property stays deleted), and `web.brand` refuses soft-delete while ANY live site or property remains (`_soft_delete_guard`). FE deletes only preflight for friendly copy — never re-implement the cascade or the guard in app code.
 
 ## Invariants & gotchas
+
+- **Moving a site between organizations is ONE RPC, never a client-side write — and the brand is part of the move.**
+  `organization_id` is denormalized onto ~60 child tables across `web.*`, `seo.*`,
+  `plan.*` and `growth.*`, so updating `web.site` alone strands every child in the
+  old tenant. `public.move_site_to_organization(p_site_id, p_target_organization_id,
+  p_expected_version, p_brand_action)` (`migrations/web_move_site_to_organization.sql`,
+  SECURITY DEFINER) does the whole thing in one transaction; `preview_site_organization_move`
+  is its read-only twin for the confirmation dialog. Rules that are easy to get wrong:
+  - **The site row moves FIRST.** `web.enforce_site_component_organization()` rejects any
+    child whose `organization_id` differs from its parent site's, so touching a child
+    before the site dies with `23514`.
+  - **Direct children are DISCOVERED at runtime** (a base table with `organization_id`
+    plus a single-column FK to `web.site`), so a new site-scoped table is covered the day
+    it is created. Only INDIRECT children are listed by name in the function.
+  - **Append-only fact tables stay on the original org, by design** — `web.snapshot`,
+    `web.crawl_url`, `web.crawl_event`, `web.analysis_result`, `web.link_edge` are
+    historical facts stamped with the org that held the site at the time, they are
+    protected by `web.reject_immutable_fact_mutation`, and access resolves through the
+    parent site anyway. Detected structurally (BEFORE UPDATE reject-trigger), so a future
+    append-only table is preserved automatically. Do not "fix" this.
+  - **`seo.keyword_market` / `seo.keyword_market_observation` never move** — shared market
+    dimensions keyed by (keyword, location), reachable from a site only incidentally
+    through `seo.collection_run`.
+  - **THE BRAND IS AN ACCESS PATH, not a footnote.** `platform.entity_relationships`
+    registers `web_site <- web_brand` as CONTAINMENT, so a brand left in the old org keeps
+    conveying read access to the moved site — live-proven 2026-08-14, a source-org member
+    still read the site, its pages and its competitors after the move. `p_brand_action` is
+    therefore REQUIRED whenever the brand would be left behind: `move_brand` (refused if
+    the brand still holds sites that are not going along), `detach`, or `keep` (the hole,
+    accepted deliberately and reported back loudly). There is no default — the RPC raises
+    and names the three options rather than guessing.
+  - Gating: **admin-level on the site** (owner / `iam.has_access` admin / super admin) plus
+    **membership of the destination org** — the same bar `web.site`'s `std_insert` policy
+    uses, deliberately not tighter. The definer lane is also what legitimises the write at
+    all: `organization_id` is a GOVERNED column, and `iam._guard_governance_columns` says
+    re-homing is "a deliberate, audited operation, never a column write".
+  UI: `components/settings/MoveSiteOrganizationCard.tsx` on `/settings`. Closes FOUND_DEFECTS D133.
 
 - **A live site identity is `(organization_id, normalized domain)`, and create is idempotent on it.** `site_org_domain_live_unique` remains the race-proof guard; `web.create_site` first returns an existing live row, then catches only that named constraint if concurrent first-time calls collide. The nested write block rolls back a losing tentative brand before recovery and every other unique violation is re-raised unchanged. Never add a client-side get-then-insert fork or expose this normal convergence as a red error. Regression: `migrations/tests/web_create_site_idempotency_tests.sql`.
 - **The shared cross-pointer trigger binds a typed row inside every table branch.**
@@ -434,6 +471,21 @@ to_jsonb(NEW))` and dereference that composite so column drift still fails
 The site/page/crawl foundation, direct live-crawl controls, dedicated technical-SEO crawl reports, analysis/finding workspaces, link/screenshot inspection, backlinks, persisted 28-day GSC keyword performance, reusable personal/org Google OAuth, GSC property binding/synchronization, app-managed PageSpeed with per-page synchronization/history/regression UI, site access/settings, and provider spend rollups are live in code. The RLS-protected `seo` schema is exposed read-only to authenticated browser clients and included in generated database types; product SEO workspaces read ordinary persisted facts directly through Supabase, while the canonical combined page-performance read and collection work run in aidream. Remaining verticals include automatic GSC keyword-market enrichment, target-keyword analysis, broader GA4 history, connection health/sync history, cross-site analysis, catalog/configuration UI, crawl scheduling UI/worker, analysis and AI-batch execution workers, actionable reconciliation/finding mutations, current-link projections, and CMS task/change/publish workflows.
 
 ## Change log
+
+- 2026-08-14 — Claude: **A site can now be moved between organizations from the product (D133).**
+  There was no control and no RPC; the one time it had to be done for real (aimatrx.com) it took a
+  hand-written transaction. `organization_id` is denormalized onto ~60 child tables, so the new
+  `public.move_site_to_organization` re-homes the site and every discovered child in ONE transaction,
+  gated on admin access to the site + membership of the destination. **The interesting finding was the
+  brand:** `web_site <- web_brand` is a CONTAINMENT relationship, so the first working version still
+  let a member of the SOURCE org read the moved site, its pages and its competitors — verified live
+  against three real user identities. The brand's fate (`move_brand` / `detach` / `keep`) is now a
+  required, explicit choice with no default. Append-only fact tables (snapshot, crawl_url, crawl_event,
+  analysis_result, link_edge) deliberately stay stamped with the org that held the site at the time —
+  detected structurally rather than listed, and separately proven to reject a re-home. UI is the new
+  "Organization" card on `/settings` (org picker limited to the user's own orgs, a confirmation that
+  names what moves AND what does not, honest post-move counts). `ConfirmDialog` gained `confirmDisabled`
+  so a dialog can block on a missing choice without faking a busy spinner.
 
 - 2026-08-14 — Claude: **The item surfaces show the whole record, and every id on it opens (D150 P0).**
   Three surfaces named records they had already loaded and would not let the user reach, and dropped

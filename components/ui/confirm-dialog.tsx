@@ -37,6 +37,12 @@ export interface ConfirmDialogProps {
   cancelLabel?: string | null;
   variant?: "default" | "destructive";
   busy?: boolean;
+  /**
+   * Blocks confirming without pretending work is in flight. For a dialog whose
+   * `content` asks the user something the action cannot proceed without — the
+   * choice is missing, not loading — `busy` would show a misleading spinner.
+   */
+  confirmDisabled?: boolean;
   onConfirm: () => void | Promise<void>;
 }
 
@@ -58,6 +64,7 @@ export function ConfirmDialog({
   cancelLabel = "Cancel",
   variant = "default",
   busy = false,
+  confirmDisabled = false,
   onConfirm,
 }: ConfirmDialogProps) {
   return (
@@ -75,7 +82,7 @@ export function ConfirmDialog({
             <AlertDialogCancel disabled={busy}>{cancelLabel}</AlertDialogCancel>
           )}
           <AlertDialogAction
-            disabled={busy}
+            disabled={busy || confirmDisabled}
             onClick={(event) => {
               event.preventDefault();
               void onConfirm();

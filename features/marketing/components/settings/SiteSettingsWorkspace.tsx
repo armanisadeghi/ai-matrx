@@ -40,6 +40,7 @@ import { extractErrorMessage } from "@/utils/errors";
 import { SiteStrategyCard } from "@/features/marketing/components/settings/SiteStrategyCard";
 import { CollectionStatusPanel } from "@/features/marketing/components/settings/CollectionStatusPanel";
 import { SiteAnalyticsCard } from "@/features/marketing/components/settings/SiteAnalyticsCard";
+import { MoveSiteOrganizationCard } from "@/features/marketing/components/settings/MoveSiteOrganizationCard";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingSiteSettingsScope } from "@/features/surfaces/manifests/marketing-site-settings.manifest";
@@ -416,6 +417,8 @@ export function SiteSettingsWorkspace() {
           siteId={site.id}
           organizationId={site.organization_id}
         />
+
+        <MoveSiteOrganizationCard site={site} />
 
         <section className="overflow-hidden rounded-lg border border-destructive/40 bg-card">
           <div className="flex h-10 items-center gap-2 border-b border-destructive/30 px-3">
