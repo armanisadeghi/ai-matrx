@@ -14,6 +14,66 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D199 — Dig Here + keyword-class rules are DARK in production (2026-08-14)
+
+Measured live as a real signed-in user: **`seo.gsc_dig_rule` 0 of 8 rows visible,
+`seo.keyword_class_rule` 0 of 11 visible, and creating a rule is refused (42501).**
+Both tables were converted to the `component` variant with parent `web_site` via
+`site_id` — but `site_id` is NULL on **every** row, as are `created_by` and
+`organization_id`: these are ownerless BUILT-IN system templates. A NULL FK can
+never match an `IN`, so no policy arm can ever be true (the generator's
+owned-orphan arm can't save them either — no `created_by`). A site-less rule is
+the NORMAL case here, so `component of web_site` is the wrong model; the likely
+fix is the `entity` variant + the platform-global tier for the builtins
+(db-rules §6e), plus a backfill — **Arman's call, needs a brief.** Surfaces:
+`/marketing/search-console`, `/marketing/admin`. Write paths that must also be
+verified: `features/marketing/search-console/data-dig.ts`,
+`data-class-rules.ts` (both accept a null siteId and use `.select().single()`).
+Every other component table probed the same way is readable or legitimately
+partial — this is these two only. **Chip fired 2026-08-14.**
+
+### D198 — the whole VAD voice-chat tree is unfinished: its engine was retired out from under it (2026-08-15)
+
+🚨 **UNFINISHED WORK ALARM** — 1,106 lines of purpose-built voice-conversation code stranded at
+reachability rung 2, plus one exact duplicate. **Nothing here may be deleted** until Arman names
+it dead in writing (`common-docs/policies/unfinished-work-alarm.md`).
+
+**Surface:** none — no route mounts any of it. **Action:** if one were mounted, speak one sentence.
+**Wrong outcome:** an unconditional `throw`, because `processAiRequest`
+(`actions/ai-actions/assistant-modular.ts`) is a retirement stub with no implementation:
+*"Provider SDK calls no longer belong in Next server actions."* It is the sole engine of all three
+hooks — transcription, LLM turn, and the returned `voiceStream` all came from it.
+
+The tree, all of it unreachable:
+
+| File | Lines | State |
+|---|---|---|
+| `hooks/tts/useVoiceChat.ts` | 356 | imported only by `components/voice/voice-assistant-ui/*`, which **nothing mounts** |
+| `hooks/tts/useVoiceChatCdn.ts` | 352 | **byte-identical to `useVoiceChat`** apart from the export name — the "Cdn" name is stale (both now load VAD wasm from jsDelivr) |
+| `hooks/tts/useVoiceChatWithAutoSleep.ts` | 398 | `useVoiceChat` + the one asset unique in this tree: an auto-sleep timer that pauses VAD after 60s idle and a `wakeUp()` that restarts it |
+| `components/voice/voice-assistant-ui/**` | — | header, Sidebar, Footer, VoiceInputBar, VoiceSelect, AssistantSelect, CollapsibleSidebar, icons — a complete UI with no page |
+
+**Auth path:** none of these touch Cartesia or the token broker. They are clean of the second-auth-path
+hazard *because* the provider seam they used was a server action, and that is exactly what was retired.
+The canonical path (`lib/cartesia/accessToken.ts` → `connectCartesiaTts`) is untouched by this tree.
+
+**The live capability that overlaps it:** Scribe / Agent+ already does voice-in → agent → voice-out on
+the canonical stack — `useChunkedRecordAndTranscribe` for capture, `useAutoVoiceResponse` +
+`useCartesiaStreamingSpeaker` (mounted once in `providers/AudioOutputHostImpl.tsx`) for streaming
+read-aloud. What Scribe does **not** have, and this tree does: hands-free VAD turn-taking (`useMicVAD`
+detecting speech start/end with no button) and idle auto-sleep.
+
+**Fix (not attempted — it is a feature build, not a wiring job):** decide whether hands-free VAD
+turn-taking is wanted. If yes, it is one hook on the live stack — `useMicVAD` for turn boundaries,
+`useChunkedRecordAndTranscribe`/`features/audio/service/transcribe.ts` for the transcript,
+`launchAgentExecution` for the turn, `requestVoicePlayback` for the reply — and the auto-sleep timer
+from `useVoiceChatWithAutoSleep` is the piece worth lifting verbatim. Wiring any of these three hooks
+to a surface as-is ships a page that throws on first utterance. Full brief:
+[`docs/handoffs/voice-chat-vad-revival.md`](./docs/handoffs/voice-chat-vad-revival.md).
+
+**Arman decides:** is hands-free VAD voice chat still wanted? If it is not, say so in writing and the
+tree can go; until then it stays and stays flagged.
+
 ### D197 — CMS `PageListView` is a bespoke list, not on the canonical entry-list shell (2026-08-14)
 
 **Surface:** `/cms/[siteId]` (Pages tab). **Action:** try to switch to cards/dense, persist a sort, filter by
