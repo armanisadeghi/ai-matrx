@@ -1,5 +1,5 @@
 {
-  "__readme": "Allowlist for scripts/check-visibility-vocab.ts. Every entry needs a justification: WHY the claim is provable there, or the tracking id (FOUND_DEFECTS.md D106b) for its removal. Delete an entry in the same change that fixes its surface — that is what re-arms the guard. Never allowlist a NEW write path that sends the retired 'shared'/'private' spellings to the server. Entries match by file, and by line +/-2 when line is set. NOTE: D105 is RULED (Arman 2026-07-28) — 'internal' is the correct default and stays; never propose flipping visibility defaults. These surfaces are therefore UNBLOCKED work, not blocked work.",
+  "__readme": "Allowlist for scripts/check-visibility-vocab.ts. Every entry needs a justification: WHY the claim is provable there, or the tracking id (FOUND_DEFECTS.md D106b) for its removal. Delete an entry in the same change that fixes its surface \u2014 that is what re-arms the guard. Never allowlist a NEW write path that sends the retired 'shared'/'private' spellings to the server. Entries match by file, and by line +/-2 when line is set. An entry that suppresses NOTHING is reported as [STALE] by the checker and must be deleted \u2014 a file-level entry blinds the WHOLE file, so a new violation there would never fire. NOTE: D105 is RULED (Arman 2026-07-28) \u2014 'internal' is the correct default and stays; never propose flipping visibility defaults. These surfaces are therefore UNBLOCKED work, not blocked work.",
   "retiredSpelling": [
     {
       "file": "app/(dev)/demos/cloud-files-debug/CloudFilesDebugClient.tsx",
@@ -8,12 +8,12 @@
     },
     {
       "file": "features/structured-lists/StructuredListManagerV2.tsx",
-      "justification": "D106b surface. Its union is a per-domain dialect ('private|authenticated|public') that may mirror the structured-lists table's own enum — check that table's real column before rewriting. UNBLOCKED (D105 ruled).",
+      "justification": "D106b surface. Its union is a per-domain dialect ('private|authenticated|public') that may mirror the structured-lists table's own enum \u2014 check that table's real column before rewriting. UNBLOCKED (D105 ruled).",
       "date": "2026-08-08"
     },
     {
       "file": "features/user-lists/types.ts",
-      "justification": "Per-domain dialect on user_lists ('public|authenticated|private'). Killing it requires a DB enum migration, so it is a deliberate DB change, not a rename — see FOUND_DEFECTS.md D106b.",
+      "justification": "Per-domain dialect on user_lists ('public|authenticated|private'). Killing it requires a DB enum migration, so it is a deliberate DB change, not a rename \u2014 see FOUND_DEFECTS.md D106b.",
       "date": "2026-08-08"
     }
   ],
@@ -40,7 +40,7 @@
     },
     {
       "file": "types/canvas-social.ts",
-      "justification": "Canvas domain dialect (public|unlisted|personal) — 'unlisted' is a real canvas concept, not a collapse. Resolve with the CanvasShareSheet copy if canvas ever adopts the platform enum.",
+      "justification": "Canvas domain dialect (public|unlisted|personal) \u2014 'unlisted' is a real canvas concept, not a collapse. Resolve with the CanvasShareSheet copy if canvas ever adopts the platform enum.",
       "date": "2026-08-08"
     }
   ],
@@ -51,28 +51,18 @@
       "date": "2026-08-08"
     },
     {
-      "file": "features/canvas/social/CanvasShareSheet.tsx",
-      "justification": "D106b. Canvas carries its own visibility dialect (types/canvas-social.ts) — resolve the union and the copy together. UNBLOCKED (D105 ruled).",
-      "date": "2026-08-08"
-    },
-    {
-      "file": "features/structured-lists/StructuredListManagerV2.tsx",
-      "justification": "D106b surface. Its union is a per-domain dialect ('private|authenticated|public') that may mirror the structured-lists table's own enum — check that table's real column before rewriting. UNBLOCKED (D105 ruled).",
-      "date": "2026-08-08"
-    },
-    {
       "file": "app/(dev)/demos/settings-primitives/page.dev.tsx",
-      "justification": "Dev demo copy; harmless but wrong-vocabulary — sweep with D106b.",
+      "justification": "Dev demo copy; harmless but wrong-vocabulary \u2014 sweep with D106b.",
       "date": "2026-08-08"
     },
     {
       "file": "app/(public)/free/zip-code-heatmap/components/SaveHeatmapModal.tsx",
-      "justification": "Standalone public tool; its links are auth-gated per-user so the claim is close to true, but it uses the retired 'private' wording — sweep with D106b.",
+      "justification": "Standalone public tool; its links are auth-gated per-user so the claim is close to true, but it uses the retired 'private' wording \u2014 sweep with D106b.",
       "date": "2026-08-08"
     },
     {
       "file": "components/image/cloud/CloudFilesBrowserTable.tsx",
-      "justification": "Legacy cloud-files browser; the canonical /files list already uses the honest AccessBadge — sweep with D106b.",
+      "justification": "Legacy cloud-files browser; the canonical /files list already uses the honest AccessBadge \u2014 sweep with D106b.",
       "date": "2026-08-08"
     },
     {
@@ -87,7 +77,7 @@
     },
     {
       "file": "features/flashcards/components/sharing/SetVisibilityControl.tsx",
-      "justification": "Describes the 'personal' option in a visibility picker — a statement about the SETTING being chosen, which is the sanctioned form. Soften wording opportunistically.",
+      "justification": "Describes the 'personal' option in a visibility picker \u2014 a statement about the SETTING being chosen, which is the sanctioned form. Soften wording opportunistically.",
       "date": "2026-08-08"
     },
     {

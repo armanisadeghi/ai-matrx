@@ -26,8 +26,10 @@
  *
  * Allowlist: scripts/visibility-vocab/allowlist.json. The bar for adding an
  * entry: a justification that names WHY the claim is provable there, or the
- * FOUND_DEFECTS id tracking its removal (D105/D106b for the baseline set).
+ * FOUND_DEFECTS id tracking its removal (D106b for the baseline set).
  * Never allowlist a NEW write path that sends `shared`/`private` to the server.
+ * An entry that suppresses NOTHING is reported as `[STALE]` — it blinds its
+ * whole file, so fixing a surface must delete its entry in the same change.
  *
  * Exit codes: 0 clean (or findings without --strict) · 1 findings + --strict · 2 script error
  */
@@ -74,12 +76,33 @@ function loadAllowlist(): Allowlist {
   };
 }
 
-function isAllowed(entries: AllowEntry[], file: string, line: number): boolean {
-  return entries.some((e) => {
-    if (e.file !== file) return false;
-    if (e.line == null) return true; // file-level allow
-    return Math.abs(e.line - line) <= 2;
-  });
+/**
+ * Which allowlist entries actually suppressed something this run. An entry
+ * that matches NOTHING is not harmless: a file-level entry silently blinds the
+ * whole file, so a NEW false claim added to a already-fixed surface would never
+ * fire. Stale entries are reported (below) instead of rotting quietly — this is
+ * exactly how two fixed surfaces kept their exemptions after the claim was gone.
+ */
+const usedEntries = new Set<string>();
+
+function entryKey(detector: string, e: AllowEntry): string {
+  return `${detector}|${e.file}|${e.line ?? "*"}`;
+}
+
+function isAllowed(
+  detector: keyof Allowlist,
+  entries: AllowEntry[],
+  file: string,
+  line: number,
+): boolean {
+  let allowed = false;
+  for (const e of entries) {
+    if (e.file !== file) continue;
+    if (e.line != null && Math.abs(e.line - line) > 2) continue;
+    usedEntries.add(entryKey(detector, e));
+    allowed = true;
+  }
+  return allowed;
 }
 
 // ─── Repo file listing ──────────────────────────────────────────────────────
@@ -193,13 +216,93 @@ function isCommentLine(trimmed: string): boolean {
  * "Only you, people you share with, and members of your org…" is the CORRECT
  * form — an enumeration that names every path is exactly what this check asks
  * for. Only the absolute claim ("Only you." / "Only you can see this") lies.
+ *
+ * A comma alone is NOT enough. "Only you, until you explicitly share a link"
+ * is the original education-FAQ lie wearing a comma: it asserts that RIGHT NOW
+ * only you can see it, and promises the future instead of naming a second
+ * party. So an exemption requires BOTH:
+ *   1. no temporal/conditional hedge ("until", "unless", "once you", "when you")
+ *      — those describe what happens later, not who can see it now; and
+ *   2. an actual PARTY named after the comma (people, members, org, anyone…).
  */
+const TEMPORAL_HEDGE_RE = /\b(until|unless|once you|when you)\b/i;
+const NAMED_PARTY_RE =
+  /\b(people|members?|anyone|users?|admins?|teammates?|collaborators?|grantees?|organizations?|org|team|those)\b/i;
+
 function isHonestEnumeration(line: string): boolean {
-  return /\bOnly you\s*,/.test(line);
+  const m = /\bOnly you\s*,/.exec(line);
+  if (!m) return false;
+  const rest = line.slice(m.index + m[0].length);
+  if (TEMPORAL_HEDGE_RE.test(rest)) return false;
+  return NAMED_PARTY_RE.test(rest);
+}
+
+/**
+ * The SAME two union detectors, for a vocabulary declared as a multi-line
+ * `as const` array rather than a one-line `A | B | C` union:
+ *
+ *   export const LIST_VISIBILITY_VALUES = ["public", "authenticated", "private"] as const;
+ *   export type ListVisibility = (typeof LIST_VISIBILITY_VALUES)[number];
+ *
+ * This shape is IDENTICAL in effect to the union and is the modern way to
+ * write one, but the line-based scan cannot see it — `features/user-lists`
+ * refactored into it and its live retired `'private'` silently stopped being
+ * reported. A detector that only sees one spelling of a vocabulary is a
+ * detector that goes blind the day someone modernizes.
+ */
+const CONST_ARRAY_RE =
+  /(?:const|let|var)\s+([A-Za-z0-9_$]+)\s*(?::[^=\n]+)?=\s*\[([^\]]*)\]\s*as\s+const/g;
+
+function scanConstArrays(rel: string, text: string, allow: Allowlist): void {
+  for (const m of text.matchAll(CONST_ARRAY_RE)) {
+    const [, name, body] = m;
+    const members = unionMembers(body);
+    if (members.length < 2) continue;
+    // Reuse the union heuristics — the declaration NAME carries the
+    // "is this visibility?" signal that the one-line form got from its line.
+    if (!isVisibilityShaped(members, name)) continue;
+
+    const lineNo = text.slice(0, m.index).split("\n").length;
+    const snippet = `const ${name} = [${members.map((v) => `"${v}"`).join(", ")}] as const`;
+
+    const retired = members.filter((v) => RETIRED.includes(v));
+    if (retired.length > 0) {
+      if (!isAllowed("retiredSpelling", allow.retiredSpelling, rel, lineNo)) {
+        findings.push({
+          detector: "retiredSpelling",
+          file: rel,
+          line: lineNo,
+          rule: `Retired visibility spelling ${retired.map((r) => `'${r}'`).join(", ")} in an \`as const\` vocabulary — the server silently rewrites it to 'personal' (data downgrade).`,
+          fix: `Use the canonical values: ${CANONICAL.map((c) => `'${c}'`).join(" | ")} (features/files/types.ts#Visibility). Normalize legacy reads via toVisibility().`,
+          snippet: snippet.slice(0, 160),
+        });
+      }
+      continue;
+    }
+
+    if (
+      members.includes("personal") &&
+      members.includes("public") &&
+      !members.includes("internal")
+    ) {
+      if (!isAllowed("collapsedUnion", allow.collapsedUnion, rel, lineNo)) {
+        findings.push({
+          detector: "collapsedUnion",
+          file: rel,
+          line: lineNo,
+          rule: `Visibility vocabulary omits 'internal' — collapsing "org-readable" into "belongs to one person" is the bug that mislabeled ~11k files.`,
+          fix: `Carry all four values (${CANONICAL.join(" | ")}), or reuse Database["platform"]["Enums"]["visibility"].`,
+          snippet: snippet.slice(0, 160),
+        });
+      }
+    }
+  }
 }
 
 function scanFile(rel: string, text: string, allow: Allowlist): void {
   const lines = text.split("\n");
+  scanConstArrays(rel, text, allow);
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const lineNo = i + 1;
@@ -214,7 +317,7 @@ function scanFile(rel: string, text: string, allow: Allowlist): void {
 
         const retired = members.filter((v) => RETIRED.includes(v));
         if (retired.length > 0) {
-          if (!isAllowed(allow.retiredSpelling, rel, lineNo)) {
+          if (!isAllowed("retiredSpelling", allow.retiredSpelling, rel, lineNo)) {
             findings.push({
               detector: "retiredSpelling",
               file: rel,
@@ -232,7 +335,7 @@ function scanFile(rel: string, text: string, allow: Allowlist): void {
           members.includes("public") &&
           !members.includes("internal")
         ) {
-          if (!isAllowed(allow.collapsedUnion, rel, lineNo)) {
+          if (!isAllowed("collapsedUnion", allow.collapsedUnion, rel, lineNo)) {
             findings.push({
               detector: "collapsedUnion",
               file: rel,
@@ -248,7 +351,7 @@ function scanFile(rel: string, text: string, allow: Allowlist): void {
 
     // Detector 3 — unprovable privacy claims in user-visible strings.
     if (!inComment && /\bOnly you\b/.test(line) && !isHonestEnumeration(line)) {
-      if (!isAllowed(allow.onlyYouClaim, rel, lineNo)) {
+      if (!isAllowed("onlyYouClaim", allow.onlyYouClaim, rel, lineNo)) {
         findings.push({
           detector: "onlyYouClaim",
           file: rel,
@@ -290,6 +393,37 @@ function main(): number {
   console.log(
     `${DIM}Canonical: personal | internal | link | public — one vocabulary, no dialects.${RESET}\n`,
   );
+
+  // Stale allowlist entries — reported BEFORE the early return, because a
+  // clean run is exactly when they hide. An entry that suppressed nothing
+  // either guards a surface that was fixed (delete it, re-arm the guard) or a
+  // violation a detector went blind to (fix the detector). Loud, non-blocking:
+  // a stale entry usually means good news (someone fixed the surface), and
+  // failing a release on good news is wrong.
+  const stale: { detector: keyof Allowlist; entry: AllowEntry }[] = [];
+  for (const detector of Object.keys(allow) as (keyof Allowlist)[]) {
+    for (const e of allow[detector]) {
+      if (!usedEntries.has(entryKey(detector, e))) stale.push({ detector, entry: e });
+    }
+  }
+
+  if (stale.length > 0) {
+    console.log(
+      `${CYAN}${BOLD}Stale allowlist entries${RESET} — ${stale.length} ${DIM}(suppressed nothing this run)${RESET}`,
+    );
+    for (const { detector, entry } of stale) {
+      console.log(
+        `  ${RED}[STALE]${RESET} ${entry.file}${entry.line != null ? `:${entry.line}` : ""} ${DIM}(${detector})${RESET}`,
+      );
+      console.log(
+        `    ${DIM}why:${RESET}  it blinds that file — a NEW violation there would not fire.`,
+      );
+      console.log(
+        `    ${DIM}fix:${RESET}  surface fixed → delete the entry (that re-arms the guard). Violation still present → the detector went blind; fix the detector.`,
+      );
+    }
+    console.log("");
+  }
 
   if (findings.length === 0) {
     console.log(`${GREEN}✓ No findings. The vocabulary holds.${RESET}`);
