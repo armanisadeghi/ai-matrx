@@ -4140,6 +4140,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/github-integrations/exchange": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Exchange */
+        post: operations["exchange_github_integrations_exchange_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/github-integrations/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sync */
+        post: operations["sync_github_integrations_sync_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/github-integrations/connection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Disconnect */
+        delete: operations["disconnect_github_integrations_connection_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/github-integrations/internal/access-token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Internal Access Token */
+        get: operations["internal_access_token_github_integrations_internal_access_token_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/github-integrations/webhook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Webhook */
+        post: operations["webhook_github_integrations_webhook_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/google-workspace/files/register": {
         parameters: {
             query?: never;
@@ -7975,6 +8060,60 @@ export interface paths {
          *     breaker runs on the fresh numbers); it can never un-pause one.
          */
         post: operations["refresh_identity_health_sending_identities__identity_id__refresh_health_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/outreach/single/drafts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Message Draft
+         * @description Render a real target and persist the exact preview as a planned interaction.
+         */
+        post: operations["create_message_draft_outreach_single_drafts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/outreach/single/drafts/{draft_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve Message Draft */
+        post: operations["approve_message_draft_outreach_single_drafts__draft_id__approve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/outreach/single/drafts/{draft_id}/send": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send Message Draft */
+        post: operations["send_message_draft_outreach_single_drafts__draft_id__send_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -20786,6 +20925,25 @@ export interface components {
             /** Updated At */
             updated_at?: string | null;
         };
+        /** ApprovalDecision */
+        ApprovalDecision: {
+            /** Trust Stage */
+            trust_stage: number;
+            /**
+             * Requirement
+             * @enum {string}
+             */
+            requirement: "every_message" | "sampled" | "none";
+            /** Required For This Message */
+            required_for_this_message: boolean;
+            /** Sample Percent */
+            sample_percent: number;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "organization_policy" | "safe_default";
+        };
         /** ArchiveOut */
         ArchiveOut: {
             /** Status */
@@ -22062,19 +22220,6 @@ export interface components {
             code: string;
             /** Returned State */
             returned_state: string;
-            /** Redirect Uri */
-            redirect_uri: string;
-            /** Client Id */
-            client_id: string;
-            /** Client Secret */
-            client_secret: string;
-            /**
-             * Owner Type
-             * @default user
-             */
-            owner_type?: string;
-            /** Organization Id */
-            organization_id?: string | null;
         };
         /** BingSearchPerformanceSyncBody */
         BingSearchPerformanceSyncBody: {
@@ -27125,6 +27270,36 @@ export interface components {
             /** Content */
             content?: string | null;
         };
+        /** CreateDraftRequest */
+        CreateDraftRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Outreach List Id */
+            outreach_list_id: string;
+            /** Member Id */
+            member_id: string;
+            /** Template Id */
+            template_id: string;
+            /** Contact Point Id */
+            contact_point_id?: string | null;
+            /** Reputation Case Id */
+            reputation_case_id?: string | null;
+            /** Backlink Id */
+            backlink_id?: string | null;
+        };
         /** CreateFolderRequest */
         CreateFolderRequest: {
             /**
@@ -29288,6 +29463,27 @@ export interface components {
              */
             proxy_type?: string;
         };
+        /**
+         * DraftActionRequest
+         * @description Typed empty body for approve/send actions in the generated contract.
+         */
+        DraftActionRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+        };
         /** DraftBriefBody */
         DraftBriefBody: {
             /** Organization Id */
@@ -29306,6 +29502,49 @@ export interface components {
              * @default false
              */
             accept?: boolean;
+        };
+        /** DraftResponse */
+        DraftResponse: {
+            /** Id */
+            id: string;
+            /** Status */
+            status: string;
+            /** Outreach List Id */
+            outreach_list_id: string;
+            /** Member Id */
+            member_id: string;
+            /** Party Id */
+            party_id: string;
+            /** Party Name */
+            party_name: string;
+            /** Contact Point Id */
+            contact_point_id: string;
+            /** Medium Id */
+            medium_id: string;
+            /** Recipient */
+            recipient: string;
+            /** Identity Id */
+            identity_id: string;
+            /** From Address */
+            from_address: string;
+            /** Template Id */
+            template_id: string;
+            /** Subject */
+            subject: string;
+            /** Body */
+            body: string;
+            /** Variables */
+            variables: string[];
+            eligibility: components["schemas"]["EligibilityVerdict"];
+            approval: components["schemas"]["ApprovalDecision"];
+            /** Approved At */
+            approved_at?: string | null;
+            /** Approved By */
+            approved_by?: string | null;
+            /** Sent At */
+            sent_at?: string | null;
+            /** Provider Message Id */
+            provider_message_id?: string | null;
         };
         /** DrainRequest */
         DrainRequest: {
@@ -29348,6 +29587,11 @@ export interface components {
              * @default 0
              */
             assists_created?: number;
+            /**
+             * Replays Reaped
+             * @default 0
+             */
+            replays_reaped?: number;
             /** Skipped */
             skipped?: {
                 [key: string]: number;
@@ -29642,6 +29886,39 @@ export interface components {
             patch: components["schemas"]["DefinitionPatch-Output"];
             /** Rationale */
             rationale: string;
+        };
+        /** EligibilityBlock */
+        EligibilityBlock: {
+            /** Code */
+            code: string;
+            /** Message */
+            message: string;
+            /** Fix */
+            fix: string;
+        };
+        /** EligibilityNotice */
+        EligibilityNotice: {
+            /** Code */
+            code: string;
+            /** Message */
+            message: string;
+            /** Fix */
+            fix?: string | null;
+        };
+        /** EligibilityVerdict */
+        EligibilityVerdict: {
+            /** Allowed */
+            allowed: boolean;
+            /** Lane */
+            lane?: string | null;
+            /** Blocks */
+            blocks?: components["schemas"]["EligibilityBlock"][];
+            /** Warnings */
+            warnings?: components["schemas"]["EligibilityNotice"][];
+            /** Resolved */
+            resolved?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
         };
         /** EmbeddingPart */
         EmbeddingPart: {
@@ -32524,6 +32801,37 @@ export interface components {
             } | string;
         } & {
             [key: string]: unknown;
+        };
+        /** GitHubConnectionResponse */
+        GitHubConnectionResponse: {
+            /** Connection Id */
+            connection_id: string;
+            /** Account Login */
+            account_login: string;
+            /** Status */
+            status: string;
+            /** Repository Count */
+            repository_count: number;
+            /** Installation Count */
+            installation_count: number;
+            /** All Repositories */
+            all_repositories: boolean;
+            /** Mcp Connected */
+            mcp_connected: boolean;
+        };
+        /** GitHubExchangeRequest */
+        GitHubExchangeRequest: {
+            /** Code */
+            code: string;
+            /** Redirect Uri */
+            redirect_uri: string;
+        };
+        /** GitHubWebhookResponse */
+        GitHubWebhookResponse: {
+            /** Accepted */
+            accepted: boolean;
+            /** Processed Connections */
+            processed_connections: number;
         };
         /** GoogleConnectionCredentialResponse */
         GoogleConnectionCredentialResponse: {
@@ -43071,6 +43379,12 @@ export interface components {
             found: boolean;
             /** Status Code */
             status_code: number;
+            /** Fetched Url */
+            fetched_url: string;
+            /** Content Type */
+            content_type?: string | null;
+            /** Fetched At */
+            fetched_at?: string | null;
             /**
              * Raw Robots Txt
              * @default
@@ -43078,6 +43392,13 @@ export interface components {
             raw_robots_txt?: string;
             /** Sitemaps */
             sitemaps?: string[];
+            /** Syntax Errors */
+            syntax_errors?: string[];
+            /**
+             * Truncated
+             * @default false
+             */
+            truncated?: boolean;
             /** Checks */
             checks?: components["schemas"]["RobotsPathCheck"][];
         };
@@ -43089,6 +43410,12 @@ export interface components {
             user_agent: string;
             /** Allowed */
             allowed: boolean;
+            /** Matched Rule */
+            matched_rule?: string | null;
+            /** Matched Rule Line */
+            matched_rule_line?: number | null;
+            /** Explanation */
+            explanation: string;
         };
         /** RotatePageBody */
         RotatePageBody: {
@@ -44290,6 +44617,14 @@ export interface components {
             mime_type: string;
             /** Web View Link */
             web_view_link: string | null;
+        };
+        /** SendResponse */
+        SendResponse: {
+            draft: components["schemas"]["DraftResponse"];
+            /** Interaction Id */
+            interaction_id: string;
+            /** Provider Message Id */
+            provider_message_id: string;
         };
         /**
          * SendingEventRecord
@@ -60103,6 +60438,119 @@ export interface operations {
             };
         };
     };
+    exchange_github_integrations_exchange_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GitHubExchangeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GitHubConnectionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sync_github_integrations_sync_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GitHubConnectionResponse"];
+                };
+            };
+        };
+    };
+    disconnect_github_integrations_connection_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GitHubConnectionResponse"];
+                };
+            };
+        };
+    };
+    internal_access_token_github_integrations_internal_access_token_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+        };
+    };
+    webhook_github_integrations_webhook_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GitHubWebhookResponse"];
+                };
+            };
+        };
+    };
     register_file_google_workspace_files_register_post: {
         parameters: {
             query?: never;
@@ -60303,10 +60751,9 @@ export interface operations {
     };
     authorization_url_bing_integrations_authorize_url_get: {
         parameters: {
-            query: {
-                client_id: string;
-                redirect_uri: string;
-                scope?: string;
+            query?: {
+                owner_type?: string;
+                organization_id?: string | null;
             };
             header?: never;
             path?: never;
@@ -66750,6 +67197,109 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SendingIdentityDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_message_draft_outreach_single_drafts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateDraftRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DraftResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    approve_message_draft_outreach_single_drafts__draft_id__approve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                draft_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DraftActionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DraftResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    send_message_draft_outreach_single_drafts__draft_id__send_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                draft_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DraftActionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SendResponse"];
                 };
             };
             /** @description Validation Error */

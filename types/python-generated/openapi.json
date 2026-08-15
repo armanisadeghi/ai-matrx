@@ -10590,6 +10590,131 @@
         }
       }
     },
+    "/github-integrations/exchange": {
+      "post": {
+        "tags": [
+          "GitHub Integrations"
+        ],
+        "summary": "Exchange",
+        "operationId": "exchange_github_integrations_exchange_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GitHubExchangeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GitHubConnectionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/github-integrations/sync": {
+      "post": {
+        "tags": [
+          "GitHub Integrations"
+        ],
+        "summary": "Sync",
+        "operationId": "sync_github_integrations_sync_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GitHubConnectionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/github-integrations/connection": {
+      "delete": {
+        "tags": [
+          "GitHub Integrations"
+        ],
+        "summary": "Disconnect",
+        "operationId": "disconnect_github_integrations_connection_delete",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GitHubConnectionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/github-integrations/internal/access-token": {
+      "get": {
+        "tags": [
+          "GitHub Integrations (internal)"
+        ],
+        "summary": "Internal Access Token",
+        "operationId": "internal_access_token_github_integrations_internal_access_token_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/github-integrations/webhook": {
+      "post": {
+        "tags": [
+          "GitHub Integrations (internal)"
+        ],
+        "summary": "Webhook",
+        "operationId": "webhook_github_integrations_webhook_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GitHubWebhookResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/google-workspace/files/register": {
       "post": {
         "tags": [
@@ -10845,33 +10970,30 @@
         "operationId": "authorization_url_bing_integrations_authorize_url_get",
         "parameters": [
           {
-            "name": "client_id",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "title": "Client Id"
-            }
-          },
-          {
-            "name": "redirect_uri",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "title": "Redirect Uri"
-            }
-          },
-          {
-            "name": "scope",
+            "name": "owner_type",
             "in": "query",
             "required": false,
             "schema": {
               "type": "string",
-              "default": "webmaster.read",
-              "title": "Scope"
+              "pattern": "^(user|organization)$",
+              "default": "user",
+              "title": "Owner Type"
+            }
+          },
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Organization Id"
             }
           }
         ],
@@ -20431,6 +20553,152 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SendingIdentityDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/outreach/single/drafts": {
+      "post": {
+        "tags": [
+          "Outreach / Single Send"
+        ],
+        "summary": "Create Message Draft",
+        "description": "Render a real target and persist the exact preview as a planned interaction.",
+        "operationId": "create_message_draft_outreach_single_drafts_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDraftRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/outreach/single/drafts/{draft_id}/approve": {
+      "post": {
+        "tags": [
+          "Outreach / Single Send"
+        ],
+        "summary": "Approve Message Draft",
+        "operationId": "approve_message_draft_outreach_single_drafts__draft_id__approve_post",
+        "parameters": [
+          {
+            "name": "draft_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Draft Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftActionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/outreach/single/drafts/{draft_id}/send": {
+      "post": {
+        "tags": [
+          "Outreach / Single Send"
+        ],
+        "summary": "Send Message Draft",
+        "operationId": "send_message_draft_outreach_single_drafts__draft_id__send_post",
+        "parameters": [
+          {
+            "name": "draft_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Draft Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftActionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SendResponse"
                 }
               }
             }
@@ -55901,6 +56169,52 @@
         ],
         "title": "ApplyWorkflowPatchResult"
       },
+      "ApprovalDecision": {
+        "properties": {
+          "trust_stage": {
+            "type": "integer",
+            "maximum": 3,
+            "minimum": 0,
+            "title": "Trust Stage"
+          },
+          "requirement": {
+            "type": "string",
+            "enum": [
+              "every_message",
+              "sampled",
+              "none"
+            ],
+            "title": "Requirement"
+          },
+          "required_for_this_message": {
+            "type": "boolean",
+            "title": "Required For This Message"
+          },
+          "sample_percent": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 0,
+            "title": "Sample Percent"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "organization_policy",
+              "safe_default"
+            ],
+            "title": "Source"
+          }
+        },
+        "type": "object",
+        "required": [
+          "trust_stage",
+          "requirement",
+          "required_for_this_message",
+          "sample_percent",
+          "source"
+        ],
+        "title": "ApprovalDecision"
+      },
       "ArchiveOut": {
         "properties": {
           "status": {
@@ -58735,47 +59049,12 @@
             "type": "string",
             "minLength": 1,
             "title": "Returned State"
-          },
-          "redirect_uri": {
-            "type": "string",
-            "minLength": 1,
-            "title": "Redirect Uri"
-          },
-          "client_id": {
-            "type": "string",
-            "minLength": 1,
-            "title": "Client Id"
-          },
-          "client_secret": {
-            "type": "string",
-            "minLength": 1,
-            "title": "Client Secret"
-          },
-          "owner_type": {
-            "type": "string",
-            "pattern": "^(user|organization)$",
-            "title": "Owner Type",
-            "default": "user"
-          },
-          "organization_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Organization Id"
           }
         },
         "type": "object",
         "required": [
           "code",
-          "returned_state",
-          "redirect_uri",
-          "client_id",
-          "client_secret"
+          "returned_state"
         ],
         "title": "BingOAuthExchangeRequest"
       },
@@ -72616,6 +72895,98 @@
         ],
         "title": "CreateArgs"
       },
+      "CreateDraftRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "outreach_list_id": {
+            "type": "string",
+            "title": "Outreach List Id"
+          },
+          "member_id": {
+            "type": "string",
+            "title": "Member Id"
+          },
+          "template_id": {
+            "type": "string",
+            "title": "Template Id"
+          },
+          "contact_point_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Point Id"
+          },
+          "reputation_case_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reputation Case Id"
+          },
+          "backlink_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Backlink Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "outreach_list_id",
+          "member_id",
+          "template_id"
+        ],
+        "title": "CreateDraftRequest"
+      },
       "CreateFolderRequest": {
         "properties": {
           "folder_path": {
@@ -78338,6 +78709,49 @@
         ],
         "title": "DomainUpsertRequest"
       },
+      "DraftActionRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          }
+        },
+        "type": "object",
+        "title": "DraftActionRequest",
+        "description": "Typed empty body for approve/send actions in the generated contract."
+      },
       "DraftBriefBody": {
         "properties": {
           "organization_id": {
@@ -78387,6 +78801,146 @@
         "additionalProperties": false,
         "type": "object",
         "title": "DraftBriefBody"
+      },
+      "DraftResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "outreach_list_id": {
+            "type": "string",
+            "title": "Outreach List Id"
+          },
+          "member_id": {
+            "type": "string",
+            "title": "Member Id"
+          },
+          "party_id": {
+            "type": "string",
+            "title": "Party Id"
+          },
+          "party_name": {
+            "type": "string",
+            "title": "Party Name"
+          },
+          "contact_point_id": {
+            "type": "string",
+            "title": "Contact Point Id"
+          },
+          "medium_id": {
+            "type": "string",
+            "title": "Medium Id"
+          },
+          "recipient": {
+            "type": "string",
+            "title": "Recipient"
+          },
+          "identity_id": {
+            "type": "string",
+            "title": "Identity Id"
+          },
+          "from_address": {
+            "type": "string",
+            "title": "From Address"
+          },
+          "template_id": {
+            "type": "string",
+            "title": "Template Id"
+          },
+          "subject": {
+            "type": "string",
+            "title": "Subject"
+          },
+          "body": {
+            "type": "string",
+            "title": "Body"
+          },
+          "variables": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Variables"
+          },
+          "eligibility": {
+            "$ref": "#/components/schemas/EligibilityVerdict"
+          },
+          "approval": {
+            "$ref": "#/components/schemas/ApprovalDecision"
+          },
+          "approved_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved At"
+          },
+          "approved_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved By"
+          },
+          "sent_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sent At"
+          },
+          "provider_message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Message Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "outreach_list_id",
+          "member_id",
+          "party_id",
+          "party_name",
+          "contact_point_id",
+          "medium_id",
+          "recipient",
+          "identity_id",
+          "from_address",
+          "template_id",
+          "subject",
+          "body",
+          "variables",
+          "eligibility",
+          "approval"
+        ],
+        "title": "DraftResponse"
       },
       "DrainRequest": {
         "properties": {
@@ -78452,6 +79006,11 @@
           "assists_created": {
             "type": "integer",
             "title": "Assists Created",
+            "default": 0
+          },
+          "replays_reaped": {
+            "type": "integer",
+            "title": "Replays Reaped",
             "default": 0
           },
           "skipped": {
@@ -79180,6 +79739,103 @@
         ],
         "title": "EditWorkflowProposal",
         "description": "A typed graph edit (config / structure / variables). Applied with one\nclick via ``apply_workflow_patch`` (POST /recovery/workflows/{id}/apply-patch)\n— validated through the full gate stack before any row is written."
+      },
+      "EligibilityBlock": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "fix": {
+            "type": "string",
+            "title": "Fix"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "fix"
+        ],
+        "title": "EligibilityBlock"
+      },
+      "EligibilityNotice": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "fix": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fix"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "EligibilityNotice"
+      },
+      "EligibilityVerdict": {
+        "properties": {
+          "allowed": {
+            "type": "boolean",
+            "title": "Allowed"
+          },
+          "lane": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lane"
+          },
+          "blocks": {
+            "items": {
+              "$ref": "#/components/schemas/EligibilityBlock"
+            },
+            "type": "array",
+            "title": "Blocks"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/EligibilityNotice"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "resolved": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Resolved"
+          }
+        },
+        "type": "object",
+        "required": [
+          "allowed"
+        ],
+        "title": "EligibilityVerdict"
       },
       "EmbeddingPart": {
         "properties": {
@@ -86864,6 +87520,87 @@
           "related"
         ],
         "title": "GetToolResponse"
+      },
+      "GitHubConnectionResponse": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "title": "Connection Id"
+          },
+          "account_login": {
+            "type": "string",
+            "title": "Account Login"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "repository_count": {
+            "type": "integer",
+            "title": "Repository Count"
+          },
+          "installation_count": {
+            "type": "integer",
+            "title": "Installation Count"
+          },
+          "all_repositories": {
+            "type": "boolean",
+            "title": "All Repositories"
+          },
+          "mcp_connected": {
+            "type": "boolean",
+            "title": "Mcp Connected"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id",
+          "account_login",
+          "status",
+          "repository_count",
+          "installation_count",
+          "all_repositories",
+          "mcp_connected"
+        ],
+        "title": "GitHubConnectionResponse"
+      },
+      "GitHubExchangeRequest": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Code"
+          },
+          "redirect_uri": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Redirect Uri"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "redirect_uri"
+        ],
+        "title": "GitHubExchangeRequest"
+      },
+      "GitHubWebhookResponse": {
+        "properties": {
+          "accepted": {
+            "type": "boolean",
+            "title": "Accepted"
+          },
+          "processed_connections": {
+            "type": "integer",
+            "title": "Processed Connections"
+          }
+        },
+        "type": "object",
+        "required": [
+          "accepted",
+          "processed_connections"
+        ],
+        "title": "GitHubWebhookResponse"
       },
       "GoogleConnectionCredentialResponse": {
         "properties": {
@@ -113459,6 +114196,32 @@
             "type": "integer",
             "title": "Status Code"
           },
+          "fetched_url": {
+            "type": "string",
+            "title": "Fetched Url"
+          },
+          "content_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content Type"
+          },
+          "fetched_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fetched At"
+          },
           "raw_robots_txt": {
             "type": "string",
             "title": "Raw Robots Txt",
@@ -113470,6 +114233,18 @@
             },
             "type": "array",
             "title": "Sitemaps"
+          },
+          "syntax_errors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Syntax Errors"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated",
+            "default": false
           },
           "checks": {
             "items": {
@@ -113485,7 +114260,8 @@
           "site_url",
           "robots_url",
           "found",
-          "status_code"
+          "status_code",
+          "fetched_url"
         ],
         "title": "RobotsCheckResult"
       },
@@ -113502,6 +114278,32 @@
           "allowed": {
             "type": "boolean",
             "title": "Allowed"
+          },
+          "matched_rule": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Matched Rule"
+          },
+          "matched_rule_line": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Matched Rule Line"
+          },
+          "explanation": {
+            "type": "string",
+            "title": "Explanation"
           }
         },
         "additionalProperties": false,
@@ -113509,7 +114311,8 @@
         "required": [
           "path",
           "user_agent",
-          "allowed"
+          "allowed",
+          "explanation"
         ],
         "title": "RobotsPathCheck"
       },
@@ -116227,6 +117030,28 @@
           "web_view_link"
         ],
         "title": "SelectedFileResponse"
+      },
+      "SendResponse": {
+        "properties": {
+          "draft": {
+            "$ref": "#/components/schemas/DraftResponse"
+          },
+          "interaction_id": {
+            "type": "string",
+            "title": "Interaction Id"
+          },
+          "provider_message_id": {
+            "type": "string",
+            "title": "Provider Message Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "draft",
+          "interaction_id",
+          "provider_message_id"
+        ],
+        "title": "SendResponse"
       },
       "SendingEventRecord": {
         "properties": {

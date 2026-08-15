@@ -85,6 +85,7 @@ export const SOURCE_FEATURES = [
   "scanner",
   "scraper",
   "scratchpad",
+  "sms-assistant",
   "system",
   "tasks",
   "tool-call-visualization",
