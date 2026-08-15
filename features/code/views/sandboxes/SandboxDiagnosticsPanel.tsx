@@ -54,6 +54,7 @@ import {
   FolderOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 
 type DiagCheck = {
   ok?: boolean;
@@ -750,8 +751,8 @@ export function SandboxDiagnosticsPanel({
                 <ScrollArea className="h-72 md:h-full border border-border rounded-md">
                   <div className="p-2 text-xs font-mono">
                     {fsRootLoading && !fsRoot ? (
-                      <div className="text-muted-foreground flex items-center gap-2">
-                        <Loader2 className="h-3 w-3 animate-spin" /> Loading…
+                      <div className="text-muted-foreground">
+                        <SuspenseLoader centered={false} size="xs" message="Loading sandbox files…" />
                       </div>
                     ) : fsRoot ? (
                       <FsTree
@@ -899,7 +900,11 @@ export function SandboxDiagnosticsPanel({
                               colSpan={2}
                               className="p-2 text-muted-foreground"
                             >
-                              {agentEnvLoading ? "Loading…" : "(no entries)"}
+                              {agentEnvLoading ? (
+                                <SuspenseLoader centered={false} size="xs" message="Loading environment variables…" />
+                              ) : (
+                                "(no entries)"
+                              )}
                             </td>
                           </tr>
                         );

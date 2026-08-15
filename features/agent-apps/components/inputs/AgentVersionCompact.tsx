@@ -20,6 +20,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import {
   fetchAgentVersionHistory,
   type AgentVersionHistoryItem,
@@ -132,7 +133,7 @@ export function AgentVersionCompact({
             </div>
             {loading ? (
               <div className="px-2 py-2 text-xs text-muted-foreground">
-                Loading…
+                <SuspenseLoader centered={false} size="xs" message="Loading agent versions…" />
               </div>
             ) : !versions || versions.length === 0 ? (
               <div className="px-2 py-2 text-xs text-muted-foreground">

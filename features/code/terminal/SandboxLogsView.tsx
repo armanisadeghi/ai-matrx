@@ -16,6 +16,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronDown, Pause, Play, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 
 const SOURCES = [
   { value: "all", label: "All" },
@@ -191,7 +192,13 @@ export const SandboxLogsView: React.FC<SandboxLogsViewProps> = ({
         ) : text ? (
           text
         ) : loading ? (
-          <span className="text-neutral-500 dark:text-neutral-400">Loading…</span>
+          <span className="text-neutral-500 dark:text-neutral-400">
+            <SuspenseLoader
+              centered={false}
+              size="xs"
+              message={`Loading ${SOURCES.find((item) => item.value === source)?.label.toLowerCase() ?? "sandbox"} logs…`}
+            />
+          </span>
         ) : (
           <span className="text-neutral-500 dark:text-neutral-400">No output.</span>
         )}

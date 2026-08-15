@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { createClient } from "@/utils/supabase/client";
 import { extractErrorMessage } from "@/utils/errors";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import {
   renameTab,
   selectActiveTabId,
@@ -191,7 +192,7 @@ export const SourceFolderNode: React.FC<SourceFolderNodeProps> = ({
               className="text-[11px] text-neutral-500"
               style={{ paddingLeft: 8 + (depth + 1) * 12 }}
             >
-              Loading…
+              <SuspenseLoader centered={false} size="xs" message="Loading source folder…" />
             </div>
           )}
           {status === "error" && (
@@ -236,4 +237,3 @@ export const SourceFolderNode: React.FC<SourceFolderNodeProps> = ({
     </div>
   );
 };
-

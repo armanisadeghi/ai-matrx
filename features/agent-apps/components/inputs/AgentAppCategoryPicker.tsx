@@ -34,6 +34,7 @@ import {
   CommandSeparator,
 } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import {
   fetchAgentAppCategories,
   type AgentAppCategoryRow,
@@ -154,7 +155,7 @@ export function AgentAppCategoryPicker({
           <CommandList>
             {loading && (
               <div className="px-3 py-4 text-sm text-muted-foreground">
-                Loading…
+                <SuspenseLoader centered={false} message="Loading app categories…" />
               </div>
             )}
             {error && (

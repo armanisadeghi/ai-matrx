@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P8",
+  "runId": "01a0009c-dfb8-7991-a488-441139eb6a50",
+  "baseSha": "b9df83471dbbf69748f9a9a541d914388d6d3777",
+  "createdAt": "2026-08-15T18:50:10.207Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-15T18:50:10.207Z",
+      "actor": "fleet-health-coordinator",
+      "summary": "Started the standing-authority follow-up that replaces 12 generic loading states with specific professional indicators.",
+      "evidence": [
+        "Arman explicitly authorized clearly superior, low-risk professional improvements without case-by-case approval."
+      ],
+      "previousEventHash": null,
+      "eventHash": "c4fd256026f7bcd2058368b5a1fd48ece5cdd7537f0be1db3e7f108f861d0f06"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-15T18:50:10.964Z",
+      "actor": "fleet-health-coordinator",
+      "summary": "Implemented contextual canonical loading indicators across the 12 previously waiting screens.",
+      "evidence": [
+        "No data flow, control flow, chunk entry, wrapper geometry, theme behavior, or viewport behavior changed.",
+        "Two adjacent generic states in the same owned files were contextualized under the same recipe."
+      ],
+      "previousEventHash": "c4fd256026f7bcd2058368b5a1fd48ece5cdd7537f0be1db3e7f108f861d0f06",
+      "eventHash": "c01a5f1b1aacc2815803a18a9fe75ce5add6300558902073800bf5657c2f77fa"
+    },
+    {
+      "sequence": 3,
+      "state": "certifying",
+      "at": "2026-08-15T18:50:11.705Z",
+      "actor": "fleet-health-coordinator",
+      "summary": "Prepared the exact 12-file loader candidate for independent adversarial review.",
+      "evidence": [
+        "Focused detector PASS; changed-file TypeScript diagnostics PASS; diff check PASS; manifest tests and live contract validation PASS.",
+        "Full repository type-check is red only on unrelated concurrent CRM/admin work; no changed loader file appears in diagnostics."
+      ],
+      "previousEventHash": "c01a5f1b1aacc2815803a18a9fe75ce5add6300558902073800bf5657c2f77fa",
+      "eventHash": "4b6062f145a5e93692be091cf8b2b26b8d99e954a716880fc85ebadb52b90fb1"
+    }
+  ]
+}

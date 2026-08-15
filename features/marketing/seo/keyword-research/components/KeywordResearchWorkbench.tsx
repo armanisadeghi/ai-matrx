@@ -30,6 +30,7 @@ import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow"
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { buildKeywordResearchScope } from "@/features/marketing/lib/scopes/keyword-research-scope";
 import { extractErrorMessage } from "@/utils/errors";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 
 import { useKeywordResearch } from "../useKeywordResearch";
 import {
@@ -636,7 +637,11 @@ export default function KeywordResearchWorkbench() {
         </span>
       ) : (
         <span className="text-xs text-muted-foreground">
-          {loading ? "Loading…" : `${sorted.length} keywords in the library`}
+          {loading ? (
+            <SuspenseLoader centered={false} size="xs" message="Loading keyword library…" />
+          ) : (
+            `${sorted.length} keywords in the library`
+          )}
         </span>
       ),
     actions: (

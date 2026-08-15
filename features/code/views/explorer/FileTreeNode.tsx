@@ -28,6 +28,7 @@ import type { FilesystemAdapter } from "../../adapters/FilesystemAdapter";
 import type { FilesystemNode } from "../../types";
 import { FileIcon } from "../../styles/file-icon";
 import { extractErrorMessage } from "@/utils/errors";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import {
   ACTIVE_ROW,
   HOVER_ROW,
@@ -624,7 +625,7 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({
               className="px-2 text-[11px] text-neutral-500"
               style={childIndentStyle}
             >
-              Loading…
+              <SuspenseLoader centered={false} size="xs" message="Loading folder contents…" />
             </div>
           )}
           {children?.map((child) => (

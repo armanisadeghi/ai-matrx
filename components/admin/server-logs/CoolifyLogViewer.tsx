@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import {
   RefreshCw,
   Loader2,
@@ -1456,7 +1457,7 @@ export default function CoolifyLogViewer({
           >
             {loading && !rawLogs ? (
               <div className="px-4 py-2 text-muted-foreground text-xs font-mono">
-                Loading…
+                <SuspenseLoader centered={false} size="xs" message="Loading server logs…" />
               </div>
             ) : !rawLogs ? (
               <div className="px-4 py-2 text-muted-foreground text-xs font-mono">
