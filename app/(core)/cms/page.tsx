@@ -5,6 +5,16 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { CmsSiteService } from "@/features/cms/services/cmsService";
 import type { ClientSiteSummary } from "@/features/cms/types";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
+import {
+  cmsLocation,
+  siteBrief,
+  siteCounts,
+  sitesListSummary,
+  SITE_CSV_COLUMNS,
+} from "@/features/cms/copy";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -334,6 +344,42 @@ export default function SitesListPage() {
 
           {/* ── Sites grid ──────────────────────────────────────────── */}
           <div className="flex-1 overflow-auto px-4 sm:px-6 pb-6 pt-[calc(var(--shell-header-h)+0.75rem)]">
+            {sites.length > 0 && (
+              <div className="flex items-center justify-end gap-1 pb-2">
+                <CopyButtons
+                  size="sm"
+                  label="CMS sites"
+                  human={() => sitesListSummary(sites)}
+                  agent={() => ({
+                    kind: "cms-sites",
+                    location: cmsLocation("Sites"),
+                    description:
+                      "Every CMS site on the hub, as the list renders them.",
+                    data: {
+                      counts: siteCounts(sites),
+                      sites: sites.map(siteBrief),
+                    },
+                    summary: sitesListSummary(sites),
+                    attributes: siteCounts(sites),
+                  })}
+                  json={() => sites.map(siteBrief)}
+                />
+                <ExportMenu
+                  label="CMS sites"
+                  items={[
+                    jsonExportItem(() => ({
+                      counts: siteCounts(sites),
+                      sites: sites.map(siteBrief),
+                    })),
+                    csvExportItem(
+                      () => sites.map(siteBrief),
+                      "CSV (all sites)",
+                      SITE_CSV_COLUMNS,
+                    ),
+                  ]}
+                />
+              </div>
+            )}
             {sites.length === 0 ? (
               <div className="flex items-center justify-center h-full">
                 <div className="flex flex-col items-center gap-4 text-muted-foreground max-w-md text-center">

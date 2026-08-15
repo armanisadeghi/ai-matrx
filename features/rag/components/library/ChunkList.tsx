@@ -29,6 +29,22 @@ import {
   fetchDerivativeChunks,
   type DerivativeChunkRow,
 } from "@/features/rag/api/derivations";
+import { Button } from "@/components/ui/button";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
+import {
+  applyChunkCustom,
+  chunkAttributes,
+  chunkBrief,
+  chunkCoverage,
+  chunkSummary,
+  chunksListSummary,
+  ragLocation,
+  CHUNK_CSV_COLUMNS,
+  CHUNK_CUSTOM_OPTIONS,
+  type ChunkScope,
+} from "@/features/rag/chunk-copy";
 
 /** The structural shape ChunkCard needs. Any endpoint chunk row that carries
  *  these fields renders without adaptation. */
@@ -62,17 +78,20 @@ function formatPages(pages: number[] | null): string | null {
 export function ChunkCard({
   chunk,
   highlighted = false,
+  scope,
 }: {
   chunk: ChunkLike;
   /** Mark this as the chunk a citation matched — a primary ring + a "Matched"
    *  badge so the user can tell the retrieved segment from its page siblings. */
   highlighted?: boolean;
+  /** Provenance for the per-chunk copy payload. Omit to hide the pair. */
+  scope?: ChunkScope;
 }) {
   const pageLabel = formatPages(chunk.page_numbers);
   return (
     <div
       className={cn(
-        "rounded-md p-2 space-y-1 bg-card",
+        "group/chunk rounded-md p-2 space-y-1 bg-card",
         highlighted
           ? "border border-primary/50 ring-1 ring-primary/30 bg-primary/[0.06]"
           : "border border-border",
@@ -124,10 +143,181 @@ export function ChunkCard({
             no embed
           </Badge>
         )}
+        {scope && (
+          <CopyButtons
+            size="xs"
+            className="ml-auto opacity-0 transition-opacity group-hover/chunk:opacity-100 focus-within:opacity-100"
+            label={`Chunk #${chunk.chunk_index ?? "?"}`}
+            human={() => chunkSummary(chunk)}
+            agent={() => ({
+              kind: "rag-chunk",
+              location: ragLocation(scope.surface),
+              description:
+                "A single RAG chunk exactly as rendered on its card, with full text.",
+              data: { chunk: chunkBrief(chunk, 0), scope },
+              summary: chunkSummary(chunk),
+              attributes: {
+                chunk_id: chunk.id,
+                chunk_index: chunk.chunk_index ?? undefined,
+                chunk_kind: chunk.chunk_kind ?? undefined,
+                tokens: chunk.token_count ?? undefined,
+                embedded: chunk.has_oai_embedding,
+                document_id: scope.documentId,
+                derivative_id: scope.derivativeId,
+                page_number: scope.pageNumber,
+              },
+            })}
+            json={() => chunk}
+          />
+        )}
       </div>
       <pre className="whitespace-pre-wrap break-words text-xs leading-relaxed font-sans overflow-x-auto">
         {chunk.content_text}
       </pre>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// List-level copy / export
+// ---------------------------------------------------------------------------
+
+/**
+ * The toolbar every chunk list carries: copy (graded + a chars-per-chunk
+ * composer), export, and — when the server holds more than is on screen — the
+ * "Show all" affordance. A truncated list with no way to see the rest is a
+ * defect, and copy/export must be able to cover ALL rows.
+ */
+function ChunkListControls({
+  chunks,
+  scope,
+  onShowAll,
+}: {
+  chunks: ChunkLike[];
+  scope: ChunkScope;
+  /** Provided only while more chunks exist server-side. */
+  onShowAll?: () => void;
+}) {
+  if (chunks.length === 0) return null;
+  const coverage = () => chunkCoverage(chunks.length, scope.total);
+  const attrs = (extra?: Record<string, string | number | boolean | undefined>) =>
+    chunkAttributes(scope, chunks.length, extra);
+
+  return (
+    <div className="flex items-center justify-end gap-1">
+      {onShowAll && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-7 px-2 text-[11px]"
+          onClick={onShowAll}
+        >
+          Show all {scope.total}
+        </Button>
+      )}
+      <CopyButtons
+        size="icon"
+        label={RAG_VOCAB.segmentsShort}
+        human={() => chunksListSummary(chunks)}
+        agent={() => ({
+          kind: "rag-chunks",
+          location: ragLocation(scope.surface),
+          description:
+            "Every chunk currently loaded on this surface, with full text.",
+          data: {
+            scope,
+            coverage: coverage(),
+            chunks: chunks.map((c) => chunkBrief(c, 0)),
+          },
+          summary: chunksListSummary(chunks),
+          attributes: attrs(),
+        })}
+        agentVariant={{ position: "last" }}
+        aiVariants={[
+          {
+            id: "previews",
+            label: "Previews",
+            hint: "Every chunk, text clipped to 500 chars",
+            build: () => ({
+              kind: "rag-chunks",
+              location: ragLocation(scope.surface),
+              description:
+                "Every loaded chunk, each clipped to 500 chars of text.",
+              data: {
+                scope,
+                coverage: coverage(),
+                chunks: chunks.map((c) => chunkBrief(c, 500)),
+              },
+              attributes: attrs({ detail: "previews" }),
+            }),
+          },
+          {
+            id: "index",
+            label: "Index only",
+            hint: "Provenance and sizes — no chunk text",
+            build: () => ({
+              kind: "rag-chunks",
+              location: ragLocation(scope.surface),
+              description:
+                "Index of the loaded chunks — provenance and sizes, no bodies.",
+              data: {
+                scope,
+                coverage: coverage(),
+                chunks: applyChunkCustom(chunks, { indexOnly: true }),
+              },
+              attributes: attrs({ detail: "index" }),
+            }),
+          },
+        ]}
+        aiCustom={{
+          label: "Open custom view…",
+          hint: "Tune how much of each chunk comes along",
+          options: CHUNK_CUSTOM_OPTIONS,
+          build: (opts) => {
+            const rows = applyChunkCustom(chunks, opts);
+            return {
+              text: JSON.stringify(rows, null, 2),
+              meta: {
+                rows: rows.length,
+                chars_per_chunk: Number(opts.chars ?? 500) || "all",
+              },
+            };
+          },
+          wrap: (_text, opts, meta) => ({
+            kind: "rag-chunks",
+            location: ragLocation(scope.surface),
+            description: "A custom slice of the chunks on this surface.",
+            // Lossy in DATA only — scope and coverage stay identical across
+            // every variant so ambient context is never silently reduced.
+            data: {
+              scope,
+              coverage: coverage(),
+              chunks: applyChunkCustom(chunks, opts),
+            },
+            attributes: attrs({
+              detail: "custom",
+              rows: Number(meta?.rows ?? 0),
+              chars_per_chunk: meta?.chars_per_chunk,
+            }),
+          }),
+        }}
+      />
+      <ExportMenu
+        label={RAG_VOCAB.segmentsShort}
+        items={[
+          jsonExportItem(() => ({
+            scope,
+            coverage: coverage(),
+            chunks: chunks.map((c) => chunkBrief(c, 0)),
+          })),
+          csvExportItem(
+            () => chunks.map((c) => chunkBrief(c, 0)),
+            "CSV (all loaded)",
+            CHUNK_CSV_COLUMNS,
+          ),
+        ]}
+      />
     </div>
   );
 }
@@ -150,6 +340,9 @@ export function ChunksOnPage({
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Raising the cap is how "Show all" works — the copy/export payloads then
+  // genuinely cover every row rather than the first page of them.
+  const [limit, setLimit] = useState(50);
 
   useEffect(() => {
     let cancelled = false;
@@ -159,7 +352,7 @@ export function ChunksOnPage({
       buildPath("/rag/library/{processed_document_id}/chunks", {
         processed_document_id: documentId,
       }),
-      { query: { limit: 50, page_number: pageNumber } },
+      { query: { limit, page_number: pageNumber } },
     )
       .then(({ data }) => {
         if (cancelled || !data) return;
@@ -179,11 +372,27 @@ export function ChunksOnPage({
     return () => {
       cancelled = true;
     };
-  }, [documentId, pageNumber]);
+  }, [documentId, pageNumber, limit]);
+
+  const scope: ChunkScope = {
+    surface: "Library preview",
+    documentId,
+    pageNumber,
+    total,
+  };
 
   return (
     <ScrollArea className="h-full">
       <div className="p-3 space-y-2">
+        {!loading && !error && chunks.length > 0 && (
+          <ChunkListControls
+            chunks={chunks}
+            scope={scope}
+            onShowAll={
+              total > chunks.length ? () => setLimit(total) : undefined
+            }
+          />
+        )}
         {loading && <ChunkListSkeleton rows={3} />}
         {error && <p className="text-sm text-destructive">{error}</p>}
         {!loading && !error && chunks.length === 0 && (
@@ -202,13 +411,25 @@ export function ChunksOnPage({
             <ChunkCard
               key={c.id}
               chunk={c}
+              scope={scope}
               highlighted={highlightChunkId != null && c.id === highlightChunkId}
             />
           ))}
         {total > chunks.length && (
-          <p className="text-xs text-muted-foreground italic">
-            Showing first {chunks.length} of {total}.
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="text-xs text-muted-foreground italic">
+              Showing first {chunks.length} of {total}.
+            </p>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-[11px]"
+              onClick={() => setLimit(total)}
+            >
+              Show all
+            </Button>
+          </div>
         )}
       </div>
     </ScrollArea>
@@ -234,13 +455,23 @@ export function DerivativeChunkList({
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Same show-all contract as ChunksOnPage: raising the cap is what makes a
+  // whole-list copy actually whole.
+  const [effectiveLimit, setEffectiveLimit] = useState(limit);
+
+  useEffect(() => {
+    setEffectiveLimit(limit);
+  }, [limit]);
 
   useEffect(() => {
     let cancelled = false;
     const ac = new AbortController();
     setLoading(true);
     setError(null);
-    fetchDerivativeChunks(derivativeId, { limit, signal: ac.signal })
+    fetchDerivativeChunks(derivativeId, {
+      limit: effectiveLimit,
+      signal: ac.signal,
+    })
       .then((res) => {
         if (cancelled) return;
         setRows(res.chunks);
@@ -257,7 +488,7 @@ export function DerivativeChunkList({
       cancelled = true;
       ac.abort();
     };
-  }, [derivativeId, limit]);
+  }, [derivativeId, effectiveLimit]);
 
   if (loading) {
     return (
@@ -282,10 +513,24 @@ export function DerivativeChunkList({
   }
 
   const shownTotal = total || expectedTotal || rows.length;
+  const scope: ChunkScope = {
+    surface: "Knowledge asset builder",
+    derivativeId,
+    total: shownTotal,
+  };
   return (
     <div className="space-y-1.5 p-0.5">
+      <ChunkListControls
+        chunks={rows}
+        scope={scope}
+        onShowAll={
+          shownTotal > rows.length
+            ? () => setEffectiveLimit(shownTotal)
+            : undefined
+        }
+      />
       {rows.map((c) => (
-        <ChunkCard key={c.id} chunk={c} />
+        <ChunkCard key={c.id} chunk={c} scope={scope} />
       ))}
       {shownTotal > rows.length && (
         <p className="text-[10px] text-muted-foreground italic">
