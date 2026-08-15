@@ -47,6 +47,23 @@ export class SiteNotEmptyError extends Error {
   }
 }
 
+/** Structured refusal from the CMS action routes. Never branch on copy. */
+export class CmsApiError extends Error {
+  readonly status: number;
+  readonly code: string | null;
+
+  constructor(message: string, status: number, code: string | null) {
+    super(message);
+    this.name = "CmsApiError";
+    this.status = status;
+    this.code = code;
+  }
+}
+
+function isResponseObject(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
 async function callApi<T = unknown>(
   endpoint: string,
   action: string,
@@ -58,10 +75,16 @@ async function callApi<T = unknown>(
     body: JSON.stringify({ action, ...params }),
   });
 
-  const data = await response.json();
+  const data: unknown = await response.json().catch(() => null);
 
   if (!response.ok) {
-    throw new Error(data.error || `CMS API error: ${response.status}`);
+    const body = isResponseObject(data) ? data : null;
+    const message =
+      typeof body?.error === "string"
+        ? body.error
+        : `CMS API error: ${response.status}`;
+    const code = typeof body?.code === "string" ? body.code : null;
+    throw new CmsApiError(message, response.status, code);
   }
 
   return data as T;

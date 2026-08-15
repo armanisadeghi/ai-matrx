@@ -38,6 +38,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { RequestAccessPanel } from "@/features/access-gate/components/RequestAccessPanel";
 import { useAccessGate } from "@/features/access-gate/hooks/useAccessGate";
+import { useLoginHref } from "@/hooks/auth/useLoginHref";
 import type { AccessDeniedContext } from "@/features/access-gate/types";
 
 export interface AccessDeniedProps {
@@ -85,16 +86,23 @@ function headline(context: AccessDeniedContext): string {
 function explanation(context: AccessDeniedContext): string {
   const kind = context.entity.label.toLowerCase();
   switch (context.status) {
-    case "denied":
+    case "denied": {
+      const owner =
+        context.organization && !context.organization.isPersonal
+          ? context.organization.name
+          : context.owner?.displayName;
       // Only promise the panel when it will actually render. `canRequest` is
       // false for rows with neither an owner nor an org (platform catalogs),
       // where "ask below" pointed at nothing. (Adversarial pass, 2026-08-11.)
       if (!context.canRequest && context.request?.status !== "pending") {
-        return `It belongs to someone else, and there's no one for us to pass a request to.`;
+        return owner
+          ? `It belongs to ${owner}, and there's no one for us to pass a request to.`
+          : `It belongs to someone else, and there's no one for us to pass a request to.`;
       }
-      return context.owner?.displayName
-        ? `It belongs to someone else. You can ask them for access below.`
+      return owner
+        ? `It belongs to ${owner}. You can ask for access below.`
         : `It belongs to someone else. You can ask for access below.`;
+    }
     case "deleted":
       return `It was removed, so there's nothing here to open.`;
     case "missing":
@@ -184,6 +192,7 @@ export function AccessDeniedView({
   onChanged: () => void;
 }) {
   const router = useRouter();
+  const signInHref = useLoginHref();
   // A personal workspace IS its owner — naming it just repeats them back.
   const showOrg = Boolean(
     context.organization && !context.organization.isPersonal,
@@ -193,12 +202,6 @@ export function AccessDeniedView({
   const ancestorHref = ancestorInfo?.hrefFor?.(ancestor?.id ?? "") ?? null;
   const selfInfo = tryGetEntityInfo(context.entity.token);
   const selfHref = selfInfo?.hrefFor?.(id) ?? null;
-
-  const signInHref = `/login?next=${encodeURIComponent(
-    typeof window !== "undefined"
-      ? window.location.pathname + window.location.search
-      : "/dashboard",
-  )}`;
 
   return (
     <div className="flex h-full min-h-64 w-full items-center justify-center p-6">
@@ -301,7 +304,8 @@ export function AccessDeniedView({
             </Button>
           ) : null}
 
-          {context.status === "ok" && onRetry ? (
+          {(context.status === "ok" || context.status === "error") &&
+          onRetry ? (
             <Button size="sm" onClick={onRetry}>
               <RefreshCw className="mr-1.5 h-4 w-4" aria-hidden />
               Try again

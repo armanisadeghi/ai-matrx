@@ -197,12 +197,12 @@ surface means importing them too, never reimplementing the RPC call.
   another. Deleted the same day it was written. The record-specific surface on
   a server route is `return <AccessGate token id/>` from the page itself
   (`app/(core)/lists/[id]/page.tsx` is the live example).
-- **CMS sites can't be gated.** `/cms/[siteId]` reads the standalone CMS
-  Supabase project, so `access_denied_context` — which resolves against Matrx
-  Main's entity registry — cannot answer for them. That surface now says only
-  what it knows ("We couldn't open this site") instead of sniffing the error
-  text for "403". A real fix needs a `cms_site` entity token, which is a
-  cross-project decision, not an agent's call.
+- **Standalone-project tokens need an explicit resolver.** CMS registers
+  `client_site` / `client_page` in `features/cms/accessGateTokens.ts`; the
+  access-context service delegates only those tokens to the authenticated
+  `/api/cms/access-context` boundary. Do not add a fake Main entity/table for an
+  external row, and do not add a catch-all external-token path: each project
+  must prove existence, access and disclosure at its own trusted boundary.
 - **Slug-addressed records have no gate.** `access_denied_context(p_type, p_id
 uuid)` needs the uuid, and `/organizations/[orgId]` accepts a slug. When the
   slug doesn't resolve, `OrganizationAccessGate` says the address didn't match
@@ -222,6 +222,16 @@ uuid)` needs the uuid, and `/organizations/[orgId]` accepts a slug. When the
   `recordUnavailable`, assert some consumer reads `.isError`/`.error`.
 
 ## Change Log
+
+- **2026-08-15** — **Access Gate now resolves standalone CMS sites and pages.**
+  Registered tokens `client_site` / `client_page` delegate to the authenticated
+  CMS boundary instead of Main's entity registry, preserving signed-out,
+  denied, genuinely missing and transient states. The common refusal surface
+  now uses the canonical destination-preserving login link, names the owning
+  organization, files the cross-project request and messages verified
+  org-owner/admin recipients. Their existing setting-request action adds the
+  requester through the canonical membership service; resolver faults alone
+  expose Retry.
 
 - **2026-08-15** — **Access Gate now covers admin-only organization settings.**
   `iam.access_requests` distinguishes resource and setting asks while retaining

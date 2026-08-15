@@ -23,6 +23,8 @@ import {
   createAccessRequest,
   withdrawAccessRequest,
 } from "@/features/access-gate/service/accessRequests";
+import { isCmsAccessGateToken } from "@/features/cms/accessGateTokens";
+import { createCmsAccessRequest } from "@/features/cms/services/cmsAccessRequests";
 import type {
   AccessDeniedContext,
   RequestedLevel,
@@ -62,18 +64,31 @@ export function RequestAccessPanel({
 
   const request = context.request;
   const kind = context.entity.label.toLowerCase();
+  const cmsToken = isCmsAccessGateToken(context.entity.token)
+    ? context.entity.token
+    : null;
+  const requestRecipientName = cmsToken
+    ? (context.organization?.name ?? "the organization’s admins")
+    : ownerName(context);
 
   async function send() {
     setBusy(true);
     try {
-      const result = await createAccessRequest({
-        resourceType: context.entity.token,
-        resourceId,
-        level,
-        message: note,
-        currentUserId,
-        href,
-      });
+      const result = cmsToken
+        ? await createCmsAccessRequest({
+            token: cmsToken,
+            resourceId,
+            message: note,
+            currentUserId,
+          })
+        : await createAccessRequest({
+            resourceType: context.entity.token,
+            resourceId,
+            level,
+            message: note,
+            currentUserId,
+            href,
+          });
       if (result.already) {
         toast.success("You've already asked — they haven't answered yet.");
       } else if (result.delivered === 0) {
@@ -86,7 +101,7 @@ export function RequestAccessPanel({
       } else {
         toast.success(
           `Request sent to ${
-            result.recipients[0]?.displayName ?? ownerName(context)
+            result.recipients[0]?.displayName ?? requestRecipientName
           }.`,
         );
       }
@@ -122,12 +137,14 @@ export function RequestAccessPanel({
       <div className="rounded-lg border border-border bg-muted/40 p-4">
         <p className="text-sm text-foreground">
           <Check className="mr-1.5 inline h-4 w-4 text-primary" aria-hidden />
-          Waiting on {ownerName(context)}.
+          Waiting on {requestRecipientName}.
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
-          {delivered === 0
-            ? "We couldn't reach them with a message, but your request is saved and they'll see it."
-            : "They’ve been messaged. You’ll get a message back the moment they answer, and this page will open."}
+          {cmsToken
+            ? "Your request is saved. Once an owner adds you to the organization, this site will open."
+            : delivered === 0
+              ? "We couldn't reach them with a message, but your request is saved and they'll see it."
+              : "They’ve been messaged. You’ll get a message back the moment they answer, and this page will open."}
         </p>
         <Button
           className="mt-3 h-8"
@@ -155,7 +172,7 @@ export function RequestAccessPanel({
     return (
       <div className="rounded-lg border border-border bg-muted/40 p-4">
         <p className="text-sm text-foreground">
-          {ownerName(context)} declined this request.
+          {requestRecipientName} declined this request.
         </p>
         {request.decisionNote ? (
           <p className="mt-1 text-xs text-muted-foreground">
@@ -182,21 +199,23 @@ export function RequestAccessPanel({
   return (
     <div className="rounded-lg border border-border bg-card p-4">
       <p className="text-sm font-medium text-foreground">
-        Ask {ownerName(context)} for access
+        Ask {requestRecipientName} for access
       </p>
 
-      <div className="mt-3 flex flex-wrap gap-2">
-        <LevelChoice
-          active={level === "viewer"}
-          label="Just to view"
-          onClick={() => setLevel("viewer")}
-        />
-        <LevelChoice
-          active={level === "editor"}
-          label="To view and make changes"
-          onClick={() => setLevel("editor")}
-        />
-      </div>
+      {!cmsToken ? (
+        <div className="mt-3 flex flex-wrap gap-2">
+          <LevelChoice
+            active={level === "viewer"}
+            label="Just to view"
+            onClick={() => setLevel("viewer")}
+          />
+          <LevelChoice
+            active={level === "editor"}
+            label="To view and make changes"
+            onClick={() => setLevel("editor")}
+          />
+        </div>
+      ) : null}
 
       <Textarea
         className="mt-3 min-h-16 text-base md:text-sm"

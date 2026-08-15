@@ -65,6 +65,7 @@ build plan this feature is part of (project P5).
 
 - `POST /api/cms/sites` — `list/get/create/update/delete` (owner-scoped) + `admin_list_sites/admin_update_policy/admin_list_activity` (requireSuperAdmin)
 - `POST /api/cms/pages` — `list/get/create/promote/update/save-draft/publish/discard-draft/rollback/delete` (owner-scoped) + `admin_list` (requireSuperAdmin). Every content-bearing `create/promote/update/save-draft` calls aidream's canonical `POST /cms/validate` before the Supabase write; a block returns structured 422 `cms_content_blocked`. `promote` (W2-A) copies an owned `html_pages` row onto an owned site as a NEW draft page: converter split per the my-matrx `/p/[id]` renderer via `features/html-pages/utils/promoteConvert.ts` (TS twin of aidream `services/cms/convert.py`; both test byte-identically against the shared `promote-convert-fixtures.json` — change semantics ⇒ change both), content lands ONLY in `_draft` twins (never auto-published), provenance both directions (`client_pages.source_*` cols, CMS migration 0008 / `html_pages.context_metadata.promotions[]`), idempotent per `(client_id, source_html_page_id)` unless `forceNew`.
+- `POST /api/cms/access-context` — the authenticated cross-project Access Gate resolver for registered CMS tokens `client_site` / `client_page`; returns the true signed-out / denied / missing / transient state, owning identity, and the caller's request state. `action: "request"` records a durable organization-setting ask in Main only after the trusted CMS boundary proves the site/org relationship, then returns verified org owners/admins for delivery through the canonical actionable-DM primitive; their inline action adds the requester through `membershipsService.add`.
 - `POST /api/cms/components` — `list/get/create/update/delete` (owner-scoped). Content-bearing `create/update` uses the same aidream validation boundary before writing live or draft HTML/CSS.
 - `POST /api/cms/versions` — `list/get` (read-only, owner-scoped)
 - `POST /api/cms/approvals` — `list/approve/reject` (requireSuperAdmin) — F3 exception queue over `client_content_exceptions` (CMS migration 0011; approve flow live-verified 2026-07-14)
@@ -77,7 +78,7 @@ build plan this feature is part of (project P5).
 
 **Shared server helpers**
 
-- `app/api/cms/_lib/cmsDb.ts` — `getCmsClient()`, `verifySiteOwnership`, `verifyPageOwnership`, `verifyComponentOwnership`, `verifyAssetOwnership`, `verifyCollectionOwnership`
+- `app/api/cms/_lib/cmsDb.ts` — `getCmsClient()`, truth-preserving `lookupCmsSiteAccess` / `lookupCmsPageAccess`, plus boolean mutation guards `verifySiteOwnership`, `verifyPageOwnership`, `verifyComponentOwnership`, `verifyAssetOwnership`, `verifyCollectionOwnership`
 - `app/api/cms/_lib/activityLog.ts` — `logCmsActivity()`, the C6 contract writer
 - `app/api/cms/_lib/validateContent.ts` — authenticated aidream validation client + canonical 422/fail-open response helpers; contains no validation rules
 
@@ -414,6 +415,23 @@ logged. **This route only edits the setting — enforcement is P1's service-laye
   `CmsCaller`. A `.eq("owner_user_id", user.id)` filter on `client_sites` is a
   DEFECT now: it is what made an org's own marketing site point at a CMS site no
   teammate could open. See § Ownership.
+- **A CMS read refusal always goes through Access Gate — never collapse or
+  hand-write it.** `get` returns `404` + `code: "not_found"` only when the CMS
+  secret client found no row, `403` + `code: "denied"` only when the row exists
+  and `canAccessCmsSite` refused the caller, and `5xx` + `code: "transient"`
+  when the truth could not be resolved. `CmsApiError` preserves that structure;
+  the site layout and page route render `<AccessGate token="client_site" id />`
+  or `<AccessGate token="client_page" id />`.
+  Those tokens are registered in `features/cms/accessGateTokens.ts` because the
+  rows live in the standalone CMS project; the shared gate delegates them to
+  `/api/cms/access-context` rather than pretending they exist in Main's entity
+  registry. Signed-out users get the destination-preserving sign-in door,
+  denied users see the owning org plus Request access, missing users get All
+  Sites, and resolver faults get Retry.
+  The cross-project route is the trusted request writer: after validating the
+  CMS row it records a Main `setting` request against the owning organization,
+  whose registered `cms_site_access.add_member` action calls the canonical
+  membership service. Never insert a fake `client_site` permission in Main.
 - **A cross-database "dangling pointer" is usually an ACCESS gap, not a data
   gap.** `resolveCmsLink` says a site "is not a CMS site you can see" for two
   very different reasons — the row is gone, or the caller cannot read it — and
@@ -481,6 +499,20 @@ UI-complete here but only take effect once P1's service layer reads them.
 ---
 
 ## Change log
+
+- `2026-08-15` — **CMS refusals now name the truth and provide a door.** Site
+  and page `get` actions preserve `404 not_found`, `403 denied`, and transient
+  failures instead of flattening them into one string; `CmsApiError` carries the
+  status/code to the render boundary. The registered standalone-project tokens
+  `client_site` / `client_page` resolve through the new authenticated
+  `/api/cms/access-context` boundary, so the shared Access Gate can name the
+  owning organization and durable one-click Request access recipients without
+  inventing a Main-project row. Both the site layout and page editor removed
+  their handwritten refusal boxes. Signed-out users return to the same URL
+  after login, missing rows link to All Sites, and resolver faults alone offer
+  Retry. Org owners/admins receive the existing actionable setting-request DM;
+  its registered inline action admits the requester through the canonical
+  membership RPC and then completes the durable request.
 
 - `2026-08-15` — **CMS sites became ORG-SCOPED and SHAREABLE** (Arman: "of course
   they should be"). `client_sites` was the last entity on private-ownership-only,

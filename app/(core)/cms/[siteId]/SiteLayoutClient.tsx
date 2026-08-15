@@ -8,7 +8,7 @@ import React, {
   useCallback,
 } from "react";
 import { extractErrorMessage } from "@/utils/errors";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import {
   CmsSiteService,
   CmsPageService,
@@ -26,7 +26,6 @@ import {
 } from "@/features/cms/utils/buildSiteStructureXml";
 import {
   Loader2,
-  AlertCircle,
   FileText,
   Puzzle,
   Database,
@@ -34,7 +33,7 @@ import {
   ExternalLink,
   Plus,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
@@ -167,12 +166,11 @@ export default function SiteLayoutClient({
   children: React.ReactNode;
 }) {
   const params = useParams();
-  const router = useRouter();
   const pathname = usePathname();
   const siteId = params.siteId as string;
   const [site, setSite] = useState<ClientSite | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
   // SUMMARY rows — `listSites` returns a column subset (switcher + inherited
   // hub inventory only). The open site itself is a FULL row from `getSite`.
   const [allSites, setAllSites] = useState<ClientSiteSummary[]>([]);
@@ -189,7 +187,7 @@ export default function SiteLayoutClient({
       const data = await CmsSiteService.getSite(siteId);
       setSite(data);
     } catch (err: unknown) {
-      setError(extractErrorMessage(err));
+      setError(err);
     } finally {
       setIsLoading(false);
     }
@@ -293,35 +291,14 @@ export default function SiteLayoutClient({
     return (
       <>
         <SiteHeaderFallback />
-        <div className="flex items-center justify-center h-full">
-          {/* CMS sites live in the standalone CMS Supabase project, so
-              `<AccessGate>` (which resolves against Matrx Main's entity
-              registry) cannot answer for them. What we must NOT do is what
-              this branch used to: substring-sniff the error text for "403"
-              and, on a hit, tell the user they have no access. A 403 in a
-              message body is not proof of anything, and the four reasons a
-              read comes back empty are indistinguishable from here. So we say
-              only what we know, and keep both doors open. */}
-          <div className="flex flex-col items-center gap-3 text-destructive">
-            <AlertCircle className="h-8 w-8" />
-            <p className="text-sm font-medium">
-              We couldn&apos;t open this site
-            </p>
-            <p className="text-xs text-muted-foreground">{error}</p>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => router.push("/cms")}
-              >
-                All Sites
-              </Button>
-              <Button variant="outline" size="sm" onClick={fetchSite}>
-                Retry
-              </Button>
-            </div>
-          </div>
-        </div>
+        <AccessGate
+          token="client_site"
+          id={siteId}
+          error={error}
+          onRetry={() => void fetchSite()}
+          fallbackHref="/cms"
+          fallbackLabel="All Sites"
+        />
       </>
     );
   }

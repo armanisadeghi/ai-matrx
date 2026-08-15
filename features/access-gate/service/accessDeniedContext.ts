@@ -12,6 +12,10 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { isUuid } from "@/features/scopes/service/associationGuards";
+import {
+  cmsAccessGateLabel,
+  isCmsAccessGateToken,
+} from "@/features/cms/accessGateTokens";
 import type {
   AccessDeniedAncestor,
   AccessDeniedContext,
@@ -144,6 +148,59 @@ const UNKNOWN: AccessDeniedContext = {
   canRequest: false,
 };
 
+function unknownContext(token: string): AccessDeniedContext {
+  return {
+    ...UNKNOWN,
+    entity: {
+      token,
+      label: isCmsAccessGateToken(token) ? cmsAccessGateLabel(token) : "item",
+      title: null,
+    },
+  };
+}
+
+function parsePayload(
+  payload: Record<string, unknown>,
+  token: string,
+): AccessDeniedContext {
+  const disclosure = parseDisclosure(payload.disclosure);
+  const entity = rec(payload.entity);
+
+  return {
+    status: deriveStatus(payload, disclosure),
+    disclosure,
+    level: parseLevel(payload.level),
+    isOwner: payload.is_owner === true,
+    entity: {
+      token: str(entity?.token) ?? token,
+      // Falling back to a generic noun keeps the copy human even for a token
+      // the registry doesn't know — never print the token itself.
+      label:
+        str(entity?.label) ??
+        (isCmsAccessGateToken(token) ? cmsAccessGateLabel(token) : "item"),
+      title: str(entity?.title),
+    },
+    owner: parseOwner(payload.owner),
+    organization: parseOrg(payload.organization),
+    ancestor: parseAncestor(payload.ancestor),
+    request: parseRequest(payload.request),
+    canRequest: payload.can_request === true,
+  };
+}
+
+async function fetchCmsAccessDeniedPayload(
+  token: string,
+  id: string,
+): Promise<Record<string, unknown> | null> {
+  const response = await fetch("/api/cms/access-context", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token, id }),
+  });
+  if (!response.ok) return null;
+  return rec(await response.json());
+}
+
 /**
  * Resolve why the caller cannot open `(token, id)`.
  *
@@ -156,7 +213,7 @@ export async function fetchAccessDeniedContext(
   token: string,
   id: string,
 ): Promise<AccessDeniedContext> {
-  if (!token || !id) return UNKNOWN;
+  if (!token || !id) return unknownContext(token);
 
   // `access_denied_context(p_type, p_id uuid)` — a syntactically invalid uuid
   // can never match any row, so the honest answer is "missing" (the link is
@@ -166,44 +223,31 @@ export async function fetchAccessDeniedContext(
     return {
       ...UNKNOWN,
       status: "missing",
-      entity: { token, label: "item", title: null },
+      entity: {
+        token,
+        label: isCmsAccessGateToken(token) ? cmsAccessGateLabel(token) : "item",
+        title: null,
+      },
     };
   }
 
   try {
+    if (isCmsAccessGateToken(token)) {
+      const payload = await fetchCmsAccessDeniedPayload(token, id);
+      return payload ? parsePayload(payload, token) : unknownContext(token);
+    }
+
     const supabase = createClient();
     const { data, error } = await supabase.rpc("access_denied_context", {
       p_type: token,
       p_id: id,
     });
-    if (error) return UNKNOWN;
+    if (error) return unknownContext(token);
 
     const payload = rec(data);
-    if (!payload) return UNKNOWN;
-
-    const disclosure = parseDisclosure(payload.disclosure);
-    const entity = rec(payload.entity);
-
-    return {
-      status: deriveStatus(payload, disclosure),
-      disclosure,
-      level: parseLevel(payload.level),
-      isOwner: payload.is_owner === true,
-      entity: {
-        token: str(entity?.token) ?? token,
-        // Falling back to a generic noun keeps the copy human even for a token
-        // the registry doesn't know — never print the token itself.
-        label: str(entity?.label) ?? "item",
-        title: str(entity?.title),
-      },
-      owner: parseOwner(payload.owner),
-      organization: parseOrg(payload.organization),
-      ancestor: parseAncestor(payload.ancestor),
-      request: parseRequest(payload.request),
-      canRequest: payload.can_request === true,
-    };
+    return payload ? parsePayload(payload, token) : unknownContext(token);
   } catch {
-    return UNKNOWN;
+    return unknownContext(token);
   }
 }
 
