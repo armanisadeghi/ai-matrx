@@ -26,6 +26,7 @@ describe("Pattern Patrol typed manifest", () => {
         "SERIALIZED RELEASE LANE",
         "LOUD FAILURE CONTRACT",
         "HUMAN EXCEPTION CONTRACT",
+        "PROFESSIONAL IMPROVEMENT AUTHORITY",
       ]) {
         expect(spec.prompt.match(new RegExp(contract, "g"))).toHaveLength(1);
       }
@@ -42,6 +43,24 @@ describe("Pattern Patrol typed manifest", () => {
     );
     expect(allPrompts).not.toContain("MUST NOT move origin/main");
     expect(allPrompts).not.toContain("controller-only credentials");
+  });
+
+  it("grants standing authority for obvious professional improvements", () => {
+    const specs = automationUpdateSpecs();
+    const productPrompts = specs.filter(
+      (candidate) => candidate.executionEnvironment === "worktree",
+    );
+    for (const spec of productPrompts) {
+      expect(spec.prompt).toContain(
+        "Known bugs, generic states, missing established affordances",
+      );
+      expect(spec.prompt).toContain(
+        "If a debatable enhancement surrounds a clear core repair, ship the core",
+      );
+    }
+    expect(
+      PATROLS.find((patrol) => patrol.patrolId === "P8")?.runInstruction,
+    ).toContain("every verified generic loader automatically");
   });
 
   it("generates a registry row for every automation", () => {

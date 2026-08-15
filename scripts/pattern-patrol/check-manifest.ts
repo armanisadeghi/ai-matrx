@@ -65,6 +65,7 @@ function validateManifest(): string[] {
       "SERIALIZED RELEASE LANE",
       "LOUD FAILURE CONTRACT",
       "HUMAN EXCEPTION CONTRACT",
+      "PROFESSIONAL IMPROVEMENT AUTHORITY",
     ]) {
       if (
         spec.executionEnvironment === "worktree" &&
