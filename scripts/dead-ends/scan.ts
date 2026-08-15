@@ -151,6 +151,7 @@ const DOOR_TAGS = new Set([
   "Link",
   "NextLink",
   "EntityRef",
+  "EntityDoorControls",
   "NavLink",
   "AssociationEntitySelect",
   "OverlayLaunchButton",
@@ -240,6 +241,11 @@ const DOOR_BINDING_RE = /^(open|goTo|navigateTo|show)[A-Z]|(Href|Url|Route)$/;
 const DOOR_IMPORT_MARKERS = [
   "next/link",
   "entity-ref/EntityRef",
+  // The OTHER canonical door primitive: doors rendered ALONGSIDE a name
+  // instead of on it, for surfaces where the name cannot be the anchor (the
+  // row's click already means edit, or a same-tab nav would discard the
+  // user's typed prose). A file importing it owns a door mechanism.
+  "entity-ref/EntityDoorControls",
   "useRouter",
   "next/navigation",
   "features/overlays/openers",

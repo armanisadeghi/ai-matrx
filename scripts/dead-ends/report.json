@@ -1,20 +1,20 @@
 {
-  "generatedAt": "2026-08-13T06:08:04.671Z",
-  "commit": "893fd01b5bbce53fd13c432496f365dac8ef8476",
+  "generatedAt": "2026-08-15T01:16:44.412Z",
+  "commit": "8f24c55c911af9186e5d70ee691b52d552226d6a",
   "totals": {
-    "findings": 102,
-    "high": 71,
+    "findings": 97,
+    "high": 66,
     "medium": 31,
     "low": 0,
-    "filesWithFindings": 63,
-    "filesScanned": 6534,
-    "allowlisted": 0
+    "filesWithFindings": 61,
+    "filesScanned": 6586,
+    "allowlisted": 2
   },
   "byRule": {
-    "bare-id-text": 51,
-    "unlinked-entity-name": 36,
+    "bare-id-text": 50,
+    "unlinked-entity-name": 34,
     "unlinked-count": 4,
-    "no-doors-in-file": 11
+    "no-doors-in-file": 9
   },
   "worstFiles": [
     {
@@ -30,11 +30,6 @@
     {
       "key": "components/debug/AgentExecutionDebugPanel.tsx",
       "count": 4,
-      "high": 3
-    },
-    {
-      "key": "features/agent-comparison/components/MasterInputWindow.tsx",
-      "count": 3,
       "high": 3
     },
     {
@@ -59,11 +54,6 @@
     },
     {
       "key": "features/agents/components/context-slots-display/ContextSlotDetailSheet.tsx",
-      "count": 2,
-      "high": 2
-    },
-    {
-      "key": "features/agents/components/usages/NotifyOwnerDialog.tsx",
       "count": 2,
       "high": 2
     },
@@ -168,12 +158,12 @@
       "high": 1
     },
     {
-      "key": "features/agent-connections/components/sections/ResourcesSection.tsx",
+      "key": "features/agent-comparison/components/MasterInputWindow.tsx",
       "count": 1,
       "high": 1
     },
     {
-      "key": "features/agent-shortcuts/components/ShortcutList.tsx",
+      "key": "features/agent-connections/components/sections/ResourcesSection.tsx",
       "count": 1,
       "high": 1
     },
@@ -266,13 +256,23 @@
       "key": "components/debug/SystemPromptDebugModal.tsx",
       "count": 1,
       "high": 0
+    },
+    {
+      "key": "components/mardown-display/blocks/quiz/QuizSessionList.tsx",
+      "count": 1,
+      "high": 0
+    },
+    {
+      "key": "components/official/processor-extractor/path-management/BookmarkManager.tsx",
+      "count": 1,
+      "high": 0
     }
   ],
   "worstFeatures": [
     {
       "key": "features/agents",
-      "count": 17,
-      "high": 12
+      "count": 15,
+      "high": 10
     },
     {
       "key": "app/(dev)",
@@ -283,11 +283,6 @@
       "key": "components/admin",
       "count": 9,
       "high": 9
-    },
-    {
-      "key": "features/agent-comparison",
-      "count": 5,
-      "high": 5
     },
     {
       "key": "features/surfaces",
@@ -302,6 +297,11 @@
     {
       "key": "components/debug",
       "count": 5,
+      "high": 3
+    },
+    {
+      "key": "features/agent-comparison",
+      "count": 3,
       "high": 3
     },
     {
@@ -360,11 +360,6 @@
       "high": 1
     },
     {
-      "key": "features/agent-shortcuts",
-      "count": 1,
-      "high": 1
-    },
-    {
       "key": "features/code-files",
       "count": 1,
       "high": 1
@@ -416,6 +411,11 @@
     },
     {
       "key": "features/flashcards",
+      "count": 1,
+      "high": 0
+    },
+    {
+      "key": "features/marketing",
       "count": 1,
       "high": 0
     }
@@ -699,32 +699,8 @@
     },
     {
       "file": "features/agent-comparison/components/MasterInputWindow.tsx",
-      "line": 1,
-      "column": 1,
-      "rule": "no-doors-in-file",
-      "severity": "high",
-      "entity": "(file)",
-      "entityHasRoute": false,
-      "expression": "features/agent-comparison/components/MasterInputWindow.tsx",
-      "feature": "features/agent-comparison",
-      "route": null
-    },
-    {
-      "file": "features/agent-comparison/components/MasterInputWindow.tsx",
-      "line": 281,
-      "column": 12,
-      "rule": "unlinked-entity-name",
-      "severity": "high",
-      "entity": "agent",
-      "entityHasRoute": true,
-      "expression": "agentName",
-      "feature": "features/agent-comparison",
-      "route": null
-    },
-    {
-      "file": "features/agent-comparison/components/MasterInputWindow.tsx",
-      "line": 307,
-      "column": 10,
+      "line": 285,
+      "column": 8,
       "rule": "unlinked-entity-name",
       "severity": "high",
       "entity": "agent",
@@ -767,18 +743,6 @@
       "entityHasRoute": true,
       "expression": "r.filename",
       "feature": "features/agent-connections",
-      "route": null
-    },
-    {
-      "file": "features/agent-shortcuts/components/ShortcutList.tsx",
-      "line": 482,
-      "column": 30,
-      "rule": "unlinked-entity-name",
-      "severity": "high",
-      "entity": "agent_shortcut",
-      "entityHasRoute": true,
-      "expression": "shortcut.label",
-      "feature": "features/agent-shortcuts",
       "route": null
     },
     {
@@ -850,30 +814,6 @@
       "entity": "(file)",
       "entityHasRoute": false,
       "expression": "features/agents/components/inputs/smart-input/RunSkillPicker.tsx",
-      "feature": "features/agents",
-      "route": null
-    },
-    {
-      "file": "features/agents/components/usages/NotifyOwnerDialog.tsx",
-      "line": 1,
-      "column": 1,
-      "rule": "no-doors-in-file",
-      "severity": "high",
-      "entity": "(file)",
-      "entityHasRoute": false,
-      "expression": "features/agents/components/usages/NotifyOwnerDialog.tsx",
-      "feature": "features/agents",
-      "route": null
-    },
-    {
-      "file": "features/agents/components/usages/NotifyOwnerDialog.tsx",
-      "line": 154,
-      "column": 16,
-      "rule": "bare-id-text",
-      "severity": "high",
-      "entity": "agent",
-      "entityHasRoute": true,
-      "expression": "target.drift.agentId.slice(0, 8)",
       "feature": "features/agents",
       "route": null
     },
@@ -1563,7 +1503,7 @@
     },
     {
       "file": "features/marketing/components/pages/cards/PushToCmsCard.tsx",
-      "line": 335,
+      "line": 367,
       "column": 53,
       "rule": "bare-id-text",
       "severity": "medium",
@@ -1659,6 +1599,20 @@
       "reason": "The detector dashboard prints rule ids, file paths and entity TOKENS (not records) as text; a token is not a row and has no id to open. Every actual record reference on that page goes through EntityRef.",
       "addedBy": "no-dead-ends detector",
       "addedOn": "2026-08-09"
+    },
+    {
+      "file": "features/agent-shortcuts/components/ShortcutList.tsx",
+      "rule": "unlinked-entity-name",
+      "reason": "Doors ride ALONGSIDE the name, not on it, and that is deliberate: the card's click already means EDIT (a navigation on the user and org consoles), so making the name a second anchor would give one card two conflicting destinations. EntityDoorControls carries Open / new tab / peek at the same URL the click uses. The detector matches doors by ANCESTOR, so a sibling door is invisible to it.",
+      "addedBy": "no-dead-ends detector",
+      "addedOn": "2026-08-15"
+    },
+    {
+      "file": "features/agents/components/usages/NotifyOwnerDialog.tsx",
+      "rule": "bare-id-text",
+      "reason": "The truncated id is shown INSTEAD of a name on purpose — the name in scope belongs to the shortcut, not to the agent the id points at, and labelling the right link with the wrong name is worse than no name; peek supplies the identity. Sibling EntityDoorControls (not a linked name) because a same-tab navigation would discard the note the user is typing in this dialog.",
+      "addedBy": "no-dead-ends detector",
+      "addedOn": "2026-08-15"
     }
   ]
 }

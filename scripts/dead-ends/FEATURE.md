@@ -265,6 +265,17 @@ files out of 6,809 scanned, in ~9s.**
   violations hide there.
 - **Analysis is per-file and ancestor-based.** A door in a parent component's
   file, or a body extracted into a sibling component, is not seen.
+- **A SIBLING door is not seen — this is why `EntityDoorControls` surfaces
+  still report.** Doors legitimately ride *alongside* a name (rather than on
+  it) whenever the name cannot be the anchor: the row's click already means
+  edit, or a same-tab navigation would discard prose the user is typing. The
+  door is then a sibling of the name, not an ancestor, so `unlinked-entity-name`
+  and `bare-id-text` still fire on a surface that is CORRECT. Importing the
+  primitive now proves the file owns a door (so `no-doors-in-file` is quiet),
+  but the per-name rules need same-id sibling lookup to close this properly —
+  until then such cases go in `allowlist.ts` with a reason. **Never "fix" one of
+  these by moving the door onto the name**: that gives one row two conflicting
+  destinations, which is the bug the alongside pattern exists to avoid.
 - **`no-doors-in-file` triggers on EMITTED findings, not on detection.**
   `sawNamedId` is set only when a `bare-id-text` finding is actually pushed, so
   a file whose every id is suppressed per-expression cannot raise the file-level
