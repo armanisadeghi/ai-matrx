@@ -23,6 +23,7 @@ import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -87,6 +88,11 @@ import type {
 } from "@/features/marketing/google/types";
 import { GOOGLE_CONNECTION_SCOPES } from "@/features/marketing/google/types";
 import { GOOGLE_ANALYTICS_SCOPES, GOOGLE_SCOPE } from "@/lib/googleScopes";
+import {
+  GOOGLE_ANALYTICS_CAMPAIGN_PAUSE_REASON,
+  assertGoogleAnalyticsCampaignActive,
+  isGoogleAnalyticsCampaignActive,
+} from "@/features/marketing/google/ga4-campaign";
 import type { MarketingSite } from "@/features/marketing/types";
 import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
 import { useGoogleAPI } from "@/providers/google-provider/GoogleApiProvider";
@@ -152,6 +158,10 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
     "organization" | "user" | null
   >(null);
   const [recoveringGa4, setRecoveringGa4] = useState(false);
+  const [authorizingGa4Owner, setAuthorizingGa4Owner] = useState<
+    "organization" | "user" | null
+  >(null);
+  const [ga4DisclosureAccepted, setGa4DisclosureAccepted] = useState(false);
   const initial = useMemo(
     () => parseSiteIntegrations(site.integrations),
     [site],
@@ -367,13 +377,20 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
     if (!propertyRef) return;
     setRecoveringGa4(true);
     try {
+      assertGoogleAnalyticsCampaignActive();
       let connectionId = ga4BindingDiagnosis?.recoverableConnectionId ?? null;
       if (!connectionId) {
+        if (!ga4DisclosureAccepted) {
+          throw new Error(
+            "Confirm the read-only Google Analytics disclosure before continuing.",
+          );
+        }
+        const savedConnection = googleInventory.data?.connections.find(
+          (connection) =>
+            connection.id === draft.googleAnalytics4.credentialRef,
+        );
         const loginHint =
-          googleInventory.data?.connections.find(
-            (connection) =>
-              connection.id === draft.googleAnalytics4.credentialRef,
-          )?.account_email ??
+          savedConnection?.account_email ??
           (googleInventory.data?.connections.length === 1
             ? googleInventory.data.connections[0].account_email
             : undefined);
@@ -383,7 +400,13 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
         );
         const result = await connectGoogle.mutateAsync({
           code,
-          owner: { type: "user" },
+          owner:
+            savedConnection?.owner_type === "organization"
+              ? {
+                  type: "organization",
+                  organizationId: site.organization_id,
+                }
+              : { type: "user" },
         });
         connectionId = result.connectionId;
       }
@@ -427,6 +450,63 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
       });
     } finally {
       setRecoveringGa4(false);
+    }
+  };
+
+  const authorizeGoogleAnalytics = async (owner: "organization" | "user") => {
+    setAuthorizingGa4Owner(owner);
+    try {
+      assertGoogleAnalyticsCampaignActive();
+      if (!ga4DisclosureAccepted) {
+        throw new Error(
+          "Confirm the read-only Google Analytics disclosure before continuing.",
+        );
+      }
+      const code = await google.requestAuthorizationCode([
+        ...GOOGLE_ANALYTICS_SCOPES,
+      ]);
+      const result = await connectGoogle.mutateAsync({
+        code,
+        owner:
+          owner === "organization"
+            ? {
+                type: "organization",
+                organizationId: site.organization_id,
+              }
+            : { type: "user" },
+      });
+      const refreshed = await googleInventory.refetch();
+      const discovered = (refreshed.data?.resources ?? []).filter(
+        (resource) =>
+          resource.connection_id === result.connectionId &&
+          resource.resource_type === "analytics_property",
+      );
+      if (!discovered.length) {
+        throw new Error(
+          "Google granted the connection but returned no Analytics properties. Confirm that this Google account can access the intended GA4 property.",
+        );
+      }
+      setBuiltIn("googleAnalytics4", {
+        ...draft.googleAnalytics4,
+        enabled: true,
+        credentialAuthority: "external_connection",
+        credentialRef: result.connectionId,
+        // Property choice is always explicit, even when discovery returns one.
+        resourceRef: "",
+      });
+      setGa4DisclosureAccepted(false);
+      toast.success("Google Analytics properties discovered", {
+        description: `${discovered.length} propert${discovered.length === 1 ? "y" : "ies"} found. Choose the exact property above, then connect it to ${site.domain}.`,
+      });
+    } catch (error) {
+      toast.error("Google Analytics was not authorized", {
+        description:
+          error instanceof Error
+            ? error.message
+            : "Google Analytics authorization did not finish.",
+      });
+    } finally {
+      setAuthorizingGa4Owner(null);
     }
   };
 
@@ -718,12 +798,26 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
                         ) ?? null
                       }
                     />
-                  ) : key === "googleAnalytics4" &&
-                    ga4BindingDiagnosis?.blocking ? (
-                    <Ga4BindingRecovery
+                  ) : key === "googleAnalytics4" ? (
+                    <Ga4CampaignPanel
                       diagnosis={ga4BindingDiagnosis}
+                      hasAnalyticsAccess={(
+                        googleInventory.data?.connections ?? []
+                      ).some(
+                        (connection) =>
+                          connection.health === "connected" &&
+                          connection.scopes.includes(
+                            GOOGLE_SCOPE.analyticsReadonly,
+                          ),
+                      )}
                       recovering={recoveringGa4}
+                      authorizingOwner={authorizingGa4Owner}
+                      disclosureAccepted={ga4DisclosureAccepted}
+                      onDisclosureAccepted={setGa4DisclosureAccepted}
                       onRecover={() => void recoverGoogleAnalytics()}
+                      onAuthorize={(owner) =>
+                        void authorizeGoogleAnalytics(owner)
+                      }
                     />
                   ) : undefined
                 }
@@ -844,43 +938,133 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
   );
 }
 
-function Ga4BindingRecovery({
+function Ga4CampaignPanel({
   diagnosis,
+  hasAnalyticsAccess,
   recovering,
+  authorizingOwner,
+  disclosureAccepted,
+  onDisclosureAccepted,
   onRecover,
+  onAuthorize,
 }: {
-  diagnosis: GoogleResourceBindingDiagnosis;
+  diagnosis: GoogleResourceBindingDiagnosis | null;
+  hasAnalyticsAccess: boolean;
   recovering: boolean;
+  authorizingOwner: "organization" | "user" | null;
+  disclosureAccepted: boolean;
+  onDisclosureAccepted: (accepted: boolean) => void;
   onRecover: () => void;
+  onAuthorize: (owner: "organization" | "user") => void;
 }) {
-  const canRebind = Boolean(diagnosis.recoverableConnectionId);
+  const campaignActive = isGoogleAnalyticsCampaignActive();
+  const canRebind = Boolean(diagnosis?.recoverableConnectionId);
+  const needsAuthorization = Boolean(diagnosis?.blocking && !canRebind);
+
+  if (!campaignActive) {
+    return (
+      <div className="space-y-1.5 rounded-md border border-warning/40 bg-warning/5 p-2">
+        <p className="text-[10px] font-medium text-foreground">
+          Analytics activation is safely paused
+        </p>
+        <p className="text-[10px] leading-4 text-muted-foreground">
+          {GOOGLE_ANALYTICS_CAMPAIGN_PAUSE_REASON} Existing Search Console
+          access and property bindings are unchanged.
+        </p>
+        <Button size="sm" variant="outline" className="h-7 w-full" disabled>
+          Waiting for Workspace verification
+        </Button>
+      </div>
+    );
+  }
+
+  if (!diagnosis?.blocking && hasAnalyticsAccess) {
+    return (
+      <div className="rounded-md border border-border bg-muted/20 p-2">
+        <p className="text-[10px] font-medium text-foreground">
+          Read-only Analytics access is available
+        </p>
+        <p className="mt-1 text-[10px] leading-4 text-muted-foreground">
+          Choose the Google account and exact GA4 property above. AI Matrx can
+          read reporting data but cannot edit Google Analytics.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-1.5 rounded-md border border-destructive/40 bg-destructive/5 p-2">
       <p className="text-[10px] font-medium text-destructive">
-        Analytics is not collecting
+        {diagnosis?.blocking
+          ? "Analytics is not collecting"
+          : "Connect Google Analytics"}
       </p>
       <p className="text-[10px] leading-4 text-destructive/90">
-        {diagnosis.reason}
+        {diagnosis?.reason ??
+          "AI Matrx requests read-only Analytics access to discover your GA4 properties and collect sessions, users, and engagement for the property you choose. It cannot edit Analytics. Search Console access remains unchanged."}
       </p>
-      <Button
-        size="sm"
-        variant="outline"
-        className="h-7 w-full gap-1.5"
-        disabled={recovering}
-        onClick={onRecover}
-      >
-        {recovering ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        ) : (
-          <RefreshCw className="h-3.5 w-3.5" />
-        )}
-        {canRebind ? "Use discovered property" : "Restore Analytics access"}
-      </Button>
-      <p className="text-[10px] leading-4 text-muted-foreground">
-        {canRebind
-          ? "This rebinds the saved property to the live Google connection."
-          : "Google will ask only for read-only Analytics access, rerun discovery, and reconnect the same property if it is returned."}
-      </p>
+      {needsAuthorization || !diagnosis ? (
+        <label className="flex items-start gap-2 rounded-sm border border-border bg-background p-2 text-[10px] leading-4 text-foreground">
+          <Checkbox
+            checked={disclosureAccepted}
+            onCheckedChange={(checked) =>
+              onDisclosureAccepted(checked === true)
+            }
+          />
+          <span>
+            I want AI Matrx to request read-only Analytics access and discover
+            properties. I will choose the property before any data is collected.
+          </span>
+        </label>
+      ) : null}
+      {diagnosis?.blocking ? (
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 w-full gap-1.5"
+          disabled={recovering || (needsAuthorization && !disclosureAccepted)}
+          onClick={onRecover}
+        >
+          {recovering ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <RefreshCw className="h-3.5 w-3.5" />
+          )}
+          {canRebind ? "Use discovered property" : "Restore Analytics access"}
+        </Button>
+      ) : (
+        <div className="grid gap-1.5">
+          <Button
+            size="sm"
+            className="h-7 w-full"
+            disabled={!disclosureAccepted || authorizingOwner !== null}
+            onClick={() => onAuthorize("organization")}
+          >
+            {authorizingOwner === "organization" ? (
+              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+            ) : null}
+            Authorize for this organization
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 w-full"
+            disabled={!disclosureAccepted || authorizingOwner !== null}
+            onClick={() => onAuthorize("user")}
+          >
+            {authorizingOwner === "user" ? (
+              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+            ) : null}
+            Authorize personally
+          </Button>
+        </div>
+      )}
+      {canRebind ? (
+        <p className="text-[10px] leading-4 text-muted-foreground">
+          This rebinds the saved property to the live Google connection without
+          requesting a new scope.
+        </p>
+      ) : null}
     </div>
   );
 }

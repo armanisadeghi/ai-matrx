@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { LineChart, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
@@ -22,12 +23,21 @@ import {
   SectionCard,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { parseSiteIntegrations } from "@/features/marketing/data/integrations-schema";
+import { useGoogleConnectionInventory } from "@/features/marketing/google/hooks";
+import { diagnoseGoogleResourceBinding } from "@/features/marketing/google/health";
+import { GOOGLE_SCOPE } from "@/lib/googleScopes";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { extractErrorMessage } from "@/utils/errors";
 import { syncSiteAnalytics } from "@/features/marketing/analytics/data";
 import {
   describeBackendFailure,
   type BackendFailureExplanation,
 } from "@/lib/api/errors";
+import {
+  GOOGLE_ANALYTICS_CAMPAIGN_PAUSE_REASON,
+  assertGoogleAnalyticsCampaignActive,
+  isGoogleAnalyticsCampaignActive,
+} from "@/features/marketing/google/ga4-campaign";
 
 // THE NAMING LAW: canonical labels for every declared surface value + group —
 // section titles and field labels below render these byte-identically.
@@ -48,6 +58,7 @@ export function PageAnalyticsCard({ page }: { page: MarketingPage }) {
   // the exact same rows this card renders.
   const analytics = usePageWebAnalytics(site.id, page.id);
   const latestRunFailure = useLatestAnalyticsFailure(site.id);
+  const googleInventory = useGoogleConnectionInventory();
   const rows = analytics.data ?? null;
   const loading = analytics.isLoading;
   const loadError = analytics.isError
@@ -57,12 +68,40 @@ export function PageAnalyticsCard({ page }: { page: MarketingPage }) {
   const [syncFailure, setSyncFailure] =
     useState<BackendFailureExplanation | null>(null);
   const integrations = parseSiteIntegrations(site.integrations);
-  const ga4Enabled = integrations.googleAnalytics4.enabled;
+  const ga4Binding = integrations.googleAnalytics4;
+  const ga4Enabled = ga4Binding.enabled;
+  const campaignActive = isGoogleAnalyticsCampaignActive();
+  const bindingDiagnosis = (() => {
+    if (
+      !ga4Binding.enabled ||
+      !ga4Binding.credentialRef ||
+      !ga4Binding.resourceRef ||
+      !googleInventory.data
+    ) {
+      return null;
+    }
+    return diagnoseGoogleResourceBinding({
+      connectionId: ga4Binding.credentialRef,
+      resourceRef: ga4Binding.resourceRef,
+      resourceType: "analytics_property",
+      requiredScope: GOOGLE_SCOPE.analyticsReadonly,
+      connections: googleInventory.data.connections,
+      resources: googleInventory.data.resources,
+    });
+  })();
+  const ga4Ready = Boolean(
+    ga4Enabled &&
+    ga4Binding.credentialRef &&
+    ga4Binding.resourceRef &&
+    googleInventory.data &&
+    !bindingDiagnosis?.blocking,
+  );
 
   const runSync = async () => {
     setSyncing(true);
     setSyncFailure(null);
     try {
+      assertGoogleAnalyticsCampaignActive();
       await syncSiteAnalytics(dispatch, site.id, site.organization_id);
       await queryClient.invalidateQueries({
         queryKey: marketingKeys.site(site.id),
@@ -95,12 +134,14 @@ export function PageAnalyticsCard({ page }: { page: MarketingPage }) {
         <button
           type="button"
           onClick={() => void runSync()}
-          disabled={syncing || !ga4Enabled}
+          disabled={syncing || !ga4Ready || !campaignActive}
           aria-label="Sync Google Analytics"
           title={
-            ga4Enabled
-              ? "Run a GA4 landing-page collection for this site"
-              : "Bind a Google Analytics 4 property to this site first"
+            !campaignActive
+              ? GOOGLE_ANALYTICS_CAMPAIGN_PAUSE_REASON
+              : ga4Ready
+                ? "Run a GA4 landing-page collection for this site"
+                : "Bind a Google Analytics 4 property to this site first"
           }
           className="flex h-6 w-7 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
         >
@@ -128,6 +169,36 @@ export function PageAnalyticsCard({ page }: { page: MarketingPage }) {
       })}
     >
       <div className="grid gap-3 p-3">
+        {!campaignActive ? (
+          <div className="rounded-md border border-warning/40 bg-warning/5 p-2.5">
+            <p className="text-xs font-medium text-foreground">
+              Analytics activation is safely paused
+            </p>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              {GOOGLE_ANALYTICS_CAMPAIGN_PAUSE_REASON}
+            </p>
+          </div>
+        ) : null}
+        {bindingDiagnosis?.blocking ? (
+          <div className="rounded-md border border-destructive/40 bg-destructive/5 p-2.5">
+            <p className="text-xs font-medium text-destructive">
+              Analytics setup needs attention
+            </p>
+            <p className="mt-1 text-xs leading-5 text-destructive/90">
+              {bindingDiagnosis.reason}
+            </p>
+            <Link
+              className="mt-2 inline-flex text-xs font-medium text-primary underline"
+              href={marketingRoutes.site(
+                site.brand_id,
+                site.id,
+                "/integrations",
+              )}
+            >
+              Open Analytics setup
+            </Link>
+          </div>
+        ) : null}
         {loadError ? (
           <p className="text-xs text-destructive">{loadError}</p>
         ) : null}

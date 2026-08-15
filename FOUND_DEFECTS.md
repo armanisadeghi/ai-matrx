@@ -14,6 +14,16 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D201 — guided setup cannot create its persisted run under ordinary product RLS (2026-08-15)
+
+Measured on the local production-backed Integrations route for `aimatrx.com`:
+`lib/guided-setup` calls `loadOrCreateRun`, but the insert into
+`platform.guided_checklist_run` returns `42501 new row violates row-level
+security policy`. The checklist renders a loud “saved progress” failure and
+cannot remember user changes. Fix the table/RPC write contract so an authorized
+site user can create the scoped checklist run through the canonical path; verify
+as a non-admin and keep cross-org runs unreadable. Do not hide or retry the 403.
+
 ### D200 — creating a personal (user-scoped) agent shortcut is IMPOSSIBLE — every path throws (2026-08-15)
 
 Measured live on production as a signed-in admin. `agentShortcutToInsert`

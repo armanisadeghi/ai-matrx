@@ -4,6 +4,10 @@ import { syncSiteAnalytics } from "@/features/marketing/analytics/data";
 import { syncBingSearchPerformance } from "@/features/marketing/bing/service";
 import { syncPagespeed } from "@/features/marketing/pagespeed/data";
 
+jest.mock("@/features/marketing/google/ga4-campaign", () => ({
+  assertGoogleAnalyticsCampaignActive: jest.fn(),
+}));
+
 jest.mock("@/lib/api/call-api", () => ({
   callApi: jest.fn((config: unknown) => config),
 }));
