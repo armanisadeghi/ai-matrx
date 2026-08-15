@@ -114,6 +114,12 @@ export function LinkAgentToShortcutModal({
   // Category is REQUIRED to create, and a scope with none would otherwise be a
   // wall: a problem we can detect ships with its one-click fix, in place.
   const [categoryFormOpen, setCategoryFormOpen] = useState(false);
+  // Latches true on first open and never goes back. Radix restores
+  // `body { pointer-events }` in its own close cleanup — unmounting the dialog
+  // while it is still open skips that, and the leftover `pointer-events: none`
+  // makes THIS modal inert (every button silently dead). So we gate the first
+  // mount (keeping the chunk unfetched until asked for) but never unmount.
+  const [categoryFormMounted, setCategoryFormMounted] = useState(false);
 
   // Reset on OPEN only. `categories` is deliberately not a dependency: it
   // changes the moment the inline "New category" form saves, and re-running
@@ -330,7 +336,10 @@ export function LinkAgentToShortcutModal({
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => setCategoryFormOpen(true)}
+                onClick={() => {
+                  setCategoryFormMounted(true);
+                  setCategoryFormOpen(true);
+                }}
                 disabled={isProcessing}
               >
                 <Plus className="h-3.5 w-3.5 mr-1" />
@@ -562,13 +571,15 @@ export function LinkAgentToShortcutModal({
   // The one-click fix for "no categories in this scope". Rendered beside the
   // modal (not inside its body) so the two overlays don't nest, and it keeps
   // the same `scope`/`scopeId` contract the caller handed us.
-  // Only mounted once the user asks for it — the chunk is not fetched (and no
-  // loading fallback flashes) just because the link modal is open.
-  const categoryForm = categoryFormOpen ? (
+  // Mounted only once the user asks for it — the chunk is not fetched (and no
+  // loading fallback flashes) just because the link modal is open — and then
+  // it STAYS mounted so Radix can run its own close cleanup. See the
+  // `categoryFormMounted` note above.
+  const categoryForm = categoryFormMounted ? (
     <CategoryForm
       scope={scope}
       scopeId={scopeId}
-      isOpen
+      isOpen={categoryFormOpen}
       onClose={() => setCategoryFormOpen(false)}
       onSuccess={(created) => {
         setCategoryFormOpen(false);
