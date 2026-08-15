@@ -157,7 +157,7 @@ export default function AdminRunsPage() {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 p-4">
-      <div className="min-h-0 flex-1">
+      <div className="min-h-0 flex-1" data-surface-value="run_row_count">
         <MatrxDataTable
           urlState={{ id: "scheduling-runs" }}
           data={rows}
@@ -176,42 +176,46 @@ export default function AdminRunsPage() {
                 id: "server-filters",
                 render: () => (
                   <div className="flex items-center gap-2">
-                    <Select
-                      value={status}
-                      onValueChange={(v) =>
-                        setStatus(v as "__all__" | RunStatus)
-                      }
-                    >
-                      <SelectTrigger className="h-8 w-36">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__all__">Any status</SelectItem>
-                        {STATUSES.map((s) => (
-                          <SelectItem key={s} value={s}>
-                            {s}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Select
-                      value={surface}
-                      onValueChange={(v) =>
-                        setSurface(v as "__all__" | Surface)
-                      }
-                    >
-                      <SelectTrigger className="h-8 w-40">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__all__">Any surface</SelectItem>
-                        {SURFACE_VALUES.map((s) => (
-                          <SelectItem key={s} value={s}>
-                            {s}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div data-surface-value="run_status_filter">
+                      <Select
+                        value={status}
+                        onValueChange={(v) =>
+                          setStatus(v as "__all__" | RunStatus)
+                        }
+                      >
+                        <SelectTrigger className="h-8 w-36">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__all__">Any status</SelectItem>
+                          {STATUSES.map((s) => (
+                            <SelectItem key={s} value={s}>
+                              {s}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div data-surface-value="run_surface_filter">
+                      <Select
+                        value={surface}
+                        onValueChange={(v) =>
+                          setSurface(v as "__all__" | Surface)
+                        }
+                      >
+                        <SelectTrigger className="h-8 w-40">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__all__">Any surface</SelectItem>
+                          {SURFACE_VALUES.map((s) => (
+                            <SelectItem key={s} value={s}>
+                              {s}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 ),
               },

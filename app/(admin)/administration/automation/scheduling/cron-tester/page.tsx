@@ -109,6 +109,7 @@ export default function CronTesterPage() {
             <div className="space-y-1.5">
               <Label htmlFor="cron-expr">Expression</Label>
               <Input
+                data-surface-value="cron_expression"
                 id="cron-expr"
                 value={expression}
                 onChange={(e) => setExpression(e.target.value)}
@@ -121,7 +122,7 @@ export default function CronTesterPage() {
               <div className="space-y-1.5">
                 <Label>Timezone</Label>
                 <Select value={tz} onValueChange={setTz}>
-                  <SelectTrigger>
+                  <SelectTrigger data-surface-value="cron_timezone">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -149,7 +150,10 @@ export default function CronTesterPage() {
         </Card>
 
         {validationError ? (
-          <Alert variant="destructive">
+          <Alert
+            variant="destructive"
+            data-surface-value="cron_validation_error"
+          >
             <AlertDescription className="font-mono text-xs">
               {validationError}
             </AlertDescription>
@@ -157,12 +161,15 @@ export default function CronTesterPage() {
         ) : (
           <>
             {human && (
-              <div className="rounded-md border border-border bg-card p-3 text-sm">
+              <div
+                className="rounded-md border border-border bg-card p-3 text-sm"
+                data-surface-value="cron_expression_human"
+              >
                 <span className="font-medium">{human}</span>
               </div>
             )}
             {fires.length > 0 && (
-              <Card>
+              <Card data-surface-value="cron_next_fires">
                 <CardContent className="p-4">
                   <ol className="space-y-1.5 text-sm">
                     {fires.map((iso, i) => (
