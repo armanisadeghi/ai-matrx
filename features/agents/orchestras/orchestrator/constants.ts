@@ -22,7 +22,7 @@ export const ORCHESTRATOR_TEMPLATE_ID = "b06689e3-c651-443a-9059-7e11160d91b4";
  * (raw UUID; not in the FE SYSTEM_AGENTS registry). Seeded by
  * `migrations/agent_set_role_describer_builtin.sql`.
  */
-export const AGENT_SET_ROLE_DESCRIBER_ID = "a3e9d1c4-7b62-4f08-9c5a-2d6e8f0b1a37";
+export const ORCHESTRA_ROLE_DESCRIBER_ID = "a3e9d1c4-7b62-4f08-9c5a-2d6e8f0b1a37";
 
 /** The variable the Orchestra Role Describer reads (the members dump JSON). */
 export const ROLE_DESCRIBER_INPUT_VAR = "agent_config";
