@@ -5,7 +5,7 @@ jest.mock("@/lib/diagnostics/captureStreamError", () => ({
 
 import { TextDecoder as NodeTextDecoder } from "node:util";
 import { captureStreamTransportError } from "@/lib/diagnostics/captureStreamError";
-import { BackendApiError } from "../errors";
+import { BackendApiError, isStreamTransportLost } from "../errors";
 import { parseNdjsonStream } from "../stream-parser";
 
 describe("parseNdjsonStream cancellation", () => {
@@ -76,17 +76,21 @@ describe("parseNdjsonStream cancellation", () => {
 
     const { events } = parseNdjsonStream(response);
 
+    // It is classified as a RESUMABLE transport loss, not `internal_error`.
+    // A backend that blows up mid-stream emits a typed `error` event and closes
+    // the body cleanly; only the transport breaks the socket. Callers branch on
+    // this code to reattach instead of showing a dead end (D183).
     await expect(events.next()).rejects.toMatchObject({
-      name: "BackendApiError",
-      code: "internal_error",
+      name: "StreamTransportError",
+      code: "stream_transport_lost",
       detail: "Load failed",
-      userMessage: "The connection to the AI response was lost.",
+      resumable: true,
     });
 
     expect(captureStreamTransportError).toHaveBeenCalledTimes(1);
-    expect(
-      jest.mocked(captureStreamTransportError).mock.calls[0]?.[0],
-    ).toBeInstanceOf(BackendApiError);
+    const captured = jest.mocked(captureStreamTransportError).mock.calls[0]?.[0];
+    expect(captured).toBeInstanceOf(BackendApiError);
+    expect(isStreamTransportLost(captured)).toBe(true);
     expect(reader.releaseLock).toHaveBeenCalledTimes(1);
     // The failure travels as a structured error, not as console noise.
     expect(consoleError).not.toHaveBeenCalled();

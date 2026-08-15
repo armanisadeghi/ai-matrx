@@ -41,7 +41,7 @@ import {
   isRecordUpdateEvent,
 } from "./types";
 import { readMatrxNdjsonStream } from "@matrx/agents/stream/ndjson";
-import { BackendApiError } from "./errors";
+import { BackendApiError, StreamTransportError } from "./errors";
 import {
   captureStreamEvent,
   captureStreamTransportError,
@@ -126,18 +126,24 @@ async function* _parseNdjsonStream(
     ) {
       return;
     }
+    // ONLY a broken body reader reaches here. `readMatrxNdjsonStream` treats
+    // malformed lines and unknown envelopes as non-fatal, and a backend that
+    // fails mid-run emits a typed `error` EVENT and closes the body cleanly —
+    // it never breaks the socket. So this is a TRANSPORT loss, and because
+    // aidream runs `detach_on_disconnect=True` the run itself is very likely
+    // still completing server-side. Say that, and hand the caller a resumable
+    // classification instead of a hard "the response was lost" verdict it can
+    // only render as a dead end (D183).
     const transportError =
       error instanceof BackendApiError
         ? error
-        : new BackendApiError({
-            code: "internal_error",
+        : new StreamTransportError({
             detail:
               error instanceof Error
                 ? error.message
                 : "The response stream ended unexpectedly.",
-            userMessage: "The connection to the AI response was lost.",
             details: error,
-            requestId: ctx?.requestId ?? undefined,
+            ...(ctx?.requestId ? { requestId: ctx.requestId } : {}),
           });
     captureStreamTransportError(transportError, ctx ?? {});
     throw transportError;

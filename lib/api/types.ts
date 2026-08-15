@@ -174,6 +174,9 @@ export type BackendErrorCode =
   | "not_found"
   | "internal_error"
   | "agent_error"
+  /** The stream socket died mid-run; the server run may still be completing
+   *  and is reattachable. See `StreamTransportError` in `lib/api/errors.ts`. */
+  | "stream_transport_lost"
   | (string & {});
 
 // ============================================================================

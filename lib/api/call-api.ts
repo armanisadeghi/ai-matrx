@@ -81,6 +81,7 @@ import {
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 // BACKEND_URLS no longer needed here — URL resolution is owned by apiConfigSlice
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
+import { BackendApiError } from "@/lib/api/errors";
 import { logApiTarget } from "@/lib/api/log-api-target";
 import { resilientFetch } from "@/lib/net/resilient-fetch";
 import { isNetError } from "@/lib/net/errors";
@@ -383,6 +384,14 @@ export interface ApiCallError {
   status?: number;
   /** Raw error detail from the server (e.g. HTTPValidationError.detail) */
   serverDetail?: unknown;
+  /**
+   * Machine code from a `BackendApiError` that reached the boundary, preserved
+   * through normalization. The load-bearing case is `stream_transport_lost`:
+   * without it a dropped socket is indistinguishable from a failed run once
+   * flattened to `network_error`, and the surface renders a dead end instead of
+   * reattaching (D183). Read it with `isStreamTransportLost(result.error)`.
+   */
+  code?: string;
   /** Original exception identity for diagnostics (network failures, etc.). */
   name?: string;
   /** Original exception stack. */
@@ -793,6 +802,19 @@ function extractServerErrorMessage(serverDetail: unknown): string | undefined {
 function normalizeError(err: unknown): ApiCallError {
   if (err instanceof DOMException && err.name === "AbortError") {
     return { type: "abort_error", message: "Request was cancelled." };
+  }
+
+  // A typed backend/stream error carries a classification the caller needs.
+  // Flattening it to a bare `network_error` is how a dropped socket became
+  // indistinguishable from a failed run (D183) — keep the code.
+  if (err instanceof BackendApiError) {
+    return {
+      type: "network_error",
+      message: err.detail || err.userMessage,
+      code: err.code,
+      name: err.name,
+      ...(err.status !== null ? { status: err.status } : {}),
+    };
   }
 
   if (isNetError(err)) {

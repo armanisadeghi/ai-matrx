@@ -20,7 +20,12 @@ import {
   clearRunSet,
 } from "@/features/agents/redux/execution-system/run-sets/run-sets.thunks";
 import {
+  createTransportLossReattacher,
+  type TransportLossReattacher,
+} from "@/features/agents/redux/execution-system/durable-runs/reattach-on-transport-loss";
+import {
   describeBackendFailure,
+  isStreamTransportLost,
   parseCallApiError,
   parsePersistedBackendError,
   parseStreamError,
@@ -218,6 +223,31 @@ export function useKeywordResearch(
     optionsRef.current = options;
   }, [options]);
 
+  /** Late-bound so the reattacher can be created before `rejoinResearch` is. */
+  const rejoinResearchRef = useRef<
+    ((runId: string, primaryKeyword: string) => Promise<void>) | null
+  >(null);
+  /**
+   * A dropped socket is not a failed run: the durable `seo.collection_run` was
+   * claimed BEFORE the first paid call and the server never stops on a client
+   * disconnect. So reopen the stream for the same run id instead of showing a
+   * failure the user has to reload out of (D183). The stored active-run record
+   * IS the durable identity, and it is cleared only on a real terminal outcome.
+   */
+  const reattacherRef = useRef<TransportLossReattacher | null>(null);
+  if (reattacherRef.current === null) {
+    reattacherRef.current = createTransportLossReattacher({
+      label: "keyword research",
+      rejoin: async () => {
+        const stored = readStoredActiveRun();
+        if (!stored || !rejoinResearchRef.current) {
+          throw new Error("no durable research run to reattach to");
+        }
+        await rejoinResearchRef.current(stored.runId, stored.primaryKeyword);
+      },
+    });
+  }
+
   const reload = useCallback(async (searchValue: string) => {
     abortRef.current?.abort();
     const controller = new AbortController();
@@ -273,6 +303,8 @@ export function useKeywordResearch(
       // defers while any still-mounted MarkdownStream renders this row.
       streamAbortRef.current?.abort();
       streamAbortRef.current = null;
+      // A reattach loop outliving the hook would rejoin into a dead surface.
+      reattacherRef.current?.cancel();
       if (adoptedRequestIdRef.current) {
         dispatch(removeRequest(adoptedRequestIdRef.current));
         adoptedRequestIdRef.current = null;
@@ -430,6 +462,7 @@ export function useKeywordResearch(
           },
           onEvent: onStreamEvent,
           abortController: streamAbort,
+          onTransportLost: () => reattacherRef.current?.onTransportLost(),
         }),
       );
       const result = await dispatch(
@@ -459,6 +492,18 @@ export function useKeywordResearch(
       // effects) belongs to the CURRENT run, not this one. Settle silently.
       if (runEpochRef.current !== epoch) return;
       if (result.error) {
+        // The SOCKET dropped, not the run. `adoptForeignStream` has already
+        // handed this to the reattach loop; clearing the stored run id here
+        // would destroy the only handle that loop rejoins by, and "Research
+        // could not start" would be a lie about work that is still executing.
+        if (isStreamTransportLost(result.error)) {
+          setRun((current) => ({
+            ...current,
+            primaryKeyword: phrase,
+            stage: "Connection dropped — reconnecting to the server run",
+          }));
+          return;
+        }
         storeActiveRun(null);
         const explanation = describeBackendFailure(
           parseCallApiError(result.error),
@@ -505,6 +550,8 @@ export function useKeywordResearch(
       const phrase = primaryKeyword.trim();
       if (!phrase) return;
       runEpochRef.current += 1;
+      // A new logical run supersedes any reattach still chasing the old one.
+      reattacherRef.current?.cancel();
       // A fresh run is a new logical session for the surface's run set; a
       // REJOIN (below) deliberately re-attaches without clearing.
       const runSetKey = optionsRef.current?.runSetKey;
@@ -541,6 +588,7 @@ export function useKeywordResearch(
     },
     [consumeResearchStream, dispatch],
   );
+  rejoinResearchRef.current = rejoinResearch;
 
   // After a refresh/crash mid-run, automatically rejoin the durable run —
   // live progress replays when the server still executes it; otherwise the

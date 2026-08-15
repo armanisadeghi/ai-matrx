@@ -49,6 +49,7 @@ import { processStream } from "./process-stream";
 import { captureStreamClientError } from "@/lib/diagnostics/captureStreamError";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { isV2Path, toV1FallbackUrl } from "@/lib/api/ai-api-version";
+import { isStreamTransportLost } from "@/lib/api/errors";
 import type { JsonExtractionConfig } from "./process-stream";
 import { logApiTarget } from "@/lib/api/log-api-target";
 import {
@@ -555,13 +556,27 @@ export async function runAiStream(
       error instanceof Error && error.name === "HeartbeatTimeoutError";
     const isTotal =
       error instanceof Error && error.name === "TotalTimeoutError";
-    const errorType: "heartbeat_timeout" | "total_timeout" | "client_error" =
-      isHeartbeat
-        ? "heartbeat_timeout"
-        : isTotal
-          ? "total_timeout"
+    // The socket broke mid-body. `detach_on_disconnect` means the server kept
+    // running the turn, so this is the SAME situation as a heartbeat timeout:
+    // a delivery problem whose truth lives on the server. It used to be
+    // classified `client_error` and got no reconnect at all (D183).
+    const isTransportLost = isStreamTransportLost(error);
+    /** Both classes mean "our connection died, the run did not" — reconnect. */
+    const isConnectionLoss = isHeartbeat || isTransportLost;
+    const errorType:
+      | "heartbeat_timeout"
+      | "total_timeout"
+      | "transport_lost"
+      | "client_error" = isHeartbeat
+      ? "heartbeat_timeout"
+      : isTotal
+        ? "total_timeout"
+        : isTransportLost
+          ? "transport_lost"
           : "client_error";
     const message = error instanceof Error ? error.message : "Unknown error";
+    const connectionLossMessage =
+      "Connection to the stream was lost. The server is still finishing the response — recovering it automatically.";
 
     // Feed the systemwide Error Inspector — a dead stream (heartbeat loss,
     // total-timeout, fetch failure) is a server-origin failure the admin wants
@@ -569,9 +584,7 @@ export async function runAiStream(
     captureStreamClientError({
       errorType,
       message,
-      userMessage: isHeartbeat
-        ? "Connection to the stream was lost. The server is still finishing the response — recovering it automatically."
-        : undefined,
+      userMessage: isConnectionLoss ? connectionLossMessage : undefined,
       name: error instanceof Error ? error.name : undefined,
       conversationId,
       requestId,
@@ -584,13 +597,11 @@ export async function runAiStream(
         error: {
           error_type: errorType,
           message,
-          // Heartbeat loss means the CONNECTION died — the server detaches
-          // and finishes the turn regardless (detach_on_disconnect). Say so,
-          // instead of implying the response itself failed.
-          ...(isHeartbeat && {
-            user_message:
-              "Connection to the stream was lost. The server is still finishing the response — recovering it automatically.",
-          }),
+          // Heartbeat loss and a dropped socket both mean the CONNECTION died —
+          // the server detaches and finishes the turn regardless
+          // (detach_on_disconnect). Say so, instead of implying the response
+          // itself failed.
+          ...(isConnectionLoss && { user_message: connectionLossMessage }),
         },
       }),
     );
@@ -604,7 +615,7 @@ export async function runAiStream(
     // anything. Falls back internally to the legacy recoverDroppedStream poll
     // when the spine has no operation. Fire-and-forget; the follower stands
     // down by itself if the user retries or sends a new message.
-    if (isHeartbeat) {
+    if (isConnectionLoss) {
       void import(
         "@/features/agents/runtime-reconnect/reconnect-server-operation.thunk"
       ).then(({ reconnectServerOperation }) => {
@@ -624,8 +635,8 @@ export async function runAiStream(
       failPendingToolLifecycle({
         requestId,
         errorType,
-        errorMessage: isHeartbeat
-          ? "Heartbeat stopped — the stream is no longer alive."
+        errorMessage: isConnectionLoss
+          ? "The connection to the stream dropped — reconnecting to the server run."
           : isTotal
             ? "Stream exceeded its maximum lifetime."
             : message,

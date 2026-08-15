@@ -52,6 +52,39 @@ So the entire defense is: **the row must outlive every mounted viewer.**
 - **Relying on rejoin to restore live output.** It cannot (no chunk replay). Surfaces MUST keep
   the saved-artifact fallback for the post-remount case (`useSavedKeywordResearch` pattern).
 
+## A DROPPED SOCKET IS NOT A FAILED RUN — reattach, never dead-end
+
+Streams run `detach_on_disconnect=True`: killing the client connection detaches
+DELIVERY, never the work. So a broken socket is a display problem with the same
+shape as the retention bug above — the answer still exists, we just stopped
+receiving it. **Never render a transport drop as a failure the user has to
+reload out of.**
+
+The client can tell the two apart structurally: a backend that blows up mid-run
+emits a typed `error` EVENT and closes the body cleanly, so **anything thrown
+out of the body reader is a transport loss**. `lib/api/stream-parser.ts` types it
+as `StreamTransportError` (`code: "stream_transport_lost"`, `resumable`); read it
+at any boundary with `isStreamTransportLost()` (it survives `callApi`'s
+normalization via `ApiCallError.code`). Resumable means *ask the server*, never
+*assume success* — a run that genuinely died reports `failed` on reattach and the
+honest record replaces the optimistic one.
+
+Two reattach paths, both already built — never hand-roll a third:
+
+- **Chat / execution-system runs** → `run-ai-stream.ts` classifies it
+  `error_type: "transport_lost"` and dispatches `reconnectServerOperation`,
+  exactly as it does for a heartbeat timeout.
+- **Durable server-orchestrated runs** (`adoptForeignStream`) → the surface's own
+  rejoin by durable run id (`POST /seo/collections/{run_id}/rejoin` and peers),
+  driven by the ONE bounded loop
+  [`createTransportLossReattacher`](../redux/execution-system/durable-runs/reattach-on-transport-loss.ts):
+  pass its `onTransportLost` to `adoptForeignStream`, `cancel()` on unmount and
+  on a new logical run. Exemplar: `useKeywordResearch`.
+
+**Banned:** clearing the surface's stored durable run id on a transport loss.
+That id is the only handle the reattach loop has; dropping it converts a
+recoverable drop into the dead end this section exists to kill (D183).
+
 ## Multi-run surfaces — RunSetDisplay is the canonical home
 
 A surface that fires MORE THAN ONE agent call (a pipeline per phase, a batch per node, a run
@@ -86,6 +119,10 @@ Redux devtools before touching retention seams.
 
 ## Change Log
 
+- 2026-08-15 — A dropped socket now reattaches instead of dead-ending (D183 defect 2):
+  `StreamTransportError` / `isStreamTransportLost` classify it, `run-ai-stream`
+  reconnects on it like a heartbeat loss, and `createTransportLossReattacher`
+  is the shared bounded rejoin loop for `adoptForeignStream` surfaces.
 - 2026-08-13 — Multi-run surfaces get their canonical home: `runSets` slice + `RunSetDisplay`
   (+ set-scoped retention holds, run-epoch guard doctrine). First consumer: keyword research
   (`useKeywordResearch` `runSetKey`/`rejoinPhrase` options; phrase-scoped auto-rejoin).

@@ -49,6 +49,7 @@
 import type { AppThunk } from "@/lib/redux/store";
 import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import { isStreamTransportLost } from "@/lib/api/errors";
 
 import {
   createRequest,
@@ -100,6 +101,20 @@ export interface AdoptForeignStreamOptions {
    * combination, so there is no default.
    */
   abortController?: AbortController;
+  /**
+   * The stream's SOCKET died mid-run — not the run.
+   *
+   * A pipeline endpoint that fails emits a typed `error` event and closes its
+   * body cleanly; only a transport drop breaks the connection. Since these runs
+   * are durable and `detach_on_disconnect`, the work keeps going server-side,
+   * so this is the signal to reopen the stream for the SAME durable run id
+   * (`POST /seo/collections/{run_id}/rejoin` and friends).
+   *
+   * Do not hand-roll the retry: `createTransportLossReattacher`
+   * (`../durable-runs/reattach-on-transport-loss.ts`) is the bounded loop every
+   * surface shares — pass its `onTransportLost` straight through.
+   */
+  onTransportLost?: (ids: AdoptedStreamIds) => void;
   /** Max ms between events before the stream is declared dead. Default 60s. */
   heartbeatTimeoutMs?: number;
   /** Max total stream lifetime. Default 30 min — pipelines are long. */
@@ -121,6 +136,7 @@ export function adoptForeignStream(
   const {
     onAdopted,
     onEvent,
+    onTransportLost,
     preferServerIds = true,
     jsonExtraction,
     abortController,
@@ -175,18 +191,32 @@ export function adoptForeignStream(
         // treats as a defect.
         const message =
           error instanceof Error ? error.message : "Adopted stream failed.";
+        // A dropped SOCKET is not a failed RUN. The server orchestrates this
+        // run durably and detaches on disconnect, so the honest state is
+        // "reattaching", and the caller's `onTransportLost` reopens the stream
+        // for the same durable run id. Telling the user to reload by hand
+        // (what this branch used to do) is the dead end D183 filed.
+        const transportLost = isStreamTransportLost(error);
         dispatch(
           setRequestStatus({
             requestId,
             status: "error",
-            error: {
-              error_type: "adopted_stream_failed",
-              message,
-              user_message:
-                "The connection to this run was lost. The work is still running on the server — reload to rejoin it.",
-            },
+            error: transportLost
+              ? {
+                  error_type: "transport_lost",
+                  message,
+                  user_message:
+                    "The connection to this run dropped. It is still running on the server — reconnecting to it now.",
+                }
+              : {
+                  error_type: "adopted_stream_failed",
+                  message,
+                  user_message:
+                    "The connection to this run was lost. The work is still running on the server — reload to rejoin it.",
+                },
           }),
         );
+        if (transportLost) onTransportLost?.({ requestId, conversationId });
         captureError({
           source: "agent-stream-client-error",
           message: `[adopt-foreign-stream] adopted stream ${requestId} failed: ${message}`,

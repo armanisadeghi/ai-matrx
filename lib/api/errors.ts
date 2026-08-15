@@ -72,6 +72,65 @@ export class BackendApiError extends Error {
   }
 }
 
+/**
+ * The socket carrying a live NDJSON stream broke mid-run.
+ *
+ * THE DISTINCTION THIS EXISTS TO MAKE: a backend that blows up mid-stream does
+ * NOT break the socket — it emits a typed `error` event and closes the body
+ * cleanly. So an exception escaping the body reader means the *transport* died,
+ * not the run. And aidream streams run `detach_on_disconnect=True`: the server
+ * keeps executing and persisting the turn after our connection goes away.
+ *
+ * The client therefore cannot decide locally whether the answer is lost — it
+ * must ASK THE SERVER. That is what `resumable` means here: "reattach by
+ * requestId / conversationId / durable run id and let server truth settle it",
+ * never "this succeeded". A server that genuinely died reports `failed` on
+ * reattach and the honest record replaces the optimistic copy.
+ *
+ * Consumers: `run-ai-stream.ts` (chat → `reconnectServerOperation`) and
+ * `adopt-foreign-stream.ts` (pipeline runs → the surface's own rejoin).
+ */
+export class StreamTransportError extends BackendApiError {
+  /** Always true — reattach and let the server settle the outcome. */
+  readonly resumable = true as const;
+
+  constructor(data: {
+    detail: string;
+    details?: unknown | null;
+    requestId?: string;
+  }) {
+    super({
+      code: "stream_transport_lost",
+      detail: data.detail,
+      userMessage:
+        "The connection dropped. Your run is still going on the server — reconnecting to it now.",
+      details: data.details ?? null,
+      ...(data.requestId !== undefined ? { requestId: data.requestId } : {}),
+    });
+    this.name = "StreamTransportError";
+  }
+}
+
+/**
+ * True when a failure is a dropped transport rather than a failed run. Use this
+ * instead of `instanceof` at boundaries that re-wrap errors (thunk rejections,
+ * `callApi` result errors), where the class identity is lost but the code
+ * survives.
+ */
+export function isStreamTransportLost(error: unknown): boolean {
+  if (error instanceof StreamTransportError) return true;
+  if (error instanceof BackendApiError) {
+    return error.code === "stream_transport_lost";
+  }
+  if (error && typeof error === "object") {
+    const code = (error as { code?: unknown }).code;
+    if (code === "stream_transport_lost") return true;
+    const errorType = (error as { error_type?: unknown }).error_type;
+    if (errorType === "transport_lost") return true;
+  }
+  return false;
+}
+
 // ============================================================================
 // HTTP ERROR PARSER
 // ============================================================================
