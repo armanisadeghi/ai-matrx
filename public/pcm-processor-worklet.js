@@ -16,12 +16,24 @@
 // Do NOT use ScriptProcessorNode anywhere — it's deprecated, runs on the
 // main thread, and causes audible glitches under load.
 
-const FRAME_SAMPLES = 480; // 20ms @ 24kHz
+const DEFAULT_FRAME_SAMPLES = 480; // 20ms @ 24kHz
 
 class PcmProcessor extends AudioWorkletProcessor {
-  constructor() {
+  constructor(options) {
     super();
-    this._buf = new Int16Array(FRAME_SAMPLES);
+    // AudioWorklet processorOptions are the only reliable way to reuse this
+    // capture primitive for provider-native sample rates. xAI keeps the 480
+    // sample default; Google Live passes 320 samples (20 ms at 16 kHz).
+    const configuredFrameSamples = Number(
+      options && options.processorOptions
+        ? options.processorOptions.frameSamples
+        : DEFAULT_FRAME_SAMPLES,
+    );
+    this._frameSamples =
+      Number.isFinite(configuredFrameSamples) && configuredFrameSamples > 0
+        ? Math.floor(configuredFrameSamples)
+        : DEFAULT_FRAME_SAMPLES;
+    this._buf = new Int16Array(this._frameSamples);
     this._bufIdx = 0;
     this._rmsAccum = 0;
     this._rmsCount = 0;
@@ -54,13 +66,12 @@ class PcmProcessor extends AudioWorkletProcessor {
       this._rmsAccum += s * s;
       this._rmsCount++;
 
-      if (this._bufIdx === FRAME_SAMPLES) {
+      if (this._bufIdx === this._frameSamples) {
         // Transfer the underlying buffer to avoid a copy across the postMessage boundary.
-        this.port.postMessage(
-          { type: "pcm", payload: this._buf.buffer },
-          [this._buf.buffer],
-        );
-        this._buf = new Int16Array(FRAME_SAMPLES);
+        this.port.postMessage({ type: "pcm", payload: this._buf.buffer }, [
+          this._buf.buffer,
+        ]);
+        this._buf = new Int16Array(this._frameSamples);
         this._bufIdx = 0;
       }
     }

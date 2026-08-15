@@ -12,6 +12,7 @@ import { updateTopic } from "../../service";
 import { AGENT_CONFIG_KEYS, type AgentConfigKey } from "../../admin/types";
 import { AgentRoleCard } from "./AgentRoleCard";
 import { useResearchAgentRoles } from "./useResearchAgentRoles";
+import { GoogleBackgroundAgentCard } from "./GoogleBackgroundAgentCard";
 
 /**
  * Reads the JSONB agent_config off a topic and returns the override UUID for
@@ -21,7 +22,11 @@ function readOverride(
   agentConfig: unknown,
   key: AgentConfigKey,
 ): string | null {
-  if (!agentConfig || typeof agentConfig !== "object" || Array.isArray(agentConfig))
+  if (
+    !agentConfig ||
+    typeof agentConfig !== "object" ||
+    Array.isArray(agentConfig)
+  )
     return null;
   const value = (agentConfig as Record<string, unknown>)[key];
   return typeof value === "string" && value.length > 0 ? value : null;
@@ -32,7 +37,11 @@ export default function TopicAgentsPage() {
   const dispatch = useAppDispatch();
   // DB-truth system pins from the agent-slot registry (replaces the drifted
   // hardcoded UUID constants).
-  const { roles, loading: rolesLoading, error: rolesError } = useResearchAgentRoles();
+  const {
+    roles,
+    loading: rolesLoading,
+    error: rolesError,
+  } = useResearchAgentRoles();
 
   const [savingKey, setSavingKey] = useState<string | null>(null);
 
@@ -72,7 +81,9 @@ export default function TopicAgentsPage() {
     setSavingKey(key);
     try {
       const current =
-        topic.agent_config && typeof topic.agent_config === "object" && !Array.isArray(topic.agent_config)
+        topic.agent_config &&
+        typeof topic.agent_config === "object" &&
+        !Array.isArray(topic.agent_config)
           ? (topic.agent_config as Record<string, string>)
           : {};
       const next: Record<string, string> = { ...current, [key]: candidateId };
@@ -88,7 +99,9 @@ export default function TopicAgentsPage() {
     setSavingKey(key);
     try {
       const current =
-        topic.agent_config && typeof topic.agent_config === "object" && !Array.isArray(topic.agent_config)
+        topic.agent_config &&
+        typeof topic.agent_config === "object" &&
+        !Array.isArray(topic.agent_config)
           ? (topic.agent_config as Record<string, string>)
           : {};
       const next: Record<string, string> = { ...current };
@@ -141,6 +154,8 @@ export default function TopicAgentsPage() {
           labels={{ run: "Topic override" }}
         />
       </header>
+
+      <GoogleBackgroundAgentCard topicId={topic.id} />
 
       {/* ── Role cards ─────────────────────────────────────────── */}
       {rolesError ? (

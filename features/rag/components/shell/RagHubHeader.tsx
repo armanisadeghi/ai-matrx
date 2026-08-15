@@ -8,7 +8,15 @@
 
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { RouteModeNav } from "@/features/shell/components/header/RouteModeNav";
-import { Home, Database, FileText, Search, Code2, Library } from "lucide-react";
+import {
+  Home,
+  Database,
+  FileText,
+  Search,
+  Code2,
+  Library,
+  Binary,
+} from "lucide-react";
 
 const HUB_NAV_ITEMS = [
   { name: "Home", href: "/rag", icon: Home },
@@ -16,11 +24,15 @@ const HUB_NAV_ITEMS = [
   { name: "Library", href: "/rag/library", icon: FileText },
   { name: "Catalog", href: "/rag/library-catalog", icon: Library },
   { name: "Search", href: "/rag/search", icon: Search },
+  { name: "Embeddings", href: "/rag/embeddings", icon: Binary },
   { name: "Repositories", href: "/rag/repositories", icon: Code2 },
 ];
 
 export function RagHubHeader({ right }: { right?: React.ReactNode }) {
   return (
-    <RouteHeader center={<RouteModeNav items={HUB_NAV_ITEMS} />} right={right} />
+    <RouteHeader
+      center={<RouteModeNav items={HUB_NAV_ITEMS} />}
+      right={right}
+    />
   );
 }

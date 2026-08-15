@@ -82,7 +82,26 @@ export interface AudioCaptureHandle {
   isMuted: () => boolean;
 }
 
-export function createAudioCapture(): AudioCaptureHandle {
+export interface AudioCaptureOptions {
+  /** Provider-native input sample rate. Defaults to xAI's 24 kHz. */
+  sampleRateHz?: number;
+  /** PCM samples per worklet frame. Defaults to 20 ms at sampleRateHz. */
+  frameSamples?: number;
+  /** Maximum pre-connect audio retained, in seconds. Defaults to 10. */
+  prebufferSeconds?: number;
+}
+
+export function createAudioCapture(
+  options: AudioCaptureOptions = {},
+): AudioCaptureHandle {
+  const sampleRateHz = options.sampleRateHz ?? SAMPLE_RATE_HZ;
+  const frameSamples =
+    options.frameSamples ??
+    Math.round(sampleRateHz * (FRAME_SAMPLES / SAMPLE_RATE_HZ));
+  const maxPrebufferSamples =
+    options.prebufferSeconds == null
+      ? sampleRateHz * (MIC_PREBUFFER_MAX_SAMPLES / SAMPLE_RATE_HZ)
+      : sampleRateHz * options.prebufferSeconds;
   let ctx: AudioContext | null = null;
   let stream: MediaStream | null = null;
   let source: MediaStreamAudioSourceNode | null = null;
@@ -145,7 +164,7 @@ export function createAudioCapture(): AudioCaptureHandle {
       // Capture/keep-alive context — input only, never audible playback, so
       // output-device routing never touches it. (Playback routing lives in
       // SinkAwarePlayer; the old global AudioContext sink patch is gone.)
-      ctx = new Ctor({ sampleRate: SAMPLE_RATE_HZ });
+      ctx = new Ctor({ sampleRate: sampleRateHz });
     }
     if (ctx.state === "suspended") {
       // resume() returns a Promise but we deliberately don't await — the
@@ -197,7 +216,7 @@ export function createAudioCapture(): AudioCaptureHandle {
         echoCancellation: true,
         noiseSuppression: true,
         autoGainControl: true,
-        sampleRate: SAMPLE_RATE_HZ,
+        sampleRate: sampleRateHz,
       });
       holdingMic = true;
     } catch (err: unknown) {
@@ -257,6 +276,7 @@ export function createAudioCapture(): AudioCaptureHandle {
       channelCount: 1,
       channelCountMode: "explicit",
       channelInterpretation: "speakers",
+      processorOptions: { frameSamples },
     });
 
     workletNode.port.onmessage = (event: MessageEvent) => {
@@ -273,14 +293,14 @@ export function createAudioCapture(): AudioCaptureHandle {
           liveSink(msg.payload);
         } else if (!liveSink) {
           // Pre-connect buffering with a safety cap.
-          if (prebufferedSamples + FRAME_SAMPLES <= MIC_PREBUFFER_MAX_SAMPLES) {
+          if (prebufferedSamples + frameSamples <= maxPrebufferSamples) {
             prebuffer.push(msg.payload);
-            prebufferedSamples += FRAME_SAMPLES;
+            prebufferedSamples += frameSamples;
           } else if (!bufferOverflowedReported) {
             bufferOverflowedReported = true;
             console.warn(
               "[audioCapture] Pre-connect mic buffer overflowed safety cap " +
-                `(${MIC_PREBUFFER_MAX_SAMPLES} samples). Subsequent frames will be dropped ` +
+                `(${maxPrebufferSamples} samples). Subsequent frames will be dropped ` +
                 "until session.updated arrives.",
             );
           }

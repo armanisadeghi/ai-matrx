@@ -34,12 +34,7 @@ export type AudioDirection = "playback" | "recording";
  *   - error
  */
 export type AudioSessionStatus =
-  | "queued"
-  | "loading"
-  | "active"
-  | "paused"
-  | "done"
-  | "error";
+  "queued" | "loading" | "active" | "paused" | "done" | "error";
 
 /**
  * Where a session came from. Free-form but drawn from a known set so the panel
@@ -51,6 +46,7 @@ export type AudioSessionSource =
   | "queue" // the unified playback queue (Speaker buttons, notes, etc.)
   | "podcast" // podcast episode player
   | "voice-agent" // xAI realtime voice agent
+  | "music-realtime" // persistent generative-music stream (for example Lyria)
   | "recording" // mic capture (transcription, voice message, etc.)
   | "media-capture" // Capture Studio video/audio recording (features/media-capture)
   | "file-media" // file-system media players (InlineMediaRef, previews, blocks)

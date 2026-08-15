@@ -41796,6 +41796,38 @@ export type Database = {
         }
         Relationships: []
       }
+      embeddings_google_gemini_2_1536: {
+        Row: {
+          chunk_id: string
+          embedded_at: string
+          embedding: string
+          organization_id: string | null
+          owner_id: string
+        }
+        Insert: {
+          chunk_id: string
+          embedded_at?: string
+          embedding: string
+          organization_id?: string | null
+          owner_id: string
+        }
+        Update: {
+          chunk_id?: string
+          embedded_at?: string
+          embedding?: string
+          organization_id?: string | null
+          owner_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "embeddings_google_gemini_2_1536_chunk_id_fkey"
+            columns: ["chunk_id"]
+            isOneToOne: true
+            referencedRelation: "kg_chunks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       embeddings_oai_3_small_1536: {
         Row: {
           chunk_id: string

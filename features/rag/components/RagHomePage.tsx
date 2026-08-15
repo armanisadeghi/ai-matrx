@@ -23,6 +23,7 @@ import {
   Eye,
   AlertTriangle,
   CheckCircle2,
+  Binary,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
@@ -51,180 +52,188 @@ export function RagHomePage() {
       <RagHubHeader />
       <div className="h-full overflow-auto bg-background">
         <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
-        {/* Entitled empty state — shared libraries lead when the user has no
+          {/* Entitled empty state — shared libraries lead when the user has no
             personal content of their own. */}
-        {showEntitledHero && (
-          <section className="rounded-md border border-primary/30 bg-primary/5 p-4 space-y-3">
-            <h2 className="text-sm font-semibold flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-primary" />
-              Shared libraries you can read right now
+          {showEntitledHero && (
+            <section className="rounded-md border border-primary/30 bg-primary/5 p-4 space-y-3">
+              <h2 className="text-sm font-semibold flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-primary" />
+                Shared libraries you can read right now
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                You haven&apos;t added any documents of your own yet, but your
+                organization is entitled to these curated knowledge libraries —
+                open one, or search across them from the Search tab.
+              </p>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {entitledLibraries.map((it) => (
+                  <Link
+                    key={it.id}
+                    href={`/rag/library-catalog?store_id=${it.id}`}
+                    className="group flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 transition-colors hover:border-primary/50"
+                  >
+                    <FileText className="h-4 w-4 shrink-0 text-primary" />
+                    <span className="min-w-0 truncate text-sm font-medium text-foreground">
+                      {it.name}
+                    </span>
+                    <EntitlementChip
+                      entitledVia={it.entitledVia}
+                      industryName={it.entitledIndustryName}
+                    />
+                    <ArrowRight className="ml-auto h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
+          {/* Live numbers */}
+          <section className="space-y-3">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              What's in your library right now
             </h2>
-            <p className="text-xs text-muted-foreground">
-              You haven&apos;t added any documents of your own yet, but your
-              organization is entitled to these curated knowledge libraries —
-              open one, or search across them from the Search tab.
-            </p>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {entitledLibraries.map((it) => (
-                <Link
-                  key={it.id}
-                  href={`/rag/library-catalog?store_id=${it.id}`}
-                  className="group flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 transition-colors hover:border-primary/50"
-                >
-                  <FileText className="h-4 w-4 shrink-0 text-primary" />
-                  <span className="min-w-0 truncate text-sm font-medium text-foreground">
-                    {it.name}
-                  </span>
-                  <EntitlementChip
-                    entitledVia={it.entitledVia}
-                    industryName={it.entitledIndustryName}
-                  />
-                  <ArrowRight className="ml-auto h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
-                </Link>
-              ))}
+            {error && (
+              <div className="border border-destructive/50 bg-destructive/5 rounded-md p-3 text-sm text-destructive">
+                <strong>Could not load summary:</strong> {error}
+                <p className="text-xs mt-1 text-muted-foreground">
+                  The endpoint is /rag/library/summary/totals. If you just
+                  deployed, give the backend a minute to restart, then refresh.
+                </p>
+              </div>
+            )}
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+              <StatCard
+                label="Documents"
+                value={summary?.documentsTotal}
+                loading={loading}
+                icon={<FileText className="h-3.5 w-3.5" />}
+              />
+              <StatCard
+                label="Ready"
+                value={summary?.documentsReady}
+                loading={loading}
+                icon={<CheckCircle2 className="h-3.5 w-3.5 text-green-500" />}
+                tone="success"
+              />
+              <StatCard
+                label="Embedding"
+                value={summary?.documentsEmbedding}
+                loading={loading}
+                icon={<Zap className="h-3.5 w-3.5 text-blue-500" />}
+              />
+              <StatCard
+                label="Extracted"
+                value={summary?.documentsExtracted}
+                loading={loading}
+                icon={<AlertTriangle className="h-3.5 w-3.5 text-yellow-500" />}
+                tone="warning"
+              />
+              <StatCard
+                label="Pending / failed"
+                value={summary?.documentsPending}
+                loading={loading}
+                icon={<AlertTriangle className="h-3.5 w-3.5 text-red-500" />}
+                tone="error"
+              />
+              <StatCard
+                label={`Total ${RAG_VOCAB.segmentsShort.toLowerCase()}`}
+                value={summary?.chunks}
+                loading={loading}
+                icon={<Layers className="h-3.5 w-3.5" />}
+              />
+              <StatCard
+                label="Data stores"
+                value={summary?.dataStores}
+                loading={loading}
+                icon={<Database className="h-3.5 w-3.5" />}
+              />
             </div>
           </section>
-        )}
-        {/* Live numbers */}
-        <section className="space-y-3">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-            What's in your library right now
-          </h2>
-          {error && (
-            <div className="border border-destructive/50 bg-destructive/5 rounded-md p-3 text-sm text-destructive">
-              <strong>Could not load summary:</strong> {error}
-              <p className="text-xs mt-1 text-muted-foreground">
-                The endpoint is /rag/library/summary/totals. If you just
-                deployed, give the backend a minute to restart, then refresh.
-              </p>
+
+          {/* Quick links */}
+          <section className="space-y-3">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              Surfaces
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              <NavCard
+                href="/rag/library"
+                icon={<FileText className="h-5 w-5" />}
+                title="Library"
+                description={`Every document you've processed, with status, page counts, ${RAG_VOCAB.segmentsShort.toLowerCase()}, embeddings, and which data stores they're bound to.`}
+                cta="Open library"
+              />
+              <NavCard
+                href="/rag/data-stores"
+                icon={<Database className="h-5 w-5" />}
+                title="Data Stores"
+                description="Named, scoped collections of documents an agent can query. Bind documents here to make them retrievable."
+                cta="Manage stores"
+              />
+              <NavCard
+                href="/rag/search"
+                icon={<Search className="h-5 w-5" />}
+                title="Search"
+                description="Hybrid retrieval (vector + lexical, with optional rerank) across your indexed content. Useful for testing what an agent will see."
+                cta="Run a search"
+              />
+              <NavCard
+                href="/rag/embeddings"
+                icon={<Binary className="h-5 w-5" />}
+                title="Embedding Lab"
+                description="Generate catalog-routed Gemini vectors for text or multimodal inputs and inspect the exact output used by vector search."
+                cta="Test embeddings"
+              />
             </div>
-          )}
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
-            <StatCard
-              label="Documents"
-              value={summary?.documentsTotal}
-              loading={loading}
-              icon={<FileText className="h-3.5 w-3.5" />}
-            />
-            <StatCard
-              label="Ready"
-              value={summary?.documentsReady}
-              loading={loading}
-              icon={<CheckCircle2 className="h-3.5 w-3.5 text-green-500" />}
-              tone="success"
-            />
-            <StatCard
-              label="Embedding"
-              value={summary?.documentsEmbedding}
-              loading={loading}
-              icon={<Zap className="h-3.5 w-3.5 text-blue-500" />}
-            />
-            <StatCard
-              label="Extracted"
-              value={summary?.documentsExtracted}
-              loading={loading}
-              icon={<AlertTriangle className="h-3.5 w-3.5 text-yellow-500" />}
-              tone="warning"
-            />
-            <StatCard
-              label="Pending / failed"
-              value={summary?.documentsPending}
-              loading={loading}
-              icon={<AlertTriangle className="h-3.5 w-3.5 text-red-500" />}
-              tone="error"
-            />
-            <StatCard
-              label={`Total ${RAG_VOCAB.segmentsShort.toLowerCase()}`}
-              value={summary?.chunks}
-              loading={loading}
-              icon={<Layers className="h-3.5 w-3.5" />}
-            />
-            <StatCard
-              label="Data stores"
-              value={summary?.dataStores}
-              loading={loading}
-              icon={<Database className="h-3.5 w-3.5" />}
-            />
-          </div>
-        </section>
+          </section>
 
-        {/* Quick links */}
-        <section className="space-y-3">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-            Surfaces
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            <NavCard
-              href="/rag/library"
-              icon={<FileText className="h-5 w-5" />}
-              title="Library"
-              description={`Every document you've processed, with status, page counts, ${RAG_VOCAB.segmentsShort.toLowerCase()}, embeddings, and which data stores they're bound to.`}
-              cta="Open library"
-            />
-            <NavCard
-              href="/rag/data-stores"
-              icon={<Database className="h-5 w-5" />}
-              title="Data Stores"
-              description="Named, scoped collections of documents an agent can query. Bind documents here to make them retrievable."
-              cta="Manage stores"
-            />
-            <NavCard
-              href="/rag/search"
-              icon={<Search className="h-5 w-5" />}
-              title="Search"
-              description="Hybrid retrieval (vector + lexical, with optional rerank) across your indexed content. Useful for testing what an agent will see."
-              cta="Run a search"
-            />
-          </div>
-        </section>
+          {/* Help block — what to do when */}
+          <section className="border rounded-md bg-muted/20 p-4">
+            <h3 className="text-sm font-semibold flex items-center gap-2 mb-2">
+              <Eye className="h-4 w-4" />
+              Common workflows
+            </h3>
+            <ol className="text-sm text-muted-foreground space-y-1.5 list-decimal pl-5">
+              <li>
+                <strong className="text-foreground">Add a document:</strong> go
+                to{" "}
+                <Link href="/rag/data-stores" className="underline">
+                  Data Stores
+                </Link>{" "}
+                → drag a PDF onto a store → it uploads, processes, segments,
+                embeds, and binds in one step.
+              </li>
+              <li>
+                <strong className="text-foreground">
+                  See what processed correctly:
+                </strong>{" "}
+                open the{" "}
+                <Link href="/rag/library" className="underline">
+                  Library
+                </Link>{" "}
+                and look at the status badge — Ready means it's fully
+                searchable; Extracted / Pending means it stalled.
+              </li>
+              <li>
+                <strong className="text-foreground">Inspect a document:</strong>{" "}
+                click any row in the library — pages,{" "}
+                {RAG_VOCAB.segmentsShort.toLowerCase()}, embeddings, and
+                store-bindings are all there.
+              </li>
+              <li>
+                <strong className="text-foreground">Test retrieval:</strong> use{" "}
+                <Link href="/rag/search" className="underline">
+                  Search
+                </Link>{" "}
+                with a data-store filter to see exactly what an agent would
+                retrieve.
+              </li>
+            </ol>
+          </section>
 
-        {/* Help block — what to do when */}
-        <section className="border rounded-md bg-muted/20 p-4">
-          <h3 className="text-sm font-semibold flex items-center gap-2 mb-2">
-            <Eye className="h-4 w-4" />
-            Common workflows
-          </h3>
-          <ol className="text-sm text-muted-foreground space-y-1.5 list-decimal pl-5">
-            <li>
-              <strong className="text-foreground">Add a document:</strong> go to{" "}
-              <Link href="/rag/data-stores" className="underline">
-                Data Stores
-              </Link>{" "}
-              → drag a PDF onto a store → it uploads, processes, segments,
-              embeds, and binds in one step.
-            </li>
-            <li>
-              <strong className="text-foreground">
-                See what processed correctly:
-              </strong>{" "}
-              open the{" "}
-              <Link href="/rag/library" className="underline">
-                Library
-              </Link>{" "}
-              and look at the status badge — Ready means it's fully searchable;
-              Extracted / Pending means it stalled.
-            </li>
-            <li>
-              <strong className="text-foreground">Inspect a document:</strong>{" "}
-              click any row in the library — pages,{" "}
-              {RAG_VOCAB.segmentsShort.toLowerCase()}, embeddings, and
-              store-bindings are all there.
-            </li>
-            <li>
-              <strong className="text-foreground">Test retrieval:</strong> use{" "}
-              <Link href="/rag/search" className="underline">
-                Search
-              </Link>{" "}
-              with a data-store filter to see exactly what an agent would
-              retrieve.
-            </li>
-          </ol>
-        </section>
-
-        {/* Shared knowledge libraries — opt-in catalog (Shared Knowledge Resources) */}
-        <section className="space-y-3">
-          <LibraryCatalogPane />
-        </section>
+          {/* Shared knowledge libraries — opt-in catalog (Shared Knowledge Resources) */}
+          <section className="space-y-3">
+            <LibraryCatalogPane />
+          </section>
         </div>
       </div>
     </>

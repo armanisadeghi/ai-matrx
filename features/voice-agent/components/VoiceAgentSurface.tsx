@@ -12,8 +12,9 @@
 // sheet trigger.
 
 import { useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Settings2 } from "lucide-react";
+import { ArrowLeft, Music2, Radio, Settings2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
@@ -124,7 +125,9 @@ export function VoiceAgentSurface({
     selectVoiceInstructions(s, instanceId),
   );
   const scopeTools = useAppSelector((s) => selectVoiceTools(s, instanceId));
-  const scopeMicMuted = useAppSelector((s) => selectVoiceMicMuted(s, instanceId));
+  const scopeMicMuted = useAppSelector((s) =>
+    selectVoiceMicMuted(s, instanceId),
+  );
   const scopeConversationId = useAppSelector((s) =>
     selectVoiceConversationId(s, instanceId),
   );
@@ -260,102 +263,118 @@ export function VoiceAgentSurface({
       surfaceName={VOICE_CHAT_SURFACE}
       getScope={getSurfaceScope}
     >
-    <div
-      className={cn(
-        "relative h-dvh flex flex-col overflow-hidden bg-background text-foreground",
-      )}
-    >
-      {/* ─── Edge ribbon — wraparound border that pulses on active turns ─
+      <div
+        className={cn(
+          "relative h-dvh flex flex-col overflow-hidden bg-background text-foreground",
+        )}
+      >
+        {/* ─── Edge ribbon — wraparound border that pulses on active turns ─
           Apple-Intelligence-style: two stacked strokes around the
           rounded-rect surface inset, the outer one blurred for halo.
           Visible only when the agent is listening or speaking — its
           appearance itself is a peripheral-vision signal that the AI
           is engaged. See VoiceEdgeRibbon.tsx for the design rationale. */}
-      <VoiceEdgeRibbon status={liveStatus} />
+        <VoiceEdgeRibbon status={liveStatus} />
 
-      {/* ─── Header ─────────────────────────────────────────────────── */}
-      {/* pr-14 clears the shell's user-menu avatar (44px) that's anchored to the viewport right edge */}
-      {/* `relative z-10` lifts all foreground UI above the ambient glow */}
-      <header className="relative z-10 shrink-0 flex items-center justify-between px-4 pr-14 py-3 border-b border-border/40">
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          aria-label="Back"
-        >
-          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          <span className="hidden sm:inline">Back</span>
-        </button>
-        <h1 className="text-sm font-medium tracking-wide text-muted-foreground">
-          {preset === "intro" ? "AI Matrx" : "Voice Playground"}
-        </h1>
-        {preset === "playground" ? (
-          <PlaygroundSettingsSheet
-            instanceId={instanceId}
-            disabled={liveStatus !== "idle" && liveStatus !== "error"}
-            trigger={
-              <button
-                type="button"
-                className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                aria-label="Voice settings"
+        {/* ─── Header ─────────────────────────────────────────────────── */}
+        {/* pr-14 clears the shell's user-menu avatar (44px) that's anchored to the viewport right edge */}
+        {/* `relative z-10` lifts all foreground UI above the ambient glow */}
+        <header className="relative z-10 shrink-0 flex items-center justify-between px-4 pr-14 py-3 border-b border-border/40">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Back"
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Back</span>
+          </button>
+          <h1 className="text-sm font-medium tracking-wide text-muted-foreground">
+            {preset === "intro" ? "AI Matrx" : "Voice Playground"}
+          </h1>
+          {preset === "playground" ? (
+            <div className="flex items-center gap-2">
+              <Link
+                href="/chat/voice/gemini"
+                className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
               >
-                <Settings2 className="h-4 w-4" aria-hidden="true" />
-                <span className="hidden sm:inline">Settings</span>
-              </button>
-            }
-          />
-        ) : (
-          <span className="w-8" aria-hidden="true" />
-        )}
-      </header>
-
-      {/* ─── Main stage: transcript behind, orb anchored mid-page ── */}
-      <main className="relative flex-1 min-h-0">
-        <section
-          className={cn(
-            "absolute inset-0 z-0 overflow-y-auto",
-            // Mask older content so the eye is drawn toward the orb.
-            "[mask-image:linear-gradient(to_bottom,transparent,#000_12%,#000_72%,transparent)]",
-          )}
-          aria-label="Voice transcript"
-          data-surface-value="transcript_text"
-        >
-          {turns.length === 0 ? (
-            <EmptyTranscript preset={preset} />
-          ) : (
-            <VoiceTranscriptStream turns={turns} />
-          )}
-        </section>
-
-        {/* ─── Hero: status + orb + mic + error ─────────────────────
-            Anchored ~54% from the top — below center so the 260 px orb
-            stays fully in view without sitting under the empty hint. */}
-        <section
-          className={cn(
-            "pointer-events-none absolute inset-x-0 top-[54%] z-10",
-            "-translate-y-1/2 flex flex-col items-center gap-5 px-4 pb-safe",
-          )}
-        >
-          <div data-surface-value="connection_status">
-            <VoiceStatusPill status={liveStatus} micMuted={micMuted} />
-          </div>
-          <div className="pointer-events-auto relative size-[260px]">
-            <VoiceOrb status={liveStatus} />
-            <div className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2">
-              <VoiceControlCluster
-                status={liveStatus}
-                micMuted={micMuted}
-                onToggleSession={toggle}
-                onToggleMute={toggleMute}
+                <Radio className="h-4 w-4" />
+                <span className="hidden md:inline">Gemini Live</span>
+              </Link>
+              <Link
+                href="/chat/voice/music"
+                className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <Music2 className="h-4 w-4" />
+                <span className="hidden md:inline">Music</span>
+              </Link>
+              <PlaygroundSettingsSheet
+                instanceId={instanceId}
+                disabled={liveStatus !== "idle" && liveStatus !== "error"}
+                trigger={
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="Voice settings"
+                  >
+                    <Settings2 className="h-4 w-4" aria-hidden="true" />
+                    <span className="hidden sm:inline">Settings</span>
+                  </button>
+                }
               />
             </div>
-          </div>
-          <div className="pointer-events-auto w-full max-w-md">
-            <VoiceErrorBanner error={liveError} />
-          </div>
-        </section>
-      </main>
-    </div>
+          ) : (
+            <span className="w-8" aria-hidden="true" />
+          )}
+        </header>
+
+        {/* ─── Main stage: transcript behind, orb anchored mid-page ── */}
+        <main className="relative flex-1 min-h-0">
+          <section
+            className={cn(
+              "absolute inset-0 z-0 overflow-y-auto",
+              // Mask older content so the eye is drawn toward the orb.
+              "[mask-image:linear-gradient(to_bottom,transparent,#000_12%,#000_72%,transparent)]",
+            )}
+            aria-label="Voice transcript"
+            data-surface-value="transcript_text"
+          >
+            {turns.length === 0 ? (
+              <EmptyTranscript preset={preset} />
+            ) : (
+              <VoiceTranscriptStream turns={turns} />
+            )}
+          </section>
+
+          {/* ─── Hero: status + orb + mic + error ─────────────────────
+            Anchored ~54% from the top — below center so the 260 px orb
+            stays fully in view without sitting under the empty hint. */}
+          <section
+            className={cn(
+              "pointer-events-none absolute inset-x-0 top-[54%] z-10",
+              "-translate-y-1/2 flex flex-col items-center gap-5 px-4 pb-safe",
+            )}
+          >
+            <div data-surface-value="connection_status">
+              <VoiceStatusPill status={liveStatus} micMuted={micMuted} />
+            </div>
+            <div className="pointer-events-auto relative size-[260px]">
+              <VoiceOrb status={liveStatus} />
+              <div className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2">
+                <VoiceControlCluster
+                  status={liveStatus}
+                  micMuted={micMuted}
+                  onToggleSession={toggle}
+                  onToggleMute={toggleMute}
+                />
+              </div>
+            </div>
+            <div className="pointer-events-auto w-full max-w-md">
+              <VoiceErrorBanner error={liveError} />
+            </div>
+          </section>
+        </main>
+      </div>
     </SurfaceRuntimeProvider>
   );
 }

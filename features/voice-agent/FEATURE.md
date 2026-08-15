@@ -2,30 +2,38 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-06-11`
+**Last updated:** `2026-08-15`
 
 ---
 
 ## Purpose
 
-Production-grade two-way realtime voice agent powered by the xAI Realtime API
-(`grok-voice-latest`, us-east-1). Provides one reusable platform primitive
+Production-grade two-way realtime voice agents powered by xAI Realtime and
+Google's Live API. Provides one reusable platform primitive
 (`features/voice-agent/`) that powers the locked **AI Matrx Introduction Agent**
 at `/chat/voice` and the fully-configurable **Voice Playground** at
-`/chat/voice/playground`. The same primitive will later power voice in the
-standard chat surface and embedded agent apps.
+`/chat/voice/playground`, plus the catalog-routed Gemini Live surface at
+`/chat/voice/gemini`. Shared capture/playback mechanics do not make the two
+provider wire protocols interchangeable.
 
 ---
 
 ## Entry points
 
 **Routes**
+
 - `app/(a)/chat/voice/page.tsx` — locked Intro Agent (voice=ara, hardcoded
   intro prompt, tools=web_search+x_search, no settings UI).
 - `app/(a)/chat/voice/playground/page.tsx` — fully configurable: voice picker,
   tool toggles, instructions editor in a right-side `<Sheet>`.
+- `app/(core)/chat/voice/gemini/page.tsx` — Google Live microphone/audio/text
+  surface with catalog model selection, thinking level, turn coverage,
+  transcript, and visible lifecycle state.
+- `app/(core)/chat/voice/music/page.tsx` — Lyria realtime weighted-prompt mixer
+  (implemented under the shared audio feature; linked from the voice hub).
 
 **Hooks** (`features/voice-agent/hooks/`)
+
 - `useXaiVoiceSession({instanceId, voiceId, instructions, tools, persist})` —
   the orchestrator. The only hook the pages mount.
 - `useAudioCapture()` — mic + AudioWorklet + pre-connect buffer.
@@ -34,24 +42,38 @@ standard chat surface and embedded agent apps.
 - `useVoiceAgentInstance(preset)` — per-route instance key + lifecycle.
 - `usePersistVoiceTranscript(instanceId)` — subscribes to slice; writes to Supabase on `response.done`.
 - `useRealtimeAgentConfig({instanceId, agentId, surface})` — POSTs `/ai/agents/{id}/realtime-tools` and writes the resolved `RealtimeToolSet` into the slice via `applyAgentConfig({tools})`. Mounted alongside `useVoiceAgentInstance`; non-fatal on error (keeps the seeded builtins). Core resolver `resolveRealtimeTools(agentId, body, post?)` is extracted + unit-tested.
+- `useGoogleLiveSession(options)` — Google-specific orchestrator over the same
+  configurable AudioWorklet capture and centralized playback; handles
+  provider transcripts, interruption, session-handle reconnect, and the
+  listening/thinking/speaking state machine without entering the xAI slice.
 
 **Realtime tool bridge** (`features/voice-agent/runtime/` + `services/`)
+
 - `runtime/realtime-tool-loop.ts` — `flushToolCalls(pending, ctx)`: buffers `response.function_call_arguments.done` until `response.done`, classifies each call (`client`/`server`/`builtin`), runs them in parallel, sends one `function_call_output` per call_id, then EXACTLY ONE `response.create`. Never throws — unknown tool / parse error / thrown runner / server `ok:false` all become a recoverable string.
 - `runtime/client-tool-registry.ts` — the shared client-tool execution path: `registerRealtimeClientTool(...)` for voice-surface tools, falling back to the canonical ui-first-tools registry (`getUiFirstToolEntry` → `handler.run`). NOT a voice-only fork.
 - `services/realtimeToolService.ts` — `execute(req) → {ok, output}` against `POST /ai/tools/execute` via the authed `postJson` client (Supabase JWT + `apiConfigSlice` base URL).
 
 **Services** (`features/voice-agent/`)
+
 - `transport/xaiClient.ts` — WebSocket lifecycle + exhaustive server-event dispatch.
+- `transport/googleRealtimeClient.ts` — authenticated-first-frame aidream
+  WebSocket transport shared by Gemini Live and Lyria; queues sends while
+  reconnecting and resumes Gemini from the latest provider session handle.
 - `transport/tokenManager.ts` — token pre-mint + auto-refresh (~5s pre-expiry, exponential backoff).
 - `audio/audioCapture.ts` — `getUserMedia` + AudioWorklet + pre-connect buffer.
 - `audio/audioPlayback.ts` — `AudioBufferSourceNode` scheduling + interruption.
 - `persistence/voiceTranscriptWriter.ts` — browser → Supabase direct writes.
 
 **API endpoints**
+
 - `POST /api/voice-agent/token` — `resolveUser` gate → mint xAI `client_secret`
   (5-minute TTL). Returns `{value, expires_at}`. Mirrors `/api/cartesia/route.ts`.
+- aidream WebSockets `/api/ai/google/live` and `/api/ai/google/music` — the
+  browser sends its Supabase access token only in the first setup frame; the
+  server validates it before opening the provider session.
 
 **Redux slice**
+
 - `features/voice-agent/state/voiceAgentSlice.ts` — multi-instance keyed by
   `instanceId` (`'intro' | 'playground'`). Registered as `voiceAgent` in
   `lib/redux/rootReducer.ts` next to `voicePad`.
@@ -79,6 +101,7 @@ standard chat surface and embedded agent apps.
 **Raw audio is never persisted.** Contractual.
 
 **Key types** (`features/voice-agent/types.ts`)
+
 - `VoiceId` — `'ara' | 'eve' | 'leo' | 'rex' | 'sal'`.
 - `BuiltinToolName` — `'web_search' | 'x_search'` (the xAI-native realtime builtins).
 - `ResolvedRealtimeTool` — `{name, description, parameters, execution}` where `execution ∈ 'server' | 'client' | 'builtin'`. Mirrors the backend `RealtimeTool` (contract §3) verbatim.
@@ -149,6 +172,10 @@ xAI's realtime agent **supports custom client-side `function` tools** (and `file
 - **The intro route has ZERO settings UI.** New configurability goes to the playground. The intro is the proof-of-craft surface.
 - **`/api/voice-agent/token` is `POST` only.** Never a `GET` — keeps it out of any prefetch / cache path.
 - **AudioWorklet processor file lives at `public/pcm-processor-worklet.js`.** Must be plain JS (no TS), served from the static origin so `audioWorklet.addModule('/pcm-processor-worklet.js')` resolves.
+- **Provider contracts stay separate.** Gemini Live uses aidream as the
+  authenticated provider boundary and supports resumable sessions; xAI keeps
+  its ephemeral-token browser connection. Shared PCM mechanics are reusable,
+  but one provider's messages must never be translated as the other's.
 - **xAI Realtime has no pronunciation API.** No SSML, no IPA, no lexicons, no phoneme overrides. Confirmed against the [Voice Agent docs](https://docs.x.ai/developers/model-capabilities/audio/voice-agent) and the broader [Voice docs](https://docs.x.ai/developers/model-capabilities/audio/voice). The standalone TTS endpoint has delivery tags like `[laugh]` / `<whisper>`, but those are emotion/pace tags and they do not apply to the realtime agent. The ONLY place to fix mispronounced brand names, acronyms, and product nouns is the `## Pronunciation` section of the system instructions — the agent writes its own text, TTS reads it phonetically, so we teach the agent how to spoken-render specific tokens. Pattern: "Spelled X — say it as Y". Currently covered: `Matrx → Matrix`, `AI Matrx → A.I. Matrix`, `aimatrx.com → A.I. Matrix dot com`, `matrxserver.com → Matrix server dot com`. Add new entries to `INTRO_INSTRUCTIONS` in `features/voice-agent/constants.ts` as they're discovered.
 
 ---
@@ -171,6 +198,7 @@ xAI's realtime agent **supports custom client-side `function` tools** (and `file
 > Required by [PRINCIPLES.md](../../PRINCIPLES.md). The artifact is disposable; the platform is the product.
 
 **Primitives reused**
+
 - Types: `Json` (from Supabase generated types) for `metadata` / `overrides` payloads.
 - Components: `@/components/ui/sheet`, `@/components/ui/confirm-dialog`, `@/components/ui/button`, `@/components/ui/textarea`, `@/components/ui/switch` (or `toggle`), Lucide icons.
 - Redux: `useAppDispatch` / `useAppSelector` from `@/lib/redux/hooks`. Slice registered next to `voicePad` in `lib/redux/rootReducer.ts`.
@@ -178,6 +206,7 @@ xAI's realtime agent **supports custom client-side `function` tools** (and `file
 - Utilities: `@/utils/route-metadata`, `@/utils/supabase/{client,server,resolveUser}`, `cn` from `@/lib/utils`, `toast` from `sonner`.
 
 **Primitives introduced**
+
 - `voiceAgentSlice` (`features/voice-agent/state/voiceAgentSlice.ts`) — Why a new slice: voice session state has a unique shape (per-turn idempotency for transcript persistence, multi-state status machine, telemetry rollup). Considered: `cx-chat` slices. Rejected: they model server-side conversation runs (managed by the Python backend), not a browser-direct ephemeral session.
 - `useXaiVoiceSession` (`features/voice-agent/hooks/useXaiVoiceSession.ts`) — Why a new hook: orchestrates WebSocket + AudioWorklet + scheduled playback + per-frame interruption — there is no existing primitive that composes all four. Considered: `useAgentLauncher`. Rejected: targets the Python execution system, not direct realtime.
 - `VoiceAmbientGlow` (`features/voice-agent/components/VoiceAmbientGlow.tsx`) — Why a new component: needs a fullscreen, non-interactive radial-glow surface bound to mic+assistant amplitude MotionValues across 8 states. Considered: extending `BreathingOrb`. Rejected: `BreathingOrb` is a centered orb — exactly the "looks like a button" UX failure mode we're correcting. The ambient layer is intentionally edge-anchored (bottom = user, top = agent) so the mic button remains the only thing on the surface that invites a tap. Supersedes the v1 `VoiceVisualizer` centered-orb component (deleted 2026-05-27).
@@ -195,7 +224,15 @@ Implementation tracked in
 
 ## Change log
 
-- `2026-08-11` — **Voice Playground settings are agent-writable (`matrx-user/chat-voice`).** The surface declares 3 `ask`-policy `mode:"draft"` write targets over the only authored state it has: `voice_instructions` (full replace), `append_voice_instructions` (add one rule without re-sending the prompt — the `agent-builder` replace/append pair applied to a voice prompt), and `voice_id` (validated against `VOICES`, so the model is told `ara | eve | leo | rex | sal` and an invented id comes back as the handler's own error). Handlers live in [`hooks/useVoicePlaygroundWriteHandlers.ts`](./hooks/useVoicePlaygroundWriteHandlers.ts) and dispatch the SAME `updateConfig` action `InstructionsEditor`'s textarea and `VoicePicker`'s select fire on every keystroke/click — never a parallel write. Registered by `PlaygroundSettingsSheet`, which renders only on `/chat/voice/playground`; the intro route mounts the same provider but no handlers, so an agent there is offered no write tool at all. **That split is load-bearing, not cosmetic:** `updateConfig` returns SILENTLY for a non-playground preset, a missing instance, and a falsy `voiceId`, so handlers on the intro route would report success for a write that never happened. Every handler therefore re-reads the store after dispatching and throws when the value did not land (the `war-room` optimistic-write precedent). **Every handler also refuses while a session is LIVE** — mid-session the change either does nothing (the instructions already went out in `session.update`) or silently alters what the user is talking to; the refusal names the status and tells the agent to ask the user to end the session first. The guard reads `store.getState()` at CALL time, because `applySurfaceWrite` resolves the handler *before* showing the confirm dialog, so a render-snapshot guard can act on a value 30+ seconds stale. Verified head-on: a dialog opened while idle, a session started while that dialog was open, and Apply pressed afterwards was still refused with the live-session error. Not writable by design: the microphone and connection state (device state, not values), the transcript and its per-turn/latency/interruption record (writing it would forge what was actually said), `conversation_id` / `voice_agent_id` (identity), the realtime TOOL set (what the voice agent may reach is a capability change, not a copy edit), and starting/ending a session. Live-verified with a real Badass Agent run on the playground — see the surfaces FEATURE.md entry for the full evidence. Also corrected the manifest's stale `readinessNote`: the registry entry and the `/chat/voice` route mapping it listed as "pending" have both been wired for some time (verified in `registry.ts` + `route-to-surface.ts`); only the DB manifest sync is still outstanding.
+- `2026-08-15` — **Gemini Live became a first-class realtime surface.** Added
+  `/chat/voice/gemini`, a dedicated catalog model/settings surface,
+  authenticated reconnecting aidream transport, 16 kHz capture, 24 kHz
+  playback, live user/assistant transcripts, provider session resumption, and
+  visible listening/thinking/speaking/error state. `audioCapture` now accepts
+  sample rate/frame/prebuffer options while retaining the xAI defaults. The
+  voice playground links both Gemini Live and the Lyria mixer; neither is
+  bolted into turn chat.
+- `2026-08-11` — **Voice Playground settings are agent-writable (`matrx-user/chat-voice`).** The surface declares 3 `ask`-policy `mode:"draft"` write targets over the only authored state it has: `voice_instructions` (full replace), `append_voice_instructions` (add one rule without re-sending the prompt — the `agent-builder` replace/append pair applied to a voice prompt), and `voice_id` (validated against `VOICES`, so the model is told `ara | eve | leo | rex | sal` and an invented id comes back as the handler's own error). Handlers live in [`hooks/useVoicePlaygroundWriteHandlers.ts`](./hooks/useVoicePlaygroundWriteHandlers.ts) and dispatch the SAME `updateConfig` action `InstructionsEditor`'s textarea and `VoicePicker`'s select fire on every keystroke/click — never a parallel write. Registered by `PlaygroundSettingsSheet`, which renders only on `/chat/voice/playground`; the intro route mounts the same provider but no handlers, so an agent there is offered no write tool at all. **That split is load-bearing, not cosmetic:** `updateConfig` returns SILENTLY for a non-playground preset, a missing instance, and a falsy `voiceId`, so handlers on the intro route would report success for a write that never happened. Every handler therefore re-reads the store after dispatching and throws when the value did not land (the `war-room` optimistic-write precedent). **Every handler also refuses while a session is LIVE** — mid-session the change either does nothing (the instructions already went out in `session.update`) or silently alters what the user is talking to; the refusal names the status and tells the agent to ask the user to end the session first. The guard reads `store.getState()` at CALL time, because `applySurfaceWrite` resolves the handler _before_ showing the confirm dialog, so a render-snapshot guard can act on a value 30+ seconds stale. Verified head-on: a dialog opened while idle, a session started while that dialog was open, and Apply pressed afterwards was still refused with the live-session error. Not writable by design: the microphone and connection state (device state, not values), the transcript and its per-turn/latency/interruption record (writing it would forge what was actually said), `conversation_id` / `voice_agent_id` (identity), the realtime TOOL set (what the voice agent may reach is a capability change, not a copy edit), and starting/ending a session. Live-verified with a real Badass Agent run on the playground — see the surfaces FEATURE.md entry for the full evidence. Also corrected the manifest's stale `readinessNote`: the registry entry and the `/chat/voice` route mapping it listed as "pending" have both been wired for some time (verified in `registry.ts` + `route-to-surface.ts`); only the DB manifest sync is still outstanding.
 - `2026-06-21` — **Mute control + session button affordance.** Live sessions now expose a smaller mute button (left of the main control) that pauses mic PCM forwarding while keeping the WebSocket open — `audioCapture.setMuted`, `micMuted` on the slice, `toggleMute` on `useXaiVoiceSession`. The main button uses SmartInput's `AudioLines` to start and `CircleStop` to end (mic icons moved to mute only). `VoiceControlCluster` composes both; status pill shows "Muted" while muted.
 - `2026-06-16` — **Realtime tool bridge — adversarial-review fixes.** Eight confirmed defects in the bridge frontend closed: (C1) the execute path never sent `added_tool_ids` / `is_version`, so a per-conversation added tool or a version agent 403'd at execute time — both are now threaded end-to-end from the SAME `VoiceAgentSurface` props that feed `useRealtimeAgentConfig` (added to `RealtimeToolExecuteRequest` + wire body in `services/realtimeToolService.ts`, `ToolLoopContext` in `runtime/realtime-tool-loop.ts`, and `UseXaiVoiceSessionOpts` → `buildToolLoopContext`), so resolve and execute can never disagree. (C2) `contextEnvelope` was hardcoded `null`, running every server tool with no org/project/task/scope (parity break + fail-closed hidden-write risk); now populated from the canonical memoized appContext selectors (`selectActiveOrganizationId` / `selectActiveProjectId` / `selectActiveTaskId` / `selectActiveScopeIds`). (H1+H2+M5) the "exactly one `response.create` per batch" invariant is now guarded against re-entrancy/interrupt/cancel: flushes are serialized via `flushInFlightRef` (a second `response.done` mid-flush never starts an overlapping flush), each flush carries an `AbortController` (`flushAbortRef`) aborted by barge-in (`speech_started`), `stop()`, and `response.cancelled` which also clear `pendingCallsRef`, and `flushToolCalls` takes `{signal, canSend}` and sends NO `function_call_output`/`response.create` when aborted or the socket is closed (re-checked before every send). (H3) the hand-read `state.userAuth?.id` in `buildToolLoopContext` replaced with the canonical `selectUserId`. (M1) `useVoiceAgentInstance` no longer writes `tools` via `applyAgentConfig` (only `voiceId`/`instructions`) — the late agent-fetch was clobbering the resolved set; `useRealtimeAgentConfig` is the sole `tools` writer and dead `readToolsFromAgent` was removed. (M2/M3) chose **re-push over gating**: `useXaiVoiceSession` watches the resolved `tools` and re-sends `session.update` (full set) once the handshake is live, so a late resolve always reaches xAI without delaying the mic-click handshake. (L4) a server-execution call with an empty `agentId` now answers with an explanatory string instead of round-tripping `agent_id:""`. Tests: `runtime/realtime-tool-loop.test.ts` grew from 7 to 13 (C1 forwarding, L4, abort-before, abort-during, closed-socket, normal-send). Left as-is: H4 builtin `{type:t.name}` shape (out of scope, xAI-accepted); M4/L2 not done this pass.
 - `2026-06-16` — **Realtime tool bridge (frontend).** Voice agents can now call the same registry / MCP / skill / data tools a turn-based agent calls — the last blocker to "swap an agent's model to a voice model and it just works." `VoiceAgentInstance.tools` migrated from the closed `ToolName[]` to `RealtimeToolSet` (`ResolvedRealtimeTool[]`, mirroring backend contract §3). New pieces: `hooks/useRealtimeAgentConfig.ts` (resolves the tool set from `POST /ai/agents/{id}/realtime-tools`, dispatches `applyAgentConfig({tools})`; non-fatal on error); `runtime/realtime-tool-loop.ts` (`flushToolCalls` — buffer `function_call_arguments.done` → flush on `response.done`, classify server/client/builtin, one `function_call_output` per call_id, exactly one `response.create`, never throws); `runtime/client-tool-registry.ts` (shared client-tool execution — `registerRealtimeClientTool` + fallback to the canonical ui-first-tools registry, NOT a fork); `services/realtimeToolService.ts` (`POST /ai/tools/execute` via authed `postJson`). `useXaiVoiceSession` gained `agentId`/`surface`/`sessionId` opts, buffers calls in `pendingCallsRef`, and flushes on `response.done`. `applyAgentConfig` made field-optional so the tool resolver overwrites only `tools`. Wired into `VoiceAgentSurface` (`matrx-user/chat-voice`) and `ScribeLiveScreen` (`matrx-user/transcript-scribe-live`). **Phase 2 (Scribe Live working-doc mutators):** `features/transcript-studio/components/scribe/realtimeWorkingDocTools.ts` registers `scribe_working_doc_append` + `scribe_working_doc_append_heading` client tools that live-write the session's `studio_documents` row via `updateWorkingDocumentContentThunk`. Drift gate `scripts/check-realtime-tools-drift.ts` (`pnpm check:realtime-tools[:strict]`, offline-safe) asserts the FE `ResolvedRealtimeTool` shape matches contract §3 + the live endpoint when creds are present. Tests: `runtime/realtime-tool-loop.test.ts` (7), `hooks/useRealtimeAgentConfig.test.ts` (5). **Open:** Scribe Live has no dedicated agent row yet, so its `useRealtimeAgentConfig` is a no-op (no `agentId`) and the working-doc tools won't be classified `client` / appear in `session.update` until a scribe-live agent (with those tools enabled) exists; the registry + runners + session plumbing are all in place. Contract: `docs/cx_chat/REALTIME_TOOL_BRIDGE_CONTRACT.md` (aidream).
@@ -205,7 +242,7 @@ Implementation tracked in
 - `2026-06-10` — **Live observability + reconnection hardening + shared mic grant.** Three additions driven by "Live works sometimes / dies after idle / mobile re-prompts the mic every time":
   - **Debug bus + panel.** New `features/voice-agent/debug/voiceDebugBus.ts` — a React/Redux-free per-instance ring-buffer log + live flag snapshot (`wsOpen`, `streamingReady`, `captureActive`, `tokenPresent`, `tokenExpiresInS`, `micPermission`, start/connect/close/error counters, last close code+intent, last server-event type/age, session age). `useXaiVoiceSession` now logs every lifecycle transition (start, audio warmup, token ready, ws connecting/open, session.updated, ws close intentional-vs-network with close code, all token/mic/ws/server errors) and mirrors live flags every second. New admin-only `VoiceDebugPanel` (`components/VoiceDebugPanel.tsx`) renders it; mounted at the top of `ScribeLiveScreen` behind `selectIsAdmin`. `tokenManager` gained `expiresAt()`; `xaiClient.onClose` now forwards the WebSocket close `code`.
   - **Connection watchdog + loud recovery.** A 1s interval detects the silent-death state (status is `listening`/`thinking`/`speaking`/`interrupting` but `xaiClient.isOpen()` is false) — the exact "UI says connected but the socket is gone" cause of "works sometimes / dies after idle". On detection it dispatches a sticky error and `stop()` (which mints a fresh token), so the next mic tap reconnects cleanly. Network-close now also surfaces a `ws-connection-dropped` error instead of silently flipping to idle. Added tab-visible / network-online token re-prime (a backgrounded tab throttles the refresh timer, leaving a stale/absent token; we warm a fresh one when idle and visible).
-  - **Shared mic-stream manager.** New `features/audio/micStream.ts` — one ref-counted, keepalive-warmed `getUserMedia` grant for the whole app. Both `audio/audioCapture.ts` (voice) and `features/audio/hooks/useChunkedRecordAndTranscribe.ts` (scribe recorder) now `acquireMicStream` / `releaseMicStream` instead of calling `getUserMedia` + `track.stop()` themselves. After the last holder releases, the stream stays warm for 3 min so successive recordings reuse the same OS grant — killing the per-recording mobile permission prompt. `micStreamDebug()` is surfaced in the debug panel. NOTE: this supersedes the old "not reused — different audio pipeline" note below; the two pipelines still differ (MediaRecorder vs AudioWorklet) but now share the *stream acquisition* layer only.
+  - **Shared mic-stream manager.** New `features/audio/micStream.ts` — one ref-counted, keepalive-warmed `getUserMedia` grant for the whole app. Both `audio/audioCapture.ts` (voice) and `features/audio/hooks/useChunkedRecordAndTranscribe.ts` (scribe recorder) now `acquireMicStream` / `releaseMicStream` instead of calling `getUserMedia` + `track.stop()` themselves. After the last holder releases, the stream stays warm for 3 min so successive recordings reuse the same OS grant — killing the per-recording mobile permission prompt. `micStreamDebug()` is surfaced in the debug panel. NOTE: this supersedes the old "not reused — different audio pipeline" note below; the two pipelines still differ (MediaRecorder vs AudioWorklet) but now share the _stream acquisition_ layer only.
 - `2026-06-10` — First **embedded** consumer of the voice primitives: `features/transcript-studio/components/scribe/ScribeLiveScreen.tsx` (the Scribe "Live" tab). It composes the hooks (`useVoiceAgentInstance` `playground` preset + `persist:false`, `useXaiVoiceSession`, `usePersistVoiceTranscript`) and the inner components (`VoiceAmbientGlow` / `VoiceTranscriptStream` / `VoiceStatusPill` / `VoiceListenHalo` / `VoiceMicButton` / `VoiceErrorBanner`) into an embedded layout (no full-page back-header, `h-full` not `h-dvh`) and injects a per-session working document into `instructions` via `updateConfig` on every doc change. Confirms the components/hooks are embeddable as-is; `VoiceAgentSurface` remains the full-page layout. If a third embedded surface appears, extract a shared inner `<VoiceConversationSurface>` rather than copying the compose-block again.
 - `2026-05-28` — Voice agents become first-class members of the agent system. Four-step migration delivered in one branch:
   - **Step 1 — Canonical `ai_model.capabilities` shape.** New module at `features/ai-models/capabilities/` defines `{input, output, features, interaction}` as the single source of truth. Tolerant parser accepts every legacy shape (null / "" / flat array / Google booleans / OpenAI I/O / hyphenated labels / literal "[transcription]"). The audit system's flat `CapabilitiesRecord` becomes a derived projection via `toAuditRecord`. All 189 `ai_model` rows backfilled via the parser; `capabilities_pre_canonical` JSONB snapshot column kept for one release as a revert safety net.

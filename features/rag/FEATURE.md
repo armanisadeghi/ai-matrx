@@ -10,6 +10,10 @@ Single home for everything Retrieval-Augmented Generation in this app — the do
 - `/rag/data-stores` — manage data stores and bind documents to them (`components/data-stores/DataStoresPage.tsx`)
 - `/rag/repositories` — code repositories you can index for RAG (`components/RepositoriesPage.tsx`). 🚨 **`?repo=<id>` is THE deep link to a `code.code_repositories` record** — what `entityRegistry.code_repository.hrefFor` and the sharing registry emit. This page is the ONLY surface over that table (`/code`'s Source Control view is git-on-the-sandbox and has never read it), so "open this repository" means landing here with its row highlighted and scrolled to. Changing the param means changing this page, the entity registry, `utils/permissions/registry.ts`, the live `platform.shareable_resource_registry` row, and the committed snapshot **in one commit**. A deep-linked repository absent from `fn_list_repositories` (deleted, or someone else's) says so — never render an unhighlighted list that looks like the link worked.
 - `/rag/search` — multi-tab Search Lab: clean search, agent simulation, **agent chat (canonical managed agent on the `matrx-user/rag-search` surface)**, diagnostics (`components/search/RagSearchExperience.tsx`)
+- `/rag/embeddings` — Google embedding lab: text batches or provider media
+  URIs, task type, 768/1536/3072 output dimensions, vector preview, and copy.
+  It calls aidream for provider compute; stored retrieval vectors use the
+  fixed 1536-dimension backend table rather than browser-side persistence.
 
 ---
 
@@ -128,14 +132,14 @@ Curated, system-owned RAG content (canonical example: the **AMA Guides 5th Editi
 
 **Open path = platform reachability (not FE exceptions):** industry/org/global grants on a library `data_store` cascade through `platform.associations` → `platform.reachability` → `iam.has_access` / `public.has_access_as`:
 
-| Edge                                        | Conveys |
-| ------------------------------------------- | ------- |
-| `file → data_store` (`library_member`)      | viewer  |
-| `note → data_store` (`library_member`)      | viewer  |
-| `transcript → data_store` (`library_member`)| viewer  |
-| `code_file → data_store` (`library_member`) | viewer  |
-| `processed_document → file` (`source_file`) | viewer  |
-| `file → file` (`page_image`)                | viewer  |
+| Edge                                         | Conveys |
+| -------------------------------------------- | ------- |
+| `file → data_store` (`library_member`)       | viewer  |
+| `note → data_store` (`library_member`)       | viewer  |
+| `transcript → data_store` (`library_member`) | viewer  |
+| `code_file → data_store` (`library_member`)  | viewer  |
+| `processed_document → file` (`source_file`)  | viewer  |
+| `file → file` (`page_image`)                 | viewer  |
 
 **Member kinds are registry-driven (P4, 2026-07-23):** `rag.sync_data_store_member_association` writes a `library_member` edge for ANY `data_store_members.source_kind` whose entity token has an ACTIVE `<token> → data_store` rule in `platform.association_types` (`rag.member_source_entity_token` maps `cld_file → file`; every other kind must BE a token). Registering the rule is the whole act of making a new kind cascade; a member with no rule is a LOUD trigger WARNING, never a silent skip. **Deliberately NOT library-shareable today:** `project` and `task` (containers with their own cascades — conveying viewer on a whole project/task through a store grant is a conveyance decision reserved for Arman) and `research` / `scraped` (no `platform.entity_types` token; registering token + conveyance is the same reserved decision). To enable one: register the token (if missing) + the `association_types` rule, then re-run the backfill in `migrations/library_cascade_generalize_member_kinds.sql` — nothing else.
 
@@ -164,6 +168,13 @@ Migrations: [`library_store_file_reachability_cascade.sql`](../../migrations/lib
 
 ## Change log
 
+- **2026-08-15 — Gemini embeddings gained an honest RAG surface.** Added the
+  `/rag/embeddings` lab and linked it from both RAG navigation surfaces. It
+  targets the dedicated `google_embeddings`/`embedContent` contract, supports
+  stable multimodal `gemini-embedding-2` and text-only
+  `gemini-embedding-001`, and exposes recommended dimensions without implying
+  that variable-length vectors can share one pgvector table. The backend's
+  persisted profile is fixed at 1536 dimensions.
 - **2026-08-14 — `/rag/repositories` became the destination for a `code_repository` record (NO DEAD ENDS).** The token had no route at all: no `hrefFor`, empty `url_path_template`, so every Open door for a repository rendered nothing. No new surface was built — this page already lists `code.code_repositories`, so it took the deep link: `?repo=<id>` highlights the row and scrolls it into view, and a repository missing from `fn_list_repositories` gets an honest notice instead of a list that looks like the link worked. All four route authorities moved in one commit; browser-verified both branches on the preview server. Contract is stated on the route line above. See [`features/sharing/FEATURE.md`](../sharing/FEATURE.md) change log.
 - **2026-08-15 — chunk lists became copyable, and stopped hiding their tail
   (`agent-copy` rollout).** New [`chunk-copy.ts`](./chunk-copy.ts) holds pure

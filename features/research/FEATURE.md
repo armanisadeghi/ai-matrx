@@ -21,6 +21,10 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 - `/research` — landing.
 - `/research/topics` · `/research/topics/new` — list + creation wizard.
 - `/research/topics/[topicId]` — live-run overview (the orchestra). Sub-routes: `sources`, `sources/[sourceId]`, `content`, `curate` (curation workbench — filter/sort/group + batch include/exclude), `keywords`, `youtube` (topic-aware discovery + permanent video library + batch Gemini processing), `keywords/[keywordId]` (per-keyword home: its synthesis + ranked search results), `analysis`, `synthesis`, `document`, `documents`, `tags`, `tags/[tagId]`, `context` (**Context Builder** — the resource catalog: pick what an agent reads, see the token cost, save it as a bundle, run any agent), `outputs` (**Outputs Studio** — publishing formats from the report + the domain-report launchpad), `media`, `costs`, `settings`, `agents`, `tasks`.
+- The topic `agents` route also hosts the Google background-agent card. It is
+  a durable experimental runner, not part of `/run`: starting stores the
+  runtime execution id locally, reload reattaches to that id, and polling
+  renders provider steps/output/citation doors until terminal.
 - `/research/topics/[topicId]/experts` — **Experts**: the people this research names, scored from the analyses already paid for, promoted into `crm.party` through the SERVER party resolver. Reads via `useResearchApi().extractExperts` (zero writes) and writes via `promoteExperts`; the roster reads `features/crm` directly. See `features/crm/FEATURE.md` § Experts for the tier + edge contract.
 - `/research/topics/[topicId]/context?bundle=<slug>` — Context Builder with a saved bundle preloaded (and its agent preselected). How Outputs Studio hands over a domain report.
 - `/research/topics/new?mode=ai&topic=...` — AI-assisted creation with the subject prefilled; used by `/demos/matrx-entry` for the new workflow entryway handoff.
@@ -301,6 +305,14 @@ find yourself writing code to add an output, something above is wrong.
 
 ## Change log
 
+- 2026-08-15 — **Long-running Google Interactions became observable and
+  reload-safe.** The topic Agents surface can start Deep Research, Deep
+  Research Max, or Antigravity through aidream's durable runtime spine. The
+  card retains the execution id across reload, polls the ownership-checked
+  status endpoint, renders intermediate steps and final output, links every
+  citation URL it can resolve, and announces completion/failure. This is
+  deliberately separate from the research pipeline orchestra: it does not
+  write `rs_*` rows or impersonate a pipeline stage.
 - 2026-08-15 — **Copy-for-AI lands on the pipeline (`agent-copy` rollout).** New
   [`copy.ts`](./copy.ts) is the feature's single source of human/agent copy
   flavors — `format.ts` next door stays the number formatter. `researchKpis()`
