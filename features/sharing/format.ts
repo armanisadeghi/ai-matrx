@@ -30,6 +30,11 @@ export function sharingLocation(surface: string): string {
   return `AI Matrx — Sharing — ${surface}`;
 }
 
+/** `humanLines` renders label: value pairs; booleans need words. */
+function yesNo(value: boolean): string {
+  return value ? "yes" : "no";
+}
+
 // ---------------------------------------------------------------------------
 // The page KPIs
 // ---------------------------------------------------------------------------
@@ -447,21 +452,34 @@ export interface PublicAccessView {
   public_url: string | null;
   heading: string;
   state_sentence: string;
+  /** The amber "open to everyone" caveat, rendered only while public. */
   warning_sentence: string | null;
+  /** The "Not open to everyone" explanation, rendered only while private. */
+  private_sentence: string | null;
   /** Rendered when the type cannot be public at all. */
   unsupported_sentence: string | null;
+  /** Owners get the toggle; everyone else reads a badge. */
+  viewer_can_change: boolean;
 }
 
 export function humanPublicState(view: PublicAccessView): string {
   return humanLines([
     ["Heading", view.heading],
-    ["State", view.is_public ? "Public — open to everyone" : "Not open to everyone"],
+    [
+      "State",
+      view.is_public ? "Public — open to everyone" : "Not open to everyone",
+    ],
     ["Explanation", view.state_sentence],
     ["Warning", view.warning_sentence],
+    ["While private", view.private_sentence],
     ["Unavailable", view.unsupported_sentence],
-    ["Public page URL", view.public_url ?? "none — this type has no public page"],
-    ["Type supports public visibility", view.supports_public],
-    ["Type supports no-login share links", view.is_link_shareable],
+    [
+      "Public page URL",
+      view.public_url ?? "none — this type has no public page",
+    ],
+    ["Type supports public visibility", yesNo(view.supports_public)],
+    ["Type supports no-login share links", yesNo(view.is_link_shareable)],
+    ["Viewer can change this", yesNo(view.viewer_can_change)],
     ["Item type", view.type_label],
   ]);
 }
