@@ -3907,9 +3907,6 @@
        "default": null,
        "title": "Size Bytes"
       },
-      "storage_uri": {
-       "title": "Storage Uri"
-      },
       "width": {
        "default": null,
        "title": "Width"
@@ -3917,8 +3914,7 @@
      },
      "required": [
       "file_path",
-      "file_name",
-      "storage_uri"
+      "file_name"
      ],
      "title": "CreateFileItem",
      "type": "object"
@@ -4003,10 +3999,6 @@
       "size_bytes": {
        "default": null,
        "title": "Size Bytes"
-      },
-      "storage_uri": {
-       "default": null,
-       "title": "Storage Uri"
       },
       "width": {
        "default": null,
