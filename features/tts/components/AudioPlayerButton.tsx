@@ -67,7 +67,12 @@ export function AudioPlayerButton({
   // The queue owns the truth: loading = synthesizing, playing/paused as named.
   // Errors surface as the queue item's status (and in the Media panel), so this
   // button no longer needs its own error toast.
-  const isGenerating = status === "loading";
+  //
+  // `queued` counts as busy — same as every sibling speaker. Something else is
+  // playing and our utterance is waiting its turn; treating that as idle lets a
+  // second click enqueue the SAME text twice, and the user hears it spoken
+  // twice in a row.
+  const isGenerating = status === "loading" || status === "queued";
   const isPlaying = status === "playing";
   const isPaused = status === "paused";
 
@@ -104,7 +109,10 @@ export function AudioPlayerButton({
 
   const iconSize = iconSizeMap[size];
 
-  const tooltipText = isGenerating
+  const isQueued = status === "queued";
+  const tooltipText = isQueued
+    ? "Waiting for the current audio to finish"
+    : isGenerating
     ? "Generating speech..."
     : isPlaying
       ? "Pause"
@@ -126,7 +134,9 @@ export function AudioPlayerButton({
         <Icon className={cn(iconSize, isGenerating && "animate-spin")} />
         {!iconOnly && (
           <span className="ml-2">
-            {isGenerating
+            {isQueued
+              ? "Waiting..."
+              : isGenerating
               ? "Generating..."
               : isPlaying
                 ? "Pause"

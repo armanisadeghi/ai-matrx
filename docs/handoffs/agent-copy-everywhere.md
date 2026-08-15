@@ -57,6 +57,15 @@ Refinements he added along the way — each is now doctrine, with the why:
 | Small verified gaps | `SiteCommandFeed.tsx:279` warnings `.slice(0,10)` with no show-all/export (**hard violation, errors-first class**); `SitesPortfolio.tsx:614` `MatrxDataTable` with no `copy` config | `session_01WZXQcgqYiiXKCLcHrt174Y` |
 | Graded variants + groomers | Crawl URLs/Logs/Snapshots/Reports tables, `PageWorkspace` (5-section record page), `BrandWorkspace` (1,322 L, 4 sections) | `session_01Yc11TPkXCxYWvdV53kuvNJ` |
 
+Plus 4 chips covering the **user-facing feature clusters** — a category the rows above don't touch at all (they are marketing + admin/agents). Verified zero-to-near-zero coverage on 2026-08-15 via `grep -rl "agent-copy/CopyButtons\|AiCopyMenu\|ExportMenu" features/<name>`:
+
+| Chip | Scope (coverage at dispatch) | Session |
+|---|---|---|
+| Knowledge/content | `notes` (0), `transcripts` + studio + cleanup (0), `dictionary` (0) — a note body and a transcript are the highest-value AI captures in the app; long transcripts are the `aiCustom` case | `session_01HibxMvGftgKxFvBjaiMxxa` |
+| Data pipeline | `research` (2), `rag` (1), `api-integrations`/MCP (0 — sanitize endpoints + OAuth ids), `cms` (0); research wants a page Groomer | `session_01BCMuaqiB7wAJCmHABxRi8p` |
+| Work management | `tasks` + projects (0), `scheduling` (0), `organizations` (0), `war-room` (0 — natural Groomer consumer) | `session_01DPXb4DgXxUTeFZhKpM5rtH` |
+| Media | `files` (2), `image-manager` (1), `podcasts` (0), `audio` (1), `pdf` (0) — SKIP the viewers, wire their lists/metadata; **payloads carry `file_id` + durable URL, never a signed URL** | `session_013omdG1hM9pyqFZ9SrtsTTC` |
+
 **Read their reports before re-chipping any of it.** Each was told to update the skill's Rollout status and to name what it deliberately skipped.
 
 ### Not yet chipped
@@ -83,7 +92,9 @@ Correctly left alone: `MarketingHub.tsx` (a nav map — non-record, plain pair i
 
 ## Decisions needed
 
-**None open.** Both prior items were ruled and are recorded here so they are not re-asked:
+- **Situation (opened 2026-08-15):** the MCP server→tools relationship is unrecorded in data, so the MCP servers console's Tools tab can never populate for any of the 38 servers. Found while wiring copy onto that page; NOT caused by that work. Two independent causes: `ToolsTab` passes `server.slug` into `listServerTools(serverId)`, which filters `managed_by_server_id` (a UUID) — and that column is NULL on all 412 `tool.definition` rows, while the legacy `${slug}:%` fallback isn't populated either (the only colon-prefixed tool names use a `bundle:` prefix). Fixing the one-line slug/UUID mismatch alone changes nothing. **Decide:** what is the source of truth for backfilling `managed_by_server_id`, or should the tab resolve a server's tools another way? Filed as review-queue item `10011a5a` (lane `database_data`, state `ready`); verified against production, no code changed pending the call.
+
+The prior items were ruled and are recorded here so they are not re-asked:
 
 - *Org membership for the real accounts* — RULED (FOUND_DEFECTS D133, 2026-08-11): AccessGate now splits denied / deleted / missing / signed-out and names the owner; aimatrx.com moved to the shared org; the outsider test account stays memberless by design. The only remainder is a product path to move a site between orgs, tracked as open D133 — not an agent-copy concern.
 - *Worktree isolation for fleets* — RULED against by CLAUDE.md § Shared checkout: one checkout, many agents, commit early and often. Do not re-propose it.
