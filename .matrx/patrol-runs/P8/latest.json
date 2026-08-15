@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P8",
+  "runId": "01a001b0-1582-7fc2-935e-299e2d1d4826",
+  "state": "certified",
+  "updatedAt": "2026-08-14T19:26:24.934Z",
+  "summary": "CERTIFIED: the three Real Loading States repairs introduced no batch-caused defect.",
+  "source": "01a001b0-1582-7fc2-935e-299e2d1d4826.json",
+  "eventHash": "80f340cf33750a52226fe0efa85ff6201ea1a7db5399eeb07895a1112f7ef9a4"
+}
