@@ -453,6 +453,30 @@ Phases 1–4 are independently valuable and shippable. **Nothing before Phase 5 
 human did not approve** — the correct risk posture for a system whose failure mode is "we helped
 a customer spam strangers from their real mailbox."
 
+## Lane A (opt-in marketing) — a separate, later track. DO NOT LOSE IT.
+
+**Everything in Phases 1–7 above is LANE B**, because backlink and media outreach are cold and
+that is what Arman needs now. **Lane A is committed vision, not a maybe** (§5.1): our CRM must be
+able to send opt-in marketing on a customer's behalf, handled exactly as Klaviyo/Mailchimp/SendGrid
+handle it, duplicating their policies end to end.
+
+It is deliberately sequenced after Lane B, and it is genuinely a different build — because *our*
+reputation carries it:
+
+- Our own sending infrastructure (a bulk ESP account), on the customer's authenticated domain.
+- **Per-recipient consent proof as a hard eligibility gate** — no consent record, not reachable.
+- Consent capture surfaces (forms, imports that carry source + timestamp + basis) — note the
+  contact-table folds already in the CRM handoff are exactly where consent metadata must survive.
+- Their AUP mirrored as our AUP: no purchased lists, complaint-rate enforcement, list hygiene,
+  and a suspension path we will actually use.
+- Preference center + one-click unsubscribe honored through the SAME single suppression authority
+  as Lane B, so an opt-out in either lane stops both.
+
+**Reusable across both lanes** (build once, in Lane B, with Lane A in mind): the message template
+primitive, the cadence runner, inbound ingestion, suppression, attribution, and the guided
+checklist. **Not reusable:** the sending path and the eligibility rules — those are lane-specific
+by design, and collapsing them is the trap (§7).
+
 ---
 
 # 7. Traps
