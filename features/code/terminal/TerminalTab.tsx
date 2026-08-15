@@ -523,10 +523,17 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
       const bufferedListener = term.onData((data) => handleData(session, data));
       session.onDataDisposer = () => bufferedListener.dispose();
 
+      const expectsPty = Boolean(processRef.current.openPty);
+      term.options.disableStdin = expectsPty;
+
       term.write(
         `${BOLD}Matrx Terminal${RESET}${DIM} — ${processRef.current.isReady ? "connected" : "no process adapter"}${RESET}\r\n`,
       );
-      writePromptFor(session);
+      if (expectsPty) {
+        term.write(`${DIM}[connecting interactive terminal…]${RESET}`);
+      } else {
+        writePromptFor(session);
+      }
       setReady(true);
 
       // Try to upgrade to a real PTY in the background. If the adapter
@@ -584,12 +591,13 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
         state.onDataDisposer?.();
         const liveListener = term.onData((data) => handle.write(data));
         state.onDataDisposer = () => liveListener.dispose();
-        // Clear the local-prompt scaffolding so we don't render two
-        // prompts on top of each other when the daemon emits its own.
+        term.options.disableStdin = false;
+        // Clear the connecting marker before the daemon emits its prompt.
         term.write("\r\x1b[K");
       } catch (error) {
+        term.options.disableStdin = false;
         term.write(
-          `\r\n${RED}[interactive PTY unavailable: ${extractErrorMessage(error)}; using buffered terminal]${RESET}\r\n`,
+          `\r\x1b[K${RED}[interactive PTY unavailable: ${extractErrorMessage(error)}; using buffered terminal]${RESET}\r\n`,
         );
         writePromptFor(state);
       }
@@ -599,6 +607,7 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
     const detachPty = (state: SessionState) => {
       state.pty?.close();
       state.pty = null;
+      state.term.options.disableStdin = false;
       state.onDataDisposer?.();
       const bufferedListener = state.term.onData((data) =>
         handleData(state, data),
