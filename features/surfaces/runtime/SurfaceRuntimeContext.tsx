@@ -351,3 +351,57 @@ export function SurfaceRuntimeProvider({
     </SurfaceRuntimeDepthContext.Provider>
   );
 }
+
+/**
+ * Hook-shaped twin of `<SurfaceRuntimeProvider>` — registers a live runtime
+ * from INSIDE a hook, at the same depth a provider mounted there would get.
+ *
+ * Use it when the component that owns the surface's live state has early
+ * returns (loading, gates, override branches) or exposes its state through a
+ * hook rather than a subtree. Wrapping such a component's JSX in a provider
+ * would unregister and re-register the surface on every branch flip; this
+ * registers once for the hook's lifetime.
+ *
+ * Pass `null` to register nothing (the surface is inherited from an ancestor
+ * provider, or the host is not on a declared surface). `getScope` is held in a
+ * ref, so an inline arrow is fine — identity churn never thrashes the
+ * registry, and the registered getter always calls the LATEST closure.
+ *
+ * ONE live registration per surface still applies: two siblings registering
+ * the same surface at the same depth is a coin flip (FOUND_DEFECTS D194).
+ */
+export function useSurfaceRuntimeRegistration(
+  value: SurfaceRuntimeValue | null,
+): void {
+  const depth = useContext(SurfaceRuntimeDepthContext) + 1;
+  const valueRef = useRef(value);
+  useEffect(() => {
+    valueRef.current = value;
+  });
+
+  const surfaceName = value?.surfaceName ?? null;
+  const isEditable = value?.isEditable;
+  useEffect(() => {
+    if (!surfaceName) return;
+    return registerSurfaceRuntime(
+      {
+        surfaceName,
+        isEditable,
+        getScope: () => {
+          const current = valueRef.current;
+          if (!current) {
+            // Unreachable while registered (the registration is torn down in
+            // the same effect that could clear the value) — loud rather than
+            // a silent empty scope if that ever stops being true.
+            throw new Error(
+              `[surfaces] runtime for "${surfaceName}" was read after its owner stopped emitting`,
+            );
+          }
+          return current.getScope();
+        },
+        getWriteHandlers: () => valueRef.current?.getWriteHandlers?.() ?? {},
+      },
+      depth,
+    );
+  }, [surfaceName, isEditable, depth]);
+}

@@ -38,10 +38,8 @@ import { SHELL_REGISTRY } from "./shells";
 import { AgentAppFullyCustomShell } from "./shells/AgentAppFullyCustomShell";
 import { useAgentAppTracker } from "../tracking/useAgentAppTracker";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import {
-  PUBLIC_AGENT_APP_SURFACE_NAME,
-  createPublicAgentAppScope,
-} from "@/features/surfaces/manifests/public-agent-app.manifest";
+import { createPublicAgentAppScope } from "@/features/surfaces/manifests/public-agent-app.manifest";
+import type { AgentAppSurfaceBinding } from "@/features/agent-apps/surface/agent-app-surface";
 import {
   AgentAppMarkdownStream,
   AgentAppStreamProvider,
@@ -55,6 +53,18 @@ const HtmlPreviewModal = dynamic(
 interface AgentAppPublicRendererProps {
   app: PublicAgentApp;
   slug: string;
+  /**
+   * Declared surface this run belongs to.
+   *
+   * `PUBLIC_AGENT_APP_SURFACE_NAME` on the anonymous `/p/[slug]` route.
+   * `null` (the default) everywhere else — the authed workspace, the editor
+   * preview and the code preview all sit inside the `matrx-user/agent-apps`
+   * provider mounted by `app/(core)/agent-apps/[id]/layout.tsx`, and the
+   * launch adopts it. Emitting `matrx-public/p` there would out-depth that
+   * provider and put an owner's authoring run on the strangers' surface.
+   * Rationale: `features/agent-apps/surface/agent-app-surface.ts`.
+   */
+  surfaceName?: string | null;
   TestComponent?: React.ComponentType<{
     onExecute: (
       variables: Record<string, unknown>,
@@ -75,6 +85,7 @@ export function AgentAppPublicRenderer({
   app,
   slug,
   TestComponent,
+  surfaceName = null,
 }: AgentAppPublicRendererProps) {
   // Phase 1c dispatch: if the app row declares a shell, look it up in the
   // registry and render that. Phase 1f extends this to fully_custom apps,
@@ -90,10 +101,16 @@ export function AgentAppPublicRenderer({
       SHELL_REGISTRY[shellKind as keyof typeof SHELL_REGISTRY]
     ) {
       const Shell = SHELL_REGISTRY[shellKind as keyof typeof SHELL_REGISTRY]!;
-      return <Shell app={app} />;
+      return <ShellHost app={app} surfaceName={surfaceName} Shell={Shell} />;
     }
     if (shellKind === "fully_custom") {
-      return <AgentAppFullyCustomShell app={app} />;
+      return (
+        <ShellHost
+          app={app}
+          surfaceName={surfaceName}
+          Shell={AgentAppFullyCustomShell}
+        />
+      );
     }
   }
 
@@ -102,14 +119,79 @@ export function AgentAppPublicRenderer({
       app={app}
       slug={slug}
       TestComponent={TestComponent}
+      surfaceName={surfaceName}
     />
   );
+}
+
+type ShellComponent = React.ComponentType<{
+  app: PublicAgentApp;
+  surface?: AgentAppSurfaceBinding;
+}>;
+
+/**
+ * Renders a built-in shell, on a declared surface when the host route has one.
+ *
+ * Split in two so the guest hooks only run where a guest exists: with no
+ * surface the shell renders bare and the run adopts the ambient authed
+ * provider.
+ */
+function ShellHost({
+  app,
+  surfaceName,
+  Shell,
+}: {
+  app: PublicAgentApp;
+  surfaceName: string | null;
+  Shell: ShellComponent;
+}) {
+  if (!surfaceName) return <Shell app={app} />;
+  return <ShellOnSurface app={app} surfaceName={surfaceName} Shell={Shell} />;
+}
+
+function ShellOnSurface({
+  app,
+  surfaceName,
+  Shell,
+}: {
+  app: PublicAgentApp;
+  surfaceName: string;
+  Shell: ShellComponent;
+}) {
+  const { isAuthenticated, fingerprintId } = useApiAuth();
+  const guestLimit = useGuestLimit();
+
+  useEffect(() => {
+    if (!fingerprintId) return;
+    guestLimit.refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fingerprintId]);
+
+  // Read at scope-build time, never snapshotted: `guest_runs_remaining` drops
+  // as the visitor runs the app, and the fingerprint resolves asynchronously.
+  const surface: AgentAppSurfaceBinding = {
+    surfaceName,
+    getHostValues: () => ({
+      app_id: app.id,
+      app_slug: app.slug,
+      app_name: app.name,
+      agent_id: app.agent_id,
+      agent_version_id: app.agent_version_id ?? undefined,
+      shell_kind: app.shell_kind ?? "fully_custom",
+      is_authenticated: isAuthenticated,
+      guest_fingerprint_id: fingerprintId ?? undefined,
+      guest_runs_remaining: !isAuthenticated ? guestLimit.remaining : undefined,
+    }),
+  };
+
+  return <Shell app={app} surface={surface} />;
 }
 
 function CustomComponentRenderer({
   app,
   slug,
   TestComponent,
+  surfaceName = null,
 }: AgentAppPublicRendererProps) {
   const dispatch = useAppDispatch();
 
@@ -345,22 +427,29 @@ function CustomComponentRenderer({
               // write policies) resolve at launch — this page previously
               // never set it, so no binding on `matrx-public/p` could ever
               // fire here regardless of what an agent author configured.
-              surfaceName: PUBLIC_AGENT_APP_SURFACE_NAME,
-              applicationScope: createPublicAgentAppScope({
-                app_id: app.id,
-                app_slug: app.slug,
-                app_name: app.name,
-                agent_id: app.agent_id,
-                agent_version_id: app.agent_version_id ?? undefined,
-                shell_kind: app.shell_kind ?? "fully_custom",
-                is_authenticated: isAuthenticated,
-                guest_fingerprint_id: fingerprintId ?? undefined,
-                guest_runs_remaining: !isAuthenticated
-                  ? guestLimit.remaining
-                  : undefined,
-                user_input: userInput,
-                form_variable_values: validVariables,
-              }),
+              // With no host surface (the authed editor / code previews) we
+              // pass NEITHER name nor scope, so the launch adopts the
+              // ancestor `matrx-user/agent-apps` provider instead.
+              ...(surfaceName
+                ? {
+                    surfaceName,
+                    applicationScope: createPublicAgentAppScope({
+                      app_id: app.id,
+                      app_slug: app.slug,
+                      app_name: app.name,
+                      agent_id: app.agent_id,
+                      agent_version_id: app.agent_version_id ?? undefined,
+                      shell_kind: app.shell_kind ?? "fully_custom",
+                      is_authenticated: isAuthenticated,
+                      guest_fingerprint_id: fingerprintId ?? undefined,
+                      guest_runs_remaining: !isAuthenticated
+                        ? guestLimit.remaining
+                        : undefined,
+                      user_input: userInput,
+                      form_variable_values: validVariables,
+                    }),
+                  }
+                : {}),
             },
             // Capture conversationId synchronously, before the stream starts.
             // The launcher's awaited promise doesn't resolve until the stream
@@ -403,6 +492,7 @@ function CustomComponentRenderer({
       validateVariables,
       dispatch,
       startRun,
+      surfaceName,
     ],
   );
 
@@ -521,10 +611,7 @@ function CustomComponentRenderer({
     });
 
   return (
-    <SurfaceRuntimeProvider
-      surfaceName={PUBLIC_AGENT_APP_SURFACE_NAME}
-      getScope={buildScope}
-    >
+    <MaybeSurfaceRuntimeProvider surfaceName={surfaceName} getScope={buildScope}>
       <div className="h-full flex flex-col">
         {guestLimit.showWarning && (
           <div className="flex-shrink-0 p-4">
@@ -665,6 +752,28 @@ function CustomComponentRenderer({
           />
         )}
       </div>
+    </MaybeSurfaceRuntimeProvider>
+  );
+}
+
+/**
+ * Registers the surface only when the host route declared one. Off the public
+ * route the ambient `matrx-user/agent-apps` provider is the correct emitter,
+ * and a nested provider here would out-depth (shadow) it.
+ */
+function MaybeSurfaceRuntimeProvider({
+  surfaceName,
+  getScope,
+  children,
+}: {
+  surfaceName: string | null;
+  getScope: () => ReturnType<typeof createPublicAgentAppScope>;
+  children: React.ReactNode;
+}) {
+  if (!surfaceName) return <>{children}</>;
+  return (
+    <SurfaceRuntimeProvider surfaceName={surfaceName} getScope={getScope}>
+      {children}
     </SurfaceRuntimeProvider>
   );
 }

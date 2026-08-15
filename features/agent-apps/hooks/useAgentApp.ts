@@ -89,6 +89,13 @@ import {
 
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 
+import { useSurfaceRuntimeRegistration } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  buildAgentAppSurfaceScope,
+  type AgentAppSurfaceBinding,
+  type AgentAppSurfaceLiveValues,
+} from "@/features/agent-apps/surface/agent-app-surface";
+
 export interface UseAgentAppArgs {
   /** Agent the app is bound to. */
   agentId: string;
@@ -146,6 +153,17 @@ export interface UseAgentAppArgs {
   showAssistantMessageOptions?: boolean;
   /** Buffer the stream — paint only when complete. */
   bufferStream?: boolean;
+
+  /**
+   * Puts this run on a declared surface: the launch carries
+   * `runtime.surfaceName` + a live `applicationScope`, and the hook registers
+   * a surface runtime so the header Agents chrome can Run here too.
+   *
+   * OMIT IT on authed routes (`/agent-apps/[id]/**`) — the launch then adopts
+   * the ancestor `matrx-user/agent-apps` provider, name and scope together.
+   * See `features/agent-apps/surface/agent-app-surface.ts` for the decision.
+   */
+  surface?: AgentAppSurfaceBinding;
 }
 
 export interface UseAgentAppReturn {
@@ -239,6 +257,7 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
     showUserMessageOptions,
     showAssistantMessageOptions,
     bufferStream,
+    surface,
   } = args;
   const surfaceKey = args.surfaceKey ?? `agent-app:${appId}`;
 
@@ -284,7 +303,18 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
       ...(hideReasoning !== undefined ? { hideReasoning } : {}),
       ...(hideToolResults !== undefined ? { hideToolResults } : {}),
     },
-    runtime: undefined,
+    // A declared surface is passed EXPLICITLY (name + the identity/visitor
+    // scope known at create time); with no binding this stays undefined so
+    // `launchAgentExecution` auto-adopts the ancestor provider — on
+    // `/agent-apps/[id]/**` that is `matrx-user/agent-apps`, name and live
+    // scope together. Passing a name with no binding would be worse than
+    // nothing: it disables adoption and launches scope-less.
+    runtime: surface
+      ? {
+          surfaceName: surface.surfaceName,
+          applicationScope: buildAgentAppSurfaceScope(surface, {}),
+        }
+      : undefined,
     apiEndpointMode: "agent",
     ready: isReady,
   });
@@ -416,6 +446,37 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
     request && (request as unknown as { errorMessage?: string }).errorMessage
       ? ((request as unknown as { errorMessage?: string }).errorMessage ?? null)
       : null;
+
+  // ── Surface runtime ───────────────────────────────────────────────────
+  // Registered from the hook rather than a wrapping provider because every
+  // shell has early returns (loading gate, pre-execution gate, override
+  // branches) — a provider in the returned JSX would unregister and
+  // re-register the surface on each branch flip. Scope is read at Run time,
+  // so it always carries the CURRENT input, variables, and stream state.
+  const liveSurfaceValues: AgentAppSurfaceLiveValues = {
+    user_input: text || undefined,
+    form_variable_values:
+      Object.keys(variables).length > 0
+        ? (variables as Record<string, unknown>)
+        : undefined,
+    conversation_id: conversationId ?? undefined,
+    run_status: error
+      ? "error"
+      : isStreaming || isExecuting
+        ? "streaming"
+        : response
+          ? "complete"
+          : undefined,
+    response_text: response || undefined,
+  };
+  useSurfaceRuntimeRegistration(
+    surface
+      ? {
+          surfaceName: surface.surfaceName,
+          getScope: () => buildAgentAppSurfaceScope(surface, liveSurfaceValues),
+        }
+      : null,
+  );
 
   // ── Variable / context / resource writers ────────────────────────────
 

@@ -19,9 +19,17 @@ import type {
   AgentAppShellKind,
   PublicAgentApp,
 } from "@/features/agent-apps/types";
+import type { AgentAppSurfaceBinding } from "@/features/agent-apps/surface/agent-app-surface";
 
 interface ShellComponentProps {
   app: PublicAgentApp;
+  /**
+   * Declared surface this run belongs to. Set on the public route
+   * (`matrx-public/p`); omitted on authed routes so the run adopts the
+   * ambient `matrx-user/agent-apps` provider. See
+   * `features/agent-apps/surface/agent-app-surface.ts`.
+   */
+  surface?: AgentAppSurfaceBinding;
 }
 
 type ShellComponent = (props: ShellComponentProps) => React.ReactNode;

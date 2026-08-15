@@ -11,15 +11,38 @@
  * session OR a browser fingerprint (`X-Fingerprint-ID`), and `useGuestLimit`
  * caps unauthenticated runs. Nothing here may assume a signed-in user.
  *
- * Distinct from `matrx-user/agent-apps` (`agent-apps.manifest.ts`), which is
- * the AUTHED builder/catalog surface where an app is authored and configured.
- * This manifest covers the opposite end: the public consumer surface where the
- * finished app actually runs for a stranger.
+ * TWO SURFACES, NOT ONE — the decision (2026-08-15)
+ * -------------------------------------------------
+ * An agent app renders through the SAME components in two places, and they are
+ * deliberately two surfaces:
  *
- * Readiness: partial — the manifest + emitter are wired and the runtime
- * value set matches what `AgentAppPublicRendererImpl.tsx` actually holds
- * (audited against the live component), but no live agent-binding test has
- * been run yet against an anonymous session. See `readinessNote`.
+ *   - `/p/[slug]` → THIS surface. An anonymous stranger runs a published app.
+ *     Its vocabulary contains values that exist nowhere else — `is_authenticated`,
+ *     `guest_fingerprint_id`, `guest_runs_remaining` — and the agents bound here
+ *     are first-contact agents talking to someone the platform has never seen.
+ *   - `/agent-apps/[id]/**` (run tab, editor preview, code preview) →
+ *     `matrx-user/agent-apps` (`agent-apps.manifest.ts`), already emitted for
+ *     every sub-route by `features/agent-apps/route/AgentAppSurfaceRuntime.tsx`.
+ *     The person there is the app's OWNER working ON the app; the useful scope
+ *     is its code / schema / config, and a guest fingerprint is meaningless.
+ *
+ * So no third "authed runner" surface exists. A shell rendered on an authed
+ * route passes NO surface binding, and the launch auto-adopts the ancestor
+ * `matrx-user/agent-apps` provider (name AND live scope). Only `/p/[slug]`
+ * passes `surfaceName={PUBLIC_AGENT_APP_SURFACE_NAME}` into
+ * `AgentAppPublicRenderer`. Runtime contract:
+ * `features/agent-apps/surface/agent-app-surface.ts`.
+ *
+ * Emitters (ALL FIVE render paths, as of 2026-08-15):
+ *   - built-in shells (`chat`, `form_to_result`, `widget`) and `fully_custom`
+ *     → `useAgentApp` (`features/agent-apps/hooks/useAgentApp.ts`) launches with
+ *     `runtime.surfaceName` + scope and registers the live runtime;
+ *   - no-shell / component_code apps → `CustomComponentRenderer` in
+ *     `AgentAppPublicRendererImpl.tsx`.
+ *
+ * Readiness: partial — every render path now emits, and the value set matches
+ * what the components hold, but no live agent-binding test has been run against
+ * an anonymous session. See `readinessNote`.
  */
 
 import type {
@@ -237,7 +260,7 @@ export const publicAgentAppManifest: SurfaceManifest = {
   surfaceName: PUBLIC_AGENT_APP_SURFACE_NAME,
   readiness: "partial",
   readinessNote:
-    "Manifest + emitter wired (runtime.surfaceName now passed to launchAgentExecution and a SurfaceRuntimeProvider mounted). Anonymous surface — no live agent-binding / Matrx-vs-matrix verification run yet; also covers only the CustomComponentRenderer path (component_code / template apps). The built-in shells in features/agent-apps/components/shells/ and AgentAppFullyCustomShell run their own execution paths and are NOT yet audited or wired to this surface.",
+    "All five /p render paths now emit (built-in shells + fully_custom via useAgentApp, no-shell apps via CustomComponentRenderer). Two gaps remain: (1) no live agent-binding / Matrx-vs-matrix verification against an anonymous session; (2) on the shell paths the launch happens at mount, so the run_input values (user_input, form_variable_values) are EMPTY in the mapped launch scope — the visitor fills the form after the instance exists, and the later submit goes through smartExecute, which does not re-run value_mappings. Agents bound to run_input values get them live only from the Agents-chrome Run path. Binding run_input at submit needs a scope-refresh seam in the execution system.",
   label: "Public Agent App",
   urlPattern: "/p",
   intro: `<surface_intro>

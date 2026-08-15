@@ -36,12 +36,15 @@ import type {
 } from "@/features/agent-apps/types";
 import { SlotRenderer } from "./SlotRenderer";
 import type { UseAgentAppReturn } from "@/features/agent-apps/hooks/useAgentApp";
+import type { AgentAppSurfaceBinding } from "@/features/agent-apps/surface/agent-app-surface";
 
 interface AgentAppChatShellProps {
   app: PublicAgentApp;
+  /** Declared surface for this run (public route only) — see agent-app-surface.ts. */
+  surface?: AgentAppSurfaceBinding;
 }
 
-export function AgentAppChatShell({ app }: AgentAppChatShellProps) {
+export function AgentAppChatShell({ app, surface }: AgentAppChatShellProps) {
   const dispatch = useAppDispatch();
   const config = (app.shell_config ?? {}) as AgentAppShellConfigCommon;
   const overrides = (app.slot_overrides ?? {}) as Record<
@@ -82,6 +85,7 @@ export function AgentAppChatShell({ app }: AgentAppChatShellProps) {
     showUserMessageOptions: config.showUserMessageOptions,
     showAssistantMessageOptions: config.showAssistantMessageOptions,
     bufferStream: config.bufferStream,
+    surface,
   });
 
   // Stamp the app's identity onto the centered hero. Drives

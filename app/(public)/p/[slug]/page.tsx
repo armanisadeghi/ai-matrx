@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { notFound } from "next/navigation";
 import { AgentAppPublicRenderer } from "@/features/agent-apps/components/AgentAppPublicRenderer";
+import { PUBLIC_AGENT_APP_SURFACE_NAME } from "@/features/surfaces/manifests/public-agent-app.manifest";
 import { getAgentAppIconsMetadata } from "@/features/agent-apps/utils/favicon-metadata";
 import type { Metadata } from "next";
 import type { PublicAgentApp } from "@/features/agent-apps/types";
@@ -146,9 +147,21 @@ export default async function PublicAppPage({
   // row's configured shell_kind. One row, two deployments (full page + iframe).
   if (embed === "widget") {
     return (
-      <AgentAppPublicRenderer app={{ ...app, shell_kind: "widget" }} slug={app.slug} />
+      <AgentAppPublicRenderer
+        app={{ ...app, shell_kind: "widget" }}
+        slug={app.slug}
+        surfaceName={PUBLIC_AGENT_APP_SURFACE_NAME}
+      />
     );
   }
 
-  return <AgentAppPublicRenderer app={app} slug={app.slug} />;
+  // This route is the ONLY one that emits `matrx-public/p` — the anonymous
+  // visitor surface. Authed agent-app routes inherit `matrx-user/agent-apps`.
+  return (
+    <AgentAppPublicRenderer
+      app={app}
+      slug={app.slug}
+      surfaceName={PUBLIC_AGENT_APP_SURFACE_NAME}
+    />
+  );
 }

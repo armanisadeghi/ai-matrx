@@ -39,6 +39,7 @@ import type {
   AgentAppShellConfigCommon,
   PublicAgentApp,
 } from "@/features/agent-apps/types";
+import type { AgentAppSurfaceBinding } from "@/features/agent-apps/surface/agent-app-surface";
 import {
   AgentAppMarkdownStream,
   AgentAppStreamProvider,
@@ -51,10 +52,13 @@ const HtmlPreviewModal = dynamic(
 
 interface AgentAppFullyCustomShellProps {
   app: PublicAgentApp;
+  /** Declared surface for this run (public route only) — see agent-app-surface.ts. */
+  surface?: AgentAppSurfaceBinding;
 }
 
 export function AgentAppFullyCustomShell({
   app,
+  surface,
 }: AgentAppFullyCustomShellProps) {
   const config = (app.shell_config ?? {}) as AgentAppShellConfigCommon;
   const slotCode = (app.slot_code ?? {}) as Record<string, string | undefined>;
@@ -108,6 +112,7 @@ export function AgentAppFullyCustomShell({
     appId: app.id,
     autoRun: config.autoRun ?? false,
     allowChat: config.allowChat ?? true,
+    surface,
   });
 
   const [localError, setLocalError] = useState<string | null>(null);

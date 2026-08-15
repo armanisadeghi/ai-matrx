@@ -36,13 +36,17 @@ import type {
 } from "@/features/agent-apps/types";
 import { SlotRenderer } from "./SlotRenderer";
 import type { UseAgentAppReturn } from "@/features/agent-apps/hooks/useAgentApp";
+import type { AgentAppSurfaceBinding } from "@/features/agent-apps/surface/agent-app-surface";
 
 interface AgentAppFormToResultShellProps {
   app: PublicAgentApp;
+  /** Declared surface for this run (public route only) — see agent-app-surface.ts. */
+  surface?: AgentAppSurfaceBinding;
 }
 
 export function AgentAppFormToResultShell({
   app,
+  surface,
 }: AgentAppFormToResultShellProps) {
   const dispatch = useAppDispatch();
   const config = (app.shell_config ?? {}) as AgentAppShellConfigCommon;
@@ -56,6 +60,7 @@ export function AgentAppFormToResultShell({
     appId: app.id,
     autoRun: config.autoRun ?? false,
     allowChat,
+    surface,
   });
 
   useEffect(() => {
