@@ -124,6 +124,30 @@ inline action so the admin resolves it without navigating. Org-level competitor
 
 ---
 
+### T6 — Wire the domain registry (BLOCKING, small) ⬅ built-and-unwired
+`platform.domain_classification` is LIVE with 166 seeded rows and measured coverage
+(**34.7%** of our 12,322-URL research corpus, **23%** of the commercial SERP sample, up from
+15% hardcoded). **Nothing reads it yet.** Point
+`matrx_seo.competitor_classification` at it: the requesting org's row wins, else the
+system-org row (`Matrx System`, `39c38960-d30c-4840-b0c1-c9960de95582`). Keep the pure
+derive/default functions unchanged. First task of the ground-truth chip.
+
+### T7 — Service lines (NEW, design agreed, not built)
+Market overlap is a property of **(service line × geography)**, not of a company or a
+location. All Green is national for ITAD/data destruction and SoCal-only for small-business
+e-waste pickup — a national ITAD rival is not a competitor for local pickup. See SoR §8a.
+Supersedes the location-only join in the earlier T4 sketch; the location detail hangs
+*beneath* the service line. Also adds `entity_role='franchise_sibling'` — same brand,
+separate P&L, real competition, never folded into "us".
+
+### T8 — Ground truth with Arman (NEW)
+Owner: background task chip, 2026-08-15. Zero human rulings exist anywhere in the system, so
+every threshold is provisional and more API data does not help — the missing thing is
+labels. Arman is the subject; his site ids and the session protocol are in SoR §10. Must
+follow the staged-confidence pattern (SoR §8d), not be a taxonomy quiz.
+
+---
+
 ## Evidence base — real SERPs, 5 industries (2026-08-15)
 
 Committed at `common-docs/systems/competitor-classification/serp-evidence-2026-08-15.json`
