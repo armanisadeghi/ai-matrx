@@ -8,6 +8,7 @@
 // a stored column would snapshot the whole row on every dial).
 
 import { useState } from "react";
+import Link from "next/link";
 import { toast } from "@/lib/toast";
 import {
   ArrowDownLeft,
@@ -15,11 +16,14 @@ import {
   AtSign,
   CalendarClock,
   History,
+  Megaphone,
   MessageSquare,
   NotebookPen,
   Phone,
   Trash2,
 } from "lucide-react";
+import { InboundLabelBadge } from "../outreach-lists/badges";
+import { readInboundClassification } from "../../inbox/attributes";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -203,10 +207,22 @@ export function InteractionTimeline({
         <ul className="space-y-0.5">
           {interactions.map((row) => {
             const meta = CHANNEL_META[row.channel_code] ?? CHANNEL_META.other;
+            // A REPLY is the most important row on this timeline — someone we
+            // wrote to wrote back. It gets a standing accent, the classifier's
+            // verdict, and a door to the campaign it answers, instead of
+            // sitting anonymously among logged calls.
+            const isReply = row.direction === "inbound";
+            const classification = isReply
+              ? readInboundClassification(row.attributes)
+              : null;
             return (
               <li
                 key={row.id}
-                className="group flex items-start gap-2 rounded px-1.5 py-1 hover:bg-accent/50"
+                className={cn(
+                  "group flex items-start gap-2 rounded px-1.5 py-1 hover:bg-accent/50",
+                  isReply &&
+                    "border-l-2 border-emerald-500/60 bg-emerald-500/5 pl-1",
+                )}
               >
                 <span className="mt-0.5 flex shrink-0 items-center gap-0.5">
                   <meta.Icon className="h-3.5 w-3.5 text-muted-foreground" />
@@ -221,6 +237,11 @@ export function InteractionTimeline({
                     <span className="truncate text-sm font-medium text-foreground">
                       {row.subject || meta.label}
                     </span>
+                    {classification?.rawLabel && (
+                      <span className="shrink-0 self-center">
+                        <InboundLabelBadge value={classification.rawLabel} />
+                      </span>
+                    )}
                     {row.duration_seconds != null && (
                       <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
                         {Math.round(row.duration_seconds / 60)}m
@@ -234,6 +255,21 @@ export function InteractionTimeline({
                     <p className="mt-0.5 whitespace-pre-wrap text-xs text-muted-foreground">
                       {row.body}
                     </p>
+                  )}
+                  {classification?.evidence && (
+                    <p className="mt-0.5 text-[11px] italic text-muted-foreground/80">
+                      {classification.evidence}
+                    </p>
+                  )}
+                  {/* THE DOOR LAW: this row names a campaign — reach it. */}
+                  {row.outreach_list_id && (
+                    <Link
+                      href={`/crm/outreach-lists/${row.outreach_list_id}`}
+                      className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground hover:underline"
+                    >
+                      <Megaphone className="h-3 w-3" aria-hidden />
+                      View the campaign this came from
+                    </Link>
                   )}
                 </div>
                 <button

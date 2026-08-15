@@ -66,6 +66,31 @@ const CRM_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
+      url: "/crm/inbox",
+      label: "Outreach Inbox",
+      description:
+        "Every inbound reply to outreach, as a VIEW over crm.interaction (no inbox table): who replied, the classifier's verdict with its evidence, the campaign and step it answers, the mailbox it was sent from, and the reputation case or backlink that motivated the message — each rendered AND linked. Reply goes through the canonical SingleSendDialog, so there is no second send path.",
+      filePath: "app/(core)/crm/inbox/page.tsx",
+      status: "Live",
+      notes: [
+        "RPCs: crm_inbox_list_scoped / _scope_counts / _list_facets / crm_inbox_set_handled (migrations/crm_08_inbox_chasebox.sql).",
+        "Scopes: Mine + My Orgs only — crm.interaction has no visibility axis and CRM still has no grant-reader RPC.",
+      ],
+    },
+    {
+      url: "/crm/chasebox",
+      label: "Chasebox",
+      description:
+        "The action queue: fresh replies, drafts awaiting approval (the trust ladder's held steps), stalled sequences, blocked members, and secondary-contact escalation candidates. Saved filters over crm.interaction + crm.outreach_list_member — every count is a door and every problem ships with its one-click fix.",
+      filePath: "app/(core)/crm/chasebox/page.tsx",
+      status: "Live",
+      notes: [
+        "RPCs: crm_chasebox_counts / crm_chasebox_items (migrations/crm_08_inbox_chasebox.sql).",
+        "Blocked members ask crm.check_send_eligibility — THE ONE AUTHORITY — and render its own fix.",
+        "Escalation candidates are a SUGGESTION only; nothing here ever auto-sends.",
+      ],
+    },
+    {
       url: "/crm/sending-identities",
       label: "Sending mailboxes",
       description:

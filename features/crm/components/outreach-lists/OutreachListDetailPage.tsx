@@ -19,6 +19,8 @@ import {
   PhoneCall,
   Play,
   CheckCircle2,
+  Inbox,
+  ListChecks,
   Mail,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -528,6 +530,31 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
               </span>
             )}
             <div className="ml-auto flex items-center gap-1.5">
+              {/* Where the answers to this campaign land, and what it is
+                  currently costing the human. Both are views over the same two
+                  tables this page writes, so a campaign must reach them. */}
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 gap-1 px-2 text-xs"
+                asChild
+              >
+                <Link href="/crm/inbox">
+                  <Inbox className="h-3.5 w-3.5" />
+                  Replies
+                </Link>
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 gap-1 px-2 text-xs"
+                asChild
+              >
+                <Link href="/crm/chasebox">
+                  <ListChecks className="h-3.5 w-3.5" />
+                  Chasebox
+                </Link>
+              </Button>
               {lifecycleButton}
               <Button
                 size="sm"

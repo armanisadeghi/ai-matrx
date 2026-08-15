@@ -28,6 +28,8 @@ import {
   Trash2,
   ArchiveRestore,
   FileUp,
+  Inbox,
+  ListChecks,
   Megaphone,
   Merge,
 } from "lucide-react";
@@ -774,6 +776,37 @@ export function CrmListPage({
         >
           <Megaphone className="h-3.5 w-3.5" />
           Outreach Lists
+        </Link>
+      </Button>
+      {/* The two outreach WORK surfaces: who replied, and what needs me now.
+          Both are views over crm.interaction, so they belong beside the CRM
+          rather than behind a separate console. */}
+      <Button
+        size="sm"
+        variant="ghost"
+        className="h-11 gap-1 px-2 text-xs lg:h-7"
+        asChild
+      >
+        <Link
+          href="/crm/inbox"
+          target={presentation === "route" ? undefined : "_blank"}
+        >
+          <Inbox className="h-3.5 w-3.5" />
+          Inbox
+        </Link>
+      </Button>
+      <Button
+        size="sm"
+        variant="ghost"
+        className="h-11 gap-1 px-2 text-xs lg:h-7"
+        asChild
+      >
+        <Link
+          href="/crm/chasebox"
+          target={presentation === "route" ? undefined : "_blank"}
+        >
+          <ListChecks className="h-3.5 w-3.5" />
+          Chasebox
         </Link>
       </Button>
       <Button
