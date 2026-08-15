@@ -26,6 +26,8 @@ export type LLMParamResolution = "480p" | "720p" | "1080p" | "4k" | "1K" | "2K" 
 
 export type LLMParamStyle = "vivid" | "natural";
 
+export type LLMParamTask = "text_to_video" | "image_to_video" | "reference_to_video" | "edit";
+
 export type LLMParamThinkingLevel = "minimal" | "low" | "medium" | "high";
 
 export type LLMParamToolChoice = "none" | "auto" | "required";

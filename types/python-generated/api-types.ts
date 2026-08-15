@@ -1585,6 +1585,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ai/google/embeddings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Embeddings */
+        post: operations["create_embeddings_ai_google_embeddings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/google/background-interactions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Background Interaction */
+        post: operations["create_background_interaction_ai_google_background_interactions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/google/background-interactions/{execution_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Background Interaction */
+        get: operations["get_background_interaction_ai_google_background_interactions__execution_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v2/ai/manual": {
         parameters: {
             query?: never;
@@ -4458,6 +4509,29 @@ export interface paths {
          *     ending with ``seo.backlink_refresh_completed``.
          */
         post: operations["refresh_site_backlinks_seo_sites__site_id__backlinks_refresh_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/pages/{page_id}/link-gap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Collect Page Link Gap
+         * @description Collect referring pages shared by accepted competitor-page proposals
+         *     but absent from our canonical page. The package service rechecks human
+         *     acceptance, competitor confirmation, and taxonomy eligibility before any
+         *     paid provider request.
+         */
+        post: operations["collect_page_link_gap_seo_sites__site_id__pages__page_id__link_gap_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -9476,6 +9550,46 @@ export interface paths {
         get: operations["export_document_research_topics__topic_id__document_export_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/parties/{outlet_party_id}/contact-candidates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Outlet Contact Candidates
+         * @description Return current crawl-backed people and address suggestions. Writes nothing.
+         */
+        get: operations["list_outlet_contact_candidates_crm_parties__outlet_party_id__contact_candidates_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/parties/{outlet_party_id}/contact-candidates/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm Outlet Contact Candidate
+         * @description Human-confirm one current person and selected literally observed addresses.
+         */
+        post: operations["confirm_outlet_contact_candidate_crm_parties__outlet_party_id__contact_candidates_confirm_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -21419,6 +21533,57 @@ export interface components {
              */
             max_calls?: number | null;
         };
+        /** BackgroundInteractionStart */
+        BackgroundInteractionStart: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Model */
+            model: string;
+            /** Input */
+            input: string | {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
+            /** Previous Interaction Id */
+            previous_interaction_id?: string | null;
+            /** Idempotency Key */
+            idempotency_key?: string | null;
+        };
+        /** BackgroundInteractionView */
+        BackgroundInteractionView: {
+            /** Execution Id */
+            execution_id: string;
+            /** Status */
+            status: string;
+            /** Interaction Id */
+            interaction_id?: string | null;
+            /** Provider Status */
+            provider_status?: string | null;
+            /** Steps */
+            steps?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
+            /** Outputs */
+            outputs?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
+            /** Error */
+            error?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+        };
         /** BacklinkEnrichmentBody */
         BacklinkEnrichmentBody: {
             /**
@@ -23648,6 +23813,10 @@ export interface components {
             stream?: boolean;
             /** Store */
             store: boolean;
+            /** Previous Interaction Id */
+            previous_interaction_id?: string | null;
+            /** Task */
+            task?: ("text_to_video" | "image_to_video" | "reference_to_video" | "edit") | null;
             /** Verbosity */
             verbosity?: ("low" | "medium" | "high") | null;
             /** Internal Web Search */
@@ -25202,8 +25371,13 @@ export interface components {
              * @enum {string}
              */
             mapType: "code_value";
-            /** Source */
-            source: string;
+            /** Target */
+            target: string;
+            /**
+             * Required
+             * @default false
+             */
+            required?: boolean;
         };
         /** CodingSessionBridgeRestRequest */
         CodingSessionBridgeRestRequest: {
@@ -25907,6 +26081,62 @@ export interface components {
             /** Id */
             id: string;
         };
+        /** ConfirmOutletContactRequest */
+        ConfirmOutletContactRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Candidate Key */
+            candidate_key: string;
+            /** Email Keys */
+            email_keys?: string[];
+            /**
+             * Accept Low Confidence
+             * @default false
+             */
+            accept_low_confidence?: boolean;
+            /**
+             * Accept Role Address
+             * @default false
+             */
+            accept_role_address?: boolean;
+        };
+        /** ConfirmedOutletContact */
+        ConfirmedOutletContact: {
+            /** Key */
+            key: string;
+            /** Display Name */
+            display_name: string;
+            /** Party Id */
+            party_id: string;
+            /** Created */
+            created: boolean;
+            /** Matched By */
+            matched_by: string;
+            /** Affiliation Id */
+            affiliation_id: string;
+            /** Affiliation Created */
+            affiliation_created: boolean;
+            /** Email Keys */
+            email_keys?: string[];
+            /**
+             * Contact Points Added
+             * @default 0
+             */
+            contact_points_added?: number;
+        };
         /**
          * ConformanceState
          * @enum {string}
@@ -25961,6 +26191,22 @@ export interface components {
             oauth_scopes_granted: string[];
             /** Last Error */
             last_error: string | null;
+        };
+        /** ContactEvidence */
+        ContactEvidence: {
+            /** Source Id */
+            source_id: string;
+            /** Url */
+            url: string;
+            /** Title */
+            title?: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "byline" | "editor" | "author_profile" | "credentialed_author" | "quote" | "mention";
+            /** Detail */
+            detail: string;
         };
         /** ContentEditRequest */
         ContentEditRequest: {
@@ -28287,7 +28533,7 @@ export interface components {
              * @enum {string}
              */
             mapType: "direct_value";
-            value: components["schemas"]["JsonValue"];
+            target: components["schemas"]["JsonValue"];
         };
         /** DirectiveConfirmRequest */
         DirectiveConfirmRequest: {
@@ -29221,6 +29467,65 @@ export interface components {
             patch: components["schemas"]["DefinitionPatch-Output"];
             /** Rationale */
             rationale: string;
+        };
+        /** EmbeddingPart */
+        EmbeddingPart: {
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "text" | "uri" | "inline";
+            /** Text */
+            text?: string | null;
+            /** Uri */
+            uri?: string | null;
+            /**
+             * Data
+             * @description Base64 encoded bytes
+             */
+            data?: string | null;
+            /** Mime Type */
+            mime_type?: string | null;
+        };
+        /** EmbeddingRequest */
+        EmbeddingRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Model */
+            model: string;
+            /** Inputs */
+            inputs: (string | components["schemas"]["EmbeddingPart"][])[];
+            /**
+             * Output Dimensionality
+             * @default 1536
+             */
+            output_dimensionality?: number;
+            /** Task Type */
+            task_type?: string | null;
+            /** Title */
+            title?: string | null;
+        };
+        /** EmbeddingResponse */
+        EmbeddingResponse: {
+            /** Model */
+            model: string;
+            /** Dimensions */
+            dimensions: number;
+            /** Vectors */
+            vectors: number[][];
         };
         /**
          * EnrichDirective
@@ -34181,6 +34486,10 @@ export interface components {
             stream?: boolean | null;
             /** Store */
             store?: boolean | null;
+            /** Previous Interaction Id */
+            previous_interaction_id?: string | null;
+            /** Task */
+            task?: ("text_to_video" | "image_to_video" | "reference_to_video" | "edit") | null;
             /** Verbosity */
             verbosity?: ("low" | "medium" | "high") | null;
             /** Internal Web Search */
@@ -36714,6 +37023,30 @@ export interface components {
             /** State */
             state: string;
         };
+        /** ObservedEmailCandidate */
+        ObservedEmailCandidate: {
+            /** Key */
+            key: string;
+            /** Address */
+            address: string;
+            /** Confidence */
+            confidence: number;
+            /**
+             * Tier
+             * @enum {string}
+             */
+            tier: "observed_personal" | "observed_role";
+            /** Is Role Address */
+            is_role_address: boolean;
+            /** Why */
+            why: string;
+            /** Source Id */
+            source_id: string;
+            /** Source Url */
+            source_url: string;
+            /** Source Title */
+            source_title?: string | null;
+        };
         /**
          * OccupationalCodesResponse
          * @description Wrapper around the bundled California job-codes config.
@@ -36955,6 +37288,8 @@ export interface components {
         OperationView: {
             /** Execution Id */
             execution_id: string;
+            /** Request Id */
+            request_id: string | null;
             /** Type */
             type: string;
             status: components["schemas"]["ExecutionStatus"];
@@ -37236,6 +37571,53 @@ export interface components {
             inject_into_sandbox?: boolean | null;
             /** Is Active */
             is_active?: boolean | null;
+        };
+        /** OutletContactCandidate */
+        OutletContactCandidate: {
+            /** Key */
+            key: string;
+            /** Display Name */
+            display_name: string;
+            /** Role */
+            role: string;
+            /** Confidence */
+            confidence: number;
+            /**
+             * Tier
+             * @enum {string}
+             */
+            tier: "strong" | "probable" | "weak";
+            /** Why */
+            why?: string[];
+            /** Evidence */
+            evidence?: components["schemas"]["ContactEvidence"][];
+            /** Observed Emails */
+            observed_emails?: components["schemas"]["ObservedEmailCandidate"][];
+            /** Existing Party Id */
+            existing_party_id?: string | null;
+            /** Existing Affiliation Id */
+            existing_affiliation_id?: string | null;
+            /** Existing Email Keys */
+            existing_email_keys?: string[];
+        };
+        /** OutletContactExtraction */
+        OutletContactExtraction: {
+            /** Outlet Party Id */
+            outlet_party_id: string;
+            /** Outlet Name */
+            outlet_name: string;
+            /** Outlet Domain */
+            outlet_domain: string;
+            /** Organization Id */
+            organization_id: string;
+            /** Sources Analyzed */
+            sources_analyzed: number;
+            /** Candidates */
+            candidates?: components["schemas"]["OutletContactCandidate"][];
+            /** Rejected */
+            rejected?: {
+                [key: string]: string;
+            }[];
         };
         /**
          * OutputSchemaEnvelope
@@ -37635,6 +38017,43 @@ export interface components {
             summary?: {
                 [key: string]: unknown;
             };
+        };
+        /** PageLinkGapBody */
+        PageLinkGapBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Opportunity Ids */
+            opportunity_ids: string[];
+            /**
+             * Limit
+             * @default 1000
+             */
+            limit?: number;
+            /**
+             * Max Spam Score
+             * @default 30
+             */
+            max_spam_score?: number;
+            /**
+             * Force Refresh
+             * @default true
+             */
+            force_refresh?: boolean;
+            /** Request Id */
+            request_id?: string | null;
         };
         /**
          * PagePerformanceConfig
@@ -39810,6 +40229,17 @@ export interface components {
              * @enum {string}
              */
             mapType: "prompt_user";
+            /**
+             * Prompt
+             * @default
+             */
+            prompt?: string;
+            defaultValue?: components["schemas"]["JsonValue"] | null;
+            /**
+             * Required
+             * @default false
+             */
+            required?: boolean;
         };
         /** PromptWarmRequest */
         PromptWarmRequest: {
@@ -54645,6 +55075,103 @@ export interface operations {
             };
         };
     };
+    create_embeddings_ai_google_embeddings_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmbeddingRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmbeddingResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_background_interaction_ai_google_background_interactions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BackgroundInteractionStart"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackgroundInteractionView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_background_interaction_ai_google_background_interactions__execution_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                execution_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackgroundInteractionView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     chat_v2_v2_ai_manual_post: {
         parameters: {
             query?: never;
@@ -60057,6 +60584,42 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["BacklinkRefreshBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    collect_page_link_gap_seo_sites__site_id__pages__page_id__link_gap_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+                page_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PageLinkGapBody"];
             };
         };
         responses: {
@@ -68933,6 +69496,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_outlet_contact_candidates_crm_parties__outlet_party_id__contact_candidates_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                outlet_party_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutletContactExtraction"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    confirm_outlet_contact_candidate_crm_parties__outlet_party_id__contact_candidates_confirm_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                outlet_party_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmOutletContactRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfirmedOutletContact"];
                 };
             };
             /** @description Validation Error */
