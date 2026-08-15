@@ -310,17 +310,16 @@ function ChaseboxItem({
                 {row.employer_name}
               </span>
             )}
+            {/* No "·" separator: this row WRAPS on a narrow screen, and a
+                bare middot is what ends up orphaned on its own line there. */}
             {row.outreach_list_id && (
-              <>
-                <span className="text-muted-foreground">·</span>
-                <EntityRef
-                  token="crm_outreach_list"
-                  id={row.outreach_list_id}
-                  name={row.outreach_list_name ?? "Campaign"}
-                  showIcon={false}
-                  className="text-xs text-muted-foreground"
-                />
-              </>
+              <EntityRef
+                token="crm_outreach_list"
+                id={row.outreach_list_id}
+                name={row.outreach_list_name ?? "Campaign"}
+                showIcon={false}
+                className="text-xs text-muted-foreground"
+              />
             )}
             {row.step != null && (
               <span className="text-xs text-muted-foreground tabular-nums">

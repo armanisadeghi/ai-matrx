@@ -34,6 +34,7 @@ import {
   type OutreachDraft,
   type OutreachProblem,
 } from "@/features/crm/outreach-single-send/service";
+import { CapabilityGate } from "@/features/entitlements/components/CapabilityGate";
 import { toast } from "@/lib/toast";
 import type {
   OutreachListMemberWithParty,
@@ -302,6 +303,19 @@ export function SingleSendDialog({
           </div>
         )}
 
+        {/*
+          THE PLAN GATES THE ACTION, and it is gated HERE — inside the one send
+          dialog — so every consumer inherits it and none can forget. The
+          outreach-list workspace had no gate at all before this; the inbox's
+          reply flow would have needed a second one beside it, which is how two
+          surfaces end up disagreeing about who may send.
+
+          `organizationId` is the org that OWNS the campaign, never the
+          active-org selection. Compact, and inside the footer, so a blocked
+          user sees the reason where they were about to press the button rather
+          than as a banner somewhere else on the page. Reading, previewing and
+          approving stay ungated — only the actual send is a plan capability.
+        */}
         <DialogFooter className="gap-2 sm:gap-2">
           {!draft ? (
             <Button
@@ -329,17 +343,23 @@ export function SingleSendDialog({
                   Approve exact message
                 </Button>
               )}
-              <Button
-                onClick={() => void send()}
-                disabled={!canSend || busy !== null}
+              <CapabilityGate
+                capability="outreach.send"
+                organizationId={list.organization_id}
+                compact
               >
-                {busy === "send" ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="mr-2 h-4 w-4" />
-                )}
-                Send email
-              </Button>
+                <Button
+                  onClick={() => void send()}
+                  disabled={!canSend || busy !== null}
+                >
+                  {busy === "send" ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="mr-2 h-4 w-4" />
+                  )}
+                  Send email
+                </Button>
+              </CapabilityGate>
             </>
           )}
         </DialogFooter>

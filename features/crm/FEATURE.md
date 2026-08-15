@@ -1,6 +1,6 @@
 # FEATURE.md — `crm`
 
-**Status:** `db-core live · route + WindowPanels live · outreach lists + call queue live · smart views live · native contact import live` · **Tier:** `1` · **Last updated:** `2026-08-15`
+**Status:** `db-core live · route + WindowPanels live · outreach lists + call queue live · smart views live · native contact import live · outreach inbox + Chasebox live` · **Tier:** `1` · **Last updated:** `2026-08-15`
 
 Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/crm/FEATURE.md` — read it before touching this feature in ANY repo.
 
@@ -146,6 +146,11 @@ DDL: [`migrations/crm_01_schema.sql`](../../migrations/crm_01_schema.sql),
 - **`last_touch_at` is deliberately NOT stored on `party`.** `party` is versioned; a
   cold-call floor would snapshot the whole row into `history.row_versions` on every
   dial. Derive it from `crm.interaction` (indexed `(party_id, occurred_at desc)`).
+- **Every CROSS-PARTY read of `crm.interaction` goes through a scoped RPC**
+  (`crm_inbox_list_scoped` / `crm_chasebox_items`), never a bare RLS-filtered
+  `.select()` — THE VIEW LAW. `fetchPartyDetail` stays the per-record reader.
+  Every client read of `attributes` goes through `features/crm/inbox/attributes.ts`;
+  its SQL twins are `public.crm_inbound_label` / `crm_inbound_evidence`.
 - **`crm.party_purge(id)` is the erasure path** — it also clears
   `history.row_versions`, `platform.comments`, and `platform.user_entity_state`. A
   purge that only deletes the live row is not a purge.
@@ -164,6 +169,11 @@ DDL: [`migrations/crm_01_schema.sql`](../../migrations/crm_01_schema.sql),
 `/crm/[partyId]` (record page) · `/crm/outreach-lists` (outreach-list console) ·
 `/crm/outreach-lists/[listId]` (outreach-list workspace) ·
 `/crm/outreach-lists/[listId]/dial` (call queue) ·
+`/crm/inbox` (the unified outreach inbox) · `/crm/chasebox` (the action queue) —
+both are VIEWS over `crm.interaction` + `crm.outreach_list_member`, never a new
+inbox model; their own [FEATURE.md](inbox/FEATURE.md) carries the contract, the
+scope decision, and 🚨 the PROVISIONAL `attributes` paths every reader must go
+through ·
 `/crm/sending-identities` + `/crm/sending-identities/[identityId]` (THE RIGHT TO
 SEND — the mailboxes outreach is sent from; its own
 [FEATURE.md](sending-identities/FEATURE.md), and the ONE part of this feature
@@ -539,6 +549,18 @@ current authors/editors/contributors without writing.
 
 ## Change log
 
+- 2026-08-15 — **The unified outreach inbox + the Chasebox (WP1).** `/crm/inbox`
+  and `/crm/chasebox`, both VIEWS over `crm.interaction` +
+  `crm.outreach_list_member` — no new table, no second inbox model, no separate
+  outreach console. `migrations/crm_08_inbox_chasebox.sql` applied live +
+  ledgered (scoped list / counts / facets / handled-write RPCs, plus the five
+  Chasebox queues in one row type). The inbox is the THIRD consumer of
+  `lib/entity-list`; replying reuses the canonical `SingleSendDialog`, and the
+  `outreach.send` capability gate moved INSIDE that dialog — which also closed
+  the outreach-list workspace's silently missing gate. `InteractionTimeline`
+  now marks an inbound reply visually, shows the classifier's verdict and
+  evidence, and links to the campaign it answers. Contract + the PROVISIONAL
+  server `attributes` paths: [`inbox/FEATURE.md`](inbox/FEATURE.md).
 - 2026-08-15 — **Outreach Phase 4 / real-case door:** the one-email dialog now
   inventories the organization's real reputation cases through the existing
   Marketing query/type layer and lets the human bind one explicitly before

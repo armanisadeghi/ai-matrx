@@ -14,9 +14,10 @@
  * A second compose UI here would be a second send path, and a send path that
  * can skip the gate will eventually skip it (crm/compliance/FEATURE.md).
  *
- * The ACTION is what `outreach.send` gates, so the CapabilityGate wraps this
- * dialog and not the inbox — reading replies is never gated, and gating the
- * teaching is how a non-technical expert's outreach career ends on day one.
+ * The ACTION is what `outreach.send` gates, and that gate lives inside
+ * `SingleSendDialog` beside the Send button — one gate, every consumer.
+ * Reading replies is never gated: gating the teaching is how a non-technical
+ * expert's outreach career ends on day one.
  */
 
 import { useEffect, useState } from "react";
@@ -28,7 +29,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { CapabilityGate } from "@/features/entitlements/components/CapabilityGate";
 import { SingleSendDialog } from "@/features/crm/components/outreach-lists/SingleSendDialog";
 import {
   fetchOutreachList,
@@ -97,24 +97,22 @@ export function InboxReplyDialog({ row, onClose, onSent }: InboxReplyDialogProps
 
   if (!row) return null;
 
-  // Resolved: hand off to THE canonical dialog, gated on the org that owns the
-  // record — never the active-org selection.
+  // Resolved: hand off to THE canonical dialog. The `outreach.send` gate lives
+  // INSIDE that dialog, beside the Send button, so this surface cannot hold a
+  // second (and eventually divergent) opinion about who may send — and a
+  // blocked user meets the explanation where they were about to press, not as
+  // a banner at the bottom of the page.
   if (resolved) {
     return (
-      <CapabilityGate
-        capability="outreach.send"
-        organizationId={resolved.list.organization_id}
-      >
-        <SingleSendDialog
-          open
-          onOpenChange={(open) => {
-            if (!open) onClose();
-          }}
-          list={resolved.list}
-          member={resolved.member}
-          onSent={onSent}
-        />
-      </CapabilityGate>
+      <SingleSendDialog
+        open
+        onOpenChange={(open) => {
+          if (!open) onClose();
+        }}
+        list={resolved.list}
+        member={resolved.member}
+        onSent={onSent}
+      />
     );
   }
 
