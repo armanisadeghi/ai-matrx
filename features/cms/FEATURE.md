@@ -31,12 +31,17 @@ build plan this feature is part of (project P5).
 - `features/cms/components/collections/CollectionItemEditorDialog.tsx` — schema-driven create/edit for one item (correct input per field type, required markers, raw-JSON escape hatch for undeclared keys, route errors pinned to the offending inputs); Drawer on mobile, Dialog on desktop
 - `features/cms/collections/validateItem.ts` — the canonical item-validator TWIN (see Doctrine)
 - `app/(core)/cms/[siteId]/pages/[pageId]/page.tsx`, `.../pages/new/page.tsx` — page editor
-  (`features/cms/components/PageEditor.tsx`). Tabs: **HTML · CSS · JS · Preview · Plan · SEO ·
-  Measure · Settings · History** (Plan, Measure and History are hidden while creating an unsaved
-  page). **Plan**
+  (`features/cms/components/PageEditor.tsx`). Tabs: **Code (HTML · CSS · JS inner switcher) ·
+  Preview · Plan · SEO · Measure · Settings · History** (Plan, Measure and History are hidden
+  while creating an unsaved page). Tabs are URL state: every switch writes `?tab=` via
+  `history.replaceState` at the buffer grain (`html`/`css`/`js` while on Code), so any tab is
+  deep-linkable and pre-fold `?tab=html|css|js` links land on the right buffer. **Plan**
   (`components/PagePlanTab.tsx`, `React.lazy` in-gate) is the page's BEFORE per
   `docs/handoffs/cms-page-hub.md`: with `plan_node_id` set it reads the `plan.node` direct from
-  Supabase and shows label/route, status, brief, target keyword, and the canonical `NodeStepRail`
+  Supabase and shows label/route, status, brief, target keyword, the **SEO plan** (the applied
+  `attributes.keyword_strategy` — page role, secondary keywords, supported money routes, and the
+  strategist's planned internal links with anchor text, each route rendered as a plan-node door
+  when the plan knows it), and the canonical `NodeStepRail`
   with an "Open in plan workspace" door (`/marketing/content-plan/{site_id}?node={id}`); editing
   stays in the plan workspace's NodePanel. With no node but a paired `web_site_id`, it runs the
   real adopt (`bridgeAdopt` → aidream `cms-align`) behind a confirm and prints the server's
@@ -500,6 +505,11 @@ UI-complete here but only take effect once P1's service layer reads them.
 
 ## Change log
 
+- `2026-08-15` — **Page editor tab governance + SEO plan** (cms-page-hub items 4–5). HTML/CSS/JS
+  folded into one Code tab with an inner switcher (7-tab strip); tabs are URL state (`?tab=`
+  written on every switch, legacy `html|css|js` values land on the right buffer). The Plan tab
+  gained the SEO plan section: the applied `attributes.keyword_strategy` rendered with plan-node
+  doors for known routes. Code-placeholder literal-`\n` bug fixed.
 - `2026-08-15` — **CMS refusals now name the truth and provide a door.** Site
   and page `get` actions preserve `404 not_found`, `403 denied`, and transient
   failures instead of flattening them into one string; `CmsApiError` carries the

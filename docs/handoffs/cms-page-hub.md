@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-08-14
+updated: 2026-08-15
 repos: [matrx-frontend, aidream]
 vision: [this doc §Vision — Arman's words, 2026-08-14]
 ---
@@ -45,11 +45,12 @@ create it, never pretend the step didn't exist), what happens DURING (the editor
 comes AFTER (measurement, analysis, findings — the feedback loop back into editing). A tab is a
 reused canonical component, never a rebuilt poorer one (Inventory Law).
 
-## Current state — verified against code 2026-08-14
+## Current state — verified against code + browser 2026-08-15
 
-- **PageEditor** (`features/cms/components/PageEditor.tsx`) tabs: html · css · js · preview ·
-  seo · settings · versions. Internal `activeTab` state, not sub-routes. Toolbar has
-  "Edit with AI" (2026-08-13 AI-everywhere wave); SEO/publish-review buttons chipped.
+- **PageEditor** (`features/cms/components/PageEditor.tsx`) tabs: **Code (html/css/js inner
+  switcher) · preview · plan · seo · measure · settings · versions** — 7 tabs, URL-synced
+  (`?tab=` written on every switch at the buffer grain; legacy `?tab=html|css|js` deep links land
+  on the right buffer). Toolbar has "Edit with AI".
 - **The identity joins already exist** — this is what makes the hub cheap:
   - `client_pages.plan_node_id` → `plan.node` (the plan that realized the page; bridge
     realize/adopt writes it).
@@ -71,67 +72,42 @@ reused canonical component, never a rebuilt poorer one (Inventory Law).
 
 ## Work order
 
-Chips fired 2026-08-14 for W1–W3 (each carries its full spec — this list is the tracker):
-
-1. ~~**Plan tab** in PageEditor~~ — **DONE 2026-08-14.** `features/cms/components/PagePlanTab.tsx`
-   (`React.lazy` in-gate), tab sits between Preview and SEO and is hidden on `/pages/new`.
-   Linked: `usePlanNode` (new single-record hook in `content-plan/data/hooks.ts`) + status
-   categories + `useKeywordLabels` + canonical `NodeStepRail`, with a new-tab door to
-   `/marketing/content-plan/{site_id}?node={id}`; read-only — the NodePanel editors are NOT
-   duplicated. Plan-less + paired site: `bridgeAdopt` behind a `ConfirmDialog`, server per-item
-   result shown verbatim, page refetched via the new `onRefetchPage` prop. Unpaired site: says so
-   and links `/marketing/content-plan`. Verified in PRODUCTION 2026-08-14 (v0.4.684): the tab renders and
-   its unpaired-site empty state names the gap and offers the content-plans door.
-2. ~~**Measure tab** — `<PageWorkspace pageId={web_page_id}/>` reused wholesale + door + honest
-   empty state.~~ **DONE 2026-08-14.** `features/cms/components/measure/CmsPageMeasure.tsx`
-   (`React.lazy` in-gate, mounted only while the tab is active) renders the canonical
-   `PageWorkspace` unchanged; the tab sits between SEO and Settings and is hidden on
-   `/pages/new`. What it took: the marketing site context is now host-agnostic —
-   `components/site/MarketingSiteContext.tsx` (extracted from `MarketingSiteLayoutClient`, which
-   also broke the layout ↔ `site-surface-base` import cycle) carries `brandId`, because
-   `useMarketingSiteSurfaceBase` read it from `useParams()` and therefore only worked under
-   `/marketing/brands/[brandId]/...`; new `getPageLocation` / `usePageLocation` resolve a bare
-   `web.page` id to its site + brand. The host supplies `MarketingSiteProvider` +
-   `MarketingSiteSurfaceProvider` + a live `useSiteCrawlActivity` (the workspace's "Fetch now"
-   rejoins server commands through it). Header door "Open page workspace" opens
-   `marketingRoutes.sitePage(...)` in a new tab (unsaved editor buffers survive); unjoined pages
-   name what makes the join (publish + crawl) and link the site's measured pages, no fake CTA; a
-   site with no brand says so rather than emitting an empty `brand_id` into agent context.
-   Verified in PRODUCTION 2026-08-14 (v0.4.684): tab renders, active-tab state correct,
-   unjoined pages explain that publish + crawl make the join.
-3. ~~**Reverse doors** — "Edit in CMS" from PageWorkspace and from every plan tree/table CMS
-   badge.~~ **DONE 2026-08-14.** `features/cms/utils/cmsRoutes.ts` (`cmsPageEditorHref`) is
-   the one href builder; PageWorkspace's header door resolves off the existing push lane
-   (`useCmsEditorHref` → `useCmsPushFacts` → `resolvePushTarget`: `web_page_id` id join
-   first, route key fallback — same query key, no second fetch); the plan tree badge and the
-   table's Page column are now new-tab links with `stopPropagation` (row select/drag intact),
-   and NodeRealityCard's existing door was verified and moved onto the same helper. Unpaired
-   site = plain text, never a fake door.
-4. **SEO-plan surface.** The page's keyword intent lives in two places (node
-   `primary_keyword_id` + `attributes.keyword_strategy` — see aidream content_plan FEATURE.md
-   invariant 5). Decide whether it earns its own tab or a section of the Plan tab (recommend:
-   section of Plan until it has its own editor), and surface the strategist's planned internal
-   links / target queries where the writer can act on them.
-5. **Tab governance.** Convert PageEditor's internal tabs to URL state (`?tab=` or sub-routes)
-   so tabs are deep-linkable and lazily loaded per Arman's "routes are free" point; beyond ~8
-   tabs the tail collapses into an overflow menu (compact-nav pattern). Do this BEFORE adding a
-   9th tab.
-6. **Before/during/after audit across the rest of the system** — apply the doctrine everywhere
-   a page-shaped artifact is edited or displayed, e.g.: the plan NodePanel should peek live
-   GSC/analysis for a published node (its AFTER); PageWorkspace should show the plan brief it
-   is measuring against (its BEFORE); the pipeline rail belongs on the Measure side too. Sweep,
-   list the gaps, chip the clear ones.
+1. ~~Plan tab~~ — DONE 2026-08-14, production-verified (PagePlanTab: node context, adopt flow,
+   workspace door).
+2. ~~Measure tab~~ — DONE 2026-08-14, production-verified (CmsPageMeasure mounts the canonical
+   PageWorkspace wholesale; `usePageLocation` + host-agnostic `MarketingSiteContext` made that
+   possible).
+3. ~~Reverse doors~~ — DONE 2026-08-14 (`cmsPageEditorHref` is the one href builder; workspace
+   header, plan tree badge, table Page column).
+4. ~~SEO-plan surface~~ — **DONE 2026-08-15** as a section of the Plan tab (built as
+   recommended; Arman can still promote it to its own tab). `PagePlanTab`'s `SeoPlanSection`
+   renders the applied `attributes.keyword_strategy` via the canonical
+   `readNodeKeywordStrategy`: page role, secondary keywords, supported money routes, and the
+   planned internal links with anchor text — every route resolved through `usePlanNodes` to a
+   plan-node door when the plan knows it, plain text when it doesn't. Honest empty state links
+   the plan workspace. Browser-verified with a live strategy record. NOTE: no live `plan.node`
+   row carries `keyword_strategy` yet — the strategist has never been applied in production, so
+   the empty state is currently what every page shows.
+5. ~~Tab governance~~ — **DONE 2026-08-15** (fold built as recommended; Arman can still switch
+   to an overflow menu). html/css/js are one **Code** tab with an inner switcher (7-tab strip);
+   every tab switch writes `?tab=` via `history.replaceState` at the buffer grain, so tabs are
+   deep-linkable both directions and legacy `?tab=html|css|js` links land on the right buffer.
+   `CmsPageEditorTab` (agent scope) still speaks the buffer grain — no manifest change.
+6. **Before/during/after audit** — the three named gaps are CHIPPED 2026-08-15 (NodePanel
+   shows its AFTER for published nodes; PageWorkspace shows its BEFORE brief; NodeStepRail on
+   the Measure side). Beyond those, the system-wide sweep of every page-shaped edit/display
+   surface remains open.
 7. **Research tab (later).** When P2 research artifacts flow (`plan.node_artifact
    kind='research'`), the page's research distillation + cited sources join the Plan tab; a
-   separate tab only if it grows an editor.
+   separate tab only if it grows an editor. Blocked on website-factory p3/p4/p5.
 
 ## Decisions needed (Arman)
 
-1. **Tab ceiling + grouping:** with Plan and Measure landed the editor has ~9 tabs. OK to fold
-   html/css/js into one "Code" tab with an inner switcher (recommended), or prefer the overflow
-   menu?
-2. **SEO plan:** own tab or Plan-tab section? (Recommend section until it has a dedicated
-   editor.)
+Both 2026-08-14 questions were built as recommended (fold to Code tab; SEO plan as a Plan-tab
+section) — ratify or reverse:
+
+1. Keep the Code-tab fold, or switch to an overflow menu?
+2. Keep SEO plan as a Plan-tab section, or promote to its own tab once it grows an editor?
 
 ## Resources
 
