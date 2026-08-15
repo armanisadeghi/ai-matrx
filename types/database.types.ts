@@ -4368,6 +4368,48 @@ export type Database = {
         }
         Relationships: []
       }
+      org_plan: {
+        Row: {
+          created_at: string
+          effective_from: string
+          expires_at: string | null
+          granted_by: string | null
+          note: string | null
+          organization_id: string
+          source: string
+          tier: Database["billing"]["Enums"]["tier"]
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          effective_from?: string
+          expires_at?: string | null
+          granted_by?: string | null
+          note?: string | null
+          organization_id: string
+          source?: string
+          tier?: Database["billing"]["Enums"]["tier"]
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          effective_from?: string
+          expires_at?: string | null
+          granted_by?: string | null
+          note?: string | null
+          organization_id?: string
+          source?: string
+          tier?: Database["billing"]["Enums"]["tier"]
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
       price: {
         Row: {
           active: boolean
@@ -4578,12 +4620,47 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      entitlement_check: { Args: { p_capability: string }; Returns: Json }
+      entitlement_check:
+        | { Args: { p_capability: string }; Returns: Json }
+        | { Args: { p_capability: string; p_org: string }; Returns: Json }
       entitlement_consume: {
         Args: { p_capability: string; p_check_id?: string; p_quantity?: number }
         Returns: Json
       }
       entitlement_snapshot: { Args: never; Returns: Json }
+      org_capability_status: { Args: { p_org: string }; Returns: Json }
+      org_plan_list: {
+        Args: never
+        Returns: {
+          created_at: string
+          effective_from: string
+          expires_at: string | null
+          granted_by: string | null
+          note: string | null
+          organization_id: string
+          source: string
+          tier: Database["billing"]["Enums"]["tier"]
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "org_plan"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      org_plan_set: {
+        Args: {
+          p_expires_at: string
+          p_note: string
+          p_org: string
+          p_source: string
+          p_tier: Database["billing"]["Enums"]["tier"]
+        }
+        Returns: Json
+      }
       period_reset: {
         Args: { p_period: Database["billing"]["Enums"]["meter_period"] }
         Returns: string
@@ -4592,13 +4669,34 @@ export type Database = {
         Args: { p_period: Database["billing"]["Enums"]["meter_period"] }
         Returns: string
       }
-      resolve_capability: {
-        Args: { p_capability: string; p_user: string }
-        Returns: Json
+      resolve_capability:
+        | { Args: { p_capability: string; p_user: string }; Returns: Json }
+        | {
+            Args: { p_capability: string; p_org: string; p_user: string }
+            Returns: Json
+          }
+      resolve_effective_tier: {
+        Args: { p_org: string; p_user: string }
+        Returns: Database["billing"]["Enums"]["tier"]
+      }
+      resolve_org_tier: {
+        Args: { p_org: string }
+        Returns: Database["billing"]["Enums"]["tier"]
       }
       resolve_tier: {
         Args: { p_user: string }
         Returns: Database["billing"]["Enums"]["tier"]
+      }
+      tier_max: {
+        Args: {
+          a: Database["billing"]["Enums"]["tier"]
+          b: Database["billing"]["Enums"]["tier"]
+        }
+        Returns: Database["billing"]["Enums"]["tier"]
+      }
+      tier_rank: {
+        Args: { p_tier: Database["billing"]["Enums"]["tier"] }
+        Returns: number
       }
       usage_admin_by_user: {
         Args: {
@@ -11020,6 +11118,11 @@ export type Database = {
           metadata: Json
           name: string
           organization_id: string
+          pause_reason: string | null
+          paused_at: string | null
+          paused_by: string | null
+          paused_by_kind: string | null
+          sending_identity_id: string | null
           started_at: string | null
           status: string
           updated_at: string
@@ -11039,6 +11142,11 @@ export type Database = {
           metadata?: Json
           name: string
           organization_id: string
+          pause_reason?: string | null
+          paused_at?: string | null
+          paused_by?: string | null
+          paused_by_kind?: string | null
+          sending_identity_id?: string | null
           started_at?: string | null
           status?: string
           updated_at?: string
@@ -11058,6 +11166,11 @@ export type Database = {
           metadata?: Json
           name?: string
           organization_id?: string
+          pause_reason?: string | null
+          paused_at?: string | null
+          paused_by?: string | null
+          paused_by_kind?: string | null
+          sending_identity_id?: string | null
           started_at?: string | null
           status?: string
           updated_at?: string
@@ -11065,7 +11178,15 @@ export type Database = {
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "outreach_list_sending_identity_id_fkey"
+            columns: ["sending_identity_id"]
+            isOneToOne: false
+            referencedRelation: "sending_identity"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       outreach_list_member: {
         Row: {
@@ -11601,6 +11722,422 @@ export type Database = {
           metadata?: Json
           name?: string
           organization_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      sending_event: {
+        Row: {
+          actor_kind: string
+          actor_user_id: string | null
+          bounce_type: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          detail: Json
+          error_code: string | null
+          error_message: string | null
+          event_kind: string
+          id: string
+          identity_id: string
+          interaction_id: string | null
+          medium_id: string | null
+          metadata: Json
+          occurred_at: string
+          organization_id: string
+          outreach_list_id: string | null
+          party_id: string | null
+          provider_message_id: string | null
+          subject: string | null
+          to_address_key: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          actor_kind?: string
+          actor_user_id?: string | null
+          bounce_type?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          detail?: Json
+          error_code?: string | null
+          error_message?: string | null
+          event_kind: string
+          id?: string
+          identity_id: string
+          interaction_id?: string | null
+          medium_id?: string | null
+          metadata?: Json
+          occurred_at?: string
+          organization_id: string
+          outreach_list_id?: string | null
+          party_id?: string | null
+          provider_message_id?: string | null
+          subject?: string | null
+          to_address_key: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          actor_kind?: string
+          actor_user_id?: string | null
+          bounce_type?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          detail?: Json
+          error_code?: string | null
+          error_message?: string | null
+          event_kind?: string
+          id?: string
+          identity_id?: string
+          interaction_id?: string | null
+          medium_id?: string | null
+          metadata?: Json
+          occurred_at?: string
+          organization_id?: string
+          outreach_list_id?: string | null
+          party_id?: string | null
+          provider_message_id?: string | null
+          subject?: string | null
+          to_address_key?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sending_event_identity_id_fkey"
+            columns: ["identity_id"]
+            isOneToOne: false
+            referencedRelation: "sending_identity"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sending_event_interaction_id_fkey"
+            columns: ["interaction_id"]
+            isOneToOne: false
+            referencedRelation: "interaction"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sending_event_medium_id_fkey"
+            columns: ["medium_id"]
+            isOneToOne: false
+            referencedRelation: "contact_medium"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sending_event_outreach_list_id_fkey"
+            columns: ["outreach_list_id"]
+            isOneToOne: false
+            referencedRelation: "outreach_list"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sending_event_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: false
+            referencedRelation: "party"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sending_identity: {
+        Row: {
+          attributes: Json
+          auth_checked_at: string | null
+          auth_detail: Json
+          connection_id: string | null
+          created_at: string
+          created_by: string | null
+          daily_cap: number
+          default_recipient_timezone: string
+          deleted_at: string | null
+          display_name: string
+          dkim_pass: boolean | null
+          dmarc_pass: boolean | null
+          domain_check_error: string | null
+          domain_checked_at: string | null
+          domain_verification_token: string
+          domain_verified_at: string | null
+          from_address: string
+          from_address_key: string
+          from_name: string | null
+          health: Json
+          health_computed_at: string | null
+          hourly_cap: number
+          id: string
+          last_send_at: string | null
+          max_interval_seconds: number
+          metadata: Json
+          min_interval_seconds: number
+          organization_id: string
+          pause_code: string | null
+          pause_reason: string | null
+          paused_at: string | null
+          paused_by: string | null
+          paused_by_kind: string | null
+          provider: string
+          provider_account: string | null
+          quiet_hours_end: number
+          quiet_hours_start: number
+          reply_to: string | null
+          resumed_at: string | null
+          resumed_by: string | null
+          send_weekends: boolean
+          sending_domain: string
+          spf_pass: boolean | null
+          status: string
+          status_changed_at: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          warmup_completed_at: string | null
+          warmup_day: number | null
+          warmup_started_at: string | null
+        }
+        Insert: {
+          attributes?: Json
+          auth_checked_at?: string | null
+          auth_detail?: Json
+          connection_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          daily_cap?: number
+          default_recipient_timezone?: string
+          deleted_at?: string | null
+          display_name: string
+          dkim_pass?: boolean | null
+          dmarc_pass?: boolean | null
+          domain_check_error?: string | null
+          domain_checked_at?: string | null
+          domain_verification_token: string
+          domain_verified_at?: string | null
+          from_address: string
+          from_address_key: string
+          from_name?: string | null
+          health?: Json
+          health_computed_at?: string | null
+          hourly_cap?: number
+          id?: string
+          last_send_at?: string | null
+          max_interval_seconds?: number
+          metadata?: Json
+          min_interval_seconds?: number
+          organization_id: string
+          pause_code?: string | null
+          pause_reason?: string | null
+          paused_at?: string | null
+          paused_by?: string | null
+          paused_by_kind?: string | null
+          provider: string
+          provider_account?: string | null
+          quiet_hours_end?: number
+          quiet_hours_start?: number
+          reply_to?: string | null
+          resumed_at?: string | null
+          resumed_by?: string | null
+          send_weekends?: boolean
+          sending_domain: string
+          spf_pass?: boolean | null
+          status?: string
+          status_changed_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          warmup_completed_at?: string | null
+          warmup_day?: number | null
+          warmup_started_at?: string | null
+        }
+        Update: {
+          attributes?: Json
+          auth_checked_at?: string | null
+          auth_detail?: Json
+          connection_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          daily_cap?: number
+          default_recipient_timezone?: string
+          deleted_at?: string | null
+          display_name?: string
+          dkim_pass?: boolean | null
+          dmarc_pass?: boolean | null
+          domain_check_error?: string | null
+          domain_checked_at?: string | null
+          domain_verification_token?: string
+          domain_verified_at?: string | null
+          from_address?: string
+          from_address_key?: string
+          from_name?: string | null
+          health?: Json
+          health_computed_at?: string | null
+          hourly_cap?: number
+          id?: string
+          last_send_at?: string | null
+          max_interval_seconds?: number
+          metadata?: Json
+          min_interval_seconds?: number
+          organization_id?: string
+          pause_code?: string | null
+          pause_reason?: string | null
+          paused_at?: string | null
+          paused_by?: string | null
+          paused_by_kind?: string | null
+          provider?: string
+          provider_account?: string | null
+          quiet_hours_end?: number
+          quiet_hours_start?: number
+          reply_to?: string | null
+          resumed_at?: string | null
+          resumed_by?: string | null
+          send_weekends?: boolean
+          sending_domain?: string
+          spf_pass?: boolean | null
+          status?: string
+          status_changed_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          warmup_completed_at?: string | null
+          warmup_day?: number | null
+          warmup_started_at?: string | null
+        }
+        Relationships: []
+      }
+      sending_identity_check: {
+        Row: {
+          check_kind: string
+          checked_at: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          duration_ms: number | null
+          id: string
+          identity_id: string
+          message: string | null
+          metadata: Json
+          observed: Json
+          organization_id: string
+          passed: boolean
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          check_kind: string
+          checked_at?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          duration_ms?: number | null
+          id?: string
+          identity_id: string
+          message?: string | null
+          metadata?: Json
+          observed?: Json
+          organization_id: string
+          passed: boolean
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          check_kind?: string
+          checked_at?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          duration_ms?: number | null
+          id?: string
+          identity_id?: string
+          message?: string | null
+          metadata?: Json
+          observed?: Json
+          organization_id?: string
+          passed?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sending_identity_check_identity_id_fkey"
+            columns: ["identity_id"]
+            isOneToOne: false
+            referencedRelation: "sending_identity"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sending_policy: {
+        Row: {
+          attributes: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          disabled_at: string | null
+          disabled_by: string | null
+          disabled_by_kind: string | null
+          disabled_reason: string | null
+          enabled_at: string | null
+          enabled_by: string | null
+          id: string
+          metadata: Json
+          notes: string | null
+          organization_id: string
+          outreach_enabled: boolean
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          attributes?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          disabled_at?: string | null
+          disabled_by?: string | null
+          disabled_by_kind?: string | null
+          disabled_reason?: string | null
+          enabled_at?: string | null
+          enabled_by?: string | null
+          id?: string
+          metadata?: Json
+          notes?: string | null
+          organization_id: string
+          outreach_enabled?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          attributes?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          disabled_at?: string | null
+          disabled_by?: string | null
+          disabled_by_kind?: string | null
+          disabled_reason?: string | null
+          enabled_at?: string | null
+          enabled_by?: string | null
+          id?: string
+          metadata?: Json
+          notes?: string | null
+          organization_id?: string
+          outreach_enabled?: boolean
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -30403,6 +30940,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      guided_checklist_run: {
+        Row: {
+          checklist_key: string
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          dismissed_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          state: Json
+          target_key: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          checklist_key: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          dismissed_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          state?: Json
+          target_key?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          checklist_key?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          dismissed_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          state?: Json
+          target_key?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
       }
       matrx_action_ledger: {
         Row: {

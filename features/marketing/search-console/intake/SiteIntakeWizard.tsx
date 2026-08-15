@@ -19,13 +19,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  CheckCircle2,
-  Compass,
-  DownloadCloud,
-  Loader2,
-  RotateCcw,
-} from "lucide-react";
+import { CheckCircle2, Compass, Loader2, RotateCcw } from "lucide-react";
+
+import { GuidedChecklist } from "@/lib/guided-setup/components/GuidedChecklist";
+import { siteSetupChecklist } from "@/features/marketing/search-console/setup/siteSetupChecklist";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -156,6 +153,12 @@ export function SiteIntakeWizard() {
   const dataTo = freshnessRows.reduce<string | null>(
     (max, row) => (max === null || row.max_date > max ? row.max_date : max),
     null,
+  );
+
+  // The context the `marketing.site_setup` checklist runs its checks against.
+  const setupContext = useMemo(
+    () => ({ site, dispatch }),
+    [site, dispatch],
   );
 
   const [importKicking, setImportKicking] = useState(false);
@@ -332,48 +335,25 @@ export function SiteIntakeWizard() {
     }
   };
 
-  // ── Not connected / no data — one compact block, no prose ───────────────
-  if (!gscBound) {
+  // ── Not connected / no data ─────────────────────────────────────────────
+  // The two dead-end blocks that used to live here ("Connect Search Console"
+  // + one button, "No data imported yet" + one button) are now the declared
+  // `marketing.site_setup` checklist: persistent, re-verified on every return,
+  // and honest about everything else that is still missing rather than only
+  // the one gate that happened to fire first.
+  if (!gscBound || (freshness.isSuccess && !hasAnyData)) {
     return (
       <div className="h-full min-h-0 overflow-y-auto p-4">
-        <div className="mx-auto flex max-w-3xl items-center justify-between rounded-lg border p-3">
-          <span className="text-sm">
-            Connect Google Search Console to run the site interview.
-          </span>
-          <Button asChild size="sm">
-            <Link
-              href={`${marketingRoutes.site(site.brand_id, site.id)}/integrations`}
-            >
-              Open Integrations
-            </Link>
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  if (freshness.isSuccess && !hasAnyData) {
-    return (
-      <div className="h-full min-h-0 overflow-y-auto p-4">
-        <div className="mx-auto flex max-w-3xl flex-col gap-2 rounded-lg border p-3">
-          <span className="text-sm">
-            No Search Console data imported yet. Google only keeps ~16 months —
-            days not imported are eventually lost.
-          </span>
-          <div>
-            <Button
-              size="sm"
-              disabled={importKicking || importRunning}
-              onClick={startHistoryImport}
-            >
-              {importKicking || importRunning ? (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <DownloadCloud className="mr-1.5 h-3.5 w-3.5" />
-              )}
-              {importRunning ? "Importing…" : "Import full history now"}
-            </Button>
-          </div>
+        <div className="mx-auto max-w-3xl">
+          <GuidedChecklist
+            definition={siteSetupChecklist}
+            context={setupContext}
+            scope={
+              organizationId
+                ? { organizationId, targetKey: site.id }
+                : null
+            }
+          />
         </div>
       </div>
     );
