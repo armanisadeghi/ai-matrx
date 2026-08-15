@@ -451,11 +451,9 @@ On a 325-page site the audit tab replaces the whole surface with a generic retry
 
 ~1,200 hatches landed unfrozen (five categories above baseline, others far below), so every run fails regardless of the change. Audit the growth (or burn it down), then re-freeze with `pnpm check:hatches --update` as its own change.
 
-### D135 — soft-deleting a row HARD-deletes its association edges; "Dismiss" is not reversible (2026-08-08)
+### D135 — RESOLVED 2026-08-14: soft delete now TOMBSTONES association edges and restore revives them
 
-`platform._gc_entity_associations` fires on UPDATE-to-deleted and PERMANENTLY deletes every edge of the trashed row. So a restored item comes back stripped — its keywords, tasks, notes, and files are gone forever and nothing rebuilds them. On `web.page` this breaks the documented Dismiss/Restore + scraper-revive contract.
-
-🚨 **ARMAN'S RULING 2026-08-14 — the design is: a soft delete SOFT-removes everything, and restore brings it ALL back, easily.** So edges get tombstoned (rows kept, marked removed, stamped) and un-tombstoned on restore; permanent purge belongs only to a true hard DELETE. Not acceptable: leaving edges untouched and filtering in readers. Constraint: associations convey access, so a tombstoned edge must stop conveying the instant the item is trashed, and every reader (both repos + reachability + `iam.has_access`) must ignore tombstones — a missed reader is an access leak. **Chip fired 2026-08-14.**
+Per Arman's ruling, `platform._gc_entity_associations` tombstones (`deleted_at` + `deleted_via_*` stamp) instead of purging, restore un-tombstones exactly what that entity's trashing removed, and only a hard DELETE purges; conveyance is cut at `platform.containment_edges` and every reader reads `platform.associations_live`. Contract + live proof: `common-docs/systems/access-architecture/FEATURE.md` §2.4c. Edges destroyed before this migration are unrecoverable.
 
 ### D133 (remainder) — no product path to move a site between organizations (2026-08-08)
 
@@ -505,11 +503,46 @@ The 4-day platform freeze is fixed (`history_row_versions_partition_autoprovisio
 
 Board: [docs/handoffs/website-factory-bug-dispatch.md](docs/handoffs/website-factory-bug-dispatch.md) (WF-1…WF-12); vision gaps in `website-factory-vision.md`. Close when the board is empty. **Arman assigns; WF-1/2/3 are HIGH.**
 
-### D119 — any EDITOR can flip a canonical entity's `visibility` (incl. to `public`) at the DB layer (2026-07-29)
+### D119 — RESOLVED 2026-08-14: THE GOVERNANCE-COLUMN TIER (the tiered model's missing column axis)
 
-`std_update` gates at editor for ALL columns; only the ShareModal UI is owner-gated — an editor-sharee can `PATCH visibility='public'` via PostgREST. The comment in `utils/permissions/service.ts` claiming RLS enforces owner-only writes is FALSE for std-variant tables.
+**It was worse than filed.** With a real `editor` grant, the real `authenticated` role and a real
+minted JWT, an editor-sharee could not only flip `visibility` to `public` — they could **take
+ownership** (`created_by := self`) and **re-home the row into their own org**
+(`organization_id`). And those chain: stealing ownership makes `std_delete`'s owner arm true, so
+the follow-up hard DELETE succeeded, defeating the one tier that WAS built.
 
-🚨 **ARMAN'S RULING 2026-08-14 — DO NOT HARD-CODE A `visibility` GUARD.** The concept (owner/admin only — and "owner" here means `created_by`, not a column named owner) is right, but this is a symptom of something bigger: the original design had TIERED access — view / edit / **admin** — where an editor got certain privileges and deliberately not others, with defaults, and with the split allowed to differ per entity type. If that tiering has been lost, restoring it is the task and it is a much larger conversation than one column. Required work is archaeology FIRST (common-docs, db-rules, `iam.membership_grant`'s member_role→confers mapping, git history of `iam.apply_rls`/`iam.has_access`): what the model was, what it conferred, where it eroded — written up in `common-docs/systems/access-architecture/FEATURE.md` — and only then restored in the canonical RLS pipeline, never per table. If it turns out it was never fully built, STOP and report; that is Arman's call. **Chip fired 2026-08-14.**
+**Archaeology (Arman's ruling: restore the tiering, never a one-off guard).** The STATEMENT axis
+was built and is correct — `std_select` viewer / `std_update` editor / **`std_delete` admin**, the
+EDITOR-CAP RULING made concrete. The COLUMN axis was **never designed**: no migration creates the
+`permission_level` enum, the only tier enumeration (the vision-era `.arman` playbook) makes DELETE
+the entire editor↔admin difference, and `NEW.visibility IS DISTINCT FROM OLD.visibility` appears
+zero times in the corpus. Two one-off column guards exist (`content_ir.kind_definition.is_active`,
+`ctx_scope_types.is_system`), both keyed to owner/super-admin, never generalized. Meanwhile
+`access-architecture/FEATURE.md` §2 and `utils/permissions/service.ts` both asserted owner-only
+`visibility` writes as fact. Full account: `common-docs/systems/access-architecture/FEATURE.md` §2.6.
+
+**Fix — in the canonical pipeline, not per table.** RLS is row-level and cannot express a column
+tier, and column GRANTs are role-wide, so the axis is a generated BEFORE UPDATE trigger emitted by
+`iam.apply_rls` beside the policies: `iam._guard_governance_columns` + `iam.apply_governance_guard`
+/ `drop_governance_guard` + `iam.sweep_governance_guards()` (one short transaction per table —
+137 ACCESS EXCLUSIVE locks in one transaction deadlocks a live DB), with per-entity-type room on
+`platform.entity_types.governed_columns` (NULL = `{visibility, created_by, organization_id}`).
+Live on 137 entity-family tables; components/ledger/restricted deliberately excluded. Migration
+`migrations/iam_governance_column_tier.sql`. Guard: `pnpm check:governance-tier` (14/14 through
+real PostgREST). Not over-tightening: of 1,650 visibility changes in 120 days, 1,594 had a NULL
+actor (privileged writes, skipped) and 56 were the owner — **zero by a real non-owner**.
+
+**Still open — two product-semantics questions, Arman decides** (documented in §2.6):
+1. **`deleted_at` is not governed.** Soft-delete stays an editor action while the editor-cap
+   ruling put "deleting others' work" — naming `entity_soft_delete` — in the admin tier. Those
+   disagree: an editor cannot call the RPC but can write the column.
+2. **Plain org members on `internal` rows** are now refused a `visibility` change on org work
+   product they did not create. Consistent with "members work, owners/admins govern", but it
+   narrows what a member could do yesterday.
+
+**Also found, not changed (product semantics):** the **component** variant puts DELETE at `editor`
+on the parent while the entity variant puts it at `admin` — ~162 tables where `editor ≡ admin` for
+destruction. Defensible under THE COMPONENT OWNERSHIP LAW, never explicitly ruled.
 
 ### D118 — conveying `working_document → conversation` edges let an editor-sharee re-share and amplify access (2026-07-29)
 
