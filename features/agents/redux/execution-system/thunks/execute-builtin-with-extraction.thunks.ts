@@ -56,6 +56,23 @@ function extractCodeFromResponse(response: string): string | null {
   // away as "No code block found in response" after paying for it. Accept the
   // response only when it IS a module: it must start with `import`/`export`
   // and carry a default export, so prose can never be mistaken for code.
+  //
+  // 2026-08-14 (D152): the root cause in the PROMPTS was fixed — both
+  // `prompt-app-auto-create` (agx v6) and `-lightning` (agx v5) ended with
+  // "output only the ... code without any additional explanation", which
+  // literally asks for a bare module. Both now carry an explicit OUTPUT
+  // CONTRACT demanding a single ```tsx fence.
+  //
+  // That was NOT sufficient, and this recovery is still load-bearing. Measured
+  // the same day: the agent answers fenced 3/3 when executed directly (aidream
+  // MCP `agent_run`), but the /agent-apps/new flow — which streams through
+  // `POST {server}/v2/ai/agents/<id>` — still produced UNFENCED modules on
+  // every observed run. It is NOT a stale agent definition: a `max_tokens`
+  // probe written seconds earlier took effect on that path immediately
+  // (`TokensOut: 1200`), proving the v2 run reads the current definition.
+  // So something about the v2 execution path, not the stored prompt, is
+  // dropping or diluting the contract. Do NOT delete this fallback, and do not
+  // treat a firing as a regression until that divergence is understood.
   const trimmed = normalized.trim();
   if (
     /^(import|export)\s/.test(trimmed) &&
