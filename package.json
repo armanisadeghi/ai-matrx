@@ -1,6 +1,6 @@
 {
   "name": "app-matrx",
-  "version": "0.4.699",
+  "version": "0.4.700",
   "private": true,
   "scripts": {
     "dev": "bash scripts/dev-cleanup.sh reap && NODE_OPTIONS='--max-old-space-size=3072 --dns-result-order=ipv4first' next dev",
