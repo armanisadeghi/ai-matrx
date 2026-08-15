@@ -12,14 +12,21 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Save, Loader2, FileText, GitCompareArrows } from "lucide-react";
+import {
+  ArrowLeft,
+  Save,
+  Loader2,
+  FileText,
+  GitCompareArrows,
+} from "lucide-react";
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import { useToast } from "@/components/ui/use-toast";
 import {
-  MessageTemplateDB,
+  MessageTemplateEditorSource,
   CreateMessageTemplateInput,
   UpdateMessageTemplateInput,
   MessageRole,
+  readMessageTemplateMetadata,
 } from "@/features/message-templates/types/message-templates-db";
 import {
   createTemplate,
@@ -35,8 +42,17 @@ const MESSAGE_ROLES: { value: MessageRole; label: string }[] = [
   { value: "tool", label: "Tool" },
 ];
 
+function isMessageRole(value: string): value is MessageRole {
+  return MESSAGE_ROLES.some((role) => role.value === value);
+}
+
+function readSubjectTemplate(metadata: unknown): string {
+  const value = readMessageTemplateMetadata(metadata).subject_template;
+  return typeof value === "string" ? value : "";
+}
+
 interface TemplateEditorProps {
-  template?: MessageTemplateDB | null;
+  template?: MessageTemplateEditorSource | null;
   mode: "create" | "edit";
 }
 
@@ -140,6 +156,9 @@ export function TemplateEditor({ template, mode }: TemplateEditorProps) {
 
   const [label, setLabel] = useState(template?.label ?? "");
   const [content, setContent] = useState(template?.content ?? "");
+  const [subjectTemplate, setSubjectTemplate] = useState(() =>
+    readSubjectTemplate(template?.metadata),
+  );
   const [role, setRole] = useState<MessageRole>(template?.role ?? "user");
   const [isPublic, setIsPublic] = useState(
     isPubliclyVisible(template?.visibility),
@@ -177,6 +196,13 @@ export function TemplateEditor({ template, mode }: TemplateEditorProps) {
 
     setIsSaving(true);
     try {
+      const metadata = {
+        ...readMessageTemplateMetadata(template?.metadata),
+        ...(subjectTemplate.trim()
+          ? { subject_template: subjectTemplate.trim() }
+          : {}),
+      };
+      if (!subjectTemplate.trim()) delete metadata.subject_template;
       if (mode === "create") {
         const input: CreateMessageTemplateInput = {
           label: label.trim(),
@@ -184,6 +210,7 @@ export function TemplateEditor({ template, mode }: TemplateEditorProps) {
           role,
           visibility: isPublic ? "public" : "internal",
           tags,
+          metadata,
         };
         await createTemplate(input);
         toast({ title: "Template created" });
@@ -195,6 +222,7 @@ export function TemplateEditor({ template, mode }: TemplateEditorProps) {
           role,
           visibility: isPublic ? "public" : "internal",
           tags,
+          metadata,
         };
         await updateTemplate(input);
         toast({ title: "Template saved" });
@@ -218,6 +246,7 @@ export function TemplateEditor({ template, mode }: TemplateEditorProps) {
     label,
     content,
     role,
+    subjectTemplate,
     isPublic,
     tagsInput,
     template,
@@ -250,7 +279,12 @@ export function TemplateEditor({ template, mode }: TemplateEditorProps) {
             />
             <Select
               value={role}
-              onValueChange={(v) => setRole(v as MessageRole)}
+              onValueChange={(value) => {
+                if (!isMessageRole(value)) {
+                  throw new Error(`Unknown message role: ${value}`);
+                }
+                setRole(value);
+              }}
             >
               <SelectTrigger
                 className="h-9 w-32 text-sm"
@@ -294,11 +328,23 @@ export function TemplateEditor({ template, mode }: TemplateEditorProps) {
           </div>
 
           {/* Content — auto-grow textarea, page scrolls */}
+          <input
+            value={subjectTemplate}
+            onChange={(event) => setSubjectTemplate(event.target.value)}
+            placeholder="Email subject (optional) — variables work here too"
+            style={{ fontSize: "16px" }}
+            className="h-9 w-full rounded-md border border-input bg-background px-3 font-mono text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+          />
           <AutoTextarea
             value={content}
             onChange={setContent}
-            placeholder="Write your template content here..."
+            placeholder="Write the message. Example: Hi {{party.display_name}}..."
           />
+          <p className="text-xs text-muted-foreground">
+            Merge fields are filled from a real record at preview time. Missing
+            or blank fields stop the send; they are never replaced with empty
+            text.
+          </p>
         </div>
       </div>
     </>

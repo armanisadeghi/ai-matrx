@@ -80,6 +80,7 @@ import type {
   TypedStreamEvent,
   RenderBlockEvent,
 } from "@/types/python-generated/stream-events";
+import { isJsonObject } from "@/types/json";
 
 interface MessageTemplateManagerProps {
   className?: string;
@@ -399,7 +400,9 @@ export function MessageTemplateManager({
         label: editData.label || "",
         content: editData.content || "",
         role: editData.role || "user",
-        metadata: editData.metadata ?? undefined,
+        metadata: isJsonObject(editData.metadata)
+          ? editData.metadata
+          : undefined,
         visibility: editData.visibility,
         tags: editData.tags || [],
       });

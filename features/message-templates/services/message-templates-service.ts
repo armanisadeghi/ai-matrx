@@ -5,6 +5,7 @@ import {
   MessageTemplateQueryOptions,
   MessageRole,
   TemplatesByRole,
+  MessageTemplateUpdate,
 } from "@/features/message-templates/types/message-templates-db";
 import { createClient } from "@/utils/supabase/client";
 import { buildSearchOr } from "@/utils/supabase-search";
@@ -80,7 +81,7 @@ export async function fetchMessageTemplates(
 
   if (error) throw new Error(error.message || "Failed to fetch templates");
 
-  return data as MessageTemplateDB[];
+  return data;
 }
 
 // Fetch message templates by role
@@ -91,6 +92,21 @@ export async function fetchTemplatesByRole(role: MessageRole) {
 // Fetch public templates only
 export async function fetchPublicTemplates() {
   return fetchMessageTemplates({ visibility: "public" });
+}
+
+/** Team templates for one real org plus the shared public library. */
+export async function fetchOrganizationMessageTemplates(
+  organizationId: string,
+): Promise<MessageTemplateDB[]> {
+  const supabase = getClient();
+  const { data, error } = await supabase
+    .schema("agent")
+    .from("message_template")
+    .select("*")
+    .or(`organization_id.eq.${organizationId},visibility.eq.public`)
+    .order("updated_at", { ascending: false });
+  if (error) throw new Error(error.message || "Failed to fetch templates");
+  return data;
 }
 
 // Fetch templates grouped by role
@@ -119,7 +135,8 @@ export async function getTemplateById(
 ): Promise<MessageTemplateDB | null> {
   const supabase = getClient();
   const { data, error } = await supabase
-    .schema("agent").from("message_template")
+    .schema("agent")
+    .from("message_template")
     .select("*")
     .eq("id", id)
     .single();
@@ -129,7 +146,7 @@ export async function getTemplateById(
     throw new Error(error.message || "Failed to fetch template");
   }
 
-  return data as MessageTemplateDB;
+  return data;
 }
 
 // Create a new template
@@ -142,7 +159,8 @@ export async function createTemplate(
   const organizationId = await ensureOrgId(undefined);
 
   const { data, error } = await supabase
-    .schema("agent").from("message_template")
+    .schema("agent")
+    .from("message_template")
     .insert([
       {
         label: input.label,
@@ -160,7 +178,7 @@ export async function createTemplate(
 
   if (error) throw new Error(error.message || "Failed to create template");
 
-  return data as MessageTemplateDB;
+  return data;
 }
 
 // Update an existing template
@@ -169,7 +187,7 @@ export async function updateTemplate(
 ): Promise<MessageTemplateDB> {
   const supabase = getClient();
 
-  const updateData: any = {};
+  const updateData: MessageTemplateUpdate = {};
 
   if (input.label !== undefined) updateData.label = input.label;
   if (input.content !== undefined) updateData.content = input.content;
@@ -179,7 +197,8 @@ export async function updateTemplate(
   if (input.tags !== undefined) updateData.tags = input.tags;
 
   const { data, error } = await supabase
-    .schema("agent").from("message_template")
+    .schema("agent")
+    .from("message_template")
     .update(updateData)
     .eq("id", input.id)
     .select()
@@ -187,7 +206,7 @@ export async function updateTemplate(
 
   if (error) throw new Error(error.message || "Failed to update template");
 
-  return data as MessageTemplateDB;
+  return data;
 }
 
 // Delete a template
@@ -195,7 +214,8 @@ export async function deleteTemplate(id: string): Promise<void> {
   const supabase = getClient();
 
   const { error } = await supabase
-    .schema("agent").from("message_template")
+    .schema("agent")
+    .from("message_template")
     .delete()
     .eq("id", id);
 
@@ -215,7 +235,8 @@ export async function getAllTags(): Promise<string[]> {
   const supabase = getClient();
 
   const { data, error } = await supabase
-    .schema("agent").from("message_template")
+    .schema("agent")
+    .from("message_template")
     .select("tags");
 
   if (error) throw new Error(error.message || "Failed to fetch tags");

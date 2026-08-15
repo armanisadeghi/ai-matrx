@@ -127,9 +127,12 @@ Headers and footer are built by `buildComplianceEnvelope()` in
 send produce byte-identical output. It also emits the GDPR art. 14 source-disclosure block on first
 contact, and the legally required postal address.
 
-`findUnresolvedMergeFields()` implements the merge-field rule: **an unresolved variable is a
-refusal, never an empty string.** "Hi ," is the most recognizable automated-spam tell there is, and
-it is a rendering bug we can make impossible.
+`findUnresolvedMergeFields()` gives the browser an early warning. The authoritative rule lives in
+aidream's generic `services/message_templates` renderer: **an unresolved, null, blank, empty, or
+malformed variable is a refusal, never an empty string.** Phase 4 renders against the real target,
+fingerprints the exact preview for approval, and renders again before the only send primitive.
+"Hi ," is the most recognizable automated-spam tell there is, and it is now structurally
+impossible at the send boundary.
 
 ---
 

@@ -19,6 +19,7 @@ import {
   PhoneCall,
   Play,
   CheckCircle2,
+  Mail,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
@@ -49,12 +50,9 @@ import type {
   MemberStatusCounts,
 } from "../../outreach-lists/types";
 import { MEMBER_STATUSES } from "../../outreach-lists/types";
-import {
-  ListKindBadge,
-  ListStatusBadge,
-  MemberStatusBadge,
-} from "./badges";
+import { ListKindBadge, ListStatusBadge, MemberStatusBadge } from "./badges";
 import { AddMembersDialog } from "./AddMembersDialog";
+import { SingleSendDialog } from "./SingleSendDialog";
 
 const PAGE_SIZE = 50;
 
@@ -72,6 +70,8 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
   const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
+  const [singleSendMember, setSingleSendMember] =
+    useState<OutreachListMemberWithParty | null>(null);
   // What last filled this queue (a smart view, or an ad-hoc filter).
   const enrollmentSource = list ? readEnrollmentSource(list) : null;
 
@@ -110,10 +110,12 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
   }, [listId, page, statusFilter, search]);
 
   useEffect(() => {
-    void loadHeader();
+    const timer = window.setTimeout(() => void loadHeader(), 0);
+    return () => window.clearTimeout(timer);
   }, [loadHeader]);
   useEffect(() => {
-    void loadMembers();
+    const timer = window.setTimeout(() => void loadMembers(), 0);
+    return () => window.clearTimeout(timer);
   }, [loadMembers]);
 
   const refreshAll = useCallback(() => {
@@ -329,6 +331,16 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
         {
           id: "queue",
           items: [
+            ...(list?.lane === "cold_outreach"
+              ? [
+                  {
+                    id: "write-email",
+                    label: "Write one email",
+                    icon: Mail,
+                    onSelect: () => setSingleSendMember(row),
+                  },
+                ]
+              : []),
             {
               id: "requeue",
               label: "Back to queue",
@@ -338,7 +350,9 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
                   refreshAll();
                   toast.success("Member requeued");
                 } catch (e) {
-                  toast.error(e instanceof Error ? e.message : "Requeue failed");
+                  toast.error(
+                    e instanceof Error ? e.message : "Requeue failed",
+                  );
                 }
               },
             },
@@ -573,6 +587,18 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
           list={list}
           ctx={ctx}
           onAdded={refreshAll}
+        />
+      )}
+      {list && (
+        <SingleSendDialog
+          key={singleSendMember?.id ?? "closed"}
+          open={singleSendMember !== null}
+          onOpenChange={(next) => {
+            if (!next) setSingleSendMember(null);
+          }}
+          list={list}
+          member={singleSendMember}
+          onSent={refreshAll}
         />
       )}
     </div>
