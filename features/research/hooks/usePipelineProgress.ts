@@ -293,7 +293,7 @@ export function sourcesDiscoveredFromItems(
  * Terminal sweep. A full `/run` does NOT emit per-stage "all complete" events
  * (`search_complete` / `analyze_all_complete` only fire from the standalone
  * endpoints, and there is no scrape/synthesis "all complete" at all — see
- * RESEARCH_STREAMING_GUIDE.md), so without this sweep any stage left in
+ * /Users/armanisadeghi/code/common-docs/systems/research/STREAMING_GUIDE.md), so without this sweep any stage left in
  * `active` keeps its spinner running forever after the run ends.
  *
  * On a terminal signal (`pipeline_complete` or the stream `end`), force every

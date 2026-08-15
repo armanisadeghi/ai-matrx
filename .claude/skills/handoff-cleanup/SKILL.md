@@ -1,6 +1,8 @@
 ---
 name: handoff-cleanup
-description: Dispatchable cleanup agent for handoff docs. Use when Arman says "/handoff-cleanup", "clean up the handoffs", "audit the handoffs", or asks whether handoff docs are stale or done. Sweeps docs/handoffs/ in BOTH repos (matrx-frontend + aidream), verifies every doc's claims against live code/DB with small subagents, deletes done docs, grooms rotted ones, and returns one concise decision list for genuinely ambiguous drift. Optional args: file names or a count to limit the batch.
+type: Skill
+title: handoff-cleanup — the rot sweep
+description: "Dispatchable cleanup agent for handoff docs. Use when Arman says \"/handoff-cleanup\", \"clean up the handoffs\", \"audit the handoffs\", or asks whether handoff docs are stale or done. Sweeps docs/handoffs/ in BOTH repos (matrx-frontend + aidream), verifies every doc's claims against live code/DB with small subagents, deletes done docs, grooms rotted ones, and returns one concise decision list for genuinely ambiguous drift. Optional args: file names or a count to limit the batch."
 ---
 
 <!-- SYNCED COPY — do not edit here.

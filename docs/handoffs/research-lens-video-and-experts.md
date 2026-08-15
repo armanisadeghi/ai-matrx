@@ -4,8 +4,8 @@ updated: 2026-08-08
 repos: [matrx-frontend, aidream]
 vision:
   [
-    features/research/docs/PIPELINE_FLOW.md,
-    features/research/docs/VISION_AND_GAPS.md,
+    /Users/armanisadeghi/code/common-docs/systems/research/PIPELINE_FLOW.md,
+    /Users/armanisadeghi/code/common-docs/systems/research/VISION_AND_GAPS.md,
   ]
 ---
 
@@ -138,12 +138,12 @@ consumer — build them so they can later be absorbed, not so they must be rebui
 
 ## 2. Resources
 
-**Read first:** [`features/research/docs/PIPELINE_FLOW.md`](../../features/research/docs/PIPELINE_FLOW.md)
+**Read first:** [`/Users/armanisadeghi/code/common-docs/systems/research/PIPELINE_FLOW.md`](/Users/armanisadeghi/code/common-docs/systems/research/PIPELINE_FLOW.md)
 — traced flow + the exact input contract of every agent. Answers "what does each
 agent receive" without reading aidream.
 
 **Feature docs:** [`features/research/FEATURE.md`](../../features/research/FEATURE.md) ·
-[`features/research/docs/VISION_AND_GAPS.md`](../../features/research/docs/VISION_AND_GAPS.md)
+[`/Users/armanisadeghi/code/common-docs/systems/research/VISION_AND_GAPS.md`](/Users/armanisadeghi/code/common-docs/systems/research/VISION_AND_GAPS.md)
 (§4, §13.2 predate the Gemini-native path — see Gotchas) ·
 [`features/industries/FEATURE.md`](../../features/industries/FEATURE.md) ·
 `/Users/armanisadeghi/code/aidream/research/FEATURE.md`
@@ -199,7 +199,7 @@ readiness ledger silently reads zero).
 - YouTube search made opt-in + metered, degrades to web-only — `aidream/research/youtube_quota.py`
 - Per-keyword `find-videos` endpoint — `aidream/research/search.py#find_keyword_videos`
 - Budget exposure removed everywhere (endpoint, 429 body, stream message, DB grants)
-- Pipeline + agent-input trace — `features/research/docs/PIPELINE_FLOW.md`
+- Pipeline + agent-input trace — `/Users/armanisadeghi/code/common-docs/systems/research/PIPELINE_FLOW.md`
 - **Canonical YouTube research library.** `research.youtube_video` stores one
   global row per YouTube ID; every discovered ID is saved immediately, topic
   membership is a canonical source→video association, and metadata/comments/
@@ -336,7 +336,7 @@ readiness ledger silently reads zero).
   `git pull --rebase` will refuse on a dirty tree, and an interrupted rebase can
   leave your commit off HEAD (recover with `git rebase --abort`, the commit
   survives in reflog).
-- **`VISION_AND_GAPS.md` §13.2 proposes a three-tier YouTube transcript ladder
+- **`/Users/armanisadeghi/code/common-docs/systems/research/VISION_AND_GAPS.md` §13.2 proposes a three-tier YouTube transcript ladder
   (yt-dlp → third-party API → Speechmatics).** That predates the Gemini-native
   path, which already works today with no download and produces transcript +
   analysis in one call. Do not build the ladder without re-deciding.

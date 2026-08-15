@@ -1,5 +1,7 @@
 ---
 name: handoffs
+type: Skill
+title: handoffs — the work-order system
 description: The handoff-document system for docs/handoffs/*.md — how to write one, take one over, groom it every turn, and delete it. Use whenever you (1) end a large task with work remaining and need to hand off, (2) are told to continue / take over / pick up work from a handoff doc, (3) finish ANY task covered by an existing handoff (grooming it before the turn ends is mandatory), or (4) touch any file under docs/handoffs/. Triggers on "write a handoff", "handoff doc", "pick up where X left off", "continue the X work", docs/handoffs/**. Cross-repo — matrx-frontend and aidream share ONE system; a piece of work gets ONE handoff in the repo that owns most of it.
 ---
 

@@ -97,7 +97,7 @@ They are grouped here because they share invariants (NDJSON streaming, Python-ba
 - Hooks: `useResearchApi`, `useResearchStream` (NDJSON + progress), `useResearchState`, `useSourceFilters`, `useTopicContext`, `useTopicId`, `useTopicData`, `useTopicProgress`, `useStreamDebug`.
 - State: Zustand store `features/research/state/topicStore.ts` with `TopicStoreInitialData` (pre-populated by server layout — no skeleton flash).
 - Context: `features/research/context/ResearchContext.tsx`.
-- Streaming guide: `app/(public)/p/research/RESEARCH_STREAMING_GUIDE.md`.
+- Streaming guide: `/Users/armanisadeghi/code/common-docs/systems/research/STREAMING_GUIDE.md`.
 
 **Data model (Supabase `rs_*` tables)**
 `rs_topic`, `rs_keyword`, `rs_keyword_source`, `rs_source`, `rs_source_tag`, `rs_content`, `rs_analysis`, `rs_synthesis`, `rs_tag`, `rs_document`, `rs_media`, `rs_template`. RPC: `get_topic_overview(topic_id)` returns aggregated counts in a single call.
@@ -189,7 +189,7 @@ The boundary is: **ingestion pipelines own persistence; agents read from those t
 - **Agent consumption:** [`features/agents/FEATURE.md`](../agents/FEATURE.md), [`features/agents/docs/DURABLE_TOOL_CALLS_CLIENT_INTEGRATION.md`](../agents/docs/DURABLE_TOOL_CALLS_CLIENT_INTEGRATION.md)
 - **Tasks integration (transcripts):** [`features/tasks/FEATURE.md`](../tasks/FEATURE.md)
 - **PDF API surface:** [`features/pdf-extractor/API.md`](../pdf-extractor/API.md)
-- **Research reference:** [`features/research/README.md`](../research/README.md), [`app/(public)/p/research/RESEARCH_STREAMING_GUIDE.md`](<../../app/(public)/p/research/RESEARCH_STREAMING_GUIDE.md>)
+- **Research reference:** [`features/research/README.md`](../research/README.md), [`/Users/armanisadeghi/code/common-docs/systems/research/STREAMING_GUIDE.md`](/Users/armanisadeghi/code/common-docs/systems/research/STREAMING_GUIDE.md)
 - **Transcripts reference:** [`features/transcripts/README.md`](../transcripts/README.md)
 
 ---
