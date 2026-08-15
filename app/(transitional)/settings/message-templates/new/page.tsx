@@ -1,36 +1,34 @@
 import { TemplateEditor } from "@/features/message-templates/components/TemplateEditor";
 import { createClient } from "@/utils/supabase/server";
-import { MessageTemplateDB } from "@/features/message-templates/types/message-templates-db";
+import type { MessageTemplateEditorSource } from "@/features/message-templates/types/message-templates-db";
 
 interface PageProps {
-    searchParams: Promise<{ from?: string }>;
+  searchParams: Promise<{ from?: string }>;
 }
 
 export default async function NewTemplatePage({ searchParams }: PageProps) {
-    const { from } = await searchParams;
+  const { from } = await searchParams;
 
-    let sourceTemplate: MessageTemplateDB | null = null;
+  let sourceTemplate: MessageTemplateEditorSource | null = null;
 
-    if (from) {
-        const supabase = await createClient();
-        const { data } = await supabase
-            .schema("agent").from("message_template")
-            .select("*")
-            .eq("id", from)
-            .single();
+  if (from) {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .schema("agent")
+      .from("message_template")
+      .select("*")
+      .eq("id", from)
+      .single();
 
-        if (data) {
-            sourceTemplate = {
-                ...(data as MessageTemplateDB),
-                id: "",
-                label: `${(data as MessageTemplateDB).label} (Copy)`,
-                visibility: "internal",
-                created_at: "",
-                updated_at: null,
-                created_by: null,
-            };
-        }
+    if (data) {
+      sourceTemplate = {
+        ...data,
+        id: "",
+        label: `${data.label ?? "Template"} (Copy)`,
+        visibility: "internal",
+      };
     }
+  }
 
-    return <TemplateEditor mode="create" template={sourceTemplate} />;
+  return <TemplateEditor mode="create" template={sourceTemplate} />;
 }
