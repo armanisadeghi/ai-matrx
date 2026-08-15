@@ -4,6 +4,8 @@ import React, { lazy, Suspense } from "react";
 import { useSelector } from "react-redux";
 import { selectUser } from "@/lib/redux/slices/userSlice";
 import { Bug } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { PUBLIC_HEADER_ICON_BUTTON } from "./publicHeaderChrome";
 
 // Lazy load FeedbackButton - only loads when user is authenticated
 const FeedbackButton = lazy(() => import("@/features/feedback/FeedbackButton"));
@@ -38,7 +40,7 @@ export function PublicHeaderFeedback() {
 function FeedbackButtonPlaceholder() {
   return (
     <span
-      className="flex h-11 w-11 items-center justify-center opacity-30"
+      className={cn(PUBLIC_HEADER_ICON_BUTTON, "flex items-center justify-center opacity-30")}
       aria-hidden="true"
     >
       <Bug className="w-4 h-4" />

@@ -6,6 +6,7 @@ import { setMode } from '@/styles/themes/themeSlice';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useIsMounted } from '@/hooks/use-is-mounted';
+import { PUBLIC_HEADER_ICON_BUTTON } from "./publicHeaderChrome";
 
 export function PublicHeaderThemeToggle() {
     const theme = useAppSelector((s) => s.theme.mode);
@@ -16,7 +17,7 @@ export function PublicHeaderThemeToggle() {
     // Don't render until mounted to avoid hydration mismatch
     if (!mounted) {
         return (
-            <div className="h-11 w-11" aria-hidden="true" />
+            <div className={PUBLIC_HEADER_ICON_BUTTON} aria-hidden="true" />
         );
     }
 
@@ -26,7 +27,8 @@ export function PublicHeaderThemeToggle() {
             size="sm"
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             className={cn(
-                "h-11 w-11 p-0 rounded-full",
+                PUBLIC_HEADER_ICON_BUTTON,
+                "p-0 rounded-full",
                 "hover:bg-zinc-100 dark:hover:bg-zinc-800",
                 "transition-all duration-200"
             )}

@@ -10,6 +10,7 @@ import { selectUser, selectDisplayName, selectProfilePhoto, selectIsSuperAdmin }
 import { cn } from '@/lib/utils';
 import { useIsMounted } from '@/hooks/use-is-mounted';
 import { useLoginHref } from "@/hooks/auth/useLoginHref";
+import { PUBLIC_HEADER_ICON_BUTTON } from "./publicHeaderChrome";
 
 // Lazy load AdminMenu - only loads when user is admin
 const AdminMenu = lazy(() => import('./AdminMenu'));
@@ -78,7 +79,8 @@ export function PublicHeaderAuth() {
           size="sm"
           aria-label="Open dashboard"
           className={cn(
-            "h-11 w-11 gap-1.5 p-0 text-xs",
+            PUBLIC_HEADER_ICON_BUTTON,
+          "gap-1.5 p-0 text-xs",
             "bg-gradient-to-r from-blue-600 to-violet-600",
             "hover:from-blue-700 hover:to-violet-700",
             "text-white border-0",
@@ -100,7 +102,8 @@ export function PublicHeaderAuth() {
       size="sm"
       aria-label="Sign in"
       className={cn(
-        "h-11 w-11 gap-1.5 p-0 text-xs sm:w-auto sm:px-3",
+        PUBLIC_HEADER_ICON_BUTTON,
+        "gap-1.5 p-0 text-xs sm:w-auto sm:px-3",
         "bg-gradient-to-r from-blue-600 to-violet-600",
         "hover:from-blue-700 hover:to-violet-700",
         "text-white border-0",

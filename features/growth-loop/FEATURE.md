@@ -1,7 +1,7 @@
 # Growth Loop — the map of the pipeline, and the run object that drives it
 
 **Status:** active · **Tier:** 2 · **Routes:** `/administration/knowledge/growth-loop` (admin
-map) · `/how-it-works` (the public, customer-facing view of the same map) ·
+map) · `/how-it-works` (public, the long read) · `/loop` (public, above the fold) ·
 `/marketing/brands/[brandId]/sites/[siteId]/growth-loop` (a site's live loop) ·
 `/marketing/growth-loop/[loopRunId]` (canonical deep link, resolves to the site)
 
@@ -53,6 +53,8 @@ Rules (also stated at the top of the file):
 | `public/stage-cards.ts`                                     | The resolved public stage model, shared by the ring and the cards.            |
 | `public/stage-icons.ts`                                     | Lucide icon NAME -> component, so `loop-map.ts` stays React-free.             |
 | `app/(public)/how-it-works/page.tsx`                        | Public route (+ metadata / OG).                                               |
+| `public/GrowthLoopGlance.tsx`                                | The above-the-fold page body. Same data, a fraction of the words.             |
+| `app/(public)/loop/page.tsx`                                | Above-the-fold public route (+ metadata / OG).                                |
 | `run/api.ts`                                                | Direct Supabase reads; contract-bound aidream orchestration actions.          |
 | `run/hooks.ts`                                              | React Query bindings + the delta-poll of the loop's event ledger.             |
 | `run/stage-doors.ts`                                        | Ref-kind → URL, and stage → "where a human does this". THE DOOR LAW.          |
@@ -82,8 +84,17 @@ Rules (also stated at the top of the file):
 
 ## The public view — rules
 
-`/how-it-works` is the marketing face of the SAME `loop-map.ts`. It is presentation only: it
-selects, renames and derives. It never restates a stage.
+**Two public pages, one map, deliberately different jobs.** `/how-it-works`
+(`GrowthLoopStory`) is the long read — every step explained. `/loop`
+(`GrowthLoopGlance`) is the above-the-fold pitch: the loop is the first thing on the
+screen, it ends at the fold on a desktop, and nothing is said in a sentence that a
+label can say. Neither replaces the other, and **neither may fork the data** — both
+render `publicStages()` / `publicCapabilities()` / `publicStanding()` and share the
+one ring (`GrowthLoopRing`, `variant="story" | "glance"`). New public face? Add a
+variant, never a second copy of the stages.
+
+Both are presentation only over the SAME `loop-map.ts`: they select, rename and derive.
+Neither ever restates a stage.
 
 - **THE HONESTY GATE.** Capability is derived from `state === "live"` ONLY (`publicCapabilities`
   / `publicStanding`). `partial` and `missing` render NOTHING — a stage with no live pipe simply
@@ -119,6 +130,15 @@ selects, renames and derives. It never restates a stage.
   emphasizes the connected stages, and suppresses unrelated paths.
 
 ## Change log
+
+- 2026-08-14 — claude: **second public face at `/loop`** — the above-the-fold version, at
+  Arman's request, beside (not instead of) `/how-it-works`. The ring gained a `glance`
+  variant rather than being forked. Also fixed the **site-wide public header**, which stood
+  at 51px with 44px controls while the app's own shell header is 40px: sizing now lives in
+  ONE place (`components/matrx/publicHeaderChrome.ts`) and is responsive — full 44px touch
+  targets on a phone, the shell's own height on a pointer. Header is 51px -> 43px on every
+  public page. Note for the record: the oversized-looking control at the far right is
+  admin-only and invisible to a signed-out prospect.
 
 - 2026-08-14 — claude: **the public view completed.** The loop is now drawn as a ring
   (`public/GrowthLoopRing.tsx`) instead of only listed as twelve cards — a prospect sees that it
