@@ -12,6 +12,8 @@
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
+import type { Json } from "@/types/database.types";
+import { mergeJsonColumn, type JsonObject } from "@/lib/supabase/mergeJsonColumn";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { EDGE_ROLE } from "./types";
@@ -28,6 +30,14 @@ import type {
 } from "./types";
 
 const EDU = () => supabase.schema("education");
+
+/** The narrow row shape a card jsonb merge reads and writes back. */
+interface CardJsonRow {
+  id: string;
+  version: number;
+  metadata?: Json | null;
+  dynamic_content?: Json | null;
+}
 
 /**
  * Resolve the org for a flashcard write. The canonical `ensureOrgId` rides the
@@ -566,6 +576,54 @@ export const fcService = {
     }
   },
 
+  /**
+   * Merge a value into ONE of a card's jsonb columns (FOUND_DEFECTS D151).
+   *
+   * `fc_card.metadata` and `fc_card.dynamic_content` are where a card's paid AI
+   * artifacts live — the trust envelope + its verification history, generated
+   * quiz items, an un-applied enhancement preview. Several surfaces write
+   * DIFFERENT keys of the same object (study deck, enhance dialog, quiz), so
+   * every one of those writes goes through this compare-and-swap merge rather
+   * than a read-spread-write that would drop a sibling's key.
+   *
+   * `merge` receives the column's current object (never null) and returns the
+   * whole next object — it must be pure, because it is re-run on a CAS retry.
+   */
+  async mergeCardJson(
+    cardId: string,
+    column: "metadata" | "dynamic_content",
+    merge: (current: JsonObject) => JsonObject,
+  ): Promise<FcResult<null>> {
+    const SELECT = `id, version, ${column}`;
+    const result = await mergeJsonColumn<CardJsonRow>({
+      fetchCurrent: () =>
+        EDU()
+          .from("fc_card")
+          .select(SELECT)
+          .eq("id", cardId)
+          .is("deleted_at", null)
+          .maybeSingle<CardJsonRow>(),
+      readColumn: (row) => row[column] ?? null,
+      merge,
+      applyUpdate: ({ value, expectedVersion, nextVersion }) =>
+        EDU()
+          .from("fc_card")
+          .update({ [column]: value, version: nextVersion } as never)
+          .eq("id", cardId)
+          .eq("version", expectedVersion)
+          .select(SELECT)
+          .maybeSingle<CardJsonRow>(),
+    });
+    if (result.status === "saved") return { data: null, error: null };
+    if (result.status === "error") return fail("mergeCardJson", result.error);
+    return fail(
+      "mergeCardJson",
+      result.status === "not_found"
+        ? "That card is no longer available"
+        : "Another edit kept winning — the card was not updated",
+    );
+  },
+
   /** Soft-delete a card. The `member` edge is left in place (harmless — the
    * card row is filtered by `deleted_at` everywhere it's read), avoiding a
    * second round-trip for something with no user-visible effect. */
@@ -622,6 +680,12 @@ export const fcService = {
       audio_file_id?: string;
       generated_by?: "agent" | "user";
       position?: number;
+      /**
+       * Provenance / structure the layer's text alone can't carry — e.g. the
+       * per-card memory-aid lane stamps `{source:'memory_hint', technique,
+       * explanation}` so the aid can be read back as its own payload (D151).
+       */
+      metadata?: JsonObject;
     } = {},
   ): Promise<FcResult<FcDetailRow>> {
     try {
@@ -637,6 +701,7 @@ export const fcService = {
         generated_by: opts.generated_by ?? "agent",
         position: opts.position ?? 0,
         generation_status: opts.audio_file_id ? "audio_ready" : "text_ready",
+        ...(opts.metadata ? { metadata: opts.metadata } : {}),
       };
       const { data, error } = await EDU()
         .from("fc_detail")

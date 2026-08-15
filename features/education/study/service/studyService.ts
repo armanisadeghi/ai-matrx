@@ -14,6 +14,8 @@
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
+import type { Json } from "@/types/database.types";
+import { asJsonObject, mergeJsonColumn } from "@/lib/supabase/mergeJsonColumn";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type { FsrsState } from "@/lib/srs/fsrs";
@@ -46,9 +48,24 @@ import type {
   NewGoalInput,
   GoalPatch,
   ListGoalsFilter,
+  SessionAiJournal,
+  SessionArtifact,
+  SessionCoachTip,
+  SessionHelpAnswer,
+  SessionProgressNarrative,
 } from "../types";
 
 const EDU = () => supabase.schema("education");
+
+/** The narrow row shape the session-journal merge reads and writes. */
+interface SessionMetadataRow {
+  id: string;
+  version: number;
+  metadata: Json;
+}
+
+/** Newest-N kept per journal key so one long sitting can't grow the row forever. */
+const SESSION_JOURNAL_CAP = 50;
 
 const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
@@ -295,6 +312,98 @@ export const studyService = {
     } catch (e) {
       return fail("updateSession", e);
     }
+  },
+
+  // ─── THE SESSION AI JOURNAL (FOUND_DEFECTS D151) ─────────────────────────
+  /**
+   * Append (or, for the narrative, set) one paid AI artifact on
+   * `study_session.metadata.ai`. THE durable landing spot for anything a model
+   * produced during a study sitting — coaching tips, tutor answers, the
+   * narrated progress report.
+   *
+   * Merged through `mergeJsonColumn` (compare-and-swap on `version`, re-read +
+   * re-merge on conflict) because several lanes write different keys of the
+   * SAME jsonb during one session; a plain read-modify-write would silently
+   * drop whichever landed first.
+   *
+   * Best-effort by contract: a failed persist returns an error string and never
+   * throws into the study flow — but it is never silent either (callers report
+   * it), because losing this is losing money already spent.
+   */
+  async appendSessionArtifact(
+    sessionId: string,
+    artifact: SessionArtifact,
+  ): Promise<StudyResult<null>> {
+    const SELECT = "id, version, metadata";
+    const result = await mergeJsonColumn<SessionMetadataRow>({
+      fetchCurrent: () =>
+        EDU()
+          .from("study_session")
+          .select(SELECT)
+          .eq("id", sessionId)
+          .is("deleted_at", null)
+          .maybeSingle<SessionMetadataRow>(),
+      readColumn: (row) => row.metadata,
+      merge: (current) => {
+        const ai = asJsonObject(current.ai as Json | null);
+        if (artifact.kind === "progressNarrative") {
+          return {
+            ...current,
+            ai: { ...ai, progressNarrative: artifact.entry as unknown as Json },
+          };
+        }
+        const key = artifact.kind === "coachTip" ? "coachTips" : "helpAnswers";
+        const prior = Array.isArray(ai[key]) ? (ai[key] as Json[]) : [];
+        return {
+          ...current,
+          ai: {
+            ...ai,
+            // Capped: a long sitting must not grow the row without bound. The
+            // newest N are what any surface reads back.
+            [key]: [...prior, artifact.entry as unknown as Json].slice(
+              -SESSION_JOURNAL_CAP,
+            ),
+          },
+        };
+      },
+      applyUpdate: ({ value, expectedVersion, nextVersion }) =>
+        EDU()
+          .from("study_session")
+          .update({ metadata: value as never, version: nextVersion } as never)
+          .eq("id", sessionId)
+          .eq("version", expectedVersion)
+          .select(SELECT)
+          .maybeSingle<SessionMetadataRow>(),
+    });
+    if (result.status === "saved") return { data: null, error: null };
+    if (result.status === "error") {
+      return fail("appendSessionArtifact", result.error);
+    }
+    return fail(
+      "appendSessionArtifact",
+      result.status === "not_found"
+        ? "The study session is no longer available"
+        : "Another writer kept winning — the AI result was not saved",
+    );
+  },
+
+  /** Read one session's AI journal (never throws; `{}` when there is none). */
+  readSessionJournal(
+    session: Pick<StudySessionRow, "metadata">,
+  ): SessionAiJournal {
+    const ai = asJsonObject(asJsonObject(session.metadata).ai as Json | null);
+    return {
+      coachTips: Array.isArray(ai.coachTips)
+        ? (ai.coachTips as unknown as SessionCoachTip[])
+        : undefined,
+      helpAnswers: Array.isArray(ai.helpAnswers)
+        ? (ai.helpAnswers as unknown as SessionHelpAnswer[])
+        : undefined,
+      progressNarrative:
+        ai.progressNarrative && typeof ai.progressNarrative === "object"
+          ? (ai.progressNarrative as unknown as SessionProgressNarrative)
+          : undefined,
+    };
   },
 
   // ─── ATTEMPTS (the canonical, mastery-updating writer) ───────────────────

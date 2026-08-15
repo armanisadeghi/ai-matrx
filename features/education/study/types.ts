@@ -164,8 +164,73 @@ export type SessionPatch = Partial<
     | "session_transcript"
     | "session_review"
     | "settings"
+    | "metadata"
   >
 >;
+
+// ─── The session AI journal (FOUND_DEFECTS D151) ──────────────────────────────
+//
+// 🚨 EVERY PAID AI RESULT PRODUCED DURING A STUDY SESSION LANDS HERE, on
+// `study_session.metadata.ai`. Before this existed, per-card coaching tips and
+// tutor answers lived in component state: the learner graded a card, we paid a
+// model, an 8-second toast appeared, and the answer was destroyed by the next
+// card. The session is the correct owner — these artifacts are per-learner and
+// per-sitting, not properties of the (possibly shared) card, and the session row
+// is already RLS-scoped to the learner and already read by every history surface.
+//
+// Append-only: `studyService.appendSessionArtifact` merges through
+// `mergeJsonColumn` (CAS on `version`), so two lanes writing during the same
+// session cannot clobber each other. Never write `metadata.ai` by hand.
+
+/** One per-card coaching tip the micro-coach lane produced during a session. */
+export interface SessionCoachTip {
+  cardId: string;
+  /** The grade that triggered the tip. */
+  result: string;
+  tip: string;
+  /** ISO timestamp the tip landed. */
+  at: string;
+}
+
+/** One tutor answer ("Ask AI for help" / "I'm confused") from this session. */
+export interface SessionHelpAnswer {
+  cardId: string;
+  /** What the learner asked, or "" when they took the generic nudge. */
+  question: string;
+  answer: string;
+  hintLevel: string;
+  followups: string[];
+  /** The answer's TrustEnvelope as emitted (kept raw — trust owns its coercion). */
+  trust: unknown;
+  at: string;
+}
+
+/**
+ * The narrated progress report (`/education/progress`). Stamped on the
+ * learner's most recent session with the fingerprint of the analytics it was
+ * written from, so the dashboard renders the stored reading and only re-pays
+ * when the underlying numbers actually moved.
+ */
+export interface SessionProgressNarrative {
+  /** The `NarrativeReport`, stored exactly as the narrator produced it. */
+  report: unknown;
+  /** Fingerprint of the analytics inputs — a mismatch means "regenerate". */
+  fingerprint: string;
+  at: string;
+}
+
+/** The whole `metadata.ai` block. Every key is optional — sessions start empty. */
+export interface SessionAiJournal {
+  coachTips?: SessionCoachTip[];
+  helpAnswers?: SessionHelpAnswer[];
+  progressNarrative?: SessionProgressNarrative;
+}
+
+/** The artifact kinds `appendSessionArtifact` accepts, as a closed vocabulary. */
+export type SessionArtifact =
+  | { kind: "coachTip"; entry: SessionCoachTip }
+  | { kind: "helpAnswer"; entry: SessionHelpAnswer }
+  | { kind: "progressNarrative"; entry: SessionProgressNarrative };
 
 // ─── Planner (Phase 6 — real study_goal CRUD) ─────────────────────────────────
 /**
