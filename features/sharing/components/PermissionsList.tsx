@@ -14,6 +14,27 @@ import {
 import { X, Mail, Building2, Globe, Loader2, Lock } from "lucide-react";
 import { PermissionBadge, PublicBadge } from "./PermissionBadge";
 import { UserAvatarDisplay } from "@/components/user/UserIdentity";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import {
+  csvExportItem,
+  jsonExportItem,
+} from "@/components/agent-copy/export";
+import {
+  accessKpis,
+  granteeKind,
+  granteeLabel,
+  granteeSecondaryLabel,
+  grantCsvRows,
+  grantLevelLabel,
+  humanGrantList,
+  humanGrantRow,
+  sharingLocation,
+  GRANT_LIST_SCOPE_NOTE,
+  NO_GRANTS_DETAIL,
+  NO_GRANTS_HEADLINE,
+  type SharingCopyContext,
+} from "@/features/sharing/format";
 import type {
   PermissionWithDetails,
   PermissionLevel,
@@ -43,6 +64,46 @@ interface PermissionsListProps {
     isPublic?: boolean;
   }) => Promise<ShareActionResult>;
   loading?: boolean;
+  /**
+   * Identity + the page's leading KPIs, so every copied grant states what it
+   * belongs to. Optional: without it the list still copies, falling back to the
+   * identity carried on the permission rows themselves — but a page that shows
+   * KPIs above this list should pass them so the payloads mirror the screen.
+   */
+  copy?: SharingCopyContext;
+  /** Which slice this list renders, e.g. "Users" / "Organizations". */
+  listLabel?: string;
+}
+
+/**
+ * Render-only preview size. The list itself is complete — truncating HERE
+ * (never in the data) is what keeps show-all, copy, and export honest: every
+ * payload and every export covers ALL grants, not the visible slice.
+ */
+const GRANT_PREVIEW = 12;
+
+/** Header toggle between the preview and the full grant list. */
+function ShowAllToggle({
+  total,
+  preview,
+  showingAll,
+  onToggle,
+}: {
+  total: number;
+  preview: number;
+  showingAll: boolean;
+  onToggle: () => void;
+}) {
+  if (total <= preview) return null;
+  return (
+    <button
+      type="button"
+      className="text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+      onClick={onToggle}
+    >
+      {showingAll ? `top ${preview}` : `all ${total.toLocaleString()}`}
+    </button>
+  );
 }
 
 /**
@@ -65,13 +126,39 @@ export function PermissionsList({
   onUpdateLevel,
   onRevoke,
   loading = false,
+  copy,
+  listLabel = "Current access",
 }: PermissionsListProps) {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [revokingId, setRevokingId] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState(false);
   const [confirmRevoke, setConfirmRevoke] = useState<{
     open: boolean;
     permission: PermissionWithDetails | null;
   }>({ open: false, permission: null });
+
+  /**
+   * The payload context. A caller that renders KPIs above this list passes
+   * them; otherwise we fall back to the identity the rows themselves carry, so
+   * a bare `<PermissionsList>` still copies something an agent can act on.
+   */
+  const context: SharingCopyContext = copy ?? {
+    resourceType: permissions[0]?.resourceType ?? "unknown",
+    resourceId: permissions[0]?.resourceId ?? "unknown",
+    surface: listLabel,
+    kpis: accessKpis({
+      permissions,
+      isPublic: permissions.some((p) => p.isPublic),
+      // What the list actually renders — owner controls are on screen or not.
+      viewerIsOwner: isOwner,
+    }),
+  };
+  const location = sharingLocation(context.surface);
+  const resourceAttributes = {
+    resource_type: context.resourceType,
+    resource_id: context.resourceId,
+    resource_name: context.resourceName ?? null,
+  };
 
   if (loading) {
     return (
@@ -83,16 +170,51 @@ export function PermissionsList({
 
   if (permissions.length === 0) {
     return (
-      <div className="text-center py-6 text-muted-foreground">
+      <div className="group text-center py-6 text-muted-foreground">
         <Lock className="w-10 h-10 mx-auto mb-1.5 opacity-20" />
-        <p className="text-sm">Not shared with anyone</p>
+        <p className="text-sm">{NO_GRANTS_HEADLINE}</p>
         {/*
          * This list only knows about DIRECT grants. It cannot see visibility,
          * org membership, or access conveyed through a container — so "only you
          * can access this" would be a claim it has no basis for. State what is
          * actually known: no one has been granted access here.
          */}
-        <p className="text-xs mt-0.5">No one has been granted access here</p>
+        <p className="text-xs mt-0.5">{NO_GRANTS_DETAIL}</p>
+        {/*
+         * "Nobody has been granted access" is an ANSWER, not an absence — it is
+         * usually the whole reason the user is here asking why someone can't
+         * see this. It has to be copyable, and it has to carry the scope note
+         * so an agent never reads it as "nothing grants access".
+         */}
+        <div className="mt-1.5 flex justify-center opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+          <CopyButtons
+            size="xs"
+            label={`${listLabel} (no grants)`}
+            human={() => humanGrantList([], { surface: context.surface })}
+            agent={() => ({
+              kind: "access-grants",
+              location,
+              description: `The "${listLabel}" grant list, which is empty: ${NO_GRANTS_HEADLINE} — ${NO_GRANTS_DETAIL}.`,
+              data: {
+                list: listLabel,
+                rendered_empty_state: {
+                  headline: NO_GRANTS_HEADLINE,
+                  detail: NO_GRANTS_DETAIL,
+                },
+                grants: [],
+                scope_note: GRANT_LIST_SCOPE_NOTE,
+                kpis: context.kpis,
+              },
+              summary: humanGrantList([], { surface: context.surface }),
+              attributes: {
+                ...context.kpis,
+                ...resourceAttributes,
+                list: listLabel,
+                count: 0,
+              },
+            })}
+          />
+        </div>
       </div>
     );
   }
@@ -132,24 +254,10 @@ export function PermissionsList({
     }
   };
 
-  const getPermissionLabel = (permission: PermissionWithDetails) => {
-    if (permission.isPublic) return "Everyone";
-    if (permission.grantedToUser) {
-      return (
-        permission.grantedToUser.displayName || permission.grantedToUser.email
-      );
-    }
-    if (permission.grantedToOrganization)
-      return permission.grantedToOrganization.name;
-    return "Unknown";
-  };
-
-  const getPermissionSecondaryLabel = (permission: PermissionWithDetails) => {
-    if (permission.grantedToUser?.displayName) {
-      return permission.grantedToUser.email;
-    }
-    return null;
-  };
+  // The row labels come from the shared extractor, so a copied grant reads
+  // exactly like the row the user is looking at.
+  const getPermissionLabel = granteeLabel;
+  const getPermissionSecondaryLabel = granteeSecondaryLabel;
 
   const getPermissionIcon = (permission: PermissionWithDetails) => {
     if (permission.isPublic) return Globe;
@@ -157,9 +265,73 @@ export function PermissionsList({
     return Mail;
   };
 
+  const visiblePermissions = showAll
+    ? permissions
+    : permissions.slice(0, GRANT_PREVIEW);
+
+  const listHuman = () =>
+    humanGrantList(permissions, {
+      surface: context.surface,
+      shown: visiblePermissions.length,
+    });
+
   return (
     <div className="space-y-1">
-      {permissions.map((permission) => {
+      {/*
+       * List-level copy + export. Both always cover ALL grants, never the
+       * visible slice — the preview above is a rendering choice, and an export
+       * that silently inherited it would be a lie about coverage.
+       */}
+      <div className="flex items-center justify-end gap-1">
+        <ShowAllToggle
+          total={permissions.length}
+          preview={GRANT_PREVIEW}
+          showingAll={showAll}
+          onToggle={() => setShowAll((current) => !current)}
+        />
+        <CopyButtons
+          size="xs"
+          label={`${listLabel} (${permissions.length} grant${permissions.length === 1 ? "" : "s"})`}
+          human={listHuman}
+          json={() => permissions}
+          agent={() => ({
+            kind: "access-grants",
+            location,
+            description: `All ${permissions.length} direct grant(s) in the "${listLabel}" list. ${GRANT_LIST_SCOPE_NOTE}`,
+            data: {
+              list: listLabel,
+              grants: permissions.map((permission) => ({
+                grantee: granteeLabel(permission),
+                grantee_email: granteeSecondaryLabel(permission),
+                grantee_type: granteeKind(permission),
+                level_shown: grantLevelLabel(permission),
+                can_manage_here: isOwner,
+                raw: permission,
+              })),
+              scope_note: GRANT_LIST_SCOPE_NOTE,
+              kpis: context.kpis,
+              rows_on_screen: visiblePermissions.length,
+              rows_total: permissions.length,
+            },
+            summary: listHuman(),
+            attributes: {
+              ...context.kpis,
+              ...resourceAttributes,
+              list: listLabel,
+              count: permissions.length,
+              shown: visiblePermissions.length,
+            },
+          })}
+        />
+        <ExportMenu
+          label={`access-grants-${context.resourceType}`}
+          items={[
+            jsonExportItem(() => permissions, "JSON (all grants)"),
+            csvExportItem(() => grantCsvRows(permissions), "CSV (all grants)"),
+          ]}
+        />
+      </div>
+      {visiblePermissions.map((permission) => {
         const Icon = getPermissionIcon(permission);
         const isUpdating = updatingId === permission.id;
         const isRevoking = revokingId === permission.id;
@@ -218,6 +390,42 @@ export function PermissionsList({
 
               {/* Right: Permission level selector and remove button */}
               <div className="flex items-center gap-1 flex-shrink-0">
+                {/* Hover-reveal so ubiquity doesn't become clutter — the same
+                    `group` the door controls above ride on. */}
+                <span className="opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+                  <CopyButtons
+                    size="xs"
+                    label={`Grant — ${granteeLabel(permission)}`}
+                    human={() => humanGrantRow(permission)}
+                    json={() => permission}
+                    agent={() => ({
+                      kind: "access-grant",
+                      location,
+                      description: `One direct access grant on this resource: ${granteeLabel(
+                        permission,
+                      )} · ${grantLevelLabel(permission)}.`,
+                      data: {
+                        grantee: granteeLabel(permission),
+                        grantee_email: granteeSecondaryLabel(permission),
+                        grantee_type: granteeKind(permission),
+                        level_shown: grantLevelLabel(permission),
+                        can_manage_here: isOwner,
+                        raw: permission,
+                        scope_note: GRANT_LIST_SCOPE_NOTE,
+                        kpis: context.kpis,
+                      },
+                      summary: humanGrantRow(permission),
+                      attributes: {
+                        ...context.kpis,
+                        ...resourceAttributes,
+                        list: listLabel,
+                        grant_id: permission.id,
+                        grantee_type: granteeKind(permission),
+                        level: permission.permissionLevel,
+                      },
+                    })}
+                  />
+                </span>
                 {isOwner ? (
                   <>
                     <Select
