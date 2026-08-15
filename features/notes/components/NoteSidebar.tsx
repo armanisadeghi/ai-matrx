@@ -118,6 +118,18 @@ import type {
 } from "@/features/context-menu-v3/types";
 import { useOpenNoteKnowledgePanel } from "@/features/overlays/openers/noteKnowledgePanel";
 import { cn } from "@/lib/utils";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
+import { keyFieldsAiVariant } from "@/features/marketing/lib/copy-payloads";
+import {
+  noteKeyFields,
+  noteLocation,
+  noteRowData,
+  notesCsvRows,
+  notesListSummary,
+} from "@/features/notes/format";
+
 import type { NoteRecord } from "../redux/notes.types";
 import type { NoteSortField, NoteSortOrder, NoteGroupBy } from "../types";
 
@@ -1011,6 +1023,128 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
               <ChevronsUpDown />
             </button>
           </SimpleTooltip>
+        )}
+
+        {/*
+         * Whole-list copy + export. `filteredNotes` is what the user is looking
+         * at; `allNotes` is the full set. Both are offered, and every summary
+         * states Shown vs Total so a search-narrowed copy never misreports the
+         * size of the notebook.
+         */}
+        {allNotes.length > 0 && (
+          <div className="ml-auto flex items-center gap-0.5">
+            <CopyButtons
+              size="xs"
+              label="Notes list"
+              human={() =>
+                notesListSummary(filteredNotes, {
+                  surface: "Sidebar",
+                  total: allNotes.length,
+                  filter: searchQuery,
+                  scope: groupBy,
+                })
+              }
+              json={() => filteredNotes.map(noteRowData)}
+              agent={() => ({
+                kind: "notes-list",
+                location: noteLocation("Sidebar list"),
+                description:
+                  "The notes currently listed in the sidebar (search + grouping applied). Metadata only — bodies are not included.",
+                data: {
+                  group_by: groupBy,
+                  search: searchQuery.trim() || null,
+                  notes: filteredNotes.map(noteRowData),
+                },
+                summary: notesListSummary(filteredNotes, {
+                  surface: "Sidebar",
+                  total: allNotes.length,
+                  filter: searchQuery,
+                  scope: groupBy,
+                }),
+                attributes: {
+                  rows: filteredNotes.length,
+                  notes_total: allNotes.length,
+                  group_by: groupBy,
+                  detail: "this-view",
+                },
+              })}
+              agentVariant={{
+                id: "this-view",
+                label: "This view",
+                hint: "The notes listed right now",
+                position: "first",
+              }}
+              aiVariants={[
+                keyFieldsAiVariant({
+                  kind: "notes-list",
+                  location: noteLocation("Sidebar list"),
+                  description:
+                    "Listed notes projected to label / folder / tags / updated.",
+                  visible: filteredNotes,
+                  project: noteKeyFields,
+                  query: {
+                    search: searchQuery.trim() || null,
+                    group_by: groupBy,
+                  },
+                  attributes: {
+                    rows: filteredNotes.length,
+                    notes_total: allNotes.length,
+                  },
+                }),
+                {
+                  id: "all-notes",
+                  label: "All notes",
+                  hint: `Every note in the list (${allNotes.length})`,
+                  build: () => ({
+                    kind: "notes-list",
+                    location: noteLocation("Sidebar list"),
+                    description:
+                      "Every note available in the sidebar, ignoring the search filter. Metadata only.",
+                    data: { notes: allNotes.map(noteRowData) },
+                    summary: notesListSummary(allNotes, { surface: "Sidebar" }),
+                    attributes: {
+                      rows: allNotes.length,
+                      notes_total: allNotes.length,
+                      detail: "all-notes",
+                    },
+                  }),
+                },
+              ]}
+            />
+            <ExportMenu
+              label="Notes list"
+              items={[
+                {
+                  ...jsonExportItem(
+                    () => filteredNotes.map(noteRowData),
+                    "JSON (this view)",
+                  ),
+                  id: "json-view",
+                },
+                {
+                  ...csvExportItem(
+                    () => notesCsvRows(filteredNotes),
+                    "CSV (this view)",
+                  ),
+                  id: "csv-view",
+                },
+                {
+                  ...jsonExportItem(
+                    () => allNotes.map(noteRowData),
+                    `JSON (all ${allNotes.length} notes)`,
+                  ),
+                  id: "json-all",
+                },
+                {
+                  ...csvExportItem(
+                    () => notesCsvRows(allNotes),
+                    `CSV (all ${allNotes.length} notes)`,
+                  ),
+                  id: "csv-all",
+                },
+              ]}
+            />
+          </div>
         )}
       </div>
 

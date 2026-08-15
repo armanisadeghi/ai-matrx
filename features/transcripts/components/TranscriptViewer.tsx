@@ -27,6 +27,22 @@ import {
 } from "lucide-react";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import {
+  csvExportItem,
+  jsonExportItem,
+  textExportItem,
+} from "@/components/agent-copy/export";
+import {
+  shortenTranscript,
+  transcriptBody,
+  transcriptData,
+  transcriptDisplayTitle,
+  transcriptHeaderSummary,
+  transcriptLocation,
+  transcriptMetaData,
+} from "@/features/transcripts/format";
 import { useToastManager } from "@/hooks/useToastManager";
 import { ProInput } from "@/components/official/ProInput";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -318,6 +334,33 @@ export function TranscriptViewer() {
     return activeTranscript.segments.map((s) => s.text).join("\n\n");
   }, [activeTranscript]);
 
+  /**
+   * The transcript as the user sees it RIGHT NOW. While the inline body editor
+   * is open the live textarea buffer is authoritative — copying the stored
+   * segments after the user edited them would hand the agent text that is no
+   * longer on screen.
+   */
+  const buildTranscriptView = (): { human: string; data: unknown } => {
+    if (!activeTranscript) return { human: "", data: null };
+    const header = transcriptHeaderSummary(activeTranscript);
+    if (isEditingContent) {
+      const live = editContentRef.current?.value ?? editContent;
+      return {
+        human: `${header}\n\nUNSAVED EDIT IN PROGRESS (inline body editor open)\n\n--- Transcript (live buffer) ---\n${live}`,
+        data: {
+          ...transcriptMetaData(activeTranscript),
+          editing: true,
+          unsaved_changes: { field: "segments", editor: "inline-body" },
+          transcript: live,
+        },
+      };
+    }
+    return {
+      human: `${header}\n\n--- Transcript ---\n${transcriptBody(activeTranscript.segments ?? [])}`,
+      data: transcriptData(activeTranscript),
+    };
+  };
+
   const handleCopyAllText = async () => {
     if (!plainTranscriptText.trim()) return;
     try {
@@ -601,6 +644,209 @@ export function TranscriptViewer() {
                     )}
                   </Button>
                 )}
+                {/*
+                 * The transcript RECORD pair. A transcript is the "massive"
+                 * size class — thousands of segments is normal — so the AI
+                 * control is a dropdown WITH a custom composer, not a single
+                 * button. The plain "Copy transcript text" button above is a
+                 * different affordance and stays.
+                 */}
+                <CopyButtons
+                  size="icon"
+                  label={`Transcript "${transcriptDisplayTitle(activeTranscript)}"`}
+                  human={() => buildTranscriptView().human}
+                  json={() => transcriptData(activeTranscript)}
+                  agent={() => {
+                    const view = buildTranscriptView();
+                    return {
+                      kind: "transcript",
+                      location: transcriptLocation("Processor — viewer"),
+                      description:
+                        "The transcript currently open in the viewer, segments included.",
+                      data: view.data,
+                      summary: view.human,
+                      attributes: {
+                        id: activeTranscript.id,
+                        title: transcriptDisplayTitle(activeTranscript),
+                        segments: activeTranscript.segments?.length ?? 0,
+                        editing: isEditingContent,
+                      },
+                    };
+                  }}
+                  agentVariant={{
+                    id: "transcript-full",
+                    label: "Transcript (full)",
+                    hint: "Everything on screen, all segments",
+                    position: "first",
+                  }}
+                  aiVariants={[
+                    {
+                      id: "transcript-metadata",
+                      label: "Details only",
+                      hint: "Title, tags, duration, speakers — no segments",
+                      build: () => ({
+                        kind: "transcript",
+                        location: transcriptLocation("Processor — viewer"),
+                        description:
+                          "The open transcript's details, with segments deliberately omitted.",
+                        data: {
+                          ...transcriptMetaData(activeTranscript),
+                          segments_included: false,
+                        },
+                        summary: transcriptHeaderSummary(activeTranscript),
+                        attributes: {
+                          id: activeTranscript.id,
+                          detail: "metadata-only",
+                          segments_omitted:
+                            activeTranscript.segments?.length ?? 0,
+                        },
+                      }),
+                    },
+                    {
+                      id: "transcript-tail",
+                      label: "Last 50 segments",
+                      hint: "The end of the conversation, with an omission stub",
+                      build: () => {
+                        const short = shortenTranscript(
+                          activeTranscript.segments ?? [],
+                          { lastN: 50 },
+                        );
+                        return {
+                          kind: "transcript",
+                          location: transcriptLocation("Processor — viewer"),
+                          description:
+                            "The tail of the open transcript. Earlier segments are stubbed, not silently dropped.",
+                          data: {
+                            ...transcriptMetaData(activeTranscript),
+                            transcript: short.text,
+                          },
+                          summary: `${transcriptHeaderSummary(activeTranscript)}\n\n--- Transcript (tail) ---\n${short.text}`,
+                          attributes: {
+                            id: activeTranscript.id,
+                            detail: "last-50",
+                            segments_included: short.segments_included,
+                            segments_omitted: short.segments_omitted,
+                          },
+                        };
+                      },
+                    },
+                  ]}
+                  aiCustom={{
+                    label: "Open custom view…",
+                    hint: "Pick how much of the transcript to send",
+                    dialogTitle: "Custom transcript copy",
+                    dialogDescription:
+                      "Shorten by segment count, drop timestamps or speaker labels, and cap long segments. Omitted segments are always stated, never silently dropped.",
+                    options: [
+                      {
+                        kind: "number",
+                        key: "lastN",
+                        label: "Segments (from the end)",
+                        hint: "0 = the whole transcript",
+                        min: 0,
+                        step: 10,
+                        presets: [
+                          { label: "All", value: 0 },
+                          { label: "25", value: 25 },
+                          { label: "50", value: 50 },
+                          { label: "100", value: 100 },
+                          { label: "250", value: 250 },
+                        ],
+                        default: 0,
+                      },
+                      {
+                        kind: "toggle",
+                        key: "timestamps",
+                        label: "Include timestamps",
+                        default: true,
+                      },
+                      {
+                        kind: "toggle",
+                        key: "speakers",
+                        label: "Include speaker labels",
+                        default: true,
+                      },
+                      {
+                        kind: "number",
+                        key: "charCap",
+                        label: "Max characters per segment",
+                        hint: "0 = unlimited",
+                        min: 0,
+                        step: 50,
+                        presets: [
+                          { label: "Unlimited", value: 0 },
+                          { label: "200", value: 200 },
+                          { label: "500", value: 500 },
+                        ],
+                        default: 0,
+                      },
+                    ],
+                    build: (opts) => {
+                      const short = shortenTranscript(
+                        activeTranscript.segments ?? [],
+                        {
+                          lastN: Number(opts.lastN) || 0,
+                          timestamps: opts.timestamps !== false,
+                          speakers: opts.speakers !== false,
+                          charCap: Number(opts.charCap) || 0,
+                        },
+                      );
+                      return {
+                        text: `${transcriptHeaderSummary(activeTranscript)}\n\n--- Transcript ---\n${short.text}`,
+                        meta: {
+                          segments_included: short.segments_included,
+                          segments_total: short.segments_total,
+                          segments_omitted: short.segments_omitted,
+                          truncated_segments: short.truncated_segments,
+                        },
+                      };
+                    },
+                    wrap: (text, opts, meta) => ({
+                      kind: "transcript",
+                      location: transcriptLocation("Processor — viewer"),
+                      description:
+                        "The open transcript, shortened to the options the user chose in the custom composer.",
+                      data: {
+                        ...transcriptMetaData(activeTranscript),
+                        options: opts,
+                        transcript: text,
+                      },
+                      attributes: {
+                        id: activeTranscript.id,
+                        title: transcriptDisplayTitle(activeTranscript),
+                        detail: "custom",
+                        ...meta,
+                      },
+                    }),
+                  }}
+                />
+                <ExportMenu
+                  label={`Transcript ${transcriptDisplayTitle(activeTranscript)}`}
+                  items={[
+                    jsonExportItem(() => transcriptData(activeTranscript)),
+                    {
+                      ...csvExportItem(
+                        () =>
+                          (activeTranscript.segments ?? []).map((s) => ({
+                            timecode: s.timecode,
+                            seconds: s.seconds,
+                            speaker: s.speaker ?? "",
+                            text: s.text,
+                          })),
+                        "CSV (segments)",
+                      ),
+                      id: "csv-segments",
+                    },
+                    {
+                      ...textExportItem(
+                        () => transcriptBody(activeTranscript.segments ?? []),
+                        "Text (transcript)",
+                        "txt",
+                      ),
+                      id: "txt-body",
+                    },
+                  ]}
+                />
                 {plainTranscriptText.trim().length > 0 && !isEditingContent && (
                   <Button
                     variant="ghost"

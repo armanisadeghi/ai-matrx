@@ -15,6 +15,17 @@ import { cn } from "@/lib/utils";
 import { useDictionaryContext } from "@/features/dictionary/hooks/useDictionaryContext";
 import { useOpenDictionarySelectorWindow } from "@/features/overlays/openers/dictionarySelectorWindow";
 import { DICT_LEVEL_LABELS } from "@/features/dictionary/constants";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
+import { effectiveInlineChars } from "@/features/dictionary/utils/format";
+import {
+  dictEntriesCsvRows,
+  dictEntryData,
+  dictEntrySummary,
+  dictLocation,
+  resolvedDictionarySummary,
+} from "@/features/dictionary/format";
 
 const SOURCE_BADGE: Record<string, string> = {
   user: "bg-sky-500/15 text-sky-700 dark:text-sky-300",
@@ -54,21 +65,78 @@ export function DictionaryContextCard({ surfaceKey }: { surfaceKey: string }) {
         .filter(Boolean)
         .join(" · ") || "Personal";
 
+  // What-I-see capture: the MERGED set this surface resolved to, plus the
+  // selection line and the badge count the header leads with — the same numbers
+  // in the body and the envelope so the agent never recomputes them.
+  const location = dictLocation("Resolved context card");
+  const resolved = consumption?.resolved ?? {
+    entries: [],
+    effective_max_inline_chars: null,
+    source_count: 0,
+  };
+  const inlineChars = effectiveInlineChars(resolved);
+  const cardSummary = () =>
+    [
+      `Dictionary — ${activeCount} active term${activeCount === 1 ? "" : "s"}`,
+      `Sources: ${selectionSummary}`,
+      "",
+      resolvedDictionarySummary(resolved, inlineChars),
+    ].join("\n");
+
   return (
     <div className="rounded-lg border border-border bg-card">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center gap-2 px-3 py-2.5 text-left"
-      >
-        <BookA className="h-4 w-4 text-muted-foreground" />
-        <span className="text-sm font-medium">Dictionary</span>
-        <Badge variant="secondary" className="ml-0.5">{activeCount}</Badge>
-        <span className="ml-auto text-[11px] text-muted-foreground truncate max-w-[140px]">
-          {selectionSummary}
-        </span>
-        <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", open && "rotate-180")} />
-      </button>
+      <div className="flex w-full items-center gap-2 px-3 py-2.5">
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          className="flex flex-1 min-w-0 items-center gap-2 text-left"
+        >
+          <BookA className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-medium">Dictionary</span>
+          <Badge variant="secondary" className="ml-0.5">{activeCount}</Badge>
+          <span className="ml-auto text-[11px] text-muted-foreground truncate max-w-[140px]">
+            {selectionSummary}
+          </span>
+          <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", open && "rotate-180")} />
+        </button>
+        <CopyButtons
+          size="xs"
+          label="Resolved dictionary"
+          human={cardSummary}
+          json={() => resolved.entries.map(dictEntryData)}
+          agent={() => ({
+            kind: "dictionary-resolved",
+            location,
+            description:
+              "The merged custom dictionary this surface resolved to — every active term with the tier it came from.",
+            data: {
+              surface_key: surfaceKey,
+              selection_summary: selectionSummary,
+              selection,
+              active_count: activeCount,
+              source_count: sourceCount,
+              effective_max_inline_chars: inlineChars,
+              entries: resolved.entries.map(dictEntryData),
+            },
+            summary: cardSummary(),
+            attributes: {
+              active_terms: activeCount,
+              sources: sourceCount,
+              selection: selectionSummary,
+            },
+            context: { surface_key: surfaceKey },
+          })}
+        />
+        {resolved.entries.length > 0 && (
+          <ExportMenu
+            label="Resolved dictionary"
+            items={[
+              jsonExportItem(() => resolved.entries.map(dictEntryData)),
+              csvExportItem(() => dictEntriesCsvRows(resolved.entries)),
+            ]}
+          />
+        )}
+      </div>
 
       {open && (
         <div className="border-t border-border">
@@ -102,7 +170,7 @@ export function DictionaryContextCard({ surfaceKey }: { surfaceKey: string }) {
             ) : (
               <ul className="divide-y divide-border">
                 {filtered.map((e) => (
-                  <li key={`${e.source_level}:${e.id}`} className="px-3 py-2 text-sm">
+                  <li key={`${e.source_level}:${e.id}`} className="group/dict-term px-3 py-2 text-sm">
                     <div className="flex items-center gap-2">
                       <span className="font-medium truncate">{e.term}</span>
                       {(e.pronunciation || e.ipa) && (
@@ -110,9 +178,34 @@ export function DictionaryContextCard({ surfaceKey }: { surfaceKey: string }) {
                           {e.pronunciation || `/${e.ipa}/`}
                         </span>
                       )}
+                      <CopyButtons
+                        size="xs"
+                        label={`Term "${e.term}"`}
+                        className="ml-auto opacity-0 transition-opacity group-hover/dict-term:opacity-100 focus-within:opacity-100"
+                        human={() => dictEntrySummary(e)}
+                        json={() => dictEntryData(e)}
+                        agent={() => ({
+                          kind: "dictionary-entry",
+                          location,
+                          description:
+                            "One resolved custom-dictionary term active on this surface.",
+                          data: dictEntryData(e),
+                          summary: dictEntrySummary(e),
+                          attributes: {
+                            term: e.term,
+                            source_level: e.source_level,
+                            source_name: e.source_name,
+                          },
+                          context: {
+                            surface_key: surfaceKey,
+                            active_terms: activeCount,
+                          },
+                        })}
+                      />
                       <span
                         className={cn(
-                          "ml-auto rounded px-1.5 py-0.5 text-[10px] font-medium shrink-0",
+                          // ml-auto now lives on the copy pair that precedes this badge.
+                          "rounded px-1.5 py-0.5 text-[10px] font-medium shrink-0",
                           SOURCE_BADGE[e.source_level] ?? "bg-muted text-muted-foreground",
                         )}
                         title={`${DICT_LEVEL_LABELS[e.source_level]} · ${e.source_name}`}

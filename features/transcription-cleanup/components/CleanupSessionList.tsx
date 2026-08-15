@@ -15,6 +15,17 @@ import { AudioLines, Layers, Loader2, Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import ActionFeedbackButton from "@/components/official/ActionFeedbackButton";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
+import {
+  sessionData,
+  sessionDisplayTitle,
+  sessionSummary,
+  sessionsCsvRows,
+  sessionsListSummary,
+  studioLocation,
+} from "@/features/transcript-studio/format";
 import type { StudioSession } from "@/features/transcript-studio/types";
 
 interface CleanupSessionsToolbarProps {
@@ -113,12 +124,51 @@ export function CleanupSessionList({
   return (
     <div className="flex flex-col">
       {showToolbar && (
-        <div className="mb-1.5">
-          <CleanupSessionsToolbar
-            scope={scope}
-            onScopeChange={onScopeChange}
-            onCreate={onCreate}
-          />
+        <div className="mb-1.5 flex items-center gap-1">
+          <div className="min-w-0 flex-1">
+            <CleanupSessionsToolbar
+              scope={scope}
+              onScopeChange={onScopeChange}
+              onCreate={onCreate}
+            />
+          </div>
+          {sessions.length > 0 && (
+            <>
+              <CopyButtons
+                size="xs"
+                label="Cleanup sessions"
+                human={() =>
+                  sessionsListSummary(sessions, {
+                    surface: "Cleanup recents",
+                    filter: scope,
+                  })
+                }
+                json={() => sessions.map(sessionData)}
+                agent={() => ({
+                  kind: "cleanup-session-list",
+                  location: studioLocation("Cleanup — recents rail"),
+                  description:
+                    "The cleanup sessions listed in the recents rail. Metadata only — no transcript text.",
+                  data: { scope, sessions: sessions.map(sessionData) },
+                  summary: sessionsListSummary(sessions, {
+                    surface: "Cleanup recents",
+                    filter: scope,
+                  }),
+                  // The scope toggle is this rail's leading control: "cleanup"
+                  // shows only this surface's sessions, "all" widens to every
+                  // session RLS allows. A payload without it cannot be read.
+                  attributes: { rows: sessions.length, scope },
+                })}
+              />
+              <ExportMenu
+                label="Cleanup sessions"
+                items={[
+                  jsonExportItem(() => sessions.map(sessionData)),
+                  csvExportItem(() => sessionsCsvRows(sessions)),
+                ]}
+              />
+            </>
+          )}
         </div>
       )}
 
@@ -164,7 +214,27 @@ export function CleanupSessionList({
                     )}
                   </span>
                 </button>
-                <span className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 transition-opacity group-hover:opacity-100">
+                <span className="absolute right-1 top-1/2 flex -translate-y-1/2 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                  <CopyButtons
+                    size="xs"
+                    label={`Cleanup session "${sessionDisplayTitle(s)}"`}
+                    human={() => sessionSummary(s)}
+                    json={() => sessionData(s)}
+                    agent={() => ({
+                      kind: "cleanup-session",
+                      location: studioLocation("Cleanup — recents rail"),
+                      description:
+                        "One cleanup session as listed in the recents rail. Metadata only — no transcript text.",
+                      data: sessionData(s),
+                      summary: sessionSummary(s),
+                      attributes: {
+                        id: s.id,
+                        title: sessionDisplayTitle(s),
+                        status: s.status,
+                        source: s.source,
+                      },
+                    })}
+                  />
                   <ActionFeedbackButton
                     icon={<Trash2 className="h-3 w-3" />}
                     tooltip="Delete session"

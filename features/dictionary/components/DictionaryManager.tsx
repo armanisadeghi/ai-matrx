@@ -27,6 +27,18 @@ import { useDictionary } from "@/features/dictionary/hooks/useDictionary";
 import { useOpenDictionaryAssistant } from "@/features/dictionary/hooks/useOpenDictionaryAssistant";
 import { DictionaryImportDialog } from "@/features/dictionary/components/DictionaryImportDialog";
 import { entriesToCsv, entriesToJson, downloadTextFile } from "@/features/dictionary/utils/io";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
+import { keyFieldsAiVariant } from "@/features/marketing/lib/copy-payloads";
+import {
+  dictEntriesCsvRows,
+  dictEntriesSummary,
+  dictEntryData,
+  dictEntryKeyFields,
+  dictEntrySummary,
+  dictLocation,
+} from "@/features/dictionary/format";
 import {
   InlinePolicyControl,
   decodeInlinePolicy,
@@ -145,6 +157,23 @@ export function DictionaryManager({ level, ownerId, ownerName, canEdit = true, e
   const [inlineDraft, setInlineDraft] = useState<InlinePolicyValue | null>(null);
   const effectiveInline = inlineDraft ?? inlineValue;
 
+  // ── agent-copy ────────────────────────────────────────────────────────────
+  // One owner label + one envelope context, reused by the row pairs, the list
+  // pair and every export item so a term copied from a row and the same term
+  // inside a list copy carry identical provenance.
+  const ownerLabel = ownerName ?? DICT_LEVEL_LABELS[level];
+  const location = dictLocation(`${DICT_LEVEL_LABELS[level]} dictionary`);
+  const copyContext = useMemo(
+    () => ({
+      owner_level: level,
+      owner_id: ownerId,
+      owner_name: ownerLabel,
+      terms_total: entries.length,
+      search: query.trim() || undefined,
+    }),
+    [level, ownerId, ownerLabel, entries.length, query],
+  );
+
   const saveInline = useCallback(async () => {
     const encoded = encodeInlinePolicy(effectiveInline);
     if ("error" in encoded) {
@@ -193,11 +222,128 @@ export function DictionaryManager({ level, ownerId, ownerName, canEdit = true, e
             <Trash2 className="h-4 w-4" /> Delete {selected.size}
           </Button>
         )}
+        {entries.length > 0 && (
+          <div className="flex items-center gap-1">
+            <CopyButtons
+              size="sm"
+              label={`${ownerLabel} dictionary`}
+              human={() =>
+                dictEntriesSummary(filtered, {
+                  ownerLabel,
+                  total: entries.length,
+                  query,
+                })
+              }
+              json={() => filtered.map(dictEntryData)}
+              // Default click = what the user is looking at (the search-narrowed
+              // view). The full dictionary is a named variant, never the default.
+              agent={() => ({
+                kind: "dictionary-entries",
+                location,
+                description:
+                  "The custom-dictionary terms currently listed in the manager (search filter applied).",
+                data: {
+                  owner: { level, id: ownerId, name: ownerLabel },
+                  search: query.trim() || null,
+                  entries: filtered.map(dictEntryData),
+                },
+                summary: dictEntriesSummary(filtered, {
+                  ownerLabel,
+                  total: entries.length,
+                  query,
+                }),
+                attributes: {
+                  rows: filtered.length,
+                  terms_total: entries.length,
+                  detail: "this-view",
+                },
+                context: copyContext,
+              })}
+              agentVariant={{
+                id: "this-view",
+                label: "This view",
+                hint: "The terms listed right now",
+                position: "first",
+              }}
+              aiVariants={[
+                keyFieldsAiVariant({
+                  kind: "dictionary-entries",
+                  location,
+                  description:
+                    "Listed custom-dictionary terms projected to term / pronunciation / mishearings / category.",
+                  visible: filtered,
+                  project: dictEntryKeyFields,
+                  query: { search: query.trim() || null },
+                  attributes: {
+                    rows: filtered.length,
+                    terms_total: entries.length,
+                  },
+                }),
+                {
+                  id: "all-terms",
+                  label: "All terms",
+                  hint: `Every term in this dictionary (${entries.length})`,
+                  build: () => ({
+                    kind: "dictionary-entries",
+                    location,
+                    description:
+                      "Every custom-dictionary term for this owner, ignoring the search filter.",
+                    data: {
+                      owner: { level, id: ownerId, name: ownerLabel },
+                      entries: entries.map(dictEntryData),
+                    },
+                    summary: dictEntriesSummary(entries, { ownerLabel }),
+                    attributes: {
+                      rows: entries.length,
+                      terms_total: entries.length,
+                      detail: "all-terms",
+                    },
+                    context: copyContext,
+                  }),
+                },
+              ]}
+            />
+            <ExportMenu
+              label={`${ownerLabel} dictionary`}
+              // ExportMenu keys on item.id — the view/all pairs must not collide.
+              items={[
+                {
+                  ...jsonExportItem(
+                    () => filtered.map(dictEntryData),
+                    "JSON (this view)",
+                  ),
+                  id: "json-view",
+                },
+                {
+                  ...csvExportItem(
+                    () => dictEntriesCsvRows(filtered),
+                    "CSV (this view)",
+                  ),
+                  id: "csv-view",
+                },
+                {
+                  ...jsonExportItem(
+                    () => entries.map(dictEntryData),
+                    `JSON (all ${entries.length} terms)`,
+                  ),
+                  id: "json-all",
+                },
+                {
+                  ...csvExportItem(
+                    () => dictEntriesCsvRows(entries),
+                    `CSV (all ${entries.length} terms)`,
+                  ),
+                  id: "csv-all",
+                },
+              ]}
+            />
+          </div>
+        )}
       </div>
 
       {/* Table */}
       <div className="rounded-md border border-border">
-        <div className="grid grid-cols-[28px_1.4fr_1.4fr_1fr_28px] gap-2 px-3 py-2 border-b border-border text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+        <div className="grid grid-cols-[28px_1.4fr_1.4fr_1fr_auto] gap-2 px-3 py-2 border-b border-border text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
           <span />
           <span>Term</span>
           <span>Pronunciation</span>
@@ -219,7 +365,7 @@ export function DictionaryManager({ level, ownerId, ownerName, canEdit = true, e
                 <li
                   key={e.id}
                   className={cn(
-                    "grid grid-cols-[28px_1.4fr_1.4fr_1fr_28px] gap-2 px-3 py-2 items-center text-sm",
+                    "group/dict-row grid grid-cols-[28px_1.4fr_1.4fr_1fr_auto] gap-2 px-3 py-2 items-center text-sm",
                     !e.is_active && "opacity-50",
                   )}
                 >
@@ -241,18 +387,39 @@ export function DictionaryManager({ level, ownerId, ownerName, canEdit = true, e
                     {e.pronunciation || (e.ipa ? `/${e.ipa}/` : "—")}
                   </div>
                   <div className="min-w-0 truncate text-muted-foreground">{e.category || "—"}</div>
-                  {canEdit ? (
-                    <button
-                      type="button"
-                      onClick={() => openEditor(e)}
-                      className="text-muted-foreground hover:text-foreground"
-                      aria-label={`Edit ${e.term}`}
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </button>
-                  ) : (
-                    <span />
-                  )}
+                  <div className="flex items-center justify-end gap-0.5">
+                    <CopyButtons
+                      size="xs"
+                      label={`Term "${e.term}"`}
+                      className="opacity-0 transition-opacity group-hover/dict-row:opacity-100 focus-within:opacity-100"
+                      human={() => dictEntrySummary(e)}
+                      json={() => dictEntryData(e)}
+                      agent={() => ({
+                        kind: "dictionary-entry",
+                        location,
+                        description:
+                          "One custom-dictionary term as rendered in the dictionary manager.",
+                        data: dictEntryData(e),
+                        summary: dictEntrySummary(e),
+                        attributes: {
+                          term: e.term,
+                          category: e.category ?? undefined,
+                          active: e.is_active,
+                        },
+                        context: copyContext,
+                      })}
+                    />
+                    {canEdit && (
+                      <button
+                        type="button"
+                        onClick={() => openEditor(e)}
+                        className="text-muted-foreground hover:text-foreground"
+                        aria-label={`Edit ${e.term}`}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>
