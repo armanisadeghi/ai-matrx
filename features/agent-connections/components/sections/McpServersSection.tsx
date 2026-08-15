@@ -10,6 +10,7 @@ import { SectionFooter } from "../SectionFooter";
 import { useMcpCatalog } from "../../hooks/useMcpCatalog";
 import { selectSelectedItemId, setSelectedItemId } from "../../redux/ui/slice";
 import type { McpCatalogEntry } from "@/features/agents/types/mcp.types";
+import { githubConnectUrl } from "@/features/github-integration/service";
 
 type McpStatusTone = "stopped" | "running" | "error";
 
@@ -168,7 +169,13 @@ function McpDetail({
           ) : (
             <button
               type="button"
-              onClick={() => connect({ serverId: entry.serverId })}
+              onClick={() => {
+                if (entry.slug === "github") {
+                  window.location.assign(githubConnectUrl(window.location.pathname));
+                  return;
+                }
+                connect({ serverId: entry.serverId });
+              }}
               className="h-7 px-3 rounded-md text-xs bg-sky-600 hover:bg-sky-500 text-white transition-colors"
             >
               Connect

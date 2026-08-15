@@ -8,11 +8,11 @@ import {
   Loader2,
   ShieldCheck,
   Trash2,
-  Zap,
   X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SandboxGitAdapter } from "../../adapters/SandboxGitAdapter";
+import { GitHubConnectionCard } from "@/features/github-integration/GitHubConnectionCard";
 
 interface CredentialsModalProps {
   adapter: SandboxGitAdapter;
@@ -83,34 +83,6 @@ export const CredentialsModal: React.FC<CredentialsModalProps> = ({
     }
   };
 
-  // NOT a hook — a click handler. Named `useWorkspaceToken` it tripped
-  // react-hooks/rules-of-hooks ("cannot be called inside a callback"), because
-  // the `use` prefix is reserved for hooks and every tool in the toolchain,
-  // including the React Compiler, reads it that way.
-  const applyWorkspaceToken = async () => {
-    setBusy(true);
-    setError(null);
-    setMessage(null);
-    try {
-      await adapter.useWorkspaceToken(scope);
-      setMessage(
-        "Workspace GitHub token attached — git push/pull are ready in this sandbox.",
-      );
-    } catch (err) {
-      const raw = extractErrorMessage(err);
-      // Friendlier copy when the server doesn't have the token configured.
-      if (raw.includes("412")) {
-        setError(
-          "Workspace token isn't configured. Ask an admin to set MATRX_SANDBOX_GH_TOKEN on the server.",
-        );
-      } else {
-        setError(raw);
-      }
-    } finally {
-      setBusy(false);
-    }
-  };
-
   return (
     <div
       role="dialog"
@@ -137,9 +109,15 @@ export const CredentialsModal: React.FC<CredentialsModalProps> = ({
           </button>
         </div>
         <div className="space-y-2 p-3">
+          <GitHubConnectionCard compact />
+          <p className="text-[10px] leading-tight text-neutral-500 dark:text-neutral-400">
+            Your connected GitHub account is used automatically for clone,
+            pull, push, agents, and the GitHub MCP. Manual credentials below
+            are only a per-sandbox fallback.
+          </p>
           <div className="flex h-7 items-center gap-1 rounded-sm bg-neutral-100 p-0.5 dark:bg-neutral-900">
             <Tab active={kind === "github"} onClick={() => setKind("github")}>
-              GitHub PAT
+              Manual PAT
             </Tab>
             <Tab active={kind === "ssh"} onClick={() => setKind("ssh")}>
               SSH key
@@ -147,32 +125,6 @@ export const CredentialsModal: React.FC<CredentialsModalProps> = ({
           </div>
           {kind === "github" ? (
             <div className="space-y-2">
-              <button
-                type="button"
-                onClick={() => void applyWorkspaceToken()}
-                disabled={busy}
-                className="flex w-full items-center justify-center gap-1.5 rounded-sm border border-emerald-300 bg-emerald-50 px-2 py-1.5 text-[11px] font-medium text-emerald-800 hover:bg-emerald-100 disabled:opacity-50 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200 dark:hover:bg-emerald-950/60"
-              >
-                {busy ? (
-                  <Loader2 size={12} className="animate-spin" />
-                ) : (
-                  <Zap size={12} />
-                )}
-                Use Matrx workspace token
-              </button>
-              <p className="text-[10px] leading-tight text-neutral-500 dark:text-neutral-400">
-                One-click bootstrap using the server-side{" "}
-                <code className="font-mono">MATRX_SANDBOX_GH_TOKEN</code>. The
-                token never reaches your browser. Use this for{" "}
-                <code className="font-mono">armanisadeghi</code> repos.
-              </p>
-              <div className="flex items-center gap-2">
-                <div className="h-px flex-1 bg-neutral-200 dark:bg-neutral-800" />
-                <span className="text-[9px] uppercase tracking-wider text-neutral-400">
-                  or paste a token
-                </span>
-                <div className="h-px flex-1 bg-neutral-200 dark:bg-neutral-800" />
-              </div>
               <label className="block text-[11px] text-neutral-600 dark:text-neutral-400">
                 Personal access token
                 <div className="mt-1 flex items-stretch gap-1">

@@ -65,6 +65,8 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
+import { GitHubConnectionCard } from "@/features/github-integration/GitHubConnectionCard";
+import { githubConnectUrl } from "@/features/github-integration/service";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -223,6 +225,10 @@ export default function IntegrationsPage() {
 
   const handleOAuthConnect = useCallback(
     async (entry: McpCatalogEntry) => {
+      if (entry.slug === "github") {
+        window.location.assign(githubConnectUrl(window.location.pathname));
+        return;
+      }
       const outcome = await startMcpOAuthPopup(entry.serverId);
       if (outcome.ok) {
         dispatch(fetchCatalog());
@@ -339,6 +345,8 @@ export default function IntegrationsPage() {
             {error}
           </div>
         )}
+
+        <GitHubConnectionCard />
 
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-3">
