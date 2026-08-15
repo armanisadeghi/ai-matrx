@@ -36,7 +36,9 @@ committing — other machines and cloud sessions read from the remote.
 skill is distributed as a real committed file in each repo (see § Shared skills), so it works
 offline; only editing/syncing them needs the bundle.
 
-**Layout — lifecycle-based, four fixed root branches (2026-07-22):**
+**Layout — lifecycle-based, six fixed root branches** (the enumerated vocabulary lives in
+`policies/document-types.md` § The bundle's root branches, and every repo's docs guard enforces
+that exact set — a pointer into anything else fails the gate):
 - `systems/<system>/FEATURE.md` — durable cross-repo truth, one dir per system (may also hold
   `VISION.md`, briefs, references).
 - `projects/<project>/` — time-bounded cross-repo work (plans, campaigns, proposals); every
@@ -44,11 +46,16 @@ offline; only editing/syncing them needs the bundle.
 - `policies/` — platform doctrine, including the **document-types taxonomy and authority
   ladder** (`policies/document-types.md` — VISION > POLICY > SOR > repo FEATURE.md > guides;
   plans/handoffs/history have no authority). Read it before creating any doc.
-- `meta/` — the bundle's machinery (OKF spec, lint script). `skills/` stays at root
-  (symlink-stable). No other root directories, no loose root `.md` besides README/index/log.
+- `operations/` — live shared **registers**: the lists, boards, and rosters that agents in more
+  than one repo write to (the unassigned-handoff list, the DB changeover board). A register
+  cannot live in a repo — see rule 2 below.
+- `meta/` — the bundle's machinery (OKF spec, lint + sync scripts). `skills/` stays at root
+  (symlink-stable). Adding a seventh branch means editing the policy AND every repo's guard in
+  the same change. No loose root `.md` besides README/index/log.
 
 **Filing test:** durable truth → `systems/`. Work → `projects/`. Doctrine → `policies/`.
-Finished → archive now, same session. Single-repo → not here at all.
+Shared register → `operations/`. Finished → archive now, same session. Single-repo → not here
+at all.
 
 This skill's canonical copy lives at
 `skills/cross-repo-docs/SKILL.md` inside that repo; `~/.claude/skills/cross-repo-docs` is a

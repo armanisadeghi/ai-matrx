@@ -15,7 +15,7 @@
  *     sanctioned list below.
  *
  *  3. Pointer-path lint — common-docs pointers must use the restructured
- *     layout (systems|projects|policies|meta|skills) and the canonical
+ *     layout (systems|projects|policies|operations|meta|skills) and the canonical
  *     spelling `/Users/armanisadeghi/code/common-docs/...` (the
  *     `/Volumes/...` and `matrx-common-docs` spellings only resolve on one
  *     machine).
@@ -59,10 +59,15 @@ const SANCTIONED_ROOT_MD = new Set([
   "README.md",
 ]);
 
+// The bundle's root branches, per common-docs/policies/document-types.md.
+// `operations` holds live shared REGISTERS (the unassigned-handoff list, the
+// DB changeover board) — a real kind since 2026-08-14, not an escape hatch.
+// Kept in lockstep with aidream scripts/check_docs_guards.py.
 const COMMON_DOCS_ALLOWED_DIRS = new Set([
   "systems",
   "projects",
   "policies",
+  "operations",
   "meta",
   "skills",
 ]);
@@ -200,7 +205,7 @@ if (rootViolations.length) {
 if (pointerViolations.length) {
   console.log("");
   console.log(`-- Stale / non-canonical common-docs pointers (${pointerViolations.length}) --`);
-  console.log("   Canonical spelling: /Users/armanisadeghi/code/common-docs/<systems|projects|policies|meta|skills>/...");
+  console.log("   Canonical spelling: /Users/armanisadeghi/code/common-docs/<systems|projects|policies|operations|meta|skills>/...");
   for (const v of pointerViolations) {
     console.log(`   ${v.file}:${v.line}  ${v.text}`);
   }
