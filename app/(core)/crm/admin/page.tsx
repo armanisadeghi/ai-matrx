@@ -193,6 +193,30 @@ const CRM_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
+      name: "StartOutreachDialog / CrmFoldControl",
+      filePath: "features/crm/components/outreach-start/",
+      description:
+        "The G9 outreach doors mounted on the MARKETING surfaces (reputation cases, referring-domain prospects, site settings): resolve the outlet through the live aidream G1 fold (/seo/sites/{site_id}/crm/...), enrol it into an existing outreach list carrying the motivating record, and the auto/manual/off fold-mode control — one record, two renders. Client bridge in features/crm/outreach-start/service.ts.",
+      tier: "internal",
+      status: "Live",
+    },
+    {
+      name: "OutreachListPicker",
+      filePath: "features/crm/components/outreach-lists/OutreachListPicker.tsx",
+      description:
+        "The shared 'which outreach list?' question (hook + fields) consumed by AddToOutreachListDialog and StartOutreachDialog — one picker, never a per-caller copy.",
+      tier: "internal",
+      status: "Live",
+    },
+    {
+      name: "PartyProvenanceCard",
+      filePath: "features/crm/components/record/PartyProvenanceCard.tsx",
+      description:
+        "'Why is this org in my CRM' on /crm/[partyId]: the G1 provenance edges (link_prospect / outreach_target / link_gap) resolved to their LIVE seo rows, every id a door, plus the discovered -> contact promotion.",
+      tier: "internal",
+      status: "Live",
+    },
+    {
       name: "ImportWizard",
       filePath: "features/crm/components/import/ImportWizard.tsx",
       description:

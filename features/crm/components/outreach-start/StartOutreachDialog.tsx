@@ -65,6 +65,7 @@ import {
   findOutletPartyByDomain,
   foldRefusalForMode,
   foldSiteDomains,
+  normalizeDomainKey,
   readSiteCrmFoldSettings,
   type FoldSource,
 } from "../../outreach-start/service";
@@ -192,8 +193,9 @@ export function StartOutreachDialog({
         });
         if (cancelled) return;
         setFoldSummary(describeFoldReport(report));
+        const wanted = normalizeDomainKey(target.domain);
         const skipped = (report.skipped ?? []).find(
-          (row) => row.domain?.toLowerCase() === target.domain.toLowerCase(),
+          (row) => normalizeDomainKey(row.domain ?? "") === wanted,
         );
         const found = await findOutletPartyByDomain({
           orgId: target.organizationId,

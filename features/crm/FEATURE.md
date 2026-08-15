@@ -539,6 +539,54 @@ current authors/editors/contributors without writing.
   state render as `Confirmed` / `Attached`, making reruns understandable rather
   than silently no-oping.
 
+## Starting outreach where the opportunity was found — G9
+
+`features/crm/outreach-start/` (client bridge) + `features/crm/components/outreach-start/`
+(the two mounted components). **There is no outreach console** — every door
+lands in `/crm/outreach-lists/[listId]`, the workspace that already exists
+(outreach handoff §7).
+
+- 🚨 **The mounted aidream paths are `/seo/sites/{site_id}/crm/{referring-domains,reputation-outlets,fold-settings}`.**
+  aidream router prefixes are BARE — the `/api/seo/...` form written in the
+  handoff appears in `/openapi.json` and is unreachable at runtime. They are
+  called through `@/lib/api/typed-client`, so a wrong path is a compile error.
+- **`crm.resolve_party` is the ONLY domain→party path and it is server-side.**
+  Never match a domain to a party in the client to create anything; the fold
+  endpoint is the call site, it is idempotent on the domain key, and it stamps
+  the provenance edge. The client only *reads* the result back.
+- **`normalizeDomainKey` is the TS twin of aidream's `normalize_domain`** and
+  must stay in step. A reputation case carries `source_domain =
+  "www.andysowards.com"` while the party is stored as `andysowards.com`; before
+  the twin existed the door reported "could not be turned into an
+  organization" about a record the server had just created. Parity test:
+  `outreach-start/__tests__/normalize-domain-key.test.ts`.
+- **Fast path first.** A fold resolves up to 250 domains, so `StartOutreachDialog`
+  looks the outlet up BEFORE folding and only folds when it is genuinely
+  missing. After a site's first fold every door is instant.
+- **`REPUTATION_OUTREACH_VERDICTS` is narrower than the server's.** aidream also
+  folds `strengthen`; the client does not offer outreach on it, because
+  `strengthen` is a verdict about our OWN page. A button that pretends is worse
+  than none.
+- **The motivating record rides along.** `addMembersByPartyIds` takes optional
+  member `metadata` (`reputation_case_id` / `backlink_id` /
+  `referring_domain_profile_id`) — the exact keys `SingleSendDialog` reads, so
+  the send opens already bound to the case (attribution, G8). That dialog now
+  re-adds a bound case that the org inventory filters out (`pitch_angle IS NULL`);
+  otherwise the selector rendered EMPTY over a real binding.
+- **`CrmFoldControl` is ONE record with TWO renders** — the site-settings
+  surface and beside the prospect/case list. Mode `off` refuses WITH the reason
+  and the fix; every run reports what it SKIPPED and why. The folded-doors list
+  is capped at 12 `EntityRef`s on purpose: 206 of them exhausted the browser's
+  connection pool with route prefetches (`ERR_INSUFFICIENT_RESOURCES`).
+- **`PartyProvenanceCard`** answers "why is this org in my CRM" on the record
+  page. It reads the provenance EDGE ids via `assoc_for_entity` and then the
+  **live** `seo` row — `platform.associations` has zero browser grants and the
+  `assoc_*` RPCs return `metadata`, not `payload`, and the live row is the
+  better answer anyway (current verdict, not a snapshot). It also carries the
+  `discovered → contact` promotion, which stays a human act.
+- **Enrollment asks the same question everywhere** — `OutreachListPicker`
+  (hook + fields), extracted from `AddToOutreachListDialog`.
+
 ## Not built yet
 
 - "Shared" list scope (needs a crm grant-reader RPC).
@@ -549,6 +597,19 @@ current authors/editors/contributors without writing.
 
 ## Change log
 
+- 2026-08-15 — **G9: outreach starts where the opportunity is found; G1 finally
+  has a frontend.** A reputation verdict was a dead end — a `pitch` case with a
+  live `pitch_angle` terminated in "Start action", which only wrote
+  `status='in_progress'`. Every verdict now resolves to the action it actually
+  implies (outreach for `pitch`/`request_update`/`correct`/`respond`; the page
+  workspace for `strengthen`; a recheck for `investigate`; honest inertness for
+  `monitor`/`leave_alone`), and the same "Start outreach" door sits on
+  referring-domain prospects (a `toxic` domain refuses with the reason). The
+  live G1 fold + `auto|manual|off` mode control got their caller, rendered in
+  both places the contract names. See § Starting outreach where the opportunity
+  was found. Browser-verified end to end against the live DB and production
+  aidream: prospect → resolve → enrol → the existing campaign workspace, and a
+  reputation case whose binding then named itself inside `SingleSendDialog`.
 - 2026-08-15 — **The unified outreach inbox + the Chasebox (WP1).** `/crm/inbox`
   and `/crm/chasebox`, both VIEWS over `crm.interaction` +
   `crm.outreach_list_member` — no new table, no second inbox model, no separate

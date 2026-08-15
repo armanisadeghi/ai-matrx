@@ -24,7 +24,10 @@ import {
   readMessageTemplateMetadata,
   type MessageTemplateDB,
 } from "@/features/message-templates/types/message-templates-db";
-import { listOrganizationReputationCases } from "@/features/marketing/data/reputation-queries";
+import {
+  getReputationCaseById,
+  listOrganizationReputationCases,
+} from "@/features/marketing/data/reputation-queries";
 import type { ReputationCaseRow } from "@/features/marketing/data/reputation-types";
 import {
   approveOutreachDraft,
@@ -89,13 +92,26 @@ export function SingleSendDialog({
       fetchOrganizationMessageTemplates(list.organization_id),
       listOrganizationReputationCases(list.organization_id),
     ])
-      .then(([rows, cases]) => {
+      .then(async ([rows, cases]) => {
         setReputationCaseId(memberReputationCaseId ?? "none");
         const emailTemplates = rows.filter((row) => subjectTemplate(row));
         setTemplates(emailTemplates);
-        setReputationCases(
-          cases.filter((row) => Boolean(row.pitch_angle?.trim())),
+        const pitchable = cases.filter((row) =>
+          Boolean(row.pitch_angle?.trim()),
         );
+        // A member enrolled by "Start outreach" can be bound to a case with no
+        // pitch angle (`correct` / `request_update` often have none), which
+        // the org inventory deliberately excludes. Without adding it back the
+        // selector renders EMPTY over a real binding — the UI would be lying
+        // about what this message is attached to.
+        if (
+          memberReputationCaseId &&
+          !pitchable.some((row) => row.id === memberReputationCaseId)
+        ) {
+          const bound = await getReputationCaseById(memberReputationCaseId);
+          if (bound) pitchable.unshift(bound);
+        }
+        setReputationCases(pitchable);
         if (emailTemplates.length === 1) setTemplateId(emailTemplates[0].id);
       })
       .catch((error: unknown) => setProblem(readOutreachProblem(error)))

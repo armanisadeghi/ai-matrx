@@ -143,6 +143,28 @@ export function foldRefusalForMode(mode: CrmFoldMode): string | null {
 // ── Resolving the folded outlet back to its party ───────────────────────────
 
 /**
+ * The TS twin of aidream's `crm.canonicalize.normalize_domain` — the function
+ * that decides what `crm.party.primary_domain` actually holds.
+ *
+ * 🚨 Paid for once: a reputation case carries `source_domain =
+ * "www.andysowards.com"` while the fold stored the party as
+ * `andysowards.com`, so looking the outlet up by the raw column found nothing
+ * and the door reported "could not be turned into an organization" about a
+ * record that had just been created. Any client-side lookup against
+ * `primary_domain` must normalize first. If this ever diverges from the
+ * server's rules, the symptom is exactly that false refusal.
+ */
+export function normalizeDomainKey(raw: string): string {
+  let value = raw.trim().toLowerCase();
+  for (const prefix of ["https://", "http://"]) {
+    if (value.startsWith(prefix)) value = value.slice(prefix.length);
+  }
+  if (value.startsWith("www.")) value = value.slice(4);
+  value = value.replace(/\/+$/, "").split("/")[0].split("?")[0].split("#")[0];
+  return value.replace(/\.+$/, "");
+}
+
+/**
  * The organization behind a domain, INCLUDING platform-discovered rows.
  *
  * Every other domain lookup in `features/crm/service.ts` is deliberately
@@ -156,7 +178,7 @@ export async function findOutletPartyByDomain(args: {
   orgId: string;
   domain: string;
 }): Promise<PartyRow | null> {
-  const domain = args.domain.trim().toLowerCase();
+  const domain = normalizeDomainKey(args.domain);
   if (!domain) return null;
   const { data, error } = await supabase
     .schema("crm")

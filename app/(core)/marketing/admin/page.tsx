@@ -533,6 +533,13 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
   ],
   components: [
     {
+      name: "CrmFoldControl / StartOutreachOnDomain / CaseVerdictAction (outreach doors)",
+      filePath: "features/crm/components/outreach-start/",
+      description:
+        "The G9 doors on marketing surfaces: 'Start outreach' on a reputation case (pitch / request_update / correct / respond) and on a referring-domain prospect (toxic refuses with the reason), plus the auto|manual|off CRM fold control rendered on site settings AND beside the prospect/case lists — one record, two renders. Components live in features/crm/ because the CRM owns the enrollment and the send gate; marketing only mounts them.",
+      tier: "internal",
+    },
+    {
       name: "MarketingReportsWorkspace",
       filePath: "features/marketing/reports/MarketingReportsWorkspace.tsx",
       description:

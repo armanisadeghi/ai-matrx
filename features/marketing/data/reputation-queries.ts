@@ -201,6 +201,29 @@ export async function listOrganizationReputationCases(
   return (response.data ?? []) as ReputationCaseRow[];
 }
 
+/**
+ * One case by id, for a surface that is ALREADY bound to it.
+ *
+ * `listOrganizationReputationCases` only returns cases with a `pitch_angle`,
+ * which is right for a picker of things worth writing about — but a member
+ * enrolled from the reputation workspace can carry a case that has none
+ * (`correct` / `request_update` frequently do). Without this the send dialog
+ * rendered an EMPTY selector over a real binding: the case was attached, and
+ * the UI showed nothing. Returns null when it is genuinely unreadable.
+ */
+export async function getReputationCaseById(
+  caseId: string,
+): Promise<ReputationCaseRow | null> {
+  const response = await supabase
+    .schema("seo")
+    .from("reputation_case")
+    .select("*")
+    .eq("id", caseId)
+    .limit(1);
+  throwIfError(response.error, "load the reputation case behind this message");
+  return (response.data?.[0] as ReputationCaseRow | undefined) ?? null;
+}
+
 export async function updateReputationCase(input: {
   caseId: string;
   status: ReputationCaseStatus;
