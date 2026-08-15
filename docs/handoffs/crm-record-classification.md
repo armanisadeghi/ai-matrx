@@ -104,7 +104,13 @@ blog"*), never a type — which is why it must not become a peer of `media outle
 5. **Curate discovered channels into shared lists** (Arman, above) — now unblocked by
    `platform.entity_grants`. Publish a `crm.outreach_list` of vetted channels from the Matrx
    Library org with `entity_type='outreach_list'`, industry-gated. **Register an AFTER DELETE purge
-   trigger for that entity type** (see `platform.entity_grants_purge_data_store`).
+   trigger for that entity type** (see `platform.entity_grants_purge_data_store`) — a generic
+   `entity_id` cannot carry an FK, so that trigger IS the referential integrity.
+   ⚠️ If you ever re-shape `rag.data_store_grants` again: any function declaring
+   `RETURNS rag.data_store_grants` depends on its composite type and a `cascade` will silently drop
+   it. That is how `library_grant_publish` and `library_subscribe` were lost and restored on
+   2026-08-15. And restore from the LIVE definition, never from a migration file — the file was
+   stale and reintroduced two already-fixed bugs.
 6. **The same axis on other CRM tables.** `crm.interaction` and `crm.outreach_list_member` have no
    `record_class` **and no `source` column at all**. Neither has an automated writer yet;
    `crm.sending_event` already does (`aidream/services/sending_identity/gate.py:654`).
