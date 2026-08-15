@@ -76,7 +76,10 @@ blank data or disappearing.
   (parents, children, natural LSIs, related phrases) → deterministic artifact
   storage and relationship ingestion → batched keyword market metrics → two
   independent automatic branches: intrinsic classification and primary-keyword
-  Google+Brave search visibility → completed summary.
+  Google+Brave search visibility → completed summary. This is the ratified
+  target sequence; today the research/market/classification branch is live and
+  primary Google+Brave collection still requires the explicit tracking/check
+  actions named under Deferred convergence work.
 - **Automatic scope:** Google and Brave SERP/rank collection runs for the
   primary keyword only. Expanded phrases receive relationships, market metrics,
   and intrinsic classification. The user may explicitly opt additional phrases
@@ -113,13 +116,17 @@ its provider payload into the canonical keyword/market/edge plane with durable
 provenance and freshness; never render raw provider rows or create a parallel
 keyword store.
 
-**SERP-informed reclassification is a separate future action.** Once persisted
-Google and Brave results exist, offer “Enhance classification from search
-results.” It sends both SERPs plus the intrinsic classification to a new agent
-slot/contract, returns a versioned canonical artifact, and records which facts
-changed, confidence deltas, reasoning/evidence, and source snapshot IDs. It does
-not silently overwrite the intrinsic universal classification. No canonical
-agent or persistence contract performs this today.
+**SERP-informed reclassification is a separate live action.** Once compatible
+persisted Google and Brave results exist, Result Pages offers “Enhance
+classification.” It sends the two selected snapshots plus the intrinsic
+classification to the pinned `seo.keyword_serp_intent_analyst` slot without
+running another search. The adopted agent stream opens in `LiveRunWindow`; the
+registered `keyword_serp_intent_analysis_v1` component renders it there and in
+the Classification tab. The server verifies every cited provider position and
+domain, then atomically stores the result under
+`classification_detail.serp_intent_analysis`. It never silently overwrites the
+intrinsic universal columns. A deliberate rerun requires confirmation and row
+version history retains the prior enhancement.
 
 ## Current agent inventory
 
@@ -127,15 +134,17 @@ All agent execution resolves through DB-managed slots; IDs in code are
 first-sync seeds, never direct runtime calls. Live defaults verified 2026-08-14
 match the seeds, use the live agent definition, and have no enabled overrides:
 
-| Stage                    | Slot                     | Live agent                                                                                                                                                                   | Batch behavior                                                                                                   |
-| ------------------------ | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| Relationship research    | `seo.keyword_researcher` | [Keyword Relationship Researcher](https://www.aimatrx.com/administration/system-agents/agents/c4b999a2-629d-4a00-a23f-25c63b2054d9) — `c4b999a2-629d-4a00-a23f-25c63b2054d9` | One call per fresh baseline; four lists × the default 10 phrases.                                                |
-| Intrinsic classification | `seo.keyword_classifier` | [Keyword Classifier](https://www.aimatrx.com/administration/system-agents/agents/5ca54dd9-6de6-4364-842f-2ec4a0274ce0) — `5ca54dd9-6de6-4364-842f-2ec4a0274ce0`              | Only stale/unclassified rows, chunks of at most 40; a full 40-related-plus-primary result may require two calls. |
+| Stage                    | Slot                              | Live agent                                                                                                                                                                                                                          | Batch behavior                                                                                                   |
+| ------------------------ | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Relationship research    | `seo.keyword_researcher`          | [Keyword Relationship Researcher](https://www.aimatrx.com/administration/system-agents/agents/c4b999a2-629d-4a00-a23f-25c63b2054d9) — `c4b999a2-629d-4a00-a23f-25c63b2054d9`                                                        | One call per fresh baseline; four lists × the default 10 phrases.                                                |
+| Intrinsic classification | `seo.keyword_classifier`          | [Keyword Classifier](https://www.aimatrx.com/administration/system-agents/agents/5ca54dd9-6de6-4364-842f-2ec4a0274ce0) — `5ca54dd9-6de6-4364-842f-2ec4a0274ce0`                                                                     | Only stale/unclassified rows, chunks of at most 40; a full 40-related-plus-primary result may require two calls. |
+| SERP intent enhancement  | `seo.keyword_serp_intent_analyst` | [SERP-Informed Keyword Intent Analyst](https://www.aimatrx.com/administration/system-agents/agents/f0cb38e5-5de8-44de-bb7b-a22d9675f098) — `f0cb38e5-5de8-44de-bb7b-a22d9675f098`; pinned v3 `99cb84db-245d-4290-a5c2-a751ea7c3262` | One explicit call for one keyword after compatible stored Google + Brave snapshots exist; no search tools.       |
 
 Artifact storage, `fn_ingest_keyword_research`, keyword-market provider calls,
-Google/Brave collection, and Supabase reads/writes are **deterministic non-agent
-stages**. Topic Assigner, Page Analyzer, Site Strategist, Page-Keyword Mapper,
-and Site Intake agents are not invoked by the per-keyword baseline.
+Google/Brave collection, evidence validation, and Supabase reads/writes are
+**deterministic non-agent stages**. Topic Assigner, Page Analyzer, Site
+Strategist, Page-Keyword Mapper, and Site Intake agents are not invoked by the
+per-keyword baseline.
 
 ## Deferred convergence work
 
@@ -148,8 +157,8 @@ and Site Intake agents are not invoked by the per-keyword baseline.
   already phrase/request keyed.
 - Build normalized persistence for Ideas/Suggestions/Related Searches before
   exposing their optional actions.
-- Define and build the SERP-informed classification agent slot, versioned shape,
-  writer, confidence-delta model, and review UI before enabling its button.
+- Browser-certify the deployed SERP-informed action with real compatible Google
+  and Brave targets after the aidream endpoint reaches production.
 - Consolidate and remove the standalone `KeywordResearchWindow` only after all
   launchers and preserved-state consumers use Keyword Intelligence.
 
@@ -213,6 +222,11 @@ the manifest, emit in `getScope`, re-sync (surface-authoring skill).
 
 ## Change Log
 
+- 2026-08-14 — Codex: shipped the optional SERP-informed intent pass end to
+  end: pinned AI Dream agent/slot, stored-snapshot-only streaming endpoint,
+  server evidence validation, non-destructive JSONB writer, adopted Redux live
+  run, Result Pages action with prerequisite/rerun states, Classification-tab
+  review, and the single registered Shape component.
 - 2026-08-14 — Codex: ratified the canonical dossier contract—honest first-run
   baseline, stage strip vs result tabs, persistent keyword drill-down, explicit
   spend rules, primary-only Google+Brave automation, optional normalized

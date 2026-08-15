@@ -1273,8 +1273,6 @@ function SearchVisibilityTab({
           organizationId={organizationId}
           phrase={phrase}
           keywordId={keywordId}
-          hasSerpIntentAnalysis={hasSerpIntentAnalysis}
-          onAnalysisComplete={onAnalysisComplete}
         />
       ) : (
         <KeywordSerpTab
@@ -1282,6 +1280,8 @@ function SearchVisibilityTab({
           organizationId={organizationId}
           phrase={phrase}
           keywordId={keywordId}
+          hasSerpIntentAnalysis={hasSerpIntentAnalysis}
+          onAnalysisComplete={onAnalysisComplete}
         />
       )}
     </div>

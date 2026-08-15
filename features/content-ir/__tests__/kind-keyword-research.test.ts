@@ -20,6 +20,7 @@ import {
   KEYWORD_RESEARCH_KIND_SCHEMAS,
   keywordClassificationServerDataFromEnvelope,
   keywordResearchServerDataFromEnvelope,
+  keywordSerpIntentAnalysisServerDataFromEnvelope,
   splitKeywordClassificationSegments,
 } from "../kinds/keyword-research";
 
@@ -87,6 +88,30 @@ const CLASSIFICATION_JSON = JSON.stringify({
   ],
 });
 
+const SERP_INTENT_JSON = JSON.stringify({
+  __kind: "keyword_serp_intent_analysis_v1",
+  analyzer_version: "kwserp-v1",
+  keyword_id: "2a132ca0-60f4-4995-8def-20482e99d360",
+  phrase: "best project management software",
+  language: "en",
+  context: { google_snapshot_id: "g1", brave_snapshot_id: "b1" },
+  original_classification: { intent_class: "commercial_investigation" },
+  enhanced_classification: {
+    intent_class: "commercial_investigation",
+    overall_confidence: 91,
+  },
+  changes: [],
+  provider_findings: [
+    { provider: "google", apparent_intent: "commercial_investigation" },
+    { provider: "brave", apparent_intent: "commercial_investigation" },
+  ],
+  serp_consensus: "aligned",
+  intent_summary: "Both providers support comparison intent.",
+  content_expectations: { dominant_formats: ["comparison roundups"] },
+  difficulty_signal: "high",
+  limitations: ["Stored results only."],
+});
+
 describe("keyword_relationship_research — streaming bridge", () => {
   it("MID-STREAM: partial feed yields partial lists, isComplete=false", () => {
     const session = new ParseSession({
@@ -94,7 +119,8 @@ describe("keyword_relationship_research — streaming bridge", () => {
       schemas: resolver,
     });
     // Cut inside the SECOND list, after the first list closed.
-    const cut = RESEARCH_JSON.indexOf('"Natural LSIs"') + '"Natural LSIs"'.length;
+    const cut =
+      RESEARCH_JSON.indexOf('"Natural LSIs"') + '"Natural LSIs"'.length;
     session.write(RESEARCH_JSON.slice(0, cut));
 
     const serverData = keywordResearchServerDataFromEnvelope(
@@ -144,7 +170,9 @@ describe("keyword_classification_batch_v1 — streaming bridge", () => {
       schemas: resolver,
     });
     // Cut just after the first result object closes (before the second opens).
-    const cut = CLASSIFICATION_JSON.indexOf('{"__kind":"keyword_classification_v1","keyword_id":"6838d7ba');
+    const cut = CLASSIFICATION_JSON.indexOf(
+      '{"__kind":"keyword_classification_v1","keyword_id":"6838d7ba',
+    );
     session.write(CLASSIFICATION_JSON.slice(0, cut));
 
     const serverData = keywordClassificationServerDataFromEnvelope(
@@ -200,9 +228,9 @@ describe("splitKeywordClassificationSegments", () => {
     const segments = splitKeywordClassificationSegments(noisy);
     expect(segments).toHaveLength(2);
     for (const segment of segments) {
-      expect(segment.startsWith('{"__kind":"keyword_classification_batch_v1"')).toBe(
-        true,
-      );
+      expect(
+        segment.startsWith('{"__kind":"keyword_classification_batch_v1"'),
+      ).toBe(true);
     }
   });
 
@@ -212,5 +240,27 @@ describe("splitKeywordClassificationSegments", () => {
     expect(
       splitKeywordClassificationSegments(CLASSIFICATION_JSON),
     ).toHaveLength(1);
+  });
+});
+
+describe("keyword_serp_intent_analysis_v1 — canonical bridge", () => {
+  it("routes a complete persisted analysis into the Shape component", () => {
+    const session = new ParseSession({
+      identity: "kw-serp-intent",
+      schemas: resolver,
+    });
+    session.write(SERP_INTENT_JSON);
+    session.end();
+
+    const serverData = keywordSerpIntentAnalysisServerDataFromEnvelope(
+      session.buildEnvelope(),
+    );
+    expect(serverData).toMatchObject({
+      phrase: "best project management software",
+      serp_consensus: "aligned",
+      difficulty_signal: "high",
+      isComplete: true,
+    });
+    session.dispose();
   });
 });

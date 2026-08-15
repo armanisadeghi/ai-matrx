@@ -247,81 +247,78 @@ export function useKeywordSerpIntentAnalysis() {
     status: "idle",
   });
 
-  const run = useCallback(
-    async ({
-      keywordId,
-      phrase,
-      googleTargetId,
-      braveTargetId,
-    }: {
-      keywordId: string;
-      phrase: string;
-      googleTargetId: string;
-      braveTargetId: string;
-    }) => {
-      abortRef.current?.abort();
-      if (requestIdRef.current) {
-        dispatch(removeRequest(requestIdRef.current));
-        requestIdRef.current = null;
-      }
-      const abortController = new AbortController();
-      abortRef.current = abortController;
-      setState({ status: "running" });
-      liveWindowRef.current = openLiveRunWindow({
-        instanceId: `keyword-serp-intent:${keywordId}`,
-        label: `Enhancing intent · ${phrase}`,
-        pending: true,
-      });
-      let completed = false;
-      let streamedError: string | null = null;
-      const consumeStream = dispatch(
-        adoptForeignStream({
-          abortController,
-          onAdopted: ({ requestId }) => {
-            requestIdRef.current = requestId;
-            liveWindowRef.current?.update({ requestId, pending: false });
-          },
-          onEvent: (event) => {
-            if (event.event === "error") {
-              streamedError = extractErrorMessage(event.data);
-              return;
-            }
-            if (event.event !== "data" || !isJsonObject(event.data)) return;
-            const data = event.data;
-            if (data.kind === "seo.keyword_serp_intent_completed") {
-              completed = true;
-            }
-          },
-        }),
-      );
-      const response = await dispatch(
-        callApi({
-          path: "/seo/keywords/{keyword_id}/serp-intent-analysis",
-          method: "POST",
-          pathParams: { keyword_id: keywordId },
-          body: {
-            google_target_id: googleTargetId,
-            brave_target_id: braveTargetId,
-          },
-          stream: true,
-          consumeStream,
-          signal: abortController.signal,
-        }),
-      );
-      if (abortController.signal.aborted) return false;
-      const error = response.error?.message ?? streamedError;
-      if (error || !completed) {
-        const message =
-          error ?? "The analysis ended before the saved result arrived.";
-        setState({ status: "error", error: message });
-        return false;
-      }
-      await queryClient.invalidateQueries({ queryKey: seoKeywordKeys.all });
-      setState({ status: "done" });
-      return true;
-    },
-    [dispatch, openLiveRunWindow, queryClient],
-  );
+  async function run({
+    keywordId,
+    phrase,
+    googleTargetId,
+    braveTargetId,
+  }: {
+    keywordId: string;
+    phrase: string;
+    googleTargetId: string;
+    braveTargetId: string;
+  }) {
+    abortRef.current?.abort();
+    if (requestIdRef.current) {
+      dispatch(removeRequest(requestIdRef.current));
+      requestIdRef.current = null;
+    }
+    const abortController = new AbortController();
+    abortRef.current = abortController;
+    setState({ status: "running" });
+    liveWindowRef.current = openLiveRunWindow({
+      instanceId: `keyword-serp-intent:${keywordId}`,
+      label: `Enhancing intent · ${phrase}`,
+      pending: true,
+    });
+    let completed = false;
+    let streamedError: string | null = null;
+    const consumeStream = dispatch(
+      adoptForeignStream({
+        abortController,
+        onAdopted: ({ requestId }) => {
+          requestIdRef.current = requestId;
+          liveWindowRef.current?.update({ requestId, pending: false });
+        },
+        onEvent: (event) => {
+          if (event.event === "error") {
+            streamedError = extractErrorMessage(event.data);
+            return;
+          }
+          if (event.event !== "data" || !isJsonObject(event.data)) return;
+          const data = event.data;
+          if (data.kind === "seo.keyword_serp_intent_completed") {
+            completed = true;
+          }
+        },
+      }),
+    );
+    const response = await dispatch(
+      callApi({
+        path: "/seo/keywords/{keyword_id}/serp-intent-analysis",
+        method: "POST",
+        pathParams: { keyword_id: keywordId },
+        body: {
+          google_target_id: googleTargetId,
+          brave_target_id: braveTargetId,
+        },
+        stream: true,
+        consumeStream,
+        signal: abortController.signal,
+      }),
+    );
+    if (abortController.signal.aborted) return false;
+    const error = response.error?.message ?? streamedError;
+    if (error || !completed) {
+      const message =
+        error ?? "The analysis ended before the saved result arrived.";
+      setState({ status: "error", error: message });
+      return false;
+    }
+    await queryClient.invalidateQueries({ queryKey: seoKeywordKeys.all });
+    setState({ status: "done" });
+    return true;
+  }
 
   return { state, run };
 }

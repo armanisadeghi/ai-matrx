@@ -4608,6 +4608,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/seo/keywords/{keyword_id}/serp-intent-analysis": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Keyword Serp Intent Analysis Route
+         * @description Deliberately enhance one intrinsic classification from the caller's
+         *     exact stored Google + Brave snapshots. This endpoint never performs a
+         *     provider search and never overwrites the intrinsic 13-field result.
+         */
+        post: operations["keyword_serp_intent_analysis_route_seo_keywords__keyword_id__serp_intent_analysis_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/seo/collections/{run_id}": {
         parameters: {
             query?: never;
@@ -5113,6 +5135,34 @@ export interface paths {
          *     verdicts are reported as skipped with the reason, never silently dropped.
          */
         post: operations["fold_reputation_outlets_endpoint_seo_sites__site_id__crm_reputation_outlets_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/crm/fold-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Crm Fold Settings
+         * @description How this site turns SEO domains into CRM records — the user's setting.
+         *
+         *     Rendered in two places on purpose: the site's settings surface (where every
+         *     per-site choice lives) and the prospect/reputation surfaces (where the
+         *     consequence is visible). One record, two renders — never two settings.
+         */
+        get: operations["read_crm_fold_settings_seo_sites__site_id__crm_fold_settings_get"];
+        /**
+         * Write Crm Fold Settings
+         * @description Set the mode (`auto` after each collection / `manual` only / `off`) and gates.
+         */
+        put: operations["write_crm_fold_settings_seo_sites__site_id__crm_fold_settings_put"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -6819,6 +6869,185 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/runtime/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Overview
+         * @description The DECOMPOSED window read — totals with period-over-period deltas, split by
+         *     flavor, by outcome truth (completed vs failed vs *falsely* reaped), by cost
+         *     concentration and by tree shape.
+         *
+         *     Raw execution counts lie: a window whose headline is "9,637 executions, 98% healthy"
+         *     can be hiding every scheduled task in the platform failing, because one flavor's
+         *     volume drowns every other flavor's outcome. Nothing here is reported undecomposed.
+         */
+        get: operations["overview_admin_runtime_overview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/runtime/signals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Signals
+         * @description The named operator reflexes, evaluated server-side: false-reap detection,
+         *     reaper-blind RUNNING rows, stuck executions, lease-expiry risk, cost outliers and
+         *     worker absence.
+         *
+         *     Each carries its own `why` — the sentence an operator would say unprompted — so the
+         *     reasoning travels with the finding instead of living in a doc nobody opens. Signals
+         *     are sorted worst-first; a signal that fails to evaluate reports `degraded` rather
+         *     than silently reading as healthy.
+         */
+        get: operations["signals_admin_runtime_signals_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/runtime/false-reaps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * False Reaps
+         * @description The false-reap audit on its own — spine says FAILED/abandoned, the linked feature
+         *     row says the work SUCCEEDED. Returns three honest buckets (`false` / `genuine` /
+         *     `unverifiable`); the third is never folded into the other two.
+         */
+        get: operations["false_reaps_admin_runtime_false_reaps_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/runtime/executions/{execution_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel Execution Tree
+         * @description Request cooperative cancellation of the whole tree — the runaway-tree stop.
+         *
+         *     Sets `cancel_requested_at` on the ROOT's control row (pass any node id; it resolves
+         *     to the root, because cancelling one node of a spending tree is not what anyone means
+         *     by "stop this"). Consumers observe it at their own `ensure_can_proceed` boundaries,
+         *     so this is a request, not a kill: an execution between checkpoints finishes its
+         *     current step. Idempotent.
+         */
+        post: operations["cancel_execution_tree_admin_runtime_executions__execution_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/runtime/executions/{execution_id}/take-over": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Take Over Execution
+         * @description Reclaim a RUNNING execution whose lease has EXPIRED — the stale-lease recovery.
+         *
+         *     Returns `changed=false` (not an error) when the lease is still live: someone owns it
+         *     and backing off is the correct outcome, not a retry. The engine refuses outright on a
+         *     non-RUNNING row (use resume) or an UNLEASED one (a deliberate crash-recovery opt-out
+         *     is never taken over) — both surface as 409 with the engine's own reason.
+         */
+        post: operations["take_over_execution_admin_runtime_executions__execution_id__take_over_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/runtime/executions/{execution_id}/mark-false-reap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark False Reap
+         * @description Record a human's durable ruling that a reap was FALSE (or confirm it genuine).
+         *
+         *     The spine's own status is left untouched on purpose: the row IS terminal, terminal is
+         *     forever, and rewriting history to say "completed" would destroy the evidence that the
+         *     reaper misfired. Instead the verdict lands as an append-only NOTE on the execution's
+         *     event log with full provenance (who, when, why) — readable through the existing
+         *     `/executions/{id}/events` endpoint by every future reader, human or agent.
+         *
+         *     No new table and no second data path: this is `ExecutionEngine.record_note`, the same
+         *     write the prep-timing and request-summary notes already use.
+         */
+        post: operations["mark_false_reap_admin_runtime_executions__execution_id__mark_false_reap_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/runtime/reap-expired": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reap Expired Now
+         * @description Run one reaper sweep immediately instead of waiting for the host loop.
+         *
+         *     Same primitive the `runs_runtime_reaper` host calls on its interval — CAS-safe and
+         *     idempotent, so racing the loop is harmless (a worker that just settled or renewed
+         *     wins). Useful when you have fixed the cause of a pile-up and want the sweep now.
+         */
+        post: operations["reap_expired_now_admin_runtime_reap_expired_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/agent-service/agents": {
         parameters: {
             query?: never;
@@ -7664,6 +7893,30 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -16834,8 +17087,49 @@ export interface paths {
          *     Supabase insert. If a downstream insert fails, the task row is
          *     rolled back (best effort -- a hard crash between inserts is
          *     possible; the FE should treat orphan tasks as benign and cleanable).
+         *
+         *     IDEMPOTENT on identity (THE SCHEDULER DUPLICATE GUARD). If the caller
+         *     already owns a live schedule doing the same work on the same trigger,
+         *     this returns THAT schedule with ``deduplicated=true`` and HTTP 200
+         *     instead of inserting a twin. A double-click, or an MCP retry whose
+         *     first attempt actually succeeded, therefore cannot produce two
+         *     always-on schedules billing for one job -- the failure measured live on
+         *     2026-08-14, where an identical pair ran hourly for five days unnoticed.
+         *
+         *     Pass ``force=true`` to create anyway when a second similar schedule is
+         *     genuinely wanted; the guard then still raises the alarm so the pair is
+         *     visible rather than silent.
          */
         post: operations["create_task_scheduler_tasks_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scheduler/tasks/duplicates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Duplicate Schedules
+         * @description The caller's schedules that duplicate each other (THE SCHEDULER DUPLICATE GUARD).
+         *
+         *     Grouped by what a schedule DOES -- agent, prompt, variables, queue, and
+         *     enabled triggers -- deliberately ignoring title and description, because two
+         *     differently-named schedules running the same agent on the same cron cost
+         *     exactly as much as two identically-named ones.
+         *
+         *     Declared BEFORE ``/tasks/{task_id}`` so the literal path wins the match;
+         *     FastAPI resolves routes in declaration order and would otherwise read
+         *     "duplicates" as a task id.
+         */
+        get: operations["list_duplicate_schedules_scheduler_tasks_duplicates_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -17961,6 +18255,22 @@ export interface components {
             detail?: {
                 [key: string]: unknown;
             } | null;
+        };
+        /** ActionResult */
+        ActionResult: {
+            /** Ok */
+            ok: boolean;
+            /** Execution Id */
+            execution_id: string;
+            /** Action */
+            action: string;
+            /** Detail */
+            detail: string;
+            /**
+             * Changed
+             * @default true
+             */
+            changed?: boolean;
         };
         /** ActivePageIdsResponse */
         ActivePageIdsResponse: {
@@ -26529,6 +26839,29 @@ export interface components {
              */
             details?: components["schemas"]["CredentialVerifyDetails"];
         };
+        /**
+         * CrmFoldSettings
+         * @description Per-site control over the SEO → CRM bridge.
+         */
+        CrmFoldSettings: {
+            /**
+             * Mode
+             * @default auto
+             * @enum {string}
+             */
+            mode?: "auto" | "manual" | "off";
+            /**
+             * Include Toxic
+             * @default false
+             */
+            include_toxic?: boolean;
+            /** Reputation Verdicts */
+            reputation_verdicts?: string[] | null;
+            /** Updated By */
+            updated_by?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
+        };
         /** CropPagesRequest */
         CropPagesRequest: {
             /** Output Mode */
@@ -27547,6 +27880,33 @@ export interface components {
             /** Error */
             error?: string | null;
         };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description JWT expiry. Default 2h, min 60s, max 24h.
+             * @default 7200
+             */
+            ttl_seconds?: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
+        };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
             /** Ok */
@@ -28528,6 +28888,54 @@ export interface components {
              * @default 1
              */
             count?: number;
+        };
+        /**
+         * DuplicateScheduleGroup
+         * @description A set of the caller's schedules that all do the same work on the same trigger.
+         */
+        DuplicateScheduleGroup: {
+            /** Fingerprint */
+            fingerprint: string;
+            /** Members */
+            members: components["schemas"]["DuplicateScheduleMember"][];
+            /**
+             * Redundant Count
+             * @description How many schedules in this group pay for work already being done.
+             */
+            redundant_count: number;
+            /**
+             * Enabled Count
+             * @description How many are still enabled. A group whose extras are all paused is resolved -- it costs nothing -- and should not be shown as a live problem.
+             */
+            enabled_count: number;
+        };
+        /**
+         * DuplicateScheduleMember
+         * @description One schedule inside a duplicate group.
+         */
+        DuplicateScheduleMember: {
+            /** Id */
+            id: string;
+            /** Title */
+            title?: string | null;
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled?: boolean;
+            /** Created At */
+            created_at?: string | null;
+            /**
+             * Is Original
+             * @description True for the OLDEST schedule in the group -- the one that is not redundant.
+             * @default false
+             */
+            is_original?: boolean;
+        };
+        /** DuplicateScheduleResponse */
+        DuplicateScheduleResponse: {
+            /** Groups */
+            groups?: components["schemas"]["DuplicateScheduleGroup"][];
         };
         /**
          * EdgeDef
@@ -29963,6 +30371,20 @@ export interface components {
             recovery_op_id: string | null;
             /** Age Secs */
             age_secs: number;
+        };
+        /**
+         * FalseReapRuling
+         * @description A human's verdict on a reap. `why` is REQUIRED — a ruling with no stated reason is
+         *     not usable by the next person (or agent) who reads the event log.
+         */
+        FalseReapRuling: {
+            /** Why */
+            why: string;
+            /**
+             * Verdict
+             * @default false_reap
+             */
+            verdict?: string;
         };
         /** FaultDomainCount */
         FaultDomainCount: {
@@ -33264,12 +33686,31 @@ export interface components {
             volume?: components["schemas"]["KeywordVolumeRefreshResult"] | null;
             classification?: components["schemas"]["KeywordClassifyResult"] | null;
         };
+        /** KeywordSerpIntentBody */
+        KeywordSerpIntentBody: {
+            /** Google Target Id */
+            google_target_id: string;
+            /** Brave Target Id */
+            brave_target_id: string;
+        };
         /** KeywordVideoSearchResult */
         KeywordVideoSearchResult: {
             /** Stored Count */
             stored_count: number;
             /** Keyword Id */
             keyword_id: string;
+        };
+        /**
+         * KeywordVolumeBatchFailure
+         * @description A batch the provider refused. Recorded, never silent, never fatal.
+         */
+        KeywordVolumeBatchFailure: {
+            /** Batch Index */
+            batch_index: number;
+            /** Keyword Count */
+            keyword_count: number;
+            /** Error */
+            error: string;
         };
         /** KeywordVolumeBatchReceipt */
         KeywordVolumeBatchReceipt: {
@@ -33354,6 +33795,8 @@ export interface components {
             rejected_phrases?: components["schemas"]["KeywordVolumeRejectedPhrase"][];
             /** Batches */
             batches?: components["schemas"]["KeywordVolumeBatchReceipt"][];
+            /** Failed Batches */
+            failed_batches?: components["schemas"]["KeywordVolumeBatchFailure"][];
         };
         /** KeywordVolumeRejectedPhrase */
         KeywordVolumeRejectedPhrase: {
@@ -43721,6 +44164,19 @@ export interface components {
             /** Gsc Site Url */
             gsc_site_url?: string | null;
         };
+        /** SiteCrmFoldSettings */
+        SiteCrmFoldSettings: {
+            /** Site Id */
+            site_id: string;
+            /** Organization Id */
+            organization_id: string;
+            settings: components["schemas"]["CrmFoldSettings"];
+            /**
+             * Is Default
+             * @default false
+             */
+            is_default?: boolean;
+        };
         /** SiteIntakeApplyBody */
         SiteIntakeApplyBody: {
             /**
@@ -46161,6 +46617,12 @@ export interface components {
             tags?: string[];
             agent_task?: components["schemas"]["AgentTaskCreate"] | null;
             trigger?: components["schemas"]["TriggerCreate"] | null;
+            /**
+             * Force
+             * @description Create even when an identical live schedule already exists. Default false: an identical create returns the EXISTING schedule instead of inserting a twin (see scheduler.duplicate_guard), so a double-click or a retried MCP call cannot produce two always-on schedules doing one job. Set true only when a second schedule is genuinely wanted.
+             * @default false
+             */
+            force?: boolean;
         };
         /**
          * TaskDetailResponse
@@ -46173,6 +46635,12 @@ export interface components {
             triggers?: components["schemas"]["TriggerResponse"][];
             /** Recent Runs */
             recent_runs?: components["schemas"]["RunResponse"][];
+            /**
+             * Deduplicated
+             * @description True when a create returned an EXISTING identical schedule instead of inserting a new one. The response is a success (HTTP 200, not 201) and `task` is the schedule that was already there — a client must not tell the user it created something new.
+             * @default false
+             */
+            deduplicated?: boolean;
         };
         /** TaskInputPart */
         TaskInputPart: {
@@ -47901,6 +48369,33 @@ export interface components {
             variable_definitions?: {
                 [key: string]: components["schemas"]["JsonValue"];
             }[] | null;
+        };
+        /**
+         * UpdateCrmFoldSettingsRequest
+         * @description Partial update — only the fields the user actually changed.
+         */
+        UpdateCrmFoldSettingsRequest: {
+            /** Mode */
+            mode?: ("auto" | "manual" | "off") | null;
+            /** Include Toxic */
+            include_toxic?: boolean | null;
+            /** Reputation Verdicts */
+            reputation_verdicts?: string[] | null;
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
         };
         /** UpdateMessageResponse */
         UpdateMessageResponse: {
@@ -50743,6 +51238,10 @@ export interface components {
             is_in_topic?: boolean;
             /** Topic Source Id */
             topic_source_id?: string | null;
+        };
+        /** _OpenResponse */
+        _OpenResponse: {
+            [key: string]: unknown;
         };
         /** DeletedResponse */
         aidream__api__routers__admin_app_logs__DeletedResponse: {
@@ -59479,6 +59978,41 @@ export interface operations {
             };
         };
     };
+    keyword_serp_intent_analysis_route_seo_keywords__keyword_id__serp_intent_analysis_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                keyword_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KeywordSerpIntentBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_collection_seo_collections__run_id__get: {
         parameters: {
             query?: never;
@@ -60198,6 +60732,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DomainFoldReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_crm_fold_settings_seo_sites__site_id__crm_fold_settings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteCrmFoldSettings"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    write_crm_fold_settings_seo_sites__site_id__crm_fold_settings_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCrmFoldSettingsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteCrmFoldSettings"];
                 };
             };
             /** @description Validation Error */
@@ -63083,6 +63683,221 @@ export interface operations {
             };
         };
     };
+    overview_admin_runtime_overview_get: {
+        parameters: {
+            query?: {
+                /** @description window size, hours */
+                hours?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["_OpenResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    signals_admin_runtime_signals_get: {
+        parameters: {
+            query?: {
+                /** @description window size, hours */
+                hours?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["_OpenResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    false_reaps_admin_runtime_false_reaps_get: {
+        parameters: {
+            query?: {
+                /** @description window size, hours */
+                hours?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["_OpenResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_execution_tree_admin_runtime_executions__execution_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                execution_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActionResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    take_over_execution_admin_runtime_executions__execution_id__take_over_post: {
+        parameters: {
+            query?: {
+                lease_seconds?: number;
+            };
+            header?: never;
+            path: {
+                execution_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActionResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mark_false_reap_admin_runtime_executions__execution_id__mark_false_reap_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                execution_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FalseReapRuling"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActionResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reap_expired_now_admin_runtime_reap_expired_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["_OpenResponse"];
+                };
+            };
+        };
+    };
     list_agents_agent_service_agents_get: {
         parameters: {
             query?: {
@@ -64837,6 +65652,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
+                };
+            };
+        };
+    };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -81402,6 +82252,15 @@ export interface operations {
             };
         };
         responses: {
+            /** @description An identical live schedule already existed; it is returned unchanged with `deduplicated: true` and nothing was created. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskDetailResponse"];
+                };
+            };
             /** @description Successful Response */
             201: {
                 headers: {
@@ -81418,6 +82277,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_duplicate_schedules_scheduler_tasks_duplicates_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DuplicateScheduleResponse"];
                 };
             };
         };
