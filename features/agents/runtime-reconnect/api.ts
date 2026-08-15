@@ -29,7 +29,10 @@ const SSE_FRAME_SEPARATOR = /\r\n\r\n|\n\n|\r\r/;
  * hanging the reconnect forever on a connection that will never speak.
  */
 const STALL_TIMEOUT_MS = 45_000;
-const RECONNECT_LIMIT = 3;
+// A single-server deployment deliberately drains for 60s, then starts a new
+// container. Keep following for three minutes so the runtime ledger can bridge
+// that handoff instead of abandoning recovery after six seconds.
+const RECONNECT_LIMIT = 60;
 const RECONNECT_DELAY_MS = 2_000;
 
 function streamHeaders(backend: ResolvedBackend): Record<string, string> {

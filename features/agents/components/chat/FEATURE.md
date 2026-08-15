@@ -1,6 +1,7 @@
 # FEATURE.md — `chat route` (the live `/chat` surface)
 
 > Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/client-tool-delegation/FEATURE.md` — read it before touching this feature in ANY repo.
+> Runtime-continuity system-of-record: `/Users/armanisadeghi/code/common-docs/systems/runtime-continuity/FEATURE.md`.
 
 **Status:** `active`
 **Tier:** `1`
@@ -154,6 +155,15 @@ Streams run `detach_on_disconnect=True` — a refresh or dropped connection neve
 3. **Follow** — fetch-based SSE (`followOperationStream` in `runtime-reconnect/api.ts`) on `GET /runtime/executions/{id}/events/stream` with `Last-Event-ID` = the seq cursor. Fetch-based because `EventSource` can't carry the Bearer header; the parser accepts all three SSE separators (sse-starlette emits CRLF — matching only `\n\n` parses ZERO frames). `waiting_input` events re-surface pending delegated calls via `surfaceColdPendingCalls` (the existing Flow 5 resume applies); a live NDJSON stream appearing on the conversation makes the follower stand down instantly (the live wire owns display).
 4. **Refetch** — token text is deliberately never replayed (platform doctrine). On the SSE `end` frame the thunk runs `loadConversation`, clears the banner, and settles request/instance status (`completed` → complete + "Connection recovered" toast on stream-loss; `failed`/`cancelled` → the hydrated record is the truth).
 
+Deployment replacement is a proved-admission retry, not a generic POST retry.
+When aidream has entered its drain window, a new AI POST receives 503 plus
+`X-Matrx-Drain: deployment` before execution. `runAiStream` may then retry that
+same request through the handoff for up to three minutes; an ambiguous initial
+network failure is never replayed. The runtime SSE follower now tolerates the
+same three-minute window. The legacy fallback treats `abandoned` as terminal so
+an unrecoverable server turn becomes a visible error instead of silently timing
+out after five minutes.
+
 Wire types are hand-mirrored in `runtime-reconnect/types.ts` (the generated OpenAPI types predate the server ship — swap when regenerated). Transport is raw fetch on `resolveBackendForConversation` (same per-conversation channel resolution as the chat stream itself), not `callApi`.
 
 ---
@@ -217,6 +227,8 @@ The old root-level "Agent/Chat/Conversation — Single Source of Truth" doc is a
 ---
 
 ## Change log
+
+- `2026-08-15` — codex: **deployment handoff and dead-run recovery are explicit end to end.** `runAiStream` retries only after aidream proves pre-execution rejection with `X-Matrx-Drain: deployment`, then tolerates the brief replacement gap for up to three minutes. Runtime SSE following uses the same window. The legacy fallback recognizes `abandoned` as terminal instead of polling silently to timeout. Canonical protocol and the triggering incident evidence live in the runtime-continuity document linked above.
 
 - `2026-08-15` — codex: **the waiting-message queue now explains itself.** `InboxQueueStrip` adds a compact count + help trigger covering queue durability, FIFO delivery, Deliver-at-next-pause, edit/withdraw, and the steer/interrupt keyboard shortcuts. The full queued text and each delivery state now have focusable canonical tooltips; retry, deliver sooner, edit, dismiss, and withdraw use the shared `IconButton` tooltip primitive with explicit accessible labels instead of delayed native `title` text. Because every composer mounts the same strip, the guidance lands in Smart Agent Input, the new-chat composer, and compact assistant surfaces together.
 

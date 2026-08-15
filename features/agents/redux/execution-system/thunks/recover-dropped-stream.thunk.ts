@@ -14,7 +14,7 @@
  *   2. On `completed` → rehydrates the conversation via `loadConversation`
  *      (the canonical full-fidelity reload), flips the request/instance
  *      status off "error", and toasts that the response was recovered.
- *   3. On `failed` / `cancelled` → rehydrates too (the DB error message is
+ *   3. On `failed` / `cancelled` / `abandoned` → rehydrates too (the DB error message is
  *      more truthful than "no server activity"), leaves error state alone.
  *   4. Gives up quietly if the user has already moved on (new request in
  *      flight on this conversation) or the deadline passes.
@@ -49,7 +49,12 @@ interface RecoverDroppedStreamResult {
   serverStatus: string | null;
 }
 
-const TERMINAL_STATUSES = new Set(["completed", "failed", "cancelled"]);
+const TERMINAL_STATUSES = new Set([
+  "completed",
+  "failed",
+  "cancelled",
+  "abandoned",
+]);
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -125,7 +130,7 @@ export const recoverDroppedStream = createAsyncThunk<
         return { recovered: true, serverStatus };
       }
 
-      // failed / cancelled — keep the error surface, but the reload above
+      // failed / cancelled / abandoned — keep the error surface, but the reload above
       // already swapped in the server's persisted (more truthful) record.
       console.warn(
         `[recoverDroppedStream] stream died and the server reports '${serverStatus}' — rehydrated the persisted record.`,
