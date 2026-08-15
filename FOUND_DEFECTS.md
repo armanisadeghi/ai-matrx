@@ -13,6 +13,38 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D193 — the shared `TabsContent` hardcodes `forceMount`: every tab panel in the app is always mounted (2026-08-15)
+
+`components/ui/tabs.tsx` (~line 69) carries `forceMount //<=======Add this line` plus
+`data-[state=inactive]:hidden`. Radix unmounts inactive panels by default; this override makes
+every hidden tab fully live across **122 consumer files** — its effects run, its fetches fire, its
+subscriptions open, and it registers whatever a mounted component registers.
+
+Not theoretical: on `/administration/agents/agent-apps/executions` both tab tables registered a
+`SurfaceRuntimeProvider` for the same surface at the same depth, so the Errors emitter won the
+tie-break and agents on the Executions tab saw error rows (fixed for that page only in `e8534c8d`
+— see D194 for the missing guard). Any hidden tab that opens a realtime channel or polls is doing
+it right now.
+
+**Fix:** restore Radix's default (unmount inactive) and make force-mounting opt-in via an explicit
+prop for panels that genuinely must preserve state (scroll position, in-flight editors). Whoever
+takes it greps the 122 consumers for effects/subscriptions that assume `mounted == visible`.
+Filed as AI Dream feedback `2295ffb3-8d1f-43e9-8dcf-f8262a6d3999`.
+
+### D194 — two surface providers at the same depth silently pick a winner; no warning (2026-08-15)
+
+`features/surfaces/runtime/SurfaceRuntimeContext.tsx::getSurfaceRuntime()` resolves "deepest wins,
+ties broken by higher registration id". Depth is correct and load-bearing for real nesting (an open
+window out-depthing the page). The unguarded case is SIBLINGS: two components at the same depth
+registering the same `surfaceName` — the registry quietly drops one and the agent gets the wrong
+page's data. Nothing logs, nothing throws. This shipped and was caught by a review bot, not by us
+(D193).
+
+**Fix:** dev-mode `console.warn` inside `registerSurfaceRuntime` when a registration lands on a
+surfaceName that already has a live entry at the SAME depth, naming both call sites — the second
+independent layer the loud-recovery doctrine requires. Filed as AI Dream feedback
+`ebed27b8-8544-4a6a-92f3-3dabdebe2ad0`.
+
 ### D192 — CRM "Save as contact" cannot complete its save until aidream deploys (2026-08-14)
 
 The frontend half is live and browser-verified up to the server call; the governed save is blocked
