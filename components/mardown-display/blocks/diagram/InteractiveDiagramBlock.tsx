@@ -69,6 +69,7 @@ import {
   Pencil,
   Check,
   Boxes,
+  Magnet,
 } from "lucide-react";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import IconButton from "@/components/official/IconButton";
@@ -79,8 +80,27 @@ import {
   getOrgChartLayout,
   getPedigreeLayout,
 } from "./layout-utils";
-import { getOrgChartRoleIcon, formatDiagramType } from "./ui-utils";
-import type { DiagramData, DiagramEdge, DiagramNode } from "./parseDiagramJSON";
+import {
+  getDiagramIconByName,
+  getOrgChartRoleIcon,
+  formatDiagramType,
+} from "./ui-utils";
+import {
+  materializeDiagramDefaults,
+  type DiagramData,
+  type DiagramEdge,
+  type DiagramNode,
+} from "./parseDiagramJSON";
+import {
+  DIAGRAM_COLOR_PRESETS,
+  DIAGRAM_ICON_OPTIONS,
+  getDiagramColorHex,
+  getDiagramNodeColorClass,
+  isCustomDiagramColor,
+  type DiagramBorderStyle,
+  type DiagramEdgeMarker,
+  type DiagramNodeShape,
+} from "./diagram-visual-defaults";
 import {
   PrintOptionsDialog,
   usePrintOptions,
@@ -96,6 +116,14 @@ import { createDiagramPrinter } from "./diagram-printer";
 // receives safe hex values. Returns a restore function to call when done.
 // ─────────────────────────────────────────────────────────────────────────────
 const UNSAFE_COLOR_RE = /\b(oklch|oklab|lab|lch|color)\s*\(/i;
+
+function backgroundVariantFromDiagram(diagram: DiagramData): BackgroundVariant {
+  if (diagram.renderHints?.background === "lines")
+    return BackgroundVariant.Lines;
+  if (diagram.renderHints?.background === "cross")
+    return BackgroundVariant.Cross;
+  return BackgroundVariant.Dots;
+}
 
 function safenColor(value: string, prop: string, isDark: boolean): string {
   if (!UNSAFE_COLOR_RE.test(value)) return value;
@@ -362,6 +390,9 @@ const CustomNode = ({
   const details = typeof data.details === "string" ? data.details : undefined;
 
   const getNodeIcon = () => {
+    if (typeof data.icon === "string") {
+      return getDiagramIconByName(data.icon);
+    }
     if (data.diagramType === "orgchart") {
       return getOrgChartRoleIcon(
         data.label as string,
@@ -402,7 +433,9 @@ const CustomNode = ({
   };
 
   const getNodeColor = () => {
-    // Allow per-node color override via data.color
+    const explicit = getDiagramNodeColorClass(data.color);
+    if (explicit) return explicit;
+    // A custom CSS color is applied as an inline style below.
     if (data.color) return "";
 
     switch (data.nodeType) {
@@ -439,23 +472,73 @@ const CustomNode = ({
 
   const isOrgChart = data.diagramType === "orgchart";
   const colorClass = getNodeColor();
-  const inlineStyle = data.color
+  const inlineStyle = isCustomDiagramColor(data.color)
     ? {
-        backgroundColor: `${data.color}20`,
-        borderColor: data.color as string,
-        color: data.color as string,
+        backgroundColor: `${getDiagramColorHex(data.color)}20`,
+        borderColor: getDiagramColorHex(data.color),
+        color: getDiagramColorHex(data.color),
       }
     : undefined;
+  const shape =
+    data.shape === "rectangle" ||
+    data.shape === "pill" ||
+    data.shape === "circle" ||
+    data.shape === "diamond" ||
+    data.shape === "hexagon"
+      ? data.shape
+      : "rounded";
+  const shapeClass =
+    shape === "rectangle"
+      ? "rounded-none"
+      : shape === "pill"
+        ? "rounded-full"
+        : shape === "circle"
+          ? "aspect-square rounded-full"
+          : shape === "rounded"
+            ? "rounded-lg"
+            : "rounded-none";
+  const clipPath =
+    shape === "diamond"
+      ? "polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)"
+      : shape === "hexagon"
+        ? "polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)"
+        : undefined;
+  const borderStyle =
+    data.borderStyle === "dashed"
+      ? "border-dashed"
+      : data.borderStyle === "dotted"
+        ? "border-dotted"
+        : "border-solid";
+  const centered = data.textAlign === "center";
+  const shapeSizeClass =
+    shape === "circle"
+      ? "aspect-square w-[200px] min-w-[160px]"
+      : shape === "diamond"
+        ? "min-h-[180px] w-[240px] min-w-[200px]"
+        : shape === "hexagon"
+          ? "min-h-[140px] w-[260px] min-w-[220px]"
+          : isOrgChart
+            ? "min-w-[200px]"
+            : "min-w-[120px]";
+  const shapePaddingClass =
+    shape === "diamond"
+      ? "px-12 py-10"
+      : shape === "hexagon"
+        ? "px-10 py-6"
+        : isOrgChart
+          ? "px-6 py-4"
+          : "px-4 py-3";
 
   return (
-    <div
-      className={`${isOrgChart ? "px-6 py-4 min-w-[200px]" : "px-4 py-3 min-w-[120px]"} rounded-lg border-2 shadow-lg transition-all ${colorClass} ${
-        selected
-          ? "shadow-xl scale-105 ring-2 ring-blue-400 dark:ring-blue-500"
-          : "hover:shadow-md"
-      }`}
-      style={inlineStyle}
-    >
+    <div className={`${shapeSizeClass} relative h-full overflow-visible`}>
+      <NodeResizer
+        isVisible={selected && data.editing === true}
+        minWidth={shape === "circle" ? 120 : 140}
+        minHeight={shape === "circle" ? 120 : 64}
+        keepAspectRatio={shape === "circle"}
+        lineClassName="!border-primary"
+        handleClassName="!h-2.5 !w-2.5 !border-primary !bg-background"
+      />
       <Handle
         type="target"
         position={isOrgChart ? Position.Top : Position.Left}
@@ -468,35 +551,48 @@ const CustomNode = ({
         className="w-3 h-3 border-2 border-gray-400 dark:border-gray-500 bg-textured hover:bg-blue-200 dark:hover:bg-blue-700 transition-colors"
       />
 
-      {isOrgChart ? (
-        <div className="text-center">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            {getNodeIcon()}
-            <div className="font-bold text-base">{data.label as string}</div>
-          </div>
-          {description && (
-            <div className="text-sm font-medium opacity-90 mb-1">
-              {description}
+      <div
+        className={`${shapePaddingClass} relative flex h-full w-full items-center border-2 shadow-lg transition-all ${shapeClass} ${borderStyle} ${colorClass} ${
+          selected
+            ? "shadow-xl ring-2 ring-blue-400 dark:ring-blue-500"
+            : "hover:shadow-md"
+        }`}
+        style={{ ...inlineStyle, clipPath }}
+      >
+        {isOrgChart ? (
+          <div className="w-full text-center">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              {getNodeIcon()}
+              <div className="font-bold text-base">{data.label as string}</div>
             </div>
-          )}
-          {details && (
-            <div className="text-xs opacity-70 italic">{details}</div>
-          )}
-        </div>
-      ) : (
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            {getNodeIcon()}
-            <div className="font-semibold text-sm">{data.label as string}</div>
+            {description && (
+              <div className="text-sm font-medium opacity-90 mb-1">
+                {description}
+              </div>
+            )}
+            {details && (
+              <div className="text-xs opacity-70 italic">{details}</div>
+            )}
           </div>
-          {description && (
-            <div className="text-xs opacity-80 mt-1">{description}</div>
-          )}
-          {details && (
-            <div className="text-xs opacity-70 mt-1 italic">{details}</div>
-          )}
-        </div>
-      )}
+        ) : (
+          <div className={`w-full ${centered ? "text-center" : "text-left"}`}>
+            <div
+              className={`mb-1 flex items-center gap-2 ${centered ? "justify-center" : ""}`}
+            >
+              {getNodeIcon()}
+              <div className="font-semibold text-sm">
+                {data.label as string}
+              </div>
+            </div>
+            {description && (
+              <div className="text-xs opacity-80 mt-1">{description}</div>
+            )}
+            {details && (
+              <div className="text-xs opacity-70 mt-1 italic">{details}</div>
+            )}
+          </div>
+        )}
+      </div>
 
       <Handle
         type="source"
@@ -529,7 +625,10 @@ const GroupNode = ({
       : data.groupStyle === "dotted"
         ? "border-dotted"
         : "border-dashed";
-  const color = typeof data.color === "string" ? data.color : undefined;
+  const color =
+    typeof data.color === "string" && data.color !== "auto"
+      ? data.color
+      : undefined;
 
   return (
     <div
@@ -538,7 +637,10 @@ const GroupNode = ({
       }`}
       style={
         color
-          ? { borderColor: color, backgroundColor: `${color}0d` }
+          ? {
+              borderColor: getDiagramColorHex(color),
+              backgroundColor: `${getDiagramColorHex(color)}0d`,
+            }
           : undefined
       }
     >
@@ -614,14 +716,22 @@ function buildReactFlowNodes(diagram: DiagramData, editing = false): Node[] {
       generation: node.generation,
       // Extras
       color: node.color,
+      icon: node.icon,
+      shape: node.shape,
+      borderStyle: node.borderStyle,
+      textAlign: node.textAlign,
       attributes: node.metadata?.attributes as string[] | undefined,
     },
     parentId: node.parentId,
     extent: node.parentId ? "parent" : undefined,
     expandParent: Boolean(node.parentId),
-    style: node.isGroup
-      ? { width: node.width ?? 420, height: node.height ?? 260 }
-      : undefined,
+    style:
+      node.width !== undefined || node.height !== undefined || node.isGroup
+        ? {
+            width: node.width ?? (node.isGroup ? 420 : undefined),
+            height: node.height ?? (node.isGroup ? 260 : undefined),
+          }
+        : undefined,
   }));
 }
 
@@ -646,8 +756,11 @@ function buildReactFlowEdges(diagram: DiagramData): Edge[] {
       const isConsanguineous = edge.relationship === "consanguineous";
 
       // Marriage edges: horizontal double line, no arrow
+      const edgeColor = getDiagramColorHex(
+        edge.color || (isMarriage ? "#374151" : "gray"),
+      );
       const edgeStyle: React.CSSProperties = {
-        stroke: edge.color || (isMarriage ? "#374151" : "#6b7280"),
+        stroke: edgeColor,
         strokeWidth: isMarriage ? 3 : edge.strokeWidth || 2,
         strokeDasharray: isDivorced
           ? "6,3"
@@ -660,7 +773,22 @@ function buildReactFlowEdges(diagram: DiagramData): Edge[] {
                 : "none",
       };
 
-      const showArrow = !hideArrows && !isMarriage && edge.arrow !== false;
+      const marker =
+        edge.marker ?? (edge.arrow === false || isMarriage ? "none" : "end");
+      const showStartMarker =
+        !hideArrows &&
+        marker !== "none" &&
+        (marker === "start" || marker === "both");
+      const showEndMarker =
+        !hideArrows &&
+        marker !== "none" &&
+        (marker === "end" || marker === "both");
+      const markerDefinition = {
+        type: MarkerType.ArrowClosed,
+        width: isPedigree ? 14 : 20,
+        height: isPedigree ? 14 : 20,
+        color: edgeColor,
+      };
 
       return {
         id: edge.id,
@@ -677,25 +805,22 @@ function buildReactFlowEdges(diagram: DiagramData): Edge[] {
               ? edge.type
               : "default",
         animated: edge.animated || false,
-        markerEnd: showArrow
-          ? {
-              type: MarkerType.ArrowClosed,
-              width: isPedigree ? 14 : 20,
-              height: isPedigree ? 14 : 20,
-              color: edge.color || "#6b7280",
-            }
-          : undefined,
+        markerStart: showStartMarker ? markerDefinition : undefined,
+        markerEnd: showEndMarker ? markerDefinition : undefined,
         style: edgeStyle,
         label: showLabels && !isPedigree ? edge.label : undefined,
         labelStyle: {
           fontSize: 12,
           fontWeight: 500,
-          fill: edge.color || "#6b7280",
+          fill: edgeColor,
         },
         labelBgStyle: { fill: "#ffffff", fillOpacity: 0.8, rx: 4, ry: 4 },
         data: {
           lineStyle: edge.lineStyle ?? (edge.dashed ? "dashed" : "solid"),
-          arrow: edge.arrow !== false,
+          color: edge.color ?? "gray",
+          strokeWidth: edge.strokeWidth ?? 2,
+          marker,
+          arrow: marker !== "none",
           edgeType: edge.type ?? "bezier",
         },
       };
@@ -785,12 +910,29 @@ const DiagramFlow: React.FC<{
               : undefined,
           nodeType:
             typeof data.nodeType === "string" ? data.nodeType : undefined,
+          color: typeof data.color === "string" ? data.color : undefined,
+          icon: typeof data.icon === "string" ? data.icon : undefined,
+          shape:
+            data.shape === "rectangle" ||
+            data.shape === "pill" ||
+            data.shape === "circle" ||
+            data.shape === "diamond" ||
+            data.shape === "hexagon"
+              ? data.shape
+              : "rounded",
+          borderStyle:
+            data.borderStyle === "dashed" || data.borderStyle === "dotted"
+              ? data.borderStyle
+              : "solid",
+          textAlign: data.textAlign === "center" ? "center" : "left",
           isGroup,
           parentId: rf.parentId,
-          width: isGroup ? (rf.measured?.width ?? rf.width ?? 420) : undefined,
+          width: isGroup
+            ? (rf.measured?.width ?? rf.width ?? 420)
+            : (rf.width ?? priorNodes.get(rf.id)?.width),
           height: isGroup
             ? (rf.measured?.height ?? rf.height ?? 260)
-            : undefined,
+            : (rf.height ?? priorNodes.get(rf.id)?.height),
           groupStyle:
             data.groupStyle === "solid" ||
             data.groupStyle === "dashed" ||
@@ -828,11 +970,20 @@ const DiagramFlow: React.FC<{
               : "solid",
           dashed: data?.lineStyle === "dashed",
           animated: rf.animated === true,
-          arrow: data?.arrow !== false,
+          color: typeof data?.color === "string" ? data.color : "gray",
+          strokeWidth:
+            typeof data?.strokeWidth === "number" ? data.strokeWidth : 2,
+          marker:
+            data?.marker === "none" ||
+            data?.marker === "start" ||
+            data?.marker === "both"
+              ? data.marker
+              : "end",
+          arrow: data?.marker !== "none" && data?.arrow !== false,
         };
       });
 
-      onDiagramChange({ ...diagram, nodes, edges });
+      onDiagramChange(materializeDiagramDefaults({ ...diagram, nodes, edges }));
     },
     [diagram, onDiagramChange],
   );
@@ -846,8 +997,18 @@ const DiagramFlow: React.FC<{
           ...params,
           id: `e-${crypto.randomUUID().slice(0, 8)}`,
           type: "default",
-          markerEnd: { type: MarkerType.ArrowClosed, color: "#6b7280" },
-          data: { lineStyle: "solid", arrow: true, edgeType: "bezier" },
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: getDiagramColorHex("gray"),
+          },
+          style: { stroke: getDiagramColorHex("gray"), strokeWidth: 2 },
+          data: {
+            lineStyle: "solid",
+            marker: "end",
+            color: "gray",
+            strokeWidth: 2,
+            edgeType: "bezier",
+          },
         },
         getEdges(),
       );
@@ -947,6 +1108,11 @@ const DiagramFlow: React.FC<{
       description?: string;
       nodeType?: string;
       groupStyle?: "solid" | "dashed" | "dotted";
+      color?: string;
+      icon?: string;
+      shape?: DiagramNodeShape;
+      borderStyle?: DiagramBorderStyle;
+      textAlign?: "left" | "center";
     }) => {
       if (!selectedNodeId) return;
       const next = getNodes().map((node) =>
@@ -1056,7 +1222,9 @@ const DiagramFlow: React.FC<{
       lineStyle?: "solid" | "dashed" | "dotted";
       edgeType?: "bezier" | "smoothstep" | "step" | "straight";
       animated?: boolean;
-      arrow?: boolean;
+      color?: string;
+      strokeWidth?: number;
+      marker?: DiagramEdgeMarker;
     }) => {
       if (!selectedEdgeId) return;
       const next = getEdges().map((edge) => {
@@ -1065,13 +1233,27 @@ const DiagramFlow: React.FC<{
           ...(edge.data as Record<string, unknown> | undefined),
           ...(patch.lineStyle ? { lineStyle: patch.lineStyle } : {}),
           ...(patch.edgeType ? { edgeType: patch.edgeType } : {}),
-          ...(patch.arrow !== undefined ? { arrow: patch.arrow } : {}),
+          ...(patch.color ? { color: patch.color } : {}),
+          ...(patch.strokeWidth !== undefined
+            ? { strokeWidth: patch.strokeWidth }
+            : {}),
+          ...(patch.marker ? { marker: patch.marker } : {}),
         };
         const lineStyle =
           data.lineStyle === "dashed" || data.lineStyle === "dotted"
             ? data.lineStyle
             : "solid";
-        const arrow = data.arrow !== false;
+        const marker =
+          data.marker === "none" ||
+          data.marker === "start" ||
+          data.marker === "both"
+            ? data.marker
+            : "end";
+        const color = getDiagramColorHex(data.color);
+        const markerDefinition = {
+          type: MarkerType.ArrowClosed,
+          color,
+        };
         return {
           ...edge,
           ...(patch.label !== undefined ? { label: patch.label } : {}),
@@ -1082,11 +1264,19 @@ const DiagramFlow: React.FC<{
             : {}),
           ...(patch.animated !== undefined ? { animated: patch.animated } : {}),
           data,
-          markerEnd: arrow
-            ? { type: MarkerType.ArrowClosed, color: "#6b7280" }
-            : undefined,
+          markerStart:
+            marker === "start" || marker === "both"
+              ? markerDefinition
+              : undefined,
+          markerEnd:
+            marker === "end" || marker === "both"
+              ? markerDefinition
+              : undefined,
           style: {
             ...edge.style,
+            stroke: color,
+            strokeWidth:
+              typeof data.strokeWidth === "number" ? data.strokeWidth : 2,
             strokeDasharray:
               lineStyle === "dotted"
                 ? "2,5"
@@ -1155,6 +1345,55 @@ const DiagramFlow: React.FC<{
   const sections = editing
     ? nodes.filter((node) => node.data.isGroup === true)
     : [];
+
+  const patchRenderHints = useCallback(
+    (patch: NonNullable<DiagramData["renderHints"]>) => {
+      if (!onDiagramChange) return;
+      onDiagramChange(
+        materializeDiagramDefaults({
+          ...diagram,
+          renderHints: { ...diagram.renderHints, ...patch },
+        }),
+      );
+    },
+    [diagram, onDiagramChange],
+  );
+
+  const patchLayout = useCallback(
+    (patch: NonNullable<DiagramData["layout"]>) => {
+      if (!onDiagramChange) return;
+      onDiagramChange(
+        materializeDiagramDefaults({
+          ...diagram,
+          layout: { ...diagram.layout, ...patch },
+        }),
+      );
+    },
+    [diagram, onDiagramChange],
+  );
+
+  const chooseBackground = useCallback(
+    (variant: BackgroundVariant) => {
+      setBackgroundVariant(variant);
+      patchRenderHints({
+        background:
+          variant === BackgroundVariant.Lines
+            ? "lines"
+            : variant === BackgroundVariant.Cross
+              ? "cross"
+              : "dots",
+      });
+    },
+    [patchRenderHints, setBackgroundVariant],
+  );
+
+  const chooseMiniMap = useCallback(
+    (visible: boolean) => {
+      setShowMiniMap(visible);
+      patchRenderHints({ showMiniMap: visible });
+    },
+    [patchRenderHints, setShowMiniMap],
+  );
 
   useEffect(() => {
     setNodes((current) =>
@@ -1431,6 +1670,8 @@ const DiagramFlow: React.FC<{
       nodesDraggable={editing}
       nodesConnectable={editing}
       edgesReconnectable={editing}
+      snapToGrid={diagram.renderHints?.snapToGrid === true}
+      snapGrid={[20, 20]}
       elementsSelectable={editing || Boolean(onNodeClick)}
       deleteKeyCode={null}
       minZoom={workspace ? 0.2 : 0.5}
@@ -1445,15 +1686,23 @@ const DiagramFlow: React.FC<{
         size={1}
         className="bg-gray-50 dark:bg-gray-900"
       />
-      <Controls
-        className="bg-textured border-border rounded-lg shadow-lg"
-        showInteractive={false}
-      />
+      {diagram.renderHints?.showControls !== false && (
+        <Controls
+          className="bg-textured border-border rounded-lg shadow-lg"
+          showInteractive={false}
+        />
+      )}
 
       {showMiniMap && (
         <MiniMap
           className="bg-textured border-border rounded-lg shadow-lg"
           nodeColor={(node) => {
+            if (
+              typeof node.data.color === "string" &&
+              node.data.color !== "auto"
+            ) {
+              return getDiagramColorHex(node.data.color);
+            }
             switch (node.data.nodeType) {
               case "start":
                 return "#10b981";
@@ -1640,6 +1889,121 @@ const DiagramFlow: React.FC<{
                   </div>
                 </>
               )}
+              <div className="space-y-1.5">
+                <span className="text-[11px] font-medium text-foreground">
+                  Color
+                </span>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {DIAGRAM_COLOR_PRESETS.map((preset) => (
+                    <button
+                      key={preset.value}
+                      type="button"
+                      onClick={() => patchSelectedNode({ color: preset.value })}
+                      aria-label={`Use ${preset.label.toLowerCase()}`}
+                      aria-pressed={selectedNode.data.color === preset.value}
+                      className={`h-5 w-5 rounded-full border-2 transition-transform hover:scale-110 ${
+                        selectedNode.data.color === preset.value
+                          ? "border-primary ring-1 ring-primary"
+                          : "border-border"
+                      }`}
+                      style={{ backgroundColor: preset.hex }}
+                    />
+                  ))}
+                  <label
+                    className="relative h-5 w-5 overflow-hidden rounded-full border border-border"
+                    title="Custom color"
+                  >
+                    <span className="sr-only">Custom color</span>
+                    <input
+                      type="color"
+                      aria-label="Choose a custom color"
+                      value={getDiagramColorHex(selectedNode.data.color)}
+                      onChange={(event) =>
+                        patchSelectedNode({ color: event.target.value })
+                      }
+                      className="absolute -inset-2 h-9 w-9 cursor-pointer"
+                    />
+                  </label>
+                </div>
+              </div>
+              {!selectedIsSection && (
+                <>
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="block text-[11px] font-medium text-foreground">
+                      Icon
+                      <select
+                        value={String(selectedNode.data.icon ?? "square")}
+                        onChange={(event) =>
+                          patchSelectedNode({ icon: event.target.value })
+                        }
+                        className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs text-foreground outline-none focus:border-primary"
+                      >
+                        {DIAGRAM_ICON_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="block text-[11px] font-medium text-foreground">
+                      Shape
+                      <select
+                        value={String(selectedNode.data.shape ?? "rounded")}
+                        onChange={(event) =>
+                          patchSelectedNode({
+                            shape: event.target.value as DiagramNodeShape,
+                          })
+                        }
+                        className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs text-foreground outline-none focus:border-primary"
+                      >
+                        <option value="rounded">Rounded</option>
+                        <option value="rectangle">Rectangle</option>
+                        <option value="pill">Pill</option>
+                        <option value="circle">Circle</option>
+                        <option value="diamond">Diamond</option>
+                        <option value="hexagon">Hexagon</option>
+                      </select>
+                    </label>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="block text-[11px] font-medium text-foreground">
+                      Border
+                      <select
+                        value={String(selectedNode.data.borderStyle ?? "solid")}
+                        onChange={(event) =>
+                          patchSelectedNode({
+                            borderStyle: event.target
+                              .value as DiagramBorderStyle,
+                          })
+                        }
+                        className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs text-foreground outline-none focus:border-primary"
+                      >
+                        <option value="solid">Solid</option>
+                        <option value="dashed">Dashed</option>
+                        <option value="dotted">Dotted</option>
+                      </select>
+                    </label>
+                    <label className="block text-[11px] font-medium text-foreground">
+                      Text
+                      <select
+                        value={String(selectedNode.data.textAlign ?? "left")}
+                        onChange={(event) =>
+                          patchSelectedNode({
+                            textAlign: event.target.value as "left" | "center",
+                          })
+                        }
+                        className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs text-foreground outline-none focus:border-primary"
+                      >
+                        <option value="left">Left</option>
+                        <option value="center">Centered</option>
+                      </select>
+                    </label>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    Drag the selection handles to set an exact box size.
+                  </p>
+                </>
+              )}
               <button
                 type="button"
                 onClick={deleteSelectedNode}
@@ -1726,6 +2090,79 @@ const DiagramFlow: React.FC<{
                   </select>
                 </label>
               </div>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="block text-[11px] font-medium text-foreground">
+                  Direction
+                  <select
+                    value={String(selectedEdge.data?.marker ?? "end")}
+                    onChange={(event) =>
+                      patchSelectedEdge({
+                        marker: event.target.value as DiagramEdgeMarker,
+                      })
+                    }
+                    className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs text-foreground outline-none focus:border-primary"
+                  >
+                    <option value="end">Forward</option>
+                    <option value="start">Backward</option>
+                    <option value="both">Both ends</option>
+                    <option value="none">No arrowheads</option>
+                  </select>
+                </label>
+                <label className="block text-[11px] font-medium text-foreground">
+                  Weight
+                  <select
+                    value={String(selectedEdge.data?.strokeWidth ?? 2)}
+                    onChange={(event) =>
+                      patchSelectedEdge({
+                        strokeWidth: Number(event.target.value),
+                      })
+                    }
+                    className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs text-foreground outline-none focus:border-primary"
+                  >
+                    <option value="1">Fine</option>
+                    <option value="2">Regular</option>
+                    <option value="3">Bold</option>
+                    <option value="4">Heavy</option>
+                  </select>
+                </label>
+              </div>
+              <div className="space-y-1.5">
+                <span className="text-[11px] font-medium text-foreground">
+                  Color
+                </span>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {DIAGRAM_COLOR_PRESETS.map((preset) => (
+                    <button
+                      key={preset.value}
+                      type="button"
+                      onClick={() => patchSelectedEdge({ color: preset.value })}
+                      aria-label={`Use ${preset.label.toLowerCase()}`}
+                      aria-pressed={selectedEdge.data?.color === preset.value}
+                      className={`h-5 w-5 rounded-full border-2 transition-transform hover:scale-110 ${
+                        selectedEdge.data?.color === preset.value
+                          ? "border-primary ring-1 ring-primary"
+                          : "border-border"
+                      }`}
+                      style={{ backgroundColor: preset.hex }}
+                    />
+                  ))}
+                  <label
+                    className="relative h-5 w-5 overflow-hidden rounded-full border border-border"
+                    title="Custom color"
+                  >
+                    <span className="sr-only">Custom color</span>
+                    <input
+                      type="color"
+                      aria-label="Choose a custom arrow color"
+                      value={getDiagramColorHex(selectedEdge.data?.color)}
+                      onChange={(event) =>
+                        patchSelectedEdge({ color: event.target.value })
+                      }
+                      className="absolute -inset-2 h-9 w-9 cursor-pointer"
+                    />
+                  </label>
+                </div>
+              </div>
               <div className="grid grid-cols-2 gap-1.5">
                 <button
                   type="button"
@@ -1741,24 +2178,6 @@ const DiagramFlow: React.FC<{
                 >
                   {selectedEdge.animated ? "Motion on" : "Motion off"}
                 </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    patchSelectedEdge({
-                      arrow: selectedEdge.data?.arrow === false,
-                    })
-                  }
-                  aria-pressed={selectedEdge.data?.arrow !== false}
-                  className={`rounded-md border px-2 py-1.5 text-[11px] font-medium transition-colors ${
-                    selectedEdge.data?.arrow !== false
-                      ? "border-primary/40 bg-primary/10 text-primary"
-                      : "border-border text-muted-foreground hover:bg-muted"
-                  }`}
-                >
-                  {selectedEdge.data?.arrow !== false
-                    ? "Arrowhead on"
-                    : "Arrowhead off"}
-                </button>
               </div>
               <button
                 type="button"
@@ -1771,6 +2190,104 @@ const DiagramFlow: React.FC<{
               </button>
             </div>
           )}
+
+          <div className="mt-3 space-y-2.5 border-t border-border/70 pt-3">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+              Map appearance
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <label className="block text-[11px] font-medium text-foreground">
+                Background
+                <select
+                  value={diagram.renderHints?.background ?? "dots"}
+                  onChange={(event) =>
+                    chooseBackground(
+                      event.target.value === "lines"
+                        ? BackgroundVariant.Lines
+                        : event.target.value === "cross"
+                          ? BackgroundVariant.Cross
+                          : BackgroundVariant.Dots,
+                    )
+                  }
+                  className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs text-foreground outline-none focus:border-primary"
+                >
+                  <option value="dots">Dots</option>
+                  <option value="lines">Lines</option>
+                  <option value="cross">Crosses</option>
+                </select>
+              </label>
+              <label className="block text-[11px] font-medium text-foreground">
+                Flow
+                <select
+                  value={diagram.layout?.direction ?? "TB"}
+                  onChange={(event) =>
+                    patchLayout({
+                      direction: event.target.value as
+                        "TB" | "LR" | "BT" | "RL",
+                    })
+                  }
+                  className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs text-foreground outline-none focus:border-primary"
+                >
+                  <option value="TB">Top to bottom</option>
+                  <option value="LR">Left to right</option>
+                  <option value="BT">Bottom to top</option>
+                  <option value="RL">Right to left</option>
+                </select>
+              </label>
+            </div>
+            <div className="grid grid-cols-2 gap-1.5">
+              <button
+                type="button"
+                onClick={() => chooseMiniMap(!showMiniMap)}
+                aria-pressed={showMiniMap}
+                className={`rounded-md border px-2 py-1.5 text-[11px] font-medium ${showMiniMap ? "border-primary/40 bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}
+              >
+                Mini map {showMiniMap ? "on" : "off"}
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  patchRenderHints({
+                    snapToGrid: diagram.renderHints?.snapToGrid !== true,
+                  })
+                }
+                aria-pressed={diagram.renderHints?.snapToGrid === true}
+                className={`rounded-md border px-2 py-1.5 text-[11px] font-medium ${diagram.renderHints?.snapToGrid ? "border-primary/40 bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}
+              >
+                Snap {diagram.renderHints?.snapToGrid ? "on" : "off"}
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  patchRenderHints({
+                    showEdgeLabels:
+                      diagram.renderHints?.showEdgeLabels === false,
+                  })
+                }
+                aria-pressed={diagram.renderHints?.showEdgeLabels !== false}
+                className={`rounded-md border px-2 py-1.5 text-[11px] font-medium ${diagram.renderHints?.showEdgeLabels !== false ? "border-primary/40 bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}
+              >
+                Labels{" "}
+                {diagram.renderHints?.showEdgeLabels !== false ? "on" : "off"}
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  patchRenderHints({
+                    showLegend: diagram.renderHints?.showLegend === false,
+                  })
+                }
+                aria-pressed={diagram.renderHints?.showLegend !== false}
+                className={`rounded-md border px-2 py-1.5 text-[11px] font-medium ${diagram.renderHints?.showLegend !== false ? "border-primary/40 bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}
+              >
+                Legend{" "}
+                {diagram.renderHints?.showLegend !== false ? "on" : "off"}
+              </button>
+            </div>
+            <p className="text-[10px] leading-snug text-muted-foreground">
+              Flow direction is used the next time you choose tidy layout.
+            </p>
+          </div>
         </Panel>
       )}
 
@@ -1812,7 +2329,7 @@ const DiagramFlow: React.FC<{
             <button
               type="button"
               onClick={() =>
-                setBackgroundVariant(
+                chooseBackground(
                   backgroundVariant === BackgroundVariant.Dots
                     ? BackgroundVariant.Lines
                     : BackgroundVariant.Dots,
@@ -1832,7 +2349,7 @@ const DiagramFlow: React.FC<{
           <div className="flex gap-2 justify-center">
             <button
               type="button"
-              onClick={() => setShowMiniMap(!showMiniMap)}
+              onClick={() => chooseMiniMap(!showMiniMap)}
               aria-label={showMiniMap ? "Hide mini map" : "Show mini map"}
               aria-pressed={showMiniMap}
               className={`p-2 rounded-lg transition-colors ${showMiniMap ? "bg-blue-100 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/50" : "hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400"}`}
@@ -1840,6 +2357,26 @@ const DiagramFlow: React.FC<{
             >
               <Layers className="h-4 w-4" />
             </button>
+            {editing && (
+              <button
+                type="button"
+                onClick={() =>
+                  patchRenderHints({
+                    snapToGrid: diagram.renderHints?.snapToGrid !== true,
+                  })
+                }
+                aria-label={
+                  diagram.renderHints?.snapToGrid
+                    ? "Turn off grid snapping"
+                    : "Turn on grid snapping"
+                }
+                aria-pressed={diagram.renderHints?.snapToGrid === true}
+                className={`rounded-lg p-2 transition-colors ${diagram.renderHints?.snapToGrid ? "bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300" : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"}`}
+                title="Toggle snapping"
+              >
+                <Magnet className="h-4 w-4" />
+              </button>
+            )}
             <button
               type="button"
               onClick={exportImage}
@@ -2090,10 +2627,15 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [editing, setEditing] = useState(defaultEditing);
   const canEdit = Boolean(onDiagramChange);
-  const [showMiniMap, setShowMiniMap] = useState(false);
-  const [backgroundVariant, setBackgroundVariant] = useState<BackgroundVariant>(
-    BackgroundVariant.Dots,
-  );
+  const [cardShowMiniMap, setCardShowMiniMap] = useState(false);
+  const [cardBackgroundVariant, setCardBackgroundVariant] =
+    useState<BackgroundVariant>(BackgroundVariant.Dots);
+  const showMiniMap = editing
+    ? diagram.renderHints?.showMiniMap === true
+    : cardShowMiniMap;
+  const backgroundVariant = editing
+    ? backgroundVariantFromDiagram(diagram)
+    : cardBackgroundVariant;
   const { open: openCanvas } = useCanvas();
   const diagramContainerId = useId();
   const getDiagramElement = useCallback(
@@ -2414,9 +2956,9 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
                   diagram={diagram}
                   workspace={isWorkspace}
                   showMiniMap={showMiniMap}
-                  setShowMiniMap={setShowMiniMap}
+                  setShowMiniMap={setCardShowMiniMap}
                   backgroundVariant={backgroundVariant}
-                  setBackgroundVariant={setBackgroundVariant}
+                  setBackgroundVariant={setCardBackgroundVariant}
                   onExportImage={handleExportImage}
                   onNodeClick={onNodeClick}
                   onSelectionChange={onSelectionChange}

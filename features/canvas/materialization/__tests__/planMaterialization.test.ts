@@ -26,7 +26,9 @@ describe("planMaterialization — structured kind detection", () => {
   it("plans a fenced JSON flashcard_set as a STRUCTURED flashcards artifact", () => {
     const json = JSON.stringify(KIND_SET, null, 2);
     const plan = planMaterialization([
-      textBlock(`Here are your cards:\n\n\`\`\`json\n${json}\n\`\`\`\n\nEnjoy!`),
+      textBlock(
+        `Here are your cards:\n\n\`\`\`json\n${json}\n\`\`\`\n\nEnjoy!`,
+      ),
     ]);
 
     expect(plan.hasChanges).toBe(true);
@@ -54,7 +56,11 @@ describe("planMaterialization — structured kind detection", () => {
       [KIND_KEY]: "flashcard_set",
       title: "JS Syntax",
       cards: [
-        { [KIND_KEY]: "flashcard", front: "What does { open in JS?", back: "A block" },
+        {
+          [KIND_KEY]: "flashcard",
+          front: "What does { open in JS?",
+          back: "A block",
+        },
       ],
     };
     const plan = planMaterialization([
@@ -114,5 +120,75 @@ describe("planMaterialization — structured kind detection", () => {
     // Regression pin: `</flashcards>` is the parser's completion sentinel, not
     // content — it must NEVER be glued onto the last card's answer.
     expect(JSON.stringify(a.structured)).not.toContain("</flashcards>");
+  });
+
+  it("persists legacy agent diagram JSON as an explicit visual document", () => {
+    const legacy = {
+      diagram: {
+        type: "orgchart",
+        title: "Example organization",
+        nodes: [
+          { id: "ceo", label: "Maya — CEO", type: "user" },
+          { id: "ops", label: "Jordan — Operations", type: "process" },
+        ],
+        edges: [{ from: "ceo", to: "ops" }],
+      },
+    };
+    const plan = planMaterialization([
+      textBlock(`\`\`\`json\n${JSON.stringify(legacy)}\n\`\`\``),
+    ]);
+
+    expect(plan.artifacts).toHaveLength(1);
+    const artifact = plan.artifacts[0];
+    expect(artifact?.canvasType).toBe("diagram");
+    expect(artifact?.title).toBe("Example organization");
+    expect(artifact?.structured?.nodes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "ceo",
+          icon: "crown",
+          color: "indigo",
+          shape: "rounded",
+        }),
+      ]),
+    );
+    expect(artifact?.structured?.edges).toEqual([
+      expect.objectContaining({
+        source: "ceo",
+        target: "ops",
+        marker: "end",
+        strokeWidth: 2,
+      }),
+    ]);
+  });
+
+  it("keeps diagram_spec kind residue while adding visual defaults", () => {
+    const value = {
+      [KIND_KEY]: "diagram_spec",
+      title: "Concept map",
+      type: "mindmap",
+      nodes: [
+        {
+          [KIND_KEY]: "diagram_node",
+          id: "root",
+          label: "Root idea",
+          extra_note: "preserve me",
+        },
+      ],
+      edges: [],
+    };
+    const plan = planMaterialization([
+      textBlock(`\`\`\`json\n${JSON.stringify(value)}\n\`\`\``),
+    ]);
+    const structured = plan.artifacts[0]?.structured;
+    expect(structured?.[KIND_KEY]).toBe("diagram_spec");
+    expect(
+      (structured?.nodes as Array<Record<string, unknown>>)[0],
+    ).toMatchObject({
+      [KIND_KEY]: "diagram_node",
+      extra_note: "preserve me",
+      icon: "square",
+      color: "gray",
+    });
   });
 });
