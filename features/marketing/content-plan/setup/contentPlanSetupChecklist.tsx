@@ -49,6 +49,7 @@ import { marketingRoutes } from "@/features/marketing/lib/routes";
 import type { MarketingSite } from "@/features/marketing/types";
 import type { AppDispatch } from "@/lib/redux/store";
 
+import { humanizeKey } from "./archetypes";
 import { bridgeStarterKit, createAndLinkCmsSite } from "./bridge";
 import type { ChecklistItem, CmsFacts } from "./readiness";
 
@@ -113,6 +114,12 @@ function unreadable(ctx: ContentPlanSetupContext): CheckResult | null {
       status: "unknown",
       reason:
         "We can't tell what this site shape needs until the shape itself loads.",
+    };
+  }
+  if (!ctx.cms?.link.linked || !ctx.cms.site) {
+    return {
+      status: "unknown",
+      reason: "There's no website to check yet — the step above sets one up.",
     };
   }
   return null;
@@ -214,10 +221,12 @@ export const contentPlanSetupChecklist = registerChecklist<ContentPlanSetupConte
           };
         }
         if (declared.some((item) => item.state === "unknown")) {
+          // NO `detail` from the measurement: `readiness.ts` writes developer
+          // sentences ("theme_config is empty", "declared as =services.count")
+          // and they reached the screen verbatim in the first live render.
           return {
             status: "unknown",
             reason: "We couldn't read your website's design, so we haven't judged it.",
-            detail: declared.find((item) => item.state === "unknown")?.detail,
           };
         }
         // Per-piece truth in ONE line — the visibility four separate steps
@@ -297,7 +306,6 @@ export const contentPlanSetupChecklist = registerChecklist<ContentPlanSetupConte
           return {
             status: "unknown",
             reason: "We couldn't read your website's menu, so we haven't judged it.",
-            detail: nav.detail,
           };
         }
         if (nav.state === "met") {
@@ -349,7 +357,10 @@ export const contentPlanSetupChecklist = registerChecklist<ContentPlanSetupConte
         return {
           status: "fail",
           reason: `Still missing: ${short
-            .map((item) => `${item.label.replace(/^Asset — /, "")} (${item.actual} of ${item.required})`)
+            .map(
+              (item) =>
+                `${humanizeKey(item.key.slice("asset:".length))} (${item.actual} of ${item.required})`,
+            )
             .join(", ")}.`,
           fix: {
             label: "Add pictures",
