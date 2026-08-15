@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 360 active entity tokens. A token here is FK-valid for
+// 361 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -147,6 +147,7 @@ export type EntityTypeToken =
   | "dm_conversation"
   | "dm_message"
   | "dm_participant"
+  | "domain_classification"
   | "expertise_pack"
   | "fc_card"
   | "fc_detail"
@@ -757,6 +758,7 @@ export type ScopeableEntityToken =
   | "dm_conversation"
   | "dm_message"
   | "dm_participant"
+  | "domain_classification"
   | "expertise_pack"
   | "fc_card"
   | "fc_detail"
@@ -1155,6 +1157,7 @@ export const ENTITY_TYPE_METADATA = {
   "dm_conversation": { token: "dm_conversation", schema: "communication", table: "dm_conversations", label: "Direct Conversation", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "dm_message": { token: "dm_message", schema: "communication", table: "dm_messages", label: "Direct Message", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "dm_participant": { token: "dm_participant", schema: "communication", table: "dm_conversation_participants", label: "DM Conversation Participant", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "domain_classification": { token: "domain_classification", schema: "platform", table: "domain_classification", label: "Domain Classification", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "expertise_pack": { token: "expertise_pack", schema: "platform", table: "expertise_pack", label: "Expertise Pack", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: "Knowledge", referencePickable: true, titleColumn: "name", contentRole: "source", referenceCategory: null },
   "fc_card": { token: "fc_card", schema: "education", table: "fc_card", label: "Flashcard", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "fc_detail": { token: "fc_detail", schema: "education", table: "fc_detail", label: "Flashcard Detail", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1519,6 +1522,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "dm_conversation",
   "dm_message",
   "dm_participant",
+  "domain_classification",
   "expertise_pack",
   "fc_card",
   "fc_detail",
