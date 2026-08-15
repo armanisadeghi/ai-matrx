@@ -702,10 +702,6 @@ FE cutover done; Phase-0 migration live. Remaining: aidream Phase-3 cutover + de
 
 26 remain platform-wide (re-verified 2026-08-06; transcripts' two dropped 2026-08-08 → expected 24). FE alarm layer shipped (`errorTierRules.ts` pins any firing as permanent critical). Remaining: the aidream release guard + live verification of the induced-failure inspector flow.
 
-### D74 — `web.link_edge.http_status` is NEVER populated: no broken-link detection exists (2026-07-20)
-
-All 10,676 rows null; FE is ready. Fix lives in the scraper (post-crawl link-check pass). Relay prompt handed to Arman 2026-07-20.
-
 ### D73 — folder picking needs a canonical story (2026-07-20)
 
 `FolderPicker`/`SaveAsDialog` still on the old `PickerShell` dialog. Decide: extend `FilesResourcePicker` with folder-select mode or keep a dedicated surface, then retire `PickerShell`.
@@ -770,6 +766,7 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 
 ## RESOLVED
 
+- **D74 — Automatic broken-link evidence and openable report (2026-08-15):** crawl-completion status pass + deterministic findings + canonical Broken Links report; production session `8168bcba-932d-4424-b1a7-5cab7eda53b4` populated 3,761 edges, recorded 85 real external 404 occurrences, opened 20 findings, and produced zero false broken homepage edges — see `features/marketing/FEATURE.md` and aidream `matrx_scraper/web_crawl/FEATURE.md`.
 - **D201 — Guided setup first-run persistence fixed (2026-08-15):** owner-keyed live INSERT policy plus honest create/load reporting and regression coverage — `lib/guided-setup/service.ts`.
 - **D180 — Root-document hydration mismatch on every Marketing route (2026-08-15):** `ChunkRecoveryBootScript` and `SyncBootScript` rendered raw `<script>` children; both now use tracked `next/script` `beforeInteractive` entries.
 - **D198 — Hands-free VAD voice chat revived (2026-08-15):** one live hook and reachable `/voice/playground` surface now use shared mic/VAD, canonical STT/agent/TTS, barge-in, auto-sleep, background pause, and brokered Cartesia credentials — see `hooks/tts/useVoiceChat.ts` and `features/audio/voice/HandsFreeVoiceChat.tsx`.
