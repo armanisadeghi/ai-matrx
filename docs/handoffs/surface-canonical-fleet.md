@@ -21,7 +21,7 @@ vision: []
 - Canonical checklist: `.claude/skills/surface-authoring/SKILL.md`.
 - System doc: `features/surfaces/FEATURE.md`.
 - Exemplars: `marketing-page.manifest.ts`; `admin-database.manifest.ts`; overlay `markdown-editor.manifest.ts`.
-- Managed preview only: `pnpm preview:start` on port 3001. Login: `admin@admin.com` / `Password1234#`.
+- Managed preview only: `pnpm preview:start` on port 3001. Login: `/login` with `admin@admin.com` / `Password1234#`.
 - Sync: `scripts/emit-surface-sync-sql.ts --surface <name>…` → idempotent `migrations/*.sql` → `aidream/.venv/bin/python db/apply_migrations.py --source matrx-frontend`.
 - Gates: `pnpm check:surface-drift`, `pnpm type-check`, and route tests when mappings change.
 
@@ -61,8 +61,7 @@ Registration is complete. Promotion is the main remaining line.
 ## Done
 
 - **2026-08-15 Matrx-vs-matrix + public shell submit refresh:** the shared execution seam now re-reads the conversation's exact live surface provider and reapplies bindings at submit without recreating the mount-owned instance. Durable fixture: app `0a59ecc7-9eb7-4460-978a-d26d28c20c15`, global binding `9ddd22e3-0577-41e6-9887-3f0b3b58eca6`, deliberately non-name-matched `topic <- user_input`. Signed-in and signed-out browser runs both persisted the typed phrase to `chat.conversation.variables.topic`. Former item 4 is closed; `matrx-public/p` is `verified`.
-
-- **2026-08-15 browser batch 1:** promoted `matrx-admin/{server-logs,sandbox,email}` to verified, synced and ledgered `migrations/surface_sync_admin_browser_verified_batch1_20260815.sql`, added Email and Scheduling Locate anchors, corrected Scheduling's stale readiness note without promoting it, and left the board at 74 verified / 91 partial / 1 stub / 7 deliberate non-web rows.
+- **2026-08-15 browser batch 1:** promoted `matrx-admin/{server-logs,sandbox,email}` to verified, synced and ledgered `migrations/surface_sync_admin_browser_verified_batch1_20260815.sql`, added Email and Scheduling Locate anchors, corrected Scheduling's stale readiness note without promoting it, and refreshed the live board at 75 verified / 90 partial / 1 stub / 7 deliberate non-web rows after one concurrent promotion.
 
 ## Decisions needed
 

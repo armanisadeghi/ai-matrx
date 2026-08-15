@@ -81,6 +81,11 @@ Rules (also stated at the top of the file):
   updates in place from `Scoring…` to `<score>/100` (or a loud failure), shows the judge's
   reasoning, and links to the referenced artifact. Internal run kinds with no viewer fall
   back to that stage's working surface, so a weak score is never a dead end.
+- **An unmeasurable page is an outcome, not a dead loop.** A completed measure attempt whose
+  server outcome is `terminal_unmeasurable` renders the affected page through the canonical
+  `web_page` `EntityRef`, explains the PageSpeed reason and quarantine expiry, and offers one
+  click to the canonical `seo.release_page_measurement_quarantine` RPC. The client never
+  classifies provider errors or invents a second release path.
 
 ## The public view — rules
 
@@ -130,6 +135,13 @@ Neither ever restates a stage.
   emphasizes the connected stages, and suppresses unrelated paths.
 
 ## Change log
+
+- 2026-08-15 — Codex: **`G-MEASURE-SCHEDULE` CLOSED and the Measure code pipe is live.**
+  Live scheduler evidence confirms PageSpeed runs every ten minutes and GA4 runs daily. The
+  Growth Loop no longer rewinds when scheduled PageSpeed pages finish, terminal PSI failures
+  reuse the canonical quarantine classifier, and GA4's remaining Google API-disabled error is
+  reported as provider configuration rather than mislabeled as missing scheduling. Loop history
+  now links the affected page and exposes the existing release RPC as its one-click recovery.
 
 - 2026-08-14 — claude: **second public face at `/loop`** — the above-the-fold version, at
   Arman's request, beside (not instead of) `/how-it-works`. The ring gained a `glance`
