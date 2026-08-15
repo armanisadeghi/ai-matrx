@@ -22,6 +22,7 @@
 import type { AppDispatch } from "@/lib/redux/store";
 import { filterUndecidedKeys } from "@/features/assists/service";
 import { emitAssistTracked } from "@/features/assists/redux/emitTracked";
+import { assistPriority } from "@/features/assists/types";
 import type { TaskWithProject } from "@/features/tasks/types";
 import { UNASSIGNED_PROJECT_ID } from "@/features/tasks/redux/selectors";
 
@@ -98,7 +99,7 @@ export async function produceTaskAssists(args: {
       surfaceName: TASKS_ASSIST_SURFACE,
       dedupeKey,
       expiresAt: new Date(Date.now() + EXPIRES_MS).toISOString(),
-      priority: 10,
+      priority: assistPriority("elevated"),
     },
     dispatch,
   );

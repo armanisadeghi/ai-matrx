@@ -252,6 +252,46 @@ export const ASSIST_URGENCIES: readonly AssistUrgency[] = [
   "urgent",
 ];
 
+/**
+ * THE URGENT BAR — what earns `urgent`, platform-wide:
+ * **something is blocked or failing, and only this person can unblock it.**
+ *
+ * A workflow paused on a human decision is urgent. A capture pipeline that has
+ * started dropping data is urgent. A backlog — however large, however severe in
+ * its own domain — is NOT: an SEO check with 40 critical findings is a queue,
+ * and a queue that shouts every day is a queue nobody reads.
+ *
+ * This is not a new rule; it is the one every server producer already followed
+ * (`human_decisions/notify.py` = 20, `snapshot_retention` capture failure = the
+ * high band, scheduling escalations = 2). It is written down here because the
+ * producers that DIDN'T follow it were not disagreeing — they were scoring
+ * domain severity on a 0-100 scale and never meant it as urgency at all.
+ *
+ * Build the number with `assistPriority()`; never hand-write one.
+ */
+export const ASSIST_URGENT_BAR =
+  "Something is blocked or failing and only this user can unblock it.";
+
+/**
+ * The ONE way a producer writes `priority`: a band plus its own 0-9 ordering
+ * signal within that band.
+ *
+ * Why a rank at all — bands alone would flatten ordering the queue already
+ * relies on. `private.sweep_marketing_finding_assists()` invented this exact
+ * shape independently (`severity_rank * 10 + least(affected_count, 9)`), which
+ * is the strongest evidence it is the right one: worst-first *inside* a band,
+ * bands ordered against each other.
+ *
+ * `rank` is clamped to 0-9 so a producer can never spill into the next band —
+ * the failure mode that put a competitor-confirm chip (80) above a workflow
+ * blocked on a human decision (20).
+ */
+export function assistPriority(urgency: AssistUrgency, rank = 0): number {
+  const base = ASSIST_URGENCY_MIN_PRIORITY[urgency];
+  const bounded = Math.max(0, Math.min(9, Math.round(rank)));
+  return base + bounded;
+}
+
 /** The client-facing assist shape (the row, with `action` narrowed). */
 export interface Assist {
   id: string;

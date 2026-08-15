@@ -71,6 +71,7 @@
     "check:ui-primitives": "tsx scripts/check-ui-primitives.ts",
     "check:ui-primitives:staged": "tsx scripts/check-ui-primitives.ts --staged",
     "check:ui-primitives:strict": "tsx scripts/check-ui-primitives.ts --strict",
+    "check:assist-priority": "tsx scripts/check-assist-priority.ts",
     "check:migrations": "tsx scripts/check-migrations.ts",
     "check:partition-runway": "tsx scripts/partition-runway/check-partition-runway.ts",
     "check:partition-runway:strict": "tsx scripts/partition-runway/check-partition-runway.ts --strict",

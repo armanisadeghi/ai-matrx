@@ -24,6 +24,7 @@ import type { AppDispatch } from "@/lib/redux/store";
 import { filterUndecidedKeys } from "@/features/assists/service";
 import { emitAssistTracked } from "@/features/assists/redux/emitTracked";
 import type { Assist } from "@/features/assists/types";
+import { assistPriority } from "@/features/assists/types";
 import { listSiteKeywordValues } from "./data/service";
 import { KEYWORD_STRATEGY_ATTR_KEY } from "./setup/keyword-strategy";
 import type { CmsPageMapEntry } from "./setup/bridge";
@@ -136,7 +137,7 @@ export async function produceKeywordAssists(args: {
       expiresAt: new Date(Date.now() + EXPIRES_MS).toISOString(),
       // Above the missing-pages chip: building a page whose keyword is unknown
       // is the more expensive mistake, and it happens first.
-      priority: 20,
+      priority: assistPriority("elevated", 5),
     },
     dispatch,
   );
@@ -186,7 +187,7 @@ export async function producePlanAssists(args: {
       surfaceName: PLAN_ASSIST_SURFACE,
       dedupeKey,
       expiresAt: new Date(Date.now() + EXPIRES_MS).toISOString(),
-      priority: 10,
+      priority: assistPriority("elevated", 1),
     },
     dispatch,
   );

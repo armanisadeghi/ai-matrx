@@ -15,6 +15,7 @@
 import type { AppDispatch } from "@/lib/redux/store";
 import { filterUndecidedKeys } from "@/features/assists/service";
 import { emitAssistTracked } from "@/features/assists/redux/emitTracked";
+import { assistPriority } from "@/features/assists/types";
 import type { Assist, EmitAssistInput } from "@/features/assists/types";
 import type {
   BacklinkDimensionRow,
@@ -152,7 +153,9 @@ function lostLinkCandidate(
     surfaceName: BACKLINKS_ASSIST_SURFACE,
     dedupeKey: `${SOURCE_PREFIX}.lost_reclaim:${state.siteId}:${latestTrend?.observed_at ?? eventKey(state)}`,
     expiresAt,
-    priority: 25,
+    // Lost links are real equity damage, but a reclaim queue never blocks
+    // the user — elevated, ranked under the outright-broken targets.
+    priority: assistPriority("elevated", 3),
   };
 }
 
@@ -229,7 +232,9 @@ function brokenTargetCandidate(
     surfaceName: BACKLINKS_ASSIST_SURFACE,
     dedupeKey: `${SOURCE_PREFIX}.broken_target:${state.siteId}:${eventKey(state)}`,
     expiresAt,
-    priority: 40,
+    // The loudest backlinks family: live 4xx targets bleeding equity now.
+    // Still not urgent — nothing is blocked on this person (THE URGENT BAR).
+    priority: assistPriority("elevated", 9),
   };
 }
 
@@ -270,7 +275,7 @@ function anchorRiskCandidate(
     surfaceName: BACKLINKS_ASSIST_SURFACE,
     dedupeKey: `${SOURCE_PREFIX}.anchor_risk:${state.siteId}:${eventKey(state)}`,
     expiresAt,
-    priority: 35,
+    priority: assistPriority("elevated", 7),
   };
 }
 
@@ -309,7 +314,7 @@ function riskReviewCandidate(
     surfaceName: BACKLINKS_ASSIST_SURFACE,
     dedupeKey: `${SOURCE_PREFIX}.risk_review:${state.siteId}:${eventKey(state)}`,
     expiresAt,
-    priority: 30,
+    priority: assistPriority("elevated", 5),
   };
 }
 
@@ -338,7 +343,8 @@ function reviewBacklogCandidate(
     surfaceName: BACKLINKS_ASSIST_SURFACE,
     dedupeKey: `${SOURCE_PREFIX}.review_backlog:${state.siteId}:${requestKey}`,
     expiresAt,
-    priority: 20,
+    // A review backlog is ordinary queue work, not a finding.
+    priority: assistPriority("normal", 5),
   };
 }
 
@@ -381,7 +387,8 @@ function competitorGapCandidate(
     surfaceName: BACKLINKS_ASSIST_SURFACE,
     dedupeKey: `${SOURCE_PREFIX}.competitor_gap:${state.siteId}:${hit.row.id}`,
     expiresAt,
-    priority: 15,
+    // An investigation signal, deliberately the quietest of the six.
+    priority: assistPriority("normal", 2),
   };
 }
 

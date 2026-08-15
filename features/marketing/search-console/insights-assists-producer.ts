@@ -26,6 +26,7 @@ import type { AppDispatch } from "@/lib/redux/store";
 import { filterUndecidedKeys } from "@/features/assists/service";
 import { emitAssistTracked } from "@/features/assists/redux/emitTracked";
 import type { Assist, EmitAssistInput } from "@/features/assists/types";
+import { assistPriority } from "@/features/assists/types";
 import {
   getGscClassMovers,
   getGscClassSummary,
@@ -156,7 +157,9 @@ function moneyDecayCandidate(
     surfaceName: GSC_ASSIST_SURFACE,
     dedupeKey: `${SOURCE_PREFIX}.money_decay:${siteId}:${hit.page_id || hit.key}`,
     expiresAt,
-    priority: 20,
+    // Money-page decay: real revenue moving the wrong way, but a report
+    // is not a blocked run. Top of elevated, deliberately not urgent.
+    priority: assistPriority("elevated", 9),
   };
 }
 
@@ -200,7 +203,7 @@ function ctrGapCandidate(
     surfaceName: GSC_ASSIST_SURFACE,
     dedupeKey: `${SOURCE_PREFIX}.ctr_gap:${siteId}:${hit.page_id || hit.key}`,
     expiresAt,
-    priority: 10,
+    priority: assistPriority("elevated", 3),
   };
 }
 
@@ -240,7 +243,7 @@ function classifyCandidate(
     surfaceName: GSC_ASSIST_SURFACE,
     dedupeKey: `${SOURCE_PREFIX}.classify:${siteId}`,
     expiresAt,
-    priority: 5,
+    priority: assistPriority("normal", 5),
   };
 }
 

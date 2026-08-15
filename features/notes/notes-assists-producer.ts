@@ -20,6 +20,7 @@
 import type { AppDispatch } from "@/lib/redux/store";
 import { filterUndecidedKeys } from "@/features/assists/service";
 import { emitAssistTracked } from "@/features/assists/redux/emitTracked";
+import { assistPriority } from "@/features/assists/types";
 
 const SOURCE_KEY = "notes.unorganized";
 
@@ -90,7 +91,7 @@ export async function produceNotesAssists(args: {
       surfaceName: NOTES_ASSIST_SURFACE,
       dedupeKey,
       expiresAt: new Date(Date.now() + EXPIRES_MS).toISOString(),
-      priority: 5,
+      priority: assistPriority("normal", 5),
     },
     dispatch,
   );

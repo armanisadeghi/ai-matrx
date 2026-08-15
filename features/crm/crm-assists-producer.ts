@@ -22,6 +22,7 @@
 import type { AppDispatch } from "@/lib/redux/store";
 import { filterUndecidedKeys } from "@/features/assists/service";
 import { emitAssistTracked } from "@/features/assists/redux/emitTracked";
+import { assistPriority } from "@/features/assists/types";
 import { fetchPendingCandidateCount, runDedupScan } from "./service";
 
 const SOURCE_KEY = "crm.duplicates";
@@ -83,7 +84,7 @@ export async function produceCrmDedupAssists(args: {
         surfaceName: CRM_ASSIST_SURFACE,
         dedupeKey: autoKey,
         expiresAt: new Date(Date.now() + EXPIRES_MS).toISOString(),
-        priority: 7,
+        priority: assistPriority("normal", 7),
       },
       dispatch,
     );
@@ -106,7 +107,7 @@ export async function produceCrmDedupAssists(args: {
         surfaceName: CRM_ASSIST_SURFACE,
         dedupeKey: reviewKey,
         expiresAt: new Date(Date.now() + EXPIRES_MS).toISOString(),
-        priority: 5,
+        priority: assistPriority("normal", 5),
       },
       dispatch,
     );

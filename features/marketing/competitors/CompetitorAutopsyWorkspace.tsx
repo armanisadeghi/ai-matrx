@@ -41,6 +41,7 @@ import { toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { emitAssistTracked } from "@/features/assists/redux/emitTracked";
+import { assistPriority } from "@/features/assists/types";
 
 import type {
   CompetitorOpportunityRow,
@@ -213,7 +214,11 @@ export default function CompetitorAutopsyWorkspace() {
           entityType: "seo_competitor",
           entityId: competitor.id,
           dedupeKey: `seo.competitor_classification:${competitor.id}`,
-          priority: 80,
+          // A confirmation queue, not an emergency: nothing is blocked while
+          // a proposed competitor sits unconfirmed (THE URGENT BAR). This read
+          // 80 — a raw score, never meant as urgency — which rendered every
+          // one of these as a red "Urgent" chip above genuinely blocked runs.
+          priority: assistPriority("normal", 5),
           evidence: { kind: "competitor", label: competitor.display_name || competitor.display_domain, href: `https://${competitor.normalized_domain}`, ref: competitor.id },
           action: { kind: "surface_write", surfaceName: "matrx-user/marketing-competitors", target: "competitor_classification", value: {
             competitorId: competitor.id,
