@@ -77,6 +77,18 @@ DDL: [`migrations/crm_01_schema.sql`](../../migrations/crm_01_schema.sql),
 
 ## Invariants / gotchas
 
+- **EVERY SIGNED-UP USER HAS ONE AI Matrx-tenant party.** `crm.ensure_user_party`
+  is the narrow identity-provisioning primitive behind the `auth.users` trigger
+  `on_auth_user_created_crm_party`: it creates or claims exactly one active person
+  in normal org `5dc930e9-bd65-44a1-8369-af773f6e1a5b`, joins it through
+  `claimed_by`, and attaches Auth-backed email/phone media. It runs on permanent
+  account INSERT and anonymous→permanent promotion; anonymous execution principals
+  receive no party. It is service/auth-infrastructure only, fails the account
+  transaction closed on ambiguous identity, and is NOT a second general resolver —
+  all product/server producers still use aidream `resolve_party`. Auth verification
+  is not messaging consent. Migration + rollback proof:
+  [`migrations/crm_every_signed_up_user_party.sql`](../../migrations/crm_every_signed_up_user_party.sql)
+  and [`docs/db_rebuild/proposals/every-signed-up-user-crm-party.md`](../../docs/db_rebuild/proposals/every-signed-up-user-crm-party.md).
 - **🚨 `record_class` — the list defaults to CONTACTS, and that default is load-bearing.**
   `crm.party.record_class` is `'contact'` (the DB default: manual entry, imports, form
   fills) or `'discovered'` (the PLATFORM found it — SEO link prospects, media outlets,
@@ -597,6 +609,15 @@ lands in `/crm/outreach-lists/[listId]`, the workspace that already exists
 
 ## Change log
 
+- 2026-08-15 — **`EVERY USER HAS A PARTY` became a live invariant, not a promise.**
+  `crm.ensure_user_party` plus the `auth.users` signup/promotion trigger provisions
+  one normal AI Matrx-tenant party per permanent account, claims exact unambiguous
+  pre-existing identities, attaches Auth-backed media, and aborts ambiguous account
+  mutations. Backfilled 199/199 permanent users; 31 anonymous principals remain
+  excluded; duplicate claims and missing parties are both zero. The owner Voice
+  program's verified phone now resolves through the same party/contact-medium model,
+  without hardcoding or logging the number. Transactional rollback tests, least-
+  privilege grants, live advisors, generated types, and the migration ledger all pass.
 - 2026-08-15 — **G9: outreach starts where the opportunity is found; G1 finally
   has a frontend.** A reputation verdict was a dead end — a `pitch` case with a
   live `pitch_angle` terminated in "Start action", which only wrote
