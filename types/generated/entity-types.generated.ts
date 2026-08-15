@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 362 active entity tokens. A token here is FK-valid for
+// 363 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -204,6 +204,7 @@ export type EntityTypeToken =
   | "note_folder"
   | "ops_issue_event"
   | "organization"
+  | "output_feedback"
   | "page_extraction_job"
   | "page_extraction_page_run"
   | "party"
@@ -816,6 +817,7 @@ export type ScopeableEntityToken =
   | "note_folder"
   | "ops_issue_event"
   | "organization"
+  | "output_feedback"
   | "page_extraction_job"
   | "page_extraction_page_run"
   | "party"
@@ -1217,6 +1219,7 @@ export const ENTITY_TYPE_METADATA = {
   "note_folder": { token: "note_folder", schema: "workbench", table: "note_folders", label: "Note Folder", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "ops_issue_event": { token: "ops_issue_event", schema: "public", table: "ops_issue_event", label: "Ops Issue Event", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "organization": { token: "organization", schema: "iam", table: "organizations", label: "Organization", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: "container", referenceCategory: null },
+  "output_feedback": { token: "output_feedback", schema: "platform", table: "output_feedback", label: "Output Feedback", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "page_extraction_job": { token: "page_extraction_job", schema: "docproc", table: "page_extraction_jobs", label: "Extraction Dataset", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "page_extraction_page_run": { token: "page_extraction_page_run", schema: "docproc", table: "page_extraction_page_runs", label: "Page Extraction Page Run", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "party": { token: "party", schema: "crm", table: "party", label: "Entity", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "display_name", contentRole: "source", referenceCategory: null },
@@ -1583,6 +1586,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "note_folder",
   "ops_issue_event",
   "organization",
+  "output_feedback",
   "page_extraction_job",
   "page_extraction_page_run",
   "party",
