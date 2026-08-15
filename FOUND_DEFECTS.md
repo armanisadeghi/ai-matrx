@@ -305,9 +305,15 @@ The floating-window posture only kills the spinner for markdown payloads. Watche
 
 No `listAgentRuns` in `features/transcript-studio/service/studioService.ts`, nothing dispatches `runsLoaded` — column status is in-memory only and the live-run door (`<WatchRunButton>` via the run row's `conversationId`) dies with the tab. Fix: add `listAgentRuns(sessionId)`, dispatch `runsLoaded` where segments load, reopen for rows still `running`. **Chip fired 2026-08-12.**
 
-### D185 — `titaniummarketing.com` pins a CMS site nobody can see, so the write-back stops at the page (2026-08-13)
+### D185 — A CMS link breaks whenever the CMS site belongs to a DIFFERENT user (2026-08-13; **re-diagnosed live 2026-08-15 — the original prescription was wrong**)
 
-Found live while closing `G-FINDING-FIX`. `web.site 0fdcd5ea-…` carries `settings.cms.site_id = "60bb572e-df72-439b-a81e-0e3fb4a62298"`, which is not a CMS site the caller can read, so `resolveCmsLink` correctly refuses and every fix on that site saves only as desired metadata. Either the CMS site was deleted or the id was hand-set and never valid. Fix: clear or repoint `settings.cms.site_id`, and give the marketing site settings UI a validating picker so a hand-typed id cannot silently disable the whole CMS half of the loop.
+⚠️ **DO NOT clear or repoint `settings.cms.site_id`.** The original entry guessed the CMS site was "deleted or never valid" and prescribed clearing it. Both guesses are false, and that fix would have DESTROYED a correct link.
+
+Measured live against the CMS project (`viyklljfdhtidwecakwx`): all **7** `web.site` rows carrying `settings.cms.site_id` point at CMS sites that **exist**, are `is_active=true`, and are correctly named — `60bb572e-…` is "Titanium Marketing", exactly what it should be. `client_sites` RLS is `is_active = true`, so RLS admits it too.
+
+**The real cause is ownership scoping.** `app/api/cms/sites/route.ts:147` scopes `listSites` to `.eq("owner_user_id", user.id)`, and `resolveCmsLink` only searches the list it was handed. The CMS sites that resolve are owned by the signed-in account; Titanium Marketing and PBW Law Website are owned by `4cf62e4e-…`, a different user. So the refusal message ("not a CMS site you can see") is literally ACCURATE, and every fix on that site correctly falls back to desired-metadata only.
+
+**The gap is that `client_sites` has no org or sharing model at all** — just `owner_user_id`. A marketing site owned by an org can therefore point at a CMS site only one person can reach, and nothing surfaces WHY. **Decides: Arman** — should CMS sites become org-scoped/shareable like the rest of the platform (we-are-our-own-customer would say yes), or should the marketing site tell the user plainly "this CMS site belongs to <owner>, ask them to share it"? The validating picker from the original entry is still worth building, but it must validate against *reachability*, not existence — a picker that only checks the id exists would have called this link healthy.
 
 ### D186 — Nothing the crawler finds problems on overlaps with a CMS page, so the CMS-draft leg is unexercised (2026-08-13)
 
