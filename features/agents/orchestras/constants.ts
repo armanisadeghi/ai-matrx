@@ -1,32 +1,45 @@
-// features/agents/agent-sets/constants.ts
+// features/agents/orchestras/constants.ts
 //
-// Agent Sets (Orchestrators) — canonical tokens for the platform.associations
-// edges that model a set. There is NO agent_set table: a "set" is an
+// Orchestras — canonical tokens for the platform.associations edges that model
+// an Orchestra. There is NO orchestra table, ever: an Orchestra is an
 // orchestrator agent (agent.definition row) PLUS association edges. See
-// features/agents/docs/AGENT_SETS.md.
+// features/agents/docs/ORCHESTRAS.md.
 
 /** Entity-type token for an agent (platform.entity_types.token → agent.definition). */
 export const AGENT_TOKEN = "agent" as const;
 
 /**
  * Role of the self-edge (agent:X) → (agent:X) that marks agent X as an
- * orchestrator / set root. Its `metadata` holds set-level config (accent,
- * tagline, saved canvas position) and its existence lets an EMPTY set persist.
- * Distinct role from MEMBER_ROLE so the two never collide on the
- * (source, target, role) unique key, and so clearing members never touches it.
+ * orchestrator / Orchestra root. Its `metadata` holds Orchestra-level config
+ * (accent, tagline, saved canvas position) and its existence lets an EMPTY
+ * Orchestra persist. Distinct role from MEMBER_ROLE so the two never collide on
+ * the (source, target, role) unique key, and so clearing members never touches it.
  */
-export const SET_MARKER_ROLE = "matrx_set" as const;
+export const ORCHESTRA_MARKER_ROLE = "orchestra" as const;
+
+/**
+ * Pre-rename value of the same self-edge ("Orchestra" → "Orchestra",
+ * 2026-08-15). READ-ONLY compatibility: nothing writes this again. Remove it —
+ * and `isOrchestraMarkerRole` collapses to an equality check — once a scan of
+ * platform.associations confirms zero `matrx_set` rows remain.
+ */
+export const LEGACY_ORCHESTRA_MARKER_ROLE = "matrx_set" as const;
+
+/** True for the current marker role OR its pre-rename value. Use this for every READ. */
+export function isOrchestraMarkerRole(role: string | null | undefined): boolean {
+  return role === ORCHESTRA_MARKER_ROLE || role === LEGACY_ORCHESTRA_MARKER_ROLE;
+}
 
 /** Role of an orchestrator → member edge. Members are ordered by `position`. */
 export const MEMBER_ROLE = "member" as const;
 
 /**
- * Accent palette for a set's identity. Keys are stored in the set config
- * (`AgentSetConfig.accent`); each maps to a Tailwind-friendly gradient + ring
+ * Accent palette for an Orchestra's identity. Keys are stored in its config
+ * (`OrchestraConfig.accent`); each maps to a Tailwind-friendly gradient + ring
  * resolved in the UI (see agent-sets/components/accents.ts). Semantic, themeable,
  * never raw hex in product UI.
  */
-export const SET_ACCENTS = [
+export const ORCHESTRA_ACCENTS = [
   "violet",
   "blue",
   "emerald",
@@ -37,6 +50,6 @@ export const SET_ACCENTS = [
   "indigo",
 ] as const;
 
-export type SetAccent = (typeof SET_ACCENTS)[number];
+export type OrchestraAccent = (typeof ORCHESTRA_ACCENTS)[number];
 
-export const DEFAULT_SET_ACCENT: SetAccent = "violet";
+export const DEFAULT_ORCHESTRA_ACCENT: OrchestraAccent = "violet";

@@ -1,7 +1,7 @@
-// features/agents/agent-sets/components/SetBuilderCanvasImpl.tsx
+// features/agents/orchestras/components/OrchestraBuilderCanvasImpl.tsx
 //
-// THE heavy Agent Set builder canvas — the ONLY module allowed to import React
-// Flow (@xyflow/react). It is reached exclusively through the SetBuilderCanvas
+// THE heavy Orchestra builder canvas — the ONLY module allowed to import React
+// Flow (@xyflow/react). It is reached exclusively through the OrchestraBuilderCanvas
 // dynamic({ ssr: false }) wrapper, so the flow runtime never lands in the route
 // or server chunk. See the code-splitting skill + the reactFlowStaticImportBan in
 // eslint.config.mjs.
@@ -13,7 +13,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
-// eslint-disable-next-line no-restricted-syntax -- The ONE sanctioned React Flow import; this module is loaded only via the SetBuilderCanvas next/dynamic({ ssr:false }) wrapper (code-splitting skill + reactFlowStaticImportBan).
+// eslint-disable-next-line no-restricted-syntax -- The ONE sanctioned React Flow import; this module is loaded only via the OrchestraBuilderCanvas next/dynamic({ ssr:false }) wrapper (code-splitting skill + reactFlowStaticImportBan).
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -32,38 +32,38 @@ import {
   type NodeTypes,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import "./set-builder-canvas.css";
+import "./orchestra-builder-canvas.css";
 import dagre from "dagre";
 import { Network, Webhook, GitFork, CircleDot, LayoutGrid, Loader2, PanelRight, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import {
-  addAgentToSet,
-  removeAgentFromSet,
+  addAgentToOrchestra,
+  removeAgentFromOrchestra,
   saveMemberMeta,
-  saveSetConfig,
-} from "@/features/agents/redux/agent-sets/thunks";
+  saveOrchestraConfig,
+} from "@/features/agents/redux/orchestras/thunks";
 import { AgentRoleCard } from "./AgentRoleCard";
 import { AgentPeekButton } from "./AgentPeekButton";
-import { useMemberRunState } from "../run/SetRunStatusContext";
+import { useMemberRunState } from "../run/OrchestraRunStatusContext";
 import { accentClasses } from "./accents";
 import { AGENT_DND_MIME } from "./AgentLibraryRail";
-import type { SetBuilderCanvasProps } from "./SetBuilderCanvas";
-import type { SetAccent } from "../constants";
+import type { OrchestraBuilderCanvasProps } from "./OrchestraBuilderCanvas";
+import type { OrchestraAccent } from "../constants";
 
 const ORCH_ID = "__orchestrator__";
 
 interface OrchestratorData {
   agentId: string;
-  accent: SetAccent;
+  accent: OrchestraAccent;
   memberCount: number;
   onOpen: () => void;
 }
 interface MemberData {
   orchestratorId: string;
   agentId: string;
-  accent: SetAccent;
+  accent: OrchestraAccent;
   index: number;
   roleTitle: string | null;
   gap: string | null;
@@ -121,7 +121,7 @@ function OrchestratorNode({ data }: NodeProps) {
         </div>
       </div>
       <p className="mt-2 line-clamp-2 text-xs leading-snug text-muted-foreground">
-        {agent?.description ?? "Presides over this set of agents."}
+        {agent?.description ?? "Presides over this Orchestra."}
       </p>
       <div className="mt-2.5 flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
         <Webhook className="h-3 w-3" />
@@ -151,10 +151,10 @@ function MemberNode({ data }: NodeProps) {
         variant="node"
         onEdit={() => d.onEdit(d.agentId)}
         onRemove={() =>
-          dispatch(removeAgentFromSet({ orchestratorId: d.orchestratorId, agentId: d.agentId }))
+          dispatch(removeAgentFromOrchestra({ orchestratorId: d.orchestratorId, agentId: d.agentId }))
         }
       />
-      {/* idle = the set's accent ring; running = animated accent pulse; done /
+      {/* idle = the Orchestra's accent ring; running = animated accent pulse; done /
           failed = success / destructive rings until the next turn resets. */}
       <span
         className={cn(
@@ -255,7 +255,7 @@ function LayoutButton({ icon: Icon, label, onClick }: { icon: LucideIcon; label:
 
 // ─── canvas ─────────────────────────────────────────────────────────────
 
-function CanvasInner({ orchestratorId, accent, members, config, onEditMember, onOpenOrchestrator }: SetBuilderCanvasProps) {
+function CanvasInner({ orchestratorId, accent, members, config, onEditMember, onOpenOrchestrator }: OrchestraBuilderCanvasProps) {
   const dispatch = useAppDispatch();
   const { screenToFlowPosition, fitView } = useReactFlow();
   const a = accentClasses(accent);
@@ -348,7 +348,7 @@ function CanvasInner({ orchestratorId, accent, members, config, onEditMember, on
     (_e: unknown, node: Node) => {
       if (node.id === ORCH_ID) {
         dispatch(
-          saveSetConfig({
+          saveOrchestraConfig({
             orchestratorId,
             config: { ...config, orchestratorPos: { x: node.position.x, y: node.position.y } },
           }),
@@ -378,7 +378,7 @@ function CanvasInner({ orchestratorId, accent, members, config, onEditMember, on
       if (!agentId || agentId === orchestratorId) return;
       if (members.some((m) => m.agentId === agentId)) return;
       const pos = screenToFlowPosition({ x: event.clientX, y: event.clientY });
-      dispatch(addAgentToSet({ orchestratorId, agentId, meta: { pos } }));
+      dispatch(addAgentToOrchestra({ orchestratorId, agentId, meta: { pos } }));
     },
     [dispatch, orchestratorId, members, screenToFlowPosition],
   );
@@ -402,7 +402,7 @@ function CanvasInner({ orchestratorId, accent, members, config, onEditMember, on
               : n,
         ),
       );
-      dispatch(saveSetConfig({ orchestratorId, config: { ...config, orchestratorPos: layout.orch } }));
+      dispatch(saveOrchestraConfig({ orchestratorId, config: { ...config, orchestratorPos: layout.orch } }));
       members.forEach((m) =>
         dispatch(
           saveMemberMeta({ orchestratorId, agentId: m.agentId, meta: { pos: layout.members[m.agentId] } }),
@@ -432,7 +432,7 @@ function CanvasInner({ orchestratorId, accent, members, config, onEditMember, on
         fitView
         fitViewOptions={{ padding: 0.3, maxZoom: 1 }}
         proOptions={{ hideAttribution: true }}
-        className="agent-set-flow bg-textured"
+        className="orchestra-flow bg-textured"
       >
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} className="opacity-50" />
         <Controls showInteractive={false} className="!shadow-md" />
@@ -449,7 +449,7 @@ function CanvasInner({ orchestratorId, accent, members, config, onEditMember, on
   );
 }
 
-export default function SetBuilderCanvasImpl(props: SetBuilderCanvasProps) {
+export default function OrchestraBuilderCanvasImpl(props: OrchestraBuilderCanvasProps) {
   return (
     <ReactFlowProvider>
       <CanvasInner {...props} />

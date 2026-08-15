@@ -1,4 +1,4 @@
-// features/agents/agent-sets/hooks/useEnsureAgentsLoaded.ts
+// features/agents/orchestras/hooks/useEnsureAgentsLoaded.ts
 "use client";
 
 import { useEffect } from "react";
@@ -12,7 +12,7 @@ import { initializeChatAgents } from "@/features/agents/redux/agent-definition/t
  * already have. Never call `fetchAgentsList()` directly from this feature.
  *
  * Pass `enabled: false` while a dialog is closed so closed overlays don't
- * contribute to a mount-time fetch stampede (see AddToSetMenu / AgentCard).
+ * contribute to a mount-time fetch stampede (see AddToOrchestraMenu / AgentCard).
  */
 export function useEnsureAgentsLoaded(enabled = true) {
   const dispatch = useAppDispatch();

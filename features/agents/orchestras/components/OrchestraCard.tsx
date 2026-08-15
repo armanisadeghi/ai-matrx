@@ -1,15 +1,15 @@
-// features/agents/agent-sets/components/AgentSetCard.tsx
+// features/agents/orchestras/components/OrchestraCard.tsx
 //
-// A list tile for one Agent Set on /agents/sets. The orchestrator agent is the
-// set's face: its name + description (or the set tagline) head the card, with an
+// A list tile for one Orchestra on /agents/orchestras. The orchestrator agent is the
+// Orchestra's face: its name + description (or the Orchestra tagline) head the card, with an
 // accent-tinted header, a member-count strip, and an "Open in builder" action.
 //
 // THE DOOR LAW (common-docs/policies/no-dead-ends.md): the tile used to be a
 // `role="button"` div calling `router.push` — a plain left click was the ONLY
 // way in (no cmd-click, no middle-click, no "open in new tab", and a tab stop
-// that announced no destination). Every way into the set is now a real anchor:
-// the set's NAME, the member COUNT, "Open" and "Run", plus a mouse-only
-// full-tile overlay link so clicking empty card area still opens the set. The
+// that announced no destination). Every way into the Orchestra is now a real anchor:
+// the Orchestra's NAME, the member COUNT, "Open" and "Run", plus a mouse-only
+// full-tile overlay link so clicking empty card area still opens the Orchestra. The
 // overlay is `tabIndex={-1}` + `aria-hidden` — it is the same destination as
 // the name, so it must not become a second tab stop or a second announcement.
 // Keyboard users tab straight onto the real links; there is no synthetic key
@@ -23,20 +23,20 @@ import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { accentClasses } from "./accents";
-import type { AgentSetSummary } from "../types";
+import type { OrchestraSummary } from "../types";
 
-export function AgentSetCard({ summary }: { summary: AgentSetSummary }) {
+export function OrchestraCard({ summary }: { summary: OrchestraSummary }) {
   const a = accentClasses(summary.config.accent);
 
-  const title = summary.label?.trim() || summary.name || "Untitled Set";
+  const title = summary.label?.trim() || summary.name || "Untitled Orchestra";
   const subtitle =
     summary.config.tagline?.trim() ||
     summary.description ||
-    "An orchestrated set of agents.";
+    "An Orchestra of agents.";
   const count = summary.memberCount;
   const strip = Math.min(count, 6);
 
-  const setHref = `/agents/sets/${summary.orchestratorId}`;
+  const setHref = `/agents/orchestras/${summary.orchestratorId}`;
   const runHref = `/agents/${summary.orchestratorId}/run`;
 
   return (

@@ -1,6 +1,6 @@
-// features/agents/agent-sets/components/AgentLibraryRail.tsx
+// features/agents/orchestras/components/AgentLibraryRail.tsx
 //
-// The builder's left rail: every agent the user can add to the set. It reuses the
+// The builder's left rail: every agent the user can add to the Orchestra. It reuses the
 // CANONICAL agent filter system (the same one /agents/all uses) — its own
 // `useAgentConsumer` slot + the filtered selectors + <DesktopFilterPanel> — so
 // Mine/Shared/All tabs, category/tag filters, sort and search all work exactly as
@@ -159,7 +159,7 @@ export function AgentLibraryRail({ orchestratorId, memberIds, onAdd }: AgentLibr
               </div>
               <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
                 <AgentPeekButton agentId={a.id} />
-                {/* Clicking this row ADDS the agent to the set, so the name
+                {/* Clicking this row ADDS the agent to the Orchestra, so the name
                     cannot be the door — the door rides alongside it. New tab
                     only: navigating away would cost the user the builder. */}
                 <EntityDoorControls

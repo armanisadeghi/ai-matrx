@@ -1,11 +1,11 @@
-// features/agents/agent-sets/orchestrator/useCreateOrchestrator.ts
+// features/agents/orchestras/orchestrator/useCreateOrchestrator.ts
 //
 // Create an orchestrator from the template and drop the user into the builder —
 // where they pick the agents it coordinates on the CANONICAL rail (search/filter/
 // tabs/peek/drag-drop), not in a cramped modal. The template ships an empty
 // <available_agents> placeholder; the agent descriptions are filled later by the
 // builder's "Sync agent listings" action (which runs the generator on whatever
-// members are attached). See features/agents/docs/AGENT_SETS.md.
+// members are attached). See features/agents/docs/ORCHESTRAS.md.
 
 "use client";
 
@@ -14,8 +14,8 @@ import { toast } from "@/lib/toast-service";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
-import { createAgentSet } from "@/features/agents/redux/agent-sets/thunks";
-import type { SetAccent } from "../constants";
+import { createOrchestra } from "@/features/agents/redux/orchestras/thunks";
+import type { OrchestraAccent } from "../constants";
 import { orchestratorService } from "./orchestratorService";
 import { ORCHESTRATOR_SUPERVISOR_PROMPT, ORCHESTRATOR_USER_TEMPLATE } from "./constants";
 
@@ -25,7 +25,7 @@ export function useCreateOrchestrator() {
   const [error, setError] = useState<string | null>(null);
 
   const create = useCallback(
-    async (args: { name: string; accent: SetAccent; tagline?: string }): Promise<string | null> => {
+    async (args: { name: string; accent: OrchestraAccent; tagline?: string }): Promise<string | null> => {
       setError(null);
       setCreating(true);
       try {
@@ -60,7 +60,7 @@ export function useCreateOrchestrator() {
         // 3) Create the (empty) set. If the marker write fails we STILL route to
         //    the created agent — the builder's "Make an orchestrator" CTA recovers.
         await dispatch(
-          createAgentSet({
+          createOrchestra({
             orchestratorId,
             label: args.name.trim() || undefined,
             config: { accent: args.accent, tagline: args.tagline?.trim() || undefined },

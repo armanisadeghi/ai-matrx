@@ -914,7 +914,7 @@ these — but **not** `AgentListDropdown` (42 consumers) or `AgentActionModal`.
 | `/crm` | `features/crm/components/CrmListPage.tsx` (493) | **M** (audit said S — wrong, see below) | Closest in UI terms: already uses `EntityScopeTabs`, `useListViewPrefs`, `ItemMenu`, controlled `MatrxDataTable`, and hand-writes a filter bridge the shell owns. |
 | `/marketing/sites` | `SitesPortfolio.tsx` (647) | **S** | Best non-adopter: has `MatrxDataTable` + `ItemMenu` already |
 | `/schedules` | `ScheduleList.tsx` (98) | **S** | Small, zero primitives, cheap win |
-| `/agents/sets` | `AgentSetsBrowser.tsx` (150) | **S** | Sits inside the feature that owns the gold standard |
+| `/agents/orchestras` | `OrchestrasBrowser.tsx` (150) | **S** | Sits inside the feature that owns the gold standard |
 | `/documents` | `DocumentsHubTable.tsx` (579) | **M** | textbook bespoke hub |
 | `/workbooks` | `app/(core)/workbooks/page.tsx` (568) | **M** | all in the route file, nothing extracted |
 | `/notes` | — | **M** | **No list page exists** — `page.tsx` returns `null`. Violates the "feature entry pages are LIST views" doctrine head-on. `noteMenuRegistry` + `ItemRow` are already done; only the route + scoped RPC are missing. |

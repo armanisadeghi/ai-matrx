@@ -1,10 +1,10 @@
-// features/agents/agent-sets/orchestrator/orchestratorService.ts
+// features/agents/orchestras/orchestrator/orchestratorService.ts
 //
 // The plumbing for "generate an orchestrator agent": copy the template, dump the
 // selected agents, and inject the generated <agent> blocks into the orchestrator's
 // <available_agents> section. Every method returns a ScopesRpcResult and NEVER
 // throws. Running the description-generator agent itself is a THUNK (needs
-// dispatch) — see ./thunks.ts. See features/agents/docs/AGENT_SETS.md.
+// dispatch) — see ./thunks.ts. See features/agents/docs/ORCHESTRAS.md.
 
 "use client";
 
@@ -38,7 +38,7 @@ export interface MemberConfigRow {
   output_schema: unknown;
 }
 
-/** The Agent Set Role Describer's per-member output. */
+/** The Orchestra Role Describer's per-member output. */
 export interface DescribedMemberRole {
   id: string;
   roleTitle: string;
@@ -104,7 +104,7 @@ export function outputLabelOf(outputSchema: unknown): string {
 }
 
 /**
- * Parse the Agent Set Role Describer's output into `{id,roleTitle,gap}` rows.
+ * Parse the Orchestra Role Describer's output into `{id,roleTitle,gap}` rows.
  * Robust to a stray code fence or surrounding prose: takes the first `[` … last
  * `]` span and JSON-parses it. Returns [] on anything unparseable (caller treats
  * as "no updates") — we never write a malformed role.

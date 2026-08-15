@@ -1,4 +1,4 @@
-// features/agents/agent-sets/components/GenerateOrchestratorDialog.tsx
+// features/agents/orchestras/components/GenerateOrchestratorDialog.tsx
 //
 // "Generate an orchestrator" — a QUICK name prompt, not an agent picker. We create
 // the orchestrator from the template immediately and drop the user into the builder,
@@ -25,7 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCreateOrchestrator } from "../orchestrator/useCreateOrchestrator";
 import { accentClasses } from "./accents";
-import { DEFAULT_SET_ACCENT, SET_ACCENTS, type SetAccent } from "../constants";
+import { DEFAULT_ORCHESTRA_ACCENT, ORCHESTRA_ACCENTS, type OrchestraAccent } from "../constants";
 
 export interface GenerateOrchestratorDialogProps {
   open: boolean;
@@ -37,7 +37,7 @@ export function GenerateOrchestratorDialog({ open, onOpenChange }: GenerateOrche
   const { create, creating, error } = useCreateOrchestrator();
   const [name, setName] = useState("");
   const [tagline, setTagline] = useState("");
-  const [accent, setAccent] = useState<SetAccent>(DEFAULT_SET_ACCENT);
+  const [accent, setAccent] = useState<OrchestraAccent>(DEFAULT_ORCHESTRA_ACCENT);
   const runningRef = useRef(false);
 
   const handleOpenChange = (next: boolean) => {
@@ -45,7 +45,7 @@ export function GenerateOrchestratorDialog({ open, onOpenChange }: GenerateOrche
     if (!next) {
       setName("");
       setTagline("");
-      setAccent(DEFAULT_SET_ACCENT);
+      setAccent(DEFAULT_ORCHESTRA_ACCENT);
     }
     onOpenChange(next);
   };
@@ -58,7 +58,7 @@ export function GenerateOrchestratorDialog({ open, onOpenChange }: GenerateOrche
       if (id) {
         toast.success("Orchestrator created — add the agents it coordinates, then Sync its prompt.");
         handleOpenChange(false);
-        router.push(`/agents/sets/${id}`);
+        router.push(`/agents/orchestras/${id}`);
       }
     } finally {
       runningRef.current = false;
@@ -101,13 +101,13 @@ export function GenerateOrchestratorDialog({ open, onOpenChange }: GenerateOrche
             <Input
               value={tagline}
               onChange={(e) => setTagline(e.target.value)}
-              placeholder="What does this set accomplish together?"
+              placeholder="What does this Orchestra accomplish together?"
             />
           </div>
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-muted-foreground">Accent</label>
             <div className="flex flex-wrap gap-1.5">
-              {SET_ACCENTS.map((acc) => {
+              {ORCHESTRA_ACCENTS.map((acc) => {
                 const ac = accentClasses(acc);
                 return (
                   <button

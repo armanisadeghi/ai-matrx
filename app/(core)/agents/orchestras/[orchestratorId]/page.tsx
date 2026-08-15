@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
-import { SetBuilder } from "@/features/agents/agent-sets/components/SetBuilder";
+import { OrchestraBuilder } from "@/features/agents/orchestras/components/OrchestraBuilder";
 
 export const metadata: Metadata = {
   title: "Set Builder",
 };
 
-export default async function AgentSetBuilderPage({
+export default async function OrchestraBuilderPage({
   params,
 }: {
   params: Promise<{ orchestratorId: string }>;
 }) {
   const { orchestratorId } = await params;
-  return <SetBuilder orchestratorId={orchestratorId} />;
+  return <OrchestraBuilder orchestratorId={orchestratorId} />;
 }

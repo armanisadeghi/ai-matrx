@@ -1,4 +1,4 @@
-// features/agents/agent-sets/run/SetRunStatusContext.tsx
+// features/agents/orchestras/run/OrchestraRunStatusContext.tsx
 //
 // Distributes live member-run status to the builder's node/card components.
 // Context (not node `data`) on purpose: the canvas's React-Flow node list is
@@ -9,15 +9,15 @@
 "use client";
 
 import { createContext, useContext } from "react";
-import type { SubAgentRunState } from "./set-run-status.selectors";
-import type { SetMemberRunStatus } from "./useSetMemberRunStatus";
+import type { SubAgentRunState } from "./orchestra-run-status.selectors";
+import type { OrchestraMemberRunStatus } from "./useOrchestraMemberRunStatus";
 
-const IDLE: SetMemberRunStatus = { byAgentId: {}, isRunning: false };
+const IDLE: OrchestraMemberRunStatus = { byAgentId: {}, isRunning: false };
 
-export const SetRunStatusContext = createContext<SetMemberRunStatus>(IDLE);
+export const OrchestraRunStatusContext = createContext<OrchestraMemberRunStatus>(IDLE);
 
 /** A single member's live state — null = idle (current look). */
 export function useMemberRunState(agentId: string): SubAgentRunState | null {
-  const { byAgentId } = useContext(SetRunStatusContext);
+  const { byAgentId } = useContext(OrchestraRunStatusContext);
   return byAgentId[agentId] ?? null;
 }

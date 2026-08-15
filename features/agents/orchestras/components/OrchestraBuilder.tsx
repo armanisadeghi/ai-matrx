@@ -1,9 +1,9 @@
-// features/agents/agent-sets/components/SetBuilder.tsx
+// features/agents/orchestras/components/OrchestraBuilder.tsx
 //
-// The /agents/sets/[orchestratorId] builder shell. Composes the agent library
+// The /agents/orchestras/[orchestratorId] builder shell. Composes the agent library
 // rail, the spatial canvas (or sortable grid), and the member inspector around
 // one orchestrator. Owns view + selection + settings; all data mutation flows
-// through the agentSets thunks.
+// through the orchestras thunks.
 
 "use client";
 
@@ -32,45 +32,45 @@ import {
   EntityModeHeader,
   type EntityHeaderAction,
 } from "@/features/shell/components/header/templates/EntityModeHeader";
-import { useAgentSet } from "../hooks/useAgentSet";
-import { useAgentSetsList } from "../hooks/useAgentSetsList";
+import { useOrchestra } from "../hooks/useOrchestra";
+import { useOrchestrasList } from "../hooks/useOrchestrasList";
 import { useEnsureAgentsLoaded } from "../hooks/useEnsureAgentsLoaded";
 import { useOrchestratorPromptStatus } from "../hooks/useOrchestratorPromptStatus";
-import { addAgentToSet, createAgentSet } from "@/features/agents/redux/agent-sets/thunks";
+import { addAgentToOrchestra, createOrchestra } from "@/features/agents/redux/orchestras/thunks";
 import { enableOrchestratorSync, syncOrchestratorPrompt } from "../orchestrator/thunks";
 import { useOpenAgentContentWindow } from "@/features/overlays/openers/agentAdvancedEditorWindow";
 import { selectDisplayConversation } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.selectors";
-import { SetRunStatusContext } from "../run/SetRunStatusContext";
-import { useSetMemberRunStatus } from "../run/useSetMemberRunStatus";
+import { OrchestraRunStatusContext } from "../run/OrchestraRunStatusContext";
+import { useOrchestraMemberRunStatus } from "../run/useOrchestraMemberRunStatus";
 import { AgentLibraryRail } from "./AgentLibraryRail";
-import SetBuilderCanvas from "./SetBuilderCanvas";
-import { SetMemberGrid } from "./SetMemberGrid";
+import OrchestraBuilderCanvas from "./OrchestraBuilderCanvas";
+import { OrchestraMemberGrid } from "./OrchestraMemberGrid";
 import { MemberInspector } from "./MemberInspector";
 import { OrchestratorInspector } from "./OrchestratorInspector";
-import { SetSettingsDialog } from "./SetSettingsDialog";
+import { OrchestraSettingsDialog } from "./OrchestraSettingsDialog";
 import { accentClasses } from "./accents";
-import { DEFAULT_SET_ACCENT } from "../constants";
+import { DEFAULT_ORCHESTRA_ACCENT } from "../constants";
 
 // Loaded only when the user opens the embedded run panel — it drags the whole
-// conversation runtime with it (see SetRunPanel's own dynamic AgentRunnerPage).
-const SetRunPanel = dynamic(
-  () => import("../run/SetRunPanel").then((m) => m.SetRunPanel),
+// conversation runtime with it (see OrchestraRunPanel's own dynamic AgentRunnerPage).
+const OrchestraRunPanel = dynamic(
+  () => import("../run/OrchestraRunPanel").then((m) => m.OrchestraRunPanel),
   { ssr: false },
 );
 
-export function SetBuilder({ orchestratorId }: { orchestratorId: string }) {
+export function OrchestraBuilder({ orchestratorId }: { orchestratorId: string }) {
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const { members, config, label, exists, status } = useAgentSet(orchestratorId);
+  const { members, config, label, exists, status } = useOrchestra(orchestratorId);
   const orchestrator = useAppSelector((s) => selectAgentById(s, orchestratorId));
-  const accent = config.accent ?? DEFAULT_SET_ACCENT;
+  const accent = config.accent ?? DEFAULT_ORCHESTRA_ACCENT;
   const a = accentClasses(accent);
 
   // The canvas/grid choice lives in the URL so the header's ONE mode nav (and
   // its mobile drawer) can drive it like any other sub-view.
   const searchParams = useSearchParams();
   const view = searchParams.get("view") === "grid" ? "grid" : "canvas";
-  const basePath = `/agents/sets/${orchestratorId}`;
+  const basePath = `/agents/orchestras/${orchestratorId}`;
 
   // The library rail is a static column on desktop and a slide-over below md —
   // 16rem of fixed rail on a phone left the canvas unusable. `null` = follow the
@@ -109,7 +109,7 @@ export function SetBuilder({ orchestratorId }: { orchestratorId: string }) {
 
   useEnsureAgentsLoaded();
   // Sibling sets power the header's entity dropdown (switch set without a round trip to the list).
-  const { sets } = useAgentSetsList();
+  const { sets } = useOrchestrasList();
 
   const memberIds = useMemo(() => members.map((m) => m.agentId), [members]);
   const promptStatus = useOrchestratorPromptStatus(orchestratorId, memberIds);
@@ -119,15 +119,15 @@ export function SetBuilder({ orchestratorId }: { orchestratorId: string }) {
   // the canonical way to observe its active conversation (no runner fork).
   // Observed even while the panel is closed — a still-streaming run keeps
   // lighting the canvas after the user closes the panel (retainOnUnmount).
-  const runSurfaceKey = `agent-set-builder:${orchestratorId}`;
+  const runSurfaceKey = `orchestra-builder:${orchestratorId}`;
   const runConversationId = useAppSelector(selectDisplayConversation(runSurfaceKey));
-  const runStatus = useSetMemberRunStatus(runConversationId, memberIds);
+  const runStatus = useOrchestraMemberRunStatus(runConversationId, memberIds);
   // Derived — when a member is removed it simply resolves to null and the
   // inspector unmounts (no setState-in-effect cleanup needed).
   const editingMember = editingId ? members.find((m) => m.agentId === editingId) ?? null : null;
-  const title = label?.trim() || orchestrator?.name || "Agent Set";
+  const title = label?.trim() || orchestrator?.name || "Orchestra";
 
-  const handleAdd = (agentId: string) => dispatch(addAgentToSet({ orchestratorId, agentId }));
+  const handleAdd = (agentId: string) => dispatch(addAgentToOrchestra({ orchestratorId, agentId }));
 
   const handleSyncPrompt = async () => {
     setSyncing(true);
@@ -186,24 +186,24 @@ export function SetBuilder({ orchestratorId }: { orchestratorId: string }) {
           Make {orchestrator?.name ?? "this agent"} an orchestrator?
         </h2>
         <p className="mt-1.5 max-w-sm text-sm text-muted-foreground">
-          It will preside over a set of agents you assemble — each filling a gap in
+          It will preside over an Orchestra you assemble — each filling a gap in
           the bigger picture.
         </p>
         <div className="mt-5 flex gap-2">
-          <Button variant="ghost" onClick={() => router.push("/agents/sets")}>
+          <Button variant="ghost" onClick={() => router.push("/agents/orchestras")}>
             Cancel
           </Button>
           <Button
             disabled={creating}
             onClick={async () => {
               setCreating(true);
-              const res = await dispatch(createAgentSet({ orchestratorId, config: { accent } }));
+              const res = await dispatch(createOrchestra({ orchestratorId, config: { accent } }));
               setCreating(false);
-              if (!res.ok) router.push("/agents/sets");
+              if (!res.ok) router.push("/agents/orchestras");
             }}
           >
             {creating ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
-            Create set
+            Create Orchestra
           </Button>
         </div>
       </div>
@@ -272,11 +272,11 @@ export function SetBuilder({ orchestratorId }: { orchestratorId: string }) {
   return (
     <div className="bg-textured flex h-full flex-col overflow-hidden">
       <EntityModeHeader
-        backHref="/agents/sets"
+        backHref="/agents/orchestras"
         entityLabel={title}
         entityOptions={sets.map((s) => ({
           label: s.label?.trim() || s.name,
-          href: `/agents/sets/${s.orchestratorId}`,
+          href: `/agents/orchestras/${s.orchestratorId}`,
           active: s.orchestratorId === orchestratorId,
         }))}
         modes={[
@@ -316,9 +316,9 @@ export function SetBuilder({ orchestratorId }: { orchestratorId: string }) {
         )}
 
         <main className="relative flex-1 overflow-hidden">
-          <SetRunStatusContext.Provider value={runStatus}>
+          <OrchestraRunStatusContext.Provider value={runStatus}>
             {view === "canvas" ? (
-              <SetBuilderCanvas
+              <OrchestraBuilderCanvas
                 orchestratorId={orchestratorId}
                 accent={accent}
                 members={members}
@@ -329,7 +329,7 @@ export function SetBuilder({ orchestratorId }: { orchestratorId: string }) {
             ) : (
               <div className="h-full overflow-y-auto">
                 {members.length === 0 ? null : (
-                  <SetMemberGrid
+                  <OrchestraMemberGrid
                     orchestratorId={orchestratorId}
                     members={members}
                     accent={accent}
@@ -339,14 +339,14 @@ export function SetBuilder({ orchestratorId }: { orchestratorId: string }) {
                 )}
               </div>
             )}
-          </SetRunStatusContext.Provider>
+          </OrchestraRunStatusContext.Provider>
 
           {members.length === 0 && (
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
               <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border bg-card/70 px-6 py-5 text-center backdrop-blur">
                 <MousePointerClick className="h-5 w-5 text-muted-foreground" />
                 <p className="max-w-[15rem] text-xs text-muted-foreground">
-                  Drag agents from the library — or click one — to add them to this set.
+                  Drag agents from the library — or click one — to add them to this Orchestra.
                 </p>
               </div>
             </div>
@@ -372,7 +372,7 @@ export function SetBuilder({ orchestratorId }: { orchestratorId: string }) {
         )}
 
         {runOpen && !isMobile && (
-          <SetRunPanel
+          <OrchestraRunPanel
             orchestratorId={orchestratorId}
             surfaceKey={runSurfaceKey}
             accent={accent}
@@ -382,14 +382,14 @@ export function SetBuilder({ orchestratorId }: { orchestratorId: string }) {
         )}
       </div>
 
-      <SetSettingsDialog
+      <OrchestraSettingsDialog
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
         orchestratorId={orchestratorId}
         label={label}
         config={config}
         orchestratorName={orchestrator?.name ?? "this agent"}
-        onDeleted={() => router.push("/agents/sets")}
+        onDeleted={() => router.push("/agents/orchestras")}
       />
     </div>
   );

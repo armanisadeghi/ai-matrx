@@ -328,6 +328,19 @@ const nextConfig = {
     async redirects() {
         return [
             ...adminLegacyRouteRedirects,
+            // 2026-08-15: "Agent Sets" was renamed to "Orchestras" (Arman's
+            // ruling). Config redirects, not route shims, so existing links and
+            // bookmarks never dead-end on the old segment.
+            {
+                source: '/agents/sets',
+                destination: '/agents/orchestras',
+                permanent: true,
+            },
+            {
+                source: '/agents/sets/:orchestratorId',
+                destination: '/agents/orchestras/:orchestratorId',
+                permanent: true,
+            },
             // 2026-07-26: YouTube Discovery graduated from a dev demo into its
             // permanent authenticated Marketing home. These must be config
             // redirects (not only route shims): the deployment proxy sends

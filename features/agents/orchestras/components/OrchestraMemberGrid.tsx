@@ -1,4 +1,4 @@
-// features/agents/agent-sets/components/SetMemberGrid.tsx
+// features/agents/orchestras/components/OrchestraMemberGrid.tsx
 //
 // The "Grid" builder view — a non-sortable orchestrator hub tile followed by an
 // ordered, drag-to-reorder list of member role cards. A keyboard- and
@@ -28,14 +28,14 @@ import { Loader2, Network, PanelRight, Webhook } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
-import { removeAgentFromSet, reorderSetMembers } from "@/features/agents/redux/agent-sets/thunks";
+import { removeAgentFromOrchestra, reorderOrchestraMembers } from "@/features/agents/redux/orchestras/thunks";
 import { AgentRoleCard } from "./AgentRoleCard";
 import { AgentPeekButton } from "./AgentPeekButton";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
-import { useMemberRunState } from "../run/SetRunStatusContext";
+import { useMemberRunState } from "../run/OrchestraRunStatusContext";
 import { accentClasses } from "./accents";
-import type { SetAccent } from "../constants";
-import type { AgentSetMember } from "../types";
+import type { OrchestraAccent } from "../constants";
+import type { OrchestraMember } from "../types";
 
 // The hub tile — the Grid twin of the canvas OrchestratorNode. NOT a member and
 // NOT sortable: it renders above the sortable list, outside the DndContext.
@@ -49,7 +49,7 @@ function OrchestratorTile({
   onOpen,
 }: {
   orchestratorId: string;
-  accent: SetAccent;
+  accent: OrchestraAccent;
   memberCount: number;
   onOpen: () => void;
 }) {
@@ -112,7 +112,7 @@ function OrchestratorTile({
         </div>
       </div>
       <p className="mt-2 line-clamp-2 text-xs leading-snug text-muted-foreground">
-        {agent?.description ?? "Presides over this set of agents."}
+        {agent?.description ?? "Presides over this Orchestra."}
       </p>
       <div className="mt-2.5 flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
         <Webhook className="h-3 w-3" />
@@ -130,8 +130,8 @@ function SortableRow({
   onEdit,
 }: {
   orchestratorId: string;
-  member: AgentSetMember;
-  accent: SetAccent;
+  member: OrchestraMember;
+  accent: OrchestraAccent;
   index: number;
   onEdit: (agentId: string) => void;
 }) {
@@ -175,13 +175,13 @@ function SortableRow({
         variant="tile"
         showDragHandle
         onEdit={() => onEdit(member.agentId)}
-        onRemove={() => dispatch(removeAgentFromSet({ orchestratorId, agentId: member.agentId }))}
+        onRemove={() => dispatch(removeAgentFromOrchestra({ orchestratorId, agentId: member.agentId }))}
       />
     </div>
   );
 }
 
-export function SetMemberGrid({
+export function OrchestraMemberGrid({
   orchestratorId,
   members,
   accent,
@@ -189,8 +189,8 @@ export function SetMemberGrid({
   onOpenOrchestrator,
 }: {
   orchestratorId: string;
-  members: AgentSetMember[];
-  accent: SetAccent;
+  members: OrchestraMember[];
+  accent: OrchestraAccent;
   onEdit: (agentId: string) => void;
   onOpenOrchestrator: () => void;
 }) {
@@ -207,7 +207,7 @@ export function SetMemberGrid({
     const from = ids.indexOf(String(active.id));
     const to = ids.indexOf(String(over.id));
     if (from === -1 || to === -1) return;
-    dispatch(reorderSetMembers({ orchestratorId, orderedAgentIds: arrayMove(ids, from, to) }));
+    dispatch(reorderOrchestraMembers({ orchestratorId, orderedAgentIds: arrayMove(ids, from, to) }));
   };
 
   return (

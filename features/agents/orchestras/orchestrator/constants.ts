@@ -1,7 +1,7 @@
-// features/agents/agent-sets/orchestrator/constants.ts
+// features/agents/orchestras/orchestrator/constants.ts
 //
 // "Generate an orchestrator" flow — the ids + markers that stitch the pieces
-// together. See features/agents/docs/AGENT_SETS.md (Generating an orchestrator).
+// together. See features/agents/docs/ORCHESTRAS.md (Generating an orchestrator).
 
 /**
  * The "Agent Orchestrator" template in `agent.template`. `agx_create_agent_from_template`
@@ -11,7 +11,7 @@
 export const ORCHESTRATOR_TEMPLATE_ID = "b06689e3-c651-443a-9059-7e11160d91b4";
 
 /**
- * The "Agent Set Role Describer" builtin system agent. "Sync agent listings" runs
+ * The "Orchestra Role Describer" builtin system agent. "Sync agent listings" runs
  * it once per click over the WHOLE set: it reads every member's current config
  * (name, description, system prompt, inputs, output) AND its current set role
  * (`current_role_title` / `current_gap`), then returns a strict JSON array of
@@ -24,7 +24,7 @@ export const ORCHESTRATOR_TEMPLATE_ID = "b06689e3-c651-443a-9059-7e11160d91b4";
  */
 export const AGENT_SET_ROLE_DESCRIBER_ID = "a3e9d1c4-7b62-4f08-9c5a-2d6e8f0b1a37";
 
-/** The variable the Agent Set Role Describer reads (the members dump JSON). */
+/** The variable the Orchestra Role Describer reads (the members dump JSON). */
 export const ROLE_DESCRIBER_INPUT_VAR = "agent_config";
 
 /**
@@ -47,11 +47,11 @@ export const AVAILABLE_AGENTS_CLOSE = "</available_agents>";
 
 /**
  * The supervisor system prompt applied to a GENERATED orchestrator (replaces the
- * template's planner prompt). Runtime delegation (aidream) projects the set's
+ * template's planner prompt). Runtime delegation (aidream) projects the Orchestra's
  * members as callable TOOLS, so the orchestrator must be told to CALL them — a
  * planner that only emits a JSON plan never delegates. Keeps the
  * `<available_agents>` marker so "Sync agent listings" fills it. The user's
- * template `b06689e3` is left untouched. See features/agents/docs/AGENT_SETS.md.
+ * template `b06689e3` is left untouched. See features/agents/docs/ORCHESTRAS.md.
  */
 export const ORCHESTRATOR_SUPERVISOR_PROMPT = `You are an Orchestration Agent — a supervisor that coordinates a team of specialist agents to accomplish the user's task.
 

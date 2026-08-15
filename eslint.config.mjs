@@ -1195,7 +1195,7 @@ const heavyImplStaticImportBan = [
 // front-door gate; React Flow is imported statically ONLY inside a gated graph
 // (each such file carries a justified one-line eslint-disable). The gated
 // surfaces (D70 sweep, 2026-07-28):
-//   - Agent Set builder: SetBuilderCanvas wrapper → agent-sets/components/SetBuilderCanvasImpl.tsx
+//   - Orchestra builder: OrchestraBuilderCanvas wrapper → orchestras/components/OrchestraBuilderCanvasImpl.tsx
 //   - RAG visualization: features/rag/components/visualization/{RagFlowVisualization,IngestFlowAnimation}.tsx
 //     wrappers → *Impl + nodes/ + edges/
 //   - Schema visualizer: features/administration/schema-visualizer/index.tsx wrapper
@@ -1215,7 +1215,7 @@ const reactFlowStaticImportBan = [
         selector:
             "ImportDeclaration[importKind!='type'][source.value=/^(@xyflow\\/react|reactflow)$/]",
         message:
-            "Do not statically import React Flow (@xyflow/react / reactflow) — it's a heavy browser-only canvas. Keep it inside one of the gated surfaces (SetBuilderCanvasImpl, rag visualization Impls, schema-visualizer Impl, InteractiveDiagramBlock, PillarMap — see the comment above reactFlowStaticImportBan), each behind ONE next/dynamic({ ssr: false }) front door. If this file is inside such a gate, add `// eslint-disable-next-line no-restricted-syntax` directly above the import with a one-line justification. `import type {...}` and dynamic import() are fine. See the code-splitting skill.",
+            "Do not statically import React Flow (@xyflow/react / reactflow) — it's a heavy browser-only canvas. Keep it inside one of the gated surfaces (OrchestraBuilderCanvasImpl, rag visualization Impls, schema-visualizer Impl, InteractiveDiagramBlock, PillarMap — see the comment above reactFlowStaticImportBan), each behind ONE next/dynamic({ ssr: false }) front door. If this file is inside such a gate, add `// eslint-disable-next-line no-restricted-syntax` directly above the import with a one-line justification. `import type {...}` and dynamic import() are fine. See the code-splitting skill.",
     },
 ];
 

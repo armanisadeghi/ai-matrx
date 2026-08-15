@@ -1,7 +1,7 @@
-// features/agents/agent-sets/run/useSetMemberRunStatus.ts
+// features/agents/orchestras/run/useOrchestraMemberRunStatus.ts
 //
 // The live member-highlight data source. Given the active run conversation and
-// the set's member agent ids, derives `{ byAgentId, isRunning }` for the canvas
+// the Orchestra's member agent ids, derives `{ byAgentId, isRunning }` for the canvas
 // rings / grid dots.
 //
 // The wire events only carry the CHILD conversation id (the member's agent_id
@@ -18,7 +18,7 @@ import {
   selectConversationTurnRunning,
   selectSubAgentOpsForConversation,
   type SubAgentRunState,
-} from "./set-run-status.selectors";
+} from "./orchestra-run-status.selectors";
 
 // ── child conversation → agent_id resolution (module-level, dedup'd) ─────
 
@@ -48,7 +48,7 @@ function resolveConversationAgentId(
     inflight.delete(conversationId);
     if (error) {
       console.warn(
-        "[useSetMemberRunStatus] child conversation lookup failed",
+        "[useOrchestraMemberRunStatus] child conversation lookup failed",
         conversationId,
         error,
       );
@@ -64,7 +64,7 @@ function resolveConversationAgentId(
 
 // ── the hook ─────────────────────────────────────────────────────────────
 
-export interface SetMemberRunStatus {
+export interface OrchestraMemberRunStatus {
   /** Member agent_id → live state. Absent key = idle this turn. */
   byAgentId: Record<string, SubAgentRunState>;
   /** True while the run conversation's current turn is streaming. */
@@ -83,10 +83,10 @@ function mergeState(
   return next;
 }
 
-export function useSetMemberRunStatus(
+export function useOrchestraMemberRunStatus(
   conversationId: string | null,
   memberAgentIds: string[],
-): SetMemberRunStatus {
+): OrchestraMemberRunStatus {
   const opsSelector = useMemo(
     () => selectSubAgentOpsForConversation(conversationId),
     [conversationId],

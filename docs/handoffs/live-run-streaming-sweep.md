@@ -121,7 +121,7 @@ carry no agent-run import at all. That is the signature to search on next time.
   none awaits an AI result. The `api-tests` demos render their streams.
 - `features/ai-runs/hooks/useAiTasks.ts` — a 10s refresh of a task LIST, not a
   run the user is waiting on.
-- `features/agents/agent-sets/run/useSetMemberRunStatus.ts` — derived from wire
+- `features/agents/orchestras/run/useOrchestraMemberRunStatus.ts` — derived from wire
   events, explicitly never polled.
 
 ### Open — found, not fixed
@@ -356,8 +356,8 @@ run. Guard tests: `request-viewer-retention.test.ts`, `run-sets.test.ts`.
 - ~~Agent sets~~ — **DONE.** The sweep's claim that
   `agent-sets/orchestrator/thunks.ts:153` "launches EVERY set member" is **wrong**: that
   line is ONE describer pass over the whole set ("Sync agent listings"), and the actual
-  multi-member set RUN already streams — `SetRunPanel` embeds the canonical
-  `AgentRunnerPage` and `useSetMemberRunStatus` lights each member on the canvas as it
+  multi-member set RUN already streams — `OrchestraRunPanel` embeds the canonical
+  `AgentRunnerPage` and `useOrchestraMemberRunStatus` lights each member on the canvas as it
   executes. The real offender was the describer, a multi-minute pass with up to 3 silent
   retries behind the button's spinner. It now runs `direct` into one window per set
   (`agent-set-sync:${orchestratorId}`), each retry re-binding that window under a

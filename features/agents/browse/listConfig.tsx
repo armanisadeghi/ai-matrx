@@ -14,7 +14,7 @@ import type {
   EntityRowActionsResult,
 } from "@/lib/entity-list/config";
 import { relativeTime } from "@/lib/entity-list/columns";
-import { AddToSetDialog } from "./components/AddToSetDialog";
+import { AddToOrchestraDialog } from "./components/AddToOrchestraDialog";
 import { AgentBrowseCards } from "./components/AgentBrowseCards";
 import { AgentBrowseRows } from "./components/AgentBrowseRows";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
@@ -115,7 +115,7 @@ function useAgentListRowActions(
         />
       )}
       {host.addToSetAgent && (
-        <AddToSetDialog
+        <AddToOrchestraDialog
           open
           agentId={host.addToSetAgent.id}
           agentName={host.addToSetAgent.name}

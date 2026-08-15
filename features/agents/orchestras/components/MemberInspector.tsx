@@ -1,6 +1,6 @@
-// features/agents/agent-sets/components/MemberInspector.tsx
+// features/agents/orchestras/components/MemberInspector.tsx
 //
-// Right-side editor for one set member: name the role it plays and describe the
+// Right-side editor for one Orchestra member: name the role it plays and describe the
 // gap it fills (seeded from the agent's own description). This is what turns a
 // raw agent into a defined part of the bigger picture.
 
@@ -15,18 +15,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
-import { removeAgentFromSet, saveMemberMeta } from "@/features/agents/redux/agent-sets/thunks";
+import { removeAgentFromOrchestra, saveMemberMeta } from "@/features/agents/redux/orchestras/thunks";
 import { AgentPeekButton } from "./AgentPeekButton";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { AgentIODetails } from "./AgentIODetails";
 import { accentClasses } from "./accents";
-import type { SetAccent } from "../constants";
-import type { AgentSetMember } from "../types";
+import type { OrchestraAccent } from "../constants";
+import type { OrchestraMember } from "../types";
 
 export interface MemberInspectorProps {
   orchestratorId: string;
-  member: AgentSetMember;
-  accent: SetAccent;
+  member: OrchestraMember;
+  accent: OrchestraAccent;
   onClose: () => void;
 }
 
@@ -110,7 +110,7 @@ export function MemberInspector({ orchestratorId, member, accent, onClose }: Mem
           <textarea
             value={gap}
             onChange={(e) => setGap(e.target.value)}
-            placeholder={agent?.description || "What does this agent contribute to the set?"}
+            placeholder={agent?.description || "What does this agent contribute to the Orchestra?"}
             rows={5}
             className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           />
@@ -139,7 +139,7 @@ export function MemberInspector({ orchestratorId, member, accent, onClose }: Mem
           size="sm"
           className="gap-1.5 text-destructive hover:bg-destructive/10 hover:text-destructive"
           onClick={() => {
-            dispatch(removeAgentFromSet({ orchestratorId, agentId: member.agentId }));
+            dispatch(removeAgentFromOrchestra({ orchestratorId, agentId: member.agentId }));
             onClose();
           }}
         >

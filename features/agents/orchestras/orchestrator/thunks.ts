@@ -1,15 +1,15 @@
-// features/agents/agent-sets/orchestrator/thunks.ts
+// features/agents/orchestras/orchestrator/thunks.ts
 //
 // The "Sync agent listings" flow. ONE click, ONE headless AI pass:
-// `syncOrchestratorPrompt` runs the builtin Agent Set Role Describer over the
-// WHOLE set — it reads each member's current config AND its current set role
+// `syncOrchestratorPrompt` runs the builtin Orchestra Role Describer over the
+// WHOLE Orchestra — it reads each member's current config AND its current role
 // (Role title + gap), then returns a correct Role title + gap for EVERY member
 // (filling blanks, fixing wrong ones, confirming good ones). Those are written to
 // the member EDGES, and the orchestrator's <available_agents> block is then built
 // deterministically from the corrected role/gap + each member's declared I/O.
 //
 // LIVE POSTURE (2026-08-11). The describe pass is the long part — one model call
-// that reads EVERY member of the set — and it used to run headless behind the
+// that reads EVERY member of the Orchestra — and it used to run headless behind the
 // Sync button's spinner. It now runs `displayMode: "direct"` and streams into
 // the floating `LiveRunWindow` (THE FLOATING LAW,
 // features/window-panels/FEATURE.md). The window is floating, not inline: the
@@ -24,9 +24,9 @@ import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-syst
 import { openLiveRunWindowAction } from "@/features/overlays/openers/liveRunWindow";
 import { selectRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
-import { saveMemberMeta, loadAgentSet } from "@/features/agents/redux/agent-sets/thunks";
+import { saveMemberMeta, loadOrchestra } from "@/features/agents/redux/orchestras/thunks";
 import { isScopesRpcErr } from "@/features/scopes/types";
-import type { AgentSetMember } from "../types";
+import type { OrchestraMember } from "../types";
 import {
   orchestratorService,
   parseRoleDescriberOutput,
@@ -53,7 +53,7 @@ type AppThunk<R = void> = ThunkAction<R, RootState, unknown, UnknownAction>;
  */
 let lastLiveSyncConversationId: string | null = null;
 
-/** One member's config + its current set role, fed to the describer. */
+/** One member's config + its current Orchestra role, fed to the describer. */
 interface MemberDumpEntry {
   id: string;
   agent_name: string | null;
@@ -94,7 +94,7 @@ export function enableOrchestratorSync(args: {
  *
  * 1. Read the current members (with their authored Role title/gap) + each member
  *    agent's config.
- * 2. Run the Agent Set Role Describer ONCE over all of them — it returns a correct
+ * 2. Run the Orchestra Role Describer ONCE over all of them — it returns a correct
  *    {id, role_title, gap} for every member (fills blanks, fixes wrong ones,
  *    confirms good ones).
  * 3. Write each member's Role title + gap back to its edge (only when changed).
@@ -119,8 +119,8 @@ export function syncOrchestratorPrompt(args: {
 
     // The members with their CURRENT authored role/gap + position (Redux is the
     // source of truth the inspector/canvas also read).
-    const members: AgentSetMember[] =
-      getState().agentSets.byId[args.orchestratorId]?.members ?? [];
+    const members: OrchestraMember[] =
+      getState().orchestras.byId[args.orchestratorId]?.members ?? [];
     if (members.length === 0) {
       return { ok: false, error: "Add members before syncing the prompt." };
     }
@@ -151,7 +151,7 @@ export function syncOrchestratorPrompt(args: {
       };
     });
 
-    // ── Describe: one headless pass over the whole set, with bounded retry ───
+    // ── Describe: one headless pass over the whole Orchestra, with bounded retry ───
     // A headless agent run can transiently return nothing (cold start, a flaky
     // turn, a rate-limited provider). The describe is idempotent and cheap, so
     // retry a couple of times before giving up rather than silently doing the
@@ -163,9 +163,9 @@ export function syncOrchestratorPrompt(args: {
     // the Sync button. It now runs `direct` and streams into the canonical
     // floating `LiveRunWindow` — the user watches the describer work through
     // their agents instead of watching a spinner, and the builder underneath
-    // never shifts. One window per set (`instanceId`), so a re-sync (and each
+    // never shifts. One window per Orchestra (`instanceId`), so a re-sync (and each
     // retry attempt) re-binds the SAME window instead of stacking a new one.
-    const windowInstanceId = `agent-set-sync:${args.orchestratorId}`;
+    const windowInstanceId = `orchestra-sync:${args.orchestratorId}`;
     const runLabel = "Reading your agents";
     dispatch(
       openLiveRunWindowAction({
@@ -300,13 +300,13 @@ export function syncOrchestratorPrompt(args: {
     }
 
     // ── Build <available_agents> from EXACTLY the persisted member edges ─────
-    // Reload the set from the server first, then format ONLY the persisted role/
+    // Reload the Orchestra from the server first, then format ONLY the persisted role/
     // gap (never the agent's name/description). This makes the prompt identical
     // to what the member inspector shows by construction — the XML cannot carry
     // data the UI doesn't, and vice versa.
-    await dispatch(loadAgentSet(args.orchestratorId, { force: true }));
-    const savedMembers: AgentSetMember[] =
-      getState().agentSets.byId[args.orchestratorId]?.members ?? members;
+    await dispatch(loadOrchestra(args.orchestratorId, { force: true }));
+    const savedMembers: OrchestraMember[] =
+      getState().orchestras.byId[args.orchestratorId]?.members ?? members;
     const entries: AvailableAgentEntry[] = savedMembers
       .slice()
       .sort((a, b) => a.position - b.position)

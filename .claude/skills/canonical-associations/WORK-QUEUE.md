@@ -90,7 +90,7 @@ Backlog from the 2026-07-19 two-agent scout sweep, ranked:
 | 2 | ☐ | `tool.bundle_member` (row 1 above, BLOCKED) | `{local_alias, sort_order}` | The payload system is the UNBLOCK — typed payload makes the runtime-resolution attrs safe to carry on edges. Still coordinated FE+DB+Python. |
 | 2 | ☐ | Attached-document chat edges (`features/agents/components/inputs/resources/attached-documents.ts`) | `{representation, file_id, resource_policy}` | `resource_policy` is consumed by Python at call time — bad shape silently changes LLM context. |
 | 2 | ☐ | Research source→tag edges (`features/research/service.ts:53-70`) | `{is_primary_source, confidence, assigned_by}` | Regression: typed columns became untyped metadata during the rs_source_tag migration; writes currently drop 2 of 3 attrs. |
-| 3 | ☐ | Agent-set config + member edges (`features/agents/agent-sets/service/agentSetsService.ts`) | `AgentSetConfig` / `{gap, pos}` | `as Json` casts hide drift; malformed pos breaks builder canvas. |
+| 3 | ☐ | Orchestra config + member edges (`features/agents/orchestras/service/orchestrasService.ts`) | `OrchestraConfig` / `{gap, pos}` | `as Json` casts hide drift; malformed pos breaks builder canvas. |
 | 3 | ☐ | Working-document↔conversation edges (`cx-working-document.service.ts:377-401`) | `{enabled, doc_kind}` | Comment at :382 admits the replace-on-conflict hazard. |
 | 3 | ☐ | Shared `lineage` kind: flashcard + education provenance edges (`fcService.ts:296`, `recordSourceLineage.ts:63`) | `{processed_document_id\|targetKind, chunk_id, page\|href, detail}` | One kind, two writers; `as never` cast is the confession. |
 | 3 | ☐ | Education class-assignment edges (`edu_class_assign` RPC) | `{due_at}` | Server-written — proves the trigger guards RPC writes too. |

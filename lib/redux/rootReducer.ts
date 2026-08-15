@@ -86,7 +86,7 @@ import { conversationHistoryReducer } from "@/features/agents/redux/conversation
 import agentShortcutReducer from "@/features/agents/redux/agent-shortcuts/slice";
 import agentShortcutCategoryReducer from "@/features/agents/redux/agent-shortcut-categories/slice";
 import agentUsagesReducer from "@/features/agents/redux/usages/usages.slice";
-import agentSetsReducer from "@/features/agents/redux/agent-sets/slice";
+import orchestrasReducer from "@/features/agents/redux/orchestras/slice";
 import { sklReducer } from "@/features/agent-connections/redux/skl/slice";
 import { skillsReducer } from "@/features/skills/redux/skillsSlice";
 import { dictionaryReducer } from "@/features/dictionary/redux/dictionarySlice";
@@ -265,9 +265,9 @@ export const slimReducerMap = {
   agentShortcut: agentShortcutReducer,
   agentShortcutCategory: agentShortcutCategoryReducer,
   agentUsages: agentUsagesReducer,
-  // Agent Sets (Orchestrators) — set list + per-set member/config cache.
-  // Membership truth lives in platform.associations; see features/agents/agent-sets.
-  agentSets: agentSetsReducer,
+  // Orchestras — Orchestra list + per-Orchestra member/config cache.
+  // Membership truth lives in platform.associations; see features/agents/orchestras.
+  orchestras: orchestrasReducer,
   skl: sklReducer,
   // New skills slice — canonical source going forward. Backed by /api/skills
   // (the Python backend), not Supabase. The old `skl` key is retained for

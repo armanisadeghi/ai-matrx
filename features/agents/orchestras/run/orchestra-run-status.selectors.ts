@@ -1,4 +1,4 @@
-// features/agents/agent-sets/run/set-run-status.selectors.ts
+// features/agents/orchestras/run/orchestra-run-status.selectors.ts
 //
 // Selectors deriving live member-run status for an orchestrator-set run from
 // the activeRequests slice. When an orchestrator runs, each member executes as
@@ -6,7 +6,7 @@
 // `metadata: { label: "custom_tool_N", conversation_id: <child uuid> }` and the
 // paired `completion` carries success/failed. The member's real agent_id is NOT
 // on the wire — it is resolved from the child conversation row (see
-// useSetMemberRunStatus).
+// useOrchestraMemberRunStatus).
 //
 // Follows the selector rules in active-requests.selectors.ts: factories are
 // memoized with createSelector, callers memoize the instance, stable empty refs.

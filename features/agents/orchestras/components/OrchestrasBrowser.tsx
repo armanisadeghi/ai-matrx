@@ -1,7 +1,7 @@
-// features/agents/agent-sets/components/AgentSetsBrowser.tsx
+// features/agents/orchestras/components/OrchestrasBrowser.tsx
 //
-// The /agents/sets list view — every orchestrated set the user can see. This is
-// the "list, not a trapped detail" entry page: browse → open a set → build it.
+// The /agents/orchestras list view — every orchestrated set the user can see. This is
+// the "list, not a trapped detail" entry page: browse → open an Orchestra → build it.
 
 "use client";
 
@@ -16,14 +16,14 @@ import PageHeader from "@/features/shell/components/header/PageHeader";
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 import HeaderActions from "@/features/shell/components/header/variants/shared/HeaderActions";
 import type { HeaderAction } from "@/features/shell/components/header/variants/types";
-import { useAgentSetsList } from "../hooks/useAgentSetsList";
-import { AgentSetCard } from "./AgentSetCard";
-import { CreateSetDialog } from "./CreateSetDialog";
+import { useOrchestrasList } from "../hooks/useOrchestrasList";
+import { OrchestraCard } from "./OrchestraCard";
+import { CreateOrchestraDialog } from "./CreateOrchestraDialog";
 import { GenerateOrchestratorDialog } from "./GenerateOrchestratorDialog";
 
-export function AgentSetsBrowser() {
+export function OrchestrasBrowser() {
   const router = useRouter();
-  const { sets, status } = useAgentSetsList();
+  const { sets, status } = useOrchestrasList();
   const [search, setSearch] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [generateOpen, setGenerateOpen] = useState(false);
@@ -63,10 +63,10 @@ export function AgentSetsBrowser() {
           />
           <Network className="ml-1 h-4 w-4 shrink-0 text-muted-foreground" />
           <span className="ml-2 truncate text-sm font-semibold text-foreground">
-            Agent Sets
+            Orchestras
           </span>
           <div className="ml-auto flex items-center">
-            <HeaderActions actions={headerActions} sheetTitle="Agent sets" />
+            <HeaderActions actions={headerActions} sheetTitle="Orchestras" />
           </div>
         </div>
       </PageHeader>
@@ -101,7 +101,7 @@ export function AgentSetsBrowser() {
               <Network className="h-7 w-7" />
             </div>
             <h2 className="text-base font-semibold text-foreground">
-              Build your first agent set
+              Build your first Orchestra
             </h2>
             <p className="mt-1.5 text-sm text-muted-foreground">
               Don&apos;t have an orchestrator yet? Pick the specialists you want and
@@ -124,7 +124,7 @@ export function AgentSetsBrowser() {
         {!loading && !empty && (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filtered.map((s) => (
-              <AgentSetCard key={s.orchestratorId} summary={s} />
+              <OrchestraCard key={s.orchestratorId} summary={s} />
             ))}
             {filtered.length === 0 && (
               <div className={cn("col-span-full py-16 text-center text-sm text-muted-foreground")}>
@@ -136,7 +136,7 @@ export function AgentSetsBrowser() {
         </div>
       </div>
 
-      <CreateSetDialog
+      <CreateOrchestraDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
         onGenerateInstead={() => {

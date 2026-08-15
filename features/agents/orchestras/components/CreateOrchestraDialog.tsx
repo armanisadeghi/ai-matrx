@@ -1,6 +1,6 @@
-// features/agents/agent-sets/components/CreateSetDialog.tsx
+// features/agents/orchestras/components/CreateOrchestraDialog.tsx
 //
-// Create a set from an EXISTING agent as its orchestrator. The picker reuses the
+// Create an Orchestra from an EXISTING agent as its orchestrator. The picker reuses the
 // CANONICAL agent filter (the same `useAgentConsumer` + filtered selectors +
 // <DesktopFilterPanel> as /agents/all and the builder rail) — Mine/Shared/All tabs,
 // category/tag filters, sort, search, and per-row peek — never an alphabetical dump.
@@ -35,13 +35,13 @@ import {
 } from "@/features/agents/redux/agent-consumers/selectors";
 import { DesktopFilterPanel } from "@/features/agents/components/shared/DesktopFilterPanel";
 import {
-  createAgentSet,
-  addAgentToSet,
-} from "@/features/agents/redux/agent-sets/thunks";
+  createOrchestra,
+  addAgentToOrchestra,
+} from "@/features/agents/redux/orchestras/thunks";
 import { useEnsureAgentsLoaded } from "../hooks/useEnsureAgentsLoaded";
 import { AgentPeekButton } from "./AgentPeekButton";
 import { accentClasses } from "./accents";
-import { DEFAULT_SET_ACCENT, SET_ACCENTS, type SetAccent } from "../constants";
+import { DEFAULT_ORCHESTRA_ACCENT, ORCHESTRA_ACCENTS, type OrchestraAccent } from "../constants";
 
 const PICKER_CONSUMER = "agent-sets-orchestrator-picker";
 
@@ -57,21 +57,21 @@ function applyArrayViaToggle(
   next.forEach((v) => !cur.has(v) && toggle(v));
 }
 
-export interface CreateSetDialogProps {
+export interface CreateOrchestraDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** When set, this agent is added as the set's first member after creation. */
+  /** When set, this agent is added as the Orchestra's first member after creation. */
   seedMemberId?: string;
   /** Switch to the "generate a new orchestrator" flow (for users without one). */
   onGenerateInstead?: () => void;
 }
 
-export function CreateSetDialog({
+export function CreateOrchestraDialog({
   open,
   onOpenChange,
   seedMemberId,
   onGenerateInstead,
-}: CreateSetDialogProps) {
+}: CreateOrchestraDialogProps) {
   const dispatch = useAppDispatch();
   const router = useRouter();
   // Only fetch when the dialog is open — closed instances must be free.
@@ -95,7 +95,7 @@ export function CreateSetDialog({
   const [orchestratorId, setOrchestratorId] = useState<string | null>(null);
   const [label, setLabel] = useState("");
   const [tagline, setTagline] = useState("");
-  const [accent, setAccent] = useState<SetAccent>(DEFAULT_SET_ACCENT);
+  const [accent, setAccent] = useState<OrchestraAccent>(DEFAULT_ORCHESTRA_ACCENT);
   const [busy, setBusy] = useState(false);
 
   const candidates = useMemo(() => {
@@ -124,7 +124,7 @@ export function CreateSetDialog({
       setOrchestratorId(null);
       setLabel("");
       setTagline("");
-      setAccent(DEFAULT_SET_ACCENT);
+      setAccent(DEFAULT_ORCHESTRA_ACCENT);
     }
     onOpenChange(next);
   };
@@ -133,7 +133,7 @@ export function CreateSetDialog({
     if (!orchestratorId) return;
     setBusy(true);
     const res = await dispatch(
-      createAgentSet({
+      createOrchestra({
         orchestratorId,
         label: label.trim() || undefined,
         config: { accent, tagline: tagline.trim() || undefined },
@@ -141,14 +141,14 @@ export function CreateSetDialog({
     );
     if (!res.ok) {
       setBusy(false);
-      toast.error(res.error ?? "Could not create the set.");
+      toast.error(res.error ?? "Could not create the Orchestra.");
       return;
     }
     if (seedMemberId)
-      await dispatch(addAgentToSet({ orchestratorId, agentId: seedMemberId }));
-    toast.success("Set created.");
+      await dispatch(addAgentToOrchestra({ orchestratorId, agentId: seedMemberId }));
+    toast.success("Orchestra created.");
     handleOpenChange(false);
-    router.push(`/agents/sets/${orchestratorId}`);
+    router.push(`/agents/orchestras/${orchestratorId}`);
   };
 
   return (
@@ -157,10 +157,10 @@ export function CreateSetDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Network className="h-4 w-4 text-primary" />
-            New agent set
+            New Orchestra
           </DialogTitle>
           <DialogDescription>
-            Pick the agent that presides over this set as its orchestrator, then
+            Pick the agent that presides over this Orchestra as its orchestrator, then
             add members on the builder canvas.
             {onGenerateInstead && (
               <>
@@ -283,7 +283,7 @@ export function CreateSetDialog({
           <div className="grid grid-cols-1 gap-3">
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">
-                Set name{" "}
+                Orchestra name{" "}
                 <span className="text-muted-foreground/60">(optional)</span>
               </label>
               <Input
@@ -292,7 +292,7 @@ export function CreateSetDialog({
                 placeholder={
                   selected?.name
                     ? `Defaults to "${selected.name}"`
-                    : "Name this set…"
+                    : "Name this Orchestra…"
                 }
               />
             </div>
@@ -304,7 +304,7 @@ export function CreateSetDialog({
               <Input
                 value={tagline}
                 onChange={(e) => setTagline(e.target.value)}
-                placeholder="What does this set accomplish together?"
+                placeholder="What does this Orchestra accomplish together?"
               />
             </div>
             <div className="space-y-1.5">
@@ -312,7 +312,7 @@ export function CreateSetDialog({
                 Accent
               </label>
               <div className="flex flex-wrap gap-1.5">
-                {SET_ACCENTS.map((acc) => {
+                {ORCHESTRA_ACCENTS.map((acc) => {
                   const ac = accentClasses(acc);
                   return (
                     <button
@@ -345,7 +345,7 @@ export function CreateSetDialog({
           </Button>
           <Button onClick={handleCreate} disabled={!orchestratorId || busy}>
             {busy ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
-            Create set
+            Create Orchestra
           </Button>
         </DialogFooter>
       </DialogContent>

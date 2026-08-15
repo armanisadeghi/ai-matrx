@@ -1,4 +1,4 @@
-// features/agents/agent-sets/components/OrchestratorInspector.tsx
+// features/agents/orchestras/components/OrchestratorInspector.tsx
 //
 // Right-side inspector for the ORCHESTRATOR itself — the mirror of
 // MemberInspector for the hub node. Shows the same "core items" a member gets
@@ -21,11 +21,11 @@ import { AgentPeekButton } from "./AgentPeekButton";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { AgentIODetails } from "./AgentIODetails";
 import { accentClasses } from "./accents";
-import type { SetAccent } from "../constants";
+import type { OrchestraAccent } from "../constants";
 
 export interface OrchestratorInspectorProps {
   orchestratorId: string;
-  accent: SetAccent;
+  accent: OrchestraAccent;
   onClose: () => void;
 }
 

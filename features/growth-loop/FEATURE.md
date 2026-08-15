@@ -123,7 +123,7 @@ Neither ever restates a stage.
   the Impl**, which sits behind exactly one dynamic front door — per the `code-splitting` skill,
   rule 3. The surface is registered in `eslint.config.mjs`'s `reactFlowStaticImportBan` comment
   block; the two import lines carry justified disables. Never add a second boundary here.
-- **Reuse-first:** the map reuses the repo's React Flow conventions (`SetBuilderCanvasImpl` as the
+- **Reuse-first:** the map reuses the repo's React Flow conventions (`OrchestraBuilderCanvasImpl` as the
   exemplar), semantic color tokens, and the admin route/nav registration pattern. It introduces no
   new graph library, no new state store, and no new suggestion or status system.
 - **No dead ends:** every pipe entry renders its `ref` path so a reader can go straight to the

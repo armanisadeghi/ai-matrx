@@ -1,46 +1,46 @@
-// features/agents/agent-sets/redux/slice.ts
+// features/agents/orchestras/redux/slice.ts
 //
-// Redux state for Agent Sets (Orchestrators). Holds the enumerated set list and
+// Redux state for Orchestras (Orchestrators). Holds the enumerated set list and
 // a per-set cache of ordered members + config. Membership/config truth lives in
 // platform.associations; this slice is the read-model the builder renders and
-// mutates optimistically (thunks reconcile on error). Mounted as `agentSets`.
+// mutates optimistically (thunks reconcile on error). Mounted as `orchestras`.
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type {
-  AgentSetConfig,
-  AgentSetDetail,
-  AgentSetMember,
-  AgentSetMemberMeta,
-  AgentSetSummary,
-} from "@/features/agents/agent-sets/types";
+  OrchestraConfig,
+  OrchestraDetail,
+  OrchestraMember,
+  OrchestraMemberMeta,
+  OrchestraSummary,
+} from "@/features/agents/orchestras/types";
 
 export type LoadStatus = "idle" | "loading" | "ready" | "error";
 
-export interface AgentSetDetailEntry {
-  members: AgentSetMember[];
-  config: AgentSetConfig;
+export interface OrchestraDetailEntry {
+  members: OrchestraMember[];
+  config: OrchestraConfig;
   label: string | null;
-  /** Whether the `matrx_set` marker exists (false = "not a set yet"). */
+  /** Whether the `matrx_set` marker exists (false = "not an Orchestra yet"). */
   exists: boolean;
   status: LoadStatus;
   error: string | null;
 }
 
-export interface AgentSetsState {
-  list: AgentSetSummary[];
+export interface OrchestrasState {
+  list: OrchestraSummary[];
   listStatus: LoadStatus;
   listError: string | null;
-  byId: Record<string, AgentSetDetailEntry>;
+  byId: Record<string, OrchestraDetailEntry>;
 }
 
-const initialState: AgentSetsState = {
+const initialState: OrchestrasState = {
   list: [],
   listStatus: "idle",
   listError: null,
   byId: {},
 };
 
-function ensureEntry(state: AgentSetsState, orchId: string): AgentSetDetailEntry {
+function ensureEntry(state: OrchestrasState, orchId: string): OrchestraDetailEntry {
   let entry = state.byId[orchId];
   if (!entry) {
     entry = { members: [], config: {}, label: null, exists: false, status: "idle", error: null };
@@ -50,14 +50,14 @@ function ensureEntry(state: AgentSetsState, orchId: string): AgentSetDetailEntry
 }
 
 /** Keep a list summary's memberCount in sync with the live member array. */
-function syncCount(state: AgentSetsState, orchId: string) {
+function syncCount(state: OrchestrasState, orchId: string) {
   const entry = state.byId[orchId];
   const summary = state.list.find((s) => s.orchestratorId === orchId);
   if (entry && summary) summary.memberCount = entry.members.length;
 }
 
 const slice = createSlice({
-  name: "agentSets",
+  name: "orchestras",
   initialState,
   reducers: {
     // ─── list ──────────────────────────────────────────────────────────
@@ -65,7 +65,7 @@ const slice = createSlice({
       state.listStatus = "loading";
       state.listError = null;
     },
-    listFulfilled(state, action: PayloadAction<AgentSetSummary[]>) {
+    listFulfilled(state, action: PayloadAction<OrchestraSummary[]>) {
       state.list = action.payload;
       state.listStatus = "ready";
       state.listError = null;
@@ -74,7 +74,7 @@ const slice = createSlice({
       state.listStatus = "error";
       state.listError = action.payload;
     },
-    upsertSummary(state, action: PayloadAction<AgentSetSummary>) {
+    upsertSummary(state, action: PayloadAction<OrchestraSummary>) {
       const next = action.payload;
       const i = state.list.findIndex((s) => s.orchestratorId === next.orchestratorId);
       if (i === -1) state.list.unshift(next);
@@ -91,7 +91,7 @@ const slice = createSlice({
       entry.status = "loading";
       entry.error = null;
     },
-    detailFulfilled(state, action: PayloadAction<AgentSetDetail>) {
+    detailFulfilled(state, action: PayloadAction<OrchestraDetail>) {
       const { orchestratorId, members, config, label, exists } = action.payload;
       state.byId[orchestratorId] = {
         members,
@@ -110,7 +110,7 @@ const slice = createSlice({
     },
 
     // ─── optimistic member ops ─────────────────────────────────────────
-    memberAdded(state, action: PayloadAction<{ orchestratorId: string; member: AgentSetMember }>) {
+    memberAdded(state, action: PayloadAction<{ orchestratorId: string; member: OrchestraMember }>) {
       const entry = ensureEntry(state, action.payload.orchestratorId);
       if (entry.members.some((m) => m.agentId === action.payload.member.agentId)) return;
       entry.members.push(action.payload.member);
@@ -133,13 +133,13 @@ const slice = createSlice({
       const byAgent = new Map(entry.members.map((m) => [m.agentId, m]));
       const next = action.payload.orderedAgentIds
         .map((id) => byAgent.get(id))
-        .filter((m): m is AgentSetMember => Boolean(m));
+        .filter((m): m is OrchestraMember => Boolean(m));
       next.forEach((m, i) => (m.position = i));
       entry.members = next;
     },
     memberMetaSet(
       state,
-      action: PayloadAction<{ orchestratorId: string; agentId: string; meta: AgentSetMemberMeta }>,
+      action: PayloadAction<{ orchestratorId: string; agentId: string; meta: OrchestraMemberMeta }>,
     ) {
       const entry = state.byId[action.payload.orchestratorId];
       if (!entry) return;
@@ -152,7 +152,7 @@ const slice = createSlice({
     },
     configSet(
       state,
-      action: PayloadAction<{ orchestratorId: string; config: AgentSetConfig; label?: string | null }>,
+      action: PayloadAction<{ orchestratorId: string; config: OrchestraConfig; label?: string | null }>,
     ) {
       const entry = ensureEntry(state, action.payload.orchestratorId);
       entry.config = action.payload.config;
@@ -168,5 +168,5 @@ const slice = createSlice({
   },
 });
 
-export const agentSetsActions = slice.actions;
+export const orchestrasActions = slice.actions;
 export default slice.reducer;

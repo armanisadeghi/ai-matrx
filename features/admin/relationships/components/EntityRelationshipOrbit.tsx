@@ -10,7 +10,7 @@
 //
 // Deliberately framework-light (three columns, no canvas) so it can be
 // dropped into both the [token] route page and a WindowPanel unchanged.
-// A future React Flow graph (agents/sets-style thin shell + `dynamic({ ssr:
+// A future React Flow graph (agents/orchestras-style thin shell + `dynamic({ ssr:
 // false })` Impl) can consume the same OrbitGraph shape without touching this
 // component's callers.
 

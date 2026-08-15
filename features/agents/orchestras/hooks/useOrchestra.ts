@@ -1,23 +1,23 @@
-// features/agents/agent-sets/hooks/useAgentSet.ts
+// features/agents/orchestras/hooks/useOrchestra.ts
 "use client";
 
 import { useEffect, useMemo } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { loadAgentSet } from "@/features/agents/redux/agent-sets/thunks";
-import { makeSelectAgentSetEntry } from "@/features/agents/redux/agent-sets/selectors";
+import { loadOrchestra } from "@/features/agents/redux/orchestras/thunks";
+import { makeSelectOrchestraEntry } from "@/features/agents/redux/orchestras/selectors";
 
-/** Loads + selects one set's members + config. Auto-loads on mount. */
-export function useAgentSet(orchestratorId: string, opts?: { auto?: boolean }) {
+/** Loads + selects one Orchestra's members + config. Auto-loads on mount. */
+export function useOrchestra(orchestratorId: string, opts?: { auto?: boolean }) {
   const dispatch = useAppDispatch();
   const selectEntry = useMemo(
-    () => makeSelectAgentSetEntry(orchestratorId),
+    () => makeSelectOrchestraEntry(orchestratorId),
     [orchestratorId],
   );
   const entry = useAppSelector(selectEntry);
 
   useEffect(() => {
     if (opts?.auto !== false && orchestratorId) {
-      dispatch(loadAgentSet(orchestratorId));
+      dispatch(loadOrchestra(orchestratorId));
     }
   }, [dispatch, orchestratorId, opts?.auto]);
 
@@ -28,6 +28,6 @@ export function useAgentSet(orchestratorId: string, opts?: { auto?: boolean }) {
     exists: entry.exists,
     status: entry.status,
     error: entry.error,
-    reload: () => dispatch(loadAgentSet(orchestratorId, { force: true })),
+    reload: () => dispatch(loadOrchestra(orchestratorId, { force: true })),
   };
 }

@@ -1,15 +1,15 @@
-// features/agents/agent-sets/components/accents.ts
+// features/agents/orchestras/components/accents.ts
 //
-// Resolves a set's `accent` key into Tailwind class fragments for its identity
+// Resolves an Orchestra's `accent` key into Tailwind class fragments for its identity
 // surfaces (orchestrator glyph, card header gradient, member ring, chips). These
 // are decorative IDENTITY colors (intentionally vivid — sets are meant to feel
 // distinct), kept dark-mode-aware. Semantic surface tokens (bg-card etc.) still
 // own structure; accents only tint identity.
 
-import { DEFAULT_SET_ACCENT, type SetAccent } from "../constants";
+import { DEFAULT_ORCHESTRA_ACCENT, type OrchestraAccent } from "../constants";
 
 export interface AccentClasses {
-  /** Filled glyph square (orchestrator node + set card icon). */
+  /** Filled glyph square (orchestrator node + Orchestra card icon). */
   glyph: string;
   /** Soft tinted surface (member node header, chips). */
   soft: string;
@@ -21,11 +21,11 @@ export interface AccentClasses {
   stroke: string;
   /** Small solid dot (legend / avatars). */
   dot: string;
-  /** Header gradient for the set card. */
+  /** Header gradient for the Orchestra card. */
   gradient: string;
 }
 
-const MAP: Record<SetAccent, AccentClasses> = {
+const MAP: Record<OrchestraAccent, AccentClasses> = {
   violet: {
     glyph: "bg-violet-500 text-white",
     soft: "bg-violet-500/10 dark:bg-violet-400/10",
@@ -100,6 +100,6 @@ const MAP: Record<SetAccent, AccentClasses> = {
   },
 };
 
-export function accentClasses(accent: SetAccent | undefined | null): AccentClasses {
-  return MAP[(accent as SetAccent) ?? DEFAULT_SET_ACCENT] ?? MAP[DEFAULT_SET_ACCENT];
+export function accentClasses(accent: OrchestraAccent | undefined | null): AccentClasses {
+  return MAP[(accent as OrchestraAccent) ?? DEFAULT_ORCHESTRA_ACCENT] ?? MAP[DEFAULT_ORCHESTRA_ACCENT];
 }

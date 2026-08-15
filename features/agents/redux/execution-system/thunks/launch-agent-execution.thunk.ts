@@ -136,7 +136,7 @@ async function pollForCompletion(
       // `thinking`/`reasoning` blocks. A raw join over renderBlockOrder would
       // leak the model's chain-of-thought into `responseText`, which headless
       // consumers persist verbatim (e.g. the orchestrator's system prompt in
-      // agent sets). Never hand-roll a parallel block filter here.
+      // an Orchestra). Never hand-roll a parallel block filter here.
       return deriveAnswerText(request);
     }
     await new Promise((r) => setTimeout(r, intervalMs));

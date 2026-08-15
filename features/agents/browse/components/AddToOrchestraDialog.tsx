@@ -1,10 +1,10 @@
 "use client";
 
-// features/agents/browse/components/AddToSetDialog.tsx
+// features/agents/browse/components/AddToOrchestraDialog.tsx
 //
-// Dialog form of "add this agent to a set". The existing AddToSetMenu renders
+// Dialog form of "add this agent to a set". The existing AddToOrchestraMenu renders
 // its OWN dropdown trigger, so it cannot be reached from a menu entry — but its
-// logic can: this reuses the same `useAgentSetsList` hook and `addAgentToSet`
+// logic can: this reuses the same `useOrchestrasList` hook and `addAgentToOrchestra`
 // thunk, and only supplies a different shell. No duplicated business logic.
 
 import { useState } from "react";
@@ -19,8 +19,8 @@ import {
 } from "@/components/ui/dialog";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
-import { addAgentToSet } from "@/features/agents/redux/agent-sets/thunks";
-import { useAgentSetsList } from "@/features/agents/agent-sets/hooks/useAgentSetsList";
+import { addAgentToOrchestra } from "@/features/agents/redux/orchestras/thunks";
+import { useOrchestrasList } from "@/features/agents/orchestras/hooks/useOrchestrasList";
 
 interface Props {
   agentId: string;
@@ -29,14 +29,14 @@ interface Props {
   onClose: () => void;
 }
 
-export function AddToSetDialog({ agentId, agentName, open, onClose }: Props) {
+export function AddToOrchestraDialog({ agentId, agentName, open, onClose }: Props) {
   const dispatch = useAppDispatch();
-  const { sets, status } = useAgentSetsList();
+  const { sets, status } = useOrchestrasList();
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const add = async (orchestratorId: string, name: string) => {
     setBusyId(orchestratorId);
-    const res = await dispatch(addAgentToSet({ orchestratorId, agentId }));
+    const res = await dispatch(addAgentToOrchestra({ orchestratorId, agentId }));
     setBusyId(null);
     if (res.ok) {
       toast.success(`Added to "${name}"`);
@@ -50,7 +50,7 @@ export function AddToSetDialog({ agentId, agentName, open, onClose }: Props) {
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Add to set</DialogTitle>
+          <DialogTitle>Add to Orchestra</DialogTitle>
           <DialogDescription className="truncate">{agentName}</DialogDescription>
         </DialogHeader>
 

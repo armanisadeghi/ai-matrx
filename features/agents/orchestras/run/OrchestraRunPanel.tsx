@@ -1,11 +1,11 @@
-// features/agents/agent-sets/run/SetRunPanel.tsx
+// features/agents/orchestras/run/OrchestraRunPanel.tsx
 //
-// The embedded run experience for the set builder — a right-side panel
+// The embedded run experience for the Orchestra builder — a right-side panel
 // co-mounted with the canvas so the REAL canvas lights up live as each member
 // executes (the whole point of the live-highlight feature). Embeds the
 // canonical AgentRunnerPage under a builder-scoped surfaceKey; the run's
 // conversation is observed via the conversation-focus registry with the same
-// key (see SetBuilder), never by forking AgentRunnerPage.
+// key (see OrchestraBuilder), never by forking AgentRunnerPage.
 
 "use client";
 
@@ -15,7 +15,7 @@ import { ExternalLink, Loader2, Play, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { accentClasses } from "../components/accents";
-import type { SetAccent } from "../constants";
+import type { OrchestraAccent } from "../constants";
 
 // The full conversation runtime is heavy — keep it out of the builder chunk
 // until the panel actually opens.
@@ -34,24 +34,24 @@ const AgentRunnerPage = dynamic(
   },
 );
 
-export interface SetRunPanelProps {
+export interface OrchestraRunPanelProps {
   orchestratorId: string;
-  /** The builder's run surface key — MUST match what SetBuilder observes. */
+  /** The builder's run surface key — MUST match what OrchestraBuilder observes. */
   surfaceKey: string;
-  accent: SetAccent;
+  accent: OrchestraAccent;
   /** The active run conversation (from the focus registry), for the
    *  open-full-runner link so it lands on the same conversation. */
   conversationId: string | null;
   onClose: () => void;
 }
 
-export function SetRunPanel({
+export function OrchestraRunPanel({
   orchestratorId,
   surfaceKey,
   accent,
   conversationId,
   onClose,
-}: SetRunPanelProps) {
+}: OrchestraRunPanelProps) {
   const a = accentClasses(accent);
   const fullRunnerHref = conversationId
     ? `/agents/${orchestratorId}/run?conversationId=${conversationId}`
@@ -89,7 +89,7 @@ export function SetRunPanel({
           agentId={orchestratorId}
           surfaceKey={surfaceKey}
           sourceFeature="agent-runner"
-          backHref="/agents/sets"
+          backHref="/agents/orchestras"
           basePath="/agents"
           retainOnUnmount
         />

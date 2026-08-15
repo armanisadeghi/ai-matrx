@@ -1,8 +1,8 @@
-// features/agents/agent-sets/hooks/useOrchestratorPromptStatus.ts
+// features/agents/orchestras/hooks/useOrchestratorPromptStatus.ts
 //
 // Detects whether an orchestrator is TEMPLATE-BASED (its system prompt has the
 // `<available_agents>` section our automated system fills) and whether that section
-// is OUT OF SYNC with the set's current members (so the builder can surface a
+// is OUT OF SYNC with the Orchestra's current members (so the builder can surface a
 // "Sync agent listings" action only when it's meaningful, and flag when it's stale).
 
 "use client";
@@ -24,7 +24,7 @@ export interface OrchestratorPromptStatus {
   ready: boolean;
   /** The prompt has the `<available_agents>` markers → our system can auto-fill it. */
   isTemplate: boolean;
-  /** The listed agents don't match the set's current members → needs a sync. */
+  /** The listed agents don't match the Orchestra's current members → needs a sync. */
   outOfSync: boolean;
 }
 

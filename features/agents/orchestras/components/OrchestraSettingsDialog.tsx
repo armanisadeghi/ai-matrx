@@ -1,6 +1,6 @@
-// features/agents/agent-sets/components/SetSettingsDialog.tsx
+// features/agents/orchestras/components/OrchestraSettingsDialog.tsx
 //
-// Edit a set's identity (name, tagline, accent) and delete it. Writes through the
+// Edit an Orchestra's identity (name, tagline, accent) and delete it. Writes through the
 // same association-backed thunks the rest of the feature uses. The editable form
 // is a child mounted only while open, so its useState seeds from props on each
 // open — no setState-in-effect re-seed.
@@ -22,17 +22,17 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { deleteAgentSet, saveSetConfig } from "@/features/agents/redux/agent-sets/thunks";
+import { deleteOrchestra, saveOrchestraConfig } from "@/features/agents/redux/orchestras/thunks";
 import { accentClasses } from "./accents";
-import { DEFAULT_SET_ACCENT, SET_ACCENTS, type SetAccent } from "../constants";
-import type { AgentSetConfig } from "../types";
+import { DEFAULT_ORCHESTRA_ACCENT, ORCHESTRA_ACCENTS, type OrchestraAccent } from "../constants";
+import type { OrchestraConfig } from "../types";
 
-export interface SetSettingsDialogProps {
+export interface OrchestraSettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   orchestratorId: string;
   label: string | null;
-  config: AgentSetConfig;
+  config: OrchestraConfig;
   orchestratorName: string;
   onDeleted: () => void;
 }
@@ -44,17 +44,17 @@ function SettingsForm({
   config,
   orchestratorName,
   onDeleted,
-}: Omit<SetSettingsDialogProps, "open">) {
+}: Omit<OrchestraSettingsDialogProps, "open">) {
   const dispatch = useAppDispatch();
   const [name, setName] = useState(label ?? "");
   const [tagline, setTagline] = useState(config.tagline ?? "");
-  const [accent, setAccent] = useState<SetAccent>(config.accent ?? DEFAULT_SET_ACCENT);
+  const [accent, setAccent] = useState<OrchestraAccent>(config.accent ?? DEFAULT_ORCHESTRA_ACCENT);
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
     setSaving(true);
     const res = await dispatch(
-      saveSetConfig({
+      saveOrchestraConfig({
         orchestratorId,
         label: name.trim() || null,
         config: { ...config, accent, tagline: tagline.trim() || undefined },
@@ -78,7 +78,7 @@ function SettingsForm({
       variant: "destructive",
     });
     if (!ok) return;
-    const res = await dispatch(deleteAgentSet({ orchestratorId }));
+    const res = await dispatch(deleteOrchestra({ orchestratorId }));
     if (!res.ok) {
       toast.error(res.error ?? "Could not delete the set.");
       return;
@@ -104,13 +104,13 @@ function SettingsForm({
           <Input
             value={tagline}
             onChange={(e) => setTagline(e.target.value)}
-            placeholder="What does this set accomplish together?"
+            placeholder="What does this Orchestra accomplish together?"
           />
         </div>
         <div className="space-y-1.5">
           <label className="text-xs font-medium text-muted-foreground">Accent</label>
           <div className="flex flex-wrap gap-1.5">
-            {SET_ACCENTS.map((acc) => {
+            {ORCHESTRA_ACCENTS.map((acc) => {
               const ac = accentClasses(acc);
               return (
                 <button
@@ -153,7 +153,7 @@ function SettingsForm({
   );
 }
 
-export function SetSettingsDialog({ open, onOpenChange, ...rest }: SetSettingsDialogProps) {
+export function OrchestraSettingsDialog({ open, onOpenChange, ...rest }: OrchestraSettingsDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">

@@ -1,4 +1,4 @@
-// features/agents/agent-sets/components/AgentPeekWindow.tsx
+// features/agents/orchestras/components/AgentPeekWindow.tsx
 //
 // Non-blocking agent "quick look" as a draggable WindowPanel (NOT a blocking
 // Dialog). Renders the canonical AgentSneakPeekContent (lazy-loads the full agent

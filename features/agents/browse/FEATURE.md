@@ -178,7 +178,7 @@ future list surfaces. What remains here is the AGENT half:
 | `components/AgentBrowseCards.tsx` | Card view (render prop in the config) |
 | `components/AgentBrowseRows.tsx` | Dense view — full-width rows, aligned zones |
 | `components/ClassicViewNotice.tsx` | TEMPORARY cutover banner → `/agents/classic` |
-| `components/AddToSetDialog.tsx` | Dialog shell over the existing `useAgentSetsList` + `addAgentToSet` |
+| `components/AddToOrchestraDialog.tsx` | Dialog shell over the existing `useOrchestrasList` + `addAgentToOrchestra` |
 
 ## Invariants
 

@@ -5,7 +5,7 @@
 // the same admin_relationship_rules() rows the registry table already has,
 // so the entity explorer needs no extra RPC. The shape here is deliberately
 // generic (token + rule, not x/y positions) so a future React Flow canvas
-// (agents/sets-style thin shell + `dynamic({ ssr: false })` Impl) can consume
+// (agents/orchestras-style thin shell + `dynamic({ ssr: false })` Impl) can consume
 // it directly without a rewrite.
 
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";

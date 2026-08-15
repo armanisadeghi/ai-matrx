@@ -31,7 +31,7 @@ export function AgentBrowsePage() {
       headerActions={
         <>
           <Button asChild variant="outline" size="sm" className="h-11 lg:h-7">
-            <Link href="/agents/sets" aria-label="Agent sets">
+            <Link href="/agents/orchestras" aria-label="Orchestras">
               <Network className="h-4 w-4" />
               <span className="max-sm:sr-only">Sets</span>
             </Link>

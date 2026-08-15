@@ -17,7 +17,7 @@ const AGENTS_ADMIN_MAP: FeatureAdminMap = {
     "The agent system — definitions, versions, shortcuts, apps, surfaces, and the Find Usages + Drift Detection subsystem (this seed focuses on the latter plus the core agent routes; grow toward a full inventory).",
   docs: [
     { label: "Agents FEATURE.md", href: "/features/agents/FEATURE.md" },
-    { label: "Agent Sets (Orchestrators)", href: "/features/agents/docs/AGENT_SETS.md" },
+    { label: "Orchestras", href: "/features/agents/docs/ORCHESTRAS.md" },
     { label: "Reports admin map", href: "/reports/admin" },
   ],
   routeScanPath: "app/(core)/agents",
@@ -40,11 +40,11 @@ const AGENTS_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
-      url: "/agents/sets",
-      label: "Agent Sets",
+      url: "/agents/orchestras",
+      label: "Orchestras",
       description:
-        "List of orchestrated agent sets (savior list view). Create a set; open one to build it.",
-      filePath: "app/(core)/agents/sets/page.tsx",
+        "List of Orchestras (savior list view). Create one; open it to build it.",
+      filePath: "app/(core)/agents/orchestras/page.tsx",
       status: "Live",
     },
     {
@@ -56,11 +56,11 @@ const AGENTS_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
-      url: "/agents/sets/[orchestratorId]",
+      url: "/agents/orchestras/[orchestratorId]",
       label: "Set Builder",
       description:
         "Hub-and-spoke builder for one set — drag agents from the library onto the React Flow canvas (code-split), reorder in the grid, and author each member's role.",
-      filePath: "app/(core)/agents/sets/[orchestratorId]/page.tsx",
+      filePath: "app/(core)/agents/orchestras/[orchestratorId]/page.tsx",
       status: "Live",
     },
   ],
@@ -122,44 +122,44 @@ const AGENTS_ADMIN_MAP: FeatureAdminMap = {
       tier: "official",
     },
     {
-      name: "SetBuilder",
-      filePath: "features/agents/agent-sets/components/SetBuilder.tsx",
+      name: "OrchestraBuilder",
+      filePath: "features/agents/orchestras/components/OrchestraBuilder.tsx",
       description:
-        "Agent Sets builder shell — composes the library rail, canvas/grid views, and the member inspector around one orchestrator.",
+        "Orchestra builder shell — composes the library rail, canvas/grid views, and the member inspector around one orchestrator.",
       tier: "official",
     },
     {
-      name: "SetBuilderCanvas (+ Impl)",
-      filePath: "features/agents/agent-sets/components/SetBuilderCanvas.tsx",
+      name: "OrchestraBuilderCanvas (+ Impl)",
+      filePath: "features/agents/orchestras/components/OrchestraBuilderCanvas.tsx",
       description:
         "Code-split React Flow hub-and-spoke canvas (the ONLY @xyflow/react importer; behind next/dynamic ssr:false + eslint static-import ban).",
       tier: "official",
     },
     {
       name: "AgentRoleCard",
-      filePath: "features/agents/agent-sets/components/AgentRoleCard.tsx",
+      filePath: "features/agents/orchestras/components/AgentRoleCard.tsx",
       description:
         "Reusable member card — renders 'what this agent does in the set' from its description + authored role/gap. Used as a canvas node and a grid tile.",
       tier: "official",
     },
     {
-      name: "AgentSetCard",
-      filePath: "features/agents/agent-sets/components/AgentSetCard.tsx",
-      description: "List tile for one set on /agents/sets (orchestrator face + member strip).",
+      name: "OrchestraCard",
+      filePath: "features/agents/orchestras/components/OrchestraCard.tsx",
+      description: "List tile for one set on /agents/orchestras (orchestrator face + member strip).",
       tier: "official",
     },
     {
-      name: "AddToSetMenu",
-      filePath: "features/agents/agent-sets/components/AddToSetMenu.tsx",
+      name: "AddToOrchestraMenu",
+      filePath: "features/agents/orchestras/components/AddToOrchestraMenu.tsx",
       description:
         "Agent-card action: add an agent to an existing set or start a new set seeded with it.",
       tier: "official",
     },
     {
-      name: "agentSetsService",
-      filePath: "features/agents/agent-sets/service/agentSetsService.ts",
+      name: "orchestrasService",
+      filePath: "features/agents/orchestras/service/orchestrasService.ts",
       description:
-        "Thin service over the canonical association chokepoint + the agent_set_list() RPC. Owns no new mutation path.",
+        "Thin service over the canonical association chokepoint + the orchestra_list() RPC. Owns no new mutation path.",
       tier: "internal",
     },
   ],
@@ -189,10 +189,10 @@ const AGENTS_ADMIN_MAP: FeatureAdminMap = {
         "Find-usages caches (scope-keyed), drift report rollups, and drift alerts for the banner.",
     },
     {
-      name: "agentSets",
-      filePath: "features/agents/agent-sets/redux/slice.ts",
+      name: "orchestras",
+      filePath: "features/agents/orchestras/redux/slice.ts",
       description:
-        "Agent Sets read-model: enumerated set list + per-set member/config cache (membership truth lives in platform.associations).",
+        "Orchestras read-model: enumerated Orchestra list + per-Orchestra member/config cache (membership truth lives in platform.associations).",
     },
   ],
 
@@ -215,7 +215,7 @@ const AGENTS_ADMIN_MAP: FeatureAdminMap = {
     {
       name: "Associations (Scopes)",
       description:
-        "Agent Sets ride the canonical platform.associations system (assoc_* RPCs via associationsService). No agent_set table — orchestrator→member edges are the membership.",
+        "Orchestras ride the canonical platform.associations system (assoc_* RPCs via associationsService). No orchestra table, ever — orchestrator→member edges are the membership.",
     },
   ],
 };

@@ -1,4 +1,4 @@
-// features/agents/agent-sets/components/AgentPeekButton.tsx
+// features/agents/orchestras/components/AgentPeekButton.tsx
 //
 // A self-contained "quick look" control. Opens the agent peek as a NON-BLOCKING
 // draggable WindowPanel (AgentPeekWindow), never a blocking modal. The window is

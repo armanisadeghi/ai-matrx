@@ -381,7 +381,7 @@ function resolveAgentsSurface(stripped: string): string | null {
     "all",
     "new",
     "battle",
-    "sets",
+    "orchestras",
     "templates",
     "admin",
     "builder",

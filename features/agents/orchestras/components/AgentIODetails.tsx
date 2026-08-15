@@ -1,4 +1,4 @@
-// features/agents/agent-sets/components/AgentIODetails.tsx
+// features/agents/orchestras/components/AgentIODetails.tsx
 //
 // The agent I/O detail block (declared Inputs + Output shape) shared by the
 // member inspector and the orchestrator inspector. Lazy-loads the full agent
@@ -18,7 +18,7 @@ import {
 } from "@/features/agents/redux/agent-definition/selectors";
 import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
 import { accentClasses } from "./accents";
-import type { SetAccent } from "../constants";
+import type { OrchestraAccent } from "../constants";
 
 /** Render one JSON-schema property's type as a short label. */
 function propType(def: unknown): string {
@@ -35,7 +35,7 @@ export function AgentIODetails({
   accent,
 }: {
   agentId: string;
-  accent: SetAccent;
+  accent: OrchestraAccent;
 }) {
   const dispatch = useAppDispatch();
   const a = accentClasses(accent);

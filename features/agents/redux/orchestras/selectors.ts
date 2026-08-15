@@ -1,37 +1,37 @@
-// features/agents/agent-sets/redux/selectors.ts
+// features/agents/orchestras/redux/selectors.ts
 //
-// Memoized selectors for the `agentSets` slice. Per-set selectors are factories
+// Memoized selectors for the `orchestras` slice. Per-set selectors are factories
 // (bind once per orchestratorId via useMemo), mirroring the agent-consumers
 // `makeSelect*` convention.
 
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/rootReducer";
-import type { AgentSetDetailEntry } from "./slice";
-import type { AgentSetMember, AgentSetSummary } from "@/features/agents/agent-sets/types";
+import type { OrchestraDetailEntry } from "./slice";
+import type { OrchestraMember, OrchestraSummary } from "@/features/agents/orchestras/types";
 
-const selectAgentSets = (state: RootState) => state.agentSets;
+const selectOrchestras = (state: RootState) => state.orchestras;
 
-export const selectAgentSetsList = createSelector(
-  selectAgentSets,
-  (s): AgentSetSummary[] => s.list,
+export const selectOrchestrasList = createSelector(
+  selectOrchestras,
+  (s): OrchestraSummary[] => s.list,
 );
 
-export const selectAgentSetsListStatus = createSelector(
-  selectAgentSets,
+export const selectOrchestrasListStatus = createSelector(
+  selectOrchestras,
   (s) => s.listStatus,
 );
 
-export const selectAgentSetsListError = createSelector(
-  selectAgentSets,
+export const selectOrchestrasListError = createSelector(
+  selectOrchestras,
   (s) => s.listError,
 );
 
-export const selectAgentSetsCount = createSelector(
-  selectAgentSetsList,
+export const selectOrchestrasCount = createSelector(
+  selectOrchestrasList,
   (list) => list.length,
 );
 
-const EMPTY_ENTRY: AgentSetDetailEntry = {
+const EMPTY_ENTRY: OrchestraDetailEntry = {
   members: [],
   config: {},
   label: null,
@@ -41,34 +41,34 @@ const EMPTY_ENTRY: AgentSetDetailEntry = {
 };
 
 /** Per-set detail entry (members + config + status). Bind once per orchestratorId. */
-export function makeSelectAgentSetEntry(orchestratorId: string) {
+export function makeSelectOrchestraEntry(orchestratorId: string) {
   return createSelector(
-    selectAgentSets,
-    (s): AgentSetDetailEntry => s.byId[orchestratorId] ?? EMPTY_ENTRY,
+    selectOrchestras,
+    (s): OrchestraDetailEntry => s.byId[orchestratorId] ?? EMPTY_ENTRY,
   );
 }
 
-const EMPTY_MEMBERS: AgentSetMember[] = [];
+const EMPTY_MEMBERS: OrchestraMember[] = [];
 
 /** Ordered members of a set. Bind once per orchestratorId. */
-export function makeSelectAgentSetMembers(orchestratorId: string) {
+export function makeSelectOrchestraMembers(orchestratorId: string) {
   return createSelector(
-    selectAgentSets,
-    (s): AgentSetMember[] => s.byId[orchestratorId]?.members ?? EMPTY_MEMBERS,
+    selectOrchestras,
+    (s): OrchestraMember[] => s.byId[orchestratorId]?.members ?? EMPTY_MEMBERS,
   );
 }
 
 /** Set of member agent ids for fast membership checks. Bind once per orchestratorId. */
-export function makeSelectAgentSetMemberIds(orchestratorId: string) {
-  return createSelector(makeSelectAgentSetMembers(orchestratorId), (members) =>
+export function makeSelectOrchestraMemberIds(orchestratorId: string) {
+  return createSelector(makeSelectOrchestraMembers(orchestratorId), (members) =>
     members.map((m) => m.agentId),
   );
 }
 
 /** Whether a given set is loaded + ready. Bind once per orchestratorId. */
-export function makeSelectAgentSetStatus(orchestratorId: string) {
+export function makeSelectOrchestraStatus(orchestratorId: string) {
   return createSelector(
-    selectAgentSets,
+    selectOrchestras,
     (s) => s.byId[orchestratorId]?.status ?? "idle",
   );
 }

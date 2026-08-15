@@ -432,6 +432,8 @@ export type Database = {
           ui_gates: Json
           updated_at: string
           updated_by: string | null
+          updated_by_system: string | null
+          updated_by_tier: string | null
           variable_definitions: Json | null
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
@@ -474,6 +476,8 @@ export type Database = {
           ui_gates?: Json
           updated_at?: string
           updated_by?: string | null
+          updated_by_system?: string | null
+          updated_by_tier?: string | null
           variable_definitions?: Json | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
@@ -516,6 +520,8 @@ export type Database = {
           ui_gates?: Json
           updated_at?: string
           updated_by?: string | null
+          updated_by_system?: string | null
+          updated_by_tier?: string | null
           variable_definitions?: Json | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
@@ -547,6 +553,8 @@ export type Database = {
           context_slots: Json | null
           created_at: string
           created_by: string | null
+          created_by_system: string | null
+          created_by_tier: string | null
           custom_tools: Json | null
           deleted_at: string | null
           description: string | null
@@ -582,6 +590,8 @@ export type Database = {
           context_slots?: Json | null
           created_at?: string
           created_by?: string | null
+          created_by_system?: string | null
+          created_by_tier?: string | null
           custom_tools?: Json | null
           deleted_at?: string | null
           description?: string | null
@@ -617,6 +627,8 @@ export type Database = {
           context_slots?: Json | null
           created_at?: string
           created_by?: string | null
+          created_by_system?: string | null
+          created_by_tier?: string | null
           custom_tools?: Json | null
           deleted_at?: string | null
           description?: string | null
@@ -26903,6 +26915,7 @@ export type Database = {
       row_versions: {
         Row: {
           actor_id: string | null
+          actor_tier: string | null
           entity_type: string
           id: number
           occurred_at: string
@@ -26914,6 +26927,7 @@ export type Database = {
         }
         Insert: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type: string
           id?: never
           occurred_at?: string
@@ -26925,6 +26939,7 @@ export type Database = {
         }
         Update: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type?: string
           id?: never
           occurred_at?: string
@@ -26939,6 +26954,7 @@ export type Database = {
       row_versions_2025_11: {
         Row: {
           actor_id: string | null
+          actor_tier: string | null
           entity_type: string
           id: number
           occurred_at: string
@@ -26950,6 +26966,7 @@ export type Database = {
         }
         Insert: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type: string
           id?: never
           occurred_at?: string
@@ -26961,6 +26978,7 @@ export type Database = {
         }
         Update: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type?: string
           id?: never
           occurred_at?: string
@@ -26975,6 +26993,7 @@ export type Database = {
       row_versions_2025_12: {
         Row: {
           actor_id: string | null
+          actor_tier: string | null
           entity_type: string
           id: number
           occurred_at: string
@@ -26986,6 +27005,7 @@ export type Database = {
         }
         Insert: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type: string
           id?: never
           occurred_at?: string
@@ -26997,6 +27017,7 @@ export type Database = {
         }
         Update: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type?: string
           id?: never
           occurred_at?: string
@@ -27011,6 +27032,7 @@ export type Database = {
       row_versions_2026_01: {
         Row: {
           actor_id: string | null
+          actor_tier: string | null
           entity_type: string
           id: number
           occurred_at: string
@@ -27022,6 +27044,7 @@ export type Database = {
         }
         Insert: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type: string
           id?: never
           occurred_at?: string
@@ -27033,6 +27056,7 @@ export type Database = {
         }
         Update: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type?: string
           id?: never
           occurred_at?: string
@@ -27047,6 +27071,7 @@ export type Database = {
       row_versions_2026_02: {
         Row: {
           actor_id: string | null
+          actor_tier: string | null
           entity_type: string
           id: number
           occurred_at: string
@@ -27058,6 +27083,7 @@ export type Database = {
         }
         Insert: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type: string
           id?: never
           occurred_at?: string
@@ -27069,6 +27095,7 @@ export type Database = {
         }
         Update: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type?: string
           id?: never
           occurred_at?: string
@@ -27083,6 +27110,7 @@ export type Database = {
       row_versions_2026_03: {
         Row: {
           actor_id: string | null
+          actor_tier: string | null
           entity_type: string
           id: number
           occurred_at: string
@@ -27094,6 +27122,7 @@ export type Database = {
         }
         Insert: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type: string
           id?: never
           occurred_at?: string
@@ -27105,6 +27134,7 @@ export type Database = {
         }
         Update: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type?: string
           id?: never
           occurred_at?: string
@@ -27119,6 +27149,7 @@ export type Database = {
       row_versions_2026_04: {
         Row: {
           actor_id: string | null
+          actor_tier: string | null
           entity_type: string
           id: number
           occurred_at: string
@@ -27130,6 +27161,7 @@ export type Database = {
         }
         Insert: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type: string
           id?: never
           occurred_at?: string
@@ -27141,6 +27173,7 @@ export type Database = {
         }
         Update: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type?: string
           id?: never
           occurred_at?: string
@@ -27155,6 +27188,7 @@ export type Database = {
       row_versions_2026_05: {
         Row: {
           actor_id: string | null
+          actor_tier: string | null
           entity_type: string
           id: number
           occurred_at: string
@@ -27166,6 +27200,7 @@ export type Database = {
         }
         Insert: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type: string
           id?: never
           occurred_at?: string
@@ -27177,6 +27212,7 @@ export type Database = {
         }
         Update: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type?: string
           id?: never
           occurred_at?: string
@@ -27191,6 +27227,7 @@ export type Database = {
       row_versions_2026_06: {
         Row: {
           actor_id: string | null
+          actor_tier: string | null
           entity_type: string
           id: number
           occurred_at: string
@@ -27202,6 +27239,7 @@ export type Database = {
         }
         Insert: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type: string
           id?: never
           occurred_at?: string
@@ -27213,6 +27251,7 @@ export type Database = {
         }
         Update: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type?: string
           id?: never
           occurred_at?: string
@@ -27227,6 +27266,7 @@ export type Database = {
       row_versions_2026_07: {
         Row: {
           actor_id: string | null
+          actor_tier: string | null
           entity_type: string
           id: number
           occurred_at: string
@@ -27238,6 +27278,7 @@ export type Database = {
         }
         Insert: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type: string
           id?: never
           occurred_at?: string
@@ -27249,6 +27290,7 @@ export type Database = {
         }
         Update: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type?: string
           id?: never
           occurred_at?: string
@@ -27263,6 +27305,7 @@ export type Database = {
       row_versions_2026_08: {
         Row: {
           actor_id: string | null
+          actor_tier: string | null
           entity_type: string
           id: number
           occurred_at: string
@@ -27274,6 +27317,7 @@ export type Database = {
         }
         Insert: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type: string
           id?: never
           occurred_at?: string
@@ -27285,6 +27329,7 @@ export type Database = {
         }
         Update: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type?: string
           id?: never
           occurred_at?: string
@@ -27299,6 +27344,7 @@ export type Database = {
       row_versions_2026_09: {
         Row: {
           actor_id: string | null
+          actor_tier: string | null
           entity_type: string
           id: number
           occurred_at: string
@@ -27310,6 +27356,7 @@ export type Database = {
         }
         Insert: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type: string
           id?: never
           occurred_at?: string
@@ -27321,6 +27368,7 @@ export type Database = {
         }
         Update: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type?: string
           id?: never
           occurred_at?: string
@@ -27335,6 +27383,7 @@ export type Database = {
       row_versions_2026_10: {
         Row: {
           actor_id: string | null
+          actor_tier: string | null
           entity_type: string
           id: number
           occurred_at: string
@@ -27346,6 +27395,7 @@ export type Database = {
         }
         Insert: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type: string
           id?: never
           occurred_at?: string
@@ -27357,6 +27407,7 @@ export type Database = {
         }
         Update: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type?: string
           id?: never
           occurred_at?: string
@@ -27371,6 +27422,7 @@ export type Database = {
       row_versions_2026_11: {
         Row: {
           actor_id: string | null
+          actor_tier: string | null
           entity_type: string
           id: number
           occurred_at: string
@@ -27382,6 +27434,7 @@ export type Database = {
         }
         Insert: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type: string
           id?: never
           occurred_at?: string
@@ -27393,6 +27446,7 @@ export type Database = {
         }
         Update: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type?: string
           id?: never
           occurred_at?: string
@@ -27407,6 +27461,7 @@ export type Database = {
       row_versions_2026_12: {
         Row: {
           actor_id: string | null
+          actor_tier: string | null
           entity_type: string
           id: number
           occurred_at: string
@@ -27418,6 +27473,7 @@ export type Database = {
         }
         Insert: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type: string
           id?: never
           occurred_at?: string
@@ -27429,6 +27485,7 @@ export type Database = {
         }
         Update: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type?: string
           id?: never
           occurred_at?: string
@@ -27443,6 +27500,7 @@ export type Database = {
       row_versions_2027_01: {
         Row: {
           actor_id: string | null
+          actor_tier: string | null
           entity_type: string
           id: number
           occurred_at: string
@@ -27454,6 +27512,7 @@ export type Database = {
         }
         Insert: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type: string
           id?: never
           occurred_at?: string
@@ -27465,6 +27524,7 @@ export type Database = {
         }
         Update: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type?: string
           id?: never
           occurred_at?: string
@@ -27479,6 +27539,7 @@ export type Database = {
       row_versions_2027_02: {
         Row: {
           actor_id: string | null
+          actor_tier: string | null
           entity_type: string
           id: number
           occurred_at: string
@@ -27490,6 +27551,7 @@ export type Database = {
         }
         Insert: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type: string
           id?: never
           occurred_at?: string
@@ -27501,6 +27563,7 @@ export type Database = {
         }
         Update: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type?: string
           id?: never
           occurred_at?: string
@@ -27515,6 +27578,7 @@ export type Database = {
       row_versions_2027_03: {
         Row: {
           actor_id: string | null
+          actor_tier: string | null
           entity_type: string
           id: number
           occurred_at: string
@@ -27526,6 +27590,7 @@ export type Database = {
         }
         Insert: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type: string
           id?: never
           occurred_at?: string
@@ -27537,6 +27602,7 @@ export type Database = {
         }
         Update: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type?: string
           id?: never
           occurred_at?: string
@@ -27551,6 +27617,7 @@ export type Database = {
       row_versions_2027_04: {
         Row: {
           actor_id: string | null
+          actor_tier: string | null
           entity_type: string
           id: number
           occurred_at: string
@@ -27562,6 +27629,7 @@ export type Database = {
         }
         Insert: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type: string
           id?: never
           occurred_at?: string
@@ -27573,6 +27641,7 @@ export type Database = {
         }
         Update: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type?: string
           id?: never
           occurred_at?: string
@@ -27587,6 +27656,7 @@ export type Database = {
       row_versions_2027_05: {
         Row: {
           actor_id: string | null
+          actor_tier: string | null
           entity_type: string
           id: number
           occurred_at: string
@@ -27598,6 +27668,7 @@ export type Database = {
         }
         Insert: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type: string
           id?: never
           occurred_at?: string
@@ -27609,6 +27680,7 @@ export type Database = {
         }
         Update: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type?: string
           id?: never
           occurred_at?: string
@@ -27623,6 +27695,7 @@ export type Database = {
       row_versions_2027_06: {
         Row: {
           actor_id: string | null
+          actor_tier: string | null
           entity_type: string
           id: number
           occurred_at: string
@@ -27634,6 +27707,7 @@ export type Database = {
         }
         Insert: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type: string
           id?: never
           occurred_at?: string
@@ -27645,6 +27719,7 @@ export type Database = {
         }
         Update: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type?: string
           id?: never
           occurred_at?: string
@@ -27659,6 +27734,7 @@ export type Database = {
       row_versions_2027_07: {
         Row: {
           actor_id: string | null
+          actor_tier: string | null
           entity_type: string
           id: number
           occurred_at: string
@@ -27670,6 +27746,7 @@ export type Database = {
         }
         Insert: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type: string
           id?: never
           occurred_at?: string
@@ -27681,6 +27758,7 @@ export type Database = {
         }
         Update: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type?: string
           id?: never
           occurred_at?: string
@@ -27695,6 +27773,7 @@ export type Database = {
       row_versions_2027_08: {
         Row: {
           actor_id: string | null
+          actor_tier: string | null
           entity_type: string
           id: number
           occurred_at: string
@@ -27706,6 +27785,7 @@ export type Database = {
         }
         Insert: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type: string
           id?: never
           occurred_at?: string
@@ -27717,6 +27797,7 @@ export type Database = {
         }
         Update: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type?: string
           id?: never
           occurred_at?: string
@@ -27731,6 +27812,7 @@ export type Database = {
       row_versions_2027_09: {
         Row: {
           actor_id: string | null
+          actor_tier: string | null
           entity_type: string
           id: number
           occurred_at: string
@@ -27742,6 +27824,7 @@ export type Database = {
         }
         Insert: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type: string
           id?: never
           occurred_at?: string
@@ -27753,6 +27836,7 @@ export type Database = {
         }
         Update: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type?: string
           id?: never
           occurred_at?: string
@@ -27767,6 +27851,7 @@ export type Database = {
       row_versions_2027_10: {
         Row: {
           actor_id: string | null
+          actor_tier: string | null
           entity_type: string
           id: number
           occurred_at: string
@@ -27778,6 +27863,7 @@ export type Database = {
         }
         Insert: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type: string
           id?: never
           occurred_at?: string
@@ -27789,6 +27875,7 @@ export type Database = {
         }
         Update: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type?: string
           id?: never
           occurred_at?: string
@@ -27803,6 +27890,7 @@ export type Database = {
       row_versions_2027_11: {
         Row: {
           actor_id: string | null
+          actor_tier: string | null
           entity_type: string
           id: number
           occurred_at: string
@@ -27814,6 +27902,7 @@ export type Database = {
         }
         Insert: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type: string
           id?: never
           occurred_at?: string
@@ -27825,6 +27914,7 @@ export type Database = {
         }
         Update: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type?: string
           id?: never
           occurred_at?: string
@@ -27839,6 +27929,7 @@ export type Database = {
       row_versions_2027_12: {
         Row: {
           actor_id: string | null
+          actor_tier: string | null
           entity_type: string
           id: number
           occurred_at: string
@@ -27850,6 +27941,7 @@ export type Database = {
         }
         Insert: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type: string
           id?: never
           occurred_at?: string
@@ -27861,6 +27953,7 @@ export type Database = {
         }
         Update: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type?: string
           id?: never
           occurred_at?: string
@@ -27875,6 +27968,7 @@ export type Database = {
       row_versions_2028_01: {
         Row: {
           actor_id: string | null
+          actor_tier: string | null
           entity_type: string
           id: number
           occurred_at: string
@@ -27886,6 +27980,7 @@ export type Database = {
         }
         Insert: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type: string
           id?: never
           occurred_at?: string
@@ -27897,6 +27992,7 @@ export type Database = {
         }
         Update: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type?: string
           id?: never
           occurred_at?: string
@@ -27911,6 +28007,7 @@ export type Database = {
       row_versions_default: {
         Row: {
           actor_id: string | null
+          actor_tier: string | null
           entity_type: string
           id: number
           occurred_at: string
@@ -27922,6 +28019,7 @@ export type Database = {
         }
         Insert: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type: string
           id?: never
           occurred_at?: string
@@ -27933,6 +28031,7 @@ export type Database = {
         }
         Update: {
           actor_id?: string | null
+          actor_tier?: string | null
           entity_type?: string
           id?: never
           occurred_at?: string
@@ -31406,6 +31505,8 @@ export type Database = {
           source_type: string
           target_id: string
           target_type: string
+          updated_by_system: string | null
+          updated_by_tier: string | null
         }
         Insert: {
           created_at?: string
@@ -31425,6 +31526,8 @@ export type Database = {
           source_type: string
           target_id: string
           target_type: string
+          updated_by_system?: string | null
+          updated_by_tier?: string | null
         }
         Update: {
           created_at?: string
@@ -31444,6 +31547,8 @@ export type Database = {
           source_type?: string
           target_id?: string
           target_type?: string
+          updated_by_system?: string | null
+          updated_by_tier?: string | null
         }
         Relationships: [
           {
@@ -32654,6 +32759,8 @@ export type Database = {
       }
     }
     Functions: {
+      actor_system: { Args: never; Returns: string }
+      actor_tier: { Args: never; Returns: string }
       clear_output_feedback: {
         Args: { p_subject_id: string; p_subject_type: string }
         Returns: boolean
@@ -40170,6 +40277,19 @@ export type Database = {
         Args: never
         Returns: {
           schema_name: string
+        }[]
+      }
+      orchestra_list: {
+        Args: never
+        Returns: {
+          created_at: string
+          description: string
+          member_count: number
+          metadata: Json
+          name: string
+          orchestrator_id: string
+          set_label: string
+          updated_at: string
         }[]
       }
       org_admin_get_member: {
@@ -52343,6 +52463,8 @@ export type Database = {
           tool_group: string
           updated_at: string
           updated_by: string | null
+          updated_by_system: string | null
+          updated_by_tier: string | null
           validation_exempt: boolean
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
@@ -52375,6 +52497,8 @@ export type Database = {
           tool_group?: string
           updated_at?: string
           updated_by?: string | null
+          updated_by_system?: string | null
+          updated_by_tier?: string | null
           validation_exempt?: boolean
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
@@ -52407,6 +52531,8 @@ export type Database = {
           tool_group?: string
           updated_at?: string
           updated_by?: string | null
+          updated_by_system?: string | null
+          updated_by_tier?: string | null
           validation_exempt?: boolean
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
@@ -52430,6 +52556,8 @@ export type Database = {
           changed_at: string
           created_at: string
           created_by: string | null
+          created_by_system: string | null
+          created_by_tier: string | null
           dedupe_exempt: boolean | null
           deleted_at: string | null
           description: string | null
@@ -52462,6 +52590,8 @@ export type Database = {
           changed_at?: string
           created_at?: string
           created_by?: string | null
+          created_by_system?: string | null
+          created_by_tier?: string | null
           dedupe_exempt?: boolean | null
           deleted_at?: string | null
           description?: string | null
@@ -52494,6 +52624,8 @@ export type Database = {
           changed_at?: string
           created_at?: string
           created_by?: string | null
+          created_by_system?: string | null
+          created_by_tier?: string | null
           dedupe_exempt?: boolean | null
           deleted_at?: string | null
           description?: string | null
@@ -60130,6 +60262,8 @@ export type Database = {
           task_id: string | null
           updated_at: string
           updated_by: string | null
+          updated_by_system: string | null
+          updated_by_tier: string | null
           variables: Json
           version: number
           viewport: Json
@@ -60161,6 +60295,8 @@ export type Database = {
           task_id?: string | null
           updated_at?: string
           updated_by?: string | null
+          updated_by_system?: string | null
+          updated_by_tier?: string | null
           variables?: Json
           version?: number
           viewport?: Json
@@ -60192,6 +60328,8 @@ export type Database = {
           task_id?: string | null
           updated_at?: string
           updated_by?: string | null
+          updated_by_system?: string | null
+          updated_by_tier?: string | null
           variables?: Json
           version?: number
           viewport?: Json
@@ -60208,6 +60346,8 @@ export type Database = {
           channels: Json | null
           created_at: string
           created_by: string | null
+          created_by_system: string | null
+          created_by_tier: string | null
           definition_id: string
           deleted_at: string | null
           description: string | null
@@ -60236,6 +60376,8 @@ export type Database = {
           channels?: Json | null
           created_at?: string
           created_by?: string | null
+          created_by_system?: string | null
+          created_by_tier?: string | null
           definition_id: string
           deleted_at?: string | null
           description?: string | null
@@ -60264,6 +60406,8 @@ export type Database = {
           channels?: Json | null
           created_at?: string
           created_by?: string | null
+          created_by_system?: string | null
+          created_by_tier?: string | null
           definition_id?: string
           deleted_at?: string | null
           description?: string | null

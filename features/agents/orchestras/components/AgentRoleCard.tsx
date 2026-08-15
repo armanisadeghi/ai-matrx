@@ -1,6 +1,6 @@
-// features/agents/agent-sets/components/AgentRoleCard.tsx
+// features/agents/orchestras/components/AgentRoleCard.tsx
 //
-// The rich "what this agent does INSIDE the set" card. Built from the agent's
+// The rich "what this agent does INSIDE the Orchestra" card. Built from the agent's
 // own name/description/category/tags, overlaid with the user-authored role title
 // (stored in the association's `label`) + gap. Reused as a React Flow node body
 // and a grid tile via `variant`.
@@ -19,15 +19,15 @@ import { selectAgentById } from "@/features/agents/redux/agent-definition/select
 import { accentClasses } from "./accents";
 import { AgentPeekButton } from "./AgentPeekButton";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
-import type { SetAccent } from "../constants";
+import type { OrchestraAccent } from "../constants";
 
 export interface AgentRoleCardProps {
   agentId: string;
-  /** Authored role title within the set (from the edge `label`). Falls back to category. */
+  /** Authored role title within the Orchestra (from the edge `label`). Falls back to category. */
   roleTitle?: string | null;
   /** Authored "gap this fills". Falls back to the agent's description. */
   gap?: string | null;
-  accent?: SetAccent;
+  accent?: OrchestraAccent;
   /** 1-based ordinal shown as a "Step N" chip. */
   index?: number;
   variant?: "node" | "tile";
@@ -59,7 +59,7 @@ export function AgentRoleCard({
   const summary =
     (gap && gap.trim()) ||
     agent?.description ||
-    "Fills a role in this set — open to describe what it does.";
+    "Fills a role in this Orchestra — open to describe what it does.";
   const tags = (agent?.tags ?? []).slice(0, 3);
   const isNode = variant === "node";
   // Only offer expand when there's plausibly more than the clamp shows.
@@ -105,7 +105,7 @@ export function AgentRoleCard({
         {onRemove && (
           <button
             type="button"
-            aria-label="Remove from set"
+            aria-label="Remove from Orchestra"
             onClick={onRemove}
             className="rounded-md p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
           >
