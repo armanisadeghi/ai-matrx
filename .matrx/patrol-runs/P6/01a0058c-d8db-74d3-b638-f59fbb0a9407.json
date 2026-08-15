@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P6",
+  "runId": "01a0058c-d8db-74d3-b638-f59fbb0a9407",
+  "baseSha": "7bf85f6951ee761144c3e5c103a811b41aee7b17",
+  "createdAt": "2026-08-15T13:14:11.095Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-15T13:14:11.095Z",
+      "actor": "codex-patrol-worker",
+      "summary": "Started scheduled P6 full-pass patrol in isolated Codex worktree.",
+      "evidence": [
+        "Initial git status: clean detached worktree at 7bf85f6951ee761144c3e5c103a811b41aee7b17",
+        "Installed worktree-local dependencies with pnpm install --offline --frozen-lockfile after confirming node_modules was absent.",
+        "Mandatory doctrine, P6 registry row, repo CLAUDE.md, both patrol skills, ledger, prior report, memory, and prior run pointer read before mutation."
+      ],
+      "previousEventHash": null,
+      "eventHash": "a50b7f4801e4b0a3f1033e0f77978468c1c1914b9c07630628eb2d2ebcad65a4"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-15T13:16:12.758Z",
+      "actor": "codex-patrol-worker",
+      "summary": "Auto-approved one 15-file behavior-preserving P6 batch after full-match review.",
+      "evidence": [
+        "Immutable baseline: git status clean at 7bf85f6951ee761144c3e5c103a811b41aee7b17 before run-record initialization.",
+        "Immutable baseline: pnpm type-check PASS.",
+        "Immutable baseline detector: 252 matched lines in 111 files; 6,674 tracked TSX files; output SHA-256 6a0ab5ef1df19399af2316c2d97fe473cb076f6ea2868fe786d4cecc1bb416fb.",
+        "Batch is capped at 15 files and limited to exact Lucide substitutions or redundant decorative glyph deletion; no chunk, behavior, generated-file, suppression, dependency, responsive, or theme changes."
+      ],
+      "previousEventHash": "a50b7f4801e4b0a3f1033e0f77978468c1c1914b9c07630628eb2d2ebcad65a4",
+      "eventHash": "2e62d879479fcca94185f99255624b59e587b04469e25d1225da41fd21313a9a"
+    },
+    {
+      "sequence": 3,
+      "state": "certifying",
+      "at": "2026-08-15T13:27:51.359Z",
+      "actor": "codex-patrol-worker",
+      "summary": "Entered independent adversarial certification for the exact 15-file candidate batch.",
+      "evidence": [
+        "Post detector: 174 lines in 96 files; changed-file detector 78 removed, 0 added, 0 remaining in the 15 touched TSX files.",
+        "Post pnpm type-check PASS; git diff --check PASS; doctrine PASS; UI-primitives gate completed with 20 unchanged repo-wide warnings.",
+        "Scoped ESLint reports pre-existing same-file React Compiler/dead-end debt only; no diagnostic intersects a P6 edit.",
+        "Exact-worktree managed preview start failed twice because /Users/armanisadeghi/code/matrx-frontend owns the lease; that foreign URL was not used.",
+        "Allowed focused fallback: WelcomeEmail, FixedInputPage, and IconResolverDisplay rendered-markup checks PASS; CanvasShareSheet server render is blocked by its required Redux provider, while type-check, detector, source audit, and existing sr-only Close label cover the changed control."
+      ],
+      "previousEventHash": "2e62d879479fcca94185f99255624b59e587b04469e25d1225da41fd21313a9a",
+      "eventHash": "a8666c0a80fb0e36b60631f270041dd456284b1bce072e112f0cec78fe1a63e4"
+    }
+  ]
+}

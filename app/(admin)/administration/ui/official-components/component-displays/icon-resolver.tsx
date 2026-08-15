@@ -7,6 +7,7 @@ import IconResolver, {
   getIconComponent,
   DynamicIcon,
 } from "@/components/official/icons/IconResolver";
+import { Check } from "lucide-react";
 
 interface ComponentDisplayProps {
   component?: ComponentEntry;
@@ -292,22 +293,26 @@ const Icon = getIconComponent("Settings", "Zap");
           </h3>
           <div className="space-y-1 text-sm text-gray-700 dark:text-gray-300">
             <p>
-              ✅ <strong>Bundle Size:</strong>{" "}
+              <Check className="mr-1 inline size-4 text-green-600 dark:text-green-400" aria-hidden="true" />
+              <strong>Bundle Size:</strong>{" "}
               <code className="px-1 py-0.5 bg-white dark:bg-gray-800 rounded">
                 import * as LucideIcons
               </code>{" "}
               = ~600KB → IconResolver = ~50KB (99% reduction)
             </p>
             <p>
-              ✅ <strong>Smart Colors:</strong> Auto-detects Tailwind names vs
+              <Check className="mr-1 inline size-4 text-green-600 dark:text-green-400" aria-hidden="true" />
+              <strong>Smart Colors:</strong> Auto-detects Tailwind names vs
               hex codes, applies appropriate styling
             </p>
             <p>
-              ✅ <strong>Database Ready:</strong> Perfect for dynamic icons with
+              <Check className="mr-1 inline size-4 text-green-600 dark:text-green-400" aria-hidden="true" />
+              <strong>Database Ready:</strong> Perfect for dynamic icons with
               colors from database (no Tailwind purge issues)
             </p>
             <p>
-              ✅ <strong>Performance:</strong> Static imports for common icons,
+              <Check className="mr-1 inline size-4 text-green-600 dark:text-green-400" aria-hidden="true" />
+              <strong>Performance:</strong> Static imports for common icons,
               dynamic loading + caching for rare ones
             </p>
             <p className="mt-2 text-xs">

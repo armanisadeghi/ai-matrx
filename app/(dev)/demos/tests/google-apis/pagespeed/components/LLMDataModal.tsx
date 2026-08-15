@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Copy, CheckCircle2, FileJson, FileText } from "lucide-react";
+import { Copy, CheckCircle2, FileJson, FileText, Lightbulb } from "lucide-react";
 import { useState } from "react";
 import type { LLMAnalysisData } from "../utils/formatForLLM";
 import { formatAsMarkdown, formatAsJSON } from "../utils/formatForLLM";
@@ -56,7 +56,8 @@ export function LLMDataModal({ open, onOpenChange, data }: LLMDataModalProps) {
                         )}
                         {data.issues.length === 0 && (
                             <Badge className="bg-green-500 text-white">
-                                ✓ All Checks Passed
+                                <CheckCircle2 className="mr-1 inline size-3.5" aria-hidden="true" />
+                                All Checks Passed
                             </Badge>
                         )}
                     </div>
@@ -110,7 +111,8 @@ export function LLMDataModal({ open, onOpenChange, data }: LLMDataModalProps) {
 
                 <div className="pt-3 border-t border-border text-xs text-gray-500 dark:text-gray-400">
                     <p>
-                        💡 <strong>Tip:</strong> Copy this data and paste it into any AI workflow for analysis and
+                        <Lightbulb className="mr-1 inline size-3.5" aria-hidden="true" />
+                        <strong>Tip:</strong> Copy this data and paste it into any AI workflow for analysis and
                         improvement suggestions.
                     </p>
                 </div>

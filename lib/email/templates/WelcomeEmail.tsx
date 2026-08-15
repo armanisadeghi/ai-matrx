@@ -18,10 +18,10 @@ export function WelcomeEmail({ name }: WelcomeEmailProps) {
       </Text>
 
       <Section style={featureList}>
-        <Text style={featureItem}>✦ Build and share AI-powered apps</Text>
-        <Text style={featureItem}>✦ Create canvases and collaborate with your team</Text>
-        <Text style={featureItem}>✦ Organize prompts and templates</Text>
-        <Text style={featureItem}>✦ Connect to any AI model</Text>
+        <Text style={featureItem}>Build and share AI-powered apps</Text>
+        <Text style={featureItem}>Create canvases and collaborate with your team</Text>
+        <Text style={featureItem}>Organize prompts and templates</Text>
+        <Text style={featureItem}>Connect to any AI model</Text>
       </Section>
 
       <Section style={buttonSection}>

@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P6",
+  "runId": "01a0058c-d8db-74d3-b638-f59fbb0a9407",
+  "state": "certifying",
+  "updatedAt": "2026-08-15T13:27:51.359Z",
+  "summary": "Entered independent adversarial certification for the exact 15-file candidate batch.",
+  "source": "01a0058c-d8db-74d3-b638-f59fbb0a9407.json",
+  "eventHash": "a8666c0a80fb0e36b60631f270041dd456284b1bce072e112f0cec78fe1a63e4"
+}

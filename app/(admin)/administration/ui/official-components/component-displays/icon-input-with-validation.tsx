@@ -7,6 +7,7 @@ import IconInputWithValidation, {
   IconInputCompact,
 } from "@/components/official/icons/IconInputWithValidation.dynamic";
 import { Label } from "@/components/ui/label";
+import { Check } from "lucide-react";
 
 interface ComponentDisplayProps {
   component?: ComponentEntry;
@@ -70,13 +71,13 @@ export default function IconInputWithValidationDisplay({
 </div>
 
 // Features:
-// ✅ Real-time validation with visual feedback
-// ✅ Green checkmark when valid, red X when invalid
-// ✅ Live icon preview when validated
-// ✅ Auto-capitalizes first letter (wand2 → Wand2)
-// ✅ Press Enter to validate
-// ✅ Search Lucide opens site frame; paste <IconName />; optional Icon gallery window
-// ✅ Seamlessly replaces standard Input component`;
+// Real-time validation with visual feedback
+// Green checkmark when valid, red X when invalid
+// Live icon preview when validated
+// Auto-capitalizes first letter (wand2 → Wand2)
+// Press Enter to validate
+// Search Lucide opens site frame; paste <IconName />; optional Icon gallery window
+// Seamlessly replaces standard Input component`;
 
   // The guard sits BELOW every hook: an early return above them makes the hook
   // calls conditional (react-hooks/rules-of-hooks) and React throws the moment
@@ -190,39 +191,39 @@ export default function IconInputWithValidationDisplay({
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-gray-700 dark:text-gray-300">
             <div className="flex items-start gap-2">
-              <span className="text-green-600 dark:text-green-400">✓</span>
+              <Check className="size-4 shrink-0 text-green-600 dark:text-green-400" aria-hidden="true" />
               <span>Real-time validation with visual feedback</span>
             </div>
             <div className="flex items-start gap-2">
-              <span className="text-green-600 dark:text-green-400">✓</span>
+              <Check className="size-4 shrink-0 text-green-600 dark:text-green-400" aria-hidden="true" />
               <span>Live icon preview when valid</span>
             </div>
             <div className="flex items-start gap-2">
-              <span className="text-green-600 dark:text-green-400">✓</span>
+              <Check className="size-4 shrink-0 text-green-600 dark:text-green-400" aria-hidden="true" />
               <span>Auto-capitalizes first letter</span>
             </div>
             <div className="flex items-start gap-2">
-              <span className="text-green-600 dark:text-green-400">✓</span>
+              <Check className="size-4 shrink-0 text-green-600 dark:text-green-400" aria-hidden="true" />
               <span>Press Enter to validate</span>
             </div>
             <div className="flex items-start gap-2">
-              <span className="text-green-600 dark:text-green-400">✓</span>
+              <Check className="size-4 shrink-0 text-green-600 dark:text-green-400" aria-hidden="true" />
               <span>Search Lucide + lucide.dev link (fine print)</span>
             </div>
             <div className="flex items-start gap-2">
-              <span className="text-green-600 dark:text-green-400">✓</span>
+              <Check className="size-4 shrink-0 text-green-600 dark:text-green-400" aria-hidden="true" />
               <span>Optional finite icon gallery window</span>
             </div>
             <div className="flex items-start gap-2">
-              <span className="text-green-600 dark:text-green-400">✓</span>
+              <Check className="size-4 shrink-0 text-green-600 dark:text-green-400" aria-hidden="true" />
               <span>Seamless Input replacement</span>
             </div>
             <div className="flex items-start gap-2">
-              <span className="text-green-600 dark:text-green-400">✓</span>
+              <Check className="size-4 shrink-0 text-green-600 dark:text-green-400" aria-hidden="true" />
               <span>Works with IconResolver</span>
             </div>
             <div className="flex items-start gap-2">
-              <span className="text-green-600 dark:text-green-400">✓</span>
+              <Check className="size-4 shrink-0 text-green-600 dark:text-green-400" aria-hidden="true" />
               <span>Zero layout shift</span>
             </div>
           </div>

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Globe, Smartphone, Monitor, Loader2 } from "lucide-react";
+import { Globe, Smartphone, Monitor, Loader2, TriangleAlert } from "lucide-react";
 
 interface PageSpeedFormProps {
     onAnalyze: (url: string, categories: string[]) => void;
@@ -149,7 +149,8 @@ export function PageSpeedForm({ onAnalyze, loading }: PageSpeedFormProps) {
                         </div>
                         {selectedCategories.length === 0 && (
                             <p className="text-xs text-orange-600 dark:text-orange-400">
-                                ⚠️ Please select at least one category
+                                <TriangleAlert className="mr-1 inline size-3.5" aria-hidden="true" />
+                                Please select at least one category
                             </p>
                         )}
                     </div>
@@ -178,4 +179,3 @@ export function PageSpeedForm({ onAnalyze, loading }: PageSpeedFormProps) {
         </Card>
     );
 }
-
