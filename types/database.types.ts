@@ -58647,7 +58647,7 @@ export type Database = {
       udt_datasets: {
         Row: {
           created_at: string
-          created_by: string | null
+          created_by: string
           description: string | null
           id: string
           is_public: boolean
@@ -58665,11 +58665,12 @@ export type Database = {
           user_id: string
           validation_mode: string
           version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
           workbook_id: string | null
         }
         Insert: {
           created_at?: string
-          created_by?: string | null
+          created_by: string
           description?: string | null
           id?: string
           is_public?: boolean
@@ -58687,11 +58688,12 @@ export type Database = {
           user_id: string
           validation_mode?: string
           version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
           workbook_id?: string | null
         }
         Update: {
           created_at?: string
-          created_by?: string | null
+          created_by?: string
           description?: string | null
           id?: string
           is_public?: boolean
@@ -58709,6 +58711,7 @@ export type Database = {
           user_id?: string
           validation_mode?: string
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
           workbook_id?: string | null
         }
         Relationships: [
@@ -58769,7 +58772,7 @@ export type Database = {
       udt_documents: {
         Row: {
           created_at: string
-          created_by: string | null
+          created_by: string
           description: string | null
           document_name: string
           id: string
@@ -58784,10 +58787,11 @@ export type Database = {
           updated_by: string | null
           user_id: string
           version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           created_at?: string
-          created_by?: string | null
+          created_by: string
           description?: string | null
           document_name: string
           id?: string
@@ -58802,10 +58806,11 @@ export type Database = {
           updated_by?: string | null
           user_id?: string
           version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           created_at?: string
-          created_by?: string | null
+          created_by?: string
           description?: string | null
           document_name?: string
           id?: string
@@ -58820,6 +58825,7 @@ export type Database = {
           updated_by?: string | null
           user_id?: string
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
@@ -58894,7 +58900,7 @@ export type Database = {
       udt_structured_lists: {
         Row: {
           created_at: string
-          created_by: string | null
+          created_by: string
           description: string | null
           id: string
           is_public: boolean | null
@@ -58906,10 +58912,11 @@ export type Database = {
           updated_by: string | null
           user_id: string | null
           version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           created_at?: string
-          created_by?: string | null
+          created_by: string
           description?: string | null
           id?: string
           is_public?: boolean | null
@@ -58921,10 +58928,11 @@ export type Database = {
           updated_by?: string | null
           user_id?: string | null
           version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           created_at?: string
-          created_by?: string | null
+          created_by?: string
           description?: string | null
           id?: string
           is_public?: boolean | null
@@ -58936,6 +58944,7 @@ export type Database = {
           updated_by?: string | null
           user_id?: string | null
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
@@ -58980,7 +58989,7 @@ export type Database = {
       udt_workbooks: {
         Row: {
           created_at: string
-          created_by: string | null
+          created_by: string
           description: string | null
           id: string
           is_public: boolean
@@ -58994,11 +59003,12 @@ export type Database = {
           updated_by: string | null
           user_id: string
           version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
           workbook_name: string
         }
         Insert: {
           created_at?: string
-          created_by?: string | null
+          created_by: string
           description?: string | null
           id?: string
           is_public?: boolean
@@ -59012,11 +59022,12 @@ export type Database = {
           updated_by?: string | null
           user_id?: string
           version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
           workbook_name: string
         }
         Update: {
           created_at?: string
-          created_by?: string | null
+          created_by?: string
           description?: string | null
           id?: string
           is_public?: boolean
@@ -59030,6 +59041,7 @@ export type Database = {
           updated_by?: string | null
           user_id?: string
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
           workbook_name?: string
         }
         Relationships: []
