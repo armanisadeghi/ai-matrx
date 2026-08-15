@@ -232,7 +232,7 @@ BEGIN
   END IF;
   IF v_sort NOT IN ('occurred','created','party_name','subject','snippet','classification',
                     'outreach_list_name','sending_identity_label','employer_name','step',
-                    'handled','channel','organization_name','member_status') THEN
+                    'handled','channel','organization_name','member_status','why') THEN
     v_sort := 'occurred';
   END IF;
 
@@ -373,6 +373,10 @@ BEGIN
       AND (NOT v_f ? 'snippet'     OR j.u_snippet ILIKE '%'||(v_f->'snippet'->>'value')||'%')
       AND (NOT v_f ? 'employer_name' OR coalesce(j.j_employer_name,'') ILIKE '%'||(v_f->'employer_name'->>'value')||'%')
       AND (NOT v_f ? 'organization_name' OR coalesce(j.j_org_name,'') ILIKE '%'||(v_f->'organization_name'->>'value')||'%')
+      -- "Why we wrote" is a projection of the two motivating records; it filters
+      -- and sorts like every other column rather than being the one exempt.
+      AND (NOT v_f ? 'why'
+           OR coalesce(j.j_case_label, j.j_backlink_label, '') ILIKE '%'||(v_f->'why'->>'value')||'%')
       AND (NOT v_f ? 'classification'
            OR coalesce(nullif(j.u_classification,''),'__none__') IN (
                 SELECT jsonb_array_elements_text(v_f->'classification'->'values')))
@@ -449,6 +453,8 @@ BEGIN
     CASE WHEN v_sort='handled'  AND v_dir='asc'  THEN c.j_handled END ASC,
     CASE WHEN v_sort='organization_name' AND v_dir='desc' THEN lower(coalesce(c.j_org_name,'')) END DESC,
     CASE WHEN v_sort='organization_name' AND v_dir='asc'  THEN lower(coalesce(c.j_org_name,'')) END ASC,
+    CASE WHEN v_sort='why' AND v_dir='desc' THEN lower(coalesce(c.j_case_label, c.j_backlink_label,'')) END DESC,
+    CASE WHEN v_sort='why' AND v_dir='asc'  THEN lower(coalesce(c.j_case_label, c.j_backlink_label,'')) END ASC,
     c.u_id
   LIMIT greatest(coalesce(p_limit,25),1) OFFSET greatest(coalesce(p_offset,0),0);
 END;

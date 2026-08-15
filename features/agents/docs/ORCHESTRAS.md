@@ -15,11 +15,11 @@ An **Orchestra** = one **orchestrator agent** presiding over **member agents**, 
 
 **Direction is fixed: orchestrator = source, member = target.** This matches `assoc_set_targets` (operates from the source) and the org-auth gate in `assoc_add` (resolves org from the source agent's `organization_id`). The `(source, target, role)` unique key keeps the marker and member edges from ever colliding, and makes every write an idempotent upsert.
 
-**The one read the assoc_* family lacks:** `orchestra_list()` (SECURITY DEFINER, `iam.has_org_access`-gated; `migrations/orchestra_list_rpc.sql`) enumerates the caller's Orchestras (marker rows) + member counts. A single Orchestra's full state loads via `associationsService.listForSources('agent', [orchId], 'agent')`, split by role.
+**The one read the assoc_* family lacks:** `orchestra_list()` (SECURITY DEFINER, `iam.has_org_access`-gated; `migrations/orchestra_list_rpc.sql` + `orchestra_list_drop_legacy_role_arm.sql`) enumerates the caller's Orchestras (marker rows) + member counts. A single Orchestra's full state loads via `associationsService.listForSources('agent', [orchId], 'agent')`, split by role.
 
 The Orchestra's name/description ARE the orchestrator agent's — no duplicated identity. Tokens live in `orchestras/constants.ts` (`AGENT_TOKEN`, `ORCHESTRA_MARKER_ROLE`, `MEMBER_ROLE`).
 
-**Legacy marker role.** Before the rename the marker role was `matrx_set`. Every READ accepts both values via `isOrchestraMarkerRole` (and `orchestra_list()` matches both); **writes only ever emit `orchestra`**, and deleting an Orchestra clears both roles. The live rows were migrated 2026-08-15 — drop `LEGACY_ORCHESTRA_MARKER_ROLE` once a scan confirms none remain.
+**The rename is fully contracted.** Before 2026-08-15 the marker role was `matrx_set`. It was migrated in three ordered steps so nothing half-deployed broken: both repos shipped reading BOTH values → the 10 live rows were migrated → the tolerant read was removed. `matrx_set` is now at zero and nothing reads or writes it; `orchestra_list()` matches `orchestra` only, and `agent_set_list()` is dropped.
 
 ## Surfaces
 

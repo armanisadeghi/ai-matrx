@@ -9,9 +9,7 @@
 // An Orchestra = an orchestrator agent + edges:
 //   marker : (agent:X) --role 'orchestra'--> (agent:X)   [config + existence]
 //   member : (agent:X) --role 'member'-----> (agent:Y)   [ordered by position]
-//
-// Reads accept the pre-rename marker role too (see isOrchestraMarkerRole);
-// writes only ever emit 'orchestra'.
+
 //
 // Like associationsService, every method returns a `ScopesRpcResult` and NEVER
 // throws. See features/agents/docs/ORCHESTRAS.md.
@@ -26,7 +24,6 @@ import { isScopesRpcErr, type ScopesRpcResult } from "@/features/scopes/types";
 import type { Json } from "@/types/database.types";
 import {
   AGENT_TOKEN,
-  LEGACY_ORCHESTRA_MARKER_ROLE,
   MEMBER_ROLE,
   ORCHESTRA_MARKER_ROLE,
   isOrchestraMarkerRole,
@@ -207,11 +204,7 @@ export const orchestrasService = {
     });
   },
 
-  /**
-   * Delete an Orchestra: clear all members (role-scoped) then drop the marker.
-   * Removes the legacy marker role as well — a pre-rename Orchestra that still
-   * carries `matrx_set` must not survive its own deletion.
-   */
+  /** Delete an Orchestra: clear all members (role-scoped) then drop the marker. */
   async deleteOrchestra(orchestratorId: string): Promise<ScopesRpcResult<null>> {
     const cleared = await associationsService.setTargets({
       sourceType: AGENT_TOKEN,
@@ -221,17 +214,12 @@ export const orchestrasService = {
       role: MEMBER_ROLE,
     });
     if (isScopesRpcErr(cleared)) return cleared;
-
-    for (const role of [ORCHESTRA_MARKER_ROLE, LEGACY_ORCHESTRA_MARKER_ROLE]) {
-      const removed = await associationsService.remove({
-        sourceType: AGENT_TOKEN,
-        sourceId: orchestratorId,
-        targetType: AGENT_TOKEN,
-        targetId: orchestratorId,
-        role,
-      });
-      if (isScopesRpcErr(removed)) return removed;
-    }
-    return ok(null);
+    return associationsService.remove({
+      sourceType: AGENT_TOKEN,
+      sourceId: orchestratorId,
+      targetType: AGENT_TOKEN,
+      targetId: orchestratorId,
+      role: ORCHESTRA_MARKER_ROLE,
+    });
   },
 };

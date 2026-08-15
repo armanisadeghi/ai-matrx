@@ -18,16 +18,13 @@ export const AGENT_TOKEN = "agent" as const;
 export const ORCHESTRA_MARKER_ROLE = "orchestra" as const;
 
 /**
- * Pre-rename value of the same self-edge ("Orchestra" → "Orchestra",
- * 2026-08-15). READ-ONLY compatibility: nothing writes this again. Remove it —
- * and `isOrchestraMarkerRole` collapses to an equality check — once a scan of
- * platform.associations confirms zero `matrx_set` rows remain.
+ * True for the marker role. The pre-rename value ("matrx_set", from when this
+ * system was called "Agent Set") is GONE — all 10 live rows were migrated on
+ * 2026-08-15 and verified at zero, so the tolerant-read window is closed and
+ * this is now a plain equality check.
  */
-export const LEGACY_ORCHESTRA_MARKER_ROLE = "matrx_set" as const;
-
-/** True for the current marker role OR its pre-rename value. Use this for every READ. */
 export function isOrchestraMarkerRole(role: string | null | undefined): boolean {
-  return role === ORCHESTRA_MARKER_ROLE || role === LEGACY_ORCHESTRA_MARKER_ROLE;
+  return role === ORCHESTRA_MARKER_ROLE;
 }
 
 /** Role of an orchestrator → member edge. Members are ordered by `position`. */
@@ -36,7 +33,7 @@ export const MEMBER_ROLE = "member" as const;
 /**
  * Accent palette for an Orchestra's identity. Keys are stored in its config
  * (`OrchestraConfig.accent`); each maps to a Tailwind-friendly gradient + ring
- * resolved in the UI (see agent-sets/components/accents.ts). Semantic, themeable,
+ * resolved in the UI (see orchestras/components/accents.ts). Semantic, themeable,
  * never raw hex in product UI.
  */
 export const ORCHESTRA_ACCENTS = [

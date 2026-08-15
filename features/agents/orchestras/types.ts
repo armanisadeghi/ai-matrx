@@ -13,7 +13,7 @@ export interface CanvasPos {
 }
 
 /**
- * Orchestra-level config — carried in the `matrx_set` self-edge `metadata` jsonb.
+ * Orchestra-level config — carried in the `orchestra` self-edge `metadata` jsonb.
  * Everything here is presentational/organizational; the Orchestra's name + description
  * come from the orchestrator agent row itself.
  */
@@ -66,7 +66,7 @@ export interface OrchestraMember {
 /** Full builder state for a single Orchestra: marker config + ordered members. */
 export interface OrchestraDetail {
   orchestratorId: string;
-  /** Whether the `matrx_set` marker edge exists — false means "not an Orchestra yet". */
+  /** Whether the `orchestra` marker edge exists — false means "not an Orchestra yet". */
   exists: boolean;
   label: string | null;
   config: OrchestraConfig;
