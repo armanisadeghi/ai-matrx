@@ -333,7 +333,6 @@ function RepairPane({
         column_order: [],
         owner_id: userId,
         organization_id: orgId,
-        project_id: null,
       };
       const job = await createJob(insert);
       setJobId(job.id);

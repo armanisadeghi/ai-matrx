@@ -11723,7 +11723,6 @@ export type Database = {
           output_schema: Json
           owner_id: string
           processed_document_id: string | null
-          project_id: string | null
           rag_boost: number | null
           scope_pages: number[] | null
           shortcut_id: string | null
@@ -11756,7 +11755,6 @@ export type Database = {
           output_schema: Json
           owner_id: string
           processed_document_id?: string | null
-          project_id?: string | null
           rag_boost?: number | null
           scope_pages?: number[] | null
           shortcut_id?: string | null
@@ -11789,7 +11787,6 @@ export type Database = {
           output_schema?: Json
           owner_id?: string
           processed_document_id?: string | null
-          project_id?: string | null
           rag_boost?: number | null
           scope_pages?: number[] | null
           shortcut_id?: string | null
@@ -27445,6 +27442,10 @@ export type Database = {
         Args: { p_mode: string; p_schema: string; p_table: string }
         Returns: undefined
       }
+      apply_table_grants: {
+        Args: { p_schema: string; p_table: string; p_variant?: string }
+        Returns: undefined
+      }
       backfill_org_from_owner: {
         Args: { p_execute?: boolean }
         Returns: {
@@ -29821,6 +29822,9 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          deleted_at: string | null
+          deleted_via_id: string | null
+          deleted_via_type: string | null
           id: string
           label: string | null
           metadata: Json
@@ -29837,6 +29841,9 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
+          deleted_via_id?: string | null
+          deleted_via_type?: string | null
           id?: string
           label?: string | null
           metadata?: Json
@@ -29853,6 +29860,9 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
+          deleted_via_id?: string | null
+          deleted_via_type?: string | null
           id?: string
           label?: string | null
           metadata?: Json
@@ -30705,6 +30715,88 @@ export type Database = {
       }
     }
     Views: {
+      associations_live: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          deleted_at: string | null
+          deleted_via_id: string | null
+          deleted_via_type: string | null
+          id: string | null
+          label: string | null
+          metadata: Json | null
+          organization_id: string | null
+          payload: Json | null
+          payload_kind: string | null
+          position: number | null
+          role: string | null
+          source_id: string | null
+          source_type: string | null
+          target_id: string | null
+          target_type: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_via_id?: string | null
+          deleted_via_type?: string | null
+          id?: string | null
+          label?: string | null
+          metadata?: Json | null
+          organization_id?: string | null
+          payload?: Json | null
+          payload_kind?: string | null
+          position?: number | null
+          role?: string | null
+          source_id?: string | null
+          source_type?: string | null
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_via_id?: string | null
+          deleted_via_type?: string | null
+          id?: string | null
+          label?: string | null
+          metadata?: Json | null
+          organization_id?: string | null
+          payload?: Json | null
+          payload_kind?: string | null
+          position?: number | null
+          role?: string | null
+          source_id?: string | null
+          source_type?: string | null
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "associations_payload_kind_fkey"
+            columns: ["payload_kind"]
+            isOneToOne: false
+            referencedRelation: "edge_payload_kind"
+            referencedColumns: ["kind"]
+          },
+          {
+            foreignKeyName: "associations_source_type_fkey"
+            columns: ["source_type"]
+            isOneToOne: false
+            referencedRelation: "entity_types"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "associations_target_type_fkey"
+            columns: ["target_type"]
+            isOneToOne: false
+            referencedRelation: "entity_types"
+            referencedColumns: ["token"]
+          },
+        ]
+      }
       containment_edges: {
         Row: {
           container_id: string | null
@@ -35763,6 +35855,15 @@ export type Database = {
       crm_dismiss_merge_candidate: {
         Args: { p_id: string }
         Returns: undefined
+      }
+      crm_list_scope_counts: {
+        Args: { p_kind?: string; p_search?: string; p_view?: string }
+        Returns: {
+          label: string
+          narrow_id: string
+          scope: string
+          total: number
+        }[]
       }
       crm_merge_parties: {
         Args: {

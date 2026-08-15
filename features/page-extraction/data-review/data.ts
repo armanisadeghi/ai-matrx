@@ -51,7 +51,6 @@ export interface ExtractionCatalogEntry {
   latestRunStatus: RunStatus | null;
   latestRunFinishedAt: string | null;
   organizationId: string | null;
-  projectId: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -72,7 +71,7 @@ export async function listExtractionCatalog(opts?: {
     .schema("docproc")
     .from("page_extraction_jobs")
     .select(
-      "id, name, kind, file_id, processed_document_id, latest_run_id, organization_id, project_id, created_at, updated_at",
+      "id, name, kind, file_id, processed_document_id, latest_run_id, organization_id, created_at, updated_at",
     )
     .eq("is_saved", true)
     .order("updated_at", { ascending: false });
@@ -90,7 +89,6 @@ export async function listExtractionCatalog(opts?: {
       | "processed_document_id"
       | "latest_run_id"
       | "organization_id"
-      | "project_id"
       | "created_at"
       | "updated_at"
     >
@@ -188,7 +186,6 @@ export async function listExtractionCatalog(opts?: {
       latestRunStatus: run?.status ?? null,
       latestRunFinishedAt: run?.finished_at ?? null,
       organizationId: j.organization_id,
-      projectId: j.project_id,
       createdAt: j.created_at,
       updatedAt: j.updated_at,
     };

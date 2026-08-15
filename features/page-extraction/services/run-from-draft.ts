@@ -235,7 +235,6 @@ export async function saveTemplateFromDraft(
     rag_boost: draft.ragBoost ?? null,
     owner_id: opts.ownerId,
     organization_id: await ensureOrgId(opts.organizationId),
-    project_id: null,
     archived_at: null,
   };
 
