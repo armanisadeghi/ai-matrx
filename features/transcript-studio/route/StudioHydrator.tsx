@@ -2,12 +2,47 @@
 
 import { useEffect, useRef } from "react";
 import { useStore } from "react-redux";
-import { activeSessionIdSet, sessionsListLoaded } from "../redux/slice";
-import type { StudioSession } from "../types";
+import {
+  activeSessionIdSet,
+  cleanedSegmentsLoaded,
+  conceptsLoaded,
+  moduleSegmentsLoaded,
+  rawSegmentsLoaded,
+  recordingSegmentsLoaded,
+  sessionsListLoaded,
+} from "../redux/slice";
+import type {
+  CleanedSegment,
+  ConceptItem,
+  ModuleSegment,
+  RawSegment,
+  RecordingSegment,
+  StudioSession,
+} from "../types";
+
+/**
+ * SSR seed for ONE session's column data. Built server-side by the route via
+ * the `*Server` loaders in `service/studioService.ts` and dispatched through
+ * the exact same `*Loaded` reducers the client thunks use — so a seeded
+ * session paints its columns on the first frame and `ActiveSessionView`'s
+ * `has*Ids` guards skip the client round trip entirely.
+ *
+ * Every field is optional: a route seeds only the columns it renders.
+ */
+export interface StudioSessionSeed {
+  sessionId: string;
+  raw?: RawSegment[];
+  cleaned?: CleanedSegment[];
+  concepts?: ConceptItem[];
+  moduleSegments?: ModuleSegment[];
+  recordings?: RecordingSegment[];
+}
 
 interface StudioHydratorProps {
-  seeds: StudioSession[];
+  /** Omit entirely when an ancestor already seeded the list (nested layouts). */
+  seeds?: StudioSession[];
   initialSessionId?: string | null;
+  sessionSeed?: StudioSessionSeed | null;
 }
 
 /**
@@ -32,6 +67,7 @@ interface StudioHydratorProps {
 export function StudioHydrator({
   seeds,
   initialSessionId,
+  sessionSeed,
 }: StudioHydratorProps) {
   const store = useStore();
   const hydratedRef = useRef(false);
@@ -39,9 +75,45 @@ export function StudioHydrator({
   useEffect(() => {
     if (hydratedRef.current) return;
     hydratedRef.current = true;
-    store.dispatch(sessionsListLoaded(seeds));
-    if (initialSessionId && seeds.some((s) => s.id === initialSessionId)) {
-      store.dispatch(activeSessionIdSet(initialSessionId));
+    if (seeds) {
+      store.dispatch(sessionsListLoaded(seeds));
+      if (initialSessionId && seeds.some((s) => s.id === initialSessionId)) {
+        store.dispatch(activeSessionIdSet(initialSessionId));
+      }
+    }
+    if (sessionSeed) {
+      const { sessionId } = sessionSeed;
+      if (sessionSeed.raw) {
+        store.dispatch(
+          rawSegmentsLoaded({ sessionId, segments: sessionSeed.raw }),
+        );
+      }
+      if (sessionSeed.cleaned) {
+        store.dispatch(
+          cleanedSegmentsLoaded({ sessionId, segments: sessionSeed.cleaned }),
+        );
+      }
+      if (sessionSeed.concepts) {
+        store.dispatch(
+          conceptsLoaded({ sessionId, items: sessionSeed.concepts }),
+        );
+      }
+      if (sessionSeed.moduleSegments) {
+        store.dispatch(
+          moduleSegmentsLoaded({
+            sessionId,
+            segments: sessionSeed.moduleSegments,
+          }),
+        );
+      }
+      if (sessionSeed.recordings) {
+        store.dispatch(
+          recordingSegmentsLoaded({
+            sessionId,
+            segments: sessionSeed.recordings,
+          }),
+        );
+      }
     }
     // Effect is intentionally one-shot. Seeds + initialSessionId are
     // captured once on mount; subsequent navigations to the same route

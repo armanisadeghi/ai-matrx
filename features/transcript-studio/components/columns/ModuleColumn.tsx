@@ -16,7 +16,7 @@ import {
 import type { ModuleSegment } from "../../types";
 import { getModule } from "../../modules/registry";
 import { useStudioSettings } from "../../hooks/useStudioSettings";
-import { useScrollSyncOptional } from "../scroll-sync/ScrollSyncProvider";
+import { useScrollSync } from "../scroll-sync/ScrollSyncProvider";
 import { ColumnEmptyState } from "./ColumnEmptyState";
 import { ColumnHeader } from "./ColumnHeader";
 import { WatchRunButton } from "./WatchRunButton";
@@ -76,16 +76,13 @@ export function ModuleColumn({ sessionId, className }: ModuleColumnProps) {
   }, [segments, isRunning, moduleDef, moduleId]);
 
   // Sync-scroll registration.
-  const sync = useScrollSyncOptional();
+  const sync = useScrollSync();
   const scrollRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
-    if (!sync) return undefined;
     sync.registerColumn(COLUMN_IDS.module, scrollRef.current);
     return () => sync.registerColumn(COLUMN_IDS.module, null);
   }, [sync]);
-  const onPointerLead = sync
-    ? () => sync.markLeader(COLUMN_IDS.module)
-    : undefined;
+  const onPointerLead = () => sync.markLeader(COLUMN_IDS.module);
 
   const dispatch = useAppDispatch();
   const handleManualRun = () => {

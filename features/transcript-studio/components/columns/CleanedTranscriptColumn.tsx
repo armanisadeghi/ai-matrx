@@ -17,7 +17,7 @@ import {
   buildTimestampedTranscript,
   formatTimecode,
 } from "../../utils/timecode";
-import { useScrollSyncOptional } from "../scroll-sync/ScrollSyncProvider";
+import { useScrollSync } from "../scroll-sync/ScrollSyncProvider";
 import { ColumnEmptyState } from "./ColumnEmptyState";
 import { ColumnHeader } from "./ColumnHeader";
 import { EditableTextSegmentRow } from "./EditableTextSegmentRow";
@@ -77,16 +77,13 @@ export function CleanedTranscriptColumn({
         ? "error"
         : "idle";
 
-  const sync = useScrollSyncOptional();
+  const sync = useScrollSync();
   const scrollRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
-    if (!sync) return undefined;
     sync.registerColumn(COLUMN_IDS.cleaned, scrollRef.current);
     return () => sync.registerColumn(COLUMN_IDS.cleaned, null);
   }, [sync]);
-  const onPointerLead = sync
-    ? () => sync.markLeader(COLUMN_IDS.cleaned)
-    : undefined;
+  const onPointerLead = () => sync.markLeader(COLUMN_IDS.cleaned);
 
   const dispatch = useAppDispatch();
   const isRunning = latestColumnRun?.status === "running";

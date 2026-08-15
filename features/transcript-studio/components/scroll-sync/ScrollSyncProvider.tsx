@@ -260,8 +260,15 @@ export function ScrollSyncProvider({
   );
 }
 
+/**
+ * The four columns each register their scroll container here. It THROWS when
+ * the provider is missing rather than degrading to a no-op: a column rendered
+ * outside `<ScrollSyncProvider>` looks perfectly fine on screen while the whole
+ * synchronized-scroll feature is silently dead, which is exactly the class of
+ * failure this system is supposed to make loud.
+ */
 export function useScrollSync(): ScrollSyncApi {
-  const ctx = useContext(ScrollSyncContext);
+  const ctx = useScrollSyncOptional();
   if (!ctx) {
     throw new Error(
       "useScrollSync must be used inside <ScrollSyncProvider>",
@@ -270,8 +277,8 @@ export function useScrollSync(): ScrollSyncApi {
   return ctx;
 }
 
-/** Optional access for components rendered outside the provider tree. */
-export function useScrollSyncOptional(): ScrollSyncApi | null {
+/** Internal: raw context read. Every consumer goes through `useScrollSync`. */
+function useScrollSyncOptional(): ScrollSyncApi | null {
   return useContext(ScrollSyncContext);
 }
 

@@ -21,7 +21,7 @@ import {
   updateConceptItemThunk,
 } from "../../redux/thunks";
 import type { ConceptItem, ConceptKind } from "../../types";
-import { useScrollSyncOptional } from "../scroll-sync/ScrollSyncProvider";
+import { useScrollSync } from "../scroll-sync/ScrollSyncProvider";
 import { ColumnEmptyState } from "./ColumnEmptyState";
 import { ColumnHeader } from "./ColumnHeader";
 import { EditableConceptRow } from "./EditableConceptRow";
@@ -97,18 +97,15 @@ export function ConceptsColumn({ sessionId, className }: ConceptsColumnProps) {
     return `${items.length} concept${items.length === 1 ? "" : "s"}${isRunning ? " · running" : ""}`;
   }, [items, isRunning]);
 
-  const sync = useScrollSyncOptional();
+  const sync = useScrollSync();
   const scrollRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
-    if (!sync) return undefined;
     sync.registerColumn(COLUMN_IDS.concepts, scrollRef.current);
     return () => sync.registerColumn(COLUMN_IDS.concepts, null);
   }, [sync]);
-  const onPointerLead = sync
-    ? () => sync.markLeader(COLUMN_IDS.concepts)
-    : undefined;
+  const onPointerLead = () => sync.markLeader(COLUMN_IDS.concepts);
   const onConceptClick = (item: ConceptItem) => {
-    if (sync && item.tStart !== null) {
+    if (item.tStart !== null) {
       sync.scrollAllTo(item.tStart, COLUMN_IDS.concepts);
     }
   };

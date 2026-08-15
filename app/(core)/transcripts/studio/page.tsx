@@ -3,8 +3,17 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { createClient } from "@/utils/supabase/server";
-import { listSessionsServer } from "@/features/transcript-studio/service/studioService";
-import { StudioHydrator } from "@/features/transcript-studio/route/StudioHydrator";
+import {
+  listCleanedSegmentsServer,
+  listConceptItemsServer,
+  listModuleSegmentsServer,
+  listRawSegmentsServer,
+  listSessionsServer,
+} from "@/features/transcript-studio/service/studioService";
+import {
+  StudioHydrator,
+  type StudioSessionSeed,
+} from "@/features/transcript-studio/route/StudioHydrator";
 import {
   STUDIO_COLUMN_COOKIE_NAME,
   decodeStudioLayoutCookie,
@@ -43,6 +52,32 @@ export default async function TranscriptStudioPage({
     seeds = [];
   }
 
+  // When the URL names a session we own, seed its four columns server-side
+  // too. `ActiveSessionView` guards each fetch on `has*Ids`, so a successful
+  // seed means the workspace paints with content on the first frame and fires
+  // no client round trip. Best-effort in the same way as the list above — any
+  // failure just falls back to the client fetch.
+  let sessionSeed: StudioSessionSeed | null = null;
+  if (initialSessionId && seeds.some((s) => s.id === initialSessionId)) {
+    try {
+      const [raw, cleaned, concepts, moduleSegments] = await Promise.all([
+        listRawSegmentsServer(supabase, initialSessionId),
+        listCleanedSegmentsServer(supabase, initialSessionId),
+        listConceptItemsServer(supabase, initialSessionId),
+        listModuleSegmentsServer(supabase, initialSessionId),
+      ]);
+      sessionSeed = {
+        sessionId: initialSessionId,
+        raw,
+        cleaned,
+        concepts,
+        moduleSegments,
+      };
+    } catch {
+      sessionSeed = null;
+    }
+  }
+
   // Read the studio columns layout cookie so the 4-column shell paints
   // with the user's saved widths on the first frame.
   const defaultColumnLayout = decodeStudioLayoutCookie(
@@ -57,6 +92,7 @@ export default async function TranscriptStudioPage({
       <StudioHydrator
         seeds={seeds}
         initialSessionId={initialSessionId ?? null}
+        sessionSeed={sessionSeed}
       />
       <Suspense fallback={null}>
         <StudioRoute

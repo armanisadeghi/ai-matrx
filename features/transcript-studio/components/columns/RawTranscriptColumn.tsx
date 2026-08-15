@@ -18,7 +18,7 @@ import {
   updateRawSegmentTextThunk,
 } from "../../redux/thunks";
 import { formatTimecode } from "../../utils/timecode";
-import { useScrollSyncOptional } from "../scroll-sync/ScrollSyncProvider";
+import { useScrollSync } from "../scroll-sync/ScrollSyncProvider";
 import { AudioImportDialog } from "./AudioImportDialog";
 import { ColumnEmptyState } from "./ColumnEmptyState";
 import { ColumnHeader } from "./ColumnHeader";
@@ -280,17 +280,14 @@ export function RawTranscriptColumn({
     </>
   );
 
-  const sync = useScrollSyncOptional();
+  const sync = useScrollSync();
   const scrollRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
-    if (!sync) return undefined;
     sync.registerColumn(COLUMN_IDS.raw, scrollRef.current);
     return () => sync.registerColumn(COLUMN_IDS.raw, null);
   }, [sync]);
 
-  const onPointerLead = sync
-    ? () => sync.markLeader(COLUMN_IDS.raw)
-    : undefined;
+  const onPointerLead = () => sync.markLeader(COLUMN_IDS.raw);
 
   return (
     <section
