@@ -17,6 +17,7 @@ export const SOURCE_APPS = [
   "aidream-file-rag-jobs",
   "aidream-hindsight",
   "aidream-notify-listener",
+  "aidream-outreach",
   "aidream-page-extraction",
   "aidream-scraper-scheduler",
   "aidream-seo",

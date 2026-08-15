@@ -2792,7 +2792,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ResumeRequest"
+                "$ref": "#/components/schemas/aidream__services__conversation_context__continue_conversation__ResumeRequest"
               }
             }
           }
@@ -2843,7 +2843,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ResumeRequest"
+                "$ref": "#/components/schemas/aidream__services__conversation_context__continue_conversation__ResumeRequest"
               }
             }
           }
@@ -6779,9 +6779,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response List Coding Session Identities Coding Sessions Sessions Get"
+                  "$ref": "#/components/schemas/CodingSessionIdentityList"
                 }
               }
             }
@@ -12731,6 +12729,112 @@
         }
       }
     },
+    "/seo/sites/{site_id}/crm/referring-domains": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Fold Referring Domains Endpoint",
+        "description": "Resolve this site's backlink referring domains into `crm.party` orgs.\n\nThe outreach bridge: a referring domain stops being a string in `seo.*` and\nbecomes an organization someone can be contacted at, through the ONE party\nresolver (domain is already one of its natural keys). Idempotent — a domain\nalready in the CRM is enriched, never duplicated — and every folded row\ncarries a provenance edge back to the profile that produced it.",
+        "operationId": "fold_referring_domains_endpoint_seo_sites__site_id__crm_referring_domains_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FoldDomainsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainFoldReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/sites/{site_id}/crm/reputation-outlets": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Fold Reputation Outlets Endpoint",
+        "description": "Resolve the outlets behind this site's actionable reputation cases.\n\nOnly cases whose verdict means \"write to them\" are folded; watch-list\nverdicts are reported as skipped with the reason, never silently dropped.",
+        "operationId": "fold_reputation_outlets_endpoint_seo_sites__site_id__crm_reputation_outlets_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FoldDomainsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainFoldReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/seo/endpoint-families/apply": {
       "post": {
         "tags": [
@@ -18579,6 +18683,744 @@
         }
       }
     },
+    "/sending-identities": {
+      "get": {
+        "tags": [
+          "Sending Identities"
+        ],
+        "summary": "List Sending Identities",
+        "operationId": "list_sending_identities_sending_identities_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SendingIdentityView"
+                  },
+                  "title": "Response List Sending Identities Sending Identities Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Sending Identities"
+        ],
+        "summary": "Create Sending Identity",
+        "operationId": "create_sending_identity_sending_identities_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSendingIdentityRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SendingIdentityDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sending-identities/connectable": {
+      "get": {
+        "tags": [
+          "Sending Identities"
+        ],
+        "summary": "List Connectable",
+        "description": "Mailboxes this user could turn into a sending identity — including the\nones they cannot, with the reason and the fix.",
+        "operationId": "list_connectable_sending_identities_connectable_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ConnectableMailbox"
+                  },
+                  "title": "Response List Connectable Sending Identities Connectable Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sending-identities/policy": {
+      "get": {
+        "tags": [
+          "Sending Identities"
+        ],
+        "summary": "Get Sending Policy",
+        "operationId": "get_sending_policy_sending_identities_policy_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SendingPolicyView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Sending Identities"
+        ],
+        "summary": "Set Sending Policy",
+        "description": "The per-org kill switch. Takes effect at the gate immediately.",
+        "operationId": "set_sending_policy_sending_identities_policy_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetPolicyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SendingPolicyView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sending-identities/{identity_id}": {
+      "get": {
+        "tags": [
+          "Sending Identities"
+        ],
+        "summary": "Get Sending Identity",
+        "operationId": "get_sending_identity_sending_identities__identity_id__get",
+        "parameters": [
+          {
+            "name": "identity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Identity Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SendingIdentityDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Sending Identities"
+        ],
+        "summary": "Update Sending Identity",
+        "operationId": "update_sending_identity_sending_identities__identity_id__patch",
+        "parameters": [
+          {
+            "name": "identity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Identity Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSendingIdentityRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SendingIdentityDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Sending Identities"
+        ],
+        "summary": "Disable Sending Identity",
+        "operationId": "disable_sending_identity_sending_identities__identity_id__delete",
+        "parameters": [
+          {
+            "name": "identity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Identity Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sending-identities/{identity_id}/check-domain": {
+      "post": {
+        "tags": [
+          "Sending Identities"
+        ],
+        "summary": "Check Domain",
+        "description": "Resolve the DNS TXT challenge. The only path to a verified domain.",
+        "operationId": "check_domain_sending_identities__identity_id__check_domain_post",
+        "parameters": [
+          {
+            "name": "identity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Identity Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sending-identities/{identity_id}/check-authentication": {
+      "post": {
+        "tags": [
+          "Sending Identities"
+        ],
+        "summary": "Check Authentication",
+        "description": "Measure SPF, DKIM and DMARC against live DNS.",
+        "operationId": "check_authentication_sending_identities__identity_id__check_authentication_post",
+        "parameters": [
+          {
+            "name": "identity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Identity Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sending-identities/{identity_id}/start-warmup": {
+      "post": {
+        "tags": [
+          "Sending Identities"
+        ],
+        "summary": "Start Identity Warmup",
+        "operationId": "start_identity_warmup_sending_identities__identity_id__start_warmup_post",
+        "parameters": [
+          {
+            "name": "identity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Identity Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SendingIdentityDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sending-identities/{identity_id}/pause": {
+      "post": {
+        "tags": [
+          "Sending Identities"
+        ],
+        "summary": "Pause Sending Identity",
+        "operationId": "pause_sending_identity_sending_identities__identity_id__pause_post",
+        "parameters": [
+          {
+            "name": "identity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Identity Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PauseRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SendingIdentityDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sending-identities/{identity_id}/resume": {
+      "post": {
+        "tags": [
+          "Sending Identities"
+        ],
+        "summary": "Resume Sending Identity",
+        "description": "A person lifting a pause — including one the breaker applied. The system\nnever resumes an identity, by design.",
+        "operationId": "resume_sending_identity_sending_identities__identity_id__resume_post",
+        "parameters": [
+          {
+            "name": "identity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Identity Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/aidream__services__sending_identity__models__ResumeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SendingIdentityDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sending-identities/{identity_id}/readiness": {
+      "get": {
+        "tags": [
+          "Sending Identities"
+        ],
+        "summary": "Get Readiness",
+        "description": "\"May a campaign use this mailbox right now?\" — never throws, always\nanswers, and names the fix when the answer is no.",
+        "operationId": "get_readiness_sending_identities__identity_id__readiness_get",
+        "parameters": [
+          {
+            "name": "identity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Identity Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sending-identities/{identity_id}/events": {
+      "get": {
+        "tags": [
+          "Sending Identities"
+        ],
+        "summary": "List Sending Events",
+        "description": "The audit trail — who sent what to whom, plus every bounce and complaint.",
+        "operationId": "list_sending_events_sending_identities__identity_id__events_get",
+        "parameters": [
+          {
+            "name": "identity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Identity Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SendingEventRecord"
+                  },
+                  "title": "Response List Sending Events Sending Identities  Identity Id  Events Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sending-identities/{identity_id}/refresh-health": {
+      "post": {
+        "tags": [
+          "Sending Identities"
+        ],
+        "summary": "Refresh Identity Health",
+        "description": "Recompute the rolling window now. Can only ever PAUSE the identity (the\nbreaker runs on the fresh numbers); it can never un-pause one.",
+        "operationId": "refresh_identity_health_sending_identities__identity_id__refresh_health_post",
+        "parameters": [
+          {
+            "name": "identity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Identity Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SendingIdentityDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/agent-factory/build": {
       "post": {
         "tags": [
@@ -21544,6 +22386,112 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AdoptIntentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/research/topics/{topic_id}/experts": {
+      "get": {
+        "tags": [
+          "Research"
+        ],
+        "summary": "Extract Topic Experts",
+        "description": "Rank the people this topic's analyzed pages name. **Writes nothing.**\n\nDeterministic: the page-analysis agent already produced the structure\n(quote speakers, expert-opinion findings, author credentials, entity\nmentions), so this reads that structure and scores confidence from it —\nthere is no second model call to pay for.",
+        "operationId": "extract_topic_experts_research_topics__topic_id__experts_get",
+        "parameters": [
+          {
+            "name": "topic_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Topic Id"
+            }
+          },
+          {
+            "name": "include_weak",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "title": "Include Weak"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpertExtraction"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/research/topics/{topic_id}/experts/promote": {
+      "post": {
+        "tags": [
+          "Research"
+        ],
+        "summary": "Promote Topic Experts",
+        "description": "Write accepted expert candidates into `crm.party` — the governed path.\n\nEvery write goes through the party resolver (find-or-create, source-stamped,\nmerge-lineage aware) and lands `expert_status='registered'` plus the\n`expert_for` topic edge and one `party_observation` edge per evidencing\npage. A key the current extraction does not produce is refused, so a client\ncan never promote a person the evidence does not support.",
+        "operationId": "promote_topic_experts_research_topics__topic_id__experts_promote_post",
+        "parameters": [
+          {
+            "name": "topic_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Topic Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PromoteExpertsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpertPromotionResult"
                 }
               }
             }
@@ -62303,6 +63251,93 @@
         "title": "ChatToolCallInput",
         "description": "One tool-call entry inside an assistant message.\n\nDifferent providers carry slightly different keys (OpenAI uses\n``function.name`` + ``function.arguments``; Anthropic uses ``name`` +\n``input``). All keys are optional so either shape validates."
       },
+      "CheckRecord": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "check_kind": {
+            "type": "string",
+            "title": "Check Kind"
+          },
+          "passed": {
+            "type": "boolean",
+            "title": "Passed"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "checked_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Checked At"
+          },
+          "observed": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Observed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "check_kind",
+          "passed",
+          "checked_at"
+        ],
+        "title": "CheckRecord"
+      },
+      "CheckReport": {
+        "properties": {
+          "identity": {
+            "$ref": "#/components/schemas/SendingIdentityDetail"
+          },
+          "checks": {
+            "items": {
+              "$ref": "#/components/schemas/CheckRecord"
+            },
+            "type": "array",
+            "title": "Checks"
+          },
+          "changed_status_to": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "draft",
+                  "verifying",
+                  "warming",
+                  "ready",
+                  "paused",
+                  "disabled"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Changed Status To"
+          }
+        },
+        "type": "object",
+        "required": [
+          "identity",
+          "checks"
+        ],
+        "title": "CheckReport",
+        "description": "The result of running the checks, as the surface renders it."
+      },
       "CheckpointPreview": {
         "properties": {
           "checkpoint_id": {
@@ -64758,6 +65793,22 @@
               }
             ],
             "title": "Web Page Id"
+          },
+          "research_topic_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Research Topic Ids",
+            "default": []
+          },
+          "research_tag_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Research Tag Ids",
+            "default": []
           }
         },
         "type": "object",
@@ -65927,6 +66978,72 @@
           "provider"
         ],
         "title": "CodingSessionBridgeRestRequest"
+      },
+      "CodingSessionIdentity": {
+        "properties": {
+          "provider_session_id": {
+            "type": "string",
+            "title": "Provider Session Id"
+          },
+          "provider_project_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Project Key"
+          },
+          "conversation_id": {
+            "type": "string",
+            "title": "Conversation Id"
+          },
+          "fidelity": {
+            "type": "string",
+            "title": "Fidelity"
+          },
+          "last_seen_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last Seen At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "provider_session_id",
+          "conversation_id",
+          "fidelity",
+          "last_seen_at"
+        ],
+        "title": "CodingSessionIdentity"
+      },
+      "CodingSessionIdentityList": {
+        "properties": {
+          "schema_version": {
+            "type": "integer",
+            "title": "Schema Version",
+            "default": 1
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "sessions": {
+            "items": {
+              "$ref": "#/components/schemas/CodingSessionIdentity"
+            },
+            "type": "array",
+            "title": "Sessions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "provider",
+          "sessions"
+        ],
+        "title": "CodingSessionIdentityList"
       },
       "CollectionReceipt": {
         "properties": {
@@ -67551,6 +68668,67 @@
           "non_conformant"
         ],
         "title": "ConformanceState"
+      },
+      "ConnectableMailbox": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "title": "Connection Id"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "google_workspace",
+              "microsoft_365",
+              "smtp"
+            ],
+            "title": "Provider"
+          },
+          "account_email": {
+            "type": "string",
+            "title": "Account Email"
+          },
+          "account_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Name"
+          },
+          "can_send": {
+            "type": "boolean",
+            "title": "Can Send"
+          },
+          "blocked_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Blocked Reason"
+          },
+          "already_used": {
+            "type": "boolean",
+            "title": "Already Used",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id",
+          "provider",
+          "account_email",
+          "can_send"
+        ],
+        "title": "ConnectableMailbox",
+        "description": "A mailbox the signed-in user could turn into a sending identity."
       },
       "ConnectionSummary": {
         "properties": {
@@ -69449,6 +70627,109 @@
           "node_id"
         ],
         "title": "CreatePlanRequest"
+      },
+      "CreateSendingIdentityRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "google_workspace",
+              "microsoft_365",
+              "smtp"
+            ],
+            "title": "Provider",
+            "default": "google_workspace"
+          },
+          "connection_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Connection Id"
+          },
+          "from_address": {
+            "type": "string",
+            "title": "From Address"
+          },
+          "from_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Name"
+          },
+          "reply_to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reply To"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "from_address"
+        ],
+        "title": "CreateSendingIdentityRequest"
       },
       "CreateShareLinkRequest": {
         "properties": {
@@ -71986,6 +73267,9 @@
                   "$ref": "#/components/schemas/UpdateNodeDataOp"
                 },
                 {
+                  "$ref": "#/components/schemas/UpdateNodeTypeOp"
+                },
+                {
                   "$ref": "#/components/schemas/AddNodeOp-Input"
                 },
                 {
@@ -72013,7 +73297,8 @@
                   "remove_node": "#/components/schemas/RemoveNodeOp",
                   "remove_variable": "#/components/schemas/RemoveVariableOp",
                   "set_variable": "#/components/schemas/SetVariableOp",
-                  "update_node_data": "#/components/schemas/UpdateNodeDataOp"
+                  "update_node_data": "#/components/schemas/UpdateNodeDataOp",
+                  "update_node_type": "#/components/schemas/UpdateNodeTypeOp"
                 }
               }
             },
@@ -72051,6 +73336,9 @@
                   "$ref": "#/components/schemas/UpdateNodeDataOp"
                 },
                 {
+                  "$ref": "#/components/schemas/UpdateNodeTypeOp"
+                },
+                {
                   "$ref": "#/components/schemas/AddNodeOp-Output"
                 },
                 {
@@ -72078,7 +73366,8 @@
                   "remove_node": "#/components/schemas/RemoveNodeOp",
                   "remove_variable": "#/components/schemas/RemoveVariableOp",
                   "set_variable": "#/components/schemas/SetVariableOp",
-                  "update_node_data": "#/components/schemas/UpdateNodeDataOp"
+                  "update_node_data": "#/components/schemas/UpdateNodeDataOp",
+                  "update_node_type": "#/components/schemas/UpdateNodeTypeOp"
                 }
               }
             },
@@ -74233,6 +75522,40 @@
         ],
         "title": "DistinctValuesResponse"
       },
+      "DnsRecordSpec": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "host": {
+            "type": "string",
+            "title": "Host"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "ttl": {
+            "type": "string",
+            "title": "Ttl"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "host",
+          "name",
+          "value",
+          "ttl"
+        ],
+        "title": "DnsRecordSpec",
+        "description": "Exactly what to paste into a DNS provider. Never prose."
+      },
       "DocBlock": {
         "properties": {
           "type": {
@@ -74720,6 +76043,74 @@
         "type": "object",
         "title": "DocumentSpec",
         "description": "Canonical AI-authorable shape for a Word document (.docx)."
+      },
+      "DomainFoldReport": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "backlink",
+              "reputation"
+            ],
+            "title": "Source"
+          },
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id"
+          },
+          "scanned": {
+            "type": "integer",
+            "title": "Scanned",
+            "default": 0
+          },
+          "already_linked": {
+            "type": "integer",
+            "title": "Already Linked",
+            "default": 0
+          },
+          "created": {
+            "type": "integer",
+            "title": "Created",
+            "default": 0
+          },
+          "matched": {
+            "type": "integer",
+            "title": "Matched",
+            "default": 0
+          },
+          "folded": {
+            "items": {
+              "$ref": "#/components/schemas/FoldedDomain"
+            },
+            "type": "array",
+            "title": "Folded"
+          },
+          "skipped": {
+            "items": {
+              "$ref": "#/components/schemas/SkippedRow"
+            },
+            "type": "array",
+            "title": "Skipped"
+          },
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Errors"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source",
+          "site_id",
+          "organization_id"
+        ],
+        "title": "DomainFoldReport"
       },
       "DomainUpsertRequest": {
         "properties": {
@@ -77253,6 +78644,235 @@
           "elapsed_ms"
         ],
         "title": "ExpandResponse"
+      },
+      "ExpertCandidate": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "confidence": {
+            "type": "integer",
+            "title": "Confidence"
+          },
+          "tier": {
+            "type": "string",
+            "enum": [
+              "strong",
+              "probable",
+              "weak"
+            ],
+            "title": "Tier"
+          },
+          "credentials": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Credentials"
+          },
+          "headline": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Headline"
+          },
+          "affiliation_hints": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Affiliation Hints"
+          },
+          "source_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Source Ids"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/ExpertEvidence"
+            },
+            "type": "array",
+            "title": "Evidence"
+          },
+          "existing_party_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Existing Party Id"
+          },
+          "existing_expert_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Existing Expert Status"
+          },
+          "why": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Why"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "display_name",
+          "confidence",
+          "tier"
+        ],
+        "title": "ExpertCandidate",
+        "description": "A person the research names, with the confidence the evidence supports."
+      },
+      "ExpertEvidence": {
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "title": "Source Id"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "quote",
+              "expert_opinion",
+              "authored",
+              "mention"
+            ],
+            "title": "Kind"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_id",
+          "url",
+          "kind"
+        ],
+        "title": "ExpertEvidence",
+        "description": "One reason a candidate is on the list — always traceable to a page."
+      },
+      "ExpertExtraction": {
+        "properties": {
+          "topic_id": {
+            "type": "string",
+            "title": "Topic Id"
+          },
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id"
+          },
+          "sources_analyzed": {
+            "type": "integer",
+            "title": "Sources Analyzed"
+          },
+          "sources_with_signals": {
+            "type": "integer",
+            "title": "Sources With Signals"
+          },
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/ExpertCandidate"
+            },
+            "type": "array",
+            "title": "Candidates"
+          },
+          "rejected": {
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Rejected"
+          }
+        },
+        "type": "object",
+        "required": [
+          "topic_id",
+          "organization_id",
+          "sources_analyzed",
+          "sources_with_signals",
+          "candidates"
+        ],
+        "title": "ExpertExtraction"
+      },
+      "ExpertPromotionResult": {
+        "properties": {
+          "topic_id": {
+            "type": "string",
+            "title": "Topic Id"
+          },
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id"
+          },
+          "promoted": {
+            "items": {
+              "$ref": "#/components/schemas/PromotedExpert"
+            },
+            "type": "array",
+            "title": "Promoted"
+          },
+          "skipped": {
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Skipped"
+          }
+        },
+        "type": "object",
+        "required": [
+          "topic_id",
+          "organization_id"
+        ],
+        "title": "ExpertPromotionResult"
       },
       "ExtensionContentResponse": {
         "properties": {
@@ -81537,6 +83157,111 @@
         "title": "FocalPoint",
         "description": "Continuous focal point — normalized [0..1] coordinates from the\ntop-left of the source. Used with fit='cover' to crop around a\nuser-chosen point of interest rather than a named anchor."
       },
+      "FoldDomainsRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 1000,
+            "minimum": 1,
+            "title": "Limit",
+            "default": 250
+          },
+          "include_toxic": {
+            "type": "boolean",
+            "title": "Include Toxic",
+            "default": false
+          },
+          "refold": {
+            "type": "boolean",
+            "title": "Refold",
+            "default": false
+          },
+          "verdicts": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Verdicts"
+          }
+        },
+        "type": "object",
+        "title": "FoldDomainsRequest",
+        "description": "How much of this site's opportunity data to bridge into the CRM.\n\nThe org comes from the SITE (canonical editor authorization), never from the\nbody — an injected ``organization_id`` is accepted and ignored."
+      },
+      "FoldedDomain": {
+        "properties": {
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "party_id": {
+            "type": "string",
+            "title": "Party Id"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "created": {
+            "type": "boolean",
+            "title": "Created"
+          },
+          "matched_by": {
+            "type": "string",
+            "title": "Matched By"
+          },
+          "provenance_edge": {
+            "type": "boolean",
+            "title": "Provenance Edge"
+          }
+        },
+        "type": "object",
+        "required": [
+          "domain",
+          "party_id",
+          "display_name",
+          "created",
+          "matched_by",
+          "provenance_edge"
+        ],
+        "title": "FoldedDomain"
+      },
       "FolderRecord": {
         "properties": {
           "id": {
@@ -83559,6 +85284,90 @@
           "folders"
         ],
         "title": "IdeWorkspaceState"
+      },
+      "IdentityHealth": {
+        "properties": {
+          "window_days": {
+            "type": "integer",
+            "title": "Window Days",
+            "default": 7
+          },
+          "sent": {
+            "type": "integer",
+            "title": "Sent",
+            "default": 0
+          },
+          "delivered": {
+            "type": "integer",
+            "title": "Delivered",
+            "default": 0
+          },
+          "hard_bounced": {
+            "type": "integer",
+            "title": "Hard Bounced",
+            "default": 0
+          },
+          "soft_bounced": {
+            "type": "integer",
+            "title": "Soft Bounced",
+            "default": 0
+          },
+          "complained": {
+            "type": "integer",
+            "title": "Complained",
+            "default": 0
+          },
+          "replied": {
+            "type": "integer",
+            "title": "Replied",
+            "default": 0
+          },
+          "unsubscribed": {
+            "type": "integer",
+            "title": "Unsubscribed",
+            "default": 0
+          },
+          "failed": {
+            "type": "integer",
+            "title": "Failed",
+            "default": 0
+          },
+          "failure_streak": {
+            "type": "integer",
+            "title": "Failure Streak",
+            "default": 0
+          },
+          "hard_bounce_rate": {
+            "type": "number",
+            "title": "Hard Bounce Rate",
+            "default": 0
+          },
+          "complaint_rate": {
+            "type": "number",
+            "title": "Complaint Rate",
+            "default": 0
+          },
+          "reply_rate": {
+            "type": "number",
+            "title": "Reply Rate",
+            "default": 0
+          },
+          "computed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Computed At"
+          },
+          "breaches": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Breaches"
+          }
+        },
+        "type": "object",
+        "title": "IdentityHealth",
+        "description": "The rolling picture. Rates are fractions (0.03 == 3%), never percentages —\none unit, decided once, so nothing downstream has to guess."
       },
       "ImageBgRemoveRequest": {
         "properties": {
@@ -90550,7 +92359,9 @@
           "loop_cancelled",
           "wf_run_attached",
           "wf_run_detached",
-          "supervisor_decision"
+          "supervisor_decision",
+          "supervisor_quarantined",
+          "supervisor_recovered"
         ],
         "title": "LoopEventType",
         "description": "The loop's own narrative vocabulary — NOT a mirror of workflow events."
@@ -90896,7 +92707,9 @@
             "default": ""
           },
           "input_schema": {
-            "additionalProperties": true,
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
             "type": "object",
             "title": "Input Schema"
           },
@@ -97248,6 +99061,57 @@
         "type": "object",
         "title": "PatchFolderRequest"
       },
+      "PauseRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 3,
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "title": "PauseRequest"
+      },
       "PauseRunResponse": {
         "properties": {
           "run_id": {
@@ -101292,6 +103156,61 @@
         ],
         "title": "ProjectionStatus"
       },
+      "PromoteExpertsRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "keys": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Keys"
+          },
+          "accept_weak": {
+            "type": "boolean",
+            "title": "Accept Weak",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "PromoteExpertsRequest",
+        "description": "The candidate keys a human accepted, from the CURRENT extraction."
+      },
       "PromotePlanResponse": {
         "properties": {
           "definition_id": {
@@ -101304,6 +103223,60 @@
           "definition_id"
         ],
         "title": "PromotePlanResponse"
+      },
+      "PromotedExpert": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "party_id": {
+            "type": "string",
+            "title": "Party Id"
+          },
+          "created": {
+            "type": "boolean",
+            "title": "Created"
+          },
+          "matched_by": {
+            "type": "string",
+            "title": "Matched By"
+          },
+          "expert_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expert Status"
+          },
+          "topic_edge": {
+            "type": "boolean",
+            "title": "Topic Edge",
+            "default": false
+          },
+          "source_edges": {
+            "type": "integer",
+            "title": "Source Edges",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "display_name",
+          "party_id",
+          "created",
+          "matched_by"
+        ],
+        "title": "PromotedExpert"
       },
       "PromptStartRequest": {
         "properties": {
@@ -103365,6 +105338,45 @@
           "created_at"
         ],
         "title": "RawPayloadEvidenceOut"
+      },
+      "ReadinessResponse": {
+        "properties": {
+          "identity_id": {
+            "type": "string",
+            "title": "Identity Id"
+          },
+          "ready": {
+            "type": "boolean",
+            "title": "Ready"
+          },
+          "refusal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SendingRefusal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "remaining_today": {
+            "type": "integer",
+            "title": "Remaining Today",
+            "default": 0
+          },
+          "remaining_this_hour": {
+            "type": "integer",
+            "title": "Remaining This Hour",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "identity_id",
+          "ready"
+        ],
+        "title": "ReadinessResponse",
+        "description": "Answer to \"may a campaign use this mailbox right now?\" — the campaign-side\ncontract Phase 5's runner consumes."
       },
       "RealtimeTool": {
         "properties": {
@@ -107646,255 +109658,6 @@
         ],
         "title": "RestoreRequestBody"
       },
-      "ResumeRequest": {
-        "properties": {
-          "organization_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Organization Id",
-            "description": "Organization context for the request; omitted to use the authenticated context."
-          },
-          "project_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Project Id",
-            "description": "Optional associated project selected by the caller."
-          },
-          "task_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Task Id",
-            "description": "Optional associated task selected by the caller."
-          },
-          "scope_ids": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Scope Ids",
-            "description": "Active context-scope ids selected by the caller and membership-validated server-side."
-          },
-          "context_anchor": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/ContextAnchor"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Durable resource identity from which authoritative organization and task context is reloaded."
-          },
-          "source_app": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Source App",
-            "description": "Stable application slug that initiated the request."
-          },
-          "source_feature": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Source Feature",
-            "description": "Stable feature slug within the source application."
-          },
-          "initiation": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "user",
-                  "auto"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Initiation",
-            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
-          },
-          "store": {
-            "type": "boolean",
-            "title": "Store",
-            "description": "Persist request outputs when true; run ephemerally when false.",
-            "default": true
-          },
-          "target_instance_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Target Instance Id",
-            "description": "Specific connected desktop instance allowed to claim delegated local tools."
-          },
-          "user_request_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "User Request Id"
-          },
-          "config_overrides": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/LLMParams"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "debug": {
-            "type": "boolean",
-            "title": "Debug",
-            "default": false
-          },
-          "tools": {
-            "items": {
-              "oneOf": [
-                {
-                  "$ref": "#/components/schemas/RegisteredToolSpec"
-                },
-                {
-                  "$ref": "#/components/schemas/InlineToolSpec"
-                },
-                {
-                  "$ref": "#/components/schemas/AgentToolSpec"
-                }
-              ],
-              "discriminator": {
-                "propertyName": "kind",
-                "mapping": {
-                  "agent": "#/components/schemas/AgentToolSpec",
-                  "inline": "#/components/schemas/InlineToolSpec",
-                  "registered": "#/components/schemas/RegisteredToolSpec"
-                }
-              }
-            },
-            "type": "array",
-            "title": "Tools",
-            "default": []
-          },
-          "tools_replace": {
-            "anyOf": [
-              {
-                "items": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/RegisteredToolSpec"
-                    },
-                    {
-                      "$ref": "#/components/schemas/InlineToolSpec"
-                    },
-                    {
-                      "$ref": "#/components/schemas/AgentToolSpec"
-                    }
-                  ],
-                  "discriminator": {
-                    "propertyName": "kind",
-                    "mapping": {
-                      "agent": "#/components/schemas/AgentToolSpec",
-                      "inline": "#/components/schemas/InlineToolSpec",
-                      "registered": "#/components/schemas/RegisteredToolSpec"
-                    }
-                  }
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Tools Replace"
-          },
-          "client": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/ClientContext"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "user": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/UserOverrides"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "context": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Context",
-            "default": {}
-          },
-          "writable_variables": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Writable Variables",
-            "default": []
-          },
-          "allow_context_create": {
-            "type": "boolean",
-            "title": "Allow Context Create",
-            "default": false
-          }
-        },
-        "type": "object",
-        "title": "ResumeRequest"
-      },
       "ResumeRunRequest": {
         "properties": {
           "checkpoint_id": {
@@ -111484,6 +113247,745 @@
         ],
         "title": "SelectedFileResponse"
       },
+      "SendingEventRecord": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "event_kind": {
+            "type": "string",
+            "title": "Event Kind"
+          },
+          "to_address_key": {
+            "type": "string",
+            "title": "To Address Key"
+          },
+          "subject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject"
+          },
+          "party_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Party Id"
+          },
+          "outreach_list_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outreach List Id"
+          },
+          "provider_message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Message Id"
+          },
+          "bounce_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bounce Type"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "actor_kind": {
+            "type": "string",
+            "title": "Actor Kind"
+          },
+          "actor_user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor User Id"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Occurred At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "event_kind",
+          "to_address_key",
+          "actor_kind",
+          "occurred_at"
+        ],
+        "title": "SendingEventRecord",
+        "description": "One line of the audit trail: who sent what to whom, and what happened."
+      },
+      "SendingIdentityDetail": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "google_workspace",
+              "microsoft_365",
+              "smtp"
+            ],
+            "title": "Provider"
+          },
+          "from_address": {
+            "type": "string",
+            "title": "From Address"
+          },
+          "from_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Name"
+          },
+          "sending_domain": {
+            "type": "string",
+            "title": "Sending Domain"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "verifying",
+              "warming",
+              "ready",
+              "paused",
+              "disabled"
+            ],
+            "title": "Status"
+          },
+          "domain_verified": {
+            "type": "boolean",
+            "title": "Domain Verified"
+          },
+          "spf_pass": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spf Pass"
+          },
+          "dkim_pass": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dkim Pass"
+          },
+          "dmarc_pass": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dmarc Pass"
+          },
+          "warmup": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WarmupProgress"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "health": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdentityHealth"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "paused_by_kind": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "system",
+                  "human"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paused By Kind"
+          },
+          "pause_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pause Reason"
+          },
+          "last_send_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Send At"
+          },
+          "can_run_campaign": {
+            "type": "boolean",
+            "title": "Can Run Campaign",
+            "default": false
+          },
+          "issues": {
+            "items": {
+              "$ref": "#/components/schemas/SendingRefusal"
+            },
+            "type": "array",
+            "title": "Issues"
+          },
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "connection_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Connection Id"
+          },
+          "provider_account": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Account"
+          },
+          "reply_to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reply To"
+          },
+          "dns_record": {
+            "$ref": "#/components/schemas/DnsRecordSpec"
+          },
+          "daily_cap": {
+            "type": "integer",
+            "title": "Daily Cap"
+          },
+          "hourly_cap": {
+            "type": "integer",
+            "title": "Hourly Cap"
+          },
+          "min_interval_seconds": {
+            "type": "integer",
+            "title": "Min Interval Seconds"
+          },
+          "max_interval_seconds": {
+            "type": "integer",
+            "title": "Max Interval Seconds"
+          },
+          "quiet_hours_start": {
+            "type": "integer",
+            "title": "Quiet Hours Start"
+          },
+          "quiet_hours_end": {
+            "type": "integer",
+            "title": "Quiet Hours End"
+          },
+          "send_weekends": {
+            "type": "boolean",
+            "title": "Send Weekends"
+          },
+          "default_recipient_timezone": {
+            "type": "string",
+            "title": "Default Recipient Timezone"
+          },
+          "effective_daily_cap": {
+            "type": "integer",
+            "title": "Effective Daily Cap"
+          },
+          "sends_today": {
+            "type": "integer",
+            "title": "Sends Today"
+          },
+          "remaining_today": {
+            "type": "integer",
+            "title": "Remaining Today"
+          },
+          "domain_checked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain Checked At"
+          },
+          "auth_checked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auth Checked At"
+          },
+          "recent_checks": {
+            "items": {
+              "$ref": "#/components/schemas/CheckRecord"
+            },
+            "type": "array",
+            "title": "Recent Checks"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "display_name",
+          "provider",
+          "from_address",
+          "sending_domain",
+          "status",
+          "domain_verified",
+          "organization_id",
+          "created_at",
+          "updated_at",
+          "dns_record",
+          "daily_cap",
+          "hourly_cap",
+          "min_interval_seconds",
+          "max_interval_seconds",
+          "quiet_hours_start",
+          "quiet_hours_end",
+          "send_weekends",
+          "default_recipient_timezone",
+          "effective_daily_cap",
+          "sends_today",
+          "remaining_today"
+        ],
+        "title": "SendingIdentityDetail"
+      },
+      "SendingIdentityView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "google_workspace",
+              "microsoft_365",
+              "smtp"
+            ],
+            "title": "Provider"
+          },
+          "from_address": {
+            "type": "string",
+            "title": "From Address"
+          },
+          "from_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Name"
+          },
+          "sending_domain": {
+            "type": "string",
+            "title": "Sending Domain"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "verifying",
+              "warming",
+              "ready",
+              "paused",
+              "disabled"
+            ],
+            "title": "Status"
+          },
+          "domain_verified": {
+            "type": "boolean",
+            "title": "Domain Verified"
+          },
+          "spf_pass": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spf Pass"
+          },
+          "dkim_pass": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dkim Pass"
+          },
+          "dmarc_pass": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dmarc Pass"
+          },
+          "warmup": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WarmupProgress"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "health": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdentityHealth"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "paused_by_kind": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "system",
+                  "human"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paused By Kind"
+          },
+          "pause_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pause Reason"
+          },
+          "last_send_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Send At"
+          },
+          "can_run_campaign": {
+            "type": "boolean",
+            "title": "Can Run Campaign",
+            "default": false
+          },
+          "issues": {
+            "items": {
+              "$ref": "#/components/schemas/SendingRefusal"
+            },
+            "type": "array",
+            "title": "Issues"
+          },
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "display_name",
+          "provider",
+          "from_address",
+          "sending_domain",
+          "status",
+          "domain_verified",
+          "organization_id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "SendingIdentityView",
+        "description": "The list row — enough to see at a glance which mailbox needs attention."
+      },
+      "SendingPolicyView": {
+        "properties": {
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id"
+          },
+          "outreach_enabled": {
+            "type": "boolean",
+            "title": "Outreach Enabled"
+          },
+          "disabled_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disabled At"
+          },
+          "disabled_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disabled Reason"
+          },
+          "disabled_by_kind": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "system",
+                  "human"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disabled By Kind"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "identity_count": {
+            "type": "integer",
+            "title": "Identity Count",
+            "default": 0
+          },
+          "ready_identity_count": {
+            "type": "integer",
+            "title": "Ready Identity Count",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "organization_id",
+          "outreach_enabled"
+        ],
+        "title": "SendingPolicyView"
+      },
+      "SendingRefusal": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "fix_action": {
+            "type": "string",
+            "enum": [
+              "connect_mailbox",
+              "publish_dns_record",
+              "check_domain",
+              "check_authentication",
+              "start_warmup",
+              "wait_for_warmup",
+              "wait_for_pacing",
+              "wait_for_quiet_hours",
+              "review_and_resume",
+              "enable_org_outreach",
+              "verify_recipient_address",
+              "choose_another_identity",
+              "reconnect_mailbox",
+              "none"
+            ],
+            "title": "Fix Action"
+          },
+          "fix_detail": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Fix Detail"
+          },
+          "transient": {
+            "type": "boolean",
+            "title": "Transient",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "fix_action"
+        ],
+        "title": "SendingRefusal",
+        "description": "One machine-readable reason a send was refused, with its fix."
+      },
       "SeoCapability": {
         "type": "string",
         "enum": [
@@ -112130,6 +114632,67 @@
           "reason"
         ],
         "title": "SetCanonicalResponse"
+      },
+      "SetPolicyRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "outreach_enabled": {
+            "type": "boolean",
+            "title": "Outreach Enabled"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "outreach_enabled"
+        ],
+        "title": "SetPolicyRequest"
       },
       "SetSampleRequest": {
         "properties": {
@@ -114231,6 +116794,30 @@
         ],
         "title": "SkipProposal",
         "description": "Synthesize a (possibly empty) output and continue."
+      },
+      "SkippedRow": {
+        "properties": {
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "row_id": {
+            "type": "string",
+            "title": "Row Id"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "domain",
+          "row_id",
+          "reason"
+        ],
+        "title": "SkippedRow",
+        "description": "An opportunity row we deliberately did NOT fold, in the words a user reads."
       },
       "SlideSpec": {
         "properties": {
@@ -123794,6 +126381,35 @@
         "title": "UpdateNodeDataOp",
         "description": "Deep-merge ``data`` into an existing node's ``data`` payload.\n\nNested dicts merge recursively; an explicit ``None`` deletes the key;\nscalars/lists replace. ``data.config`` is where node config lives, so\n``{\"config\": {\"timeout_s\": 60}}`` tweaks one config key in place."
       },
+      "UpdateNodeTypeOp": {
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "update_node_type",
+            "title": "Op",
+            "default": "update_node_type"
+          },
+          "node_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Node Id"
+          },
+          "type": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Type"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "node_id",
+          "type"
+        ],
+        "title": "UpdateNodeTypeOp",
+        "description": "Replace an existing node's top-level React Flow renderer type.\n\nThe executable spec remains ``data.spec_type``. Callers changing a node's\nconcrete identity generally pair this operation with\n:class:`UpdateNodeDataOp` in the same :class:`DefinitionPatch` so the\nrenderer category and executable spec persist atomically."
+      },
       "UpdatePlanRequest": {
         "properties": {
           "organization_id": {
@@ -123933,6 +126549,193 @@
           "data"
         ],
         "title": "UpdateRowResponse"
+      },
+      "UpdateSendingIdentityRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "from_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Name"
+          },
+          "reply_to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reply To"
+          },
+          "daily_cap": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 500,
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Daily Cap"
+          },
+          "hourly_cap": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 200,
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hourly Cap"
+          },
+          "min_interval_seconds": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 86400,
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Interval Seconds"
+          },
+          "max_interval_seconds": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 86400,
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Interval Seconds"
+          },
+          "quiet_hours_start": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 23,
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quiet Hours Start"
+          },
+          "quiet_hours_end": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 23,
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quiet Hours End"
+          },
+          "send_weekends": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Send Weekends"
+          },
+          "default_recipient_timezone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Recipient Timezone"
+          },
+          "dkim_selector": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dkim Selector"
+          }
+        },
+        "type": "object",
+        "title": "UpdateSendingIdentityRequest",
+        "description": "Pacing and presentation only.\n\nDeliberately CANNOT set `status`, warmup dates, or any verification flag: a\nclient that could write `status='ready'` would be an override, and the whole\ndesign rests on there being none."
       },
       "UpdateTriggerActiveRequest": {
         "properties": {
@@ -128902,6 +131705,58 @@
         "title": "VisionMediaUploadResponse",
         "description": "Response payload for ``POST /media/upload``."
       },
+      "WarmupProgress": {
+        "properties": {
+          "day": {
+            "type": "integer",
+            "title": "Day"
+          },
+          "total_days": {
+            "type": "integer",
+            "title": "Total Days"
+          },
+          "daily_allowance": {
+            "type": "integer",
+            "title": "Daily Allowance"
+          },
+          "percent_complete": {
+            "type": "integer",
+            "title": "Percent Complete"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "day",
+          "total_days",
+          "daily_allowance",
+          "percent_complete"
+        ],
+        "title": "WarmupProgress"
+      },
       "WatchdogStatusResponse": {
         "properties": {
           "tables": {
@@ -131749,6 +134604,255 @@
         ],
         "title": "RestoreResponse"
       },
+      "aidream__services__conversation_context__continue_conversation__ResumeRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "scope_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope Ids",
+            "description": "Active context-scope ids selected by the caller and membership-validated server-side."
+          },
+          "context_anchor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContextAnchor"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Durable resource identity from which authoritative organization and task context is reloaded."
+          },
+          "source_app": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source App",
+            "description": "Stable application slug that initiated the request."
+          },
+          "source_feature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Feature",
+            "description": "Stable feature slug within the source application."
+          },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "user",
+                  "auto"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
+          },
+          "store": {
+            "type": "boolean",
+            "title": "Store",
+            "description": "Persist request outputs when true; run ephemerally when false.",
+            "default": true
+          },
+          "target_instance_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Instance Id",
+            "description": "Specific connected desktop instance allowed to claim delegated local tools."
+          },
+          "user_request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Request Id"
+          },
+          "config_overrides": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LLMParams"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "debug": {
+            "type": "boolean",
+            "title": "Debug",
+            "default": false
+          },
+          "tools": {
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/RegisteredToolSpec"
+                },
+                {
+                  "$ref": "#/components/schemas/InlineToolSpec"
+                },
+                {
+                  "$ref": "#/components/schemas/AgentToolSpec"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "kind",
+                "mapping": {
+                  "agent": "#/components/schemas/AgentToolSpec",
+                  "inline": "#/components/schemas/InlineToolSpec",
+                  "registered": "#/components/schemas/RegisteredToolSpec"
+                }
+              }
+            },
+            "type": "array",
+            "title": "Tools",
+            "default": []
+          },
+          "tools_replace": {
+            "anyOf": [
+              {
+                "items": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/RegisteredToolSpec"
+                    },
+                    {
+                      "$ref": "#/components/schemas/InlineToolSpec"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AgentToolSpec"
+                    }
+                  ],
+                  "discriminator": {
+                    "propertyName": "kind",
+                    "mapping": {
+                      "agent": "#/components/schemas/AgentToolSpec",
+                      "inline": "#/components/schemas/InlineToolSpec",
+                      "registered": "#/components/schemas/RegisteredToolSpec"
+                    }
+                  }
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tools Replace"
+          },
+          "client": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClientContext"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "user": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserOverrides"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "context": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Context",
+            "default": {}
+          },
+          "writable_variables": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Writable Variables",
+            "default": []
+          },
+          "allow_context_create": {
+            "type": "boolean",
+            "title": "Allow Context Create",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "ResumeRequest"
+      },
       "aidream__services__knowledge_graph__graph__MentionRow": {
         "properties": {
           "chunk_id": {
@@ -131918,6 +135022,49 @@
           "source_id"
         ],
         "title": "IngestRequest"
+      },
+      "aidream__services__sending_identity__models__ResumeRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          }
+        },
+        "type": "object",
+        "title": "ResumeRequest",
+        "description": "No fields. Resuming is a human act with no parameters — in particular\nthere is no \"resume and skip the checks\"."
       },
       "aidream__services__seo__competitor_autopsy__EvidenceCoverage": {
         "properties": {

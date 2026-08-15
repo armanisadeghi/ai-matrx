@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 356 active entity tokens. A token here is FK-valid for
+// 357 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -175,6 +175,7 @@ export type EntityTypeToken =
   | "growth_loop_event"
   | "growth_loop_run"
   | "growth_loop_stage_run"
+  | "guided_checklist_run"
   | "heatmap_save"
   | "hindsight_enrollment"
   | "hindsight_finding"
@@ -777,6 +778,7 @@ export type ScopeableEntityToken =
   | "growth_loop_event"
   | "growth_loop_run"
   | "growth_loop_stage_run"
+  | "guided_checklist_run"
   | "heatmap_save"
   | "hindsight_enrollment"
   | "hindsight_finding"
@@ -1171,6 +1173,7 @@ export const ENTITY_TYPE_METADATA = {
   "growth_loop_event": { token: "growth_loop_event", schema: "growth", table: "loop_event", label: "Growth Loop Event", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "growth_loop_run": { token: "growth_loop_run", schema: "growth", table: "loop_run", label: "Growth Loop Run", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: "label", contentRole: null, referenceCategory: null },
   "growth_loop_stage_run": { token: "growth_loop_stage_run", schema: "growth", table: "loop_stage_run", label: "Growth Loop Stage Run", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "guided_checklist_run": { token: "guided_checklist_run", schema: "platform", table: "guided_checklist_run", label: "Guided Checklist Run", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "heatmap_save": { token: "heatmap_save", schema: "workbench", table: "heatmap_saves", label: "Heatmap Save", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "title", contentRole: null, referenceCategory: null },
   "hindsight_enrollment": { token: "hindsight_enrollment", schema: "hindsight", table: "enrollment", label: "Hindsight Enrollment", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "display_name", contentRole: null, referenceCategory: null },
   "hindsight_finding": { token: "hindsight_finding", schema: "hindsight", table: "finding", label: "Hindsight Finding", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1531,6 +1534,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "growth_loop_event",
   "growth_loop_run",
   "growth_loop_stage_run",
+  "guided_checklist_run",
   "heatmap_save",
   "hindsight_enrollment",
   "hindsight_finding",
