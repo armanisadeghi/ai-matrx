@@ -55,6 +55,9 @@ export async function createDocument(
     };
   }
 
+  // Org is NOT NULL — ride the explicit org if given, else the active org.
+  const organizationId = await ensureOrgId(args.organizationId);
+
   const { data, error } = await supabase
     .schema("workbench")
     .from("udt_documents")
@@ -62,13 +65,18 @@ export async function createDocument(
       document_name: args.name,
       description: args.description ?? null,
       source: args.source ?? "created",
-      // Org is NOT NULL — ride the explicit org if given, else the active org.
-      organization_id: await ensureOrgId(args.organizationId),
+      organization_id: organizationId,
       project_id: args.projectId ?? null,
       task_id: args.taskId ?? null,
-      is_public: args.isPublic ?? false,
       original_file_id: args.originalFileId ?? null,
-      user_id: userData.user.id,
+      // CANONICAL columns (workbench_udt_canonical_step1). `visibility` is the
+      // source of truth; the legacy `is_public` boolean is derived from it by
+      // the workbench._bridge_legacy_owner trigger, so writing both here would
+      // be two authorities for one fact. A new document defaults to `internal`
+      // — it is org work product, not an individual person's private thing
+      // (db-rules §6) — unless the caller explicitly asked for public.
+      created_by: userData.user.id,
+      visibility: args.isPublic ? "public" : "internal",
     })
     .select("*")
     .single();

@@ -5,7 +5,14 @@ import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Globe, AlertTriangle, Check, Copy, Lock } from "lucide-react";
+import {
+  Globe,
+  AlertTriangle,
+  Check,
+  Copy,
+  Lock,
+  Building2,
+} from "lucide-react";
 import { getShareableResource } from "@/utils/permissions/registry";
 import { publicResourceUrl } from "@/utils/permissions/publicLane";
 import type {
@@ -13,10 +20,12 @@ import type {
   ResourceType,
   ShareActionResult,
 } from "@/utils/permissions/types";
+import type { VisibilityValue } from "@/utils/permissions/service";
 import { PublicBadge } from "../PermissionBadge";
 import { useToast } from "@/components/ui/use-toast";
 import { ShareLinkPanel } from "../ShareLinkPanel";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import { extractErrorMessage } from "@/utils/errors";
 import {
   getShareCapabilities,
@@ -33,6 +42,13 @@ import {
 interface PublicAccessTabProps {
   /** Whether is_public = true on the resource row */
   isPublic: boolean;
+  /**
+   * The row's canonical `visibility` enum value, or null for a legacy
+   * boolean-backed type that genuinely has only two states.
+   */
+  visibility?: VisibilityValue | null;
+  /** Write the canonical enum. Required for the three-state control to render. */
+  onSetVisibility?: (next: VisibilityValue) => Promise<ShareActionResult>;
   /** The public permission row from the permissions table, if any */
   publicPermission?: Permission;
   isOwner: boolean;
@@ -49,15 +65,57 @@ interface PublicAccessTabProps {
 }
 
 /**
- * PublicAccessTab — binary public / private toggle.
+ * The three states a person actually chooses between. `link` is a real enum
+ * value but it is set by the share-link flow, not picked here — offering it as
+ * a fourth button would give one value two owners.
+ */
+const VISIBILITY_CHOICES: {
+  value: VisibilityValue;
+  label: string;
+  icon: typeof Lock;
+  describe: (typeLabel: string) => string;
+}[] = [
+  {
+    value: "personal",
+    label: "Only me",
+    icon: Lock,
+    describe: (t) => `Just you. Nobody else can open this ${t}.`,
+  },
+  {
+    value: "internal",
+    label: "My organization",
+    icon: Building2,
+    describe: (t) => `Anyone in this ${t}'s organization can open and edit it.`,
+  },
+  {
+    value: "public",
+    label: "Anyone",
+    icon: Globe,
+    describe: (t) => `Open to everyone — anyone can view this ${t}, no sign-in.`,
+  },
+];
+
+/**
+ * PublicAccessTab — who can reach this item.
  *
- * Public = anyone with the link can read (no sign-in required).
- * Private = only owner + explicit user/org grants + hierarchy members.
+ * TWO SHAPES, because the platform genuinely has two:
+ *  • Canonical enum types (`visibility`): a THREE-state picker — Only me /
+ *    My organization / Anyone. "My organization" is the state that was
+ *    previously unreachable from the UI: the row already carried an
+ *    organization_id, but with only a public on/off switch there was no way to
+ *    say "share this with my team".
+ *  • Legacy boolean types (`is_public`): the original two-state switch,
+ *    unchanged. They have no `internal` to move to, so offering one would
+ *    promise a team access nobody would actually get.
  *
- * Uses make_resource_public() / make_resource_private() RPCs via the service.
+ * Enum types render the picker INSTEAD of the switch, never both — the switch
+ * is a strict subset of the picker, and two controls for one column is how they
+ * drift apart.
  */
 export function PublicAccessTab({
   isPublic,
+  visibility,
+  onSetVisibility,
   isOwner,
   onMakePublic,
   onRevokePublic,
@@ -141,6 +199,44 @@ export function PublicAccessTab({
       const message =
         error instanceof Error ? error.message : "Please try again";
       toast({ title: "Error", description: message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * The three-state control is offered only when all three are true: the
+   * physical column really is the canonical enum, the caller wired a writer,
+   * and we know the row's current value. Anything less and we fall back to the
+   * binary switch rather than render a picker that cannot tell the truth.
+   */
+  const enumPicker =
+    caps.publicState?.kind === "enum" && onSetVisibility && visibility != null;
+
+  const handlePickVisibility = async (next: VisibilityValue) => {
+    if (!isOwner || !onSetVisibility || next === visibility) return;
+    setLoading(true);
+    try {
+      const result = await onSetVisibility(next);
+      const choice = VISIBILITY_CHOICES.find((c) => c.value === next);
+      if (result?.success !== false) {
+        toast({
+          title: `Visibility set to “${choice?.label ?? next}”`,
+          description: choice?.describe(typeLabel),
+        });
+      } else {
+        toast({
+          title: "Couldn't change visibility",
+          description: result?.error || "Please try again",
+          variant: "destructive",
+        });
+      }
+    } catch (error: unknown) {
+      toast({
+        title: "Couldn't change visibility",
+        description: extractErrorMessage(error) || "Please try again",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -286,6 +382,88 @@ export function PublicAccessTab({
                 />
               </span>
             </div>
+          ) : enumPicker ? (
+            <>
+              <div
+                className="space-y-1.5 p-3 bg-muted/30 rounded-lg border"
+                role="radiogroup"
+                aria-label="Who can reach this item"
+              >
+                <p className="text-xs font-medium">Who can reach this</p>
+                <div className="grid gap-1.5">
+                  {VISIBILITY_CHOICES.map((choice) => {
+                    const Icon = choice.icon;
+                    const selected = visibility === choice.value;
+                    return (
+                      <button
+                        key={choice.value}
+                        type="button"
+                        role="radio"
+                        aria-checked={selected}
+                        disabled={!isOwner || loading}
+                        onClick={() => handlePickVisibility(choice.value)}
+                        className={cn(
+                          "flex w-full items-start gap-2.5 rounded-md border p-2 text-left transition-colors",
+                          selected
+                            ? "border-primary bg-background"
+                            : "border-transparent hover:bg-background/60",
+                          (!isOwner || loading) && "opacity-60",
+                        )}
+                      >
+                        <Icon
+                          className={cn(
+                            "mt-0.5 h-4 w-4 flex-shrink-0",
+                            selected ? "text-primary" : "text-muted-foreground",
+                          )}
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-center gap-1.5 text-sm font-medium">
+                            {choice.label}
+                            {selected && (
+                              <Check className="h-3.5 w-3.5 text-primary" />
+                            )}
+                          </span>
+                          <span className="block text-xs text-muted-foreground">
+                            {choice.describe(typeLabel)}
+                          </span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {!isOwner && (
+                  <p className="text-xs text-muted-foreground">
+                    Only the owner can change who can reach this {typeLabel}.
+                  </p>
+                )}
+              </div>
+
+              {isPublic && publicUrl && (
+                <div className="space-y-1.5 p-3 bg-muted/30 rounded-lg border">
+                  <p className="text-xs font-medium">Public page</p>
+                  <div className="flex items-center gap-1.5 rounded-md border bg-background p-1.5">
+                    <Input
+                      readOnly
+                      value={publicUrl}
+                      className="h-7 border-0 bg-transparent px-1 text-xs shadow-none focus-visible:ring-0"
+                    />
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 px-2"
+                      onClick={copyPublicUrl}
+                    >
+                      {copied ? (
+                        <Check className="h-3.5 w-3.5" />
+                      ) : (
+                        <Copy className="h-3.5 w-3.5" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+            </>
           ) : (
             <>
               <div className="group flex items-start justify-between gap-3 p-3 bg-muted/30 rounded-lg border">

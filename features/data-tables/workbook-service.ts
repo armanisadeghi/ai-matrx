@@ -81,9 +81,14 @@ export async function createWorkbook(
       organization_id: organizationId,
       project_id: args.projectId ?? null,
       task_id: args.taskId ?? null,
-      is_public: args.isPublic ?? false,
       original_file_id: args.originalFileId ?? null,
-      user_id: userData.user.id,
+      // CANONICAL columns (workbench_udt_canonical_step1). `visibility` is the
+      // source of truth; legacy `is_public` is derived from it by the
+      // workbench._bridge_legacy_owner trigger. A new workbook defaults to
+      // `internal` — org work product, not an individual's private thing
+      // (db-rules §6) — unless the caller explicitly asked for public.
+      created_by: userData.user.id,
+      visibility: args.isPublic ? "public" : "internal",
     })
     .select("*")
     .single();

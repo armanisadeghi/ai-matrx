@@ -28,7 +28,9 @@ import {
   updatePermissionLevel,
   getSharedWithMe,
   getResourceVisibility,
+  setResourceVisibility,
   type ResourceVisibility,
+  type VisibilityValue,
 } from "./service";
 
 // ============================================================================
@@ -268,6 +270,7 @@ export function useSharing(
   const [error, setError] = useState<string | null>(null);
   const [visibility, setVisibility] = useState<ResourceVisibility>({
     isPublic: false,
+    visibility: null,
   });
   const { permissions, refresh: refreshPermissions } = usePermissions(
     resourceType,
@@ -484,14 +487,45 @@ export function useSharing(
     [resourceType, resourceId, refresh],
   );
 
+  const handleSetVisibility = useCallback(
+    async (next: VisibilityValue) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const result = await setResourceVisibility(
+          resourceType,
+          resourceId,
+          next,
+        );
+        if (!result.success) {
+          setError(result.error || "Failed to update visibility");
+          return result;
+        }
+        await refresh();
+        return result;
+      } catch (err) {
+        const errorMessage =
+          extractErrorMessage(err) || "Failed to update visibility";
+        setError(errorMessage);
+        return { success: false, error: errorMessage };
+      } finally {
+        setLoading(false);
+      }
+    },
+    [resourceType, resourceId, refresh],
+  );
+
   return {
     permissions,
     isPublic: visibility.isPublic,
+    /** The canonical enum value, or null for legacy boolean-backed types. */
+    visibility: visibility.visibility,
     loading,
     error,
     shareWithUser: handleShareWithUser,
     shareWithOrg: handleShareWithOrg,
     makePublic: handleMakePublic,
+    setVisibility: handleSetVisibility,
     revokeAccess: handleRevokeAccess,
     revokeOrgAccess: handleRevokeOrgAccess,
     updateLevel: handleUpdateLevel,
@@ -561,6 +595,7 @@ export function useSharingStatus(
 ) {
   const [visibility, setVisibility] = useState<ResourceVisibility>({
     isPublic: false,
+    visibility: null,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

@@ -9,7 +9,11 @@ jest.mock("../shareLinks", () => ({
 }));
 
 import { supabase } from "@/utils/supabase/client";
-import { getResourceVisibility, makePublic } from "../service";
+import {
+  getResourceVisibility,
+  makePublic,
+  setResourceVisibility,
+} from "../service";
 import { getShareCapabilities } from "../shareLinks";
 
 const mockSchema = jest.mocked(supabase.schema);
@@ -32,7 +36,7 @@ describe("getResourceVisibility", () => {
         "seo_collection_run",
         "c3f6270e-b750-49d0-bcc2-4ea02b39f7b7",
       ),
-    ).resolves.toEqual({ isPublic: false });
+    ).resolves.toEqual({ isPublic: false, visibility: null });
     expect(mockSchema).not.toHaveBeenCalled();
   });
 
@@ -56,7 +60,7 @@ describe("getResourceVisibility", () => {
         "agent_card",
         "4fb96afb-0ff0-4a01-92e1-531a14872144",
       ),
-    ).resolves.toEqual({ isPublic: true });
+    ).resolves.toEqual({ isPublic: true, visibility: "public" });
     expect(select).toHaveBeenCalledWith("card_visibility");
     expect(select).not.toHaveBeenCalledWith("visibility");
   });
@@ -105,5 +109,57 @@ describe("getResourceVisibility", () => {
       message: "Resource is now public",
     });
     expect(update).toHaveBeenCalledWith({ card_visibility: "public" });
+  });
+});
+
+describe("setResourceVisibility", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("writes the canonical enum column for a three-state resource", async () => {
+    mockGetShareCapabilities.mockResolvedValue({
+      supportsPublic: true,
+      isLinkShareable: true,
+      publicState: { column: "visibility", kind: "enum" },
+    });
+    const select = jest.fn().mockResolvedValue({
+      data: [{ id: "d92ff8a4-88f2-4afe-a185-84298397f20e" }],
+      error: null,
+    });
+    const eq = jest.fn().mockReturnValue({ select });
+    const update = jest.fn().mockReturnValue({ eq });
+    const from = jest.fn().mockReturnValue({ update });
+    mockSchema.mockReturnValue({ from } as never);
+
+    await expect(
+      setResourceVisibility(
+        "udt_document",
+        "d92ff8a4-88f2-4afe-a185-84298397f20e",
+        "internal",
+      ),
+    ).resolves.toEqual({ success: true });
+    expect(mockSchema).toHaveBeenCalledWith("workbench");
+    expect(from).toHaveBeenCalledWith("udt_documents");
+    expect(update).toHaveBeenCalledWith({ visibility: "internal" });
+  });
+
+  it("refuses a legacy boolean type rather than silently losing 'internal'", async () => {
+    // A boolean-backed type has no organization state. Mapping `internal` onto
+    // "not public" would tell the user their team can see something when in
+    // fact nobody but them can.
+    mockGetShareCapabilities.mockResolvedValue({
+      supportsPublic: true,
+      isLinkShareable: true,
+      publicState: { column: "is_public", kind: "boolean" },
+    });
+
+    const result = await setResourceVisibility(
+      "batch_provider_batch",
+      "c3f6270e-b750-49d0-bcc2-4ea02b39f7b7",
+      "internal",
+    );
+    expect(result.success).toBe(false);
+    expect(mockSchema).not.toHaveBeenCalled();
   });
 });

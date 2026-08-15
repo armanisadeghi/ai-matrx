@@ -136,8 +136,21 @@ function parseShareRpcResult(data: Json | null | undefined): {
 // Resource Visibility (is_public lives on the resource row)
 // ============================================================================
 
+/**
+ * The canonical visibility enum (platform.visibility). `link` is set by the
+ * share-link flow, not by the visibility picker, so the picker offers the three
+ * states a person actually chooses between: personal / internal / public.
+ */
+export type VisibilityValue = "personal" | "internal" | "link" | "public";
+
 export interface ResourceVisibility {
   isPublic: boolean;
+  /**
+   * The row's actual enum value, for types whose public state is the canonical
+   * `visibility` column. Null for legacy boolean-backed types, which genuinely
+   * only have two states — a caller must not invent a third for them.
+   */
+  visibility: VisibilityValue | null;
 }
 
 /**
@@ -207,7 +220,7 @@ export async function getResourceVisibility(
   }
   const capabilities = await getShareCapabilities(resourceType);
   if (!capabilities.publicState) {
-    return { isPublic: false };
+    return { isPublic: false, visibility: null };
   }
 
   const client = resolveDynamicClient(entry.schemaName);
@@ -221,12 +234,62 @@ export async function getResourceVisibility(
     throw operationFailed("check this item's public visibility", error);
   }
   const value = data[capabilities.publicState.column];
-  return {
-    isPublic:
-      capabilities.publicState.kind === "enum"
-        ? value === "public"
-        : value === true,
-  };
+  if (capabilities.publicState.kind === "enum") {
+    return {
+      isPublic: value === "public",
+      visibility: isVisibilityValue(value) ? value : null,
+    };
+  }
+  return { isPublic: value === true, visibility: null };
+}
+
+const VISIBILITY_VALUES = ["personal", "internal", "link", "public"] as const;
+
+function isVisibilityValue(value: unknown): value is VisibilityValue {
+  return (
+    typeof value === "string" &&
+    (VISIBILITY_VALUES as readonly string[]).includes(value)
+  );
+}
+
+/**
+ * Set a resource's canonical visibility — the three-state answer to "who can
+ * reach this", as opposed to makePublic()'s two-state one.
+ *
+ * Enum-backed types ONLY. A legacy boolean type has no `internal` to move to,
+ * so this refuses rather than silently mapping internal onto "not public" —
+ * which would tell the user their team can see something when nobody can.
+ *
+ * Reuses the same setVisibilityColumn writer makePublic() uses; this is a third
+ * caller of one path, never a second path.
+ */
+export async function setResourceVisibility(
+  resourceType: ResourceType,
+  resourceId: string,
+  visibility: VisibilityValue,
+): Promise<ShareActionResult> {
+  try {
+    const capabilities = await getShareCapabilities(resourceType);
+    if (capabilities.publicState?.kind !== "enum") {
+      return {
+        success: false,
+        error:
+          "This item type only supports public or private — it has no organization-level visibility.",
+      };
+    }
+    return await setVisibilityColumn(
+      resourceType,
+      resourceId,
+      capabilities.publicState.column,
+      visibility,
+    );
+  } catch (error: unknown) {
+    console.error("setResourceVisibility error:", error);
+    return {
+      success: false,
+      error: errMessage(error) || "Failed to update visibility",
+    };
+  }
 }
 
 // ============================================================================

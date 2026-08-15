@@ -171,6 +171,8 @@ export function ShareModal({
   const {
     permissions,
     isPublic: resourceIsPublic,
+    visibility: resourceVisibility,
+    setVisibility,
     loading,
     error,
     shareWithUser,
@@ -385,6 +387,8 @@ export function ShareModal({
               <TabsContent value="public" className="mt-0">
                 <PublicAccessTab
                   isPublic={resourceIsPublic}
+                  visibility={resourceVisibility}
+                  onSetVisibility={setVisibility}
                   publicPermission={publicPermission}
                   isOwner={isOwner}
                   onMakePublic={makePublic}
