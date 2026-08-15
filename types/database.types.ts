@@ -9003,6 +9003,8 @@ export type Database = {
       sms_notification_preferences: {
         Row: {
           ai_agent_messages: boolean
+          assistant_destination_id: string | null
+          assistant_program_key: string | null
           created_at: string
           created_by: string | null
           deleted_at: string | null
@@ -9034,6 +9036,8 @@ export type Database = {
         }
         Insert: {
           ai_agent_messages?: boolean
+          assistant_destination_id?: string | null
+          assistant_program_key?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -9065,6 +9069,8 @@ export type Database = {
         }
         Update: {
           ai_agent_messages?: boolean
+          assistant_destination_id?: string | null
+          assistant_program_key?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -9094,7 +9100,15 @@ export type Database = {
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sms_notification_preferences_assistant_binding_fkey"
+            columns: ["assistant_destination_id", "assistant_program_key"]
+            isOneToOne: false
+            referencedRelation: "sms_phone_numbers"
+            referencedColumns: ["id", "program_key"]
+          },
+        ]
       }
       sms_notifications: {
         Row: {

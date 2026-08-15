@@ -4445,6 +4445,17 @@
        "default": {},
        "title": "Metadata"
       },
+      "request_key": {
+       "title": "Request Key"
+      },
+      "request_kind": {
+       "default": "resource_access",
+       "title": "Request Kind"
+      },
+      "request_payload": {
+       "default": {},
+       "title": "Request Payload"
+      },
       "requested_level": {
        "default": "viewer",
        "title": "Requested Level"
@@ -4462,7 +4473,8 @@
      },
      "required": [
       "resource_type",
-      "resource_id"
+      "resource_id",
+      "request_key"
      ],
      "title": "CreateAccessRequestItem",
      "type": "object"
@@ -4507,6 +4519,18 @@
       "metadata": {
        "default": null,
        "title": "Metadata"
+      },
+      "request_key": {
+       "default": null,
+       "title": "Request Key"
+      },
+      "request_kind": {
+       "default": null,
+       "title": "Request Kind"
+      },
+      "request_payload": {
+       "default": null,
+       "title": "Request Payload"
       },
       "requested_level": {
        "default": null,
@@ -15755,7 +15779,133 @@
    "label": "Domain Classification",
    "noun": "domain_classification",
    "reference": "no",
-   "schemas": null,
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "confidence": {
+       "default": null,
+       "title": "Confidence"
+      },
+      "entity_role": {
+       "title": "Entity Role"
+      },
+      "industry_hint": {
+       "default": null,
+       "title": "Industry Hint"
+      },
+      "is_active": {
+       "default": true,
+       "title": "Is Active"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "notes": {
+       "default": null,
+       "title": "Notes"
+      },
+      "observed_hits": {
+       "default": null,
+       "title": "Observed Hits"
+      },
+      "pattern": {
+       "title": "Pattern"
+      },
+      "pattern_kind": {
+       "default": "domain",
+       "title": "Pattern Kind"
+      },
+      "reason": {
+       "default": null,
+       "title": "Reason"
+      },
+      "source": {
+       "default": "system",
+       "title": "Source"
+      }
+     },
+     "required": [
+      "pattern",
+      "entity_role"
+     ],
+     "title": "CreateDomainClassificationItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteDomainClassificationItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "confidence": {
+       "default": null,
+       "title": "Confidence"
+      },
+      "entity_role": {
+       "default": null,
+       "title": "Entity Role"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "industry_hint": {
+       "default": null,
+       "title": "Industry Hint"
+      },
+      "is_active": {
+       "default": null,
+       "title": "Is Active"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "notes": {
+       "default": null,
+       "title": "Notes"
+      },
+      "observed_hits": {
+       "default": null,
+       "title": "Observed Hits"
+      },
+      "pattern": {
+       "default": null,
+       "title": "Pattern"
+      },
+      "pattern_kind": {
+       "default": null,
+       "title": "Pattern Kind"
+      },
+      "reason": {
+       "default": null,
+       "title": "Reason"
+      },
+      "source": {
+       "default": null,
+       "title": "Source"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateDomainClassificationItem",
+     "type": "object"
+    }
+   },
    "table": "platform.domain_classification",
    "title_column": null,
    "update": "planned",
@@ -24777,16 +24927,52 @@
     "create": {
      "additionalProperties": true,
      "properties": {
+      "agent_id": {
+       "default": null,
+       "title": "Agent Id"
+      },
+      "agent_version_id": {
+       "default": null,
+       "title": "Agent Version Id"
+      },
       "ai_agent_id": {
        "default": null,
        "title": "Ai Agent Id"
+      },
+      "canonical_agent_version_id": {
+       "default": null,
+       "title": "Canonical Agent Version Id"
+      },
+      "chat_conversation_id": {
+       "default": null,
+       "title": "Chat Conversation Id"
+      },
+      "contact_medium_id": {
+       "default": null,
+       "title": "Contact Medium Id"
+      },
+      "contact_point_id": {
+       "default": null,
+       "title": "Contact Point Id"
       },
       "conversation_type": {
        "default": "user_initiated",
        "title": "Conversation Type"
       },
+      "destination_identity_id": {
+       "default": null,
+       "title": "Destination Identity Id"
+      },
       "external_phone_number": {
        "title": "External Phone Number"
+      },
+      "identity_status": {
+       "default": "unresolved",
+       "title": "Identity Status"
+      },
+      "interaction_id": {
+       "default": null,
+       "title": "Interaction Id"
       },
       "last_message_at": {
        "default": null,
@@ -24810,6 +24996,22 @@
       },
       "our_phone_number": {
        "title": "Our Phone Number"
+      },
+      "party_id": {
+       "default": null,
+       "title": "Party Id"
+      },
+      "program_key": {
+       "default": null,
+       "title": "Program Key"
+      },
+      "provider": {
+       "default": "twilio",
+       "title": "Provider"
+      },
+      "provider_account_id": {
+       "default": null,
+       "title": "Provider Account Id"
       },
       "status": {
        "default": "active",
@@ -24844,13 +25046,41 @@
     "update": {
      "additionalProperties": true,
      "properties": {
+      "agent_id": {
+       "default": null,
+       "title": "Agent Id"
+      },
+      "agent_version_id": {
+       "default": null,
+       "title": "Agent Version Id"
+      },
       "ai_agent_id": {
        "default": null,
        "title": "Ai Agent Id"
       },
+      "canonical_agent_version_id": {
+       "default": null,
+       "title": "Canonical Agent Version Id"
+      },
+      "chat_conversation_id": {
+       "default": null,
+       "title": "Chat Conversation Id"
+      },
+      "contact_medium_id": {
+       "default": null,
+       "title": "Contact Medium Id"
+      },
+      "contact_point_id": {
+       "default": null,
+       "title": "Contact Point Id"
+      },
       "conversation_type": {
        "default": null,
        "title": "Conversation Type"
+      },
+      "destination_identity_id": {
+       "default": null,
+       "title": "Destination Identity Id"
       },
       "external_phone_number": {
        "default": null,
@@ -24859,6 +25089,14 @@
       "id": {
        "title": "Id",
        "type": "string"
+      },
+      "identity_status": {
+       "default": null,
+       "title": "Identity Status"
+      },
+      "interaction_id": {
+       "default": null,
+       "title": "Interaction Id"
       },
       "last_message_at": {
        "default": null,
@@ -24883,6 +25121,22 @@
       "our_phone_number": {
        "default": null,
        "title": "Our Phone Number"
+      },
+      "party_id": {
+       "default": null,
+       "title": "Party Id"
+      },
+      "program_key": {
+       "default": null,
+       "title": "Program Key"
+      },
+      "provider": {
+       "default": null,
+       "title": "Provider"
+      },
+      "provider_account_id": {
+       "default": null,
+       "title": "Provider Account Id"
       },
       "status": {
        "default": null,
@@ -24953,6 +25207,14 @@
        "default": null,
        "title": "Failure Reason"
       },
+      "idempotency_key": {
+       "default": null,
+       "title": "Idempotency Key"
+      },
+      "interaction_id": {
+       "default": null,
+       "title": "Interaction Id"
+      },
       "message_id": {
        "default": null,
        "title": "Message Id"
@@ -25019,6 +25281,14 @@
       "id": {
        "title": "Id",
        "type": "string"
+      },
+      "idempotency_key": {
+       "default": null,
+       "title": "Idempotency Key"
+      },
+      "interaction_id": {
+       "default": null,
+       "title": "Interaction Id"
       },
       "message_id": {
        "default": null,
@@ -25109,6 +25379,22 @@
        "default": null,
        "title": "Phone Number"
       },
+      "preferred_agent_id": {
+       "default": null,
+       "title": "Preferred Agent Id"
+      },
+      "preferred_agent_version_id": {
+       "default": null,
+       "title": "Preferred Agent Version Id"
+      },
+      "preferred_ai_agent_id": {
+       "default": null,
+       "title": "Preferred Ai Agent Id"
+      },
+      "preferred_ai_agent_version_id": {
+       "default": null,
+       "title": "Preferred Ai Agent Version Id"
+      },
       "quiet_hours_enabled": {
        "default": true,
        "title": "Quiet Hours Enabled"
@@ -25194,6 +25480,22 @@
        "default": null,
        "title": "Phone Number"
       },
+      "preferred_agent_id": {
+       "default": null,
+       "title": "Preferred Agent Id"
+      },
+      "preferred_agent_version_id": {
+       "default": null,
+       "title": "Preferred Agent Version Id"
+      },
+      "preferred_ai_agent_id": {
+       "default": null,
+       "title": "Preferred Ai Agent Id"
+      },
+      "preferred_ai_agent_version_id": {
+       "default": null,
+       "title": "Preferred Ai Agent Version Id"
+      },
       "quiet_hours_enabled": {
        "default": null,
        "title": "Quiet Hours Enabled"
@@ -25251,6 +25553,10 @@
        "default": null,
        "title": "Assigned At"
       },
+      "assistant_enabled": {
+       "default": false,
+       "title": "Assistant Enabled"
+      },
       "capabilities": {
        "default": {
         "mms": true,
@@ -25277,6 +25583,18 @@
       },
       "phone_number": {
        "title": "Phone Number"
+      },
+      "program_key": {
+       "default": "ai_matrx_owner_beta",
+       "title": "Program Key"
+      },
+      "provider": {
+       "default": "twilio",
+       "title": "Provider"
+      },
+      "provider_account_id": {
+       "default": null,
+       "title": "Provider Account Id"
       },
       "released_at": {
        "default": null,
@@ -25314,6 +25632,10 @@
        "default": null,
        "title": "Assigned At"
       },
+      "assistant_enabled": {
+       "default": null,
+       "title": "Assistant Enabled"
+      },
       "capabilities": {
        "default": null,
        "title": "Capabilities"
@@ -25341,6 +25663,18 @@
       "phone_number": {
        "default": null,
        "title": "Phone Number"
+      },
+      "program_key": {
+       "default": null,
+       "title": "Program Key"
+      },
+      "provider": {
+       "default": null,
+       "title": "Provider"
+      },
+      "provider_account_id": {
+       "default": null,
+       "title": "Provider Account Id"
       },
       "released_at": {
        "default": null,

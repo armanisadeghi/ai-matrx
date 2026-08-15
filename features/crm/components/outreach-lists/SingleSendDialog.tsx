@@ -24,6 +24,8 @@ import {
   readMessageTemplateMetadata,
   type MessageTemplateDB,
 } from "@/features/message-templates/types/message-templates-db";
+import { listOrganizationReputationCases } from "@/features/marketing/data/reputation-queries";
+import type { ReputationCaseRow } from "@/features/marketing/data/reputation-types";
 import {
   approveOutreachDraft,
   createOutreachDraft,
@@ -66,23 +68,38 @@ export function SingleSendDialog({
 }: SingleSendDialogProps) {
   const [templates, setTemplates] = useState<MessageTemplateDB[]>([]);
   const [templateId, setTemplateId] = useState("");
+  const [reputationCases, setReputationCases] = useState<ReputationCaseRow[]>(
+    [],
+  );
+  const [reputationCaseId, setReputationCaseId] = useState("none");
   const [draft, setDraft] = useState<OutreachDraft | null>(null);
   const [problem, setProblem] = useState<OutreachProblem | null>(null);
   const [busy, setBusy] = useState<
     "loading" | "preview" | "approve" | "send" | null
   >(open ? "loading" : null);
+  const memberReputationCaseId = metadataId(
+    member?.metadata,
+    "reputation_case_id",
+  );
 
   useEffect(() => {
     if (!open) return;
-    void fetchOrganizationMessageTemplates(list.organization_id)
-      .then((rows) => {
+    void Promise.all([
+      fetchOrganizationMessageTemplates(list.organization_id),
+      listOrganizationReputationCases(list.organization_id),
+    ])
+      .then(([rows, cases]) => {
+        setReputationCaseId(memberReputationCaseId ?? "none");
         const emailTemplates = rows.filter((row) => subjectTemplate(row));
         setTemplates(emailTemplates);
+        setReputationCases(
+          cases.filter((row) => Boolean(row.pitch_angle?.trim())),
+        );
         if (emailTemplates.length === 1) setTemplateId(emailTemplates[0].id);
       })
       .catch((error: unknown) => setProblem(readOutreachProblem(error)))
       .finally(() => setBusy(null));
-  }, [list.organization_id, open]);
+  }, [list.organization_id, memberReputationCaseId, open]);
 
   const approved = Boolean(draft?.approved_at);
   const canSend = Boolean(
@@ -109,7 +126,8 @@ export function SingleSendDialog({
           outreachListId: list.id,
           memberId: member.id,
           templateId,
-          reputationCaseId: metadataId(member.metadata, "reputation_case_id"),
+          reputationCaseId:
+            reputationCaseId === "none" ? undefined : reputationCaseId,
           backlinkId: metadataId(member.metadata, "backlink_id"),
         }),
       );
@@ -183,6 +201,31 @@ export function SingleSendDialog({
                 ))}
               </SelectContent>
             </Select>
+            <Select
+              value={reputationCaseId}
+              onValueChange={setReputationCaseId}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Choose the real case behind this message" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No reputation case</SelectItem>
+                {reputationCases.map((reputationCase) => (
+                  <SelectItem key={reputationCase.id} value={reputationCase.id}>
+                    {reputationCase.headline ||
+                      reputationCase.source_title ||
+                      reputationCase.source_domain ||
+                      "Reputation case"}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {reputationCaseId !== "none" && (
+              <p className="text-xs text-muted-foreground">
+                The preview binds to this live reputation record; changing it
+                requires a fresh preview and approval.
+              </p>
+            )}
             {busy !== "loading" && templates.length === 0 && (
               <p className="text-sm text-muted-foreground">
                 No email-ready template exists yet. Add a subject and body in{" "}

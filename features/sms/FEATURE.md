@@ -109,6 +109,7 @@ All SMS tables live in the `communication` schema. The enrollment contract prima
 
 ## Change log
 
+- `2026-08-15` — Aligned the inbound webhook test with the canonical `www.aimatrx.com` signing host and current processor result contract; the route now accepts the standard `Request` surface it actually consumes.
 - `2026-08-15` — Added the production personal text-assistant binding to Messaging settings using direct authenticated, program-scoped RPCs; added durable provider-event claims, exact identity/conversation resolution, policy-keyword precedence, canonical agent execution with tools disabled, durable agent/outbound workers, crash fences, early status-callback correlation, and separate global/user kill switches.
 - `2026-08-15` — Moved the canonical Twilio signature validator to the shared communications
   provider adapter and removed the former SMS-only implementation after migrating every consumer.

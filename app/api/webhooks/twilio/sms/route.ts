@@ -6,7 +6,7 @@
  * and responds with TwiML.
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import twilio from 'twilio';
 import { validateTwilioWebhook } from '@/lib/communications/providers/twilio/webhook-validation';
 import {
@@ -22,7 +22,7 @@ import {
 
 const WEBHOOK_PATH = '/api/webhooks/twilio/sms';
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   let claimedReceiptId: string | null = null;
   try {
     // Validate Twilio signature

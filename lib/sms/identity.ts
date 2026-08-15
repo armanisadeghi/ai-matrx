@@ -63,8 +63,14 @@ export interface ClaimedSmsInboundReceipt {
 
 export interface SmsVerifiedPreferenceScope {
   phoneNumber: string;
-  organizationId: string;
+  destinationIdentityId: string;
+  programKey: string;
 }
+
+export type SmsPreferenceBindingSelection<T> =
+  | { status: "not_found" }
+  | { status: "ambiguous"; candidateCount: number }
+  | { status: "resolved"; value: T };
 
 /** Normalize a transport endpoint with the same E.164 rules as CRM contact media. */
 export function normalizeSmsEndpoint(raw: string): string {
@@ -81,14 +87,31 @@ export function smsInboundProviderEventKey(input: SmsInboundContextInput): strin
   return `${input.provider}:inbound:${account}:${message}`;
 }
 
-/** Exact tenant + endpoint scope required before a verified phone can identify a user. */
+/** Exact shared destination + program + endpoint scope required before a phone can identify a user. */
 export function smsVerifiedPreferenceScope(
   input: SmsInboundContextInput,
-  destinationOrganizationId: string,
+  destinationIdentityId: string,
+  programKey: string,
 ): SmsVerifiedPreferenceScope {
-  const organizationId = destinationOrganizationId.trim();
-  if (!organizationId) {
-    throw new Error("Inbound SMS destination requires an organization identity");
+  const normalizedDestinationIdentityId = destinationIdentityId.trim();
+  const normalizedProgramKey = programKey.trim();
+  if (!normalizedDestinationIdentityId || !normalizedProgramKey) {
+    throw new Error("Inbound SMS destination requires an explicit identity and program");
   }
-  return { phoneNumber: input.source, organizationId };
+  return {
+    phoneNumber: input.source,
+    destinationIdentityId: normalizedDestinationIdentityId,
+    programKey: normalizedProgramKey,
+  };
+}
+
+/** Fail closed unless an explicitly scoped verified-phone lookup has exactly one result. */
+export function selectSingleSmsPreferenceBinding<T>(
+  matches: readonly T[] | null | undefined,
+): SmsPreferenceBindingSelection<T> {
+  if (!matches?.length) return { status: "not_found" };
+  if (matches.length > 1) {
+    return { status: "ambiguous", candidateCount: matches.length };
+  }
+  return { status: "resolved", value: matches[0] };
 }

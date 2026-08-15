@@ -539,6 +539,14 @@ current authors/editors/contributors without writing.
 
 ## Change log
 
+- 2026-08-15 — **Outreach Phase 4 / real-case door:** the one-email dialog now
+  inventories the organization's real reputation cases through the existing
+  Marketing query/type layer and lets the human bind one explicitly before
+  preview. Member metadata remains the preselected value when an upstream
+  workflow already supplied it. The rendered draft fingerprints that case, so
+  changing the selection requires a fresh preview and approval; a hidden
+  `reputation_case_id` is no longer the only way to reach the promised case →
+  message path.
 - 2026-08-15 — **Outreach Phase 4 / mailbox door:** every newly created
   outreach list now persists Lane B explicitly, and its workspace can attach an
   organization sending identity to the campaign row. The selected mailbox is

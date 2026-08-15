@@ -12,7 +12,10 @@ const REPUTATION_KIND = "digital_pr_reputation_brief_v1";
 
 function throwIfError(error: unknown, action?: string): void {
   if (error)
-    throw operationFailed(action ?? "reach this site's reputation workspace", error);
+    throw operationFailed(
+      action ?? "reach this site's reputation workspace",
+      error,
+    );
 }
 
 /**
@@ -35,7 +38,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
-export function parseReputationBrief(value: Json | null): ReputationBrief | null {
+export function parseReputationBrief(
+  value: Json | null,
+): ReputationBrief | null {
   if (!isRecord(value)) return null;
   if (value.__kind !== REPUTATION_KIND) return null;
   if (
@@ -172,6 +177,30 @@ export async function getReputationWorkspace(
   };
 }
 
+/**
+ * Small cross-surface inventory for doors that bind work to a real reputation
+ * case (for example, the governed one-message outreach preview). The full
+ * workspace loader remains site-scoped; this intentionally returns only the
+ * organization's newest actionable cases through the same direct Supabase
+ * path and generated row type.
+ */
+export async function listOrganizationReputationCases(
+  organizationId: string,
+  limit = 100,
+): Promise<ReputationCaseRow[]> {
+  const response = await supabase
+    .schema("seo")
+    .from("reputation_case")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .not("pitch_angle", "is", null)
+    .order("priority", { ascending: false })
+    .order("analyzed_at", { ascending: false })
+    .limit(limit);
+  throwIfError(response.error, "load this organization's reputation cases");
+  return (response.data ?? []) as ReputationCaseRow[];
+}
+
 export async function updateReputationCase(input: {
   caseId: string;
   status: ReputationCaseStatus;
@@ -183,6 +212,7 @@ export async function updateReputationCase(input: {
     p_human_ruling: input.ruling ?? {},
   });
   throwIfError(response.error, "save that reputation case");
-  if (!response.data) throw new Error("The case action returned no updated record.");
+  if (!response.data)
+    throw new Error("The case action returned no updated record.");
   return response.data as ReputationCaseRow;
 }

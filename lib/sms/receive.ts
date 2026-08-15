@@ -11,6 +11,7 @@ import type { InboundSmsPayload, TwilioMediaAttachment } from './types';
 import {
   normalizeSmsEndpoint,
   smsInboundProviderEventKey,
+  selectSingleSmsPreferenceBinding,
   smsVerifiedPreferenceScope,
   type ClaimedSmsInboundReceipt,
   type ResolvedSmsInboundContext,
@@ -337,33 +338,39 @@ export async function resolveSmsInboundContext(
   if (!destination.is_active) {
     return { ...base, status: 'not_found', reason: 'destination_inactive' };
   }
-  const preferenceScope = smsVerifiedPreferenceScope(input, destination.organization_id);
+  const preferenceScope = smsVerifiedPreferenceScope(
+    input,
+    destination.id,
+    destination.program_key,
+  );
 
   const { data: preferences, error: preferenceError } = await supabase
     .schema('communication')
     .from('sms_notification_preferences')
     .select('user_id, organization_id, ai_agent_messages, preferred_agent_id, preferred_agent_version_id')
     .eq('phone_number', preferenceScope.phoneNumber)
-    .eq('organization_id', preferenceScope.organizationId)
+    .eq('assistant_destination_id', preferenceScope.destinationIdentityId)
+    .eq('assistant_program_key', preferenceScope.programKey)
     .eq('sms_enabled', true)
     .is('deleted_at', null)
     .limit(3);
   if (preferenceError) {
     throw new Error(`Failed to resolve verified SMS user binding: ${preferenceError.message}`);
   }
-  if (!preferences?.length) {
+  const preferenceSelection = selectSingleSmsPreferenceBinding(preferences);
+  if (preferenceSelection.status === 'not_found') {
     return { ...base, status: 'not_found', reason: 'verified_user_binding_not_found' };
   }
-  if (preferences.length > 1) {
+  if (preferenceSelection.status === 'ambiguous') {
     return {
       ...base,
       status: 'ambiguous',
       reason: 'phone_bound_to_multiple_users',
-      candidateCount: preferences.length,
+      candidateCount: preferenceSelection.candidateCount,
       candidatePartyIds: [],
     };
   }
-  const preference = preferences[0];
+  const preference = preferenceSelection.value;
   const crmBinding = await optionalCrmBinding(
     preference.organization_id,
     preference.user_id,

@@ -1,5 +1,6 @@
 import {
   normalizeSmsEndpoint,
+  selectSingleSmsPreferenceBinding,
   smsInboundProviderEventKey,
   smsVerifiedPreferenceScope,
 } from "@/lib/sms/identity";
@@ -34,7 +35,7 @@ describe("SMS identity contract", () => {
     ).toThrow("provider account and message identifiers");
   });
 
-  test("scopes verified phone identity to the destination tenant", () => {
+  test("scopes a tenant user's verified phone to the shared destination and program", () => {
     expect(
       smsVerifiedPreferenceScope(
         {
@@ -44,11 +45,27 @@ describe("SMS identity contract", () => {
           source: "+14155551234",
           destination: "+14155559999",
         },
-        "org-destination",
+        "destination-id",
+        "ai_matrx_owner_beta",
       ),
     ).toEqual({
       phoneNumber: "+14155551234",
-      organizationId: "org-destination",
+      destinationIdentityId: "destination-id",
+      programKey: "ai_matrx_owner_beta",
+    });
+  });
+
+  test("fails closed when the same phone has multiple explicit bindings", () => {
+    expect(selectSingleSmsPreferenceBinding([{ id: "one" }, { id: "two" }])).toEqual({
+      status: "ambiguous",
+      candidateCount: 2,
+    });
+  });
+
+  test("resolves exactly one explicit binding", () => {
+    expect(selectSingleSmsPreferenceBinding([{ id: "one" }])).toEqual({
+      status: "resolved",
+      value: { id: "one" },
     });
   });
 });

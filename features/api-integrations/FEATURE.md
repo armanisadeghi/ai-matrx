@@ -26,6 +26,10 @@
 `/Users/armanisadeghi/code/common-docs/projects/unified-credential-vault/PLAN.md`. Read it
 before changing MCP credential storage or resolution in any repo.
 
+**Microsoft identity, Graph, Work IQ MCP, and Microsoft 365:** the cross-repo execution plan is
+`/Users/armanisadeghi/code/common-docs/projects/microsoft-platform-integration/PLAN.md`. Read it
+before adding a Microsoft OAuth client, scope, callback, MCP server, or connection surface.
+
 ## Invariants that survive from the old doc
 
 - MCP tools integrate through the **durable delegated tool path** — never a parallel execution path ([`../agents/docs/DURABLE_TOOL_CALLS_CLIENT_INTEGRATION.md`](../agents/docs/DURABLE_TOOL_CALLS_CLIENT_INTEGRATION.md)).
@@ -71,6 +75,8 @@ implementation (it also adds the origin check and listener cleanup the settings 
 
 ## Change log
 
+- `2026-08-15` — linked the cross-repo Microsoft platform integration program before its first
+  production OAuth/MCP implementation.
 - `2026-08-15` — Cloudflare Bot Fight Mode challenged Vercel's authenticated token-persist
   POST before aidream ran. Disabled that zone-level machine-client blocker; DCR registration
   is now attempt-scoped, and callback failures distinguish edge HTML from structured aidream
