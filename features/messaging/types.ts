@@ -6,6 +6,8 @@
  * Tables prefixed with dm_ to avoid conflicts.
  */
 
+import type { JsonObject } from "@/types/json";
+
 // ============================================
 // Database Types (matching dm_ schema)
 // ============================================
@@ -125,6 +127,18 @@ export interface AccessRequestActionPayload {
   note?: string | null;
   /** Where the record lives, when the registry could resolve a route. */
   href?: string | null;
+}
+
+/** Payload for an admin-only setting request with an inline registered action. */
+export interface SettingAccessRequestActionPayload {
+  request_id: string;
+  organization_id: string;
+  setting_key: string;
+  setting_label: string;
+  href: string;
+  action_key: string;
+  action_payload: JsonObject;
+  note?: string | null;
 }
 
 export interface Message {

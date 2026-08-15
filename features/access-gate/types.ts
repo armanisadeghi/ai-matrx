@@ -8,6 +8,8 @@
  * named here, and every surface branches on the name instead of inventing copy.
  */
 
+import type { JsonObject } from "@/types/json";
+
 /** What the platform actually knows about a failed read. */
 export type AccessGateStatus =
   /** Still resolving. */
@@ -37,14 +39,20 @@ export type AccessDisclosure =
   | "none";
 
 export type AccessRequestStatus =
-  | "pending"
-  | "granted"
-  | "declined"
-  | "withdrawn"
-  | "reported";
+  "pending" | "granted" | "declined" | "withdrawn" | "reported";
 
 /** The level a requester is asking for. Mirrors `iam.permissions.permission_level`. */
 export type RequestedLevel = "viewer" | "editor";
+
+export type AccessRequestKind = "resource_access" | "setting";
+
+/** The executable context carried by a setting request and its DM action. */
+export interface SettingRequestPayload {
+  settingLabel: string;
+  href: string;
+  actionKey: string;
+  actionPayload: JsonObject;
+}
 
 export interface AccessDeniedOwner {
   userId: string;
@@ -152,6 +160,9 @@ export interface AccessRequestRow {
   resourceId: string;
   entityLabel: string | null;
   entityTitle: string | null;
+  requestKind: AccessRequestKind;
+  requestKey: string;
+  settingRequest: SettingRequestPayload | null;
   /** Present on the inbox side only. */
   requester: AccessDeniedOwner | null;
 }

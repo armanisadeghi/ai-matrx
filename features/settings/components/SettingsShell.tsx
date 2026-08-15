@@ -28,6 +28,8 @@ export type SettingsShellProps = {
   onClose: () => void;
   /** Tab id to activate on first open. */
   initialTabId?: string;
+  /** Exact control id to reveal once the lazy tab mounts. */
+  initialControlId?: string;
   /** Show admin-gated tabs. Default false. */
   isAdmin?: boolean;
 };
@@ -49,6 +51,7 @@ export function SettingsShell({
   isOpen,
   onClose,
   initialTabId,
+  initialControlId,
   isAdmin = false,
 }: SettingsShellProps) {
   const isMobile = useIsMobile();
@@ -100,6 +103,7 @@ export function SettingsShell({
         presentation="drawer"
         closeShell={onClose}
         setActiveTabId={activateTab}
+        focusControlId={initialControlId}
       >
         <SettingsDrawerNav
           nodes={treeNodes}
@@ -130,6 +134,7 @@ export function SettingsShell({
       presentation="window"
       closeShell={onClose}
       setActiveTabId={activateTab}
+      focusControlId={initialControlId}
     >
       <WindowPanel
         title="Settings"

@@ -41,12 +41,17 @@ import type {
 import { getResourceSharePath } from "@/utils/permissions/registry";
 import { getResourceIcon } from "@/features/sharing/resourceIcons";
 import { EntityCard } from "@/features/tool-call-visualization/renderers/_shared-entity/EntityCard";
+import { SettingRequestActionButtons } from "@/features/access-gate/components/SettingRequestActionButtons";
+import { isJsonObject } from "@/types/json";
 
 interface ChipRenderContext {
   isOwn: boolean;
 }
 
-type ChipRenderer = (data: MessageActionData, ctx: ChipRenderContext) => React.ReactNode;
+type ChipRenderer = (
+  data: MessageActionData,
+  ctx: ChipRenderContext,
+) => React.ReactNode;
 
 function chipClass(isOwn: boolean): string {
   return [
@@ -58,7 +63,13 @@ function chipClass(isOwn: boolean): string {
   ].join(" ");
 }
 
-function AgentDriftChips({ data, isOwn }: { data: MessageActionData; isOwn: boolean }) {
+function AgentDriftChips({
+  data,
+  isOwn,
+}: {
+  data: MessageActionData;
+  isOwn: boolean;
+}) {
   const openFindUsages = useOpenAgentFindUsagesWindow();
   const payload = data.payload as AgentDriftActionPayload;
   if (!payload?.agent_id) return null;
@@ -112,7 +123,13 @@ function ResourceSharedCard({ data }: { data: MessageActionData }) {
  * `open_link` — the generic single deep-link chip for system DMs that point
  * the user at an in-app page (external URLs are refused).
  */
-function OpenLinkChip({ data, isOwn }: { data: MessageActionData; isOwn: boolean }) {
+function OpenLinkChip({
+  data,
+  isOwn,
+}: {
+  data: MessageActionData;
+  isOwn: boolean;
+}) {
   const p = data.payload as OpenLinkActionPayload;
   if (!p?.href || !p?.label || !p.href.startsWith("/")) return null;
   return (
@@ -128,15 +145,20 @@ function OpenLinkChip({ data, isOwn }: { data: MessageActionData; isOwn: boolean
  * Open navigates; Complete and Snooze act inline through the canonical task
  * services (recurrence-aware completion; per-user snooze state).
  */
-function TaskReminderChips({ data, isOwn }: { data: MessageActionData; isOwn: boolean }) {
+function TaskReminderChips({
+  data,
+  isOwn,
+}: {
+  data: MessageActionData;
+  isOwn: boolean;
+}) {
   const p = data.payload as TaskReminderActionPayload;
   const [done, setDone] = useState<"completed" | "snoozed" | null>(null);
   if (!p?.task_id) return null;
 
   const complete = async () => {
-    const { completeTask } = await import(
-      "@/features/tasks/services/taskService"
-    );
+    const { completeTask } =
+      await import("@/features/tasks/services/taskService");
     const result = await completeTask({
       id: p.task_id,
       recurrence_rule: p.recurrence_rule ?? null,
@@ -155,9 +177,8 @@ function TaskReminderChips({ data, isOwn }: { data: MessageActionData; isOwn: bo
   };
 
   const snooze = async () => {
-    const { snoozeTask } = await import(
-      "@/features/tasks/services/taskUserStateService"
-    );
+    const { snoozeTask } =
+      await import("@/features/tasks/services/taskUserStateService");
     const until = new Date();
     until.setDate(until.getDate() + 1);
     until.setHours(9, 0, 0, 0);
@@ -227,12 +248,14 @@ function AccessRequestChips({
     );
   }
 
-  async function decide(decision: "grant" | "decline", level?: "viewer" | "editor") {
+  async function decide(
+    decision: "grant" | "decline",
+    level?: "viewer" | "editor",
+  ) {
     setBusy(true);
     try {
-      const { decideAccessRequest } = await import(
-        "@/features/access-gate/service/accessRequests"
-      );
+      const { decideAccessRequest } =
+        await import("@/features/access-gate/service/accessRequests");
       const result = await decideAccessRequest({
         requestId: p.request_id,
         decision,
@@ -259,9 +282,8 @@ function AccessRequestChips({
   async function report() {
     setBusy(true);
     try {
-      const { reportAccessRequest } = await import(
-        "@/features/access-gate/service/accessRequests"
-      );
+      const { reportAccessRequest } =
+        await import("@/features/access-gate/service/accessRequests");
       await reportAccessRequest(p.request_id);
       setDone("reported");
       toast.success("Reported. They can't ask about this again.");
@@ -330,6 +352,33 @@ function AccessRequestChips({
   );
 }
 
+function SettingAccessRequestChips({
+  data,
+  isOwn,
+}: {
+  data: MessageActionData;
+  isOwn: boolean;
+}) {
+  if (!isJsonObject(data.payload)) return null;
+  const p = data.payload;
+  if (
+    typeof p.request_id !== "string" ||
+    typeof p.href !== "string" ||
+    typeof p.action_key !== "string"
+  ) {
+    return null;
+  }
+  return (
+    <SettingRequestActionButtons
+      requestId={p.request_id}
+      href={p.href}
+      actionKey={p.action_key}
+      isOwn={isOwn}
+      compact
+    />
+  );
+}
+
 const RENDERERS: Record<string, ChipRenderer> = {
   access_request: (data, ctx) => (
     <AccessRequestChips data={data} isOwn={ctx.isOwn} />
@@ -337,7 +386,12 @@ const RENDERERS: Record<string, ChipRenderer> = {
   agent_drift: (data, ctx) => <AgentDriftChips data={data} isOwn={ctx.isOwn} />,
   open_link: (data, ctx) => <OpenLinkChip data={data} isOwn={ctx.isOwn} />,
   resource_shared: (data) => <ResourceSharedCard data={data} />,
-  task_reminder: (data, ctx) => <TaskReminderChips data={data} isOwn={ctx.isOwn} />,
+  setting_access_request: (data, ctx) => (
+    <SettingAccessRequestChips data={data} isOwn={ctx.isOwn} />
+  ),
+  task_reminder: (data, ctx) => (
+    <TaskReminderChips data={data} isOwn={ctx.isOwn} />
+  ),
 };
 
 /** Render the chips for a message's action_data, or null if none/unknown. */
@@ -351,6 +405,8 @@ export function renderMessageActionChips(
 }
 
 /** Whether a given action_data has a registered renderer (for layout decisions). */
-export function hasMessageAction(actionData: MessageActionData | null | undefined): boolean {
+export function hasMessageAction(
+  actionData: MessageActionData | null | undefined,
+): boolean {
   return !!actionData?.kind && actionData.kind in RENDERERS;
 }

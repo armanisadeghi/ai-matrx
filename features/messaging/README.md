@@ -30,6 +30,7 @@ app/(authenticated)/messages/
 ```
 
 **Key Features:**
+
 - **Desktop**: Persistent sidebar showing conversation list across all routes
 - **Mobile**: Full-screen route transitions between list and chat
 - **Deep Linking**: Share direct links to conversations (`/messages/[id]`)
@@ -37,6 +38,7 @@ app/(authenticated)/messages/
 - **Loading States**: `useTransition` for smooth navigation with loading indicators
 
 **Navigation Pattern:**
+
 ```tsx
 // Use Next.js router, NOT Redux
 const router = useRouter();
@@ -93,7 +95,7 @@ dm_messages
 
 A message can carry a generic **`action_data`** envelope `{ kind, version, payload }` that renders as deep-link chips below the bubble.
 
-- **Registry, not switch:** `actions/messageActionRegistry.tsx` maps `kind` → chip renderer. Unknown kinds render nothing (forward-compatible). Add a kind there; every bubble that carries it gets chips. First kind: `agent_drift` ("Review usages" opens the Find Usages window; "Drift report" links to `/reports/agent-drift`).
+- **Registry, not switch:** `actions/messageActionRegistry.tsx` maps `kind` → chip renderer. Unknown kinds render nothing (forward-compatible). Add a kind there; every bubble that carries it gets chips. `setting_access_request` delegates its nested operation to the generic setting-action registry and reuses the same decision component as the durable Access Requests inbox.
 - **Render:** `MessageBubble` mounts `<MessageActionChips>`; chips are cycle-safe (the registry imports opener hooks + the pure agents `severity.ts`, never agents components).
 - **Send:** `service/sendDirectActionMessage.ts` is the reusable "system notify a user" primitive — find/create a direct conversation + send with `actionData`. Pass `actionData` through `getMessagingService().sendMessage(..., { actionData })`. Domain copy for drift lives in `features/agents/.../driftMessageTemplate.ts` (kept in lockstep with the aidream Python template).
 
@@ -159,6 +161,7 @@ unsubscribe only `untrack()`. Re-attaching `.on()` to a subscribed channel throw
 crash the entire `/messages/[id]` route on React 19's double-invoked effects.
 
 **Dual Subscription Pattern:**
+
 1. **Broadcast** - Immediate delivery when sender broadcasts
 2. **postgres_changes** - Reliable fallback via database INSERT trigger
 
@@ -169,6 +172,7 @@ crash the entire `/messages/[id]` route on React 19's double-invoked effects.
 ### 1. Database Setup
 
 Run the migration in Supabase SQL Editor:
+
 ```sql
 -- See: supabase/migrations/20260130200000_messaging.sql
 ```
@@ -180,40 +184,37 @@ import {
   MessagingSideSheet,
   MessagingInitializer,
   MessageIcon,
-} from '@/features/messaging';
+} from "@/features/messaging";
 ```
 
 ### 3. Global Setup (Already Integrated)
 
 The authenticated layout includes:
+
 - `<MessagingInitializer />` - Loads conversations on mount
 - `<MessagingSideSheet />` - Side panel UI
 
 The header includes:
+
 - `<MessageIcon />` - Toggle button with unread badge
 
 ### 4. Use Hooks Directly
 
 ```tsx
-import { useChat, useConversations } from '@/hooks/useSupabaseMessaging';
+import { useChat, useConversations } from "@/hooks/useSupabaseMessaging";
 
 // In your component
 const userId = user?.id; // auth.users.id UUID
-const displayName = user?.userMetadata?.fullName || 'User';
+const displayName = user?.userMetadata?.fullName || "User";
 
-const {
-  messages,
-  sendMessage,
-  typingUsers,
-  setTyping,
-  onlineUsers,
-} = useChat(conversationId, userId, displayName);
+const { messages, sendMessage, typingUsers, setTyping, onlineUsers } = useChat(
+  conversationId,
+  userId,
+  displayName,
+);
 
-const {
-  conversations,
-  createConversation,
-  refreshConversations,
-} = useConversations(userId);
+const { conversations, createConversation, refreshConversations } =
+  useConversations(userId);
 ```
 
 ### 5. Navigation
@@ -221,8 +222,8 @@ const {
 **Use Next.js Router for navigation (NOT Redux):**
 
 ```tsx
-import { useRouter } from 'next/navigation';
-import { useTransition } from 'react';
+import { useRouter } from "next/navigation";
+import { useTransition } from "react";
 
 const router = useRouter();
 const [isPending, startTransition] = useTransition();
@@ -238,12 +239,12 @@ const handleSelectConversation = (conversationId: string) => {
 **Redux State (for UI only):**
 
 ```tsx
-import { useAppDispatch, useAppSelector } from '@/lib/redux';
+import { useAppDispatch, useAppSelector } from "@/lib/redux";
 import {
   openMessaging,
   closeMessaging,
   selectTotalUnreadCount,
-} from '@/features/messaging';
+} from "@/features/messaging";
 
 // Open/close side sheet
 dispatch(openMessaging());
@@ -257,18 +258,18 @@ const unreadCount = useAppSelector(selectTotalUnreadCount);
 
 ## API Routes
 
-| Method | Route | Description |
-|--------|-------|-------------|
-| GET | `/api/messages/conversations` | List user's conversations |
-| POST | `/api/messages/conversations` | Create conversation (or return existing) |
-| GET | `/api/messages/conversations/[id]` | Get conversation details |
-| PUT | `/api/messages/conversations/[id]` | Update settings (mute, archive) |
-| DELETE | `/api/messages/conversations/[id]` | Leave/delete conversation |
-| GET | `/api/messages/[conversationId]/messages` | List messages (paginated) |
-| POST | `/api/messages/[conversationId]/messages` | Send message |
-| GET | `/api/messages/[conversationId]/messages/[id]` | Get single message |
-| PATCH | `/api/messages/[conversationId]/messages/[id]` | Edit/delete message |
-| DELETE | `/api/messages/[conversationId]/messages/[id]` | Soft delete message |
+| Method | Route                                          | Description                              |
+| ------ | ---------------------------------------------- | ---------------------------------------- |
+| GET    | `/api/messages/conversations`                  | List user's conversations                |
+| POST   | `/api/messages/conversations`                  | Create conversation (or return existing) |
+| GET    | `/api/messages/conversations/[id]`             | Get conversation details                 |
+| PUT    | `/api/messages/conversations/[id]`             | Update settings (mute, archive)          |
+| DELETE | `/api/messages/conversations/[id]`             | Leave/delete conversation                |
+| GET    | `/api/messages/[conversationId]/messages`      | List messages (paginated)                |
+| POST   | `/api/messages/[conversationId]/messages`      | Send message                             |
+| GET    | `/api/messages/[conversationId]/messages/[id]` | Get single message                       |
+| PATCH  | `/api/messages/[conversationId]/messages/[id]` | Edit/delete message                      |
+| DELETE | `/api/messages/[conversationId]/messages/[id]` | Soft delete message                      |
 
 ## File Structure
 
@@ -303,11 +304,13 @@ app/(authenticated)/messages/   # Page routes
 ### Next.js Routing (New Pattern)
 
 **Proper Component Lifecycle:**
+
 - Components unmount/remount correctly when navigating between routes
 - Real-time subscriptions are properly cleaned up on unmount
 - No stale subscriptions or memory leaks
 
 **Layout Structure:**
+
 ```tsx
 // messages/layout.tsx
 <div className="flex h-full">
@@ -315,15 +318,14 @@ app/(authenticated)/messages/   # Page routes
   <div className="hidden md:flex w-80">
     <ConversationList />
   </div>
-  
+
   {/* Main content - route outlet */}
-  <div className="flex-1">
-    {children}
-  </div>
+  <div className="flex-1">{children}</div>
 </div>
 ```
 
 **Benefits:**
+
 - ✅ Shareable conversation URLs
 - ✅ Browser back/forward works
 - ✅ Proper component lifecycle
@@ -383,12 +385,14 @@ Uses Supabase Presence API to track who's currently viewing a conversation.
 Shows when other users are typing in real-time. Uses Supabase Presence API.
 
 **How it works:**
+
 1. User starts typing → `setTyping(true)` called
 2. Presence state updated via Supabase channel
 3. Other users see "User is typing..." within 1 second
 4. Auto-stops after 3 seconds of no typing
 
 **Requirements for proper function:**
+
 - Proper component lifecycle (unmount/remount)
 - Clean channel subscriptions
 - Next.js routing (not Redux-based navigation)
@@ -398,12 +402,14 @@ Shows when other users are typing in real-time. Uses Supabase Presence API.
 Tracks which users are currently viewing the conversation.
 
 **How it works:**
+
 1. User opens conversation → Presence tracked
 2. Green dot shown for online users
 3. User navigates away → Presence untracked
 4. Offline status shown within 5-10 seconds
 
 **Requirements:**
+
 - `useOnlinePresence` hook subscribes on mount
 - Unsubscribes on unmount (proper cleanup)
 - Separate presence channel per conversation
@@ -429,22 +435,25 @@ Real-time unread count badge in the header message icon.
 4. **Display**: `MessageIcon` shows badge with count from Redux state
 
 **Auto-Mark as Read:**
+
 - When `ChatThread` mounts → marks conversation as read
 - When new message arrives from other user → marks as read immediately
 - Updates `last_read_at` timestamp in database
 - Triggers real-time update for all connected clients
 
 **Database Calculation:**
+
 ```sql
 -- Unread count = messages created after user's last_read_at
-SELECT COUNT(*) 
+SELECT COUNT(*)
 FROM dm_messages m
-WHERE m.conversation_id = ? 
+WHERE m.conversation_id = ?
   AND m.created_at > participant.last_read_at
   AND m.sender_id != current_user_id
 ```
 
 **Real-time Flow:**
+
 ```mermaid
 sequenceDiagram
     participant UserA as User A
@@ -452,7 +461,7 @@ sequenceDiagram
     participant UserB_Init as User B (Initializer)
     participant UserB_Icon as User B (Icon)
     participant UserB_Chat as User B (ChatThread)
-    
+
     Note over UserA,UserB_Chat: New Message Scenario
     UserA->>DB: Send message
     DB->>UserB_Init: INSERT event (dm_messages)
@@ -460,7 +469,7 @@ sequenceDiagram
     DB-->>UserB_Init: Count: 1
     UserB_Init->>UserB_Icon: Update Redux (count: 1)
     UserB_Icon->>UserB_Icon: Show badge "1"
-    
+
     Note over UserA,UserB_Chat: Mark as Read Scenario
     UserB_Chat->>DB: markConversationAsRead()
     DB->>DB: UPDATE last_read_at
@@ -516,6 +525,7 @@ sequenceDiagram
 ### Messages not arriving in real-time
 
 **Check:**
+
 1. Console for `[DM]` subscription logs
 2. Network tab for WebSocket connections
 3. Database RLS policies allow access
@@ -532,6 +542,7 @@ sequenceDiagram
 **Cause:** MessagingInitializer not subscribed to proper events
 
 **Solution:** Verify subscriptions in console:
+
 ```
 [DM Global] Subscribed to global DM updates
 [DM Global] New message from other user, updating unread count
@@ -540,6 +551,7 @@ sequenceDiagram
 ```
 
 **Test Scenario:**
+
 1. Open app in two browser windows (User A and User B)
 2. User A sends message to User B
 3. Check User B's header → Should show badge with "1"
@@ -550,12 +562,24 @@ sequenceDiagram
 ### Unread count showing wrong number
 
 **Check:**
+
 1. Database function `get_dm_conversations_with_details` is correct
 2. `last_read_at` timestamps are being set properly
 3. Messages have proper `created_at` timestamps
 4. Console logs show correct count after fetch
 
 ## Change Log
+
+- **2026-08-15 — admin-gated settings became actionable DMs.**
+  `setting_access_request` carries the exact setting URL, durable request id,
+  human summary, and a typed `{ key, payload }` operation. The message registry
+  renders `SettingRequestActionButtons`, shared with the Access Requests inbox;
+  the nested registry's first idempotent operation is
+  `org_module_custom_value.add`. This reuses `sendDirectActionMessage` and
+  `dm_messages.action_data`; no parallel notification transport exists. The DM
+  envelope is never trusted for a write: the button re-resolves the durable,
+  caller-authorized inbox row and uses that action payload. Canonical contract:
+  `common-docs/systems/setting-doors/FEATURE.md`.
 
 - **2026-08-12 — the `matrx-user/messages` surface now emits a truthful loaded-message count; still deliberately NOT agent-writable.**
   `ChatThread` gained an optional `onLoadedMessageCountChange` callback so the

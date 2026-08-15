@@ -47,6 +47,8 @@ export interface SettingsPresentationContextValue {
   closeShell?: () => void;
   /** Switch the active settings tab in-place. Only defined in `window` / `drawer`. */
   setActiveTabId?: (tabId: string) => void;
+  /** Exact control a setting door asked this presentation to reveal. */
+  focusControlId?: string;
 }
 
 const DEFAULT_VALUE: SettingsPresentationContextValue = {
@@ -68,11 +70,12 @@ export function SettingsPresentationProvider({
   presentation,
   closeShell,
   setActiveTabId,
+  focusControlId,
   children,
 }: ProviderProps) {
   const value = useMemo<SettingsPresentationContextValue>(
-    () => ({ presentation, closeShell, setActiveTabId }),
-    [presentation, closeShell, setActiveTabId],
+    () => ({ presentation, closeShell, setActiveTabId, focusControlId }),
+    [presentation, closeShell, setActiveTabId, focusControlId],
   );
   return (
     <SettingsPresentationContext.Provider value={value}>

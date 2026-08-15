@@ -2,20 +2,21 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** 2026-07-14
+**Last updated:** 2026-08-15
 
 ---
 
 ## Purpose
 
-The single user-facing surface for every preference in the app — a VS Code-style window with a hierarchical tree on desktop and an iOS-style push-nav drawer on mobile. Every preference across every Redux slice (`userPreferences`, `theme`, `adminPreferences`, `layout`, `windowManager`) is read and written through one unified hook (`useSetting`) and composed from one tightly controlled set of primitives. No tab imports Redux directly; no tab imports shadcn directly.
+The single user-facing surface for every preference in the app — a VS Code-style window with a hierarchical tree on desktop and an iOS-style push-nav drawer on mobile. Every preference across every Redux slice (`userPreferences`, `theme`, `adminPreferences`, `layout`, `windowManager`) is read and written through one unified hook (`useSetting`) and composed from one tightly controlled set of primitives. No tab imports Redux directly; no tab imports shadcn directly. Any behavior governed here from another surface reaches the exact control through the platform-wide setting-door contract in [`common-docs/systems/setting-doors/FEATURE.md`](../../../common-docs/systems/setting-doors/FEATURE.md).
 
 ---
 
 ## Entry points
 
 **Routes**
-- `app/(authenticated)/settings/preferences/page.tsx` — legacy URL kept alive as a redirect. Dispatches `openOverlay({ overlayId: "userPreferencesWindow", data: { initialTabId } })` and forwards to `/dashboard`. Legacy `?tab=` values are aliased to new registry ids.
+
+- `app/(transitional)/settings/preferences/page.tsx` — legacy URL kept alive as a redirect. Dispatches `openOverlay({ overlayId: "userPreferencesWindow", data: { initialTabId, initialControlId } })` and forwards to `/dashboard`. Legacy `?tab=` values are aliased to new registry ids; `?control=` identifies the exact setting.
 - `app/(authenticated)/settings-shell-demo/page.tsx` — dev demo page with Open Settings button + admin-view toggle.
 - `app/(authenticated)/settings-primitives/page.tsx` — primitive gallery (every control, every state).
 - `app/(authenticated)/settings-tree-demo/page.tsx` — tree + drawer-nav demo with a fake 20-node tree.
@@ -23,10 +24,12 @@ The single user-facing surface for every preference in the app — a VS Code-sty
 - `/user-settings/communication/messaging` — production SMS enrollment and opt-out, composed into the existing Messaging tab.
 
 **Overlay ids** (dispatched via `openOverlay(...)`)
+
 - `userPreferencesWindow` — canonical. Every caller should use this one.
 - `userPreferences` — legacy modal id. Resolves to the same shell via `SettingsShellOverlay`.
 
 **Hooks**
+
 - `useSetting<T>(path)` — read/write any setting. `[value, setter]`. Throws at init if the path's slice isn't registered.
 - `useSettingPersistence(path)` — returns `"synced" | "local-only" | "session"` for surfacing badges.
 - `useSettingsSearch(query, { isAdmin })` — ranked hits (label > keyword > description).
@@ -36,24 +39,29 @@ The single user-facing surface for every preference in the app — a VS Code-sty
 - `useSettingsTabNavigate()` — switches the active settings tab in-place inside the shell; falls back to `/settings/preferences?tab=…` (or a custom href) on a route.
 
 **Public API** — `@/features/settings`
+
 - `SettingsShell`, `SettingsShellOverlay`, `SettingsTabHost`
+- `SettingDoor`, `SettingAnchor`, `settingDoorHref`
 - `useSetting`, `useSettingPersistence`, `useSettingsSearch`, `countSearchHits`
 - `settingsRegistry`, `getVisibleTabs`, `getTabTree`, `getTabTreeNodes`, `findTab`
 - `parseSettingsPath`, `getSliceBinding`, `sliceBindings`
 - Types: `SettingsPath`, `SettingsPersistence`, `SettingsTabDef`, `ResolvedSettingsTab`, `SettingsSearchHit`, `SliceBinding`
 
 **Presentation-aware nav** — `@/features/settings/components/SettingsPresentationContext` (imported directly; not re-exported through the barrel because barrels are being eliminated)
+
 - `SettingsPresentationProvider` (provider)
 - `useSettingsPresentation`, `useSettingsNavigate`, `useSettingsTabNavigate`
 - Types: `SettingsPresentation`, `SettingsPresentationContextValue`, `SettingsNavigateOptions`
 
 **Primitives** — `@/components/official/settings`
+
 - Form: `SettingsSwitch`, `SettingsSelect`, `SettingsSlider`, `SettingsNumberInput`, `SettingsTextInput`, `SettingsTextarea`, `SettingsRadioGroup`, `SettingsCheckbox`, `SettingsSegmented`, `SettingsColorPicker`, `SettingsMultiSelect`, `SettingsButton`, `SettingsLink`, `SettingsKeybinding`, `SettingsModelPicker`
 - Layout: `SettingsSection`, `SettingsSubHeader`, `SettingsCallout`, `SettingsGrid`, `SettingsReadOnlyValue`
 - Tree: `SettingsTree`, `SettingsDrawerNav`, `SettingsBreadcrumb`
 - Shared types: `SettingsBadge`, `SettingsCommonProps`, `SettingsRowVariant`, `SettingsRowDensity`, `SettingsControlSize`, `SettingsOption`, `SettingsTreeNode`
 
 **Redux slice(s) exposed through `useSetting`**
+
 - `userPreferences` (`lib/redux/preferences/userPreferencesSlice.ts`) — 20 modules (incl. `favorites` — user-curated pins, capped at `FAVORITES_MAX`, mutated via dedicated `addFavorite`/`removeFavorite`/`toggleFavorite`/`reorderFavorites` reducers); persistence: **synced** (warm-cache: IDB + localStorage + Supabase).
 - `theme` (`styles/themes/themeSlice.ts`) — `{ mode: "light" | "dark" }`; persistence: **synced** (boot-critical: pre-paint localStorage).
 - `adminPreferences` (`lib/redux/preferences/adminPreferencesSlice.ts`) — admin-only backend host override and desktop delegation target override (`desktopTargetInstanceId`); persistence: **local-only** (flagged for sync migration).
@@ -65,9 +73,11 @@ The single user-facing surface for every preference in the app — a VS Code-sty
 ## Data model
 
 **Database tables** (Supabase)
+
 - `user_preferences` — single JSONB blob per user, mutated through the userPreferences warm-cache sync policy. This feature doesn't touch the table directly; the sync engine owns the fetch/write contract.
 
 **Key types**
+
 - `SettingsTabDef` (`features/settings/types.ts`) — registry entry shape.
 - `SliceBinding` (`features/settings/slice-bindings.ts`) — per-slice `{ read, write, persistence }` contract.
 - `SettingsTreeNode` (`components/official/settings/tree/types.ts`) — tree rendering node.
@@ -81,6 +91,7 @@ The single user-facing surface for every preference in the app — a VS Code-sty
 Trigger: `dispatch(openOverlay({ overlayId: "userPreferencesWindow", data?: { initialTabId? } }))`.
 
 Path:
+
 - `UnifiedOverlayController` iterates `ALL_WINDOW_REGISTRY_ENTRIES`, renders one `<OverlaySurface>` per entry.
 - `OverlaySurface` for `userPreferencesWindow` reads its `isOpen` from `overlaySlice`, lazy-loads `componentImport`, and mounts the resolved component with `{ isOpen: true, onClose, ...data }`.
 - The resolved component is `SettingsShellOverlay` (Phase 8), which ignores the passed props and reads `overlaySlice` directly so it also catches the legacy `userPreferences` modal id.
@@ -95,6 +106,7 @@ Exit: `SettingsShell.onClose` dispatches `closeOverlay` for both ids; `OverlaySu
 Trigger: a primitive's `onValueChange` inside a tab calls `setter(v)` from `useSetting(path)`.
 
 Path:
+
 - `useSetting` parses the path (`parseSettingsPath`), looks up the slice binding (`getSliceBinding`), and dispatches `binding.write(key, value)`.
 - For `userPreferences.*`, the write resolves to `setPreference({ module, preference, value })` — the warm-cache sync policy's middleware picks it up, debounces ≤250ms, and writes to IDB + localStorage mirror + Supabase.
 - For `theme.mode`, the write is `setMode(value)` — boot-critical middleware synchronously writes to localStorage and broadcasts across tabs.
@@ -107,6 +119,7 @@ Exit: Every subscribed component re-renders on the slice update; the sync engine
 Trigger: browser navigates to any URL containing `?panels=user_preferences` on mount.
 
 Path:
+
 - `initUrlHydration` registers a `user_preferences` hydrator that dispatches `openOverlay({ overlayId: "userPreferencesWindow" })`.
 - The rest of the flow matches Flow 1.
 
@@ -117,6 +130,7 @@ Exit: Window opens at the default tab. If additional query params (e.g. `&user_p
 Trigger: Developer adds a new setting.
 
 Path:
+
 1. Decide where the value lives. Existing slice → use `useSetting("slice.key")`. New preference → add to `UserPreferences` types + defaults + reducer, the sync engine picks it up automatically. Genuinely new slice → add a binding in `features/settings/slice-bindings.ts`.
 2. Create `features/settings/tabs/MyTab.tsx` composing ONLY primitives from `@/components/official/settings`. No Redux imports. No shadcn imports. No `className` on primitives.
 3. Add a registry entry in `features/settings/registry.ts` with `{ id, label, icon, parentId?, component: lazyTab(...), persistence }`.
@@ -127,6 +141,7 @@ Path:
 Trigger: an admin opens **Admin → Server environment → Desktop app (dev override)** and chooses a registered desktop instance.
 
 Path:
+
 - The tab reads/writes `adminPreferences.desktopTargetInstanceId` through `useSetting`, beside the localhost-server override.
 - The selector is populated from aidream `GET /desktop-instances`, backed by `public.app_instances`. Response fields: `id` (stable `app_instances.instance_id`, used as the target), `name`, `live`, `dev`, `last_seen`, `app_instance_id` (row UUID, `app_instances.id`), and `platform`.
 - `Auto / installed app` stores `null`, so agent calls omit `target_instance_id` and aidream keeps default desktop routing.
@@ -139,6 +154,7 @@ Exit: The local admin override persists in Redux with the other admin overrides 
 Trigger: A signed-in user opens **Communication → Messaging → Text messages**.
 
 Path:
+
 - `SmsEnrollmentSettingsSection` composes only official settings primitives and delegates the workflow to `useSmsEnrollment`.
 - The user enters a mobile number and affirmatively accepts the versioned SMS disclosure; the checkbox is unchecked by default.
 - `/api/sms/verify` starts Twilio Verify, validates the OTP, writes the exact consent contract to `communication.sms_consent`, and only then enables `communication.sms_notification_preferences`.
@@ -151,14 +167,14 @@ Exit: The verified number renders as enabled, or the user returns to the unenrol
 ## Invariants & gotchas
 
 - **Primitives have no `className` prop.** Ever. Variations must be new enum values on existing props. If you need a visual variation that isn't supported, add a prop to the primitive — don't pass `className`.
-- **Tabs never import Redux.** They can call `useSelector` only for *read-only derived state that isn't a preference* (e.g. in `WindowsTab` where open-window counts come directly from `windowManager.windows`). For anything writable, `useSetting` is the only path.
+- **Tabs never import Redux.** They can call `useSelector` only for _read-only derived state that isn't a preference_ (e.g. in `WindowsTab` where open-window counts come directly from `windowManager.windows`). For anything writable, `useSetting` is the only path.
 - **Tabs never import shadcn.** All form controls come from `@/components/official/settings`. The one documented exception is `AiModelsTab`, which lazy-wraps the legacy `AiModelsPreferences` until a `SettingsModelList` primitive exists.
 - **Admin/dev overrides stay in `adminPreferences`.** The localhost-server override and desktop `target_instance_id` selector live in the same admin-gated tab and must remain local-only/dev affordances, not synced user preferences.
 - **`useSetting` throws at init when the slice isn't bound.** Treat that as a "fix your slice binding" signal, not a caller bug. Add to `slice-bindings.ts`.
 - **Any in-shell component that pushes a route MUST go through `useSettingsNavigate()` (or `useSettingsTabNavigate()` for tab switches).** Calling `router.push("/somewhere")` directly inside a tab silently dismisses the settings window and yanks the user out of the surface — the shell isn't aware the route changed, the overlay just blinks out and the new page renders bare. Cmd/Ctrl/middle-click "open in new tab" must keep working; the hook handles it. `SettingsLink`, `OrganizationCard`, and `UserContentTemplateManager` are the reference consumers. The Boy-scout rule applies: if you encounter a stray `router.push` inside a settings-mounted component while working in a file, route it through the hook in the same change.
 - **Writing through `useSetting` for `windowManager` requires an action-only key.** `toggleHidden`, `restoreAll` — no `read` roundtrip. For the full `minimizeAll(payload)` write you need viewport dims, so call `useAppDispatch()` directly with `minimizeAll(...)` (see `WindowsTab`).
 - **`persistence: "local-only"` and `persistence: "session"` are flags, not final states.** They document which slices still need a sync policy.
-- **A `userPreferences` SHAPE CHANGE ships a paired backfill — no exceptions.** Retiring/renaming/re-typing a persisted field means old blobs (IDB, the localStorage mirror, and the `users.user_preferences` DB rows) still carry the old value. Stripping it only in Redux at load makes the console warn on *every* load and never heals dormant users. The rule: (1) add the normalization rule to **both** the TS `sanitizeLoadedPreferences` (`userPreferencesSlice.ts`) **and** the DB `users.normalize_preferences_jsonb` (`migrations/user_preferences_legacy_drift_backfill.sql`) in the SAME change; (2) the migration reruns `heal_user_preferences_drift()` so live rows are backfilled at deploy; (3) the weekly `heal-user-preferences-drift` pg_cron job + the `user-preferences-legacy-drift` data-integrity check (`lib/integrity/checks.ts`, visible at `/administration/database/data-integrity`) keep it at zero and scream if it ever isn't. All load boundaries route through `sanitizeLoadedPreferences` — never a subset of the individual strips, or a boundary silently re-persists what it missed.
+- **A `userPreferences` SHAPE CHANGE ships a paired backfill — no exceptions.** Retiring/renaming/re-typing a persisted field means old blobs (IDB, the localStorage mirror, and the `users.user_preferences` DB rows) still carry the old value. Stripping it only in Redux at load makes the console warn on _every_ load and never heals dormant users. The rule: (1) add the normalization rule to **both** the TS `sanitizeLoadedPreferences` (`userPreferencesSlice.ts`) **and** the DB `users.normalize_preferences_jsonb` (`migrations/user_preferences_legacy_drift_backfill.sql`) in the SAME change; (2) the migration reruns `heal_user_preferences_drift()` so live rows are backfilled at deploy; (3) the weekly `heal-user-preferences-drift` pg_cron job + the `user-preferences-legacy-drift` data-integrity check (`lib/integrity/checks.ts`, visible at `/administration/database/data-integrity`) keep it at zero and scream if it ever isn't. All load boundaries route through `sanitizeLoadedPreferences` — never a subset of the individual strips, or a boundary silently re-persists what it missed.
 - **The legacy `userPreferences` modal overlay id still resolves to the new shell.** Kept so nothing downstream has to change. Remove the modal registry entry once every caller has migrated to `userPreferencesWindow`.
 - **Do NOT regress on `components/user-preferences/AiModelsPreferences.tsx`.** It's kept on purpose — it's the only remaining legacy `*Preferences.tsx` still referenced (by `AiModelsTab`). Deleting it breaks the shell.
 - **Category tabs (e.g. `id: "general"`, `id: "ai"`) have `component: Placeholder`.** The tree's folder nodes only expand/collapse, they don't activate. The placeholder is never rendered for them; it's still required to satisfy the type.
@@ -189,6 +205,7 @@ Exit: The verified number renders as enabled, or the user returns to the unenrol
 Phase 1–8 shipped. Phase 9 (this doc + skill) closes the original project.
 
 **Follow-up candidates** (not blocking):
+
 - Migrate `adminPreferences`, `layout`, and the email-preferences API to the sync engine so those tabs can drop their `local-only` flag.
 - Build a `SettingsModelList` primitive and replace the legacy `AiModelsPreferences` wrapper.
 - Reintroduce `AgentContextPreferences` as a proper tab built on the new agent system.
@@ -197,6 +214,14 @@ Phase 1–8 shipped. Phase 9 (this doc + skill) closes the original project.
 ---
 
 ## Change log
+
+- `2026-08-15` — **Exact setting doors are a platform primitive.** `SettingDoor`
+  targets a user setting by tab + control and preserves the existing
+  window/drawer presentation on an ordinary click; `SettingAnchor` receives the
+  control identity through `SettingsPresentationContext`, scrolls, focuses, and
+  highlights it. `/settings/preferences?tab=…&control=…` now survives the legacy
+  route-to-overlay bridge instead of dropping the control target. Organization
+  targets use the same primitive and are specified in the cross-repo contract.
 
 - `2026-08-11` — **Seven preferences are now agent-writable** via the `matrx-user/settings` surface (`writeTargets` on `features/surfaces/manifests/settings.manifest.ts`, handlers on `route-shell/SettingsTabContentImpl.tsx`): `theme_mode`, `accent_theme`, `display_layout`, `text_generation_style`, `language_defaults`, `assistant_name`, `voice_persona`. **Golden rule 3 still holds for agents**: every handler dispatches `getSliceBinding(slice).write(key, value)` — the same action `useSetting`'s setter dispatches — so there is no second write path, and writes are refused while an autosave flush is in flight. New dependency-free `agent-writable-settings.ts` is now the single vocabulary for those enums: `AppearanceTab`, `LanguageTab`, `TextGenerationTab` and `VoiceTab` render their `SettingsSelect`/`SettingsSegmented` options from it, the manifest interpolates the same lists into the contract an agent reads, and the handlers validate against the same guards. **This fixed live drift** — the tabs each carried a hand-typed language list and Text generation was missing hi/nl/pl/sv/tr; they now share one 15-language list. `SettingsSelect`/`SettingsSegmented` `options` props widened to `readonly` (type-only) so `as const` vocabularies pass without copying. Because the tabs are lazy and there is no registry of per-tab setting keys, the surface reads these seven straight from Redux — they are readable and writable from ANY settings tab, each with a 1:1 read twin. Deliberately NOT agent-writable, argued in the manifest docblock: the Profile tabs (account identity), anything security-shaped, billing, Organizations (membership/roles), AI Models + Admin Server (capability governance), the whole Privacy tab (`alwaysWatching` and auto knowledge-graph are background-capture escalations, not preferences), Integrations/Google Workspace/Extension (credentials and grants), and the experimental `layout.isInWindow` + windowManager session actions. Adding a new agent-writable setting = add its vocabulary to `agent-writable-settings.ts`, a target to the manifest, and a handler to `SettingsTabContentImpl` — never a new write path.
 
