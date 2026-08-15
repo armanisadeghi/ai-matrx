@@ -34,12 +34,21 @@ import { resolveActiveRouteMode } from "@/features/shell/components/header/route
  * this keep landing on the right view. Never WRITE `tab` — `?view=` is the one
  * name (see CLAUDE.md: one value, one variable name).
  */
-export function useMarketingSubView(section: string): string {
-  const params = useSearchParams();
-  const raw = params.get("view") ?? params.get("tab");
+export function resolveMarketingSubView(
+  section: string,
+  raw: string | null,
+): string {
   const fallback = defaultMarketingSubView(section)?.id ?? "";
   if (!raw) return fallback;
   return isMarketingSubView(section, raw) ? raw : fallback;
+}
+
+export function useMarketingSubView(section: string): string {
+  const params = useSearchParams();
+  return resolveMarketingSubView(
+    section,
+    params.get("view") ?? params.get("tab"),
+  );
 }
 
 export interface MarketingSubNavItem {
@@ -68,15 +77,23 @@ export interface MarketingSiteSubNav {
  * A section with no sub-views contributes nothing, and the header centre is
  * simply empty — the page's own title already says where you are.
  */
-export function useMarketingSiteSubNav(sitePath: string): MarketingSiteSubNav {
-  const pathname = usePathname() ?? sitePath;
+/**
+ * PURE core of the header's sub-nav. Kept free of Next's hooks so what the
+ * header renders on any given URL is directly testable — the hook below is a
+ * three-line shell over it.
+ */
+export function buildMarketingSubNav(
+  sitePath: string,
+  pathname: string,
+  rawViewParam: string | null,
+): MarketingSiteSubNav {
   const active = resolveActiveRouteMode(
     listMarketingSiteModes(sitePath),
     pathname,
   );
   const section = active?.slug ?? "";
   const sectionHref = active?.href ?? sitePath;
-  const view = useMarketingSubView(section);
+  const view = resolveMarketingSubView(section, rawViewParam);
   // Only a migrated section hands its sub-nav to the header; one that still
   // draws its own switcher would otherwise show the same tabs twice.
   const views = isMarketingSubNavMigrated(section)
@@ -91,4 +108,24 @@ export function useMarketingSiteSubNav(sitePath: string): MarketingSiteSubNav {
     })),
     activeHref: marketingSubViewHref(sectionHref, section, view),
   };
+}
+
+/**
+ * What the site header renders. It used to render all 26 SECTIONS, which no
+ * width could ever fit — `RouteModeNav` degraded them to bare icons, or on a
+ * narrow window to a single 26-row dropdown. The sections now live in the
+ * marketing sidebar, and the header shows one level down: the current
+ * section's sub-views, a set of 2-7 that fits as icon + label.
+ *
+ * A section with no sub-views contributes nothing, and the header centre is
+ * simply empty — the page's own title already says where you are.
+ */
+export function useMarketingSiteSubNav(sitePath: string): MarketingSiteSubNav {
+  const pathname = usePathname() ?? sitePath;
+  const params = useSearchParams();
+  return buildMarketingSubNav(
+    sitePath,
+    pathname,
+    params.get("view") ?? params.get("tab"),
+  );
 }
