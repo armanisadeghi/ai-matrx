@@ -29,6 +29,8 @@ export interface UseSpeechOptions {
   label?: string;
   /** Which engine synthesizes. Omit for the app default. */
   engine?: SpeakEngineId;
+  /** Explicit voice id for this surface — overrides the user's saved voice. */
+  voice?: string;
   /**
    * When set, on (re)mount this hook re-adopts the queue's currently-active item
    * if that item's text equals `adoptText` — so a Speak button that unmounted
@@ -45,6 +47,7 @@ export function useSpeech({
   dictionarySurfaceKey,
   label,
   engine,
+  voice,
   adoptText,
 }: UseSpeechOptions = {}) {
   const { items, pause, resume, skip, remove, playItem, currentId } =
@@ -73,6 +76,7 @@ export function useSpeech({
       const { id } = speakText({
         text,
         engine,
+        voice,
         purpose,
         processMarkdown,
         label,
@@ -81,7 +85,7 @@ export function useSpeech({
       setItemId(id);
       return id;
     },
-    [engine, purpose, processMarkdown, label, dictionarySurfaceKey],
+    [engine, voice, purpose, processMarkdown, label, dictionarySurfaceKey],
   );
 
   const status: PlaybackItemStatus | null = effectiveId
