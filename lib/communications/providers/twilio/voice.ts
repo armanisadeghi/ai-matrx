@@ -18,6 +18,23 @@ export interface TwilioInboundVoiceRequest {
   direction: string;
 }
 
+export type TwilioVoiceConsentDecision =
+  | {
+      consented: true;
+      responseKind: "dtmf" | "speech";
+      responseValue: string;
+    }
+  | {
+      consented: false;
+      reason:
+        | "no_response"
+        | "ambiguous_response"
+        | "unrecognized_dtmf"
+        | "unrecognized_speech"
+        | "invalid_confidence"
+        | "low_confidence";
+    };
+
 export type VoiceParseResult<T> =
   | { ok: true; value: T }
   | { ok: false; error: string };
@@ -66,17 +83,89 @@ export function parseTwilioInboundVoiceRequest(
   if (!callSid.ok) return callSid;
   const to = requiredParam(params, "To");
   if (!to.ok) return to;
+  const from = requiredParam(params, "From");
+  if (!from.ok) return from;
+  const direction = requiredParam(params, "Direction");
+  if (!direction.ok) return direction;
 
   return {
     ok: true,
     value: {
       accountSid: accountSid.value,
       callSid: callSid.value,
-      from: params.From?.trim() || "anonymous",
+      from: from.value,
       to: to.value,
-      direction: params.Direction?.trim() || "inbound",
+      direction: direction.value,
     },
   };
+}
+
+function normalizeAffirmativeSpeech(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+const AFFIRMATIVE_SPEECH_RESPONSES = new Set([
+  "i agree",
+  "yes i agree",
+  "i consent",
+]);
+
+/**
+ * Admit only an exact keypad response or a narrow explicit speech phrase.
+ * Missing, conflicting, low-confidence, or merely positive-sounding input is
+ * not consent.
+ */
+export function parseTwilioVoiceConsentDecision(
+  params: Record<string, string>,
+): TwilioVoiceConsentDecision {
+  const digits = params.Digits?.trim();
+  const speech = params.SpeechResult?.trim();
+  if (digits && speech) {
+    return { consented: false, reason: "ambiguous_response" };
+  }
+  if (digits) {
+    return digits === "1"
+      ? { consented: true, responseKind: "dtmf", responseValue: "1" }
+      : { consented: false, reason: "unrecognized_dtmf" };
+  }
+  if (!speech) return { consented: false, reason: "no_response" };
+
+  const rawConfidence = params.Confidence?.trim();
+  if (rawConfidence) {
+    const confidence = Number(rawConfidence);
+    if (!Number.isFinite(confidence) || confidence < 0 || confidence > 1) {
+      return { consented: false, reason: "invalid_confidence" };
+    }
+    if (confidence < 0.5) {
+      return { consented: false, reason: "low_confidence" };
+    }
+  }
+  const normalizedSpeech = normalizeAffirmativeSpeech(speech);
+  return AFFIRMATIVE_SPEECH_RESPONSES.has(normalizedSpeech)
+    ? {
+        consented: true,
+        responseKind: "speech",
+        responseValue: normalizedSpeech,
+      }
+    : { consented: false, reason: "unrecognized_speech" };
+}
+
+export function twilioVoiceConsentEventKey(input: {
+  accountSid: string;
+  callSid: string;
+  disclosureVersion: string;
+}): string {
+  return [
+    "twilio",
+    "voice-consent",
+    input.accountSid.trim(),
+    input.callSid.trim(),
+    input.disclosureVersion.trim(),
+  ].join(":");
 }
 
 export function twilioVoiceLifecycleEventKey(input: {

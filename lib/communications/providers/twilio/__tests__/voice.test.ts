@@ -2,10 +2,17 @@
 
 import {
   parseTwilioInboundVoiceRequest,
+  parseTwilioVoiceConsentDecision,
   parseTwilioVoiceLifecycleEvent,
   parseTwilioVoiceRecordingLifecycleEvent,
+  twilioVoiceConsentEventKey,
 } from "@/lib/communications/providers/twilio/voice";
-import { buildStaticVoiceTestTwiml } from "@/lib/communications/providers/twilio/voice-twiml";
+import {
+  buildOwnerBetaConsentAcceptedTwiml,
+  buildOwnerBetaConsentPromptTwiml,
+  buildOwnerBetaNoConsentTwiml,
+  buildOwnerBetaRejectedCallerTwiml,
+} from "@/lib/communications/providers/twilio/voice-twiml";
 import { shouldApplyCallLifecycleEvent } from "@/lib/communications/voice/lifecycle";
 import { shouldApplyCallRecordingLifecycleEvent } from "@/lib/communications/voice/recording-lifecycle";
 import { evaluateVoiceRecordingReadiness } from "@/lib/communications/voice/recording-readiness";
@@ -36,17 +43,80 @@ describe("Twilio Voice provider adapter", () => {
     });
   });
 
-  test("returns branded disclosure TwiML without recording or a long-lived connection", () => {
-    const twiml = buildStaticVoiceTestTwiml();
+  test("returns a branded affirmative consent gate without any capture point", () => {
+    const twiml = buildOwnerBetaConsentPromptTwiml(
+      "https://www.aimatrx.com/api/webhooks/twilio/voice?stage=owner-beta-consent",
+    );
 
     expect(twiml).toContain("A.I. Matrix");
-    expect(twiml).toContain("A.I.-powered test line");
-    expect(twiml).toContain("may be recorded and reviewed");
-    expect(twiml).toContain("phone webhook is working correctly");
+    expect(twiml).toContain("not being recorded right now");
+    expect(twiml).toContain("Twilio may record the call");
+    expect(twiml).toContain("press 1 or say, I agree");
+    expect(twiml).toContain('input="dtmf speech"');
+    expect(twiml).toContain('actionOnEmptyResult="true"');
     expect(twiml).toContain("<Hangup/>");
     expect(twiml).not.toContain("<Record");
     expect(twiml).not.toContain("<Connect");
     expect(twiml).not.toContain("<Stream");
+  });
+
+  test("keeps every terminal owner-beta response explicitly non-recording", () => {
+    for (const twiml of [
+      buildOwnerBetaConsentAcceptedTwiml(),
+      buildOwnerBetaNoConsentTwiml(),
+      buildOwnerBetaRejectedCallerTwiml(),
+    ]) {
+      expect(twiml).toContain("record");
+      expect(twiml).toContain("<Hangup/>");
+      expect(twiml).not.toContain("<Record");
+      expect(twiml).not.toContain("<Connect");
+      expect(twiml).not.toContain("<Stream");
+    }
+  });
+
+  test("accepts only exact affirmative DTMF or narrow speech consent", () => {
+    expect(parseTwilioVoiceConsentDecision({ Digits: "1" })).toEqual({
+      consented: true,
+      responseKind: "dtmf",
+      responseValue: "1",
+    });
+    expect(
+      parseTwilioVoiceConsentDecision({
+        SpeechResult: "Yes, I agree.",
+        Confidence: "0.91",
+      }),
+    ).toEqual({
+      consented: true,
+      responseKind: "speech",
+      responseValue: "yes i agree",
+    });
+    expect(parseTwilioVoiceConsentDecision({})).toEqual({
+      consented: false,
+      reason: "no_response",
+    });
+    expect(parseTwilioVoiceConsentDecision({ Digits: "2" })).toEqual({
+      consented: false,
+      reason: "unrecognized_dtmf",
+    });
+    expect(
+      parseTwilioVoiceConsentDecision({
+        SpeechResult: "I agree",
+        Confidence: "0.2",
+      }),
+    ).toEqual({ consented: false, reason: "low_confidence" });
+    expect(
+      parseTwilioVoiceConsentDecision({ Digits: "1", SpeechResult: "I agree" }),
+    ).toEqual({ consented: false, reason: "ambiguous_response" });
+  });
+
+  test("creates a stable provider-scoped consent evidence key", () => {
+    expect(
+      twilioVoiceConsentEventKey({
+        accountSid: "AC123",
+        callSid: "CA123",
+        disclosureVersion: "v1",
+      }),
+    ).toBe("twilio:voice-consent:AC123:CA123:v1");
   });
 
   test("creates a stable provider-scoped lifecycle key", () => {
