@@ -398,6 +398,12 @@ export const EXPERT_STATUS_FILTER_ENUM_TEXT = EXPERT_STATUS_FILTERS.map((v) =>
       : `"${v}"`,
 ).join(" | ");
 
+/** Record-class vocabulary WITH meaning — the default is a filter, so an agent
+ *  that does not know "contacts" is the default cannot ask for the rest. */
+export const RECORD_CLASS_FILTER_ENUM_TEXT = RECORD_CLASS_FILTERS.map(
+  (v) => `"${v}" (${RECORD_CLASS_FILTER_LABEL[v]})`,
+).join(" | ");
+
 export const PARTY_KIND_ENUM_TEXT = PARTY_KINDS.join(" | ");
 export const PARTY_KIND_FILTER_ENUM_TEXT = PARTY_KIND_FILTERS.join(" | ");
 export const PARTY_SORT_KEY_ENUM_TEXT = PARTY_SORT_KEYS.join(" | ");

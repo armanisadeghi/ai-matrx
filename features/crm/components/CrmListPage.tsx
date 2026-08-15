@@ -75,6 +75,7 @@ import {
   DATE_BUCKETS,
   DEFAULT_RECORD_CLASS_FILTER,
   RECORD_CLASS_FILTERS,
+  RECORD_CLASS_FILTER_ENUM_TEXT,
   DATE_BUCKET_ENUM_TEXT,
   DATE_BUCKET_VALUES,
   EXPERT_STATUS_FILTERS,
@@ -317,6 +318,23 @@ function parseColumnFilters(value: unknown): PartyListFilters {
       );
     }
     out.expert_status = entry as ExpertStatusFilter;
+  }
+
+  // THE RECORD FACET. Unlike every other filter here, omitting this key is not
+  // "no filter" — `applyPartyListPredicates` falls back to contacts-only. So an
+  // agent asked to include what the platform discovered MUST be able to say so,
+  // and silently dropping the key made that request a no-op.
+  if ("record_class" in raw) {
+    const entry = raw.record_class;
+    if (
+      typeof entry !== "string" ||
+      !(RECORD_CLASS_FILTERS as readonly string[]).includes(entry)
+    ) {
+      throw new Error(
+        `column_filters.record_class expects one of ${RECORD_CLASS_FILTER_ENUM_TEXT} — received ${describeValue(entry)}. Omitting the key is NOT "no filter": the list falls back to "${DEFAULT_RECORD_CLASS_FILTER}", so send "all" to include records the platform discovered.`,
+      );
+    }
+    out.record_class = entry as RecordClassFilter;
   }
 
   for (const key of ["updated_at", "created_at"] as const) {

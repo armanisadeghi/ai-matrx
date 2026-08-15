@@ -22,10 +22,14 @@ import type {
   PartyListQuery,
   PartySortDirection,
   PartySortKey,
+  RecordClassFilter,
 } from "../types";
 import {
   DATE_BUCKET_VALUES,
+  DEFAULT_RECORD_CLASS_FILTER,
   EXPERT_STATUS_FILTERS,
+  RECORD_CLASS_FILTERS,
+  RECORD_CLASS_FILTER_LABEL,
   DEFAULT_PARTY_QUERY,
   PARTY_COLUMN_FILTER_KEYS,
   PARTY_KINDS,
@@ -121,6 +125,17 @@ function parseFilters(raw: unknown): PartyListFilters {
         (EXPERT_STATUS_FILTERS as readonly string[]).includes(value)
       ) {
         out.expert_status = value as ExpertStatusFilter;
+      }
+    } else if (key === "record_class") {
+      // A saved view is a named QUERY, and the record facet is part of it — a
+      // view built over what the platform discovered has to reopen that way.
+      // Dropping it here also blinded the dirty-detector (definitionFromQuery
+      // runs through this parser), so changing the facet read as "unmodified".
+      if (
+        typeof value === "string" &&
+        (RECORD_CLASS_FILTERS as readonly string[]).includes(value)
+      ) {
+        out.record_class = value as RecordClassFilter;
       }
     } else if (key === "updated_at" || key === "created_at") {
       if (
@@ -267,6 +282,11 @@ export function describeDefinition(definition: SavedViewDefinition): string {
     parts.push(f.do_not_contact ? "do-not-contact only" : "contactable only");
   }
   if (f.expert_status) parts.push(`experts: ${f.expert_status}`);
+  // Stated only when it is NOT the default — a view that says "My contacts" on
+  // every chip teaches the user nothing; one that says "Everything" warns them.
+  if (f.record_class && f.record_class !== DEFAULT_RECORD_CLASS_FILTER) {
+    parts.push(RECORD_CLASS_FILTER_LABEL[f.record_class]);
+  }
   if (f.updated_at) parts.push(`updated ${f.updated_at}`);
   if (f.created_at) parts.push(`created ${f.created_at}`);
   return parts.join(" · ");
