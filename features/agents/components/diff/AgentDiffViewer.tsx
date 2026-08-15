@@ -34,7 +34,12 @@ interface AgentDiffViewerProps {
   className?: string;
 }
 
-function buildAgentAdapterRegistry() {
+/**
+ * The canonical agent field-adapter registry. Exported so the diff PAGE can
+ * name and describe changed fields exactly as this viewer renders them when it
+ * builds a Copy-for-AI payload — one registry, never a parallel label table.
+ */
+export function buildAgentAdapterRegistry() {
   const registry = createAdapterRegistry();
 
   // Complex structured fields

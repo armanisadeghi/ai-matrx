@@ -302,6 +302,25 @@ first and emit the gap list; only then wire, batch by batch:
   `/marketing/brands/[id]/sites/[id]/backlinks` (the full-granularity + groomer
   reference page); relationships hub — all tabs; the planner is the
   what-I-see reference (`access-planner/copy.ts`).
+- **What-I-see wirings (post-MISSION, use these as the pattern):**
+  `features/agents/components/diff/AgentVersionDiffPage` — the RENDERED DIFF
+  as data. Changed fields are built through the SAME adapter registry +
+  enrichment the viewer renders with (`buildAgentAdapterRegistry` is exported
+  from `AgentDiffViewer` for exactly this), so each field carries the label
+  and summary line the user reads; the stats strip is the page KPI and rides
+  in body + attributes everywhere; variants mirror the page's own view modes
+  (Changes / Changes + review prompt / Summary / History / Everything) and the
+  review-prompt variant answers the question the user actually has ("what
+  changed and is it safe?"). `features/agents/components/widgets/AgentWidgetsPage`
+  — LIVE form state; the launch-options builder was extracted to
+  `build-widget-launch.ts` so the click handler and the payload share ONE
+  extractor, and a JSON-box parse failure copies as `status:"blocked"` with
+  the red-banner text verbatim.
+  `features/agents/components/shortcuts/AgentShortcutsPanel` — rendered row
+  projection (surface first), count cards mirrored into every payload, error
+  banner captured verbatim with its own pair; fat raw records demoted to
+  "Everything". Shared shapes in `features/agents/format.ts` +
+  `features/agent-shortcuts/format.ts`.
 - Feature components: `features/ai-models` (AiModelTable + filter bar),
   `features/tool-registry/mcp-admin` + `mcp-tools` (incl. aiCustom export
   dialog; sanitized formatters), `feedback` (all four tabs + detail dialog,
@@ -315,6 +334,17 @@ first and emit the gap list; only then wire, batch by batch:
 list above) carry raw-dump payloads that fail the what-I-see test — auditing
 them is step 4 of the module-audit protocol. Any you touch is boy-scout
 territory: upgrade the payload while you're there.
+
+**Open per-item gaps on the version-diff page:** its two lists render in
+files outside that page — the History tab's rows in
+`features/agents/components/diff/VersionHistoryTimeline.tsx`, and the
+per-field diff rows in the shared `components/diff/views/*` (used by other
+features). Both lists are covered today at whole-list granularity from the
+page toolbar (a "Version history" variant + all-versions CSV, and the
+changed-field list + CSV), but neither has a per-row pair yet. Wiring those
+means editing the timeline and the shared diff views — do it deliberately,
+and keep the shared views generic (take an optional copy config, don't
+hard-code agent payloads into `components/diff/`).
 
 ## Roadmap — from "copy" to "connect"
 
