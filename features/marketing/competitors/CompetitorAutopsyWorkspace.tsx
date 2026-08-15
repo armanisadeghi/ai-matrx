@@ -194,6 +194,7 @@ export default function CompetitorAutopsyWorkspace() {
   );
   const selectedSite = sites.data?.find((site) => site.id === resolvedSiteId) ?? null;
   const [discovering, setDiscovering] = useState(false);
+  const [activeTab, setActiveTab] = useState("competitors");
 
   useEffect(() => {
     if (!resolvedSiteId || !proposed.length) return;
@@ -323,7 +324,7 @@ export default function CompetitorAutopsyWorkspace() {
   // handlers resolve the visible rows (and the run state) through this ref at
   // APPLY time instead, and refuse the whole write on one unknown id.
   const liveRef = useRef<{
-    competitors: Array<{ id: string; label: string }>;
+    competitors: Array<{ id: string; label: string; peerScale: CompetitorRow["peer_scale"] }>;
     opportunities: Array<{ id: string; label: string }>;
     runStatus: typeof run.status;
   }>({ competitors: [], opportunities: [], runStatus: "idle" });
@@ -333,6 +334,9 @@ export default function CompetitorAutopsyWorkspace() {
       competitors: (data?.competitors ?? []).map((row) => ({
         id: row.id,
         label: row.display_domain ?? row.normalized_domain ?? row.id,
+        // Carried so an agent write that omits peer_scale preserves the axis
+        // instead of silently clearing it.
+        peerScale: row.peer_scale,
       })),
       opportunities: (data?.opportunities ?? []).map((row) => ({
         id: row.id,
@@ -398,7 +402,7 @@ export default function CompetitorAutopsyWorkspace() {
         entity_role: String(write.entity_role) as CompetitorRow["entity_role"],
         peer_scale: typeof write.peer_scale === "string"
           ? (write.peer_scale as CompetitorRow["peer_scale"])
-          : row.peer_scale,
+          : row.peerScale,
         posture: String(write.posture) as CompetitorRow["posture"],
         use_for_link_gap: write.use_for_link_gap === true,
         custom_labels: Array.isArray(write.custom_labels) ? write.custom_labels.map(String) : [],
@@ -802,15 +806,28 @@ export default function CompetitorAutopsyWorkspace() {
 
         <ManualCompetitorAdd site={selectedSite} onAdded={refresh} />
 
+        {/* ONE door to the ruling queue, not a wall of twelve. This used to
+            render a button per proposal that scrolled to a table row; the Review
+            tab is now where a proposal is ruled on, so a second list of the same
+            rows is noise between the reader and the work. */}
         {proposed.length ? (
           <Card className="border-amber-500/30 bg-amber-500/[0.04]">
-            <CardHeader className="pb-3"><CardTitle className="text-sm">Confirm the proposed classifications</CardTitle></CardHeader>
-            <CardContent className="flex flex-wrap gap-2">
-              {proposed.map((competitor) => (
-                <Button key={competitor.id} variant="outline" size="sm" className="h-auto gap-2 py-2" onClick={() => document.getElementById(`competitor-review-${competitor.id}`)?.scrollIntoView({ behavior: "smooth" })}>
-                  <span className="text-left"><span className="block font-medium">{competitor.display_name || competitor.display_domain}</span><span className="block text-xs text-muted-foreground">{derivedCompetitorLabel(competitor)} · review before it drives spend</span></span>
-                </Button>
-              ))}
+            <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
+              <div className="min-w-0">
+                <p className="text-sm font-medium">
+                  {proposed.length} {proposed.length === 1 ? "call is" : "calls are"} waiting on you
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Nothing here drives spend until you say it is right.
+                </p>
+              </div>
+              <Button
+                size="sm"
+                className="shrink-0"
+                onClick={() => setActiveTab("ground-truth")}
+              >
+                Review them
+              </Button>
             </CardContent>
           </Card>
         ) : null}
@@ -836,7 +853,7 @@ export default function CompetitorAutopsyWorkspace() {
           </Card>
         ) : null}
 
-        <Tabs defaultValue="competitors" className="min-w-0">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="min-w-0">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <TabsList>
               <TabsTrigger value="ground-truth">
