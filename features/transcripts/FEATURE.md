@@ -139,8 +139,8 @@ The whole transcription ecosystem is catalogued at **`/transcripts/admin`** (`ap
   per kind. The sectioned hub stack was deleted (`TranscriptsHubTable`,
   hub cards/sections, grouping/sort/filter utils, `transcriptsHubService`,
   hub types/constants). Nested session→recording grouping is dropped pending
-  a MatrxDataTable hierarchy concept; row actions are read-only (open/copy)
-  — both tracked in `docs/handoffs/canonical-entity-list-extraction.md`.
+  a MatrxDataTable hierarchy concept (a decision in `.matrx/ARMAN_TASKS.md`);
+  row actions are read-only (open/copy) — chip `TASK-EL-TRXACTIONS`.
 - `2026-08-08` — **Transcript hub review repair.** `/transcripts` now exposes
   an explicit Mine / organization scope control (Mine by default) and applies
   that scope to processor, studio, cleanup, detached-recording, active-recording,

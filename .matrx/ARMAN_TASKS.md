@@ -9,6 +9,27 @@ _Last updated: 2026-07-22_
 
 ## Active (ranked — quickest wins first)
 
+### 0. Decide: does `/transcripts` still need the NESTED view? (seconds — a decision)
+
+The canonical entity-list rewrite (merged 2026-08-15) replaced the sectioned
+transcripts hub with one server-paged list. It deliberately **dropped the
+nested tree view** — session → its recordings, cleanup → its recordings — which
+the old bespoke `TranscriptsHubTable` rendered with a hand-rolled tree gutter.
+Everything else came across; this is the one capability that did not.
+
+Bringing it back is not a transcripts fix — `MatrxDataTable` has no hierarchy
+concept at all, so it means adding parent/child rows to the canonical table
+that ~20 surfaces now share. The extraction's own ruling was that this is the
+one place where extending the canonical table is *likely* correct rather than
+bending transcripts around it. But building a hierarchy engine into the shared
+table on a hunch is exactly the speculative work the doctrine forbids.
+
+**The call:** does anyone actually use nesting to find a recording?
+- **Yes** → I file it as a chip to add hierarchy to `MatrxDataTable` (a real
+  piece of work, and every table surface inherits it).
+- **No** → say so and I delete this entry; the flat list with a Type column
+  and a `session` filter already answers "what recordings exist".
+
 ### 0a. Run the agent-machine setup on your OTHER Macs (~5 min each, mostly one command)
 Done on the 16GB Mac 2026-08-09; **every other machine and account still needs it**, or agents there will crash the box with a second dev server and be unable to drive the desktop app.
 
