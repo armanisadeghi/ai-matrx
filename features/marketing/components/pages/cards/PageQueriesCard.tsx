@@ -27,7 +27,7 @@ import { useUpdatePageIntent } from "@/features/marketing/data/hooks";
 import { usePageTopQueries } from "@/features/marketing/seo/keyword/hooks";
 import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
 import type { MarketingPage } from "@/features/marketing/types";
-import { ClassChip } from "@/features/marketing/search-console/components/insights/ClassInsights";
+import { ClassChip } from "@/features/marketing/search-console/components/insights/ClassChip";
 import { useGscKeywordClasses } from "@/features/marketing/search-console/hooks/useGscQuery";
 import { normalizeKeywordPhrase } from "@/features/marketing/seo/keyword/data";
 

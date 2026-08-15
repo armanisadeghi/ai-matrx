@@ -591,8 +591,6 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
         description:
           "Scheduled, branded, client-ready reports assembled from live marketing data.",
         iconName: "FileBarChart",
-        status: "coming-soon",
-        comingSoonId: "marketing.reports",
       },
       {
         label: "Cost",

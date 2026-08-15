@@ -1,9 +1,11 @@
-// Reserved Marketing route. Body, copy, and status come from the shared
-// placeholder — see features/marketing/components/MarketingComingSoon.tsx.
-// The promise is tracked as `marketing.reports` in lib/coming-soon/registry.ts.
-
-import { MarketingComingSoon } from "@/features/marketing/components/MarketingComingSoon";
+import { Suspense } from "react";
+import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
+import { MarketingReportsWorkspace } from "@/features/marketing/reports/MarketingReportsWorkspace";
 
 export default function Page() {
-  return <MarketingComingSoon comingSoonId="marketing.reports" />;
+  return (
+    <Suspense fallback={<LoadingSurface label="Loading marketing reports…" />}>
+      <MarketingReportsWorkspace />
+    </Suspense>
+  );
 }

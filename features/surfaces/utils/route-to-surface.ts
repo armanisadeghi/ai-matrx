@@ -309,6 +309,7 @@ function resolveMarketingSurface(stripped: string): string | null {
   // site-vertical map below).
   if (segments[1] === "ranks") return "matrx-user/marketing-ranks-hub";
   if (segments[1] === "initiatives") return "matrx-user/marketing-initiatives";
+  if (segments[1] === "reports") return "matrx-user/marketing-reports";
 
   // /marketing/brands/[brandId][...]
   if (segments[1] === "brands" && segments.length >= 3) {

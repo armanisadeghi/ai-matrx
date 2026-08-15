@@ -45,26 +45,11 @@ import {
   GSC_TRAFFIC_CLASSES,
   formatCount,
 } from "@/features/marketing/search-console/types";
+import { ClassChip } from "./ClassChip";
 
 function num(value: number | null | undefined): string {
   if (value === null || value === undefined) return "—";
   return formatCount(value);
-}
-
-export function ClassChip({ trafficClass }: { trafficClass: string | null }) {
-  const meta = GSC_TRAFFIC_CLASSES.find((c) => c.key === trafficClass);
-  if (!meta) return <span className="text-xs text-muted-foreground">—</span>;
-  return (
-    <span
-      className={cn(
-        "rounded border border-border bg-card px-1.5 py-0.5 text-[11px] font-medium",
-        meta.tone,
-      )}
-      title={meta.description}
-    >
-      {meta.label}
-    </span>
-  );
 }
 
 function ErrorPanel({ error }: { error: unknown }) {
