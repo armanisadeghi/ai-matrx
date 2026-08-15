@@ -450,6 +450,25 @@
         }
       }
     },
+    "/ai/prompts/builtins": {
+      "get": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Get All Prompt Builtins",
+        "operationId": "get_all_prompt_builtins_ai_prompts_builtins_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/ai/prompts/{prompt_id}/warm": {
       "post": {
         "tags": [
@@ -1603,6 +1622,44 @@
                   "type": "object",
                   "title": "Response List Scenarios Ai Mock Stream Scenarios Get"
                 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/prompts": {
+      "get": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Get User Prompts",
+        "operationId": "get_user_prompts_ai_prompts_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/prompts/all": {
+      "get": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Get User Prompts And Builtins",
+        "operationId": "get_user_prompts_and_builtins_ai_prompts_all_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           }
@@ -11212,6 +11269,216 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/sites/{site_id}/competitors/discover": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Discover Site Competitors",
+        "description": "Find the rivals and classify each one — WITHOUT buying a page-crawl autopsy.\n\nThe cheap half of the autopsy, on its own. Every row lands `proposed` and\nwaits for a human: nothing becomes a competitor because software said so.",
+        "operationId": "discover_site_competitors_seo_sites__site_id__competitors_discover_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompetitorDiscoverBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Discover Site Competitors Seo Sites  Site Id  Competitors Discover Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/sites/{site_id}/landscape-brief": {
+      "get": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Get Site Landscape Brief",
+        "description": "The brief as it stands, whatever its review state.",
+        "operationId": "get_site_landscape_brief_seo_sites__site_id__landscape_brief_get",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Site Landscape Brief Seo Sites  Site Id  Landscape Brief Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/sites/{site_id}/landscape-brief/generate": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Generate Site Landscape Brief",
+        "description": "Stage 1 of the staged-confidence pattern: establish the ground facts.\n\nLeaves the brief `awaiting_review` with a 24-hour deadline — after which\ndownstream work proceeds on these assumptions rather than stalling.",
+        "operationId": "generate_site_landscape_brief_seo_sites__site_id__landscape_brief_generate_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptsInjectedScope"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Generate Site Landscape Brief Seo Sites  Site Id  Landscape Brief Generate Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/sites/{site_id}/landscape-brief/ruling": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Rule On Site Landscape Brief",
+        "description": "The owner's correction, in their own words — the guidance every later\nagent inherits.",
+        "operationId": "rule_on_site_landscape_brief_seo_sites__site_id__landscape_brief_ruling_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LandscapeBriefRulingBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Rule On Site Landscape Brief Seo Sites  Site Id  Landscape Brief Ruling Post"
+                }
               }
             }
           },
@@ -49931,6 +50198,49 @@
         ],
         "title": "AcceptBriefResult"
       },
+      "AcceptsInjectedScope": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          }
+        },
+        "type": "object",
+        "title": "AcceptsInjectedScope",
+        "description": "Fields the FE ``callApi`` may inject on every POST/PUT/PATCH body.\n\n``lib/api/call-api.ts::buildRequestBody`` always merges\n``organization_id`` / ``project_id`` / ``task_id`` from the active app\ncontext onto the JSON body. A request model with ``extra=\"forbid\"`` that\nomits these fields 422s with ``extra_forbidden`` the moment the user has\nan org selected — the entire class of failure behind the 2026-07-15\n``/skills/ingest`` incident.\n\n**Rule:** every FastAPI body model that sets ``extra=\"forbid\"`` MUST\ninherit this (or :class:`ScopedRequest`, which does). Guard:\n``scripts/check_request_accepts_org_scope.py``."
+      },
       "ActionApplyResult": {
         "properties": {
           "type": {
@@ -69455,6 +69765,81 @@
           "competitor_id"
         ],
         "title": "CompetitorClassifyBody"
+      },
+      "CompetitorDiscoverBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "competitor_domains": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 25,
+            "title": "Competitor Domains"
+          },
+          "location_code": {
+            "type": "integer",
+            "title": "Location Code",
+            "default": 2840
+          },
+          "language_code": {
+            "type": "string",
+            "maxLength": 10,
+            "minLength": 2,
+            "title": "Language Code",
+            "default": "en"
+          },
+          "max_competitors": {
+            "type": "integer",
+            "maximum": 25,
+            "minimum": 1,
+            "title": "Max Competitors",
+            "default": 12
+          },
+          "force_refresh": {
+            "type": "boolean",
+            "title": "Force Refresh",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "CompetitorDiscoverBody"
       },
       "CompetitorLookupBody": {
         "properties": {
@@ -92451,6 +92836,84 @@
         },
         "type": "object",
         "title": "LabelRequest"
+      },
+      "LandscapeBriefRulingBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "guidance": {
+            "type": "string",
+            "maxLength": 8000,
+            "minLength": 1,
+            "title": "Guidance"
+          },
+          "service_lines": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Service Lines"
+          },
+          "brief_markdown": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brief Markdown"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "guidance"
+        ],
+        "title": "LandscapeBriefRulingBody"
       },
       "LeakRule": {
         "type": "string",

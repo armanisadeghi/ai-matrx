@@ -291,6 +291,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ai/prompts/builtins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get All Prompt Builtins */
+        get: operations["get_all_prompt_builtins_ai_prompts_builtins_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ai/prompts/{prompt_id}/warm": {
         parameters: {
             query?: never;
@@ -824,6 +841,40 @@ export interface paths {
          * @description Return all available scenario names with short descriptions.
          */
         get: operations["list_scenarios_ai_mock_stream_scenarios_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/prompts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get User Prompts */
+        get: operations["get_user_prompts_ai_prompts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/prompts/all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get User Prompts And Builtins */
+        get: operations["get_user_prompts_and_builtins_ai_prompts_all_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4367,6 +4418,93 @@ export interface paths {
          *     exact internal-authority plan while streaming the agent's Content IR.
          */
         post: operations["route_site_authority_seo_sites__site_id__authority_route_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/competitors/discover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Discover Site Competitors
+         * @description Find the rivals and classify each one — WITHOUT buying a page-crawl autopsy.
+         *
+         *     The cheap half of the autopsy, on its own. Every row lands `proposed` and
+         *     waits for a human: nothing becomes a competitor because software said so.
+         */
+        post: operations["discover_site_competitors_seo_sites__site_id__competitors_discover_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/landscape-brief": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Site Landscape Brief
+         * @description The brief as it stands, whatever its review state.
+         */
+        get: operations["get_site_landscape_brief_seo_sites__site_id__landscape_brief_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/landscape-brief/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate Site Landscape Brief
+         * @description Stage 1 of the staged-confidence pattern: establish the ground facts.
+         *
+         *     Leaves the brief `awaiting_review` with a 24-hour deadline — after which
+         *     downstream work proceeds on these assumptions rather than stalling.
+         */
+        post: operations["generate_site_landscape_brief_seo_sites__site_id__landscape_brief_generate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/landscape-brief/ruling": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rule On Site Landscape Brief
+         * @description The owner's correction, in their own words — the guidance every later
+         *     agent inherits.
+         */
+        post: operations["rule_on_site_landscape_brief_seo_sites__site_id__landscape_brief_ruling_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -18357,6 +18495,38 @@ export interface components {
             /** Brief */
             brief: string[];
         };
+        /**
+         * AcceptsInjectedScope
+         * @description Fields the FE ``callApi`` may inject on every POST/PUT/PATCH body.
+         *
+         *     ``lib/api/call-api.ts::buildRequestBody`` always merges
+         *     ``organization_id`` / ``project_id`` / ``task_id`` from the active app
+         *     context onto the JSON body. A request model with ``extra="forbid"`` that
+         *     omits these fields 422s with ``extra_forbidden`` the moment the user has
+         *     an org selected — the entire class of failure behind the 2026-07-15
+         *     ``/skills/ingest`` incident.
+         *
+         *     **Rule:** every FastAPI body model that sets ``extra="forbid"`` MUST
+         *     inherit this (or :class:`ScopedRequest`, which does). Guard:
+         *     ``scripts/check_request_accepts_org_scope.py``.
+         */
+        AcceptsInjectedScope: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+        };
         /** ActionApplyResult */
         ActionApplyResult: {
             /** Type */
@@ -25812,6 +25982,46 @@ export interface components {
             task_id?: string | null;
             /** Competitor Id */
             competitor_id: string;
+        };
+        /** CompetitorDiscoverBody */
+        CompetitorDiscoverBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Competitor Domains */
+            competitor_domains?: string[];
+            /**
+             * Location Code
+             * @default 2840
+             */
+            location_code?: number;
+            /**
+             * Language Code
+             * @default en
+             */
+            language_code?: string;
+            /**
+             * Max Competitors
+             * @default 12
+             */
+            max_competitors?: number;
+            /**
+             * Force Refresh
+             * @default false
+             */
+            force_refresh?: boolean;
         };
         /** CompetitorLookupBody */
         CompetitorLookupBody: {
@@ -34665,6 +34875,32 @@ export interface components {
              * @default false
              */
             debug?: boolean;
+        };
+        /** LandscapeBriefRulingBody */
+        LandscapeBriefRulingBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Guidance */
+            guidance: string;
+            /** Service Lines */
+            service_lines?: {
+                [key: string]: unknown;
+            }[] | null;
+            /** Brief Markdown */
+            brief_markdown?: string | null;
         };
         /**
          * LeakRule
@@ -52892,6 +53128,26 @@ export interface operations {
             };
         };
     };
+    get_all_prompt_builtins_ai_prompts_builtins_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
     warm_prompt_ai_prompts__prompt_id__warm_post: {
         parameters: {
             query?: never;
@@ -53736,6 +53992,46 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+        };
+    };
+    get_user_prompts_ai_prompts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_user_prompts_and_builtins_ai_prompts_all_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
         };
@@ -60345,6 +60641,150 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    discover_site_competitors_seo_sites__site_id__competitors_discover_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompetitorDiscoverBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_site_landscape_brief_seo_sites__site_id__landscape_brief_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_site_landscape_brief_seo_sites__site_id__landscape_brief_generate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcceptsInjectedScope"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rule_on_site_landscape_brief_seo_sites__site_id__landscape_brief_ruling_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LandscapeBriefRulingBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Validation Error */
