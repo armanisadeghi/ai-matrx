@@ -22,8 +22,9 @@ database.
   confirmed through the party resolver, and never invents an address.
 - Phase 3/G5 sending identity is live in both repos: connected mailbox, domain proof,
   SPF/DKIM/DMARC checks, warmup/caps/pacing, health events, circuit breaker, tier gate, and guided
-  setup. Production currently has no active `crm.sending_identity` row; provisioning a named
-  mailbox remains an operational prerequisite for a real send.
+  setup. Production now has the real `info@aimatrx.com` identity
+  `3489a446-1356-4dae-824f-90c65267732f`; its live checklist correctly refuses sending because the
+  `_matrx-verify.aimatrx.com` TXT proof is not published, so authentication and warmup cannot begin.
 - Compliance is live: `crm.check_send_eligibility()`, suppression/unsubscribe, jurisdiction,
   AUP, list quality, postal footer, RFC 8058 envelope, MX verification, and circuit breaker.
 - Phase 4/G3 code now exists: generic strict templates plus one human-reviewed Lane B send into
@@ -120,7 +121,7 @@ hardcoded forever-constant.
 3. **Right to send (G5 + compliance + tiers + checklist)** — live primitive.
 4. **One real message (G3)** — strict generic render; real-target preview; planned interaction;
    exact-message approval; final eligibility check; send; event + interaction receipt. Code built;
-   deploy, create/use a named verified warm identity, prove arrival, suppressed refusal + fix, and
+   deploy, finish the real identity checklist, prove arrival, suppressed refusal + fix, and
    unresolved-variable refusal before marking complete.
 5. **Sequences + inbound (G4 + G6)** — build together.
 6. **Attribution (G8)** — crawler closes the loop.
@@ -139,8 +140,9 @@ hardcoded forever-constant.
 
 ## 8. Next exact move
 
-Deploy both repos, sync generated API types from live aidream, then production-test Phase 4. If no
-named Gmail-send-capable identity exists, stop at the exact guided fix—reconnect the named mailbox
-with `gmail.send`, prove its domain, complete authentication/warmup/postal/AUP—and do not stamp or
+Deploy both repos and production-test Phase 4. The real `info@aimatrx.com` mailbox is connected and
+has `gmail.send`; the exact live blocker is the unpublished `_matrx-verify.aimatrx.com` TXT record
+shown at `/crm/sending-identities/3489a446-1356-4dae-824f-90c65267732f`. Publish it, then use the
+same guided surface to prove domain/authentication and start the honest warmup. Do not stamp or
 bypass readiness. Register `/crm/outreach-lists/{listId}` in `agent.review_queue` only after the
-live surface exists.
+Phase 4 UI is live.
