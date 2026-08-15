@@ -365,7 +365,7 @@ function main(): void {
     }
     writeFileSync(REPORT_PATH, `${JSON.stringify(report, null, 2)}\n`);
     const history = readHistory();
-    history.push({
+    const point = {
       generatedAt: report.generatedAt,
       commit: report.commit,
       findings: report.totals.findings,
@@ -373,7 +373,22 @@ function main(): void {
       medium: report.totals.medium,
       low: report.totals.low,
       filesWithFindings: report.totals.filesWithFindings,
-    });
+    };
+    /**
+     * Re-scanning the SAME commit REPLACES its point — never appends a second.
+     * Findings are deterministic per tree, so two points for one commit are
+     * always noise, and the dashboard reads the previous point as this one's
+     * predecessor: a rescan therefore invents a delta against itself. The case
+     * that bites is a scan taken while the detector is locally modified — it
+     * records a number that was never true for that commit and then becomes
+     * the baseline everything after is compared to.
+     */
+    const last = history[history.length - 1];
+    if (last && last.commit === point.commit) {
+      history[history.length - 1] = point;
+    } else {
+      history.push(point);
+    }
     writeFileSync(
       HISTORY_PATH,
       `${JSON.stringify(history.slice(-HISTORY_MAX_POINTS), null, 2)}\n`,
