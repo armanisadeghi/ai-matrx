@@ -134,9 +134,19 @@ Invariants the template carries, all of them learned the hard way:
    the loaded page is worse than no control.
 6. `SECURITY DEFINER` ⇒ the function enforces membership itself; never trust a
    passed-in org/industry id without joining the membership table.
+7. **Qualify every relation column in PL/pgSQL.** `RETURNS TABLE` names are
+   implicit variables across the whole body, so a bare `organization_id`, `id`,
+   `name`, or other output name is ambiguous. Prefix intermediate columns when
+   they intentionally mirror the wire contract; `plpgsql_check` may report only
+   the first collision in a statement.
+8. **Match every final projection type exactly.** PostgreSQL does not coerce a
+   schema enum to a `text` OUT column in `RETURN QUERY`; cast canonical enums
+   explicitly at the wire boundary.
 
 ## Change log
 
+- 2026-08-15 — Scoped-list RPCs now explicitly require qualified relation
+  columns so `RETURNS TABLE` output variables cannot shadow source columns.
 - 2026-08-08 — `ListScopeSwitcher` now self-loads organizations through the
   canonical organization hook instead of depending on an unrelated Redux
   hydration path; its compact chips retain 44px touch targets below desktop.
