@@ -288,6 +288,7 @@ function AddTargetForm({
             onSubmit={() => void submit()}
             scope={{ siteId, organizationId }}
             placeholder="e.g. botox cost"
+            showDetails={false}
           />
         )}
       </div>
