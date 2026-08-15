@@ -77,6 +77,27 @@ const TOP_ISSUE_PREVIEW = 14;
 const WORST_PAGE_PREVIEW = 10;
 const GONE_PAGE_PREVIEW = 10;
 
+/**
+ * The metric strip this page leads with. THE WHAT-I-SEE LAW: every payload
+ * from this page — page, section, and row alike — carries these numbers
+ * verbatim, because nothing here is interpretable without them and the agent
+ * must never recompute what the user is already looking at.
+ */
+type AuditPageKpis = Record<string, number>;
+
+function auditPageKpis(rollup: SiteAuditRollup): AuditPageKpis {
+  return {
+    pages_total: rollup.totalPages,
+    pages_audited: rollup.auditedPages,
+    pages_uncomputed: rollup.uncomputedPages,
+    non_html_resources: rollup.nonHtmlResources,
+    gone_pages: rollup.gonePages,
+    indexable: rollup.verdicts.indexable,
+    needs_review: rollup.verdicts.check,
+    blocked: rollup.verdicts.blocked,
+  };
+}
+
 /** Ranks-style header toggle between the ranked preview and the full list. */
 function ShowAllToggle({
   total,
@@ -157,12 +178,14 @@ function PassRateBar({
 }
 
 function IssueRow({
+  kpis,
   issue,
   pagePath,
   location,
 }: {
   issue: AuditIssueRollup;
   pagePath: (pageId: string) => string;
+  kpis: AuditPageKpis;
   location: string;
 }) {
   const meta = SECTION_META[issue.section];
@@ -207,6 +230,7 @@ function IssueRow({
             data: issue,
             summary: humanIssueRow(issue),
             attributes: {
+              ...kpis,
               section: issue.section,
               severity: issue.severity,
               count: issue.count,
@@ -219,12 +243,14 @@ function IssueRow({
 }
 
 function WorstPageRow({
+  kpis,
   page,
   href,
   location,
 }: {
   page: AuditPageRollup;
   href: string;
+  kpis: AuditPageKpis;
   location: string;
 }) {
   return (
@@ -259,6 +285,7 @@ function WorstPageRow({
             data: page,
             summary: humanWorstPageRow(page),
             attributes: {
+              ...kpis,
               page_id: page.pageId,
               errors: page.errorCount,
               warnings: page.warningCount,
@@ -277,12 +304,14 @@ function WorstPageRow({
  * redirect it), the count opens the whole filtered list.
  */
 function GonePageRow({
+  kpis,
   page,
   href,
   location,
 }: {
   page: GonePageRollup;
   href: string;
+  kpis: AuditPageKpis;
   location: string;
 }) {
   const clicks = page.gscClicks28d ?? 0;
@@ -323,6 +352,7 @@ function GonePageRow({
             data: page,
             summary: humanGonePageRow(page),
             attributes: {
+              ...kpis,
               page_id: page.pageId,
               gsc_clicks_28d: page.gscClicks28d,
               gsc_impressions_28d: page.gscImpressions28d,
@@ -349,6 +379,7 @@ function AuditBody({
 }) {
   const pagePath = (pageId: string) => `${sitePath}/pages/${pageId}`;
   const pageLocation = webLocation(`Site audit — ${siteDomain}`);
+  const pageKpis = auditPageKpis(rollup);
   const [showAllIssues, setShowAllIssues] = useState(false);
   const [showAllWorstPages, setShowAllWorstPages] = useState(false);
   const [showAllGonePages, setShowAllGonePages] = useState(false);
@@ -435,7 +466,7 @@ function AuditBody({
       location: pageLocation,
       description: `The "${label}" site-audit KPI for ${siteDomain}.`,
       data: { metric: label, value, detail: detail ?? null },
-      attributes: { metric: label },
+      attributes: { ...pageKpis, metric: label },
     }),
   });
 
@@ -451,6 +482,7 @@ function AuditBody({
       description: `All ${rollup.topIssues.length} distinct rolled-up audit issues for ${siteDomain}, ranked by severity then page count.`,
       data: rollup.topIssues,
       attributes: {
+        ...pageKpis,
         count: rollup.topIssues.length,
         shown: visibleIssues.length,
       },
@@ -469,6 +501,7 @@ function AuditBody({
       description: `All ${rollup.worstPages.length} pages with audit findings for ${siteDomain}, ranked worst first by error then warning count.`,
       data: rollup.worstPages,
       attributes: {
+        ...pageKpis,
         count: rollup.worstPages.length,
         shown: visibleWorstPages.length,
       },
@@ -489,6 +522,7 @@ function AuditBody({
       description: `All ${rollup.gonePageDetails.length} pages on ${siteDomain} that the crawler no longer finds, ranked by the Google Search traffic they were earning. These are excluded from every HTML-quality finding: their stored metrics describe documents that no longer resolve. The fix is to restore or redirect them, never to edit them.`,
       data: rollup.gonePageDetails,
       attributes: {
+        ...pageKpis,
         count: rollup.gonePageDetails.length,
         shown: visibleGonePages.length,
       },
@@ -596,7 +630,7 @@ function AuditBody({
     description: `The full site-audit rollup dashboard for ${siteDomain}.`,
     data: pageFullData(),
     summary: humanAuditSnapshot(rollup),
-    attributes: { site_id: siteId, domain: siteDomain },
+    attributes: { ...pageKpis, site_id: siteId, domain: siteDomain },
   });
 
   const groomerConfig = (): AgentCopyGroomerConfig => ({
@@ -604,7 +638,7 @@ function AuditBody({
     kind: "marketing-audit-page",
     location: pageLocation,
     description: `The full site-audit rollup dashboard for ${siteDomain}.`,
-    attributes: { site_id: siteId, domain: siteDomain },
+    attributes: { ...pageKpis, site_id: siteId, domain: siteDomain },
     summary: humanAuditSnapshot(rollup),
     sections: groomerSections(),
   });
@@ -823,6 +857,7 @@ function AuditBody({
                     issue={issue}
                     pagePath={pagePath}
                     location={pageLocation}
+                    kpis={pageKpis}
                   />
                 ))}
               </div>
@@ -879,6 +914,7 @@ function AuditBody({
                     page={page}
                     href={pagePath(page.pageId)}
                     location={pageLocation}
+                    kpis={pageKpis}
                   />
                 ))}
               </div>
@@ -945,6 +981,7 @@ function AuditBody({
                   page={page}
                   href={pagePath(page.pageId)}
                   location={pageLocation}
+                    kpis={pageKpis}
                 />
               ))}
             </div>
