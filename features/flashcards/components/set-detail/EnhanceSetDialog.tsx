@@ -37,6 +37,8 @@ import {
   DEPTH_TIERS,
   enrichCard,
   expandCard,
+  readPendingEnhancement,
+  writePendingEnhancement,
   type EnrichedDetail,
   type ExpandedSubCard,
 } from "../../data/enhanceCard";
@@ -87,6 +89,26 @@ export function EnhanceSetDialog({
   const [work, setWork] = useState<Record<string, CardWork>>({});
 
   const workFor = (cardId: string): CardWork => work[cardId] ?? EMPTY_WORK;
+
+  /**
+   * D151 — what this card is proposing right now. Local state wins the moment
+   * the user touches the card (run / save / discard); until then the card's OWN
+   * stored proposal is shown. Quota is committed at generation, so a preview
+   * lost to a refresh was billed and thrown away — reading it back off
+   * `fc_card.metadata.pending_enhancement` is what stops that.
+   *
+   * Derived, not hydrated into state: there is nothing to synchronize, and an
+   * effect here would just be a slower way to compute the same value.
+   */
+  const previewFor = (card: CardWithDetails): CardWork["preview"] => {
+    const local = work[card.id];
+    if (local) return local.preview;
+    const pending = readPendingEnhancement(card.metadata);
+    if (!pending) return null;
+    return pending.mode === "enrich"
+      ? { mode: "enrich", details: pending.details }
+      : { mode: "deepen", subCards: pending.subCards };
+  };
   const patchWork = (cardId: string, patch: Partial<CardWork>): void =>
     setWork((prev) => ({
       ...prev,
@@ -171,7 +193,7 @@ export function EnhanceSetDialog({
   };
 
   const save = async (card: CardWithDetails): Promise<void> => {
-    const preview = workFor(card.id).preview;
+    const preview = previewFor(card);
     if (!preview) return;
     patchWork(card.id, { saving: true });
     try {
@@ -215,6 +237,8 @@ export function EnhanceSetDialog({
           }`,
         );
       }
+      // The proposal has become real rows — it is no longer pending.
+      await writePendingEnhancement(card.id, null);
       releaseRun(card.id);
       patchWork(card.id, { preview: null, conversationId: null });
       onChanged();
@@ -276,6 +300,7 @@ export function EnhanceSetDialog({
             ) : (
               cards.map((card, i) => {
                 const w = workFor(card.id);
+                const preview = previewFor(card);
                 const busy = w.running !== null || w.saving;
                 return (
                   <div
@@ -349,17 +374,18 @@ export function EnhanceSetDialog({
                       bodyClassName="max-h-64"
                     />
 
-                    {/* Preview + confirm — nothing persists until Save. */}
-                    {w.preview && (
+                    {/* Preview + confirm — nothing becomes a real detail/sub-card
+                        row until Save; the proposal itself is durable (D151). */}
+                    {preview && (
                       <div className="mt-3 rounded-md border border-border bg-muted/40 p-2.5">
                         <div className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                          {w.preview.mode === "enrich"
+                          {preview.mode === "enrich"
                             ? "New detail layers"
                             : "New sub-cards"}
                         </div>
                         <div className="space-y-1.5">
-                          {w.preview.mode === "enrich"
-                            ? w.preview.details.map((d, di) => (
+                          {preview.mode === "enrich"
+                            ? preview.details.map((d, di) => (
                                 <div key={di} className="text-xs">
                                   <span className="rounded bg-primary/10 px-1 py-0.5 text-[10px] font-medium uppercase text-primary">
                                     {d.kind}
@@ -369,7 +395,7 @@ export function EnhanceSetDialog({
                                   </span>
                                 </div>
                               ))
-                            : w.preview.subCards.map((s, si) => (
+                            : preview.subCards.map((s, si) => (
                                 <div
                                   key={si}
                                   className="rounded border border-border bg-card px-2 py-1 text-xs"
@@ -390,6 +416,7 @@ export function EnhanceSetDialog({
                             className="h-7 gap-1 px-2 text-xs"
                             disabled={w.saving}
                             onClick={() => {
+                              void writePendingEnhancement(card.id, null);
                               releaseRun(card.id);
                               patchWork(card.id, {
                                 preview: null,

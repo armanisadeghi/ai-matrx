@@ -25,6 +25,18 @@ export interface KindRequestInput {
   variables: Record<string, string>;
   /** Stamped as `__kind` on the result if the agent didn't emit one. */
   expectedKind?: string;
+  /**
+   * 🚨 THE BATCH SEAM (FOUND_DEFECTS D151). Called with the COMPLETE generated
+   * value the instant it lands, from inside the run primitive — before, and
+   * independent of, the user picking one.
+   *
+   * Why: this primitive's whole shape is "generate N options, keep 1". The
+   * other N−1 are paid output, and every consumer was discarding them the
+   * moment the dialog closed. A surface with a durable home for the batch
+   * (an idea bank on the parent row, a drafts column) passes this and keeps
+   * all of it; a surface with nowhere to put it simply doesn't.
+   */
+  onBatch?: (value: unknown) => void | Promise<void>;
 }
 
 export interface KindRequestResult {
@@ -98,6 +110,16 @@ export function useKindRequest(): UseKindRequest {
         value,
         kind: readKind(value, input.expectedKind),
       }),
+      ...(input.onBatch
+        ? {
+            onResult: async (result) => {
+              if (result.data == null) return;
+              await (input.onBatch as (v: unknown) => void | Promise<void>)(
+                result.data,
+              );
+            },
+          }
+        : {}),
     });
   }
 

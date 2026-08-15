@@ -124,3 +124,39 @@ export function coerceNarrative(value: unknown): NarrativeReport {
   }
   return { headline, insights, recommendations };
 }
+
+/**
+ * A stable fingerprint of the numbers a narration was written from
+ * (FOUND_DEFECTS D151). The dashboard stores the reading against this; on the
+ * next visit an identical fingerprint means the stored reading is still the
+ * right one and the ~120s narrator run is NOT re-paid for. It changes the
+ * moment the learner actually studies anything — which is exactly when a new
+ * reading is worth buying.
+ */
+export function narrativeFingerprint(analytics: StudyAnalytics): string {
+  const o = analytics.overall;
+  return [
+    o.studied,
+    o.mastered,
+    o.learning,
+    o.struggling,
+    o.totalAttempts,
+    o.correctAttempts,
+    analytics.sessions,
+    analytics.currentStreak,
+    Math.round(analytics.totalMinutes),
+  ].join(":");
+}
+
+/** Read a stored narration back off a session's AI journal (null when absent). */
+export function readStoredNarrative(value: unknown): NarrativeReport | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const obj = value as Record<string, unknown>;
+  const headline = typeof obj.headline === "string" ? obj.headline : "";
+  if (!headline) return null;
+  try {
+    return coerceNarrative(obj);
+  } catch {
+    return null;
+  }
+}

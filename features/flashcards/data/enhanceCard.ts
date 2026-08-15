@@ -42,6 +42,86 @@ export interface ExpandedSubCard {
   back: string;
 }
 
+/**
+ * 🚨 FOUND_DEFECTS D151 — where an UN-SAVED enhancement preview lives.
+ *
+ * Quota is committed the moment the agent answers (`enrichGuard.commit()`), so
+ * a preview the user never got round to saving was billed and then destroyed by
+ * a refresh, a closed dialog, or a route change. The proposal now lands on the
+ * card itself the instant it arrives, exactly like the content-plan brief
+ * writer's `ai_brief_draft`: it PROPOSES (the user still confirms), but the
+ * proposal is durable, so nothing the user does — or fails to do — loses it.
+ */
+export const PENDING_ENHANCEMENT_KEY = "pending_enhancement";
+
+export interface PendingEnhancement {
+  mode: "enrich" | "deepen";
+  depth: Depth;
+  details: EnrichedDetail[];
+  subCards: ExpandedSubCard[];
+  generated_at: string;
+}
+
+/** Read a card's un-saved enhancement preview (null when there is none). */
+export function readPendingEnhancement(
+  metadata: unknown,
+): PendingEnhancement | null {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return null;
+  }
+  const raw = (metadata as Record<string, unknown>)[PENDING_ENHANCEMENT_KEY];
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const row = raw as Record<string, unknown>;
+  const mode = row.mode === "deepen" ? "deepen" : "enrich";
+  const details = coerceDetails({ details: row.details });
+  const subCards = coerceSubCards({ sub_cards: row.subCards });
+  if (mode === "enrich" ? details.length === 0 : subCards.length === 0) {
+    return null;
+  }
+  const depthRaw = row.depth;
+  return {
+    mode,
+    depth:
+      depthRaw === "recall" || depthRaw === "applied" || depthRaw === "exam"
+        ? depthRaw
+        : "applied",
+    details,
+    subCards,
+    generated_at: typeof row.generated_at === "string" ? row.generated_at : "",
+  };
+}
+
+/** Persist (or clear) a card's pending enhancement preview. */
+export async function writePendingEnhancement(
+  cardId: string,
+  pending: PendingEnhancement | null,
+): Promise<void> {
+  const { fcService } = await import("./fcService");
+  const saved = await fcService.mergeCardJson(cardId, "metadata", (current) => {
+    if (!pending) {
+      const next = { ...current };
+      delete next[PENDING_ENHANCEMENT_KEY];
+      return next;
+    }
+    return {
+      ...current,
+      [PENDING_ENHANCEMENT_KEY]: {
+        mode: pending.mode,
+        depth: pending.depth,
+        details: pending.details,
+        subCards: pending.subCards,
+        generated_at: pending.generated_at,
+      },
+    };
+  });
+  if (saved.error) {
+    console.error(
+      "[flashcards.enhanceCard] preview generated but NOT saved:",
+      saved.error,
+    );
+  }
+}
+
 /** fc_detail kinds the enrich agent is allowed to emit (mirrors AGENT_SPECS §3). */
 const VALID_DETAIL_KINDS = [
   "helper",
@@ -172,6 +252,19 @@ export function enrichCard(args: {
         ...(args.onConversationCreated
           ? { onConversationCreated: args.onConversationCreated }
           : {}),
+        // D151 — quota is committed the moment this answers; the preview must
+        // outlive the dialog that asked for it.
+        onResult: async (run) => {
+          const details = coerceDetails(run.data);
+          if (details.length === 0) return;
+          await writePendingEnhancement(card.id, {
+            mode: "enrich",
+            depth,
+            details,
+            subCards: [],
+            generated_at: new Date().toISOString(),
+          });
+        },
       });
       return coerceDetails(result.data);
     } catch (err) {
@@ -218,6 +311,18 @@ export function expandCard(args: {
         ...(args.onConversationCreated
           ? { onConversationCreated: args.onConversationCreated }
           : {}),
+        // D151 — see enrichCard: the proposal is durable the instant it lands.
+        onResult: async (run) => {
+          const subCards = coerceSubCards(run.data);
+          if (subCards.length === 0) return;
+          await writePendingEnhancement(card.id, {
+            mode: "deepen",
+            depth,
+            details: [],
+            subCards,
+            generated_at: new Date().toISOString(),
+          });
+        },
       });
       return coerceSubCards(result.data);
     } catch (err) {

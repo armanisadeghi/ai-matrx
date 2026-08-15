@@ -15,6 +15,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useStudyAnalytics } from "../useStudyAnalytics";
 import { useAnalyticsNarrative } from "../useAnalyticsNarrative";
+import { studyService } from "../../service/studyService";
+import { narrativeFingerprint, readStoredNarrative } from "../narrative";
 import { learningGainService } from "../../learning-gain/learningGainService";
 import type { LearningGainReport } from "../../learning-gain/types";
 import type { NarrativeReport } from "../narrative";
@@ -31,11 +33,25 @@ export function StudyAnalyticsDashboard({
 }: {
   backHref?: string;
 }) {
-  const { analytics, mastery, loading, error } = useStudyAnalytics();
+  const { analytics, mastery, latestSession, loading, error } =
+    useStudyAnalytics();
   const narrator = useAnalyticsNarrative();
   const [report, setReport] = useState<NarrativeReport | null>(null);
   const [gain, setGain] = useState<LearningGainReport | null>(null);
   const narratedRef = useRef(false);
+  const sessionId = latestSession?.id ?? null;
+
+  // D151 — the reading this learner already paid for, stored on their most
+  // recent session with the fingerprint of the numbers it describes.
+  const stored = latestSession
+    ? studyService.readSessionJournal(latestSession).progressNarrative
+    : undefined;
+  const storedReport = stored ? readStoredNarrative(stored.report) : null;
+  const storedIsCurrent =
+    storedReport != null &&
+    analytics != null &&
+    stored?.fingerprint === narrativeFingerprint(analytics);
+  const shownReport = report ?? (storedIsCurrent ? storedReport : null);
 
   // Read at trigger time, never from stale closure state.
   const buildScope = () =>
@@ -58,37 +74,39 @@ export function StudyAnalyticsDashboard({
           }),
       narrative_loading: narrator.isNarrating,
       narrative_error: narrator.error ?? undefined,
-      ...(report
+      ...(shownReport
         ? {
-            narrative_headline: report.headline,
-            narrative_insights: report.insights,
-            narrative_recommendations: report.recommendations,
+            narrative_headline: shownReport.headline,
+            narrative_insights: shownReport.insights,
+            narrative_recommendations: shownReport.recommendations,
           }
         : {}),
     });
 
   const runNarration = async (a: StudyAnalytics) => {
     try {
-      const r = await narrator.narrate(a);
+      const r = await narrator.narrate(a, { sessionId });
       setReport(r);
     } catch {
       /* narration is optional chrome — numbers stand on their own */
     }
   };
 
-  // Auto-narrate once when meaningful data is present.
+  // Auto-narrate once when meaningful data is present — and ONLY when there
+  // isn't already a reading for exactly these numbers. This used to re-pay for
+  // a ~120s narration on every single visit to the page (D151).
   useEffect(() => {
     if (
       analytics &&
       analytics.hasData &&
       analytics.overall.studied >= 3 &&
-      !narratedRef.current
+      !narratedRef.current &&
+      !storedIsCurrent
     ) {
       narratedRef.current = true;
       void runNarration(analytics);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [analytics]);
+  }, [analytics, storedIsCurrent]);
 
   useEffect(() => {
     let cancelled = false;
@@ -114,7 +132,7 @@ export function StudyAnalyticsDashboard({
         narrative={
           analytics && analytics.hasData ? (
             <NarrativeCard
-              report={report}
+              report={shownReport}
               conversationId={narrator.conversationId}
               loading={narrator.isNarrating}
               error={narrator.error}

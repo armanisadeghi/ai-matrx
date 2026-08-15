@@ -12,12 +12,21 @@
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import { FC_AGENTS } from "../agents";
+import { QUIZ_ITEMS_KEY } from "./buildQuizQuestions";
 
 export interface MakeQuizItemsArgs {
   front: string;
   back: string;
   topic?: string | null;
   distractorCount: number;
+  /**
+   * The card these items are for. With it, the COMPLETE result — stem, correct
+   * answer, distractors, explanation — is written to
+   * `fc_card.dynamic_content.quiz_items` on arrival (D151). Before that, only
+   * `distractors` survived, in memory, so every future quiz over the same deck
+   * paid for the same items again.
+   */
+  cardId?: string | null;
   /** Override the configured `fc_make_quiz_items` agent id (testing only). */
   agentId?: string | null;
 }
@@ -27,6 +36,23 @@ export interface MakeQuizItemsResult {
   correct: string;
   distractors: string[];
   explanation: string;
+}
+
+/** Narrow the agent's raw JSON to the lane's contract (shared with the seam). */
+function readItems(data: unknown): MakeQuizItemsResult | null {
+  if (!data || typeof data !== "object") return null;
+  const r = data as Record<string, unknown>;
+  const question = typeof r.question === "string" ? r.question : "";
+  const correct = typeof r.correct === "string" ? r.correct : "";
+  if (!question || !correct) return null;
+  return {
+    question,
+    correct,
+    distractors: Array.isArray(r.distractors)
+      ? r.distractors.filter((x): x is string => typeof x === "string")
+      : [],
+    explanation: typeof r.explanation === "string" ? r.explanation : "",
+  };
 }
 
 /** Returns AI-generated distractors for one card, or null on any skip/failure. */
@@ -52,22 +78,40 @@ export function makeQuizItems(args: MakeQuizItemsArgs) {
         },
         timeoutMs: 45_000,
         pollIntervalMs: 150,
+        // 🚨 D151 — persist the WHOLE result on arrival. This lane fires from a
+        // mount effect on the question being shown; the learner advancing (or
+        // leaving) used to throw away everything but the distractors, in memory.
+        ...(args.cardId
+          ? {
+              onResult: async (run) => {
+                const items = readItems(run.data);
+                if (!items || items.distractors.length === 0) return;
+                const { fcService } = await import("../fcService");
+                const saved = await fcService.mergeCardJson(
+                  args.cardId as string,
+                  "dynamic_content",
+                  (current) => ({
+                    ...current,
+                    [QUIZ_ITEMS_KEY]: {
+                      question: items.question,
+                      correct: items.correct,
+                      distractors: items.distractors,
+                      explanation: items.explanation,
+                      generated_at: new Date().toISOString(),
+                    },
+                  }),
+                );
+                if (saved.error) {
+                  console.error(
+                    "[flashcards.makeQuizItems] items generated but NOT saved:",
+                    saved.error,
+                  );
+                }
+              },
+            }
+          : {}),
       });
-      const raw = result.data;
-      if (!raw || typeof raw !== "object") return null;
-      const r = raw as Record<string, unknown>;
-      const question = typeof r.question === "string" ? r.question : "";
-      const correct = typeof r.correct === "string" ? r.correct : "";
-      if (!question || !correct) return null;
-
-      return {
-        question,
-        correct,
-        distractors: Array.isArray(r.distractors)
-          ? r.distractors.filter((x): x is string => typeof x === "string")
-          : [],
-        explanation: typeof r.explanation === "string" ? r.explanation : "",
-      };
+      return readItems(result.data);
     } catch (err) {
       console.error("[flashcards.makeQuizItems] failed:", err);
       return null;

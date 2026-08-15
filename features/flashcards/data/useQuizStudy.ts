@@ -18,8 +18,8 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { fcService } from "./fcService";
 import { studyService } from "@/features/education/study/service/studyService";
 import {
+  applyStoredQuizItems,
   buildQuizQuestions,
-  mergeFallbackDistractors,
   type QuizQuestion,
 } from "./quiz/buildQuizQuestions";
 import { makeQuizItems } from "./quiz/makeQuizItems";
@@ -174,6 +174,8 @@ export function useQuizStudy(
         back: q.correctAnswer,
         topic: set?.topic ?? null,
         distractorCount: 3,
+        // D151 — the lane writes the complete result to the card on arrival.
+        cardId: q.cardId,
       }),
     )
       .then((result) => {
@@ -181,7 +183,10 @@ export function useQuizStudy(
         setQuestions((prev) =>
           prev.map((item) =>
             item.cardId === q.cardId
-              ? mergeFallbackDistractors(item, result.distractors)
+              ? applyStoredQuizItems(item, {
+                  ...result,
+                  generated_at: new Date().toISOString(),
+                })
               : item,
           ),
         );

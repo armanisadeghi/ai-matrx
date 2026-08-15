@@ -180,6 +180,12 @@ export interface KindRequestDialogProps {
   uiOptions?: KindComponentUiOptions;
   /** Called with the value the user chose; the dialog then closes. */
   onResolve: (value: unknown) => void;
+  /**
+   * Called with the COMPLETE generated batch the instant it lands (D151) —
+   * every option, not just the one the user keeps. Pass it when the surface has
+   * a durable home for the batch; omit it and the batch stays transient.
+   */
+  onBatch?: (value: unknown) => void | Promise<void>;
 }
 
 type Phase = "input" | "running";
@@ -195,6 +201,7 @@ export function KindRequestDialog({
   expectedKind,
   uiOptions,
   onResolve,
+  onBatch,
 }: KindRequestDialogProps) {
   const { run, isRunning, error, conversationId, reset } = useKindRequest();
   const [phase, setPhase] = useState<Phase>("input");
@@ -243,6 +250,7 @@ export function KindRequestDialog({
       agentId,
       variables: { ...(fixedVariables ?? {}), ...values },
       expectedKind,
+      ...(onBatch ? { onBatch } : {}),
     }).catch(() => {
       // useKindRequest already captured the message into `error`. Flag the
       // failure — the render below decides what it means: with options on

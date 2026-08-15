@@ -117,8 +117,10 @@ function QuestionPanel({ study }: { study: ReturnType<typeof useQuizStudy> }) {
         <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
           Which answer matches?
         </p>
+        {/* D151 — when this card has an AI-authored question stem, THAT is what
+            we paid for; the raw card front is the fallback, not the default. */}
         <p className="mt-1.5 text-lg font-medium leading-snug text-foreground">
-          {current.front}
+          {current.aiQuestion || current.front}
         </p>
         {study.fallbackLoading && current.needsFallback && (
           <p className="mt-1.5 inline-flex items-center gap-1 text-[11px] text-muted-foreground">
@@ -168,6 +170,14 @@ function QuestionPanel({ study }: { study: ReturnType<typeof useQuizStudy> }) {
             );
           })}
         </div>
+
+        {/* The agent's explanation of the right answer — generated, paid for,
+            and previously dropped at the coercion boundary (D151). */}
+        {answered && current.explanation && (
+          <p className="mt-3 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-foreground">
+            {current.explanation}
+          </p>
+        )}
 
         {answered && (
           <Button className="mt-4 w-full" onClick={study.next}>

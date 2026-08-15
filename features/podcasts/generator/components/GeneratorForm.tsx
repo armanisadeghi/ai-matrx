@@ -666,7 +666,11 @@ export function GeneratorForm({
         {/* Topic-only: agent-assisted idea picker. Fills the topic field via
             the existing setText; zero footprint for every other source. */}
         {sourceKind === "topic" && (
-          <TopicIdeaHelper seedConcept={text} onPick={setText} />
+          <TopicIdeaHelper
+            seedConcept={text}
+            onPick={setText}
+            showId={showId}
+          />
         )}
       </section>
 

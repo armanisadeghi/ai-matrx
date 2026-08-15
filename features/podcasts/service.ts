@@ -1,6 +1,8 @@
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
+import type { Json } from "@/types/database.types";
+import { asJsonObject, mergeJsonColumn } from "@/lib/supabase/mergeJsonColumn";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type {
@@ -15,6 +17,24 @@ import {
   mapPcEpisodeWithShowRow,
   mapPcShowRow,
 } from "./types";
+
+/** The `pc_shows.metadata` key holding the show's generated topic-idea bank. */
+export const TOPIC_IDEA_BANK_KEY = "topic_ideas";
+/** How many past batches a show keeps. */
+const TOPIC_IDEA_BANK_CAP = 20;
+
+/** One banked batch, exactly as the generator produced it. */
+export interface TopicIdeaBatch {
+  batch: Json;
+  generated_at: string;
+}
+
+/** The narrow row shape the idea-bank merge reads and writes. */
+interface PcShowMetadataRow {
+  id: string;
+  version: number;
+  metadata: Json;
+}
 
 export const podcastService = {
   // ── Shows ──────────────────────────────────────────────────────────────
@@ -64,6 +84,75 @@ export const podcastService = {
       .single();
     if (error) throw error;
     return mapPcShowRow(data);
+  },
+
+  /**
+   * Bank a generated batch of topic ideas on the show (FOUND_DEFECTS D151).
+   *
+   * The idea generator writes five ideas and the studio kept one; the other
+   * four were paid model output that vanished when the dialog closed. They now
+   * accumulate on `pc_shows.metadata.topic_ideas` as the show's idea bank,
+   * newest batch first, merged compare-and-swap so two studio tabs can't clobber
+   * each other.
+   *
+   * Background persistence — it reports failures loudly but never throws into
+   * the surface that triggered it.
+   */
+  async bankTopicIdeas(showId: string, batch: unknown): Promise<void> {
+    const SELECT = "id, version, metadata";
+    const result = await mergeJsonColumn<PcShowMetadataRow>({
+      fetchCurrent: () =>
+        supabase
+          .schema("podcast")
+          .from("pc_shows")
+          .select(SELECT)
+          .eq("id", showId)
+          .is("deleted_at", null)
+          .maybeSingle<PcShowMetadataRow>(),
+      readColumn: (row) => row.metadata,
+      merge: (current) => {
+        const prior = Array.isArray(current[TOPIC_IDEA_BANK_KEY])
+          ? (current[TOPIC_IDEA_BANK_KEY] as Json[])
+          : [];
+        return {
+          ...current,
+          [TOPIC_IDEA_BANK_KEY]: [
+            { batch: batch as Json, generated_at: new Date().toISOString() },
+            ...prior,
+          ].slice(0, TOPIC_IDEA_BANK_CAP),
+        };
+      },
+      applyUpdate: ({ value, expectedVersion, nextVersion }) =>
+        supabase
+          .schema("podcast")
+          .from("pc_shows")
+          .update({ metadata: value as never, version: nextVersion } as never)
+          .eq("id", showId)
+          .eq("version", expectedVersion)
+          .select(SELECT)
+          .maybeSingle<PcShowMetadataRow>(),
+    });
+    if (result.status !== "saved") {
+      console.error(
+        "[podcastService] topic ideas generated but NOT banked:",
+        result.status === "error" ? result.error : result.status,
+      );
+    }
+  },
+
+  /** Every banked topic-idea batch for a show, newest first. */
+  readTopicIdeaBank(show: { metadata?: Json | null }): TopicIdeaBatch[] {
+    const rows = asJsonObject(show.metadata ?? null)[TOPIC_IDEA_BANK_KEY];
+    if (!Array.isArray(rows)) return [];
+    return rows
+      .filter(
+        (r): r is Record<string, Json> =>
+          !!r && typeof r === "object" && !Array.isArray(r),
+      )
+      .map((r) => ({
+        batch: r.batch ?? null,
+        generated_at: typeof r.generated_at === "string" ? r.generated_at : "",
+      }));
   },
 
   async removeShow(id: string): Promise<void> {

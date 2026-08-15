@@ -12,7 +12,7 @@
 import { useEffect, useState } from "react";
 import { studyService } from "../service/studyService";
 import { computeAnalytics, type StudyAnalytics } from "./computeAnalytics";
-import type { ItemMasteryRow } from "../types";
+import type { ItemMasteryRow, StudySessionRow } from "../types";
 
 const TREND_WEEKS = 4;
 const MS_PER_WEEK = 7 * 86_400_000;
@@ -21,6 +21,12 @@ export interface UseStudyAnalyticsResult {
   analytics: StudyAnalytics | null;
   /** Raw mastery rows (all item types) — reused by StudyTrends without refetch. */
   mastery: ItemMasteryRow[];
+  /**
+   * The learner's most recent study session (D151). It is the durable home for
+   * the narrated progress reading — this hook already loads every session, so
+   * exposing it costs nothing and saves the dashboard a second read.
+   */
+  latestSession: StudySessionRow | null;
   loading: boolean;
   error: string | null;
   reload: () => void;
@@ -29,6 +35,9 @@ export interface UseStudyAnalyticsResult {
 export function useStudyAnalytics(): UseStudyAnalyticsResult {
   const [analytics, setAnalytics] = useState<StudyAnalytics | null>(null);
   const [mastery, setMastery] = useState<ItemMasteryRow[]>([]);
+  const [latestSession, setLatestSession] = useState<StudySessionRow | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
@@ -57,6 +66,8 @@ export function useStudyAnalytics(): UseStudyAnalyticsResult {
 
       const masteryRows = masteryRes.data ?? [];
       setMastery(masteryRows);
+      // listSessions is newest-first.
+      setLatestSession(sessionsRes.data?.[0] ?? null);
       // Resolve fc_card topics for the weak-topic breakdown (dynamic import so
       // this stays mode-agnostic infrastructure).
       let topicsById: Record<string, string | null> | undefined;
@@ -94,6 +105,7 @@ export function useStudyAnalytics(): UseStudyAnalyticsResult {
   return {
     analytics,
     mastery,
+    latestSession,
     loading,
     error,
     reload: () => setNonce((n) => n + 1),

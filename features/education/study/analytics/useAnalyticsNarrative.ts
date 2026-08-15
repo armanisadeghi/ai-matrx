@@ -14,10 +14,12 @@
 // React Compiler is on: no manual memo.
 
 import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
+import { studyService } from "../service/studyService";
 import { STUDY_AGENTS } from "../planner/agents";
 import type { StudyAnalytics } from "./computeAnalytics";
 import {
   coerceNarrative,
+  narrativeFingerprint,
   narrativeVariables,
   type NarrativeReport,
 } from "./narrative";
@@ -25,10 +27,20 @@ import {
 const EXTRACTION_TIMEOUT_MS = 120_000;
 const POLL_INTERVAL_MS = 250;
 
+export interface NarrateOptions {
+  itemLabel?: string;
+  /**
+   * The learner's most recent `study_session` — where the reading is stored
+   * (D151). Without it the narration is transient and every visit re-pays for
+   * a ~120s run whose result dies on navigate.
+   */
+  sessionId?: string | null;
+}
+
 export interface AnalyticsNarrativeResult {
   narrate: (
     analytics: StudyAnalytics,
-    itemLabel?: string,
+    options?: NarrateOptions,
   ) => Promise<NarrativeReport>;
   isNarrating: boolean;
   error: string | null;
@@ -41,13 +53,15 @@ export function useAnalyticsNarrative(): AnalyticsNarrativeResult {
 
   async function narrate(
     analytics: StudyAnalytics,
-    itemLabel = "cards",
+    options: NarrateOptions = {},
   ): Promise<NarrativeReport> {
+    const sessionId = options.sessionId ?? null;
+    const fingerprint = narrativeFingerprint(analytics);
     return run<NarrativeReport>({
       agentId: STUDY_AGENTS.narrator,
       surfaceKey: "education-analytics-narrate",
       sourceFeature: "education-analytics",
-      variables: narrativeVariables(analytics, itemLabel),
+      variables: narrativeVariables(analytics, options.itemLabel ?? "cards"),
       timeoutMs: EXTRACTION_TIMEOUT_MS,
       pollIntervalMs: POLL_INTERVAL_MS,
       failureMessages: {
@@ -56,6 +70,36 @@ export function useAnalyticsNarrative(): AnalyticsNarrativeResult {
         timeout: "Timed out waiting for the narrator agent",
       },
       coerce: coerceNarrative,
+      // 🚨 D151 — this is the most expensive auto-fired run in the product: a
+      // ~120s narration triggered by a mount effect. Stored with the
+      // fingerprint of the numbers it describes, so the next visit reads it
+      // back and only re-pays once the learner has actually studied more.
+      ...(sessionId
+        ? {
+            onResult: async (runResult) => {
+              let report: NarrativeReport;
+              try {
+                report = coerceNarrative(runResult.data);
+              } catch {
+                return; // nothing usable — nothing to store
+              }
+              const saved = await studyService.appendSessionArtifact(sessionId, {
+                kind: "progressNarrative",
+                entry: {
+                  report: report as unknown,
+                  fingerprint,
+                  at: new Date().toISOString(),
+                },
+              });
+              if (saved.error) {
+                console.error(
+                  "[study.narrate] reading generated but NOT saved:",
+                  saved.error,
+                );
+              }
+            },
+          }
+        : {}),
     });
   }
 
