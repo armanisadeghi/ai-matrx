@@ -19997,6 +19997,10 @@
        "default": null,
        "title": "Rating Id"
       },
+      "record_class": {
+       "default": "contact",
+       "title": "Record Class"
+      },
       "registration_number": {
        "default": null,
        "title": "Registration Number"
@@ -20149,6 +20153,10 @@
       "rating_id": {
        "default": null,
        "title": "Rating Id"
+      },
+      "record_class": {
+       "default": null,
+       "title": "Record Class"
       },
       "registration_number": {
        "default": null,
