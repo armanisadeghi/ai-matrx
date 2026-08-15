@@ -128,10 +128,7 @@ export function EntitlementsTableClient() {
               <ShieldCheck className="h-3 w-3" /> on
             </Badge>
           ) : (
-            <Badge
-              variant="secondary"
-              className="gap-1 text-[11px] text-muted-foreground"
-            >
+            <Badge variant="secondary" className="gap-1 text-[11px]">
               <ShieldOff className="h-3 w-3" /> permissive
             </Badge>
           ),

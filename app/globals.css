@@ -935,9 +935,9 @@
     --primary: 221 83% 53%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary - Brighter purple for dark mode visibility */
-    --secondary: 275 70% 62%;
-    --secondary-foreground: 275 20% 15%;
+    /* Secondary - Purple with sufficient contrast for small white text */
+    --secondary: 275 70% 58%;
+    --secondary-foreground: 0 0% 100%;
 
     /* Muted - Zinc-750 for subtle backgrounds */
     --muted: 240 4% 24%;
