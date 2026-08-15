@@ -23,6 +23,12 @@ import {
   listServers,
   type McpServerRow,
 } from "@/features/tool-registry/mcp-admin/services/mcpAdmin.service";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import {
+  toolEditorAgentPayload,
+  toolEditorHuman,
+  type ToolEditorView,
+} from "./format";
 import {
   TOOL_SOURCE_KIND_VALUES,
   sourceKindLabel,
@@ -155,6 +161,36 @@ export function ToolCreatePage() {
       setIsSaving(false);
     }
   };
+
+  // ── Copy-for-AI: the new-tool draft as it stands RIGHT NOW ────────────────
+  // There is no saved row to fall back on here — the draft IS the only copy
+  // of this tool that exists. Alongside it go the red "JSON Error: …" text
+  // rendered beside the schema boxes and every condition blocking Create.
+  const buildEditorView = (): ToolEditorView => ({
+    mode: "create",
+    draft: tool as ToolEditorView["draft"],
+    saved: null,
+    activeTab: isMobile ? "all sections (mobile)" : activeTab,
+    isSaving,
+    jsonErrors,
+    mcpServerName:
+      mcpServers.find((s) => s.id === tool.managed_by_server_id)?.name ?? null,
+  });
+
+  const copyPair = (
+    <CopyButtons
+      size="sm"
+      label="New tool draft"
+      human={() => toolEditorHuman(buildEditorView())}
+      json={() => tool}
+      agent={() => toolEditorAgentPayload(buildEditorView())}
+      agentVariant={{
+        label: "This form",
+        hint: "Live draft, JSON errors and create blockers",
+        position: "first",
+      }}
+    />
+  );
 
   const basicFields = (
     <div className="space-y-5">
@@ -363,6 +399,7 @@ export function ToolCreatePage() {
         </Button>
         <span className="text-sm font-medium text-muted-foreground">/</span>
         <span className="text-sm font-medium">New Tool</span>
+        <div className="ml-auto">{copyPair}</div>
       </div>
 
       <div className="flex-1 overflow-hidden flex flex-col">
