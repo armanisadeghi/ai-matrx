@@ -25,7 +25,8 @@ import {
 import { getSessionControls } from "./audioSessionRegistry";
 import type { AudioSessionControls } from "./types";
 
-type ControlAction = keyof AudioSessionControls;
+/** The no-argument verbs. `setRate` takes a value, so it has its own entry point. */
+type ControlAction = Exclude<keyof AudioSessionControls, "setRate">;
 
 export function useAudioSessions() {
   const all = useAppSelector(selectAllAudioSessions);
@@ -46,8 +47,20 @@ export function useAudioSessions() {
   }, []);
 
   /** Whether a session currently exposes a given control. */
-  const can = useCallback((id: string, action: ControlAction): boolean => {
-    return !!getSessionControls(id)?.[action];
+  const can = useCallback(
+    (id: string, action: keyof AudioSessionControls): boolean => {
+      return !!getSessionControls(id)?.[action];
+    },
+    [],
+  );
+
+  /**
+   * Change a session's playback speed live. Only sessions backed by a real
+   * media element expose this (`can(id, "setRate")`); for everything else the
+   * speed belongs to the synthesis queue, not the session.
+   */
+  const setSessionRate = useCallback((id: string, rate: number) => {
+    getSessionControls(id)?.setRate?.(rate);
   }, []);
 
   return {
@@ -62,5 +75,6 @@ export function useAudioSessions() {
     recordingHistory,
     control,
     can,
+    setSessionRate,
   };
 }

@@ -119,10 +119,17 @@ export const DEFAULT_LISTEN_ENGINE: ListenEngineId = "default";
  * versa) and this line fails the type gate instead of failing at runtime with
  * "Unknown playback provider" after a user clicks Speak.
  */
-type _EnginesMatchAdapters = [
-  SpeakEngineId extends PlaybackProvider ? true : never,
-  PlaybackProvider extends SpeakEngineId ? true : never,
-];
+// `Assert` has a `true` constraint, so a failing check is a constraint
+// VIOLATION at the alias declaration — an error tsc reports even though the
+// alias is unused. (A bare conditional resolving to `never` compiles fine and
+// guards nothing.)
+type Assert<T extends true> = T;
+type _EnginesHaveAdapters = Assert<
+  SpeakEngineId extends PlaybackProvider ? true : false
+>;
+type _AdaptersHaveEngines = Assert<
+  PlaybackProvider extends SpeakEngineId ? true : false
+>;
 
 export function speakEngine(id: SpeakEngineId | undefined): SpeakEngine {
   return SPEAK_ENGINES[id ?? DEFAULT_SPEAK_ENGINE] ?? SPEAK_ENGINES[DEFAULT_SPEAK_ENGINE];

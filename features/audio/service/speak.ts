@@ -19,7 +19,14 @@
 import { enqueuePlayback } from "@/features/audio/playback/playbackQueue";
 import { resolveVoiceId, type VoicePurpose } from "@/lib/cartesia/config";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
-import type { VoicePreferences } from "@/lib/redux/preferences/userPreferencesSlice";
+import {
+  selectTextToSpeechPreferences,
+  selectVoicePreferences,
+} from "@/lib/redux/preferences/userPreferenceSelectors";
+import type {
+  TextToSpeechPreferences,
+  VoicePreferences,
+} from "@/lib/redux/preferences/userPreferencesSlice";
 import {
   DEFAULT_SPEAK_ENGINE,
   engineAcceptsVoice,
@@ -55,15 +62,30 @@ export interface SpeakResult {
 }
 
 /**
- * Read the saved voice preferences without React. Returns sane defaults before
- * the store exists (SSR, a very early call) — speech is never worth throwing
- * over a missing preference.
+ * Read the saved preferences without React, through the SAME canonical
+ * selectors the React surfaces use — never a hand-written state path, which is
+ * exactly how a "speak" call silently loses the user's chosen voice.
+ *
+ * Each engine reads its OWN preference: the streaming engine uses the Voice
+ * settings (a voice id + language + speed), the catalog engine uses the
+ * Text-to-speech settings (a named voice). They are different vocabularies and
+ * must never be crossed.
+ *
+ * Returns null before the store exists (SSR, a very early call) — speech is
+ * never worth throwing over a missing preference.
  */
-function voicePreferences(): VoicePreferences | null {
+function preferences(): {
+  voice: VoicePreferences | null;
+  tts: TextToSpeechPreferences | null;
+} {
   const store = getStoreSingleton();
-  if (!store) return null;
-  const state = store.getState() as { voice?: VoicePreferences };
-  return state.voice ?? null;
+  if (!store) return { voice: null, tts: null };
+  const state = store.getState() as Parameters<typeof selectVoicePreferences>[0];
+  if (!state?.userPreferences) return { voice: null, tts: null };
+  return {
+    voice: selectVoicePreferences(state) ?? null,
+    tts: selectTextToSpeechPreferences(state) ?? null,
+  };
 }
 
 /**
@@ -79,7 +101,7 @@ export function resolveSpeakEngine(requested?: SpeakEngineId): SpeakEngineId {
 export function speak(request: SpeakRequest): SpeakResult {
   const engineId = resolveSpeakEngine(request.engine);
   const engine = speakEngine(engineId);
-  const prefs = voicePreferences();
+  const prefs = preferences();
 
   const common = {
     text: request.text,
@@ -94,9 +116,10 @@ export function speak(request: SpeakRequest): SpeakResult {
       provider: "cartesia",
       cartesia: {
         voiceId:
-          request.voice ?? resolveVoiceId(prefs?.voice, request.purpose ?? "assistant"),
-        language: request.language ?? prefs?.language ?? "en",
-        speed: request.speed ?? prefs?.speed ?? 1,
+          request.voice ??
+          resolveVoiceId(prefs.voice?.voice, request.purpose ?? "assistant"),
+        language: request.language ?? prefs.voice?.language ?? "en",
+        speed: request.speed ?? prefs.voice?.speed ?? 1,
       },
     });
     return { id, engine: engine.id };
@@ -105,7 +128,7 @@ export function speak(request: SpeakRequest): SpeakResult {
   // Catalog engine — the server picks the vendor behind the alias. An unknown
   // voice is dropped rather than rejected so the backend's current default
   // wins (a preference saved before a voice was retired must not break speech).
-  const voice = request.voice ?? prefs?.voice;
+  const voice = request.voice ?? prefs.tts?.preferredVoice;
   const { id } = enqueuePlayback({
     ...common,
     provider: "catalog",
