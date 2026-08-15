@@ -15,8 +15,12 @@ consent-policy decision.
 The canonical production property is `properties/425921044`, web stream
 `6695751301`, measurement ID `G-Y9F6QPFLFM`.
 
+Production certification on 2026-08-15 showed the deployed tag and inline
+initializer on a signed-in super-admin route. GA4 Realtime then reported three
+active users, five `page_view` events, and the real Marketing, Brand Assets,
+Keywords, and Settings page titles.
+
 ## Change log
 
 - 2026-08-15 — Added super-admin-only page-view collection for AI Matrx's own
   GA4 property, with Education excluded and no Google OAuth dependency.
-
