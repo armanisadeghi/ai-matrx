@@ -129,7 +129,7 @@ milestone, never read back as the status — the verdict is always derived live.
 | Flow | Where it is hand-rolled today | How it maps |
 |---|---|---|
 | **Search Console / site setup** | **MIGRATED 2026-08-14.** Was two dead-end gate blocks at the top of `features/marketing/search-console/intake/SiteIntakeWizard.tsx` | `marketing.site_setup` (`features/marketing/search-console/setup/siteSetupChecklist.tsx`): brand / address / connection = **verified**; history import = **auto** (Google deletes history past ~16 months, so waiting for a click loses days permanently); "is this the right property" = **confirmed** (only the owner knows) |
-| **Sending identity (outreach)** | **EXTRACTED 2026-08-14.** A parallel session landed `/crm/sending-identities` mid-build; it had hand-rolled three hard-coded "Gate" cards (domain → authentication → warm-up) in gate order | `outreach.sending_identity` (`features/crm/sending-identities/sendingIdentityChecklist.tsx`): publish the TXT record = **confirmed** (we generate the exact values with Copy buttons; we cannot log into their registrar); domain ownership = **auto** (`autoRun: false` — a network lookup the user triggers); SPF / DKIM / DMARC = **verified, one step EACH** (a single "authentication" step that fails tells the user nothing they can act on, and the server's tri-state `null` maps to `unknown`, so a resolver timeout never reads as a broken domain); warm-up = **auto with `autoRun: false` on purpose** — it begins sending real mail from the customer's real domain, which is exactly what that escape hatch is for. Their `DnsRecordCard` and warm-up bar are HOSTED inside their steps via `extra`, not replaced; `IssueList` stays, because runtime refusals (pacing, quiet hours, org disabled) are not setup steps. **Not yet rendered live — zero `crm.sending_identity` rows exist, and creating one needs a real OAuth mailbox connection** |
+| **Sending identity (outreach)** | **EXTRACTED 2026-08-14.** A parallel session landed `/crm/sending-identities` mid-build; it had hand-rolled three hard-coded "Gate" cards (domain → authentication → warm-up) in gate order | `outreach.sending_identity` (`features/crm/sending-identities/sendingIdentityChecklist.tsx`): publish the TXT record = **confirmed** (we generate the exact values with Copy buttons; we cannot log into their registrar); domain ownership = **auto** (`autoRun: false` — a network lookup the user triggers); SPF / DKIM / DMARC = **verified, one step EACH** (a single "authentication" step that fails tells the user nothing they can act on, and the server's tri-state `null` maps to `unknown`, so a resolver timeout never reads as a broken domain); warm-up = **auto with `autoRun: false` on purpose** — it begins sending real mail from the customer's real domain, which is exactly what that escape hatch is for. Their `DnsRecordCard` and warm-up bar are HOSTED inside their steps via `extra`, not replaced; `IssueList` is filtered to runtime refusals only (pacing, quiet hours, org disabled) because it was otherwise restating every setup gate a second time. **Live-verified 2026-08-14** against a temporary seeded draft identity (`connection_id` is nullable, so a row renders without an OAuth mailbox); probe deleted afterwards. Still unverified: everything downstream of a real mailbox — the domain check actually resolving, warm-up actually starting |
 | **CMS / content-plan site launch** | `features/marketing/content-plan/setup/readiness.ts` — already has `met/partial/unmet/unknown` with reasons, and already refuses to call an unreadable CMS "unmet". **Its item model is the closest thing to this primitive that existed.** | Every `ChecklistItem` becomes a **verified** step: `required`/`actual`/`detail` collapse into `CheckResult.detail`, `state: "unknown"` is already exactly rule 3, and each item gains the `fix` it currently lacks (the brand gate's fix is "open Marketing → Sites"). What it gains: persistence, re-verification on return, and the foundation items becoming **auto** where we can generate the missing component ourselves. **Not migrated in this pass** — its coverage-counting half (families, `plannedCount` vs `targetCount`) is a genuine meter, not a checklist, and splitting the two is its own change |
 | **Payment / creator payouts (Stripe Connect)** | `features/entitlements/stripe/connect.ts` + `features/education/creators/components/CreatorPayoutsPanel.tsx` | Stripe hands us `charges_enabled`, `payouts_enabled`, `details_submitted` and a `requirements.currently_due` list — that is a **verified** step per requirement, each with `fix.href` = the Stripe onboarding link we already mint. Creating the connected account is **auto** (`ensureConnectAccount` is already idempotent). Nothing here is `confirmed` — Stripe is the authority on all of it |
 | **Org onboarding** | Scattered: `features/scope-system/components/ScopeOnboarding.tsx`, `utils/onboarding.ts`, empty states | Members invited / first scope created / industry chosen = **verified**; the personal-org and default-scope creation we already do at signup = **auto**; "who else should be in here" = **confirmed** |
@@ -146,6 +146,29 @@ milestone, never read back as the status — the verdict is always derived live.
   (`features/assists/`) reading the same definitions — not a second checker.
 - **`listChecklists()` only sees definitions whose module has been imported.**
   It is honest for an admin map on a page that imports them, not a static census.
+
+## What live rendering caught that review did not
+
+Kept because every one of them looked fine in the diff, and four of the six
+would have hit the user directly. If you extend this primitive, render it before
+you believe it.
+
+1. **Writes raised before the run row loaded were silently dropped** — the first
+   round of checks reliably wins the race, so the last-known cache was never
+   written and the row sat at version 1 with an empty map.
+2. **Identical results were re-stamped on every visit** — a write per step per
+   page view, and it destroyed the meaning of the timestamp.
+3. **A hand-built copy of the DNS record disagreed with the canonical
+   `DnsRecordCard`** — `host` and `name` swapped, i.e. a non-technical expert
+   pastes the FQDN into the Host field and the check never passes. THE CANONICAL
+   COMPONENT LAW is the fix: the shape has a component, so nothing else renders it.
+4. **The same record rendered twice** (hand-built values + the card), with
+   different labels. Two descriptions of one thing read as two things.
+5. **An `auto` step printed its action twice** — once as its own run button and
+   once as the check result's `fix`.
+6. **Blocked steps offered a fix button** under "Waiting on: X" — telling the
+   user to do two contradictory things at once. Fixed in the primitive
+   (`GuidedChecklist`) and locked by an engine test, so no consumer can hit it.
 
 ## Change log
 

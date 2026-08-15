@@ -100,6 +100,27 @@ describe("resolveChecklist", () => {
     expect(unblocked.steps.find((s) => s.id === "import")!.status).toBe("action");
   });
 
+  it("keeps a blocked step out of the 'what should I do now' slot", () => {
+    // The blocked step is the only non-done one, but it is not actionable —
+    // pointing the user at it would send them at work they cannot start.
+    // (The UI's matching rule: a blocked step never renders its fix button.)
+    const resolved = resolveChecklist({
+      definition,
+      state: withConfirmation(emptyState, "own", true, "u1", new Date().toISOString()),
+      live: { connect: { status: "pass" }, import: { status: "fail" } },
+    });
+    expect(resolved.steps.find((s) => s.id === "import")!.status).toBe("action");
+
+    const blocked = resolveChecklist({
+      definition,
+      state: withConfirmation(emptyState, "own", true, "u1", new Date().toISOString()),
+      live: { connect: { status: "fail" }, import: { status: "fail" } },
+    });
+    // `connect` is what actually wants the user; `import` is merely waiting.
+    expect(blocked.currentStepId).toBe("connect");
+    expect(blocked.steps.find((s) => s.id === "import")!.status).toBe("blocked");
+  });
+
   it("expires a human confirmation once it is out of date", () => {
     const now = Date.parse("2026-06-01T00:00:00Z");
     const fresh = withConfirmation(emptyState, "own", true, "u1", "2026-05-25T00:00:00Z");

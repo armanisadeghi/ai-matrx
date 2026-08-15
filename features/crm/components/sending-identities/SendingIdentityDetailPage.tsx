@@ -227,7 +227,28 @@ export function SendingIdentityDetailPage({ identityId }: { identityId: string }
   const systemPaused =
     identity.status === "paused" && identity.paused_by_kind === "system";
   const visibleEvents = showAllEvents ? events ?? [] : (events ?? []).slice(0, 12);
-  const issues = identity.issues ?? [];
+
+  /**
+   * Runtime refusals only — the SETUP gates now belong to the checklist below.
+   *
+   * Live render, 2026-08-14: with both on screen, every setup gate appeared
+   * twice — once as a red issue up here and once as its step in the checklist,
+   * each with its own copy and its own button. Two descriptions of one problem
+   * is worse than either alone, because the reader cannot tell whether they are
+   * two problems. The checklist owns anything a person does once during setup;
+   * this list keeps what only happens while sending (pacing, quiet hours, the
+   * org switch, a bad recipient) and has no home in a setup checklist.
+   */
+  const SETUP_FIXES = new Set([
+    "publish_dns_record",
+    "check_domain",
+    "check_authentication",
+    "start_warmup",
+    "wait_for_warmup",
+  ]);
+  const issues = (identity.issues ?? []).filter(
+    (issue) => !SETUP_FIXES.has(issue.fix_action),
+  );
 
   return (
     <div className="h-full overflow-y-auto">
@@ -303,7 +324,7 @@ export function SendingIdentityDetailPage({ identityId }: { identityId: string }
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-semibold">
-                What has to happen before this mailbox can run a campaign
+                Stopping this mailbox from sending right now
               </CardTitle>
             </CardHeader>
             <CardContent>

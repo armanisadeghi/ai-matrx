@@ -87,27 +87,25 @@ export const sendingIdentityChecklist = registerChecklist<SendingIdentityContext
       description:
         "This is how your domain host tells us you really own it. You add it once, wherever you bought your domain.",
       confirmLabel: "I've added it",
-      values: ({ identity }) => {
-        const record = identity.dns_record;
-        if (!record) return [];
-        return [
-          { label: "Type", value: record.type },
-          {
-            label: "Name / Host",
-            value: record.host,
-            hint: "Some hosts want just this part; others want the full name below.",
-          },
-          { label: "Full name", value: record.name },
-          { label: "Value", value: record.value, hint: "Copy this exactly." },
-          { label: "TTL", value: record.ttl },
-        ];
-      },
+      // NO `values()` here on purpose — see the note on `extra` below.
       howTo: ({ identity }) => [
         `Sign in wherever you bought ${identity.sending_domain}.`,
         "Find the DNS settings (sometimes called DNS records, or Advanced DNS).",
-        "Add a new record using the values above — copy each one, don't retype it.",
+        "Add a new record using the values below — copy each one, don't retype it.",
         "Save it, then come back here. Changes can take up to an hour to show up.",
       ],
+      /**
+       * THE CANONICAL COMPONENT LAW. `DnsRecordSpec` already HAS a component —
+       * `DnsRecordCard` — so the record renders through it and through nothing
+       * else. This step originally also declared `values()`, which put a
+       * second, hand-built copy of the same five fields directly above the
+       * card. Live render, 2026-08-14: the two copies disagreed. The card is
+       * right (`record.name` is the short host you usually type;
+       * `record.host` is the FQDN some providers want instead) and the
+       * hand-built copy had them SWAPPED — which for a non-technical expert
+       * means pasting the wrong string into their registrar and watching the
+       * check fail forever with no idea why. The duplicate is gone.
+       */
       extra: ({ dnsCard }) => dnsCard,
     },
     {
@@ -119,7 +117,10 @@ export const sendingIdentityChecklist = registerChecklist<SendingIdentityContext
       autoRun: false,
       runLabel: "Check the domain now",
       runningLabel: "Looking up your DNS…",
-      check: async ({ identity, checkDomain }): Promise<CheckResult> =>
+      // No `fix` on the failure: an auto step already renders its own
+      // `runLabel` button, and attaching the same action as a fix printed
+      // "Check the domain now" twice side by side (caught in live render).
+      check: async ({ identity }): Promise<CheckResult> =>
         identity.domain_verified
           ? {
               status: "pass",
@@ -132,7 +133,6 @@ export const sendingIdentityChecklist = registerChecklist<SendingIdentityContext
               reason: identity.domain_checked_at
                 ? "We looked, and our record isn't on your domain yet. If you just added it, give it up to an hour."
                 : "We haven't checked your domain yet.",
-              fix: { label: "Check the domain now", run: checkDomain },
             },
       run: async ({ checkDomain }) => checkDomain(),
     },

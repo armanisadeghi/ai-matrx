@@ -270,8 +270,19 @@ function StepRow<Ctx>({
               </span>
             ) : null}
 
-            {/* THE ONE-CLICK FIX. A failure without one is a dead end. */}
-            {fix && resolved.status !== "done" && resolved.status !== "busy" ? (
+            {/*
+              THE ONE-CLICK FIX. A failure without one is a dead end.
+
+              But a BLOCKED step must not offer one: it already says "Waiting
+              on: X", and putting a button under that tells the user to do two
+              contradictory things at once. Caught in live render, 2026-08-14 —
+              three blocked authentication steps each said "waiting on the
+              domain" and then offered "Check it now".
+            */}
+            {fix &&
+            resolved.status !== "done" &&
+            resolved.status !== "busy" &&
+            resolved.status !== "blocked" ? (
               fix.href ? (
                 <Button asChild size="sm" variant="outline" className="h-7">
                   <Link
