@@ -37131,6 +37131,7 @@ export type Database = {
       }
       crm_unmerge_parties: { Args: { p_merge_id: string }; Returns: undefined }
       ctx_seed_template: { Args: { p_template: Json }; Returns: string }
+      curatable_processed_document_ids: { Args: never; Returns: string[] }
       current_personal_org_id: { Args: never; Returns: string }
       cx_canvas_archive: {
         Args: { p_canvas_id: string; p_include_versions?: boolean }
@@ -39551,6 +39552,7 @@ export type Database = {
         Returns: Json
       }
       outreach_unsubscribe_preview: { Args: { p_token: string }; Returns: Json }
+      owned_or_org_processed_document_ids: { Args: never; Returns: string[] }
       page_extraction_clear_job_results: {
         Args: { p_job_id: string }
         Returns: undefined
@@ -39895,6 +39897,7 @@ export type Database = {
         Args: { p_file: string }
         Returns: string
       }
+      readable_processed_document_ids: { Args: never; Returns: string[] }
       record_guest_execution: {
         Args: {
           p_fingerprint: string
@@ -47469,11 +47472,17 @@ export type Database = {
         Row: {
           analyzed_at: string | null
           average_position: number | null
+          business_overlap: string | null
+          classification_confirmed_at: string | null
+          classification_confirmed_by: string | null
+          classification_status: string
           created_at: string
           created_by: string
+          custom_labels: string[]
           discovery_source: string
           display_domain: string
           display_name: string | null
+          entity_role: string | null
           estimated_traffic: number | null
           first_observed_at: string | null
           human_reviewed_at: string | null
@@ -47483,27 +47492,37 @@ export type Database = {
           last_observed_at: string | null
           latest_autopsy: Json
           latest_run_id: string | null
+          market_overlap: string | null
           metadata: Json
           normalized_domain: string
           organic_keywords: number | null
           organization_id: string
+          posture: string | null
           provider_evidence: Json
           relevance_score: number | null
           resolved_assessment: Json
+          search_overlap_band: string | null
           serp_visibility: number | null
           site_id: string
           threat_level: string | null
           tracking_status: string
           updated_at: string
+          use_for_link_gap: boolean | null
         }
         Insert: {
           analyzed_at?: string | null
           average_position?: number | null
+          business_overlap?: string | null
+          classification_confirmed_at?: string | null
+          classification_confirmed_by?: string | null
+          classification_status?: string
           created_at?: string
           created_by: string
+          custom_labels?: string[]
           discovery_source?: string
           display_domain: string
           display_name?: string | null
+          entity_role?: string | null
           estimated_traffic?: number | null
           first_observed_at?: string | null
           human_reviewed_at?: string | null
@@ -47513,27 +47532,37 @@ export type Database = {
           last_observed_at?: string | null
           latest_autopsy?: Json
           latest_run_id?: string | null
+          market_overlap?: string | null
           metadata?: Json
           normalized_domain: string
           organic_keywords?: number | null
           organization_id: string
+          posture?: string | null
           provider_evidence?: Json
           relevance_score?: number | null
           resolved_assessment?: Json
+          search_overlap_band?: string | null
           serp_visibility?: number | null
           site_id: string
           threat_level?: string | null
           tracking_status?: string
           updated_at?: string
+          use_for_link_gap?: boolean | null
         }
         Update: {
           analyzed_at?: string | null
           average_position?: number | null
+          business_overlap?: string | null
+          classification_confirmed_at?: string | null
+          classification_confirmed_by?: string | null
+          classification_status?: string
           created_at?: string
           created_by?: string
+          custom_labels?: string[]
           discovery_source?: string
           display_domain?: string
           display_name?: string | null
+          entity_role?: string | null
           estimated_traffic?: number | null
           first_observed_at?: string | null
           human_reviewed_at?: string | null
@@ -47543,18 +47572,22 @@ export type Database = {
           last_observed_at?: string | null
           latest_autopsy?: Json
           latest_run_id?: string | null
+          market_overlap?: string | null
           metadata?: Json
           normalized_domain?: string
           organic_keywords?: number | null
           organization_id?: string
+          posture?: string | null
           provider_evidence?: Json
           relevance_score?: number | null
           resolved_assessment?: Json
+          search_overlap_band?: string | null
           serp_visibility?: number | null
           site_id?: string
           threat_level?: string | null
           tracking_status?: string
           updated_at?: string
+          use_for_link_gap?: boolean | null
         }
         Relationships: [
           {
@@ -48376,6 +48409,194 @@ export type Database = {
             columns: ["topic_id"]
             isOneToOne: false
             referencedRelation: "topic"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      link_gap_domain: {
+        Row: {
+          ai_assessment: Json
+          analyzed_at: string | null
+          created_at: string
+          created_by: string | null
+          display_domain: string
+          domain_rank: number | null
+          first_seen_at: string | null
+          human_ruling: Json
+          id: string
+          last_seen_at: string | null
+          latest_run_id: string | null
+          match_count: number
+          metadata: Json
+          normalized_domain: string
+          observed_at: string | null
+          organization_id: string
+          priority_reason: string | null
+          priority_score: number | null
+          provider_metrics: Json
+          referring_domains: number | null
+          review_status: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          site_id: string
+          spam_score: number | null
+          total_backlinks: number | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          ai_assessment?: Json
+          analyzed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          display_domain: string
+          domain_rank?: number | null
+          first_seen_at?: string | null
+          human_ruling?: Json
+          id?: string
+          last_seen_at?: string | null
+          latest_run_id?: string | null
+          match_count?: number
+          metadata?: Json
+          normalized_domain: string
+          observed_at?: string | null
+          organization_id: string
+          priority_reason?: string | null
+          priority_score?: number | null
+          provider_metrics?: Json
+          referring_domains?: number | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          site_id: string
+          spam_score?: number | null
+          total_backlinks?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          ai_assessment?: Json
+          analyzed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          display_domain?: string
+          domain_rank?: number | null
+          first_seen_at?: string | null
+          human_ruling?: Json
+          id?: string
+          last_seen_at?: string | null
+          latest_run_id?: string | null
+          match_count?: number
+          metadata?: Json
+          normalized_domain?: string
+          observed_at?: string | null
+          organization_id?: string
+          priority_reason?: string | null
+          priority_score?: number | null
+          provider_metrics?: Json
+          referring_domains?: number | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          site_id?: string
+          spam_score?: number | null
+          total_backlinks?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "link_gap_domain_latest_run_id_fkey"
+            columns: ["latest_run_id"]
+            isOneToOne: false
+            referencedRelation: "collection_run"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      link_gap_match: {
+        Row: {
+          backlinks: number | null
+          competitor_domain: string
+          competitor_id: string
+          created_at: string
+          created_by: string | null
+          domain_rank: number | null
+          first_seen_at: string | null
+          id: string
+          is_dofollow: boolean | null
+          last_seen_at: string | null
+          link_gap_domain_id: string
+          metadata: Json
+          organization_id: string
+          provider_metrics: Json
+          source_url: string | null
+          spam_score: number | null
+          target_url: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          backlinks?: number | null
+          competitor_domain: string
+          competitor_id: string
+          created_at?: string
+          created_by?: string | null
+          domain_rank?: number | null
+          first_seen_at?: string | null
+          id?: string
+          is_dofollow?: boolean | null
+          last_seen_at?: string | null
+          link_gap_domain_id: string
+          metadata?: Json
+          organization_id: string
+          provider_metrics?: Json
+          source_url?: string | null
+          spam_score?: number | null
+          target_url?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          backlinks?: number | null
+          competitor_domain?: string
+          competitor_id?: string
+          created_at?: string
+          created_by?: string | null
+          domain_rank?: number | null
+          first_seen_at?: string | null
+          id?: string
+          is_dofollow?: boolean | null
+          last_seen_at?: string | null
+          link_gap_domain_id?: string
+          metadata?: Json
+          organization_id?: string
+          provider_metrics?: Json
+          source_url?: string | null
+          spam_score?: number | null
+          target_url?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "link_gap_match_competitor_id_fkey"
+            columns: ["competitor_id"]
+            isOneToOne: false
+            referencedRelation: "competitor"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "link_gap_match_link_gap_domain_id_fkey"
+            columns: ["link_gap_domain_id"]
+            isOneToOne: false
+            referencedRelation: "link_gap_domain"
             referencedColumns: ["id"]
           },
         ]
@@ -50718,11 +50939,17 @@ export type Database = {
         Returns: {
           analyzed_at: string | null
           average_position: number | null
+          business_overlap: string | null
+          classification_confirmed_at: string | null
+          classification_confirmed_by: string | null
+          classification_status: string
           created_at: string
           created_by: string
+          custom_labels: string[]
           discovery_source: string
           display_domain: string
           display_name: string | null
+          entity_role: string | null
           estimated_traffic: number | null
           first_observed_at: string | null
           human_reviewed_at: string | null
@@ -50732,18 +50959,22 @@ export type Database = {
           last_observed_at: string | null
           latest_autopsy: Json
           latest_run_id: string | null
+          market_overlap: string | null
           metadata: Json
           normalized_domain: string
           organic_keywords: number | null
           organization_id: string
+          posture: string | null
           provider_evidence: Json
           relevance_score: number | null
           resolved_assessment: Json
+          search_overlap_band: string | null
           serp_visibility: number | null
           site_id: string
           threat_level: string | null
           tracking_status: string
           updated_at: string
+          use_for_link_gap: boolean | null
         }
         SetofOptions: {
           from: "*"
