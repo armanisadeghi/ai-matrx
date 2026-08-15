@@ -35,4 +35,5 @@ Demo page: `/demos/token-broker` (dev builds) — mint per audience/tier, cache 
 
 ## Change Log
 
+- 2026-08-15 — Added `cartesia_tts` (native ephemeral); `lib/cartesia/accessToken.ts` now consumes the broker and the duplicate Next.js token minter is removed.
 - 2026-07-12 — Created: full client primitive (types/client/cache/transport/hooks) + demo page; audiences live: `openai_realtime` (native), `anthropic` (proxied).

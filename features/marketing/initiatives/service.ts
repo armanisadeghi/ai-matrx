@@ -103,7 +103,7 @@ export async function createInitiative(
 }
 
 export async function updateInitiative(
-  row: Initiative,
+  row: Pick<Initiative, "id" | "version">,
   patch: InitiativeUpdate,
 ): Promise<Initiative> {
   const result = await guardedUpdate<Initiative>({

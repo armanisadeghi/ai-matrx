@@ -157,6 +157,7 @@ import { podcastRunManifest } from "./podcast-run.manifest";
 import { scopesManifest } from "./scopes.manifest";
 import { contextItemsManifest } from "./context-items.manifest";
 import { chatVoiceManifest } from "./chat-voice.manifest";
+import { voiceChatManifest } from "./voice-chat.manifest";
 import { transcriptScribeLiveManifest } from "./transcript-scribe-live.manifest";
 import { adminSystemAgentsManifest } from "./admin-system-agents.manifest";
 import { adminDatabaseManifest } from "./admin-database.manifest";
@@ -338,6 +339,7 @@ const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   scopesManifest,
   contextItemsManifest,
   chatVoiceManifest,
+  voiceChatManifest,
   transcriptScribeLiveManifest,
   adminSystemAgentsManifest,
   adminDatabaseManifest,

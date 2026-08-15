@@ -40,7 +40,7 @@ export type CredentialMode = BrokeredCredential["credential_mode"];
  * (global `token-broker` skill), then consumed here with zero primitive
  * changes.
  */
-export const KNOWN_AUDIENCES = ["openai_realtime", "anthropic"] as const;
+export const KNOWN_AUDIENCES = ["openai_realtime", "anthropic", "cartesia_tts"] as const;
 export type KnownAudience = (typeof KNOWN_AUDIENCES)[number];
 export type BrokerAudience = KnownAudience | (string & {});
 

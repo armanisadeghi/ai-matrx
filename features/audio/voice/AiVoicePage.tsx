@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import VoicesList from "./VoicesList";
 import VoiceActions from "./VoiceActions";
 import VoicePlayground from "./VoicePlayground";
+import { HandsFreeVoiceChat } from "./HandsFreeVoiceChat";
 import { createUseModuleHook } from "@/lib/hooks/useModule";
 import { AiAudioSchema } from "@/types/aiAudioTypes";
 
@@ -93,12 +94,14 @@ const AiVoicePage: React.FC = () => {
 
     return (
         <div className="h-full overflow-y-auto p-6 pt-[calc(var(--shell-header-h)+1rem)] bg-background text-foreground">
-            <Tabs defaultValue="playground" className="w-full">
+            <Tabs defaultValue="hands-free" className="w-full">
                 <TabsList className="mb-6">
+                    <TabsTrigger value="hands-free">Hands-free Chat</TabsTrigger>
                     <TabsTrigger value="playground">Voice Playground</TabsTrigger>
                     <TabsTrigger value="voices">Matrx Voices</TabsTrigger>
                     <TabsTrigger value="actions">Create Custom Voices</TabsTrigger>
                 </TabsList>
+                <TabsContent value="hands-free"><HandsFreeVoiceChat /></TabsContent>
                 <TabsContent value="voices">
                     <div className="bg-card rounded-lg shadow-lg p-6">
                         <h2 className="text-2xl font-semibold mb-4">Available Matrx Voices</h2>

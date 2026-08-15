@@ -159,6 +159,7 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   { prefix: "/gallery", surface: "matrx-user/gallery" },
   { prefix: "/feedback", surface: "matrx-user/feedback" },
   { prefix: "/voice-pad", surface: "matrx-user/voice-pad" },
+  { prefix: "/voice/playground", surface: "matrx-user/voice-chat" },
   { prefix: "/share", surface: "matrx-user/share" },
   // Legacy path aliases (old surface names / bookmarks)
   { prefix: "/content-extractor", surface: "matrx-user/extractor-chunker" },
