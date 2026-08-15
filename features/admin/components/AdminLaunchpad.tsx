@@ -13,6 +13,7 @@ import {
 } from "@/features/admin/constants/admin-navigation";
 import { cn } from "@/lib/utils";
 import { matchesSearch } from "@/utils/search-scoring";
+import styles from "./AdminLaunchpad.module.css";
 
 const AUTO_REFRESH_MS = 60 * 60 * 1_000;
 const FOCUSED_CONTROL_RETRY_MS = 5 * 60 * 1_000;
@@ -194,7 +195,7 @@ export default function AdminLaunchpad() {
 
       <main className="p-3">
         {visibleDomains.length > 0 ? (
-          <div className="columns-1 gap-3 md:columns-2 xl:columns-3 2xl:columns-4 min-[1900px]:columns-5 min-[2250px]:columns-6 min-[2500px]:columns-7">
+          <div className={styles.columns}>
             {visibleDomains.map((domain) => (
               <section
                 key={domain.slug}

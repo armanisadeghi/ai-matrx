@@ -41,7 +41,49 @@ The visible type is always `derivedCompetitorLabel(...)`; no stored type exists.
 `competitor_classification` surface-write target and stamps human confirmation; the
 table editor uses the same writer. Paid work may consume only confirmed rows.
 
+## Ground truth — the Review tab
+
+**System of record: `common-docs/systems/competitor-classification/FEATURE.md` §8d + §10.**
+Read it before touching the brief, the ruling record, or the axes.
+
+`/marketing/competitors` → **Review** is where a human's judgment becomes ground truth, and it
+implements THE STAGED-CONFIDENCE PATTERN in the real product rather than in a separate admin
+harness — his rulings are collected as a side effect of using the tool.
+
+**The brief first, the rulings second.** `LandscapeBriefCard` shows what stage 1 established: what
+the business is, the analyst's OWN 1-5 certainty, and the SERVICE LINES with a footprint each.
+That last part is the load-bearing one — market overlap is a property of (service line ×
+geography), so a national rival in one service line is not a competitor in another. The correction
+box is free text on purpose: "I think it's more like 30 miles" is the training signal, and a form
+field would destroy it. What he writes becomes `seo.landscape_brief.guidance`, which every later
+agent receives as fact outranking its own inference.
+
+🚨 **The deadline is a promise, not a wait.** A brief lapses to `auto_accepted` 24 hours after it
+is generated and downstream work carries on with its assumptions — "the system doesn't wait around
+for the user to accept it." Never write copy implying work is blocked on the reader, and never
+build a stage that stalls on an unread approval. `reviewDeadlineNote()` owns that wording.
+
+**The queue leads with our best work.** `GroundTruthQueue` sorts by the classifier's own
+confidence, DESCENDING: leading with the most confident calls is what makes the first ruling cost a
+second, and a correction on a high-confidence row is the most informative signal in the system.
+Two buttons — Right, Wrong. **Never ask an abstract taxonomy question**; show a real domain from
+their own search results and a plain sentence about it.
+
+**What a ruling must capture** is defined once, in `groundTruth.ts`: the axes set, the label they
+would have used, whether OUR proposal was right, and *in their words* why. The machine's proposal
+is frozen BESIDE the ruling — without both versions "were we right?" is unanswerable. It lands in
+`seo.competitor.human_ruling` with `classification_status='confirmed'`, never in a file.
+
+**Find my competitors** calls `POST /seo/sites/{id}/competitors/discover` — discovery and
+classification without buying a page-crawl autopsy. Everything lands `proposed`.
+
 ## Change log
+
+- 2026-08-15 — Added the Review tab: the landscape brief (staged confidence, service lines, 24h
+  non-blocking deadline), the confidence-ordered ruling queue, and the ground-truth ruling record.
+  The axis editor gained `peer_scale` and the live 15-value `entity_role` list — the pinned
+  classifier agent's schema still enumerated the original 8, so the widened taxonomy was
+  unreachable by the AI layer until v3.
 
 - 2026-08-15 — Added first-class typed-name web lookup + one-click add, deterministic-first
   classification with the platform-agent fallback, assist-backed approvals, derived labels,
