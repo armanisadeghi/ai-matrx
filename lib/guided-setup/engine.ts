@@ -229,17 +229,25 @@ export function withLastResult(
   };
 }
 
-/** Record (or withdraw) a human confirmation. */
+/**
+ * Record (or withdraw) a human confirmation.
+ *
+ * `userId` is nullable and stays ABSENT rather than becoming `""` when we do
+ * not know who acted: a confirmation attributed to an empty string reads, to
+ * every later query, as a real user with a blank id. "We don't know who" is a
+ * different fact from "nobody", and the audit value of this field is the whole
+ * reason it exists.
+ */
 export function withConfirmation(
   state: ChecklistRunState,
   stepId: string,
   confirmed: boolean,
-  userId: string,
+  userId: string | null,
   at: string,
 ): ChecklistRunState {
   const prior = state.steps[stepId] ?? {};
   const next = confirmed
-    ? { ...prior, confirmedAt: at, confirmedBy: userId }
+    ? { ...prior, confirmedAt: at, confirmedBy: userId ?? undefined }
     : { ...prior, confirmedAt: undefined, confirmedBy: undefined };
   return { ...state, steps: { ...state.steps, [stepId]: next } };
 }

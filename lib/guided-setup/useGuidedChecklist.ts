@@ -340,7 +340,7 @@ export function useGuidedChecklist<Ctx>(args: {
           prev,
           stepId,
           confirmed,
-          userId ?? "",
+          userId,
           new Date().toISOString(),
         ),
       );
