@@ -820,15 +820,33 @@ EARNED-TRUST LADDER) before acting on any of these — it is the lens they were 
    **Left open for counsel** (sharpens ATTORNEY_BRIEF Q9): the policy's bulk-mail carve-out reads
    *"approved as long as the user consented to receive emails"* — whether Lane B itself sits
    comfortably inside Gmail restricted scopes is arguable both ways and an agent may not settle it.
-4. **Media/journalist data — crawl-only for NOW, but actively acquire.** Arman: *"I'm okay with
-   crawl only for now. However… we need to document, that we need to look into all of those
-   things… if there are lists that maybe we can crawl for once, then let's get that crawl task
-   going today or tomorrow. We're not gonna wait."* Chip fired 2026-08-14. His mental model for
-   data sources, which generalizes beyond media:
+4. **Media/journalist data acquisition — research and first crawl DONE 2026-08-14; scaled
+   ingestion remains open.** Cross-repo source of truth:
+   `/Users/armanisadeghi/code/common-docs/systems/outreach-data/FEATURE.md`. It contains the full
+   source/license matrix, actual prices, vendor-rights questions, purchase brief, and live crawl
+   receipt. Headline decision: start the CC0/free registry spine with Wikidata, DOAJ, Crossref,
+   OpenAlex, and ORCID; buy a **$34/month annual-billing Hunter Starter** candidate-enrichment
+   pilot; run at most a $50 DataForSEO listings pilot after written multi-tenant persistence rights;
+   do not use ordinary Muck Rack/Cision/Prowly/Meltwater/Podcast Index/Substack/HARO-style plans as
+   product database seeds. Traditional databases require explicit OEM/data-license terms.
+
+   The concrete crawl ran Wikidata `Q228389` → a robots-allowed, public-domain Voice of America
+   reporter bio → `rs_source.page_analysis` → the **server** party resolver. It created one VOA
+   organization party with a Wikidata external ID and **zero email/phone contact points**; every
+   person/byline remains suggestion-gated per §3 G2. Topic
+   `3a5124c3-88ed-4c46-b096-7af563cda7dd`, source
+   `524d561c-f584-4ad4-9654-4258f4aa88c0`, party
+   `d6659209-4406-4735-874e-0a4eef61a99d`.
+
+   Arman: *"I'm okay with crawl only for now. However… we need to document, that we need to look
+   into all of those things… if there are lists that maybe we can crawl for once, then let's get
+   that crawl task going today or tomorrow. We're not gonna wait."* His mental model for data
+   sources, which generalizes beyond media:
    - **Hostile APIs** (SEMrush, Ahrefs class) — priced and shaped so you don't use them. Skip.
    - **Purpose-built APIs** (DataForSEO class) — made to be consumed. Evaluate seriously.
    - **Community/open goldmines** (the OpenStreetMap class — "incredible data at nothing or next
      to nothing"). **Hunt for these first;** analogous troves exist for legal/cases and elsewhere.
-   **Never treat "we'll crawl it ourselves" as the end of the conversation.**
+   **Never treat "we'll crawl it ourselves" as the end of the conversation.** Next work is the
+   allowlisted registry ingestion and candidate-review queue described in the source of truth.
 5. **Outreach pricing — per connected mailbox, aligned with the category**, resolved inside the
    §5.6 tier work; volume rides the ladder on top of the plan.
