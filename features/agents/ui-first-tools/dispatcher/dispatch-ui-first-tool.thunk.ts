@@ -7,10 +7,9 @@
  *   1. Look up the schema + handler from the registry.
  *   2. Validate args via Zod. On schema failure: POST tool_result error,
  *      mark lifecycle 'error'; do NOT throw.
- *   3. Flip the instance to `paused` — this is the honest signal that the
- *      agent is waiting on a client-tool answer. The backend hard-suspended
- *      and ended the stream; the /tool_results POST → resumeInstance handoff
- *      will flip it back to `running` once the user answers.
+ *   3. The canonical delegated-call router has already flipped the instance
+ *      to `paused`; keep it there while validation/handling/result submission
+ *      runs. The /tool_results → resumeInstance handoff restores `running`.
  *   4. Run the handler. On throw: POST tool_result error + mark lifecycle.
  *   5. On success: POST tool_result with the handler's return value as
  *      `output`. Mark lifecycle 'completed'.
@@ -25,9 +24,9 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
 import { extractErrorMessage } from "@/utils/errors";
 import { submitToolResult } from "@/features/agents/api/submit-tool-results";
-import { setInstanceStatus } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
 import { upsertToolLifecycle } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
 import { getUiFirstToolEntry } from "../tools/registry";
+import { recoverUserArgs } from "../tools/schemas";
 
 export interface DispatchUiFirstToolPayload {
   conversationId: string;
@@ -110,7 +109,18 @@ export const dispatchUiFirstTool = createAsyncThunk<
       return;
     }
 
-    const parsed = entry.schema.safeParse(args);
+    const recovery =
+      toolName === "user"
+        ? recoverUserArgs(args)
+        : { args, recoveredAlias: null };
+    if (recovery.recoveredAlias) {
+      console.warn(
+        "[ui-first-tools] recovered user tool discriminator alias `action` → `type`.",
+        { conversationId, requestId, callId },
+      );
+    }
+
+    const parsed = entry.schema.safeParse(recovery.args);
     if (!parsed.success) {
       const message = `args failed schema for ${toolName}: ${JSON.stringify(
         parsed.error.format(),
@@ -139,12 +149,6 @@ export const dispatchUiFirstTool = createAsyncThunk<
       );
       return;
     }
-
-    // Truthful "waiting on the user" status. Set BEFORE awaiting the handler
-    // so the instance reflects reality the moment the dispatcher takes over.
-    // For fast handlers this is briefly `paused` → `running` (resume sets
-    // running) — a single tick of flicker — which beats lying about state.
-    dispatch(setInstanceStatus({ conversationId, status: "paused" }));
 
     // Client-measured execution time, persisted to cx_tool_call.duration_ms —
     // without it every client-delegated call lands as duration_ms=0.

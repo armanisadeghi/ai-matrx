@@ -10,11 +10,13 @@
  * it." This thunk opens a fresh stream against `/ai/conversations/{id}/resume`
  * to reconstruct the conversation from the DB and stream the continuation.
  *
- * The thunk that owns the contract for that round-trip is `submit-tool-results.ts`
- * — it reads the success body and dispatches us. Do not call this from
- * anywhere else; the server's `continuation_needed` flag is the only
- * authoritative signal for when to resume. (Exception: this thunk re-dispatches
- * itself for the bounded 409 `resume_conflict` retry.)
+ * The normal owner of that round-trip is `submit-tool-results.ts` — it reads
+ * the success body and dispatches us. The other authoritative trigger is
+ * durable reconnect: WAITING_INPUT + zero pending delegated rows + the runtime
+ * OperationView's request_id proves the answer landed and only continuation
+ * was lost. The reconnect thunk and its explicit Continue affordance use that
+ * identity. This thunk also re-dispatches itself for bounded close-race / 409
+ * retries.
  *
  * Concurrency contract (2026-06-09 incident fixes):
  *   - Single-flight per user_request_id via `claimResume` — taken
@@ -52,10 +54,16 @@ import {
   nextResumeConflictAttempt,
   RESUME_CONFLICT_BACKOFF_MS,
   RESUME_CONFLICT_MAX_RETRIES,
+  nextResumeStreamClosingAttempt,
+  RESUME_STREAM_CLOSING_BACKOFF_MS,
+  RESUME_STREAM_CLOSING_MAX_RETRIES,
 } from "./resume-claims";
 import { selectContextPayload } from "../instance-context/instance-context.selectors";
 import { buildAmbientContext } from "@/features/agents/ui-first-tools/redux/build-ambient-context";
-import { setInstanceStatus } from "../conversations/conversations.slice";
+import {
+  patchConversation,
+  setInstanceStatus,
+} from "../conversations/conversations.slice";
 import { selectDesktopTargetInstanceId } from "@/lib/redux/preferences/adminPreferencesSlice";
 import {
   selectEffectiveOrganizationId,
@@ -118,11 +126,37 @@ export const resumeInstance = createAsyncThunk<
       // a previous resume is mid-flight). Aborting it would race the
       // already-in-flight reducer, and starting a second one would split the
       // stream into two parallel readers writing to the same Redux entries.
-      // Bail and let the live one finish; the next /tool_results POST will
-      // re-evaluate continuation_needed.
+      // The most important case is a fast client tool: its result POST can
+      // return continuation_needed while the just-suspended reader is still
+      // unregistering. There may be no next tool result, so discarding that
+      // signal wedges the durable request forever. Retry after a bounded,
+      // linear delay; single-flight claims still prevent parallel resumes.
       if (hasAbortController(conversationId)) {
         releaseResumeClaim(userRequestId);
-        return rejectWithValue("Resume skipped — stream already in flight");
+        const attempt = nextResumeStreamClosingAttempt(userRequestId);
+        if (attempt !== null) {
+          const delay = RESUME_STREAM_CLOSING_BACKOFF_MS * attempt;
+          console.warn(
+            `[resumeInstance] suspending stream still closing — retrying in ${delay}ms (attempt ${attempt}/${RESUME_STREAM_CLOSING_MAX_RETRIES})`,
+            { conversationId, userRequestId },
+          );
+          setTimeout(() => {
+            void dispatch(
+              resumeInstance({ conversationId, userRequestId, debug }),
+            );
+          }, delay);
+          return rejectWithValue(
+            `suspending stream still closing — retry ${attempt} scheduled`,
+          );
+        }
+        console.error(
+          "[resumeInstance] suspending stream did not close within retry budget; leaving the durable operation recoverable from reconnect UI.",
+          { conversationId, userRequestId },
+        );
+        dispatch(setInstanceStatus({ conversationId, status: "paused" }));
+        return rejectWithValue(
+          "suspending stream still closing — retries exhausted",
+        );
       }
 
       // Conversation must already be in Redux (the /tool_results POST that
@@ -204,7 +238,9 @@ export const resumeInstance = createAsyncThunk<
       // is only a fallback for a record that never hydrated. See the identical
       // rule in assembleRequest — org never moves once a conversation exists.
       const organization_id =
-        instance.organizationId ?? selectEffectiveOrganizationId(state) ?? undefined;
+        instance.organizationId ??
+        selectEffectiveOrganizationId(state) ??
+        undefined;
       const project_id = selectProjectId(state) ?? undefined;
       const task_id = selectTaskId(state) ?? undefined;
       const scope_ids = Object.values(
@@ -246,6 +282,10 @@ export const resumeInstance = createAsyncThunk<
       // (the original suspended stream finalised its phase). `runAiStream`
       // will set it to `streaming` once the response opens.
       dispatch(setInstanceStatus({ conversationId, status: "running" }));
+      // Any reconnect follower/banner is now stale: this live stream owns the
+      // conversation again. Clear it immediately instead of waiting for the
+      // follower's next SSE frame to notice the abort-controller handoff.
+      dispatch(patchConversation({ conversationId, serverOperation: null }));
       dispatch(setRequestStatus({ requestId, status: "connecting" }));
 
       const submitAt = performance.now();

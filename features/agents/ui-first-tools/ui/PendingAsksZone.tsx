@@ -67,11 +67,20 @@ export function PendingAsksZone({
   });
 
   if (isMobile) {
-    return <MobileAsksDrawer asks={asks}>{cards}</MobileAsksDrawer>;
+    return (
+      <div id={`pending-asks-${conversationId}`}>
+        <MobileAsksDrawer asks={asks}>{cards}</MobileAsksDrawer>
+      </div>
+    );
   }
 
   return (
-    <div className={className ?? "flex flex-col gap-1.5 mb-1.5"}>{cards}</div>
+    <div
+      id={`pending-asks-${conversationId}`}
+      className={className ?? "flex flex-col gap-1.5 mb-1.5"}
+    >
+      {cards}
+    </div>
   );
 }
 
@@ -91,7 +100,7 @@ function MobileAsksDrawer({
   const [open, setOpen] = useState(true);
   // Soft fade at the drawer's scroll edges — the whole question+answers scroll
   // as one here, so the fade cues "there's more above/below".
-  const fade = useScrollFade<HTMLDivElement>();
+  const { ref: fadeRef, style: fadeStyle } = useScrollFade<HTMLDivElement>();
   // Track which asks we've already surfaced so re-opening only happens for a
   // genuinely new interaction — not every time the pending list re-renders.
   const seenRef = useRef<Set<string>>(new Set());
@@ -104,6 +113,9 @@ function MobileAsksDrawer({
         hasNew = true;
       }
     }
+    // This effect is the external arrival signal: a newly delegated call must
+    // reopen the user-action drawer even if the user minimized an older ask.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (hasNew) setOpen(true);
   }, [asks]);
 
@@ -130,6 +142,7 @@ function MobileAsksDrawer({
           >
             <button
               type="button"
+              data-open-pending-asks
               onClick={() => setOpen(true)}
               className="flex w-full items-center gap-2.5 rounded-[10px] bg-card px-3 py-2 text-left transition-colors hover:bg-accent/40"
             >
@@ -170,8 +183,8 @@ function MobileAsksDrawer({
             </button>
           </div>
           <div
-            ref={fade.ref}
-            style={fade.style}
+            ref={fadeRef}
+            style={fadeStyle}
             className={cn(
               "flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain px-3 pt-1",
               "pb-[calc(env(safe-area-inset-bottom,0px)+1rem)]",

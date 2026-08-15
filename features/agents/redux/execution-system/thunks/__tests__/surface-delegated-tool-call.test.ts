@@ -166,7 +166,9 @@ describe("surfaceDelegatedToolCall cold desktop reconciliation", () => {
     surfaceDelegatedToolCall({
       ...BASE_ARGS,
       toolName: "apply_surface_write",
-      data: { arguments: { target: "page_meta_tags", value: { meta_title: "T" } } },
+      data: {
+        arguments: { target: "page_meta_tags", value: { meta_title: "T" } },
+      },
     })(dispatch as never, jest.fn() as never, undefined);
     await flushPromises();
 
@@ -177,6 +179,12 @@ describe("surfaceDelegatedToolCall cold desktop reconciliation", () => {
       toolName: "apply_surface_write",
       args: { target: "page_meta_tags", value: { meta_title: "T" } },
     });
+    expect(dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: expect.stringContaining("setInstanceStatus"),
+        payload: { conversationId: "conversation-1", status: "paused" },
+      }),
+    );
     // Routed — never answered as unsupported, never resolved here.
     expect(mockSubmitToolResult).not.toHaveBeenCalled();
   });

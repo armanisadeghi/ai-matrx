@@ -314,6 +314,15 @@ model overrides.
 
 ## Change Log
 
+- `2026-08-15` — **Runtime waiting banners are now evidence-backed and
+  recoverable.** A `WAITING_INPUT` spine row no longer automatically means
+  "waiting for your answer": reconnect checks the durable delegated ledger
+  and the actual pending-ask inbox. Real asks receive a one-click focus/reopen
+  action; zero-row waits auto-resume with the runtime `request_id`; failed
+  recovery retains **Continue agent / Check again** instead of a dead-end
+  status banner. Fast delegated results also retry across the original
+  stream's AbortController teardown race.
+
 - `2026-08-14` — claude: **`adoptHeadlessAgentJson` — the sibling entry point for runs the primitive did not launch — and viewer retention moved into the shared wait loop (closes the last D126 copy).** Image Studio's describe flow launches through a shape `launchAgentExecution` cannot express: a SHORTCUT trigger (`autoRun:false`) that attaches an uploaded image as an instance resource before `executeInstance`. That forced it to keep the last hand-rolled poll of the D126 class. The new export in `run-headless-agent-json.ts` takes an already-executed `requestId`+`conversationId` and reuses THE machinery — viewer-retained polling, stream-error fast-fail, the bounded settle window, `resolveRunData`'s one result-resolution rule, loud no-result capture, instance cleanup (`keepInstance` opt-out for callers whose own lifecycle owns teardown), `onResult`, and `signal`. In the same change the shared `waitForExtraction` now retains/releases the request row around its poll (per `docs/LIVE_RUN_RETENTION.md` — a long-lived `getState()` poll IS a viewer), so BOTH entry points are reap-proof without call-site retention; `useImageStudio`'s hand-retained local copy was deleted and the describe flow live-verified end-to-end at `/images/convert`.
 - `2026-08-14` — claude: **`runHeadlessAgentJson` gained a PERSISTENCE SEAM and an `AbortSignal` (FOUND_DEFECTS D151).** The primitive delivered a paid result only through the returned promise. Unmounting mid-run does not cancel the run — the money is already spent — so the resolved payload was written into a dead component and lost; eight surfaces across education, flashcards and podcasts were losing coaching tips, tutor answers, memory aids, quiz items, verify verdicts, narrated reports and generation previews this way. **`onResult`** fires with the resolved result from inside the function on every exit path (success, stream error, timeout, abort) and is awaited before the promise resolves — that is where a result becomes durable, beyond the reach of the caller's lifecycle; a throw inside it is captured and never alters the run's own outcome. **`signal`** stops the WAIT, never the spend: it settles from whatever the run already produced and still fires `onResult` — abort HARVESTS, it never discards. Both are opt-in, so every existing call site is unchanged. The companion primitive is `lib/supabase/mergeJsonColumn.ts` (CAS jsonb read-modify-write on `guardedUpdate`, re-read-and-remerge on conflict), built once because every persistence target needed the same lost-update-safe merge.
 

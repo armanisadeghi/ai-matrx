@@ -134,6 +134,12 @@ export const surfaceDelegatedToolCall = (
       }),
     );
 
+    // Every client-delegated call hard-suspends and ends the server stream,
+    // including fast handlers and schema-error paths. Stamp that truth before
+    // routing so process-stream cannot finalize the instance as `complete`
+    // while an immediate tool-result POST is arranging the continuation.
+    dispatch(setInstanceStatus({ conversationId, status: "paused" }));
+
     if (isWidgetActionName(toolName)) {
       // Widget actions resolve fast and fire-and-forget — the microtask
       // batcher posts results back so the server can resume.
@@ -153,7 +159,7 @@ export const surfaceDelegatedToolCall = (
       // UI-first tools (user / update_plan / tasks / user_todos /
       // request_user_takeover / memory / storage). The dispatcher validates
       // args, runs the handler (which may await user input), and POSTs the
-      // result; it flips the instance to `paused` while waiting.
+      // result. The canonical router already stamped the instance `paused`.
       dispatch(
         dispatchUiFirstTool({
           conversationId,
@@ -306,7 +312,6 @@ export const surfaceDelegatedToolCall = (
     // from the capability declaration) so a desktop that vanished mid-turn
     // falls through to the loud unsupported error instead of wedging forever.
     if (isDesktopDelegatedToolName(toolName)) {
-      dispatch(setInstanceStatus({ conversationId, status: "paused" }));
       const startReconciliation = () => {
         dispatch(
           watchDesktopDelegation({
@@ -357,7 +362,6 @@ export const surfaceDelegatedToolCall = (
     // would silently wedge it. Flip to `paused` for a truthful state during the
     // microtask window, then POST an error result through the funnel so the
     // server can recover or surface the failure.
-    dispatch(setInstanceStatus({ conversationId, status: "paused" }));
     postUnsupportedError();
   };
 };
