@@ -395,10 +395,19 @@ export function parsePersistedBackendError(
       : summary;
   const detail = specific === summary ? summary : `${summary}: ${specific}`;
   const code = typeof error.type === "string" ? error.type : "internal_error";
+  // A persisted failure may carry a human-facing line the technical detail
+  // cannot express — the load-bearing case being a paid result that survived
+  // its persistence failure (`WritePreservedError`, D183): "it broke" is true
+  // and "your work is preserved and will be recovered" is what the user needs.
+  // `describeBackendFailure` still overrides a TEMPLATED one with the cause.
+  const userMessage =
+    typeof error.user_message === "string" && error.user_message
+      ? error.user_message
+      : detail;
   return new BackendApiError({
     code,
     detail,
-    userMessage: detail,
+    userMessage,
     details: error,
     requestId,
   });
