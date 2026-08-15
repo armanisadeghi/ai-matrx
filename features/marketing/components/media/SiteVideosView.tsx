@@ -28,6 +28,7 @@ import {
   Film,
   FolderPlus,
   Loader2,
+  Maximize2,
   Tags,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -58,6 +59,12 @@ import { isJsonRecord, type BrandAsset } from "@/features/marketing/types";
 import type { Json } from "@/types/database.types";
 import { videoPublishDateFromMetadata } from "@/lib/media/video-date";
 import { useYouTubeVideoIdentityIndex } from "@/features/research/hooks/useResearchState";
+import {
+  BrandAssetDetailDialog,
+  readVideoMetadata,
+  type AssetPageRef,
+} from "@/features/marketing/components/media/BrandAssetDetail";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 
 const PROVIDER_LABELS: Record<SiteVideoAsset["provider"], string> = {
   youtube: "YouTube",
@@ -66,15 +73,22 @@ const PROVIDER_LABELS: Record<SiteVideoAsset["provider"], string> = {
   embed: "Embed",
 };
 
-function assetHasMetadata(asset: BrandAsset): boolean {
-  return isJsonRecord(asset.data) && isJsonRecord(asset.data.video_metadata);
-}
-
 /** Poster for a library video that came from a provider URL (no file_id). */
 function libraryPosterUrl(asset: BrandAsset): string | null {
   if (!asset.source_url) return null;
   const yt = youtubeId(asset.source_url);
   return yt ? youTubeThumbnail(yt) : null;
+}
+
+/** Canonical pages a crawled video was observed on, in the detail's shape. */
+function assetPagesFor(
+  video: SiteVideoAsset | undefined,
+): readonly AssetPageRef[] | undefined {
+  return video?.pages.map((page) => ({
+    pageId: page.pageId,
+    url: page.url,
+    path: page.path,
+  }));
 }
 
 function pagesLabel(video: SiteVideoAsset): string {
@@ -95,7 +109,10 @@ export function SiteVideosView({
   standards: SiteMediaStandards;
 }) {
   const dispatch = useAppDispatch();
-  const { site } = useMarketingSite();
+  const { site, sitePath } = useMarketingSite();
+  /** The library asset whose FULL record is open (D150 P0 — the paid-for
+   *  title/description/keywords/schema.org had no surface at all). */
+  const [detailAssetId, setDetailAssetId] = useState<string | null>(null);
   const videosQuery = useSiteVideos(site.id);
   const assetsQuery = useBrandAssets(brandId);
   const createAsset = useCreateBrandAsset();
@@ -280,6 +297,8 @@ export function SiteVideosView({
 
   const crawled = videosQuery.data ?? [];
   const empty = crawled.length === 0 && libraryVideos.length === 0;
+  const detailAsset =
+    libraryVideos.find((asset) => asset.id === detailAssetId) ?? null;
 
   return (
     <div className="space-y-4">
@@ -328,6 +347,7 @@ export function SiteVideosView({
                   ? youtubeIdentityForId(libraryVideoId)?.published_at
                   : null) ?? videoPublishDateFromMetadata(asset.data);
               const busy = metadataBusy === asset.id;
+              const meta = readVideoMetadata(asset.data);
               // Locals (not `asset.x` inline) — the React Compiler lint taints
               // the whole base object when a member expression feeds a `ref` prop.
               const fileId = asset.file_id;
@@ -365,43 +385,79 @@ export function SiteVideosView({
                       className="pointer-events-none absolute bottom-1.5 left-1.5 rounded bg-black/75 px-1 py-0.5 text-white shadow-sm"
                     />
                   </div>
-                  <div className="flex items-center gap-1.5 p-1.5">
-                    <div className="min-w-0 flex-1">
-                      <p
-                        className="truncate text-[11px] font-medium text-foreground"
-                        title={asset.title ?? undefined}
-                      >
+                  <div className="space-y-1 p-1.5">
+                    {/* The tile now SHOWS what the agent wrote instead of a
+                        four-pixel badge; the full record is one click away. */}
+                    <button
+                      type="button"
+                      className="block w-full min-w-0 text-left"
+                      onClick={() => setDetailAssetId(asset.id)}
+                      title="Open the full asset record"
+                    >
+                      <p className="truncate text-[11px] font-medium text-foreground hover:text-primary">
                         {asset.title || "Untitled video"}
                       </p>
-                      <p className="truncate text-[9px] text-muted-foreground">
-                        {asset.source}
-                        {assetHasMetadata(asset) ? " · metadata written" : ""}
-                      </p>
-                    </div>
-                    {assetHasMetadata(asset) ? (
-                      <Badge
-                        variant="outline"
-                        className="h-4 shrink-0 px-1 text-[8px] text-emerald-600 dark:text-emerald-400"
+                    </button>
+                    {meta?.description ? (
+                      <p
+                        className="line-clamp-2 text-[9px] leading-snug text-muted-foreground"
+                        title={meta.description}
                       >
-                        <Tags className="mr-0.5 h-2.5 w-2.5" />
-                        meta
-                      </Badge>
+                        {meta.description}
+                      </p>
                     ) : null}
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-6 shrink-0 px-1.5 text-[10px]"
-                      disabled={busy || updateAsset.isPending}
-                      onClick={() => void writeAssetMetadata(asset)}
-                      title="Run the metadata agent: title, description, keywords, schema.org VideoObject"
-                    >
-                      {busy ? (
-                        <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                      ) : (
-                        <Tags className="mr-1 h-3 w-3" />
-                      )}
-                      {assetHasMetadata(asset) ? "Rewrite" : "Write metadata"}
-                    </Button>
+                    {meta && meta.keywords.length > 0 ? (
+                      <div className="flex flex-wrap gap-0.5">
+                        {meta.keywords.slice(0, 4).map((keyword) => (
+                          <Badge
+                            key={keyword}
+                            variant="secondary"
+                            className="h-4 px-1 text-[8px] font-normal"
+                          >
+                            {keyword}
+                          </Badge>
+                        ))}
+                        {meta.keywords.length > 4 ? (
+                          <button
+                            type="button"
+                            className="text-[8px] text-muted-foreground hover:text-primary"
+                            onClick={() => setDetailAssetId(asset.id)}
+                          >
+                            +{meta.keywords.length - 4} more
+                          </button>
+                        ) : null}
+                      </div>
+                    ) : null}
+                    <div className="flex items-center gap-1">
+                      <span className="truncate text-[9px] text-muted-foreground">
+                        {asset.source}
+                        {meta?.schemaOrg ? " · schema.org" : ""}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="ml-auto h-6 shrink-0 px-1.5 text-[10px]"
+                        onClick={() => setDetailAssetId(asset.id)}
+                      >
+                        <Maximize2 className="mr-1 h-3 w-3" />
+                        Details
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 shrink-0 px-1.5 text-[10px]"
+                        disabled={busy || updateAsset.isPending}
+                        onClick={() => void writeAssetMetadata(asset)}
+                        title="Run the metadata agent: title, description, keywords, schema.org VideoObject"
+                      >
+                        {busy ? (
+                          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                        ) : (
+                          <Tags className="mr-1 h-3 w-3" />
+                        )}
+                        {meta ? "Rewrite" : "Write metadata"}
+                      </Button>
+                    </div>
                   </div>
                 </div>
               );
@@ -474,12 +530,35 @@ export function SiteVideosView({
                       <span className="truncate">{video.url}</span>
                       <ExternalLink className="h-2.5 w-2.5 shrink-0" />
                     </a>
-                    <p
-                      className="truncate text-[9px] text-muted-foreground"
-                      title={pagesLabel(video)}
-                    >
-                      {`On ${video.pages.length} page${video.pages.length === 1 ? "" : "s"}: ${pagesLabel(video)}`}
-                    </p>
+                    {/* Every page here is a canonical `web.page` record — it
+                        was rendered as comma-joined text (THE DOOR LAW). */}
+                    <div className="min-w-0 space-y-0.5">
+                      <p className="text-[9px] text-muted-foreground">
+                        {`On ${video.pages.length} page${video.pages.length === 1 ? "" : "s"}`}
+                        {video.mimeType ? ` · ${video.mimeType}` : ""}
+                        {video.videoId ? ` · ${video.videoId}` : ""}
+                      </p>
+                      {video.pages.slice(0, 3).map((page) => (
+                        <EntityRef
+                          key={page.pageId}
+                          token="web_page"
+                          id={page.pageId}
+                          name={page.path || page.url}
+                          href={`${sitePath}/pages/${page.pageId}`}
+                          showIcon={false}
+                          labelClassName="text-[9px]"
+                          className="min-w-0"
+                        />
+                      ))}
+                      {video.pages.length > 3 ? (
+                        <p
+                          className="text-[9px] text-muted-foreground"
+                          title={pagesLabel(video)}
+                        >
+                          +{video.pages.length - 3} more
+                        </p>
+                      ) : null}
+                    </div>
                     <div className="flex items-center gap-1">
                       <Button
                         size="sm"
@@ -530,6 +609,21 @@ export function SiteVideosView({
           No embedded videos found on the crawled pages.
         </p>
       ) : null}
+
+      <BrandAssetDetailDialog
+        asset={detailAsset}
+        open={Boolean(detailAsset)}
+        onOpenChange={(next) => {
+          if (!next) setDetailAssetId(null);
+        }}
+        sitePath={sitePath}
+        pages={assetPagesFor(
+          detailAsset
+            ? crawled.find((video) => video.url === detailAsset.source_url)
+            : undefined,
+        )}
+        posterUrl={detailAsset ? libraryPosterUrl(detailAsset) : null}
+      />
     </div>
   );
 }

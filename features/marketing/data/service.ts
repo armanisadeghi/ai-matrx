@@ -1876,6 +1876,58 @@ export async function getCrawl(
   );
 }
 
+/**
+ * The human label behind an `analysis_result.provider_id`.
+ *
+ * `web.provider` carries `key` and `label`; the inspector printed the raw
+ * uuid, which tells the user nothing about which analyzer produced a verdict.
+ */
+export async function getAnalysisProvider(
+  providerId: string,
+  signal?: AbortSignal,
+): Promise<{ id: string; key: string; label: string; kind: string } | null> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("provider")
+    .select("id, key, label, kind")
+    .eq("id", providerId)
+    .is("deleted_at", null)
+    .abortSignal(signal ?? new AbortController().signal)
+    .maybeSingle();
+  if (response.error) throw response.error;
+  return response.data ?? null;
+}
+
+/**
+ * Is `candidateId` one of this site's crawl sessions?
+ *
+ * `web.analysis_result.run_id` carries NO foreign key — it is a crawl session
+ * for analyzer passes that ran inside a crawl, and an opaque provider run id
+ * otherwise. A surface may not print it as a door on a guess (THE DOOR LAW's
+ * fourth corollary: an unresolvable reference is its own loud state), so it
+ * asks here first. Returns null instead of throwing — "not a crawl" is an
+ * ANSWER, not a failure.
+ */
+export async function getCrawlSessionRef(
+  siteId: string,
+  candidateId: string,
+  signal?: AbortSignal,
+): Promise<Pick<CrawlSession, "id" | "status" | "trigger"> | null> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("crawl_session")
+    .select("id, status, trigger")
+    .eq("site_id", siteId)
+    .eq("id", candidateId)
+    .is("deleted_at", null)
+    .abortSignal(signal ?? new AbortController().signal)
+    .maybeSingle();
+  if (response.error) throw response.error;
+  return response.data ?? null;
+}
+
 export async function listCrawlUrls(
   siteId: string,
   crawlId: string,

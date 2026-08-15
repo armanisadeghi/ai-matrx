@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -17,6 +17,13 @@ import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxData
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import {
   FindingStatusBadge,
@@ -33,10 +40,16 @@ import { tableViewState } from "@/features/marketing/lib/scopes/table-view-value
 import {
   formatCompactDate,
   formatDate,
-  JsonPreview,
   LoadingSurface,
   QueryError,
 } from "@/features/marketing/components/shared/MarketingUi";
+import {
+  AnalysisResultInspector,
+  confidenceLabel,
+} from "@/features/marketing/components/analysis/AnalysisResultInspector";
+import { AnalysisSubjectRef } from "@/features/marketing/components/shared/MarketingRefs";
+import { RecordStamps } from "@/components/official/record-stamps/RecordStamps";
+import { useRecordActors } from "@/components/official/record-stamps/useRecordActors";
 import {
   analysisKeys,
   useFindingResults,
@@ -80,14 +93,6 @@ function projectResult(
   };
 }
 
-function compactId(value: string | null) {
-  return value ? value.slice(0, 12) : "—";
-}
-
-function confidenceLabel(value: number | null) {
-  return value === null ? "—" : `${Math.round(Number(value) * 100)}%`;
-}
-
 function LifecycleDatum({
   label,
   value,
@@ -102,65 +107,87 @@ function LifecycleDatum({
       <dt className="truncate text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
         {label}
       </dt>
-      <dd className="mt-0.5 truncate text-xs text-foreground">{value}</dd>
+      <dd
+        className={
+          typeof value === "string" || typeof value === "number"
+            ? "mt-0.5 truncate text-xs text-foreground"
+            : "mt-0.5 min-w-0 text-xs text-foreground"
+        }
+      >
+        {value}
+      </dd>
     </div>
   );
 }
 
-function EvidenceInspector({ result }: { result: MarketingAnalysisResult }) {
-  const reasoning = resultReasoning(result.metadata);
+/**
+ * A door onto a referenced `web.analysis_result` row. The record has no route
+ * of its own (it lives inside its finding), so the door is a dialog carrying
+ * the SAME inspector the evidence table renders — one shape, one component.
+ */
+function ResultDoor({
+  label,
+  result,
+  id,
+  sitePath,
+  pageUrl,
+  siteName,
+}: {
+  label: string;
+  result: MarketingAnalysisResult | null;
+  id: string | null;
+  sitePath: string;
+  pageUrl: string | null;
+  siteName: string;
+}) {
+  const [open, setOpen] = useState(false);
+  if (!id) {
+    return (
+      <span className="font-mono">
+        {label}: <span className="text-muted-foreground">none</span>
+      </span>
+    );
+  }
+  if (!result) {
+    // The finding points at a result the current view cannot read. Loud, not
+    // laundered into an "ok" — and never a link that goes nowhere.
+    return (
+      <span className="font-mono text-warning" title={id}>
+        {label}: recorded, not readable here
+      </span>
+    );
+  }
   return (
-    <div className="grid gap-3 p-3 text-xs">
-      {/* The verdict in words, before the machine fields. Present on every
-          result the analyzer writes — including checks this UI predates. */}
-      {reasoning ? (
-        <p className="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs leading-relaxed text-foreground">
-          {reasoning}
-        </p>
-      ) : null}
-      <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
-        <div>
-          <dt className="text-[10px] uppercase text-muted-foreground">
-            Computed
-          </dt>
-          <dd className="mt-0.5">{formatDate(result.computed_at)}</dd>
-        </div>
-        <div>
-          <dt className="text-[10px] uppercase text-muted-foreground">
-            Provider
-          </dt>
-          <dd className="mt-0.5 break-all font-mono text-[11px]">
-            {result.provider_id}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-[10px] uppercase text-muted-foreground">Run</dt>
-          <dd className="mt-0.5 break-all font-mono text-[11px]">
-            {result.run_id || "Independent analysis"}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-[10px] uppercase text-muted-foreground">Batch</dt>
-          <dd className="mt-0.5 break-all font-mono text-[11px]">
-            {result.batch_id || "—"}
-          </dd>
-        </div>
-        <div className="col-span-2">
-          <dt className="text-[10px] uppercase text-muted-foreground">
-            Rich payload reference
-          </dt>
-          <dd className="mt-0.5 break-all font-mono text-[11px]">
-            {result.payload_instance_id || "No payload instance"}
-          </dd>
-        </div>
-      </dl>
-      <div className="overflow-hidden rounded-md border border-border">
-        <p className="border-b border-border px-3 py-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-          Result metadata
-        </p>
-        <JsonPreview value={result.metadata} />
-      </div>
-    </div>
+    <>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-5 gap-1 px-1.5 text-[10px] font-normal"
+        onClick={() => setOpen(true)}
+      >
+        <FileSearch className="h-3 w-3" />
+        {label}: {result.status}
+        {result.score === null ? "" : ` · ${result.score}`}
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-h-[85dvh] max-w-3xl overflow-y-auto p-0">
+          <DialogHeader className="border-b border-border p-3">
+            <DialogTitle className="text-sm">
+              {label} · {result.item_key}
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              {formatDate(result.computed_at)}
+            </DialogDescription>
+          </DialogHeader>
+          <AnalysisResultInspector
+            result={result}
+            sitePath={sitePath}
+            pageUrl={pageUrl}
+            siteName={siteName}
+          />
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -178,6 +205,10 @@ export function FindingDetail({ findingId }: { findingId: string }) {
     findingId,
     table.queryState,
   );
+  const resolveFindingActor = useRecordActors(site.organization_id, [
+    detail.data?.finding.created_by,
+    detail.data?.finding.updated_by,
+  ]);
 
   if (detail.isLoading) {
     return <LoadingSurface label="Loading finding…" />;
@@ -533,8 +564,20 @@ export function FindingDetail({ findingId }: { findingId: string }) {
         <dl className="grid grid-cols-2 border-t border-border divide-x divide-y divide-border sm:grid-cols-4 xl:grid-cols-8">
           <LifecycleDatum
             label="Subject"
-            value={finding.subject_type}
-            title={finding.subject_id}
+            // The subject was printed as its TYPE with the id hidden in a
+            // tooltip — a record with a route, named and unreachable.
+            value={
+              <AnalysisSubjectRef
+                subjectType={finding.subject_type}
+                subjectId={finding.subject_id}
+                name={
+                  finding.subject_type === "page"
+                    ? (data.page?.path ?? data.page?.url ?? null)
+                    : null
+                }
+                className="text-xs"
+              />
+            }
           />
           <LifecycleDatum
             label="First detected"
@@ -562,20 +605,48 @@ export function FindingDetail({ findingId }: { findingId: string }) {
             value={confidenceLabel(latest?.confidence ?? null)}
           />
         </dl>
-        <div className="flex flex-wrap gap-x-4 gap-y-1 border-t border-border px-3 py-1.5 font-mono text-[10px] text-muted-foreground">
-          <span title={finding.first_result_id ?? undefined}>
-            First result: {compactId(finding.first_result_id)}
+        {/* These two ids were eight-character text. Both rows are LOADED —
+            `getFindingDetail` returns them — so the door is free: open the
+            full immutable result, not a fragment of its uuid. */}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-border px-3 py-1.5 text-[10px] text-muted-foreground">
+          <ResultDoor
+            label="First result"
+            result={data.firstResult}
+            id={finding.first_result_id}
+            sitePath={sitePath}
+            pageUrl={data.page?.url ?? null}
+            siteName={site.name}
+          />
+          <ResultDoor
+            label="Latest result"
+            result={data.lastResult}
+            id={finding.last_result_id}
+            sitePath={sitePath}
+            pageUrl={data.page?.url ?? null}
+            siteName={site.name}
+          />
+          <span className="font-mono">
+            Item weight: {data.item?.weight ?? "—"}
           </span>
-          <span title={finding.last_result_id ?? undefined}>
-            Latest result: {compactId(finding.last_result_id)}
-          </span>
-          <span>Item weight: {data.item?.weight ?? "—"}</span>
           {finding.suppressed_reason ? (
             <span className="min-w-0 flex-1 truncate text-warning">
               Suppression: {finding.suppressed_reason}
             </span>
           ) : null}
         </div>
+        {/* The finding row's own stamps — who/when, previously not shown at all. */}
+        <RecordStamps
+          organizationId={finding.organization_id}
+          createdAt={finding.created_at}
+          createdBy={finding.created_by}
+          updatedAt={finding.updated_at}
+          updatedBy={finding.updated_by}
+          deletedAt={finding.deleted_at}
+          version={finding.version}
+          formatTimestamp={formatDate}
+          resolveActor={resolveFindingActor}
+          className="border-t border-border px-3 py-2"
+        />
       </section>
 
       {/* The write-back half of the loop: a real proposed page edit the user
@@ -695,11 +766,25 @@ export function FindingDetail({ findingId }: { findingId: string }) {
             detail={{
               title: (row) => `${row.item_key} · ${row.status}`,
               description: (row) => formatDate(row.computed_at),
-              render: (row) => <EvidenceInspector result={row} />,
+              render: (row) => (
+                <AnalysisResultInspector
+                  result={row}
+                  sitePath={sitePath}
+                  pageUrl={data.page?.url ?? null}
+                  siteName={site.name}
+                />
+              ),
             }}
             window={{
               title: (row) => `${row.item_key} · ${row.status}`,
-              renderView: (row) => <EvidenceInspector result={row} />,
+              renderView: (row) => (
+                <AnalysisResultInspector
+                  result={row}
+                  sitePath={sitePath}
+                  pageUrl={data.page?.url ?? null}
+                  siteName={site.name}
+                />
+              ),
               renderEdit: false,
             }}
             emptyState={{

@@ -9,6 +9,8 @@ import { useSnapshot } from "@/features/marketing/data/hooks";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import type { Json } from "@/types/database.types";
 import {
+  CondensedFieldGrid,
+  formatCompactDate,
   formatDate,
   JsonPreview,
   LoadingSurface,
@@ -18,6 +20,13 @@ import {
 import { SnapshotArtifacts } from "@/features/marketing/components/pages/SnapshotArtifacts";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { RecordStamps } from "@/components/official/record-stamps/RecordStamps";
+import { useRecordActors } from "@/components/official/record-stamps/useRecordActors";
+import {
+  CrawlSessionRef,
+  useCrawlSessionRef,
+} from "@/features/marketing/components/shared/MarketingRefs";
 
 export function SnapshotDetail({
   pageId,
@@ -28,6 +37,12 @@ export function SnapshotDetail({
 }) {
   const { site, sitePath } = useMarketingSite();
   const snapshot = useSnapshot(site.id, pageId, snapshotId);
+  // Hooks run before the guards — the doors below need them either way.
+  const resolveActor = useRecordActors(snapshot.data?.organization_id, [
+    snapshot.data?.created_by,
+    snapshot.data?.updated_by,
+  ]);
+  const crawl = useCrawlSessionRef(site.id, snapshot.data?.session_id);
   if (snapshot.isLoading) return <LoadingSurface label="Loading snapshot…" />;
   if (snapshot.isError || !snapshot.data) {
     return (
@@ -57,6 +72,10 @@ export function SnapshotDetail({
       ["Words", row.word_count],
       ["Content hash", row.content_hash],
       ["Crawl session", row.session_id],
+      ["Page", pageId],
+      ["Body file", row.body_file_id],
+      ["Markdown file", row.markdown_file_id],
+      ["Row version", row.version],
     ],
     attributes: { snapshot_id: row.id, page_id: pageId, site_id: site.id },
   });
@@ -125,21 +144,101 @@ export function SnapshotDetail({
             ) : null}
           </div>
         </section>
-        <section className="grid grid-cols-2 overflow-hidden rounded-lg border border-border bg-card sm:grid-cols-3 lg:grid-cols-6">
-          <MetricCell label="Captured" value={formatDate(row.captured_at)} />
+        <section className="grid grid-cols-2 overflow-hidden rounded-lg border border-border bg-card sm:grid-cols-3 lg:grid-cols-5">
+          <MetricCell
+            label="Captured"
+            value={formatCompactDate(row.captured_at)}
+            detail={formatDate(row.captured_at)}
+          />
           <MetricCell label="HTTP" value={row.http_status ?? "—"} />
           <MetricCell
             label="Words"
             value={row.word_count?.toLocaleString() ?? "—"}
           />
           <MetricCell
-            label="Content hash"
-            value={row.content_hash ? row.content_hash.slice(0, 12) : "—"}
+            label="Body stored"
+            value={row.body_file_id ? "Yes" : "No"}
           />
-          <MetricCell label="Crawl" value={row.session_id.slice(0, 8)} />
           <MetricCell
-            label="Body"
-            value={row.body_file_id ? "Stored" : "None"}
+            label="Markdown stored"
+            value={row.markdown_file_id ? "Yes" : "No"}
+          />
+        </section>
+
+        {/* Identity + the two records this snapshot BELONGS to. The crawl was
+            an inert eight-character id; the page was not named at all. */}
+        <section className="rounded-lg border border-border bg-card p-3">
+          <CondensedFieldGrid
+            fields={[
+              {
+                label: "Page",
+                value: (
+                  <EntityRef
+                    token="web_page"
+                    id={pageId}
+                    name={row.final_url ?? undefined}
+                    href={`${sitePath}/pages/${pageId}`}
+                    wrap
+                  />
+                ),
+                span: 2,
+              },
+              {
+                label: "Crawl session",
+                value: (
+                  <CrawlSessionRef
+                    sitePath={sitePath}
+                    sessionId={row.session_id}
+                    label={
+                      crawl.data
+                        ? `Crawl ${crawl.data.trigger} · ${crawl.data.status}`
+                        : null
+                    }
+                  />
+                ),
+                span: 2,
+              },
+              {
+                label: "Site",
+                value: (
+                  <EntityRef
+                    token="web_site"
+                    id={row.site_id}
+                    name={site.name}
+                    wrap
+                  />
+                ),
+              },
+              {
+                label: "Snapshot id",
+                value: (
+                  <span className="break-all font-mono text-[11px]">
+                    {row.id}
+                  </span>
+                ),
+              },
+              {
+                label: "Content hash",
+                value: (
+                  <span className="break-all font-mono text-[11px]">
+                    {row.content_hash || "—"}
+                  </span>
+                ),
+                span: 2,
+              },
+            ]}
+          />
+          <RecordStamps
+            organizationId={row.organization_id}
+            createdAt={row.created_at}
+            createdBy={row.created_by}
+            updatedAt={row.updated_at}
+            updatedBy={row.updated_by}
+            deletedAt={row.deleted_at}
+            version={row.version}
+            formatTimestamp={formatDate}
+            resolveActor={resolveActor}
+            className="mt-3 border-t border-border pt-3"
           />
         </section>
         <SnapshotArtifacts siteId={site.id} snapshot={row} showMarkdown />
@@ -221,6 +320,43 @@ export function SnapshotDetail({
             )}
           >
             <JsonPreview value={row.images} />
+          </SectionCard>
+          {/* Three stored columns this "full immutable record" never rendered
+              (D150 P0): the SEO and audit measurements the crawl computed, and
+              the row's own metadata. */}
+          <SectionCard
+            title="SEO metrics"
+            copy={sectionCopy(
+              "web-snapshot-seo-metrics",
+              "SEO metrics",
+              "The SEO measurements computed for this snapshot.",
+              row.seo_metrics,
+            )}
+          >
+            <JsonPreview value={row.seo_metrics} />
+          </SectionCard>
+          <SectionCard
+            title="Audit metrics"
+            copy={sectionCopy(
+              "web-snapshot-audit-metrics",
+              "Audit metrics",
+              "The audit measurements computed for this snapshot.",
+              row.audit_metrics,
+            )}
+          >
+            <JsonPreview value={row.audit_metrics} />
+          </SectionCard>
+          <SectionCard
+            title="Snapshot metadata"
+            className="lg:col-span-2"
+            copy={sectionCopy(
+              "web-snapshot-metadata",
+              "Snapshot metadata",
+              "The record's own metadata column.",
+              row.metadata,
+            )}
+          >
+            <JsonPreview value={row.metadata} />
           </SectionCard>
         </div>
       </div>

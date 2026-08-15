@@ -33,6 +33,7 @@ import {
 } from "@/features/marketing/components/shared/MarketingUi";
 import { BrandAssetEditorDialog } from "@/features/marketing/components/brands/BrandAssetEditorDialog";
 import { AssetImageEditorDialog } from "@/features/marketing/components/media/AssetImageEditorDialog";
+import { BrandAssetDetailDialog } from "@/features/marketing/components/media/BrandAssetDetail";
 import type { SiteMediaStandards } from "@/features/marketing/data/media-library";
 import {
   useBrandAssets,
@@ -104,6 +105,7 @@ const SOURCE_LABELS: Record<string, string> = {
 function AssetTile({
   asset,
   publishedAt,
+  onOpenDetail,
   onEdit,
   onEditImage,
   onDelete,
@@ -112,6 +114,7 @@ function AssetTile({
 }: {
   asset: BrandAsset;
   publishedAt?: string | null;
+  onOpenDetail: (asset: BrandAsset) => void;
   onEdit: (asset: BrandAsset) => void;
   /** Opens the image-editing suite — only offered when the asset has a file_id. */
   onEditImage: (asset: BrandAsset) => void;
@@ -218,14 +221,18 @@ function AssetTile({
       )}
       <div className="flex items-center gap-1 p-1.5">
         <div className="min-w-0 flex-1">
-          <p
-            className="truncate text-[11px] font-medium text-foreground"
-            title={asset.title ?? undefined}
+          {/* The name is the door onto the full record (THE DOOR LAW) — the
+              asset has no route, so `BrandAssetDetailDialog` is its door. */}
+          <button
+            type="button"
+            onClick={() => onOpenDetail(asset)}
+            title="Open the full asset record"
+            className="block w-full min-w-0 truncate text-left text-[11px] font-medium text-foreground hover:text-primary"
           >
             {asset.title ||
               BRAND_ASSET_KIND_LABELS[asset.kind as BrandAssetKind] ||
               asset.kind}
-          </p>
+          </button>
           <p className="truncate text-[9px] text-muted-foreground">
             {SOURCE_LABELS[asset.source] ?? asset.source}
             {asset.is_primary ? " · primary" : ""}
@@ -295,6 +302,8 @@ export function BrandLibraryView({
   const { upload, uploading } = useFileUpload();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [editing, setEditing] = useState<BrandAsset | null>(null);
+  /** The asset whose FULL record is open (read), distinct from `editing`. */
+  const [viewing, setViewing] = useState<BrandAsset | null>(null);
   const [editingImage, setEditingImage] = useState<BrandAsset | null>(null);
   const [creating, setCreating] = useState(false);
 
@@ -464,6 +473,7 @@ export function BrandLibraryView({
                     key={asset.id}
                     asset={asset}
                     publishedAt={publishedAt}
+                    onOpenDetail={setViewing}
                     onEdit={setEditing}
                     onEditImage={setEditingImage}
                     onDelete={(item) => void onDelete(item)}
@@ -485,6 +495,20 @@ export function BrandLibraryView({
         brandId={brandId}
         organizationId={organizationId}
         standards={standards}
+      />
+
+      {/* The full stored record — the same component the Videos view opens. */}
+      <BrandAssetDetailDialog
+        asset={viewing}
+        open={viewing !== null}
+        onOpenChange={(open) => {
+          if (!open) setViewing(null);
+        }}
+        onEdit={() => {
+          const asset = viewing;
+          setViewing(null);
+          setEditing(asset);
+        }}
       />
 
       <BrandAssetEditorDialog
