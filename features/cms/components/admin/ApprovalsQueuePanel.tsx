@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { SurfaceRuntimeProvider } from '@/features/surfaces/runtime/SurfaceRuntimeContext';
+import { ADMIN_KNOWLEDGE_SURFACE_NAME, createAdminKnowledgeScope } from '@/features/surfaces/manifests/admin-knowledge.manifest';
 import { CmsApprovalsService } from '../../services/cmsService';
 import type { ContentException } from '../../types';
 import { Button } from '@/components/ui/button';
@@ -61,6 +63,7 @@ export default function ApprovalsQueuePanel() {
     }
 
     return (
+        <SurfaceRuntimeProvider surfaceName={ADMIN_KNOWLEDGE_SURFACE_NAME} getScope={() => createAdminKnowledgeScope({ knowledge_section: 'cms_agents', cms_pending_exceptions: violations })}>
         <div className="flex flex-col h-full">
             <div className="flex-none flex items-center px-1 py-2">
                 <p className="text-xs text-muted-foreground">
@@ -131,5 +134,6 @@ export default function ApprovalsQueuePanel() {
                 ))}
             </div>
         </div>
+        </SurfaceRuntimeProvider>
     );
 }

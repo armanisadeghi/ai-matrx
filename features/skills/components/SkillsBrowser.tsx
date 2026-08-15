@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { ADMIN_SKILLS_SURFACE_NAME, createAdminSkillsScope } from "@/features/surfaces/manifests/admin-skills.manifest";
 import {
   Lightbulb,
   Loader2,
@@ -106,6 +108,22 @@ export function SkillsBrowser({
   }, [filtered, categoryLabelById]);
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_SKILLS_SURFACE_NAME}
+      getScope={() => createAdminSkillsScope({
+        skills_section: "list",
+        skills_list: skills,
+        skills_stats: {
+          total: skills.length,
+          system: skills.filter((skill) => skill.isSystem).length,
+          public: skills.filter((skill) => skill.isPublic).length,
+          personal: skills.filter((skill) => !skill.isSystem && !skill.isPublic).length,
+        },
+        skills_search: search,
+        skills_scope_filter: scope,
+        skills_category_filter: categoryId,
+      })}
+    >
     <div className="flex flex-col h-full min-h-0">
       {/* Filter / actions bar */}
       <div className="flex items-center gap-2 px-4 py-3 shrink-0 border-b border-border/60">
@@ -242,6 +260,7 @@ export function SkillsBrowser({
         )}
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 

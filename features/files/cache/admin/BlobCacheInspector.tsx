@@ -30,6 +30,8 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { ADMIN_UTILITIES_SURFACE_NAME, createAdminUtilitiesScope } from "@/features/surfaces/manifests/admin-utilities.manifest";
 import {
   AlertCircle,
   CheckCircle2,
@@ -258,6 +260,15 @@ export function BlobCacheInspector() {
   }
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_UTILITIES_SURFACE_NAME}
+      getScope={() => createAdminUtilitiesScope({
+        utilities_section: "blob_cache",
+        ...(l1 ? { blob_cache_l1_stats: { ...l1 } } : {}),
+        ...(l2 ? { blob_cache_l2_stats: { ...l2 } } : {}),
+        blob_cache_sw_status: { ...sw },
+      })}
+    >
     <div className="flex flex-col gap-4 p-4 md:p-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -440,6 +451,7 @@ export function BlobCacheInspector() {
         </Button>
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 

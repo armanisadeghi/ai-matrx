@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useTransition } from "react";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { ADMIN_KNOWLEDGE_SURFACE_NAME, createAdminKnowledgeScope } from "@/features/surfaces/manifests/admin-knowledge.manifest";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
@@ -145,6 +147,7 @@ export function ShowDetailClient({ showId }: ShowDetailClientProps) {
     startTransition(() => router.push("/administration/knowledge/podcasts/shows"));
 
   return (
+    <SurfaceRuntimeProvider surfaceName={ADMIN_KNOWLEDGE_SURFACE_NAME} getScope={() => createAdminKnowledgeScope({ knowledge_section: "podcasts_show_detail", podcast_current_show_id: showId, ...(show ? { podcast_current_show: show } : {}), podcast_current_show_episodes: episodes, podcast_active_panel: panel === "episodes" ? "episodes" : "show" })}>
     <div className="h-full flex flex-col overflow-hidden">
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 border-b bg-background shrink-0">
@@ -408,5 +411,6 @@ export function ShowDetailClient({ showId }: ShowDetailClientProps) {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

@@ -17,6 +17,8 @@
  * Pure reads through the typed kgInspectorService → Python backend.
  */
 import { useEffect, useMemo, useState } from "react";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { ADMIN_KNOWLEDGE_SURFACE_NAME, createAdminKnowledgeScope } from "@/features/surfaces/manifests/admin-knowledge.manifest";
 import Link from "next/link";
 import {
   Database,
@@ -412,6 +414,7 @@ function EntitiesTab({
   ];
 
   return (
+    <SurfaceRuntimeProvider surfaceName={ADMIN_KNOWLEDGE_SURFACE_NAME} getScope={() => createAdminKnowledgeScope({ knowledge_section: "kg_inspector", kg_inspector_tab: "entities", kg_entities_filter: { kind, q, page, sortKey, sortDir, columnFilters }, kg_entities: processedRows })}>
     <div className="flex flex-col gap-3">
       {serverTotal > FETCH_MAX ? (
         <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
@@ -680,6 +683,7 @@ function EntitiesTab({
         </div>
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 
@@ -736,6 +740,7 @@ function MentionsTab({ entity }: { entity: SelectedEntity | null }) {
   const pageEnd = Math.min(offset + PAGE_SIZE, total);
 
   return (
+    <SurfaceRuntimeProvider surfaceName={ADMIN_KNOWLEDGE_SURFACE_NAME} getScope={() => createAdminKnowledgeScope({ knowledge_section: "kg_inspector", kg_inspector_tab: "mentions", kg_inspector_selected_entity: { ...entity }, kg_mentions: rows })}>
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
         <KindChip kind={entity.kind} />
@@ -849,6 +854,7 @@ function MentionsTab({ entity }: { entity: SelectedEntity | null }) {
         </div>
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 
@@ -925,6 +931,7 @@ function EdgesTab({
   ];
 
   return (
+    <SurfaceRuntimeProvider surfaceName={ADMIN_KNOWLEDGE_SURFACE_NAME} getScope={() => createAdminKnowledgeScope({ knowledge_section: "kg_inspector", kg_inspector_tab: "edges", kg_edges_filter: { orgId, edgeKind, sortKey, sortDir, columnFilters }, kg_edges: displayRows })}>
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
         <Input
@@ -1062,6 +1069,7 @@ function EdgesTab({
         {rawRows.length >= FETCH_MAX ? ` (top ${FETCH_MAX} from server)` : ""}
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 
@@ -1077,6 +1085,14 @@ export function KgInspector() {
   };
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_KNOWLEDGE_SURFACE_NAME}
+      getScope={() => createAdminKnowledgeScope({
+        knowledge_section: "kg_inspector",
+        kg_inspector_tab: tab as "entities" | "mentions" | "edges",
+        ...(selected ? { kg_inspector_selected_entity: { ...selected } } : {}),
+      })}
+    >
     <div className="flex h-[calc(100dvh-2.5rem)] flex-col overflow-hidden bg-textured">
       <div className="flex items-center gap-2 border-b border-border px-4 py-2">
         <Database className="h-4 w-4 text-muted-foreground" />
@@ -1128,5 +1144,6 @@ export function KgInspector() {
         </div>
       </Tabs>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

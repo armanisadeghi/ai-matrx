@@ -28,6 +28,8 @@ import { SkillsBrowser } from "@/features/skills/components/SkillsBrowser";
 import { SkillDetailEditor } from "@/features/skills/components/SkillDetailEditor";
 import { SkillIngestPanel } from "@/features/skills/components/SkillIngestPanel";
 import { SkillCategoryTreeEditor } from "@/features/skills/components/SkillCategoryTreeEditor";
+import { ADMIN_SKILLS_SURFACE_NAME, createAdminSkillsScope } from "@/features/surfaces/manifests/admin-skills.manifest";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 
 type Mode = "list" | "detail" | "create" | "ingest" | "categories";
 
@@ -84,7 +86,19 @@ function SkillsAdminPageInner() {
     setSelectedId(null);
   };
 
+  const selectedSkill = selectedId
+    ? allSkills.find((skill) => skill.id === selectedId || skill.skillId === selectedId)
+    : undefined;
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_SKILLS_SURFACE_NAME}
+      getScope={() => createAdminSkillsScope({
+        skills_section: mode,
+        ...(selectedId ? { selected_skill_id: selectedId } : {}),
+        ...(selectedSkill ? { selected_skill: { ...selectedSkill } } : {}),
+      })}
+    >
     <div className="h-full flex flex-col overflow-hidden">
       <div className="flex-shrink-0 p-4 border-b border-border bg-card">
         <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -174,11 +188,12 @@ function SkillsAdminPageInner() {
             skillId={selectedId}
             onBack={goList}
             skillHref={skillHref}
+            surfaceName={ADMIN_SKILLS_SURFACE_NAME}
           />
         )}
 
         {mode === "create" && (
-          <SkillDetailEditor skillId="" isNew onBack={goList} />
+          <SkillDetailEditor skillId="" isNew onBack={goList} surfaceName={ADMIN_SKILLS_SURFACE_NAME} />
         )}
 
         {mode === "ingest" && (
@@ -195,6 +210,7 @@ function SkillsAdminPageInner() {
         {mode === "categories" && <SkillCategoryTreeEditor onBack={goList} />}
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 

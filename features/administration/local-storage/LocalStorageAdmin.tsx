@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { ADMIN_UTILITIES_SURFACE_NAME, createAdminUtilitiesScope } from "@/features/surfaces/manifests/admin-utilities.manifest";
 import { motion, AnimatePresence } from "motion/react";
 import { Button } from "@/components/ui/button";
 import {
@@ -685,6 +687,16 @@ const StorageManager = ({
   }, [selectedModule]);
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_UTILITIES_SURFACE_NAME}
+      getScope={() => createAdminUtilitiesScope({
+        utilities_section: "local_storage",
+        local_storage_modules: modules,
+        local_storage_selected_module: selectedModule,
+        local_storage_items: items,
+        ...(editingKey ? { local_storage_editing_key: editingKey } : {}),
+      })}
+    >
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div className="flex gap-2">
@@ -877,6 +889,7 @@ const StorageManager = ({
         </ScrollArea>
       </Tabs>
     </div>
+    </SurfaceRuntimeProvider>
   );
 };
 

@@ -13,11 +13,16 @@ import {
   shellIconComponents,
 } from "@/features/shell/shellIconMap";
 import { REPORTS } from "@/features/reports/registry";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ADMIN_REPORTING_SURFACE_NAME,
+  createAdminReportingScope,
+} from "@/features/surfaces/manifests/admin-reporting.manifest";
 
 export function ReportsLanding({ mode = "user" }: { mode?: "user" | "admin" }) {
   const reports = mode === "admin" ? REPORTS.filter((r) => r.adminHref) : REPORTS;
 
-  return (
+  const content = (
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {reports.map((report) => {
         const Icon = shellIconComponents[resolveShellIconName(report.iconName)];
@@ -61,5 +66,20 @@ export function ReportsLanding({ mode = "user" }: { mode?: "user" | "admin" }) {
         );
       })}
     </div>
+  );
+
+  if (mode !== "admin") return content;
+  return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_REPORTING_SURFACE_NAME}
+      getScope={() =>
+        createAdminReportingScope({
+          reporting_section: "reports",
+          reports_catalog: reports,
+        })
+      }
+    >
+      {content}
+    </SurfaceRuntimeProvider>
   );
 }

@@ -13,6 +13,8 @@
  * No emojis, Lucide icons only, semantic color tokens — per CLAUDE.md.
  */
 import { useEffect, useState } from "react";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { ADMIN_KNOWLEDGE_SURFACE_NAME, createAdminKnowledgeScope } from "@/features/surfaces/manifests/admin-knowledge.manifest";
 import {
   Wallet,
   Receipt,
@@ -572,9 +574,11 @@ function OrgAutoIngestControls({ orgId }: { orgId: string }) {
 function OrgDetailDialog({
   orgId,
   onClose,
+  onDetailChange,
 }: {
   orgId: string | null;
   onClose: () => void;
+  onDetailChange: (detail: OrgCostDetailResponse | null) => void;
 }) {
   const [detail, setDetail] = useState<OrgCostDetailResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -585,9 +589,13 @@ function OrgDetailDialog({
     setLoading(true);
     setError(null);
     setDetail(null);
+    onDetailChange(null);
     const controller = new AbortController();
     getOrgCostDetail(orgId, { signal: controller.signal })
-      .then(setDetail)
+      .then((value) => {
+        setDetail(value);
+        onDetailChange(value);
+      })
       .catch((e: unknown) => {
         if (controller.signal.aborted) return;
         setError(e instanceof Error ? e.message : "Failed to load org detail");
@@ -597,7 +605,7 @@ function OrgDetailDialog({
         setLoading(false);
       });
     return () => controller.abort();
-  }, [orgId]);
+  }, [orgId, onDetailChange]);
 
   return (
     <Dialog open={orgId !== null} onOpenChange={(open) => !open && onClose()}>
@@ -782,9 +790,11 @@ function OrgDetailDialog({
 function BatchDetailDialog({
   batchRowId,
   onClose,
+  onDetailChange,
 }: {
   batchRowId: string | null;
   onClose: () => void;
+  onDetailChange: (detail: BatchDetailResponse | null) => void;
 }) {
   const [detail, setDetail] = useState<BatchDetailResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -795,9 +805,13 @@ function BatchDetailDialog({
     setLoading(true);
     setError(null);
     setDetail(null);
+    onDetailChange(null);
     const controller = new AbortController();
     getBatchDetail(batchRowId, { signal: controller.signal })
-      .then(setDetail)
+      .then((value) => {
+        setDetail(value);
+        onDetailChange(value);
+      })
       .catch((e: unknown) => {
         if (controller.signal.aborted) return;
         setError(
@@ -809,7 +823,7 @@ function BatchDetailDialog({
         setLoading(false);
       });
     return () => controller.abort();
-  }, [batchRowId]);
+  }, [batchRowId, onDetailChange]);
 
   return (
     <Dialog
@@ -996,6 +1010,8 @@ export function KgCostDashboard() {
 
   const [openOrgId, setOpenOrgId] = useState<string | null>(null);
   const [openBatchId, setOpenBatchId] = useState<string | null>(null);
+  const [orgDetail, setOrgDetail] = useState<OrgCostDetailResponse | null>(null);
+  const [batchDetail, setBatchDetail] = useState<BatchDetailResponse | null>(null);
 
   const [refreshTick, setRefreshTick] = useState(0);
 
@@ -1036,6 +1052,19 @@ export function KgCostDashboard() {
   }, [refreshTick]);
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_KNOWLEDGE_SURFACE_NAME}
+      getScope={() => createAdminKnowledgeScope({
+        knowledge_section: "kg_cost",
+        ...(summary ? { kg_cost_summary: { ...summary } } : {}),
+        kg_cost_org_rows: orgs,
+        kg_cost_batch_rows: batches,
+        ...(openOrgId ? { kg_cost_open_org_id: openOrgId } : {}),
+        ...(orgDetail ? { kg_cost_org_detail: { ...orgDetail } } : {}),
+        ...(openBatchId ? { kg_cost_open_batch_id: openBatchId } : {}),
+        ...(batchDetail ? { kg_cost_batch_detail: { ...batchDetail } } : {}),
+      })}
+    >
     <div className="flex h-[calc(100dvh-2.5rem)] flex-col overflow-hidden">
       <header className="flex items-center justify-between border-b border-border px-4 py-2">
         <div>
@@ -1080,11 +1109,13 @@ export function KgCostDashboard() {
         </div>
       </ScrollArea>
 
-      <OrgDetailDialog orgId={openOrgId} onClose={() => setOpenOrgId(null)} />
+      <OrgDetailDialog orgId={openOrgId} onClose={() => setOpenOrgId(null)} onDetailChange={setOrgDetail} />
       <BatchDetailDialog
         batchRowId={openBatchId}
         onClose={() => setOpenBatchId(null)}
+        onDetailChange={setBatchDetail}
       />
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

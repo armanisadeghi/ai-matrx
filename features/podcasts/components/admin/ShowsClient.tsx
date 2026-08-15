@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useTransition } from "react";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { ADMIN_KNOWLEDGE_SURFACE_NAME, createAdminKnowledgeScope } from "@/features/surfaces/manifests/admin-knowledge.manifest";
 import { idMatchesQuery } from "@/utils/search-scoring";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -129,6 +131,7 @@ export function ShowsClient() {
   ] as const;
 
   return (
+    <SurfaceRuntimeProvider surfaceName={ADMIN_KNOWLEDGE_SURFACE_NAME} getScope={() => createAdminKnowledgeScope({ knowledge_section: "podcasts_shows", podcast_shows: shows, podcast_shows_search: search })}>
     <>
       {/* Toolbar */}
       <div className="flex items-center gap-2 px-4 py-3 border-b bg-background shrink-0">
@@ -331,5 +334,6 @@ export function ShowsClient() {
         </AlertDialogContent>
       </AlertDialog>
     </>
+    </SurfaceRuntimeProvider>
   );
 }

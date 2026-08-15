@@ -438,9 +438,9 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const adminUtilitiesManifest: SurfaceManifest = {
   surfaceName: ADMIN_UTILITIES_SURFACE_NAME,
-  readiness: "stub",
+  readiness: "partial",
   readinessNote:
-    "Manifest-only — vocabulary audited against the live pages, no runtime emitter wired yet. /administration/utilities itself is a static link directory (AdminDomainDirectory, no data, no values). kind-registry is deliberately excluded (own surface, matrx-admin/kind-registry). Every other child is its own independent client component tree (content-blocks and message-templates each carry 10+ useState hooks of CRUD/dialog state) with no shared provider seam — wiring an emitter per child is real follow-up work.",
+    "Emitter wired, browser verification pending. kind-registry remains deliberately excluded as its own surface.",
   label: "Utilities Admin",
   urlPattern: "/administration/utilities",
   intro: `<surface_intro>

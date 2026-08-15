@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { ADMIN_KNOWLEDGE_SURFACE_NAME, createAdminKnowledgeScope } from "@/features/surfaces/manifests/admin-knowledge.manifest";
 import Link from "next/link";
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -109,6 +111,7 @@ export function ProjectsOverview() {
   }
 
   return (
+    <SurfaceRuntimeProvider surfaceName={ADMIN_KNOWLEDGE_SURFACE_NAME} getScope={() => createAdminKnowledgeScope({ knowledge_section: "research_system", research_admin_tab: "projects", research_templates: templates, research_topics: configs.map((config) => ({ ...config, project_id: projectLinks[config.id] ?? null })) })}>
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card/50">
         <div>
@@ -253,5 +256,6 @@ export function ProjectsOverview() {
         </Table>
       </ScrollArea>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { ADMIN_KNOWLEDGE_SURFACE_NAME, createAdminKnowledgeScope } from "@/features/surfaces/manifests/admin-knowledge.manifest";
 import {
   Plus,
   Trash2,
@@ -532,6 +534,7 @@ export function TemplatesManager() {
   );
 
   return (
+    <SurfaceRuntimeProvider surfaceName={ADMIN_KNOWLEDGE_SURFACE_NAME} getScope={() => createAdminKnowledgeScope({ knowledge_section: "research_system", research_admin_tab: "templates", research_templates: templates, research_builtin_agents: builtins })}>
     <div className="h-full flex flex-col">
       {/* Toolbar */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card/50">
@@ -873,5 +876,6 @@ export function TemplatesManager() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

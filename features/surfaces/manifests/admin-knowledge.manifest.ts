@@ -491,9 +491,9 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const adminKnowledgeManifest: SurfaceManifest = {
   surfaceName: ADMIN_KNOWLEDGE_SURFACE_NAME,
-  readiness: "stub",
+  readiness: "partial",
   readinessNote:
-    "Manifest-only — vocabulary audited against the live pages, no runtime emitter wired yet. /administration/knowledge itself is a static link directory (no data, no values). growth-loop is deliberately excluded (its own pillar/doctrine). Wiring an emitter per child is real follow-up work: cms-agents has 5 concurrently-mounted panels, kg-cost/kg-inspector/podcasts/research-system each have their own filter+pagination+selection state.",
+    "Emitter wired, browser verification pending. /administration/knowledge itself is a static link directory; growth-loop remains deliberately excluded as its own pillar.",
   label: "Knowledge Admin",
   urlPattern: "/administration/knowledge",
   intro: `<surface_intro>

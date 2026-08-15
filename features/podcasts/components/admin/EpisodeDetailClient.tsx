@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useTransition } from "react";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { ADMIN_KNOWLEDGE_SURFACE_NAME, createAdminKnowledgeScope } from "@/features/surfaces/manifests/admin-knowledge.manifest";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { EpisodeForm } from "./PodcastForm";
@@ -68,6 +70,7 @@ export function EpisodeDetailClient({
   };
 
   return (
+    <SurfaceRuntimeProvider surfaceName={ADMIN_KNOWLEDGE_SURFACE_NAME} getScope={() => createAdminKnowledgeScope({ knowledge_section: "podcasts_episode_detail", podcast_current_show_id: showId, ...(show ? { podcast_current_show: show } : {}), podcast_current_episode_id: episodeId, ...(episode ? { podcast_current_episode: episode } : {}) })}>
     <div className="h-full flex flex-col overflow-hidden">
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 border-b bg-background shrink-0">
@@ -115,5 +118,6 @@ export function EpisodeDetailClient({
         )}
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

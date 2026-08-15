@@ -335,9 +335,9 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const adminReportingManifest: SurfaceManifest = {
   surfaceName: ADMIN_REPORTING_SURFACE_NAME,
-  readiness: "stub",
+  readiness: "partial",
   readinessNote:
-    "Manifest-only — vocabulary audited against the live pages, no runtime emitter wired yet. /administration/reporting itself is a static link directory (AdminDomainDirectory, no data, no values). Events has live filter/auto-refresh/row state with no provider mounted. The three scoreboards (dead-ends/unwired/lint-debt) each hold their bucket-drill useState inside a shared *Console component with no prop seam to publish from today — wiring all four emitters is real follow-up work.",
+    "Emitter wired, browser verification pending. The reporting hub remains a static link directory with only its section identity.",
   label: "Reporting Admin",
   urlPattern: "/administration/reporting",
   intro: `<surface_intro>

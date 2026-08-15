@@ -220,9 +220,9 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const adminSkillsManifest: SurfaceManifest = {
   surfaceName: ADMIN_SKILLS_SURFACE_NAME,
-  readiness: "stub",
+  readiness: "partial",
   readinessNote:
-    "Manifest-only — vocabulary audited against the live pages, no runtime emitter wired yet. SkillDetailEditor already has agent-writable draft fields behind useSurfaceWriteHandlers, but only when mounted with a surfaceName prop; the admin page mounts it without one today.",
+    "Emitter wired, browser verification pending.",
   label: "Skills Admin",
   urlPattern: "/administration/agents/skills",
   intro: `<surface_intro>

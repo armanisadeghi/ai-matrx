@@ -22,6 +22,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle, AlertTriangle, Info } from "lucide-react";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { ADMIN_UTILITIES_SURFACE_NAME, createAdminUtilitiesScope } from "@/features/surfaces/manifests/admin-utilities.manifest";
 
 import { toast } from "@/components/ui/use-toast";
 import type { PatternConfig } from "@/app/(admin)/administration/utilities/utils/configs/patterns";
@@ -289,6 +291,27 @@ export const TextCleanerComponent: React.FC = () => {
   }, [parsedErrors, changeErrorFormat, copyText]);
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_UTILITIES_SURFACE_NAME}
+      getScope={() => createAdminUtilitiesScope({
+        utilities_section: "text_cleaner",
+        text_cleaner_input: inputText,
+        text_cleaner_config: {
+          activePatterns,
+          removeDuplicates,
+          preserveClasses,
+          preserveStyles,
+          preserveDataAttributes,
+          preserveAriaAttributes,
+          errorMode,
+          errorFormat,
+          prefixes,
+          suffixes,
+          selectedContexts,
+        },
+        text_cleaner_output: cleanedText,
+      })}
+    >
     <div className="w-full space-y-4">
       <Card className="p-4">
         <div className="space-y-4">
@@ -561,5 +584,6 @@ export const TextCleanerComponent: React.FC = () => {
         Extract and Copy Text Between Markers
       </Button>
     </div>
+    </SurfaceRuntimeProvider>
   );
 };

@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { ADMIN_UTILITIES_SURFACE_NAME, createAdminUtilitiesScope } from "@/features/surfaces/manifests/admin-utilities.manifest";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { TablesUpdate } from "@/types/database.types";
 import { Button } from "@/components/ui/button";
@@ -1038,6 +1040,16 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
   }
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_UTILITIES_SURFACE_NAME}
+      getScope={() => createAdminUtilitiesScope({
+        utilities_section: "content_blocks",
+        content_blocks_list: contentBlocks,
+        content_blocks_categories: categories,
+        content_blocks_filter: { selectedCategory, searchTerm },
+        ...(selectedBlockId ? { content_blocks_selected_id: selectedBlockId } : {}),
+      })}
+    >
     <div
       className={`flex h-full w-full bg-textured overflow-hidden ${className}`}
     >
@@ -2574,5 +2586,6 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

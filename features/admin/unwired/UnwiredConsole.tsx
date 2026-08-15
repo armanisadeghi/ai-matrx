@@ -9,6 +9,8 @@ import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxData
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { repositorySourceHref } from "@/features/admin/reporting/source-links";
 import { toast } from "@/lib/toast";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { ADMIN_REPORTING_SURFACE_NAME, createAdminReportingScope } from "@/features/surfaces/manifests/admin-reporting.manifest";
 import {
   DETECTOR_TITLES,
   type UnwiredFinding,
@@ -133,6 +135,16 @@ export function UnwiredConsole({ report, history, problems }: UnwiredConsoleProp
   ];
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_REPORTING_SURFACE_NAME}
+      getScope={() => createAdminReportingScope({
+        reporting_section: "unwired",
+        unwired_totals: { ...report.totals },
+        unwired_bucket_filter: {},
+        unwired_worst_files: report.worstFiles,
+        unwired_problems: problems,
+      })}
+    >
     <div className="flex h-full min-h-0 flex-col gap-3 p-3">
       <header className="flex flex-wrap items-start justify-between gap-3 rounded-lg border border-border bg-card p-4">
         <div className="min-w-0">
@@ -184,6 +196,7 @@ export function UnwiredConsole({ report, history, problems }: UnwiredConsoleProp
         />
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 

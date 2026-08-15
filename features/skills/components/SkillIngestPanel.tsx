@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { ADMIN_SKILLS_SURFACE_NAME, createAdminSkillsScope } from "@/features/surfaces/manifests/admin-skills.manifest";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -119,6 +121,15 @@ export function SkillIngestPanel({
   const hasReport = report !== null;
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_SKILLS_SURFACE_NAME}
+      getScope={() => createAdminSkillsScope({
+        skills_section: "ingest",
+        ingest_paths_text: pathsText,
+        ingest_status: status,
+        ...(report ? { ingest_report: { ...report } } : {}),
+      })}
+    >
     <div className="flex flex-col h-full min-h-0">
       <Header onBack={onBack} />
 
@@ -350,6 +361,7 @@ export function SkillIngestPanel({
         </div>
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 

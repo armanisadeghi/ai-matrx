@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { SurfaceRuntimeProvider } from '@/features/surfaces/runtime/SurfaceRuntimeContext';
+import { ADMIN_KNOWLEDGE_SURFACE_NAME, createAdminKnowledgeScope } from '@/features/surfaces/manifests/admin-knowledge.manifest';
 import { CmsPageService } from '../../services/cmsService';
 import { activeSiteDomain, clientPageUrl, clientSiteRootUrl, sitePreviewToken } from '../../utils/pageUrls';
 import type { ClientPageSummary, ClientSiteSummary } from '../../types';
@@ -52,6 +54,7 @@ export default function SitePageTreePanel({ sites }: { sites: ClientSiteSummary[
     );
 
     return (
+        <SurfaceRuntimeProvider surfaceName={ADMIN_KNOWLEDGE_SURFACE_NAME} getScope={() => createAdminKnowledgeScope({ knowledge_section: 'cms_agents', cms_sites: sites, ...(siteId ? { cms_selected_site_id: siteId } : {}), cms_site_pages: sorted })}>
         <div className="flex flex-col h-full">
             <div className="flex-none flex items-center gap-2 px-1 py-2">
                 <Select value={siteId} onValueChange={setSiteId}>
@@ -170,5 +173,6 @@ export default function SitePageTreePanel({ sites }: { sites: ClientSiteSummary[
                 </div>
             )}
         </div>
+        </SurfaceRuntimeProvider>
     );
 }

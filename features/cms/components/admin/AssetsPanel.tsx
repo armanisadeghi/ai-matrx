@@ -14,6 +14,8 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { SurfaceRuntimeProvider } from '@/features/surfaces/runtime/SurfaceRuntimeContext';
+import { ADMIN_KNOWLEDGE_SURFACE_NAME, createAdminKnowledgeScope } from '@/features/surfaces/manifests/admin-knowledge.manifest';
 import { toast } from "@/lib/toast";
 import { fileHandler } from "@/features/files/handler/handler";
 import { AssetInUseError, CmsAssetService } from '../../services/cmsService';
@@ -204,6 +206,7 @@ export default function AssetsPanel({ sites }: { sites: ClientSiteSummary[] }) {
     };
 
     return (
+        <SurfaceRuntimeProvider surfaceName={ADMIN_KNOWLEDGE_SURFACE_NAME} getScope={() => createAdminKnowledgeScope({ knowledge_section: 'cms_agents', cms_sites: sites, ...(siteId ? { cms_selected_site_id: siteId } : {}), cms_selected_site_assets: assets })}>
         <div className="h-full flex flex-col overflow-hidden">
             <div className="flex-none flex items-center gap-2 pb-2">
                 <Select value={siteId} onValueChange={setSiteId}>
@@ -439,5 +442,6 @@ export default function AssetsPanel({ sites }: { sites: ClientSiteSummary[] }) {
                 </DialogContent>
             </Dialog>
         </div>
+        </SurfaceRuntimeProvider>
     );
 }

@@ -25,6 +25,8 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { ADMIN_SKILLS_SURFACE_NAME, createAdminSkillsScope } from "@/features/surfaces/manifests/admin-skills.manifest";
 import {
   DndContext,
   DragOverlay,
@@ -287,6 +289,13 @@ export function SkillCategoryTreeEditor({
   );
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_SKILLS_SURFACE_NAME}
+      getScope={() => createAdminSkillsScope({
+        skills_section: "categories",
+        skill_categories: categories,
+      })}
+    >
     <div className="flex flex-col h-full min-h-0">
       <Header
         onBack={onBack}
@@ -367,6 +376,7 @@ export function SkillCategoryTreeEditor({
         )}
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 

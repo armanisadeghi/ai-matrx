@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { SurfaceRuntimeProvider } from '@/features/surfaces/runtime/SurfaceRuntimeContext';
+import { ADMIN_KNOWLEDGE_SURFACE_NAME, createAdminKnowledgeScope } from '@/features/surfaces/manifests/admin-knowledge.manifest';
 import {
     RefreshCw, Check, Copy, ExternalLink, ChevronDown, ChevronUp,
     Loader2, AlertCircle, CheckCircle2, Edit2,
@@ -127,6 +129,7 @@ export function AgentWiringDashboard() {
     }
 
     return (
+        <SurfaceRuntimeProvider surfaceName={ADMIN_KNOWLEDGE_SURFACE_NAME} getScope={() => createAdminKnowledgeScope({ knowledge_section: 'research_system', research_admin_tab: 'agents', research_templates: templates, research_builtin_agents: builtins })}>
         <ScrollArea className="h-full">
             <div className="p-4 sm:p-6 space-y-8">
                 {/* Header */}
@@ -349,5 +352,6 @@ export function AgentWiringDashboard() {
                 </div>
             </div>
         </ScrollArea>
+        </SurfaceRuntimeProvider>
     );
 }

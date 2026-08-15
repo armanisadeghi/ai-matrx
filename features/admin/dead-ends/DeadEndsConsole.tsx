@@ -41,6 +41,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { ADMIN_REPORTING_SURFACE_NAME, createAdminReportingScope } from "@/features/surfaces/manifests/admin-reporting.manifest";
 import { describeFinding, isRegistryToken } from "@/scripts/dead-ends/describe";
 import {
   RULE_DOCTRINE,
@@ -370,6 +372,17 @@ export function DeadEndsConsole({
       : null;
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_REPORTING_SURFACE_NAME}
+      getScope={() => createAdminReportingScope({
+        reporting_section: "dead_ends",
+        dead_ends_totals: { ...report.totals },
+        dead_ends_bucket_filter: bucket,
+        dead_ends_worst_features: report.worstFeatures,
+        dead_ends_worst_files: report.worstFiles,
+        dead_ends_problems: problems,
+      })}
+    >
     <div className="flex h-full min-h-0 flex-col gap-3 p-4">
       <Header
         report={report}
@@ -537,6 +550,7 @@ export function DeadEndsConsole({
 
       <AllowlistPanel report={report} />
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 

@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { ADMIN_UTILITIES_SURFACE_NAME, createAdminUtilitiesScope } from "@/features/surfaces/manifests/admin-utilities.manifest";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Database, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
@@ -100,6 +102,13 @@ export default function ServerCacheManager() {
     };
 
     return (
+        <SurfaceRuntimeProvider
+            surfaceName={ADMIN_UTILITIES_SURFACE_NAME}
+            getScope={() => createAdminUtilitiesScope({
+                utilities_section: "server_cache",
+                server_cache_items: cacheItems.map((item) => ({ ...item, state: refreshStates[item.id] ?? null, icon: undefined })),
+            })}
+        >
         <div className="w-full h-full bg-gray-50 dark:bg-neutral-900 p-6">
             <div className="max-w-6xl mx-auto space-y-6">
                 {/* Header */}
@@ -229,6 +238,6 @@ export default function ServerCacheManager() {
                 </Card>
             </div>
         </div>
+        </SurfaceRuntimeProvider>
     );
 }
-

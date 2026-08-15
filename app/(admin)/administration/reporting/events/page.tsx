@@ -29,6 +29,11 @@ import { Label } from "@/components/ui/label";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ADMIN_REPORTING_SURFACE_NAME,
+  createAdminReportingScope,
+} from "@/features/surfaces/manifests/admin-reporting.manifest";
 
 interface ActivityRow {
   id: number;
@@ -180,6 +185,17 @@ export default function AdminEventsPage() {
   }, []);
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_REPORTING_SURFACE_NAME}
+      getScope={() =>
+        createAdminReportingScope({
+          reporting_section: "events",
+          events_action_prefix: prefix ?? "all",
+          events_auto_refresh: autoRefresh,
+          events_rows: rows,
+        })
+      }
+    >
     <div className="flex h-full min-h-0 flex-col gap-3 p-4">
       <div className="flex items-center gap-2">
         <Activity className="size-5 text-primary" />
@@ -353,5 +369,6 @@ export default function AdminEventsPage() {
         />
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

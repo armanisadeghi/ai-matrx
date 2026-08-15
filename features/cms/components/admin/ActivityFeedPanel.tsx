@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { SurfaceRuntimeProvider } from '@/features/surfaces/runtime/SurfaceRuntimeContext';
+import { ADMIN_KNOWLEDGE_SURFACE_NAME, createAdminKnowledgeScope } from '@/features/surfaces/manifests/admin-knowledge.manifest';
 import { formatDistanceToNow } from 'date-fns';
 import { useCmsAdminActivity } from '../../hooks/useCmsAdminActivity';
 import type { ClientSiteSummary } from '../../types';
@@ -80,6 +82,7 @@ export default function ActivityFeedPanel({ sites }: { sites: ClientSiteSummary[
     const siteName = (id: string | null) => sites.find((s) => s.id === id)?.name ?? id ?? '—';
 
     return (
+        <SurfaceRuntimeProvider surfaceName={ADMIN_KNOWLEDGE_SURFACE_NAME} getScope={() => createAdminKnowledgeScope({ knowledge_section: 'cms_agents', cms_sites: sites, cms_activity_filter: { siteId, entityType, actor }, cms_activity_log: activity })}>
         <div className="flex flex-col h-full">
             <div className="flex-none flex items-center gap-2 px-1 py-2 flex-wrap">
                 <Select value={siteId} onValueChange={setSiteId}>
@@ -190,5 +193,6 @@ export default function ActivityFeedPanel({ sites }: { sites: ClientSiteSummary[
                 </Table>
             </div>
         </div>
+        </SurfaceRuntimeProvider>
     );
 }

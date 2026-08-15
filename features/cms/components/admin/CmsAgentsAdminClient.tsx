@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { SurfaceRuntimeProvider } from '@/features/surfaces/runtime/SurfaceRuntimeContext';
+import { ADMIN_KNOWLEDGE_SURFACE_NAME, createAdminKnowledgeScope } from '@/features/surfaces/manifests/admin-knowledge.manifest';
 import { CmsSiteService } from '../../services/cmsService';
 import type { ClientSiteSummary } from '../../types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -15,6 +17,7 @@ export default function CmsAgentsAdminClient() {
     const [sites, setSites] = useState<ClientSiteSummary[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [activeTab, setActiveTab] = useState('activity');
 
     const fetchSites = useCallback(async () => {
         try {
@@ -54,6 +57,7 @@ export default function CmsAgentsAdminClient() {
     }
 
     return (
+        <SurfaceRuntimeProvider surfaceName={ADMIN_KNOWLEDGE_SURFACE_NAME} getScope={() => createAdminKnowledgeScope({ knowledge_section: 'cms_agents', cms_sites: sites })}>
         <div className="h-full flex flex-col overflow-hidden p-4">
             <div className="flex-none flex items-center justify-between pb-3">
                 <div>
@@ -69,7 +73,7 @@ export default function CmsAgentsAdminClient() {
                 </div>
             </div>
 
-            <Tabs defaultValue="activity" className="flex-1 min-h-0 flex flex-col">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 min-h-0 flex flex-col">
                 <TabsList className="flex-none w-fit">
                     <TabsTrigger value="activity" className="text-xs">
                         Activity Feed
@@ -105,5 +109,6 @@ export default function CmsAgentsAdminClient() {
                 </TabsContent>
             </Tabs>
         </div>
+        </SurfaceRuntimeProvider>
     );
 }

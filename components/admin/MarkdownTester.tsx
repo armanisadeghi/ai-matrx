@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useRef, useCallback, useEffect } from "react";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { ADMIN_UTILITIES_SURFACE_NAME, createAdminUtilitiesScope } from "@/features/surfaces/manifests/admin-utilities.manifest";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -1201,6 +1203,20 @@ const MarkdownTester: React.FC<MarkdownTesterProps> = ({ className }) => {
   const availableHeight = isFullScreen ? "100dvh" : "calc(100dvh - 64px)";
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_UTILITIES_SURFACE_NAME}
+      getScope={() => createAdminUtilitiesScope({
+        utilities_section: "markdown_tester",
+        markdown_tester_input: inputContent,
+        markdown_tester_extraction_config: {
+          activeTab,
+          showPreview,
+          isAutoMode,
+          strictServerData,
+          syncScroll,
+        },
+      })}
+    >
     <>
       {isFullScreen && (
         <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" />
@@ -1692,6 +1708,7 @@ const MarkdownTester: React.FC<MarkdownTesterProps> = ({ className }) => {
         markdownContent={renderedContent}
       />
     </>
+    </SurfaceRuntimeProvider>
   );
 };
 

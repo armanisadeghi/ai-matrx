@@ -43,6 +43,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { ADMIN_REPORTING_SURFACE_NAME, createAdminReportingScope } from "@/features/surfaces/manifests/admin-reporting.manifest";
 import {
   commitHref,
   pathHref,
@@ -346,6 +348,18 @@ export function LintDebtConsole({
     report.totals.byClass.bug + report.totals.byClass.correctness;
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_REPORTING_SURFACE_NAME}
+      getScope={() => createAdminReportingScope({
+        reporting_section: "lint_debt",
+        lint_debt_totals: { ...report.totals },
+        lint_debt_bucket_filter: bucket,
+        lint_debt_worst_files: report.worstFiles,
+        lint_debt_worst_features: report.worstFeatures,
+        lint_debt_by_rule: report.byRule,
+        lint_debt_problems: problems,
+      })}
+    >
     <div className="flex h-full min-h-0 flex-col gap-3 p-4">
       <Header
         report={report}
@@ -513,6 +527,7 @@ export function LintDebtConsole({
         />
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 

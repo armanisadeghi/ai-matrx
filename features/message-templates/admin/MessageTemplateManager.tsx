@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { ADMIN_UTILITIES_SURFACE_NAME, createAdminUtilitiesScope } from "@/features/surfaces/manifests/admin-utilities.manifest";
 import { isPubliclyVisible } from "@/lib/visibility/labels";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -598,6 +600,16 @@ export function MessageTemplateManager({
   }
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_UTILITIES_SURFACE_NAME}
+      getScope={() => createAdminUtilitiesScope({
+        utilities_section: "message_templates",
+        message_templates_list: templates,
+        message_templates_tags: allTags,
+        message_templates_filter: { selectedRole, searchTerm },
+        ...(selectedTemplateId ? { message_templates_selected_id: selectedTemplateId } : {}),
+      })}
+    >
     <div
       className={`flex h-full w-full bg-textured overflow-hidden ${className}`}
     >
@@ -1286,5 +1298,6 @@ export function MessageTemplateManager({
         </DialogContent>
       </Dialog>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

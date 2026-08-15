@@ -10,6 +10,8 @@
  */
 
 import { useState } from "react";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { ADMIN_UTILITIES_SURFACE_NAME, createAdminUtilitiesScope } from "@/features/surfaces/manifests/admin-utilities.manifest";
 import { ArrowDownToLine, ArrowUpFromLine, Trash2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -71,6 +73,15 @@ export default function CaptureInspectorPanel({
     exchanges.find((e) => e.id === selectedId) ?? exchanges[0] ?? null;
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_UTILITIES_SURFACE_NAME}
+      getScope={() => createAdminUtilitiesScope({
+        utilities_section: "capture_inspector",
+        capture_exchanges: exchanges,
+        capture_mode: `${mode}${enabled ? ":enabled" : ":disabled"}`,
+        ...(selected ? { capture_selected_exchange: { ...selected } } : {}),
+      })}
+    >
     <div className="flex h-full flex-col overflow-hidden">
       <div className="flex items-center gap-3 border-b border-border px-3 py-2">
         <span className="text-sm font-medium">Capture Inspector</span>
@@ -230,5 +241,6 @@ export default function CaptureInspectorPanel({
         </div>
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
