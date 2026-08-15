@@ -14,9 +14,9 @@ export interface DeepLinkParam {
 /**
  * Read a deep-link param and get correct ways to set or drop it.
  *
- * Every "?user=…" / "?category=…" / "?block=…" surface needs the same two
- * things, and hand-rolling the second is where they diverge: the clear must
- * preserve sibling params and must go through `router.replace`, because
+ * Every "?user=…" / "?category=…" / "?block=…" surface needs the same URL
+ * mutations, and hand-rolling them is where implementations diverge: updates
+ * must preserve sibling params and must go through `router.replace`, because
  * `window.history.replaceState` does NOT update `useSearchParams`, so the UI
  * keeps rendering the value the user just cleared.
  *
@@ -35,7 +35,9 @@ export function useDeepLinkParam(key: string): DeepLinkParam {
     if (value === null) params.delete(key);
     else params.set(key, value);
     const query = params.toString();
-    router.replace(query ? `${pathname}?${query}` : pathname);
+    router.replace(query ? `${pathname}?${query}` : pathname, {
+      scroll: false,
+    });
   };
 
   return { value, set, clear: () => set(null) };
