@@ -1,6 +1,7 @@
 # P8 — Real loading states
 
 - Run date: 2026-08-14
+- Standing-authority follow-up: 2026-08-15
 - Run kind: scheduled structural-novelty run plus a fresh full-repository pass
 - Authority: mixed Tier M / Tier R under the dedicated `real-loading-states` skill
 - Scan-start commit: `3a650ee9a6de6c29c4c8a382c678469c2b61f80e`
@@ -18,8 +19,8 @@
 ## Approval routing and findings
 
 - Verified findings: **83 files**.
-- Auto-approved and fixed now: **3 files**.
-- Manual approval requested: **12 files**.
+- Standing-authority fixes: **15 files** — the original 3-file batch is delivered; the 12-file compact batch is implemented and awaiting independent certification.
+- Genuine human decisions required: **0**.
 - Backlog retained: **68 files** — 32 compact/control or identity cases still lack a verified direct primitive mapping, and 36 page/panel/list/tree/editor/preview cases need a surface-shaped skeleton or chunk-boundary decision.
 - Excluded as compliant or false positive: the other 76 post-fix signature files. These render an existing component-library loader/skeleton or contextual indicator, are ARIA-only, are comments/docs/diagnostics, or contain the term only in non-loading error/empty/copy data.
 - Resolved before this run: `features/agents/components/agent-listings/AgentSneakPeekModal.tsx` no longer contains the P8 signature.
@@ -34,9 +35,9 @@ Every automatic gate held: each literal was the sole indicator inside a React Su
 
 Each wrapper now renders `SuspenseLoader centered={false}` with one polite live status. No shared primitive changed.
 
-### Manual approval requested
+### Standing-authority compact-loader follow-up
 
-These 12 compact states have direct React-node slots and deterministic nouns, so the problem is certain, the safe fix is known, and the repair is worthwhile. Approval would authorize only replacing the bare child with `SuspenseLoader centered={false}` and the message shown below, preserving the owning wrapper, dimensions, data/control flow, interaction, theme, viewport behavior, and chunk entry. They fit one bounded 12-file Tier-M batch and would receive the same static, scoped, representative-browser, and adversarial certification.
+Arman granted standing authority on 2026-08-15 for verified generic loaders with one clearly superior, professional, behavior-preserving repair. These 12 compact states have direct React-node slots and deterministic user-relevant nouns, so they were implemented immediately with `SuspenseLoader centered={false}` while preserving each owning wrapper, dimensions, data/control flow, interaction, theme, viewport behavior, and chunk entry. The batch remains in certification; no human decision is pending.
 
 - `components/admin/server-logs/CoolifyLogViewer.tsx` → `Loading server logs…`
 - `features/agent-apps/components/inputs/AgentAppCategoryPicker.tsx` → `Loading app categories…`
@@ -131,6 +132,8 @@ These replace page, panel, list, tree, editor, preview, or identity content. The
 
 ## Verification and certification
 
+### Delivered 3-file batch
+
 - Immutable pre-edit baseline: clean status; `pnpm type-check` PASS; `pnpm check:doctrine` PASS; exact detector 183 lines / 159 files.
 - Post-edit `pnpm type-check`: PASS.
 - Post-edit `pnpm check:doctrine`: PASS.
@@ -143,6 +146,14 @@ These replace page, panel, list, tree, editor, preview, or identity content. The
 - The preview later exceeded the mandatory 8 GB process-group cap while compiling another route (17.9–19.0 GB reported) and was stopped. This happened after proof and is infrastructure evidence, not a product regression.
 - Independent adversarial certifier verdict: **CERTIFIED** — no batch-caused defect found.
 - `pnpm check:migrations`: completed with a non-blocking unrelated baseline warning for three drifted migration files; this batch contains no migration or generated file.
+
+### 12-file standing-authority follow-up
+
+- Focused P8 literal detector: PASS; no bare `Loading…` literal remains in the 12 changed files.
+- Changed-file TypeScript diagnostics: PASS; the full repository type-check remains red only in unrelated concurrent CRM/admin work.
+- `git diff --check`: PASS.
+- Manifest tests: 6/6 PASS; repository and live automation contract validation PASS.
+- Independent adversarial certification: **PENDING**. The candidate must remain on its remote branch until a second reviewer records an exact-candidate verdict; this is not a human-approval state.
 
 ## Structural baseline for the next run
 

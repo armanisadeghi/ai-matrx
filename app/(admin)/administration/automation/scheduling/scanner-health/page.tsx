@@ -111,14 +111,22 @@ export default function ScannerHealthPage() {
             </p>
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={() => load()} disabled={loading}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => load()}
+          disabled={loading}
+        >
           <RefreshCw className={cn("h-3.5 w-3.5 mr-1.5", loading && "animate-spin")} />
           Refresh
         </Button>
       </div>
 
       {error && (
-        <Alert variant="destructive">
+        <Alert
+          variant="destructive"
+          data-surface-value="scanner_unreachable_error"
+        >
           <Server className="h-4 w-4" />
           <AlertTitle>Scanner unreachable</AlertTitle>
           <AlertDescription>
@@ -139,7 +147,7 @@ export default function ScannerHealthPage() {
         </div>
       ) : status ? (
         <>
-          <Card>
+          <Card data-surface-value="scanner_running">
             <CardContent className="p-4 flex items-center gap-3">
               {status.running ? (
                 <CheckCircle className="h-5 w-5 text-emerald-500" />
@@ -151,16 +159,23 @@ export default function ScannerHealthPage() {
                   {status.running ? "Scanner running" : "Scanner stopped"}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  Started {humanizeRelative(status.started_at)} · Last tick{" "}
-                  {humanizeRelative(status.last_tick_at)}
+                  <span data-surface-value="scanner_started_at">
+                    Started {humanizeRelative(status.started_at)}
+                  </span>{" "}
+                  ·{" "}
+                  <span data-surface-value="scanner_last_tick_at">
+                    Last tick {humanizeRelative(status.last_tick_at)}
+                  </span>
                 </div>
               </div>
-              {status.consecutive_errors > 0 && (
-                <Badge variant="destructive" className="gap-1">
-                  <AlertTriangle className="h-3 w-3" />
-                  {status.consecutive_errors} errors
-                </Badge>
-              )}
+              <div data-surface-value="scanner_consecutive_errors">
+                {status.consecutive_errors > 0 && (
+                  <Badge variant="destructive" className="gap-1">
+                    <AlertTriangle className="h-3 w-3" />
+                    {status.consecutive_errors} errors
+                  </Badge>
+                )}
+              </div>
             </CardContent>
           </Card>
 
@@ -173,11 +188,13 @@ export default function ScannerHealthPage() {
                   ? `${status.last_tick_duration_ms} ms`
                   : "—"
               }
+              surfaceValue="scanner_last_tick_duration_ms"
             />
             <Stat
               icon={Activity}
               label="Claimed (last tick)"
               value={String(status.last_tick_claimed)}
+              surfaceValue="scanner_last_tick_claimed"
             />
             <Stat
               icon={AlertTriangle}
@@ -186,26 +203,33 @@ export default function ScannerHealthPage() {
               tone={
                 status.last_tick_expired_sweeps > 0 ? "warning" : "default"
               }
+              surfaceValue="scanner_last_tick_expired_sweeps"
             />
             <Stat
               icon={Activity}
               label="Total dispatched"
               value={String(status.total_runs_dispatched)}
+              surfaceValue="scanner_total_runs_dispatched"
             />
             <Stat
               icon={Activity}
               label="Manual claimed (last tick)"
               value={String(status.last_tick_manual_claimed)}
+              surfaceValue="scanner_last_tick_manual_claimed"
             />
             <Stat
               icon={Activity}
               label="In flight"
               value={String(status.in_flight_count)}
+              surfaceValue="scanner_in_flight_count"
             />
           </div>
 
           {status.error_message && (
-            <Alert variant="destructive">
+            <Alert
+              variant="destructive"
+              data-surface-value="scanner_error_message"
+            >
               <AlertTitle>Recent error</AlertTitle>
               <AlertDescription className="font-mono text-xs">
                 {status.error_message}
@@ -223,14 +247,16 @@ function Stat({
   label,
   value,
   tone = "default",
+  surfaceValue,
 }: {
   icon: typeof Activity;
   label: string;
   value: string;
   tone?: "default" | "warning";
+  surfaceValue: string;
 }) {
   return (
-    <Card>
+    <Card data-surface-value={surfaceValue}>
       <CardContent className="p-3 flex items-center justify-between gap-3">
         <div>
           <div className="text-xs text-muted-foreground">{label}</div>

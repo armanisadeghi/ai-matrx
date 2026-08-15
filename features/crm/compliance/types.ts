@@ -65,7 +65,14 @@ export type EligibilityBlockCode =
   // recipient deliverability
   | "address_invalid"
   | "address_unverified"
+  | "mx_missing"
+  | "disposable_address"
   | "medium_not_found"
+  // list integrity — applies before the lane branch, so BOTH lanes
+  | "list_not_found"
+  | "list_other_org"
+  | "recipient_not_in_list"
+  | "purchased_list_suspected"
   // lane A
   | "no_consent_record"
   | "consent_expired"
@@ -79,9 +86,11 @@ export type EligibilityBlockCode =
   | "lia_missing"
   // the sending mailbox
   | "identity_not_found"
+  | "identity_other_org"
   | "identity_not_ready"
   | "domain_unverified"
   | "authentication_failing"
+  | "rfc8058_dkim_unavailable"
   | "role_sender_address"
   | "domain_too_new";
 
@@ -103,6 +112,15 @@ export type EligibilityVerdict = {
     jurisdiction_ratified: boolean;
     consent_basis: ConsentBasis;
     subscriber_kind: SubscriberKind;
+    list_quality?: {
+      status: "passed" | "blocked";
+      signals: string[];
+      member_count?: number;
+      email_count?: number;
+      missing_provenance_count?: number;
+      role_address_count?: number;
+      dominant_pattern_count?: number;
+    } | null;
   };
 };
 

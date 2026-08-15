@@ -6,7 +6,7 @@
  * `sch_*` spine (feature code `features/scheduling/`): scheduled tasks, their
  * run history, orphaned leases, a cron expression tester, live scanner health
  * from aidream, and curated starter templates. The `ui_surface` row exists
- * (verified 2026-08-12); only the VALUE rows still need a manifest sync.
+ * (verified 2026-08-12); its manifest mirrors are synchronized.
  *
  * Seven route-tabbed pages share one shell
  * (`SchedulingAdminLayoutClient.tsx`):
@@ -533,7 +533,7 @@ export const adminSchedulingManifest: SurfaceManifest = {
   surfaceName: ADMIN_SCHEDULING_SURFACE_NAME,
   readiness: "partial",
   readinessNote:
-    "All seven tabs emit live. The shell (SchedulingAdminLayoutClient) mounts the outer SurfaceRuntimeProvider and derives active_tab from the pathname; Overview, Tasks, Runs, Orphan leases and Scanner health publish their own slices through features/scheduling/lib/admin-scheduling-scope.ts, and only the MOUNTED tab's slice is emitted. The Cron tester nests its own provider (features/scheduling/lib/cron-tester-surface.ts), wins that tab by depth, and carries the surface's two write targets. Every value was checked against the live page and both write targets were verified with real agent runs (apply, decline, undeclared-target refusal, and invalid-value throws). Still short of `verified`: the DB value sync has NOT been applied, so ui_surface_value still carries the removed task_search/task_enabled_filter rows and none of the newly declared scanner_*/cron_expression_human/cron_preview_count/overview_load_error rows; and no page element carries a data-surface-value anchor for Locate. Templates (templates/page.tsx) is a hardcoded in-file SEEDS array with no backing table yet — the page's own \"Coming next\" alert says a sch_template table + read RPC are pending — so it is deliberately NOT declared as page data here; declaring it would promise a value no real data source supplies.",
+    "All seven emitters are wired, the manifest mirrors are synchronized, and every declared page value now has a data-surface-value Locate anchor. Browser verification is still incomplete: Overview opened Surface Context with `contract honored`; Tasks loaded real rows and emitted active_tab + task_row_count; Runs loaded its real empty result, but its Context window plus Orphan leases, Cron tester, Scanner health, and Templates still need to be observed before promotion. The Cron tester's two write targets were previously verified with real agent runs (apply, decline, undeclared-target refusal, and invalid-value throws). Templates remains deliberately undeclared page data because it is a hardcoded in-file SEEDS array pending a sch_template table + read RPC.",
   label: "Scheduling",
   urlPattern: "/administration/automation/scheduling",
   intro: `<surface_intro>

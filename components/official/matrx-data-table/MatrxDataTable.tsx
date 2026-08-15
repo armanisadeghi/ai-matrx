@@ -921,6 +921,23 @@ function MatrxDataTableCore<T>({
             Clear
           </Button>
           <div className="ml-auto flex flex-wrap items-center gap-1.5">
+            {copy && selectedRows.length > 0 ? (
+              <CopyButtons
+                size="icon"
+                label={`${selectedRows.length} selected ${selectionNoun}${selectedRows.length === 1 ? "" : "s"}`}
+                human={() => buildViewHuman(copy, selectedRows, visibleColumns)}
+                json={() =>
+                  selectedRows.map((row) =>
+                    copy.agentRow ? copy.agentRow(row) : row,
+                  )
+                }
+                agent={() =>
+                  buildViewAgentInput(copy, selectedRows, data, {
+                    scope: "selected",
+                  })
+                }
+              />
+            ) : null}
             {selection.actions?.(selectedRows, selection.selectedIds)}
           </div>
         </div>

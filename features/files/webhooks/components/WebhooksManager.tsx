@@ -33,6 +33,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import {
   createWebhook,
@@ -117,7 +118,10 @@ function DeliveryRow({
       {icon}
       <span className="w-16 capitalize text-foreground">{d.status}</span>
       <span className="w-14 text-muted-foreground">{d.http_status ?? "—"}</span>
-      <span className="w-16 text-muted-foreground" title="Request → response latency">
+      <span
+        className="w-16 text-muted-foreground"
+        title="Request → response latency"
+      >
         {d.latency_ms !== null ? `${d.latency_ms} ms` : "—"}
       </span>
       <span className="flex-1 truncate text-muted-foreground">
@@ -317,7 +321,13 @@ function WebhookCard({
       {expanded && (
         <div className="mt-2 border-t border-border pt-2">
           {deliveries === null ? (
-            <p className="text-xs text-muted-foreground">Loading…</p>
+            <p className="text-xs text-muted-foreground">
+              <SuspenseLoader
+                centered={false}
+                size="xs"
+                message="Loading webhook deliveries…"
+              />
+            </p>
           ) : deliveries.length === 0 ? (
             <p className="text-xs text-muted-foreground">No deliveries yet.</p>
           ) : (

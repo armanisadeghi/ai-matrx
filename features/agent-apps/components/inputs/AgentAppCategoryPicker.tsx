@@ -34,6 +34,7 @@ import {
   CommandSeparator,
 } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import {
   fetchAgentAppCategories,
   type AgentAppCategoryRow,
@@ -144,7 +145,10 @@ export function AgentAppCategoryPicker({
           <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-[var(--radix-popover-trigger-width)] p-0">
+      <PopoverContent
+        align="start"
+        className="w-[var(--radix-popover-trigger-width)] p-0"
+      >
         <Command>
           <CommandInput
             placeholder="Search system options or type your own…"
@@ -154,13 +158,14 @@ export function AgentAppCategoryPicker({
           <CommandList>
             {loading && (
               <div className="px-3 py-4 text-sm text-muted-foreground">
-                Loading…
+                <SuspenseLoader
+                  centered={false}
+                  message="Loading app categories…"
+                />
               </div>
             )}
             {error && (
-              <div className="px-3 py-2 text-sm text-destructive">
-                {error}
-              </div>
+              <div className="px-3 py-2 text-sm text-destructive">{error}</div>
             )}
             {!loading && filteredSystem.length === 0 && !showCreate && (
               <CommandEmpty>

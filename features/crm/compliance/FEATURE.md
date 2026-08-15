@@ -1,6 +1,6 @@
 # FEATURE.md — `crm/compliance`
 
-**Status:** `gates LIVE · unsubscribe LIVE · circuit breaker LIVE · attorney ratification PENDING` · **Tier:** `1` · **Last updated:** `2026-08-15`
+**Status:** `compliance floor LIVE · unsubscribe LIVE · circuit breaker LIVE · attorney ratification PENDING` · **Tier:** `1` · **Last updated:** `2026-08-15`
 
 🚨 **Cross-repo system-of-record:** `/Users/armanisadeghi/code/common-docs/systems/outreach-compliance/`
 — read it before touching anything here, in ANY repo. It carries the verified sources and dates,
@@ -63,11 +63,12 @@ Client entry point: `checkSendEligibility()` in [`service.ts`](./service.ts) →
 |---|---|---|
 | 0 | Org kill switch (`crm.sending_policy.outreach_enabled`) | Instant per-org stop |
 | 1 | Suppression — unsubscribed / complained / suppressed / DNC / hard bounce | A legal opt-out outranks everything, in every lane |
-| 2 | Address verification (`verification_status`) | Never send to an unverified address; hard bounces burn a domain fastest |
+| 2 | Address verification: syntax, explicit MX, disposable-domain result, freshness | Never send to an unverified address; hard bounces burn a domain fastest |
+| 2a | List integrity: real membership + purchased/bulk-scraped signals | Purchased lists are banned in both lanes, so this runs before the lane branch |
 | 3a | **Lane A:** consent basis is `express` or `soft_opt_in`, not expired | Our infrastructure, our reputation — consent is the entry bar |
 | 3b | **Lane B:** the recipient's country permits cold outreach | Their law, not ours |
 | 3c | Role relevance, subscriber kind, GDPR art. 14 source, the LIA | The specific conditions attached to `conditional` countries |
-| 4 | Sending identity: ready, domain verified, SPF+DKIM+DMARC pass, not a role address, domain ≥30 days | The right to send |
+| 4 | Sending identity: ready, domain verified, SPF+DKIM+DMARC pass, RFC 8058 DKIM-capable provider, not a role address, domain ≥30 days | The right to send |
 | 5 | The sender's postal address exists | Legally required in every commercial message |
 | 6 | The org accepted the AUP for that lane | Contract before first send |
 
@@ -122,10 +123,20 @@ Required by every regime and previously absent in every form.
   `crm.contact_medium`, the ONE suppression authority. It stops **every channel and every
   campaign**, not just the list the link came from, and is never time-limited.
 
-Headers and footer are built by `buildComplianceEnvelope()` in
-[`message-compliance.ts`](./message-compliance.ts) — pure, so the browser preview and the server
-send produce byte-identical output. It also emits the GDPR art. 14 source-disclosure block on first
-contact, and the legally required postal address.
+The browser preview contract lives in `buildComplianceEnvelope()` in
+[`message-compliance.ts`](./message-compliance.ts). The authoritative envelope is built again
+**inside** aidream's only send primitive, where the caller cannot omit it; it carries the same exact
+RFC 8058 header values, permanent body link, postal address, and first-contact art. 14 disclosure.
+The Google Workspace provider is the only enabled outreach transport: a real external delivery
+showed DKIM `PASS`, and its `DKIM-Signature h=` covered
+`list-unsubscribe-post:list-unsubscribe`. Adding another provider is a DB-authority change only
+after the same received-message proof.
+
+Reply opt-outs use the G6 seam rather than a second inbox. Provider adapters will emit one
+`InboundReply`; aidream's quoted-reply-safe detector recognizes explicit requests such as “remove
+me” and “take me off your list”, then the service-role-only `crm.honor_reply_opt_out()` atomically
+sets permanent suppression and writes one idempotent `unsubscribed` event. The detector and write
+are live now; only provider reply delivery remains in G6.
 
 `findUnresolvedMergeFields()` implements the merge-field rule: **an unresolved variable is a
 refusal, never an empty string.** "Hi ," is the most recognizable automated-spam tell there is, and
@@ -185,6 +196,8 @@ cannot be reconstructed.
 | [`service.ts`](./service.ts) | Eligibility check (single + batch), jurisdiction list, AUP acceptance, token minting, resume |
 | [`message-compliance.ts`](./message-compliance.ts) | `buildComplianceEnvelope()` — RFC 8058 headers, footer, art. 14 block; `findUnresolvedMergeFields()` |
 | `migrations/crm_06_compliance.sql` | The whole DB layer, idempotent, applied and ledger-recorded |
+| `migrations/crm_07_compliance_floor.sql` | MX/disposable + purchased-list + RFC 8058-provider floor inside the authority; reply-opt-out DB seam; applied and ledger-recorded |
+| `aidream/services/sending_identity/{address_verification,compliance,inbound,gate}.py` | Server DNS verification, authoritative envelope, G6 reply seam, and the only send consumer |
 
 ---
 
@@ -200,19 +213,23 @@ cannot be reconstructed.
 
 ## Not built here (deliberately)
 
-- **The MX / disposable-domain verification itself** — the gate *requires* `verification_status`,
-  but performing the lookup is server work (aidream). Until it runs, every address is `unverified`
-  and the gate refuses, which is the correct direction.
-- **The art. 14 notice text delivery and DKIM signing** — `buildComplianceEnvelope()` produces the
-  headers and blocks; the send primitive must attach them and DKIM-sign both `List-Unsubscribe`
-  headers (RFC 8058 §3.1).
-- **Reply-based opt-out** — a stranger usually replies "take me off your list" rather than clicking.
-  Needs G6 inbound (Phase 5). The header/link path does not wait for it.
-- **Anti-harvesting-notice checks and purchased-list detection** (GAP-3, part of GAP-9) — import-path
-  work.
+- **G6 provider reply delivery.** The normalized contract, opt-out detector, and suppression write
+  are complete. Gmail/Microsoft/IMAP adapters still need to deliver replies into that seam; they
+  must not duplicate its legal logic.
+- **Anti-harvesting-notice checks during discovery.** Purchased-list detection is already a floor
+  in both lanes. G2 still needs to record a source site's notice when it discovers an address.
+- **Prohibited-content classification.** The accepted AUP bans those categories; message-time
+  classification remains Phase 4 work and must become another block in this same authority.
 
 ## Change log
 
+- **2026-08-15 — compliance floor closed.** aidream now verifies syntax + live MX/null-MX +
+  disposable domains and persists 30-day evidence; list-quality signals refuse declared purchased
+  origins, bulk rows without provenance, role-address concentrations, and uniform patterns before
+  either lane; the server-owned envelope is attached by the only send primitive; Google provider
+  coverage was proven on an externally received message with DKIM `PASS` and both RFC 8058 headers
+  in `h=`; and the G6 reply seam can immediately honor an explicit opt-out. Production fixtures
+  proved every DB refusal and write, then were removed.
 - **2026-08-15** — Created. Jurisdiction policy (35 countries, 30 blocking), consent provenance on
   `crm.contact_medium`, lane + LIA on `crm.outreach_list`, postal address on sending policy and
   identity, AUP acceptance record, the full unsubscribe machinery (token + RFC 8058 POST + human

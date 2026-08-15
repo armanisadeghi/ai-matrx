@@ -175,7 +175,10 @@ export default function OrphanLeasesPage() {
           few minutes, something's wrong upstream.
         </span>
       </p>
-      <div className="min-h-0 flex-1">
+      <div
+        className="min-h-0 flex-1"
+        data-surface-value="orphan_lease_row_count"
+      >
         <MatrxDataTable
           urlState={{ id: "scheduling-orphan-leases" }}
           data={rows}

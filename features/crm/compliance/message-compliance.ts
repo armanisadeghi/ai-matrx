@@ -3,9 +3,10 @@
 // THE COMPLIANCE ENVELOPE — what every commercial message must carry, built in
 // one place so no send path can forget a piece of it.
 //
-// Pure functions on purpose: no Supabase, no fetch, no Redux. The same logic has
-// to run in the browser (preview) and on the server (the actual send), and a
-// preview that disagrees with what ships is worse than no preview.
+// Pure functions on purpose: no Supabase, no fetch, no Redux. This is the
+// browser-preview contract. The actual send is built inside aidream's one send
+// primitive so a caller cannot omit it; both speak the same RFC 8058 header and
+// footer contract documented in FEATURE.md.
 //
 // What the law requires in every message, verified 2026-08-14:
 //   • a working opt-out mechanism                    CAN-SPAM §7704(a)(3), CASL, Spam Act

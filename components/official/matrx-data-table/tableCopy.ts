@@ -50,14 +50,17 @@ export function buildViewAgentInput<T>(
     anyOf?: string;
     filterCount?: number;
     sort?: string | null;
+    scope?: "view" | "selected";
   },
 ): AgentPayloadInput {
   return {
     kind: config.listKind,
     location: config.location,
     description:
-      config.listDescription ??
-      `${config.listLabel ?? config.label} — current filtered/sorted view.`,
+      meta?.scope === "selected"
+        ? `${visible.length} selected ${visible.length === 1 ? config.label : (config.listLabel ?? `${config.label} rows`)}.`
+        : (config.listDescription ??
+          `${config.listLabel ?? config.label} — current filtered/sorted view.`),
     data: visible.map((r) => (config.agentRow ? config.agentRow(r) : r)),
     summary: visible.map((r) => config.humanRow(r)).join("\n---\n"),
     attributes: {
@@ -68,6 +71,7 @@ export function buildViewAgentInput<T>(
       any_of: meta?.anyOf || undefined,
       active_filters: meta?.filterCount ?? 0,
       sort: meta?.sort || undefined,
+      scope: meta?.scope ?? "view",
       ...config.listAttributes?.(visible, all),
     },
   };

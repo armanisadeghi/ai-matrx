@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import {
   RefreshCw,
   Loader2,
@@ -1143,385 +1144,389 @@ export default function CoolifyLogViewer({
         })
       }
     >
-    {/* Body indentation is left as-is so this wrapper stays a small diff on a
+      {/* Body indentation is left as-is so this wrapper stays a small diff on a
         1,500-line component (the repo has no formatter to normalize it). */}
-    <div className="w-full h-full flex flex-col bg-background text-foreground overflow-hidden">
-      {/* ── Top toolbar ── */}
-      <div className="shrink-0 flex items-center gap-2 px-3 py-2 border-b border-border bg-card flex-wrap">
-        {!hideAppSelector && (
+      <div className="w-full h-full flex flex-col bg-background text-foreground overflow-hidden">
+        {/* ── Top toolbar ── */}
+        <div className="shrink-0 flex items-center gap-2 px-3 py-2 border-b border-border bg-card flex-wrap">
+          {!hideAppSelector && (
+            <Select
+              value={selectedApp}
+              onValueChange={(v) => handleAppChange(v as AppKey)}
+            >
+              <SelectTrigger className="w-56 h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {APPS.map((app) => (
+                  <SelectItem key={app.key} value={app.key} className="text-xs">
+                    <span className="flex items-center gap-2">
+                      {app.label}
+                      <Badge
+                        variant="outline"
+                        className={
+                          app.env === "production"
+                            ? "text-[10px] py-0 border-warning/60 text-warning"
+                            : "text-[10px] py-0 border-border text-muted-foreground"
+                        }
+                      >
+                        {app.env === "production" ? "prod" : "dev"}
+                      </Badge>
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
           <Select
-            value={selectedApp}
-            onValueChange={(v) => handleAppChange(v as AppKey)}
+            value={String(lineCount)}
+            onValueChange={(v) => setLineCount(parseInt(v, 10))}
           >
-            <SelectTrigger className="w-56 h-8 text-xs">
+            <SelectTrigger className="w-28 h-8 text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {APPS.map((app) => (
-                <SelectItem key={app.key} value={app.key} className="text-xs">
-                  <span className="flex items-center gap-2">
-                    {app.label}
-                    <Badge
-                      variant="outline"
-                      className={
-                        app.env === "production"
-                          ? "text-[10px] py-0 border-warning/60 text-warning"
-                          : "text-[10px] py-0 border-border text-muted-foreground"
-                      }
-                    >
-                      {app.env === "production" ? "prod" : "dev"}
-                    </Badge>
-                  </span>
+              {LINE_OPTIONS.map((n) => (
+                <SelectItem key={n} value={String(n)} className="text-xs">
+                  {n} lines
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-        )}
 
-        <Select
-          value={String(lineCount)}
-          onValueChange={(v) => setLineCount(parseInt(v, 10))}
-        >
-          <SelectTrigger className="w-28 h-8 text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {LINE_OPTIONS.map((n) => (
-              <SelectItem key={n} value={String(n)} className="text-xs">
-                {n} lines
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          <Select
+            value={String(pollInterval)}
+            onValueChange={(v) => setPollInterval(parseInt(v, 10))}
+          >
+            <SelectTrigger className="w-32 h-8 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {POLL_INTERVALS.map((opt) => (
+                <SelectItem
+                  key={opt.value}
+                  value={String(opt.value)}
+                  className="text-xs"
+                >
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-        <Select
-          value={String(pollInterval)}
-          onValueChange={(v) => setPollInterval(parseInt(v, 10))}
-        >
-          <SelectTrigger className="w-32 h-8 text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {POLL_INTERVALS.map((opt) => (
-              <SelectItem
-                key={opt.value}
-                value={String(opt.value)}
-                className="text-xs"
-              >
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          <Button
+            onClick={fetchLogs}
+            disabled={loading}
+            size="sm"
+            className="h-8 text-xs"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                Fetching…
+              </>
+            ) : (
+              <>
+                <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                Refresh
+              </>
+            )}
+          </Button>
 
-        <Button
-          onClick={fetchLogs}
-          disabled={loading}
-          size="sm"
-          className="h-8 text-xs"
-        >
-          {loading ? (
-            <>
-              <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-              Fetching…
-            </>
-          ) : (
-            <>
-              <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
-              Refresh
-            </>
+          {isLivePolling && (
+            <Badge className="h-6 text-[10px] bg-success/15 text-success border-success/40">
+              <span className="w-1.5 h-1.5 rounded-full bg-success mr-1.5 animate-pulse" />
+              Live
+            </Badge>
           )}
-        </Button>
 
-        {isLivePolling && (
-          <Badge className="h-6 text-[10px] bg-success/15 text-success border-success/40">
-            <span className="w-1.5 h-1.5 rounded-full bg-success mr-1.5 animate-pulse" />
-            Live
-          </Badge>
-        )}
+          <div className="flex-1" />
 
-        <div className="flex-1" />
+          {viewMode !== "raw" && (
+            <NoiseExcludeToggles
+              excludes={filters.noiseExcludes}
+              onChange={(noiseExcludes) =>
+                setFilters({ ...filters, noiseExcludes })
+              }
+              compact
+            />
+          )}
 
-        {viewMode !== "raw" && (
-          <NoiseExcludeToggles
-            excludes={filters.noiseExcludes}
-            onChange={(noiseExcludes) =>
-              setFilters({ ...filters, noiseExcludes })
-            }
-            compact
+          {fetchedAt && (
+            <span className="text-[10px] text-muted-foreground">
+              {new Date(fetchedAt).toLocaleTimeString()}
+            </span>
+          )}
+          <span className="text-[10px] text-muted-foreground tabular-nums">
+            {viewMode === "raw"
+              ? rawLineCount
+              : `${filteredLines.length}/${rawLineCount}`}{" "}
+            lines
+          </span>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={scrollToTop}
+            className="h-8 px-2 text-muted-foreground hover:text-foreground"
+            title="Scroll to top"
+          >
+            <ChevronUp className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={scrollToBottom}
+            className="h-8 px-2 text-muted-foreground hover:text-foreground"
+            title="Scroll to bottom"
+          >
+            <ChevronDown className="h-3.5 w-3.5" />
+          </Button>
+
+          {/* Range toggle */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowRange((p) => !p)}
+            className={`h-8 px-2 text-xs ${showRange ? "text-foreground bg-accent" : "text-muted-foreground hover:text-foreground"}`}
+            title="Set view range"
+          >
+            <FileText className="h-3.5 w-3.5 mr-1" />
+            Range
+          </Button>
+
+          {/* Filter toggle */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowFilters((p) => !p)}
+            className={`h-8 px-2 text-xs ${showFilters ? "text-foreground bg-accent" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            <Filter className="h-3.5 w-3.5 mr-1" />
+            Filter
+          </Button>
+
+          {/* View mode segmented control */}
+          <div className="flex items-center gap-0.5 bg-muted rounded p-0.5">
+            {(
+              [
+                {
+                  mode: "log-only" as ViewMode,
+                  icon: <Terminal className="h-3.5 w-3.5" />,
+                  title: "Parsed log view",
+                },
+                {
+                  mode: "split" as ViewMode,
+                  icon: <SplitSquareHorizontal className="h-3.5 w-3.5" />,
+                  title: "Split: log + JSON",
+                },
+                {
+                  mode: "json-only" as ViewMode,
+                  icon: <PanelLeft className="h-3.5 w-3.5" />,
+                  title: "JSON inspector only",
+                },
+                {
+                  mode: "raw" as ViewMode,
+                  icon: <FileText className="h-3.5 w-3.5" />,
+                  title: "Raw (no parsing)",
+                },
+              ] as const
+            ).map(({ mode, icon, title }) => (
+              <Button
+                key={mode}
+                variant="ghost"
+                size="sm"
+                title={title}
+                onClick={() => setViewMode(mode)}
+                className={`h-7 px-2 text-xs rounded-sm ${viewMode === mode ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                {icon}
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Range panel ── */}
+        {showRange && viewMode !== "raw" && (
+          <LineRangePanel
+            totalFetched={parsedLines.length}
+            startOffset={startOffset}
+            displayCount={displayCount}
+            onStartOffset={(n) => {
+              setStartOffset(n);
+              handleClearSelection();
+            }}
+            onDisplayCount={(n) => {
+              setDisplayCount(n);
+              handleClearSelection();
+            }}
           />
         )}
 
-        {fetchedAt && (
-          <span className="text-[10px] text-muted-foreground">
-            {new Date(fetchedAt).toLocaleTimeString()}
-          </span>
+        {/* ── Filter panel ── */}
+        {showFilters && viewMode !== "raw" && (
+          <FilterPanel
+            filters={filters}
+            onChange={setFilters}
+            availableModules={availableModules}
+            availableEndpoints={availableEndpoints}
+            totalLines={rangedLines.length}
+            visibleLines={filteredLines.length}
+          />
         )}
-        <span className="text-[10px] text-muted-foreground tabular-nums">
-          {viewMode === "raw"
-            ? rawLineCount
-            : `${filteredLines.length}/${rawLineCount}`}{" "}
-          lines
-        </span>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={scrollToTop}
-          className="h-8 px-2 text-muted-foreground hover:text-foreground"
-          title="Scroll to top"
-        >
-          <ChevronUp className="h-3.5 w-3.5" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={scrollToBottom}
-          className="h-8 px-2 text-muted-foreground hover:text-foreground"
-          title="Scroll to bottom"
-        >
-          <ChevronDown className="h-3.5 w-3.5" />
-        </Button>
+        {/* ── Selection / copy bar — shown whenever a selection exists ── */}
+        {showSelectionBar && viewMode !== "raw" && (
+          <SelectionBar
+            anchor={selAnchor}
+            tail={selTail}
+            selectedCount={
+              selectionCount ||
+              filteredLines.filter((l) => l.raw.trim() !== "").length
+            }
+            copied={copied}
+            onCopy={handleCopy}
+            onClear={handleClearSelection}
+            onSelectAll={handleSelectAllVisible}
+          />
+        )}
 
-        {/* Range toggle */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setShowRange((p) => !p)}
-          className={`h-8 px-2 text-xs ${showRange ? "text-foreground bg-accent" : "text-muted-foreground hover:text-foreground"}`}
-          title="Set view range"
-        >
-          <FileText className="h-3.5 w-3.5 mr-1" />
-          Range
-        </Button>
+        {/* ── Error banner ── */}
+        {error && (
+          <div className="shrink-0 flex items-center gap-3 px-4 py-2 bg-destructive/10 border-b border-destructive/30 text-destructive text-xs">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            {error}
+          </div>
+        )}
 
-        {/* Filter toggle */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setShowFilters((p) => !p)}
-          className={`h-8 px-2 text-xs ${showFilters ? "text-foreground bg-accent" : "text-muted-foreground hover:text-foreground"}`}
-        >
-          <Filter className="h-3.5 w-3.5 mr-1" />
-          Filter
-        </Button>
-
-        {/* View mode segmented control */}
-        <div className="flex items-center gap-0.5 bg-muted rounded p-0.5">
-          {(
-            [
-              {
-                mode: "log-only" as ViewMode,
-                icon: <Terminal className="h-3.5 w-3.5" />,
-                title: "Parsed log view",
-              },
-              {
-                mode: "split" as ViewMode,
-                icon: <SplitSquareHorizontal className="h-3.5 w-3.5" />,
-                title: "Split: log + JSON",
-              },
-              {
-                mode: "json-only" as ViewMode,
-                icon: <PanelLeft className="h-3.5 w-3.5" />,
-                title: "JSON inspector only",
-              },
-              {
-                mode: "raw" as ViewMode,
-                icon: <FileText className="h-3.5 w-3.5" />,
-                title: "Raw (no parsing)",
-              },
-            ] as const
-          ).map(({ mode, icon, title }) => (
-            <Button
-              key={mode}
-              variant="ghost"
-              size="sm"
-              title={title}
-              onClick={() => setViewMode(mode)}
-              className={`h-7 px-2 text-xs rounded-sm ${viewMode === mode ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              {icon}
-            </Button>
-          ))}
-        </div>
-      </div>
-
-      {/* ── Range panel ── */}
-      {showRange && viewMode !== "raw" && (
-        <LineRangePanel
-          totalFetched={parsedLines.length}
-          startOffset={startOffset}
-          displayCount={displayCount}
-          onStartOffset={(n) => {
-            setStartOffset(n);
-            handleClearSelection();
-          }}
-          onDisplayCount={(n) => {
-            setDisplayCount(n);
-            handleClearSelection();
-          }}
-        />
-      )}
-
-      {/* ── Filter panel ── */}
-      {showFilters && viewMode !== "raw" && (
-        <FilterPanel
-          filters={filters}
-          onChange={setFilters}
-          availableModules={availableModules}
-          availableEndpoints={availableEndpoints}
-          totalLines={rangedLines.length}
-          visibleLines={filteredLines.length}
-        />
-      )}
-
-      {/* ── Selection / copy bar — shown whenever a selection exists ── */}
-      {showSelectionBar && viewMode !== "raw" && (
-        <SelectionBar
-          anchor={selAnchor}
-          tail={selTail}
-          selectedCount={
-            selectionCount ||
-            filteredLines.filter((l) => l.raw.trim() !== "").length
-          }
-          copied={copied}
-          onCopy={handleCopy}
-          onClear={handleClearSelection}
-          onSelectAll={handleSelectAllVisible}
-        />
-      )}
-
-      {/* ── Error banner ── */}
-      {error && (
-        <div className="shrink-0 flex items-center gap-3 px-4 py-2 bg-destructive/10 border-b border-destructive/30 text-destructive text-xs">
-          <AlertCircle className="h-4 w-4 shrink-0" />
-          {error}
-        </div>
-      )}
-
-      {/* ── Info bar ── */}
-      <div className="shrink-0 flex items-center gap-2 px-3 py-1 border-b border-border bg-muted/40">
-        <Terminal className="h-3.5 w-3.5 text-success shrink-0" />
-        <span className="text-xs font-mono text-foreground">
-          {appMeta?.label} ({appMeta?.env}) — last {lineCount} lines
-          {isLivePolling && (
-            <span className="text-muted-foreground">
-              {" "}
-              · polling every {pollInterval / 1000}s
+        {/* ── Info bar ── */}
+        <div className="shrink-0 flex items-center gap-2 px-3 py-1 border-b border-border bg-muted/40">
+          <Terminal className="h-3.5 w-3.5 text-success shrink-0" />
+          <span className="text-xs font-mono text-foreground">
+            {appMeta?.label} ({appMeta?.env}) — last {lineCount} lines
+            {isLivePolling && (
+              <span className="text-muted-foreground">
+                {" "}
+                · polling every {pollInterval / 1000}s
+              </span>
+            )}
+          </span>
+          {viewMode === "raw" && (
+            <span className="text-[10px] text-warning ml-2">
+              raw mode — no filtering or parsing
             </span>
           )}
-        </span>
-        {viewMode === "raw" && (
-          <span className="text-[10px] text-warning ml-2">
-            raw mode — no filtering or parsing
-          </span>
-        )}
-        {viewMode !== "raw" && (
-          <span className="text-[10px] text-muted-foreground ml-auto">
-            Click any line to inspect · Shift+click to extend selection · Copy
-            button to copy
-          </span>
-        )}
-        {selectedLine && !showSelectionBar && viewMode !== "raw" && (
-          <span className="ml-auto text-[10px] text-primary flex items-center gap-1">
-            <Info className="h-3 w-3" />
-            Line {selectedLine.lineIndex + 1}
-          </span>
-        )}
-      </div>
+          {viewMode !== "raw" && (
+            <span className="text-[10px] text-muted-foreground ml-auto">
+              Click any line to inspect · Shift+click to extend selection · Copy
+              button to copy
+            </span>
+          )}
+          {selectedLine && !showSelectionBar && viewMode !== "raw" && (
+            <span className="ml-auto text-[10px] text-primary flex items-center gap-1">
+              <Info className="h-3 w-3" />
+              Line {selectedLine.lineIndex + 1}
+            </span>
+          )}
+        </div>
 
-      {/* ── Main content ── */}
-      <div className="flex-1 flex min-h-0 overflow-hidden">
-        {viewMode === "raw" && (
-          <pre
-            ref={rawRef}
-            className="flex-1 overflow-auto p-3 text-xs font-mono leading-5 text-foreground whitespace-pre-wrap break-all scrollbar-contrast-lg"
-            style={{ scrollbarGutter: "stable" }}
-          >
-            {!rawLogs ? (
-              <span className="text-muted-foreground">
-                No logs. Select an app and click Refresh.
-              </span>
-            ) : (
-              rawLogs
-            )}
-          </pre>
-        )}
+        {/* ── Main content ── */}
+        <div className="flex-1 flex min-h-0 overflow-hidden">
+          {viewMode === "raw" && (
+            <pre
+              ref={rawRef}
+              className="flex-1 overflow-auto p-3 text-xs font-mono leading-5 text-foreground whitespace-pre-wrap break-all scrollbar-contrast-lg"
+              style={{ scrollbarGutter: "stable" }}
+            >
+              {!rawLogs ? (
+                <span className="text-muted-foreground">
+                  No logs. Select an app and click Refresh.
+                </span>
+              ) : (
+                rawLogs
+              )}
+            </pre>
+          )}
 
-        {(viewMode === "log-only" || viewMode === "split") && (
-          <div
-            ref={logRef}
-            className={`flex flex-col overflow-y-auto min-h-0 py-1 scrollbar-contrast-lg ${viewMode === "split" ? "w-1/2 border-r border-border" : "w-full"}`}
-            style={{ scrollbarGutter: "stable" }}
-          >
-            {loading && !rawLogs ? (
-              <div className="px-4 py-2 text-muted-foreground text-xs font-mono">
-                Loading…
-              </div>
-            ) : !rawLogs ? (
-              <div className="px-4 py-2 text-muted-foreground text-xs font-mono">
-                No logs. Select an app and click Refresh.
-              </div>
-            ) : filteredLines.length === 0 ? (
-              <div className="px-4 py-2 text-muted-foreground text-xs font-mono">
-                No lines match the current filters.
-              </div>
-            ) : (
-              filteredLines.map((line, i) => (
-                <LogLine
-                  key={line.lineIndex}
-                  line={line}
-                  timeTick={timeTick}
-                  displayIndex={i + 1}
-                  selected={selectedLine?.lineIndex === line.lineIndex}
-                  inSelection={selectionSet.has(line.lineIndex)}
-                  isAnchor={selAnchor === line.lineIndex}
-                  onSelect={(l) => {
-                    setSelectedLine(l);
-                    if (viewMode === "log-only") setViewMode("split");
-                  }}
-                  onRangeClick={handleRangeClick}
-                />
-              ))
-            )}
-          </div>
-        )}
-
-        {(viewMode === "split" || viewMode === "json-only") && (
-          <div
-            className={`flex flex-col min-h-0 overflow-hidden bg-card border-l border-border ${viewMode === "split" ? "w-1/2" : "w-full"}`}
-          >
-            {/* ── JSON panel header: close ── */}
-            <div className="shrink-0 flex items-center justify-end border-b border-border bg-muted/30 px-1">
-              <button
-                onClick={() => {
-                  setViewMode("log-only");
-                  setSelectedLine(null);
-                }}
-                className="shrink-0 p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent rounded transition-colors"
-                title="Close panel"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
+          {(viewMode === "log-only" || viewMode === "split") && (
+            <div
+              ref={logRef}
+              className={`flex flex-col overflow-y-auto min-h-0 py-1 scrollbar-contrast-lg ${viewMode === "split" ? "w-1/2 border-r border-border" : "w-full"}`}
+              style={{ scrollbarGutter: "stable" }}
+            >
+              {loading && !rawLogs ? (
+                <div className="px-4 py-2 text-muted-foreground text-xs font-mono">
+                  <SuspenseLoader
+                    centered={false}
+                    size="xs"
+                    message="Loading server logs…"
+                  />
+                </div>
+              ) : !rawLogs ? (
+                <div className="px-4 py-2 text-muted-foreground text-xs font-mono">
+                  No logs. Select an app and click Refresh.
+                </div>
+              ) : filteredLines.length === 0 ? (
+                <div className="px-4 py-2 text-muted-foreground text-xs font-mono">
+                  No lines match the current filters.
+                </div>
+              ) : (
+                filteredLines.map((line, i) => (
+                  <LogLine
+                    key={line.lineIndex}
+                    line={line}
+                    timeTick={timeTick}
+                    displayIndex={i + 1}
+                    selected={selectedLine?.lineIndex === line.lineIndex}
+                    inSelection={selectionSet.has(line.lineIndex)}
+                    isAnchor={selAnchor === line.lineIndex}
+                    onSelect={(l) => {
+                      setSelectedLine(l);
+                      if (viewMode === "log-only") setViewMode("split");
+                    }}
+                    onRangeClick={handleRangeClick}
+                  />
+                ))
+              )}
             </div>
+          )}
 
-            {/* ── JSON panel body ── */}
-            {jsonPanelData != null ? (
-              <JsonInspector
-                data={jsonPanelData}
-                defaultView="json"
-                className="flex-1 min-h-0 rounded-none border-0 shadow-none"
-              />
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-xs gap-2">
-                <PanelLeft className="h-8 w-8 opacity-30" />
-                <span>Click a log line to inspect it here</span>
+          {(viewMode === "split" || viewMode === "json-only") && (
+            <div
+              className={`flex flex-col min-h-0 overflow-hidden bg-card border-l border-border ${viewMode === "split" ? "w-1/2" : "w-full"}`}
+            >
+              {/* ── JSON panel header: close ── */}
+              <div className="shrink-0 flex items-center justify-end border-b border-border bg-muted/30 px-1">
+                <button
+                  onClick={() => {
+                    setViewMode("log-only");
+                    setSelectedLine(null);
+                  }}
+                  className="shrink-0 p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent rounded transition-colors"
+                  title="Close panel"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
               </div>
-            )}
-          </div>
-        )}
+
+              {/* ── JSON panel body ── */}
+              {jsonPanelData != null ? (
+                <JsonInspector
+                  data={jsonPanelData}
+                  defaultView="json"
+                  className="flex-1 min-h-0 rounded-none border-0 shadow-none"
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-xs gap-2">
+                  <PanelLeft className="h-8 w-8 opacity-30" />
+                  <span>Click a log line to inspect it here</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
     </SurfaceRuntimeProvider>
   );
 }

@@ -103,7 +103,10 @@ export function SchedulingAdminLayoutClient({
             <CalendarClock className="h-4 w-4 text-blue-500" />
             <span className="font-medium text-sm">Scheduling</span>
           </div>
-          <nav className="flex items-center h-12 gap-1 overflow-x-auto">
+          <nav
+            className="flex items-center h-12 gap-1 overflow-x-auto"
+            data-surface-value="active_tab"
+          >
             {NAV_ITEMS.map((item) => {
               const active = isActive(pathname, item.href, item.exact);
               const navigating = isPending && pendingHref === item.href;

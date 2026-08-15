@@ -2,10 +2,10 @@
 import { useState } from "react";
 import { supabase } from "@/utils/supabase/client";
 import {
-  unwrapGetUserTableComplete,
-  unwrapGetUserTableDataPaginatedRows,
-} from "@/utils/user-tables-rpc";
-import { getTableMetadata } from "@/features/data-tables/service";
+  getCompleteTable,
+  getTableMetadata,
+  getTablePage,
+} from "@/features/data-tables/service";
 import { isServiceFailure } from "@/features/data-tables/types";
 import {
   Dialog,
@@ -70,28 +70,21 @@ export default function ExportTableModal({
     if (isServiceFailure(meta)) throw new Error(meta.error);
     const fieldsData = meta.data.columns;
 
-    const { data, error } = await supabase.rpc(
-      "get_user_table_data_paginated_v2",
-      {
-        p_table_id: tableId,
-        p_limit: 10000, // Large limit to get all search results
-        p_offset: 0,
-        p_sort_field: sortField ?? undefined,
-        p_sort_direction: sortDirection,
-        p_search_term: searchTerm ?? undefined,
-      },
-    );
-
-    if (error)
-      throw new Error(error.message || "Failed to fetch filtered data");
-
-    const rows = unwrapGetUserTableDataPaginatedRows(data ?? null);
+    const page = await getTablePage({
+      tableId,
+      limit: 10000,
+      offset: 0,
+      sortField,
+      sortDirection,
+      searchTerm,
+    });
+    if (isServiceFailure(page)) throw new Error(page.error);
 
     // Return in the same format as get_user_table_complete for compatibility
     return {
       success: true,
       fields: fieldsData || [],
-      data: rows,
+      data: page.data.rows,
     };
   };
 
@@ -101,14 +94,17 @@ export default function ExportTableModal({
       return await fetchFilteredData();
     }
     // Full table export
-    const { data, error } = await supabase.rpc("get_user_table_complete", {
-      p_table_id: tableId,
-      p_sort_field: sortField ?? undefined,
-      p_sort_direction: sortDirection,
+    const complete = await getCompleteTable({
+      tableId,
+      sortField,
+      sortDirection,
     });
-    if (error) throw error;
-    const u = unwrapGetUserTableComplete(data ?? null);
-    return { success: true, fields: u.fields, data: u.data };
+    if (isServiceFailure(complete)) throw new Error(complete.error);
+    return {
+      success: true,
+      fields: complete.data.fields,
+      data: complete.data.rows,
+    };
   };
 
   // Generate CSV from table data (client-side, for filtered exports)

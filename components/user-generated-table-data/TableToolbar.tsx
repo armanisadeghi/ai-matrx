@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import AddColumnModal from "./AddColumnModal";
 import AddRowModal from "./AddRowModal";
 import EditRowModal from "./EditRowModal";
@@ -126,6 +127,8 @@ interface TableToolbarProps {
 
   /** Optional trailing controls in the toolbar row (e.g. chat artifact revert). */
   toolbarTrailing?: React.ReactNode;
+  /** Shared direct Copy / Copy for AI controls for the current table view. */
+  copyControls?: React.ReactNode;
 }
 
 export default function TableToolbar({
@@ -184,7 +187,9 @@ export default function TableToolbar({
   disableRowOrdering,
   onRowOrderingSuccess,
   toolbarTrailing,
+  copyControls,
 }: TableToolbarProps) {
+  const isMobile = useIsMobile();
   // Show toast when trying to use edit features in read-only mode
   const showReadOnlyToast = () => {
     toast({
@@ -322,6 +327,8 @@ export default function TableToolbar({
           {/* Bulk cell cleanup — the caller's <CellCleanupButton>. */}
           {cleanupControl}
 
+          {!isMobile ? copyControls : null}
+
           {/* Reference - always available (read-only action) */}
           <Button
             variant="outline"
@@ -427,6 +434,11 @@ export default function TableToolbar({
               setShowReferenceOverlay(true);
             }}
           />
+          {isMobile && copyControls ? (
+            <div className="border-t border-border px-2 py-2 [&_button]:min-h-11">
+              {copyControls}
+            </div>
+          ) : null}
           <MobileActionRow
             icon={Download}
             label="Export Table"
