@@ -196,9 +196,10 @@ export class SandboxProcessAdapter implements ProcessAdapter {
    * ownership-checking route, then connects the browser directly to the
    * orchestrator. Vercel route handlers cannot complete WebSocket upgrades.
    *
-   * Each frame is a single JSON object terminated by `\n`. Falls back
-   * gracefully when the browser cannot reach the WebSocket — the caller
-   * can drop back to read-line emulation.
+   * The daemon sends raw PTY bytes and accepts raw text keystrokes. JSON is
+   * reserved for client-to-daemon resize/signal control frames. Falls back
+   * gracefully when the browser cannot reach the WebSocket — the caller can
+   * drop back to read-line emulation.
    */
   async openPty(opts: PtyOpenOptions): Promise<PtyHandle> {
     if (typeof window === "undefined") {
@@ -236,7 +237,14 @@ export class SandboxProcessAdapter implements ProcessAdapter {
     params.set("access_token", credential.token);
     const url = `${credential.ws_base.replace(/\/$/, "")}/sandboxes/${encodeURIComponent(credential.sandbox_id)}/pty?${params.toString()}`;
 
+    if (window.location.protocol === "https:" && url.startsWith("ws://")) {
+      throw new Error(
+        "PTY endpoint is not TLS-enabled (ws:// cannot connect from this HTTPS page)",
+      );
+    }
+
     const socket = new WebSocket(url);
+    socket.binaryType = "arraybuffer";
     let isOpen = false;
     let closed = false;
 
@@ -274,40 +282,12 @@ export class SandboxProcessAdapter implements ProcessAdapter {
     };
 
     socket.onmessage = (event) => {
-      const raw = typeof event.data === "string" ? event.data : "";
-      if (!raw) return;
-      // Daemon may send either single JSON object frames or NDJSON when
-      // batched. Split on newlines and parse each non-empty line.
-      for (const line of raw.split("\n")) {
-        if (!line.trim()) continue;
-        let msg: Record<string, unknown> | null = null;
-        try {
-          msg = JSON.parse(line);
-        } catch {
-          // Malformed frame — pass the raw bytes through so users still
-          // see something sensible if the daemon ever degrades.
-          opts.onData(line);
-          continue;
-        }
-        if (!msg) continue;
-        if (msg.type === "output") {
-          opts.onData(typeof msg.data === "string" ? msg.data : "");
-        } else if (msg.type === "exit") {
-          opts.onExit?.(
-            typeof msg.code === "number" ? msg.code : null,
-            typeof msg.signal === "string" ? msg.signal : null,
-          );
-        } else if (msg.type === "error") {
-          opts.onError?.(
-            new Error(
-              typeof msg.message === "string" ? msg.message : "PTY error",
-            ),
-          );
-        } else if (msg.type === "ready") {
-          opts.onReady?.();
-        }
-        // Ignore unknown frame types so the daemon can extend without
-        // breaking older clients.
+      if (typeof event.data === "string") {
+        opts.onData(event.data);
+        return;
+      }
+      if (event.data instanceof ArrayBuffer) {
+        opts.onData(new TextDecoder().decode(event.data));
       }
     };
 
@@ -317,7 +297,10 @@ export class SandboxProcessAdapter implements ProcessAdapter {
     // connection fails (host unreachable, auth failure, …) the Promise
     // rejects and the caller can stay on the buffered fallback.
     return await new Promise<PtyHandle>((resolve, reject) => {
-      const CONNECT_TIMEOUT_MS = 4000;
+      // The orchestrator resolves the container and its internal IP before it
+      // accepts the browser upgrade. A cold/busy host can legitimately take
+      // longer than four seconds even though the sandbox itself is healthy.
+      const CONNECT_TIMEOUT_MS = 15_000;
       let settled = false;
       const settle = (fn: () => void) => {
         if (settled) return;

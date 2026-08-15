@@ -549,13 +549,19 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
           handle.close();
           return;
         }
-        // Tear down the buffered listener and route keystrokes straight
-        // to the PTY. The remote daemon owns line editing, history,
-        // signal handling, and prompt rendering from this point.
+        if (!handle.isOpen) {
+          throw new Error("PTY connection closed during terminal attachment");
+        }
+        // Publish the handle before replacing the input listener. If the
+        // socket closes after this synchronous block, onExit can now restore
+        // buffered input instead of leaving xterm wired to a dead handle.
+        state.pty = handle;
+        // Tear down the buffered listener and route keystrokes straight to
+        // the PTY. The remote daemon owns line editing, history, signal
+        // handling, and prompt rendering from this point.
         state.onDataDisposer?.();
         const liveListener = term.onData((data) => handle.write(data));
         state.onDataDisposer = () => liveListener.dispose();
-        state.pty = handle;
         // Clear the local-prompt scaffolding so we don't render two
         // prompts on top of each other when the daemon emits its own.
         term.write("\r\x1b[K");

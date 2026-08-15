@@ -54,8 +54,11 @@ describe("SandboxProcessAdapter.openPty", () => {
       static readonly OPEN = 1;
       readonly sent: string[] = [];
       readyState = MockWebSocket.OPEN;
+      binaryType = "blob";
       onopen: (() => void) | null = null;
-      onmessage: ((event: { data: string }) => void) | null = null;
+      onmessage:
+        | ((event: { data: string | ArrayBuffer }) => void)
+        | null = null;
       onerror: (() => void) | null = null;
       onclose: (() => void) | null = null;
       constructor(readonly url: string) {
@@ -70,9 +73,10 @@ describe("SandboxProcessAdapter.openPty", () => {
     globalThis.WebSocket = MockWebSocket as unknown as typeof WebSocket;
 
     const adapter = new SandboxProcessAdapter("row-id");
+    const onData = jest.fn();
     let resolved = false;
     const pending = adapter.openPty({
-      onData: jest.fn(),
+      onData,
     });
     pending.then(() => {
       resolved = true;
@@ -87,10 +91,17 @@ describe("SandboxProcessAdapter.openPty", () => {
     handle.resize(100, 40);
     handle.signal("SIGINT");
 
+    const outputBytes = new Uint8Array([
+      97, 103, 101, 110, 116, 64, 98, 111, 120, 58, 126, 36, 32,
+    ]);
+    sockets[0]?.onmessage?.({ data: outputBytes.buffer });
+
     expect(sockets[0]?.sent).toEqual([
       "echo hello\r",
       JSON.stringify({ type: "resize", cols: 100, rows: 40 }),
       JSON.stringify({ type: "signal", name: "SIGINT" }),
     ]);
+    expect(sockets[0]?.binaryType).toBe("arraybuffer");
+    expect(onData).toHaveBeenCalledWith("agent@box:~$ ");
   });
 });
