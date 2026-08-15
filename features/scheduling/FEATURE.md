@@ -36,14 +36,13 @@ Execution happens on:
   - `scanner-health/page.tsx` — aidream-backed status (auto-refresh)
   - `templates/page.tsx` — admin-curated starter schedules (stub)
 - **Hooks:** `features/scheduling/hooks/`
-  - `useScheduledTasks` — list hydration + Supabase realtime on
-    `sch_task` (current user filter)
-  - `useTaskListStream` — INSERT/UPDATE/DELETE subscription used by
-    `useScheduledTasks`
+  - `useScheduledTasks` — list hydration + private scheduler Broadcast
+  - `useTaskListStream` — INSERT/UPDATE/DELETE Broadcast hints used by
+    `useScheduledTasks`; durable rows are refetched through table RLS
   - `useTaskDetail` — single task + runs
   - `useTaskRuns` — run history
-  - `useRunStream` — realtime on `sch_run` + `sch_task` for the
-    visible task
+  - `useRunStream` — private per-user Broadcast for `sch_run` +
+    `sch_task`, filtered to the visible task in the client
 - **Services:**
   - `features/scheduling/service/schedulerClient.ts` — typed HTTP
     client for the aidream `/scheduler/*` router (matrx-scheduler
@@ -120,10 +119,13 @@ injection of triggers/runs).
    ownership, stamps `user_id` from the task, sets `status='queued'`,
    `surface=NULL`). The aidream scanner picks it up within ~5 seconds.
 4. **Live updates** —
-   - List view: `useTaskListStream` subscribes to INSERT/UPDATE/DELETE
-     on `sch_task` filtered by `user_id=eq.${userId}`.
-   - Detail view: `useRunStream` subscribes to `sch_run` for the task
-     AND `sch_task` UPDATEs.
+   - One shared private topic, `scheduler:user:<auth.uid()>`, carries
+     database-triggered Broadcast events for `sch_task` and `sch_run`.
+     `realtime.messages` RLS authorizes only the matching signed-in user.
+   - List and detail consumers filter the Broadcast payload locally, then
+     patch or refetch the durable RLS-protected rows. The scheduler tables
+     are deliberately absent from `supabase_realtime`; their high-frequency
+     scanner writes must never re-enter the per-WAL-row RLS evaluator.
 5. **Cron preview** — FE renders `next 5 fires` inline via
    `lib/scheduler-client/next-due` (TS twin of the Python `next_due`
    module) + `cronstrue`. Authoritative `next_due_at` written to the
@@ -137,7 +139,7 @@ injection of triggers/runs).
    scheduled tasks, claims atomically (partial unique index), advances
    `next_due_at` immediately on claim, dispatches to runner. Runner
    drives the matrx-ai bridge in `aidream/services/scheduling/
-   agent_runner_adapter.py` and writes results back with `claim_token`
+agent_runner_adapter.py` and writes results back with `claim_token`
    gating.
 
 ## Invariants
@@ -162,15 +164,15 @@ injection of triggers/runs).
 9. **THE SCHEDULER DUPLICATE GUARD — never mirror the fingerprint here.**
    What makes two schedules "the same" is decided in ONE place,
    `matrx_scheduler.duplicate_guard` (agent + prompt + variables + queue
-   + enabled triggers, deliberately NOT the title). A TypeScript copy
-   would drift the first time either side changed, so the FE only ever
-   renders what `GET /scheduler/tasks/duplicates` already decided.
-   Corollaries: a create that came back `deduplicated: true` must never
-   be reported as "created" — it is a lie the user acts on; the banner
-   offers **pause**, never delete, because pausing stops the cost
-   immediately, changes no results and is reversible; and the duplicates
-   lookup fails SILENTLY (an advisory layer must never turn a working
-   schedule list into an error page).
+   - enabled triggers, deliberately NOT the title). A TypeScript copy
+     would drift the first time either side changed, so the FE only ever
+     renders what `GET /scheduler/tasks/duplicates` already decided.
+     Corollaries: a create that came back `deduplicated: true` must never
+     be reported as "created" — it is a lie the user acts on; the banner
+     offers **pause**, never delete, because pausing stops the cost
+     immediately, changes no results and is reversible; and the duplicates
+     lookup fails SILENTLY (an advisory layer must never turn a working
+     schedule list into an error page).
 
 ## Related features
 
@@ -183,10 +185,10 @@ injection of triggers/runs).
 
 ## Tests
 
-| Layer | Count | Location |
-|---|---|---|
-| Python | 25 (cron + edge cases + DST + malformed inputs) | `aidream/packages/matrx-scheduler/tests/` |
-| FE Jest | triggerHumanize + validation | `features/scheduling/utils/__tests__/` |
+| Layer   | Count                                           | Location                                  |
+| ------- | ----------------------------------------------- | ----------------------------------------- |
+| Python  | 25 (cron + edge cases + DST + malformed inputs) | `aidream/packages/matrx-scheduler/tests/` |
+| FE Jest | triggerHumanize + validation                    | `features/scheduling/utils/__tests__/`    |
 
 Run: `pnpm exec jest features/scheduling/` and (inside aidream)
 `uv run pytest packages/matrx-scheduler/tests`.
@@ -201,6 +203,13 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
   errors yet.
 
 ## Change log
+
+- **2026-08-15** — Replaced `sch_task` / `sch_run` `postgres_changes`
+  consumers with one ref-counted private per-user Broadcast channel. Database
+  triggers emit row-change hints, `realtime.messages` RLS gates the topic to
+  `auth.uid()`, and both scheduler tables were removed from the
+  `supabase_realtime` publication. This cuts the WAL/RLS path's largest input
+  while keeping durable state and reconnect catch-up on normal RLS reads.
 
 - **2026-08-14** — claude: **THE SCHEDULER DUPLICATE GUARD — one job, one schedule.** "Human Baseline Schedule" existed twice in `scheduler.sch_task` (`515dcc49-…` / `da07e6c6-…`), created 36 seconds apart by one user, identical in every field that decides what runs. Both enabled, both firing hourly for FIVE DAYS, doubling agent spend. Nothing was broken, which is exactly why nobody caught it: two healthy schedules running perfectly are indistinguishable from one unless something is explicitly looking for the pair. Root cause was that the CREATE path had no notion of identity, so a double-click or a retried `create_scheduled_task` MCP call inserted a second complete schedule and an always-on trigger turned that one instant into open-ended recurring cost. Four layers, ONE key: (1) `matrx_scheduler.duplicate_guard.task_fingerprint` defines identity as what a schedule DOES — kind, queue, agent, prompt, variables, enabled triggers — and deliberately **ignores the title**, because two differently-named schedules on the same agent and cron cost exactly as much as two identically-named ones; (2) create is now idempotent on that key, returning the EXISTING schedule (`deduplicated: true`, HTTP 200) rather than a twin, with `force: true` as the escape hatch for a genuinely-wanted second schedule (which then still raises the alarm, so a deliberate pair is visible rather than silent); (3) a `platform.assists` chip names the twin and carries the door, routed through the SAME `escalation_sink` THE REPEAT GUARD uses — one alarm path out of the package, dispatched on payload type in `aidream/services/scheduling/escalation.py`, so a host can never wire one guard and leave the other log-only; (4) `DuplicateScheduleBanner` on `/schedules` **and** the admin tasks console renders the groups above the list (duplication is a property of the SET — no row can show it), links every named schedule per THE DOOR LAW, and ships the one-click **pause** fix. `can_fire` gates all of it: a paused or trigger-less schedule bills nothing and duplicates nothing — a rule found by an existing API test that caught two trigger-less `ping` tasks being grouped, and the reason "pause the extra" is an honest resolution. Validated against the live table before shipping: across all 39 rows the fingerprint produced exactly ONE group (the incident pair) and zero false positives, notably NOT collapsing the two distinct schedules both titled "Weekly Marketing Recap". The guard never picks a winner and never deletes. 129 package tests pass; `pnpm type-check` clean.
 
@@ -221,38 +230,38 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
   task reappeared on the next list fetch because the FE / scanner
   couldn't distinguish a soft-deleted row from a paused row — both
   used `enabled=false`). Five-part change:
-  * **Migration** `migrations/sch_task_deleted_at.sql` — added
+  - **Migration** `migrations/sch_task_deleted_at.sql` — added
     `sch_task.deleted_at TIMESTAMPTZ NULL` plus a partial index
     `sch_task_user_id_active_idx ON (user_id, updated_at DESC) WHERE
-    deleted_at IS NULL` so the common "my schedules, newest first"
+deleted_at IS NULL` so the common "my schedules, newest first"
     query stays fast.
-  * **matrx-scheduler package** (`api/user_queries.py`) — `list_tasks`
+  - **matrx-scheduler package** (`api/user_queries.py`) — `list_tasks`
     / `count_tasks` / `get_task` filter `deleted_at IS NULL`;
-    `soft_delete_task` now writes `deleted_at = now()` *and* keeps
+    `soft_delete_task` now writes `deleted_at = now()` _and_ keeps
     `enabled = false` (belt + suspenders for the scanner);
     `update_task` refuses to PATCH a soft-deleted row (returns None
     → router 404) so a misbehaving FE can't silently revive a
     deleted task. `queries.py` (scanner) also defensively filters
     `deleted_at IS NULL`. Test asserting GET-after-delete is now
     updated to expect 404 (was 200); 75 / 75 pass.
-  * **FE reads** (`features/scheduling/service/queries.ts`) —
+  - **FE reads** (`features/scheduling/service/queries.ts`) —
     `listAgentTasks` and `getAgentTask` add `.is("deleted_at", null)`
     so the list view and detail / edit pages match the HTTP surface.
     `useTaskListStream` now treats an UPDATE that flips
     `deleted_at != null` as a removal (other tabs / sessions drop the
     row immediately).
-  * **Wire-type cleanup** —
+  - **Wire-type cleanup** —
     `features/scheduling/service/schedulerApi.types.ts:RunResponse`
     dropped `claim_token` and `claim_expires_at` to match the
     package's Pydantic schema (internal scheduler-lease state, never
     exposed via the HTTP surface; the admin orphan-leases page still
     reads them directly via `scheduling-admin-service.ts` against
     `SchRunRow`).
-  * **Confirm-dialog copy** — `ScheduleRow` and `ScheduleDetail`
+  - **Confirm-dialog copy** — `ScheduleRow` and `ScheduleDetail`
     "Delete schedule" dialogs no longer claim "and its run history"
     (run history is preserved by FK; only the schedule row is
     hidden).
-  * **`types/database.types.ts`** — `sch_task` Row / Insert / Update
+  - **`types/database.types.ts`** — `sch_task` Row / Insert / Update
     sections updated to include `deleted_at: string | null`.
 
   Net effect: pressing Delete now does what users expect (gone from

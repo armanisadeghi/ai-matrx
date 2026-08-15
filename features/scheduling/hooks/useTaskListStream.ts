@@ -1,16 +1,16 @@
 // features/scheduling/hooks/useTaskListStream.ts
 //
-// List-view realtime: subscribe to sch_task INSERT/UPDATE/DELETE for the
-// current user so the list stays fresh without polling. Filters by
-// user_id=eq.${userId} server-side per Supabase realtime conventions.
+// List-view realtime: private per-user Broadcast hints keep the durable,
+// RLS-fetched schedule list fresh without putting scheduler churn through
+// Realtime's per-WAL-row RLS evaluator.
 
 "use client";
 
 import { useEffect } from "react";
 import { supabase } from "@/utils/supabase/client";
-import { uniqueChannelTopic } from "@/utils/supabase/realtime";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { subscribeSchedulerBroadcast } from "@/lib/scheduler-client/realtime";
 import { fetchScheduledTask } from "../redux/tasks/thunks";
 import { patchTask, removeTask } from "../redux/tasks/slice";
 import type { AgendaTask, SchTaskRow } from "../types";
@@ -37,36 +37,24 @@ export function useTaskListStream() {
   useEffect(() => {
     if (!userId) return undefined;
 
-    const channel = supabase
-      .channel(uniqueChannelTopic(`sch_task-list-${userId}`))
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "scheduler",
-          table: "sch_task",
-          filter: `user_id=eq.${userId}`,
-        },
-        (payload) => {
-          const row = payload.new as Partial<SchTaskRow>;
+    const unsubscribe = subscribeSchedulerBroadcast(
+      supabase,
+      userId,
+      (event, payload) => {
+        if (payload.schema !== "scheduler" || payload.table !== "sch_task")
+          return;
+        if (event === "INSERT") {
+          const row = payload.new as Partial<SchTaskRow> | null;
           if (row?.id) {
             // INSERT carries no joined agent/triggers — refetch the full shape.
             dispatch(fetchScheduledTask(row.id)).catch(() => {
               /* slice tracks error */
             });
           }
-        },
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "scheduler",
-          table: "sch_task",
-          filter: `user_id=eq.${userId}`,
-        },
-        (payload) => {
-          const row = payload.new as Partial<SchTaskRow>;
+          return;
+        }
+        if (event === "UPDATE") {
+          const row = payload.new as Partial<SchTaskRow> | null;
           const id = row?.id;
           if (!id) return;
           // A soft-delete fires as an UPDATE (deleted_at flips from null to
@@ -78,25 +66,17 @@ export function useTaskListStream() {
           }
           const patch = buildTaskPatch(row);
           if (patch) dispatch(patchTask({ id, patch }));
-        },
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "DELETE",
-          schema: "scheduler",
-          table: "sch_task",
-          filter: `user_id=eq.${userId}`,
-        },
-        (payload) => {
-          const oldRow = payload.old as Partial<SchTaskRow> | undefined;
+          return;
+        }
+        if (event === "DELETE") {
+          const oldRow = payload.old as Partial<SchTaskRow> | null;
           if (oldRow?.id) dispatch(removeTask(oldRow.id));
-        },
-      )
-      .subscribe();
+        }
+      },
+    );
 
     return () => {
-      void supabase.removeChannel(channel);
+      void unsubscribe();
     };
   }, [dispatch, userId]);
 }

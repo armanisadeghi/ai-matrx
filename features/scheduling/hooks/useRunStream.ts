@@ -8,15 +8,17 @@
 
 import { useEffect } from "react";
 import { supabase } from "@/utils/supabase/client";
-import { uniqueChannelTopic } from "@/utils/supabase/realtime";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { subscribeSchedulerBroadcast } from "@/lib/scheduler-client/realtime";
 import { removeRun, upsertRun } from "../redux/runs/slice";
 import { patchTask } from "../redux/tasks/slice";
 import type { AgendaTask, SchRunRow, SchTaskRow } from "../types";
 
 function buildTaskPatch(row: Partial<SchTaskRow>): Partial<AgendaTask> | null {
   const patch: Partial<AgendaTask> = {};
-  if ("enabled" in row && row.enabled !== undefined) patch.enabled = row.enabled;
+  if ("enabled" in row && row.enabled !== undefined)
+    patch.enabled = row.enabled;
   if ("next_due_at" in row) patch.nextDueAt = row.next_due_at ?? null;
   if ("last_run_at" in row) patch.lastRunAt = row.last_run_at ?? null;
   if ("updated_at" in row && row.updated_at) patch.updatedAt = row.updated_at;
@@ -30,48 +32,38 @@ function buildTaskPatch(row: Partial<SchTaskRow>): Partial<AgendaTask> | null {
 
 export function useRunStream(taskId: string | null | undefined) {
   const dispatch = useAppDispatch();
+  const userId = useAppSelector(selectUserId);
 
   useEffect(() => {
-    if (!taskId) return undefined;
+    if (!taskId || !userId) return undefined;
 
-    const channel = supabase
-      .channel(uniqueChannelTopic(`sch_run-${taskId}`))
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "scheduler",
-          table: "sch_run",
-          filter: `task_id=eq.${taskId}`,
-        },
-        (payload) => {
-          if (payload.eventType === "DELETE") {
-            const oldRow = payload.old as Partial<SchRunRow> | undefined;
-            if (oldRow?.id) dispatch(removeRun(oldRow.id));
+    const unsubscribe = subscribeSchedulerBroadcast(
+      supabase,
+      userId,
+      (event, payload) => {
+        if (payload.schema !== "scheduler") return;
+        if (payload.table === "sch_run") {
+          const candidate = event === "DELETE" ? payload.old : payload.new;
+          const run = candidate as Partial<SchRunRow> | null;
+          if (run?.task_id !== taskId) return;
+          if (event === "DELETE") {
+            if (run.id) dispatch(removeRun(run.id));
             return;
           }
-          const row = payload.new as SchRunRow;
-          dispatch(upsertRun(row));
-        },
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "scheduler",
-          table: "sch_task",
-          filter: `id=eq.${taskId}`,
-        },
-        (payload) => {
-          const row = payload.new as Partial<SchTaskRow>;
+          dispatch(upsertRun(run as SchRunRow));
+          return;
+        }
+        if (payload.table === "sch_task" && event === "UPDATE") {
+          const row = payload.new as Partial<SchTaskRow> | null;
+          if (row?.id !== taskId) return;
           const patch = buildTaskPatch(row);
           if (patch) dispatch(patchTask({ id: taskId, patch }));
-        },
-      )
-      .subscribe();
+        }
+      },
+    );
 
     return () => {
-      void supabase.removeChannel(channel);
+      void unsubscribe();
     };
-  }, [dispatch, taskId]);
+  }, [dispatch, taskId, userId]);
 }
