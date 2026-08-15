@@ -101,7 +101,10 @@ export function SnapshotDetail({
   return (
     <main className="h-full overflow-y-auto bg-textured p-3 sm:p-4">
       <div className="grid w-full gap-3">
-        <section className="flex min-w-0 items-center justify-between gap-3 rounded-lg border border-border bg-card p-3">
+        {/* Stacks on mobile: at 375px the row squeezed the identity column to
+            ~1ch and printed "IMMUTABLE SNAPSHOT" one letter per line, with the
+            id and URL pushed out of view entirely. */}
+        <section className="flex min-w-0 flex-col gap-2 rounded-lg border border-border bg-card p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
           <div className="min-w-0">
             <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
               Immutable snapshot
@@ -113,7 +116,7 @@ export function SnapshotDetail({
               {row.final_url || "No final URL recorded"}
             </p>
           </div>
-          <div className="flex shrink-0 items-center gap-1">
+          <div className="flex shrink-0 flex-wrap items-center gap-1">
             <ShareButton
               resourceType="web_snapshot"
               resourceId={row.id}

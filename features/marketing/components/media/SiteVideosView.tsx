@@ -61,9 +61,9 @@ import { videoPublishDateFromMetadata } from "@/lib/media/video-date";
 import { useYouTubeVideoIdentityIndex } from "@/features/research/hooks/useResearchState";
 import {
   BrandAssetDetailDialog,
-  readVideoMetadata,
   type AssetPageRef,
 } from "@/features/marketing/components/media/BrandAssetDetail";
+import { readVideoMetadata } from "@/features/marketing/lib/video-metadata";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 
 const PROVIDER_LABELS: Record<SiteVideoAsset["provider"], string> = {

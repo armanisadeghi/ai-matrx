@@ -20,6 +20,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -362,9 +363,16 @@ export function PushToCmsCard({
                 </div>
               ) : null}
               {matched?.plan_node_id ? (
-                <div className="text-[11px] text-muted-foreground">
+                // `plan_node` has a route — the id was printed as mono text.
+                <div className="flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
                   Linked plan node:
-                  <span className="ml-1 font-mono">{matched.plan_node_id}</span>
+                  <EntityRef
+                    token="plan_node"
+                    id={matched.plan_node_id}
+                    name={matched.title || undefined}
+                    openInNewTab
+                    wrap
+                  />
                 </div>
               ) : null}
             </div>
