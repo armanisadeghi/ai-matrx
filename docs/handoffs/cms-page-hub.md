@@ -80,8 +80,8 @@ Chips fired 2026-08-14 for W1–W3 (each carries its full spec — this list is 
    `/marketing/content-plan/{site_id}?node={id}`; read-only — the NodePanel editors are NOT
    duplicated. Plan-less + paired site: `bridgeAdopt` behind a `ConfirmDialog`, server per-item
    result shown verbatim, page refetched via the new `onRefetchPage` prop. Unpaired site: says so
-   and links `/marketing/content-plan`. `type-check` + `check:surface-drift` clean; browser pass
-   still owed (the shared dev server died during compile on three attempts).
+   and links `/marketing/content-plan`. Verified in PRODUCTION 2026-08-14 (v0.4.684): the tab renders and
+   its unpaired-site empty state names the gap and offers the content-plans door.
 2. ~~**Measure tab** — `<PageWorkspace pageId={web_page_id}/>` reused wholesale + door + honest
    empty state.~~ **DONE 2026-08-14.** `features/cms/components/measure/CmsPageMeasure.tsx`
    (`React.lazy` in-gate, mounted only while the tab is active) renders the canonical
@@ -97,8 +97,8 @@ Chips fired 2026-08-14 for W1–W3 (each carries its full spec — this list is 
    `marketingRoutes.sitePage(...)` in a new tab (unsaved editor buffers survive); unjoined pages
    name what makes the join (publish + crawl) and link the site's measured pages, no fake CTA; a
    site with no brand says so rather than emitting an empty `brand_id` into agent context.
-   `type-check` + `check:surface-drift` clean; **browser pass still owed** — the shared dev
-   server was OOM-killed by its 8 GB guard on three attempts (11–13 GB RSS while compiling).
+   Verified in PRODUCTION 2026-08-14 (v0.4.684): tab renders, active-tab state correct,
+   unjoined pages explain that publish + crawl make the join.
 3. ~~**Reverse doors** — "Edit in CMS" from PageWorkspace and from every plan tree/table CMS
    badge.~~ **DONE 2026-08-14.** `features/cms/utils/cmsRoutes.ts` (`cmsPageEditorHref`) is
    the one href builder; PageWorkspace's header door resolves off the existing push lane
@@ -141,7 +141,10 @@ Chips fired 2026-08-14 for W1–W3 (each carries its full spec — this list is 
   NodePanel/NodeStepRail); pipeline records: aidream `services/content_plan/artifacts.py`
 - Measured side: `features/marketing/components/pages/PageWorkspace.tsx`, analysis hooks
   `features/marketing/data/analysis-hooks.ts`, GSC `features/marketing/search-console/`
-- Worked example page (plan-created, published): 
+- Worked example page (plan-created, has `plan_node_id`, unpublished):
   `/cms/4d536826-9795-4788-bbfa-3fc77a59767a/pages/7f79c21a-6a77-4bdc-8e9f-a649ce6376b2`
+  — PBW Law, owned by arman@armansadeghi.com in the AI Matrx org. **The `admin@admin.com`
+  test login is NOT a member of that org and gets refused** (correct behavior, ugly message —
+  chipped). Use `dev-website` (`16f6b29b-…`) for test-login walkthroughs.
 - Test login `admin@admin.com` / `Password1234#`; never write to `iopbm` / `prp-injection-md`
   (real clients — use dev-website / cosmeticinjectables).

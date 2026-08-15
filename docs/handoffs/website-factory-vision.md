@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-08-13
+updated: 2026-08-14
 repos: [matrx-frontend, aidream, my-matrx]
 vision: [this doc §Vision — Arman's words, 2026-07-30 chat]
 ---
@@ -79,7 +79,7 @@ Per SITE (once, "the starting thing"):
 | Step | Exists today? | Where it inserts |
 |---|---|---|
 | S1. Content plan (tree of pages, briefs, keywords) | ✅ works | `/marketing/content-plan/[siteId]`; `plan.node` (821 live nodes); generator `aidream/aidream/services/content_plan/generator.py` |
-| S2. Site shell: theme CSS, header+menu, footer | ⚠️ half | `cms_site starter_kit` (`aidream/services/cms/starter_kit.py`) seeds all three, agent-only, no UI button; **renderer `theme_config`→CSS wiring is dead in my-matrx** (`lib/render/themeCss.js` exists, unimported — filed defect 2026-07-27) |
+| S2. Site shell: theme CSS, header+menu, footer | ✅ works | `starter_kit` seeds all three; human Install button on `/cms/[siteId]/settings` (WF-7) and real theme/nav/footer editors with in-place AI (WF-6 + AI-everywhere). Renderer theme wiring fixed (WF-1). |
 | S3. Design system: curated section/block library (hero, cards, CTA, FAQ, pricing…) per site | ❌ none | New: block library the starter kit installs (site CSS + reference markup); consumed by S4 and P6 |
 | S4. ~~Page templates: no page created without a prebuilt template~~ **RETIRED (Arman, 2026-08-07):** *"my comments were silly … figure it out and remove that from the vision."* The real goal behind it was **a non-technical way for the user to edit a page's TEXT without knowing HTML** — in the AI age the page itself can be the template. Replacement direction: smart per-case paths (block library where it helps, free-form where it doesn't) + an easy text-edit surface for humans. The structured-content draft in the P4 record (below) is what makes that surface possible — edit the structured sections, the builder re-renders. | — | No template entity. `client_pages.page_type`/`layout_type` stay labels. |
 
@@ -106,94 +106,30 @@ fork it.
 lifecycle with publication; there is no "researched / written / reviewed / built" axis and no
 node-level "has page / is live" flag, and the plan UI shows none of the CMS linkage.
 
-## P4 — the per-page working-content record: BUILT 2026-08-12 (shape as proposed — flag for Arman's review)
+## P4 — the per-page working-content record: BUILT and PROVEN IN PRODUCTION
 
-Ruling (Arman, 2026-08-07): plan side, main DB — *"absolutely no question"*; the SHAPE below
-was the argued proposal and was **built exactly as written** (bias-to-action call, 2026-08-12
-session; append-only data, nothing downstream depends on it yet, so shape adjustments stay
-cheap). Live: aidream migration `0344` (`plan.node_artifact` + `plan.node_step`, components of
-`plan_node`, canonical RLS, site/org trigger-stamped, supersession index proven live);
-writer module `aidream/services/content_plan/artifacts.py` (STEPS vocabulary, loud-open
-recording); wired producers: deepen → `p2_research` (+ research artifact), cms_fill →
-`p6_build` running/done/failed (+ `final` build artifact, preview-write included), publish
-flow-back → `p7_publish`. FE: direct RLS reads + the NodePanel "Pipeline" rail
-(`NodeStepRail.tsx`) + tree/table progress badges from one site-wide query. NOT yet done: formal
-content-ir kind registration for the two envelope shapes, per-step run actions, and the
-p1/p3/p4/p5 specialist steps.
+Ruling (Arman, 2026-08-07): plan side, main DB. Built 2026-08-12 exactly as the argued proposal
+(git history holds the full design rationale if the shape is ever re-opened).
 
-### The two tables (and why exactly two)
+**Live:** aidream migration `0344` — `plan.node_artifact` (append-only, Wave-A supersession, ONE
+current row per `(node, kind)`) + `plan.node_step` (one row per `(node, step)`, in place); both
+components of `plan_node` under canonical RLS, site/org trigger-stamped. Writer:
+`aidream/services/content_plan/artifacts.py` (the STEPS vocabulary + the ONE write path,
+loud-open so a record failure never fails the paid work). FE reads direct under RLS: NodePanel
+"Pipeline" rail (`NodeStepRail`) + tree/table badges off one site-wide query
+(`lib/pipeline-progress.ts`).
 
-**1. `plan.node_artifact` — everything a step PRODUCES. Append-only, supersession-versioned.**
+**Production proof (2026-08-14):** real runs have written every wired producer —
+`p2_research` 2 done (+2 research artifacts), `p6_build` 2 done (+2 `final` artifacts),
+`p7_publish` 3 done; all artifacts current with summaries. 2 fill jobs, 8 items succeeded.
 
-| column | type | notes |
-|---|---|---|
-| `id` | uuid pk | |
-| `node_id` | uuid NOT NULL → `plan.node` ON DELETE CASCADE | the owner — a direct FK, deliberately NOT an association (see Why below) |
-| `site_id` / `organization_id` | uuid | TRIGGER-stamped from the node (same pattern as `plan._node_shape` stamps `organization_id`) — site-wide queries without joins |
-| `kind` | text | small machine vocabulary: `research` · `outline` · `draft` · `review` · `fact_check` · `final` (code constant, not a lookup table — architecture lives in code) |
-| `step` | text | which pipeline step wrote it (`p1_keywords` … `p6_build`) |
-| `content` | jsonb | **a content-ir `__kind` envelope** — the platform's ONE structured-content representation. A draft is a structured page-sections kind, NOT HTML; research is a findings kind. This is what makes the "easy text edit for humans" surface and every downstream agent input possible without a new format |
-| `summary` | text | one paragraph for lists/context assembly (agents skim summaries, load `content` on demand) |
-| `valid_to` | timestamptz null | **Wave-A supersession law**: current row has `valid_to IS NULL`; a revision INSERTS a new row and stamps the old one. Revisions ARE the history — no separate version log, no UPDATE of content ever |
-| `produced_by` | jsonb | provenance: agent id, run/job id, model, input artifact ids |
-| `created_at` | timestamptz | |
+**Deliberately not done:** `p1_keywords` / `p3_family` / `p4_write` / `p5_review` have no
+producer yet — a pending step VISIBLE in data is the point (steps exist even while the one-shot
+fill skips them). Also open: formal content-ir kind registration for the two envelope shapes
+(`plan_page_research`, `cms_page_build`), and per-node "run this step" actions.
 
-Partial unique index: `(node_id, kind) WHERE valid_to IS NULL` — ONE current artifact per kind
-per page; "latest draft" is an index lookup, never a max() scan.
-
-**2. `plan.node_step` — where each page IS in the pipeline. One row per (node, step), updated in place.**
-
-| column | type | notes |
-|---|---|---|
-| `node_id` → `plan.node` CASCADE + `step` text | UNIQUE pair | |
-| `status` | text | `pending` · `running` · `done` · `failed` · `skipped` — machine lifecycle, so NOT a `platform.categories` dimension (categories are user taxonomy; this is a state machine) |
-| `artifact_id` | uuid null → `node_artifact` | the step's current output |
-| `attempts` / `error` / `started_at` / `finished_at` | | re-runnable + honest failure display |
-| `site_id` / `organization_id` | | trigger-stamped, as above |
-
-This is the vision's "steps exist in DATA, not prose": each step independently re-runnable, the
-plan UI reads `node_step` for the researched/written/reviewed/built axis, and the one-button
-pipeline is just "run every non-done step in order".
-
-### What is deliberately NOT a new table
-
-- **Full research reports / crawl data / keywords** — already have homes (`research.*`, `seo.*`,
-  `primary_keyword_id` + `secondary_keyword` edges). `node_artifact(kind='research')` holds only
-  the per-page DISTILLATION; links to the source report/topic go on **`platform.associations`**
-  (node→`research_topic` / node→`rs_document`, target types already registered). Associations
-  connect DOMAINS; they never carry the content payload itself.
-- **Step registry** — a code constant beside the pipeline, not a table (a step is architecture).
-- **Job/queue state** — `plan.cms_fill_job/_item` already is the durable fan-out engine; when
-  fill decomposes into steps, its items reference `(node_id, step)` instead of growing new state.
-- **`plan_status`** — untouched. It stays the EDITORIAL lifecycle (planned→published); `node_step`
-  is the production axis. They meet exactly once: the build step creates the CMS page, and
-  publish already advances `plan_status` (WF-2, shipped).
-
-### Why this shape (the argued alternatives)
-
-- **Why not one mega-table with everything jsonb?** You lose the one query that matters ("what
-  step is every page at" across 300 pages) to jsonb scans, and step state gets versioned along
-  with content when only content deserves supersession. Two tables = the two different write
-  patterns (append-only artifacts vs in-place step state).
-- **Why not a table per artifact type (page_draft, page_research, page_review…)?** Same columns
-  six times; every new specialist agent would need DDL. `kind` + a content-ir envelope makes a
-  new artifact type DATA (register the kind), which is the whole Shape System's point.
-- **Why not `platform.associations` as the storage?** An artifact is OWNED by its node (same
-  lifecycle, cascade-deleted, org-stamped from it) — that is a child row, not a cross-entity
-  relationship. Megabyte drafts in edge payloads would also wreck the associations table's
-  role. Associations are used exactly where they shine: node↔research-source links.
-- **RLS**: canonical `iam.apply_rls` v2 + `iam.has_access` on both tables (never hand-written
-  policies); org comes from the trigger-stamped column.
-
-### Build order once approved
-
-1. Tables + triggers + RLS via Supabase MCP; `pnpm db-types` + aidream `db/generate.py`.
-2. aidream: `node_artifact`/`node_step` write path in `services/content_plan/service.py` +
-   tool actions; decompose `cms_fill._author_page()` so each phase reads/writes artifacts and
-   stamps its step (thin steps first — same prompts, now persisted).
-3. **DONE 2026-08-13:** FE NodePanel step rail + artifact viewer and tree/table badges all read
-   the same site-wide `node_step` query; untouched nodes stay visually silent.
-4. Specialist agents replace the thin steps one at a time (writer, reviewer, fact-checker).
+**Known soft edge:** concurrent writers racing `record_artifact` on the same `(node, kind)` can
+lose the losing record to the unique index (logged loudly; the work itself is unaffected).
 
 ## Resources
 
@@ -242,8 +178,8 @@ before/during/after all captured. Work order: [cms-page-hub.md](./cms-page-hub.m
 
 ## Remaining work (priority order)
 
-1. **Prove the current loop once end-to-end.** Test site → starter kit → cms-fill (~10 nodes) → publish → view on mymatrx.com/c/{slug}. `plan.cms_fill_job` has 0 rows ever; nothing downstream should be designed on an unexercised pipeline. Surface every failure found.
-2. **Fix `theme_config` → CSS in my-matrx** (filed defect). Without it, S2 theming is fake — theme edits after starter-kit change nothing.
+1. **Prove the loop at SCALE.** The small loop is proven (2026-08-14 live: 2 fill jobs, 8 items succeeded, publish verified on mymatrx.com) — what has never been run is a real site end-to-end: starter kit → fill ~25 nodes → review → bulk publish → verify every URL. Do it on a throwaway or `cosmeticinjectables`, never `iopbm`/`prp-injection-md`, and surface every failure.
+2. ~~Fix `theme_config` → CSS in my-matrx~~ **DONE** (WF-1: renderer was already wired; the starter kit's token bake — which shadowed later theme edits — was removed and 4 baked sites migrated + prod-verified).
 3. ~~Design + build the per-node content record (P4)~~ **DONE 2026-08-12** (see the P4 section — tables, writer, producers, FE rail all live; review the shape).
 4. **Decompose `cms_fill` into explicit pipeline steps** behind the SAME button. STARTED 2026-08-12: fill/deepen/publish now persist step state + artifacts (the steps exist in data); still monolithic per page — the author call is one prompt. Next: split context-assembly (`p3_family`), structured write (`p4_write`), review (`p5_review`) into separately re-runnable item types on the same durable queue.
 5. **Site design system (S3) + page templates (S4)**: template/block entities in the CMS DB, starter kit installs a default set, `page_type` binds node → template, per-site "templates required vs theme-only" setting. Page build step consumes them.
