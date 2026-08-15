@@ -20,9 +20,23 @@
  */
 
 import React, { useState } from "react";
-import { Clock, Handshake, Pencil, RotateCcw, X, Zap } from "lucide-react";
+import {
+  CircleHelp,
+  Clock,
+  Handshake,
+  Pencil,
+  RotateCcw,
+  X,
+  Zap,
+} from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import IconButton from "@/components/official/IconButton";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { selectInboxItems } from "@/features/agents/redux/execution-system/inbox/inbox.selectors";
 import {
   enqueueInboxMessage,
@@ -89,6 +103,42 @@ export function InboxQueueStrip({ conversationId }: InboxQueueStripProps) {
 
   return (
     <div className="flex flex-col gap-1 px-2 pb-1 shrink-0">
+      <div className="flex items-center gap-1 px-0.5 text-[11px] text-muted-foreground">
+        <span className="font-medium text-foreground/80">Waiting messages</span>
+        <span aria-label={`${visible.length} waiting messages`}>
+          {visible.length}
+        </span>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              aria-label="How waiting messages work"
+              className="inline-flex h-5 w-5 items-center justify-center rounded-full hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            >
+              <CircleHelp className="h-3.5 w-3.5" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent
+            side="top"
+            align="start"
+            className="max-w-[20rem] space-y-1.5 py-2"
+          >
+            <p className="font-medium">Messages sent while the agent works</p>
+            <p className="text-muted-foreground">
+              They wait here in order, are saved across reloads, and send
+              automatically after the current run finishes.
+            </p>
+            <p className="text-muted-foreground">
+              Use the lightning bolt to deliver one at the agent&apos;s next
+              natural pause. Edit or withdraw it any time before delivery.
+            </p>
+            <p className="text-muted-foreground">
+              Shortcut: Command/Ctrl + Enter delivers at the next pause;
+              Command/Ctrl + Shift + Enter stops and redirects the run.
+            </p>
+          </TooltipContent>
+        </Tooltip>
+      </div>
       {visible.map((item) => {
         const failed = item.status === "failed";
         const busy = item.status === "sending";
@@ -96,6 +146,15 @@ export function InboxQueueStrip({ conversationId }: InboxQueueStripProps) {
         const editable = item.status === "pending" && !collabNote;
         const collabAgent = collabNote ? parseCollabNoteAgent(item.text) : null;
         const Icon = collabNote ? Handshake : Clock;
+        const statusHelp = failed
+          ? `${item.error ?? "This message could not be queued."} Retry it or dismiss it.`
+          : busy
+            ? "Saving this message to the waiting queue."
+            : collabNote
+              ? "A collaborating agent left context for this conversation. It will be added automatically on the next turn."
+              : item.mode === "queue"
+                ? "This message is saved and waiting in line. It sends automatically after the current run finishes, even if you leave this page."
+                : "This message will reach the agent at its next natural pause without stopping the current work.";
         return (
           <div
             key={item.injectionId}
@@ -118,22 +177,45 @@ export function InboxQueueStrip({ conversationId }: InboxQueueStripProps) {
                       : "text-muted-foreground"
               }`}
             />
-            <span className="min-w-0 flex-1 truncate text-foreground">
-              {collabNote && collabAgent
-                ? `Note from ${collabAgent}`
-                : item.text}
-            </span>
-            <span
-              className={`shrink-0 ${
-                failed ? "text-destructive" : "text-muted-foreground"
-              }`}
-            >
-              {statusLabel(item)}
-            </span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span
+                  tabIndex={0}
+                  className="min-w-0 flex-1 truncate text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  {collabNote && collabAgent
+                    ? `Note from ${collabAgent}`
+                    : item.text}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-[24rem] break-words">
+                {item.text}
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span
+                  tabIndex={0}
+                  className={`shrink-0 cursor-help rounded-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ${
+                    failed ? "text-destructive" : "text-muted-foreground"
+                  }`}
+                >
+                  {statusLabel(item)}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-[20rem]">
+                {statusHelp}
+              </TooltipContent>
+            </Tooltip>
             {failed && (
-              <button
+              <IconButton
                 type="button"
-                title="Retry this message"
+                icon={RotateCcw}
+                size="xs"
+                variant="ghost"
+                tooltip="Retry — try saving this message to the queue again."
+                tooltipSide="top"
+                aria-label="Retry queued message"
                 className="shrink-0 rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                 onClick={() => {
                   dispatch(
@@ -150,31 +232,39 @@ export function InboxQueueStrip({ conversationId }: InboxQueueStripProps) {
                     }),
                   );
                 }}
-              >
-                <RotateCcw className="h-3.5 w-3.5" />
-              </button>
+              />
             )}
-            {item.mode === "queue" && item.status === "pending" && !collabNote && (
-              <button
-                type="button"
-                title="Deliver now — don't wait for the run to end; the agent picks it up at its next pause"
-                className="shrink-0 rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-                onClick={() =>
-                  dispatch(
-                    promoteQueuedToSteer({
-                      conversationId,
-                      injectionId: item.injectionId,
-                    }),
-                  )
-                }
-              >
-                <Zap className="h-3.5 w-3.5" />
-              </button>
-            )}
+            {item.mode === "queue" &&
+              item.status === "pending" &&
+              !collabNote && (
+                <IconButton
+                  type="button"
+                  icon={Zap}
+                  size="xs"
+                  variant="ghost"
+                  tooltip="Deliver at the next pause — the agent keeps working, but receives this sooner."
+                  tooltipSide="top"
+                  aria-label="Deliver queued message at the agent's next pause"
+                  className="shrink-0 rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  onClick={() =>
+                    dispatch(
+                      promoteQueuedToSteer({
+                        conversationId,
+                        injectionId: item.injectionId,
+                      }),
+                    )
+                  }
+                />
+              )}
             {editable && (
-              <button
+              <IconButton
                 type="button"
-                title="Edit — this message hasn't been sent yet"
+                icon={Pencil}
+                size="xs"
+                variant="ghost"
+                tooltip="Edit — change this message before the agent receives it."
+                tooltipSide="top"
+                aria-label="Edit queued message"
                 className="shrink-0 rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                 onClick={() =>
                   setEditing({
@@ -183,14 +273,23 @@ export function InboxQueueStrip({ conversationId }: InboxQueueStripProps) {
                     text: item.text,
                   })
                 }
-              >
-                <Pencil className="h-3.5 w-3.5" />
-              </button>
+              />
             )}
             {!busy && (
-              <button
+              <IconButton
                 type="button"
-                title={failed ? "Dismiss" : "Withdraw — don't send this"}
+                icon={X}
+                size="xs"
+                variant="ghost"
+                tooltip={
+                  failed
+                    ? "Dismiss — remove this failed message."
+                    : "Withdraw — remove this message before the agent receives it."
+                }
+                tooltipSide="top"
+                aria-label={
+                  failed ? "Dismiss failed message" : "Withdraw queued message"
+                }
                 className="shrink-0 rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                 onClick={() =>
                   dispatch(
@@ -200,9 +299,7 @@ export function InboxQueueStrip({ conversationId }: InboxQueueStripProps) {
                     }),
                   )
                 }
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
+              />
             )}
           </div>
         );
