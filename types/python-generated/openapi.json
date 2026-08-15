@@ -11104,6 +11104,114 @@
         }
       }
     },
+    "/seo/sites/{site_id}/competitors/lookup": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Lookup Site Competitor",
+        "operationId": "lookup_site_competitor_seo_sites__site_id__competitors_lookup_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompetitorLookupBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Lookup Site Competitor Seo Sites  Site Id  Competitors Lookup Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/sites/{site_id}/competitors/classify": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Classify Site Competitor",
+        "operationId": "classify_site_competitor_seo_sites__site_id__competitors_classify_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompetitorClassifyBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Classify Site Competitor Seo Sites  Site Id  Competitors Classify Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/seo/sites/{site_id}/ai-visibility/analyze": {
       "post": {
         "tags": [
@@ -31018,6 +31126,80 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent-slots/{slot_key}/variable-verdicts": {
+      "post": {
+        "tags": [
+          "Agent Slots Admin"
+        ],
+        "summary": "Slot Variable Verdicts",
+        "description": "Evaluate bindings against the agent that would run, never the code seed.",
+        "operationId": "slot_variable_verdicts_agent_slots__slot_key__variable_verdicts_post",
+        "parameters": [
+          {
+            "name": "slot_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slot Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SlotVariableVerdictRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VariableResolution"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent-slots/code-truth": {
+      "get": {
+        "tags": [
+          "Agent Slots Admin"
+        ],
+        "summary": "Get Slot Code Truth",
+        "operationId": "get_slot_code_truth_agent_slots_code_truth_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SlotCodeTruthReport"
                 }
               }
             }
@@ -58764,6 +58946,86 @@
         ],
         "title": "Body_upload_vision_master_media_upload_post"
       },
+      "BoundAgentTruth": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "declared_variables": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Declared Variables"
+          },
+          "output_schema": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Schema"
+          },
+          "pinned_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pinned Version Id"
+          },
+          "pinned_version_declared_variables": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pinned Version Declared Variables"
+          },
+          "pinned_version_output_schema": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pinned Version Output Schema"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "declared_variables"
+        ],
+        "title": "BoundAgentTruth"
+      },
       "BridgeAccountIdentity": {
         "properties": {
           "provider_account_key": {
@@ -67377,6 +67639,139 @@
         ],
         "title": "CodeResultPart"
       },
+      "CodeTruthCallSite": {
+        "properties": {
+          "source_file": {
+            "type": "string",
+            "title": "Source File"
+          },
+          "line": {
+            "type": "integer",
+            "title": "Line"
+          },
+          "passes_user_input": {
+            "type": "boolean",
+            "title": "Passes User Input"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source_file",
+          "line",
+          "passes_user_input"
+        ],
+        "title": "CodeTruthCallSite"
+      },
+      "CodeTruthField": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "mapped_name": {
+            "type": "string",
+            "title": "Mapped Name"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "required": {
+            "type": "boolean",
+            "title": "Required"
+          },
+          "default_value": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "mapped_name",
+          "type",
+          "required"
+        ],
+        "title": "CodeTruthField"
+      },
+      "CodeTruthModel": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "schema": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Schema"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "schema"
+        ],
+        "title": "CodeTruthModel"
+      },
+      "CodeTruthSource": {
+        "properties": {
+          "class_name": {
+            "type": "string",
+            "title": "Class Name"
+          },
+          "module": {
+            "type": "string",
+            "title": "Module"
+          },
+          "source_file": {
+            "type": "string",
+            "title": "Source File"
+          },
+          "line": {
+            "type": "integer",
+            "title": "Line"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "class_name",
+          "module",
+          "source_file",
+          "line"
+        ],
+        "title": "CodeTruthSource"
+      },
+      "CodeValueMapping": {
+        "properties": {
+          "mapType": {
+            "type": "string",
+            "const": "code_value",
+            "title": "Maptype",
+            "default": "code_value"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source"
+        ],
+        "title": "CodeValueMapping"
+      },
       "CodingSessionBridgeRestRequest": {
         "properties": {
           "schema_version": {
@@ -68533,6 +68928,108 @@
           "opportunities_persisted"
         ],
         "title": "CompetitorAutopsyResult"
+      },
+      "CompetitorClassifyBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "competitor_id": {
+            "type": "string",
+            "title": "Competitor Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "competitor_id"
+        ],
+        "title": "CompetitorClassifyBody"
+      },
+      "CompetitorLookupBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 2,
+            "title": "Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "CompetitorLookupBody"
       },
       "CompetitorOpportunityArtifact": {
         "properties": {
@@ -75523,6 +76020,24 @@
           "chat_config"
         ],
         "title": "DirectChatRequest"
+      },
+      "DirectValueMapping": {
+        "properties": {
+          "mapType": {
+            "type": "string",
+            "const": "direct_value",
+            "title": "Maptype",
+            "default": "direct_value"
+          },
+          "value": {
+            "$ref": "#/components/schemas/JsonValue"
+          }
+        },
+        "type": "object",
+        "required": [
+          "value"
+        ],
+        "title": "DirectValueMapping"
       },
       "DirectiveConfirmRequest": {
         "properties": {
@@ -104519,6 +105034,18 @@
         ],
         "title": "PromptStartRequest"
       },
+      "PromptUserValueMapping": {
+        "properties": {
+          "mapType": {
+            "type": "string",
+            "const": "prompt_user",
+            "title": "Maptype",
+            "default": "prompt_user"
+          }
+        },
+        "type": "object",
+        "title": "PromptUserValueMapping"
+      },
       "PromptWarmRequest": {
         "properties": {
           "source": {
@@ -117962,6 +118489,204 @@
         "title": "SlotCandidate",
         "description": "One labelled comparison column.\n\n``config_overrides=None`` means use the selection's normal configuration\nbehavior. An explicitly supplied ``{}`` means apply no run-scope\noverrides, including when the current principal has binding overrides."
       },
+      "SlotCodeTruth": {
+        "properties": {
+          "slot_key": {
+            "type": "string",
+            "title": "Slot Key"
+          },
+          "resolution": {
+            "type": "string",
+            "enum": [
+              "code_declaration_found",
+              "code_exists_but_import_failed",
+              "no_code_declaration_found"
+            ],
+            "title": "Resolution"
+          },
+          "drift": {
+            "type": "string",
+            "enum": [
+              "code_only",
+              "db_only",
+              "diff",
+              "match"
+            ],
+            "title": "Drift"
+          },
+          "bound_agent_drift": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "code_only",
+                  "db_only",
+                  "diff",
+                  "match"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bound Agent Drift"
+          },
+          "code_variables": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Code Variables"
+          },
+          "db_required_variables": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Db Required Variables"
+          },
+          "code_only_variables": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Code Only Variables"
+          },
+          "db_only_variables": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Db Only Variables"
+          },
+          "bound_agent_missing_variables": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Bound Agent Missing Variables"
+          },
+          "bound_agent_only_variables": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Bound Agent Only Variables"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CodeTruthSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "inputs": {
+            "items": {
+              "$ref": "#/components/schemas/CodeTruthField"
+            },
+            "type": "array",
+            "title": "Inputs"
+          },
+          "variable_map": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Variable Map"
+          },
+          "output": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CodeTruthModel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "passes_user_input": {
+            "type": "boolean",
+            "title": "Passes User Input",
+            "default": false
+          },
+          "call_sites": {
+            "items": {
+              "$ref": "#/components/schemas/CodeTruthCallSite"
+            },
+            "type": "array",
+            "title": "Call Sites"
+          },
+          "bound_agent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BoundAgentTruth"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "import_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Import Error"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "slot_key",
+          "resolution",
+          "drift",
+          "code_variables",
+          "db_required_variables",
+          "code_only_variables",
+          "db_only_variables"
+        ],
+        "title": "SlotCodeTruth"
+      },
+      "SlotCodeTruthReport": {
+        "properties": {
+          "slots": {
+            "items": {
+              "$ref": "#/components/schemas/SlotCodeTruth"
+            },
+            "type": "array",
+            "title": "Slots"
+          },
+          "import_failures": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Import Failures"
+          },
+          "counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Counts"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "slots",
+          "import_failures",
+          "counts"
+        ],
+        "title": "SlotCodeTruthReport"
+      },
       "SlotExemplarTestResults": {
         "properties": {
           "exemplar_id": {
@@ -118520,6 +119245,108 @@
         ],
         "title": "SlotTestResult",
         "description": "A persisted result entry stored in slot_exemplar.metadata."
+      },
+      "SlotVariableVerdictRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "code_values": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Code Values"
+          },
+          "mapping": {
+            "additionalProperties": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/CodeValueMapping"
+                },
+                {
+                  "$ref": "#/components/schemas/DirectValueMapping"
+                },
+                {
+                  "$ref": "#/components/schemas/UnmappedValueMapping"
+                },
+                {
+                  "$ref": "#/components/schemas/PromptUserValueMapping"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "mapType",
+                "mapping": {
+                  "code_value": "#/components/schemas/CodeValueMapping",
+                  "direct_value": "#/components/schemas/DirectValueMapping",
+                  "prompt_user": "#/components/schemas/PromptUserValueMapping",
+                  "unmapped": "#/components/schemas/UnmappedValueMapping"
+                }
+              }
+            },
+            "type": "object",
+            "title": "Mapping"
+          },
+          "spill_variables": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true,
+            "title": "Spill Variables"
+          },
+          "user_input": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Input"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "code_values"
+        ],
+        "title": "SlotVariableVerdictRequest",
+        "description": "Code truth plus the mapping to evaluate against the resolved slot agent."
       },
       "SnapBboxBody": {
         "properties": {
@@ -127026,6 +127853,18 @@
         ],
         "title": "UnarchiveWorkflowResponse"
       },
+      "UnmappedValueMapping": {
+        "properties": {
+          "mapType": {
+            "type": "string",
+            "const": "unmapped",
+            "title": "Maptype",
+            "default": "unmapped"
+          }
+        },
+        "type": "object",
+        "title": "UnmappedValueMapping"
+      },
       "UpdateAgentInput": {
         "properties": {
           "name": {
@@ -129883,6 +130722,42 @@
         "title": "VariableComponentSpec",
         "description": "The input component a variable renders as (customComponent)."
       },
+      "VariableResolution": {
+        "properties": {
+          "variables": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Variables"
+          },
+          "user_input": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Input"
+          },
+          "verdicts": {
+            "items": {
+              "$ref": "#/components/schemas/VariableVerdict"
+            },
+            "type": "array",
+            "title": "Verdicts"
+          },
+          "blocking": {
+            "type": "boolean",
+            "title": "Blocking",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "VariableResolution"
+      },
       "VariableSpec": {
         "properties": {
           "name": {
@@ -129906,6 +130781,69 @@
         ],
         "title": "VariableSpec",
         "description": "One declared run variable on a Definition.\n\n``default=None`` means \"no default\" — a reference to this variable with\nno per-reference default MUST be supplied at run time or the run fails\nloudly at that node. (A literal None default would be useless anyway:\nnode input schemas want real values.)"
+      },
+      "VariableVerdict": {
+        "properties": {
+          "variable": {
+            "type": "string",
+            "title": "Variable"
+          },
+          "verdict": {
+            "$ref": "#/components/schemas/VariableVerdictKind"
+          },
+          "code_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code Name"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "caution": {
+            "type": "boolean",
+            "title": "Caution",
+            "default": false
+          },
+          "blocking": {
+            "type": "boolean",
+            "title": "Blocking",
+            "default": false
+          },
+          "lossy": {
+            "type": "boolean",
+            "title": "Lossy",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "variable",
+          "verdict",
+          "message"
+        ],
+        "title": "VariableVerdict"
+      },
+      "VariableVerdictKind": {
+        "type": "string",
+        "enum": [
+          "ok",
+          "renamed",
+          "default_used",
+          "intentionally_blank",
+          "spilled_to_user_input",
+          "dropped",
+          "missing_from_code",
+          "required_unmapped",
+          "type_mismatch"
+        ],
+        "title": "VariableVerdictKind"
       },
       "VaultAssignRequest": {
         "properties": {

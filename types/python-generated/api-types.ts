@@ -4322,6 +4322,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/seo/sites/{site_id}/competitors/lookup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Lookup Site Competitor */
+        post: operations["lookup_site_competitor_seo_sites__site_id__competitors_lookup_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/competitors/classify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Classify Site Competitor */
+        post: operations["classify_site_competitor_seo_sites__site_id__competitors_classify_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/seo/sites/{site_id}/ai-visibility/analyze": {
         parameters: {
             query?: never;
@@ -11596,6 +11630,43 @@ export interface paths {
         };
         /** Top Edges */
         get: operations["top_edges_kg_inspector_edges_top_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent-slots/{slot_key}/variable-verdicts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Slot Variable Verdicts
+         * @description Evaluate bindings against the agent that would run, never the code seed.
+         */
+        post: operations["slot_variable_verdicts_agent_slots__slot_key__variable_verdicts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent-slots/code-truth": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Slot Code Truth */
+        get: operations["get_slot_code_truth_agent_slots_code_truth_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -22052,6 +22123,27 @@ export interface components {
              */
             folder?: string;
         };
+        /** BoundAgentTruth */
+        BoundAgentTruth: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Declared Variables */
+            declared_variables: string[];
+            /** Output Schema */
+            output_schema?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /** Pinned Version Id */
+            pinned_version_id?: string | null;
+            /** Pinned Version Declared Variables */
+            pinned_version_declared_variables?: string[] | null;
+            /** Pinned Version Output Schema */
+            pinned_version_output_schema?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+        };
         /**
          * BridgeAccountIdentity
          * @description Opaque, display-safe provider-account provenance. Never authorization.
@@ -25062,6 +25154,57 @@ export interface components {
              */
             outcome?: string;
         };
+        /** CodeTruthCallSite */
+        CodeTruthCallSite: {
+            /** Source File */
+            source_file: string;
+            /** Line */
+            line: number;
+            /** Passes User Input */
+            passes_user_input: boolean;
+        };
+        /** CodeTruthField */
+        CodeTruthField: {
+            /** Name */
+            name: string;
+            /** Mapped Name */
+            mapped_name: string;
+            /** Type */
+            type: string;
+            /** Required */
+            required: boolean;
+            default_value?: components["schemas"]["JsonValue"] | null;
+        };
+        /** CodeTruthModel */
+        CodeTruthModel: {
+            /** Name */
+            name: string;
+            /** Schema */
+            schema: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+        };
+        /** CodeTruthSource */
+        CodeTruthSource: {
+            /** Class Name */
+            class_name: string;
+            /** Module */
+            module: string;
+            /** Source File */
+            source_file: string;
+            /** Line */
+            line: number;
+        };
+        /** CodeValueMapping */
+        CodeValueMapping: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            mapType: "code_value";
+            /** Source */
+            source: string;
+        };
         /** CodingSessionBridgeRestRequest */
         CodingSessionBridgeRestRequest: {
             /**
@@ -25475,6 +25618,46 @@ export interface components {
             opportunities_persisted: number;
             /** Provider Run Ids */
             provider_run_ids?: string[];
+        };
+        /** CompetitorClassifyBody */
+        CompetitorClassifyBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Competitor Id */
+            competitor_id: string;
+        };
+        /** CompetitorLookupBody */
+        CompetitorLookupBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Name */
+            name: string;
         };
         /** CompetitorOpportunityArtifact */
         CompetitorOpportunityArtifact: {
@@ -28096,6 +28279,15 @@ export interface components {
             };
         } & {
             [key: string]: unknown;
+        };
+        /** DirectValueMapping */
+        DirectValueMapping: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            mapType: "direct_value";
+            value: components["schemas"]["JsonValue"];
         };
         /** DirectiveConfirmRequest */
         DirectiveConfirmRequest: {
@@ -39611,6 +39803,14 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /** PromptUserValueMapping */
+        PromptUserValueMapping: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            mapType: "prompt_user";
+        };
         /** PromptWarmRequest */
         PromptWarmRequest: {
             /** Source */
@@ -44834,6 +45034,64 @@ export interface components {
                 [key: string]: components["schemas"]["JsonValue"];
             } | null;
         };
+        /** SlotCodeTruth */
+        SlotCodeTruth: {
+            /** Slot Key */
+            slot_key: string;
+            /**
+             * Resolution
+             * @enum {string}
+             */
+            resolution: "code_declaration_found" | "code_exists_but_import_failed" | "no_code_declaration_found";
+            /**
+             * Drift
+             * @enum {string}
+             */
+            drift: "code_only" | "db_only" | "diff" | "match";
+            /** Bound Agent Drift */
+            bound_agent_drift?: ("code_only" | "db_only" | "diff" | "match") | null;
+            /** Code Variables */
+            code_variables: string[];
+            /** Db Required Variables */
+            db_required_variables: string[];
+            /** Code Only Variables */
+            code_only_variables: string[];
+            /** Db Only Variables */
+            db_only_variables: string[];
+            /** Bound Agent Missing Variables */
+            bound_agent_missing_variables?: string[];
+            /** Bound Agent Only Variables */
+            bound_agent_only_variables?: string[];
+            source?: components["schemas"]["CodeTruthSource"] | null;
+            /** Inputs */
+            inputs?: components["schemas"]["CodeTruthField"][];
+            /** Variable Map */
+            variable_map?: {
+                [key: string]: string;
+            };
+            output?: components["schemas"]["CodeTruthModel"] | null;
+            /**
+             * Passes User Input
+             * @default false
+             */
+            passes_user_input?: boolean;
+            /** Call Sites */
+            call_sites?: components["schemas"]["CodeTruthCallSite"][];
+            bound_agent?: components["schemas"]["BoundAgentTruth"] | null;
+            /** Import Error */
+            import_error?: string | null;
+        };
+        /** SlotCodeTruthReport */
+        SlotCodeTruthReport: {
+            /** Slots */
+            slots: components["schemas"]["SlotCodeTruth"][];
+            /** Import Failures */
+            import_failures: string[];
+            /** Counts */
+            counts: {
+                [key: string]: number;
+            };
+        };
         /** SlotExemplarTestResults */
         SlotExemplarTestResults: {
             /** Exemplar Id */
@@ -45035,6 +45293,39 @@ export interface components {
             verdict_note?: string | null;
             /** Promoted To Reference At */
             promoted_to_reference_at?: string | null;
+        };
+        /**
+         * SlotVariableVerdictRequest
+         * @description Code truth plus the mapping to evaluate against the resolved slot agent.
+         */
+        SlotVariableVerdictRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Code Values */
+            code_values: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Mapping */
+            mapping?: {
+                [key: string]: components["schemas"]["CodeValueMapping"] | components["schemas"]["DirectValueMapping"] | components["schemas"]["UnmappedValueMapping"] | components["schemas"]["PromptUserValueMapping"];
+            };
+            /** Spill Variables */
+            spill_variables?: string[];
+            /** User Input */
+            user_input?: string | null;
         };
         /** SnapBboxBody */
         SnapBboxBody: {
@@ -48316,6 +48607,14 @@ export interface components {
             /** Unarchived */
             unarchived: boolean;
         };
+        /** UnmappedValueMapping */
+        UnmappedValueMapping: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            mapType: "unmapped";
+        };
         /**
          * UpdateAgentInput
          * @description Partial update — only provided (non-None) fields are written. This is the
@@ -49314,6 +49613,22 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** VariableResolution */
+        VariableResolution: {
+            /** Variables */
+            variables?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** User Input */
+            user_input?: string | null;
+            /** Verdicts */
+            verdicts?: components["schemas"]["VariableVerdict"][];
+            /**
+             * Blocking
+             * @default false
+             */
+            blocking?: boolean;
+        };
         /**
          * VariableSpec
          * @description One declared run variable on a Definition.
@@ -49334,6 +49649,36 @@ export interface components {
             /** Default */
             default?: unknown;
         };
+        /** VariableVerdict */
+        VariableVerdict: {
+            /** Variable */
+            variable: string;
+            verdict: components["schemas"]["VariableVerdictKind"];
+            /** Code Name */
+            code_name?: string | null;
+            /** Message */
+            message: string;
+            /**
+             * Caution
+             * @default false
+             */
+            caution?: boolean;
+            /**
+             * Blocking
+             * @default false
+             */
+            blocking?: boolean;
+            /**
+             * Lossy
+             * @default false
+             */
+            lossy?: boolean;
+        };
+        /**
+         * VariableVerdictKind
+         * @enum {string}
+         */
+        VariableVerdictKind: "ok" | "renamed" | "default_used" | "intentionally_blank" | "spilled_to_user_input" | "dropped" | "missing_from_code" | "required_unmapped" | "type_mismatch";
         /**
          * VaultAssignRequest
          * @description **Create for someone**: the item is born owned by the recipient.
@@ -59473,6 +59818,80 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    lookup_site_competitor_seo_sites__site_id__competitors_lookup_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompetitorLookupBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    classify_site_competitor_seo_sites__site_id__competitors_classify_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompetitorClassifyBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Validation Error */
@@ -72726,6 +73145,61 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    slot_variable_verdicts_agent_slots__slot_key__variable_verdicts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slot_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SlotVariableVerdictRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VariableResolution"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_slot_code_truth_agent_slots_code_truth_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SlotCodeTruthReport"];
                 };
             };
         };
