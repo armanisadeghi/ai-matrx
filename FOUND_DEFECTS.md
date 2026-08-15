@@ -325,9 +325,6 @@ The four "RLS on, 0 policies" tables are currently closed (no policy = no rows f
 
 **OPEN — `rag.kg_sweep_state` fails the base contract** (entity variant, no `created_by`), so it is the 1 table of 290 the v3 backfill could not regenerate.
 
-### D180 — Hydration mismatch + "script tag while rendering" on every `(core)` marketing route (2026-08-13)
-
-Two console errors on load in dev on `/marketing/keyword-research` AND untouched `/marketing/ai-visibility` — shell-level, not feature-level: a `<script>` rendered inside a React tree somewhere in the `(core)` layout chain. Hydration failures silently re-render the whole tree client-side — real perf + correctness cost. Not yet investigated.
 ### D183 — Paid SEO output can still be lost after generation; stream drops do not resume (2026-08-13)
 
 **RLS performance root is resolved.** Before the fix, every `authenticated` read of that table — and of any `security_invoker` view
@@ -782,6 +779,7 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 
 ## RESOLVED
 
+- **D180 — Root-document hydration mismatch on every Marketing route (2026-08-15):** `ChunkRecoveryBootScript` and `SyncBootScript` rendered raw `<script>` children; both now use tracked `next/script` `beforeInteractive` entries.
 - **D198 — Hands-free VAD voice chat revived (2026-08-15):** one live hook and reachable `/voice/playground` surface now use shared mic/VAD, canonical STT/agent/TTS, barge-in, auto-sleep, background pause, and brokered Cartesia credentials — see `hooks/tts/useVoiceChat.ts` and `features/audio/voice/HandsFreeVoiceChat.tsx`.
 
 One line per fix — title, date, pointer. History lives in git. Entries older than ~2 weeks get deleted.

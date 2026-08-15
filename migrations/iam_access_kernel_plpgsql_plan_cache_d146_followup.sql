@@ -215,15 +215,51 @@ ANALYZE web.site;
 -- there is a platform-wide slowdown, which is exactly what happened.
 ALTER TABLE platform.associations SET (autovacuum_analyze_scale_factor = 0.02);
 
+-- THE SAME DEFECT WAS LIVE ON 69 MORE TABLES. After the kernel tables above
+-- were analyzed, `pg_stat_user_tables` still showed 69 tables across
+-- platform/iam/files/web/admin with `last_analyze` AND `last_autoanalyze` both
+-- NULL — 452 MB in total, including `web.link_edge` (681,628 rows, 190 MB) and
+-- `web.crawl_url` (368,993 rows, 167 MB) — and 34 of them had `reltuples < 0`,
+-- meaning the planner had never counted them at all and was planning on a bare
+-- guess. This block catches up whatever is still unanalyzed rather than
+-- freezing a table list that would rot; re-running it is free once autovacuum
+-- has taken over.
+--
+-- ⚠️ HONEST SCOPE: this did NOT move the `files.pages` numbers (those 69 tables
+-- are not on its resolution path) — measured before and after, 8.25-8.58 s
+-- either way. It is recorded because it is the same never-analyzed defect
+-- class, live across the crawl/web/files surfaces, and fixing it is free.
+DO $$
+DECLARE r record;
+BEGIN
+  FOR r IN
+    SELECT t.schemaname, t.relname
+    FROM pg_stat_user_tables t
+    WHERE t.schemaname IN ('platform','iam','files','web','admin','docproc','rag')
+      AND t.last_analyze IS NULL
+      AND t.last_autoanalyze IS NULL
+  LOOP
+    EXECUTE format('ANALYZE %I.%I', r.schemaname, r.relname);
+  END LOOP;
+END $$;
+
 -- Created while diagnosing the bad plan above. ANALYZE alone was enough to fix
 -- `_edu_can_read_via_assignment` (the planner picks `idx_assoc_source_live`
 -- there, not this one), so this index is NOT what closed that defect — it is
 -- kept because it independently earned its place: 5,916 scans for 1,035 tuples
--- read in its first two hours live, i.e. 0.17 rows per scan. Compare
--- `idx_assoc_target_live`, which has read 880 MILLION tuples over 4.6 M scans
--- (191 rows per scan) — that ratio is the same mis-planning class, elsewhere,
--- and is worth its own pass. Recorded here rather than left as undocumented
--- live DDL.
+-- read in its first two hours live, i.e. 0.17 rows per scan. Recorded here
+-- rather than left as undocumented live DDL.
+--
+-- ⚠️ DO NOT CHASE `idx_assoc_target_live`'s LIFETIME COUNTERS. It shows 880
+-- MILLION tuples read over 4.6 M scans — 191 rows per scan — which looks like a
+-- second mis-planned index. It is not. Those are cumulative-since-stats-reset
+-- counters, and they are dominated by the very bad plan this migration fixed
+-- (`_edu_can_read_via_assignment` took that index before ANALYZE). Measured over
+-- a live 180 s window AFTER the fix: 36 scans / 1,046 rows = 29 rows per scan,
+-- against `idx_assoc_source_live` carrying the real load at 104,762 scans /
+-- 1.60 rows per scan. 29 rows per scan is an ordinary reverse-lookup fanout.
+-- The index is healthy; the counter is history. Always take a delta over a live
+-- window before calling a `pg_stat_user_indexes` ratio a defect.
 CREATE INDEX IF NOT EXISTS idx_assoc_source_target_role_live
   ON platform.associations (source_type, source_id, target_type, role)
   WHERE deleted_at IS NULL;
