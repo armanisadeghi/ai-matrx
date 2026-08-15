@@ -1309,9 +1309,12 @@ export default [
         },
         rules: {
             'no-barrel-files/no-barrel-files': 'warn',
-            // Loud but non-blocking — keep at 'warn' so CI / Vercel builds
-            // don't fail while we clean up existing usages.
-            'matrx/no-banned-lucide-icons': 'warn',
+            // Promoted warn -> error 2026-08-15 (D67): the cleanup is DONE —
+            // a full pass over features/ components/ app/ lib/ reports zero
+            // violations. It stays at 'error' because a banned brand icon is
+            // type-valid but missing at runtime, so it 500s the page rather
+            // than degrading; 'warn' was the wrong severity for a crash.
+            'matrx/no-banned-lucide-icons': 'error',
             // Media durability — hardcoded storage URLs in raw media tags. Loud
             // but non-blocking; the DB-edge guard covers the dynamic-src case.
             'matrx/no-raw-storage-media': 'warn',
