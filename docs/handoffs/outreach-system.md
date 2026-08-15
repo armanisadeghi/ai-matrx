@@ -6,6 +6,12 @@ repos: [matrx-frontend, aidream]
 
 # Outreach system — backlink outreach + media outreach
 
+> **2026-08-15 — this work order is now the pipeline spine of a larger program.** Arman's full
+> best-in-class product vision (Pitchbox + BuzzStream + Muck Rack superset) is orchestrated from
+> `/Users/armanisadeghi/code/common-docs/projects/outreach-system/` (MASTER_PLAN, STATUS_BOARD,
+> DECISION_LOG, INTEGRATION_MAP, work packages, research). This doc's rulings remain binding;
+> WP1 (Pipeline Core) executes its open phases. Coordinate through the project docs.
+
 **The one-sentence gap this exists to close:** *we already find the opportunity, score it, and
 write the pitch — and then we have no way to reach a human being.*
 
