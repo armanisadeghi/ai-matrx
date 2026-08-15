@@ -13,7 +13,7 @@ This document is the work order. Arman named backlink outreach and media outreac
 things to build (2026-08-14), and building them honestly forced out a set of canonical primitives
 the platform was missing and did not know it was missing.
 
-> ## Status 2026-08-15 — the RIGHT to send is built; the ACT of sending is not
+> ## Status 2026-08-15 — phases 1–3 are live; phase 4 is implemented and awaiting production proof
 >
 > **Shipped and live:** domain→party (G1) · crawl-backed contact discovery (G2) · **the sending identity** (G5 — DNS proof, SPF/DKIM/
 > DMARC, warm-up ramp, health, circuit breaker, kill switch) · **the compliance layer**
@@ -21,11 +21,15 @@ the platform was missing and did not know it was missing.
 > 35-country jurisdiction policy) · tiers + entitlements · the guided-checklist primitive · and
 > every research pass (deliverability/warmup, media-data acquisition, the attorney brief).
 >
-> **Not yet built: an email has never left the building.** No template primitive, no send path,
-> no sequences, no reply ingestion, no attribution, and no "Start outreach" surface. Phase 4 is
-> the next move and is fully unblocked.
+> **Phase 4 code now exists:** strict record-bound templates plus one human-reviewed Lane B send
+> recorded in `crm.interaction`. It is not complete until the gated aidream integration deploys
+> and a real received message proves the path. Sequences, provider reply ingestion, attribution,
+> and broad "Start outreach" doors remain open.
 >
-> **Two things only Arman can do:** publish the `_matrx-verify` TXT record for the sending domain
+> **The current production blocker is concrete:** the real `info@aimatrx.com` identity
+> (`3489a446-1356-4dae-824f-90c65267732f`) correctly refuses sending because the
+> `_matrx-verify.aimatrx.com` TXT proof is not published; authentication and warmup cannot begin.
+> Two things only Arman can do: publish that TXT record
 > (an agent may not touch a production DNS zone), and take `ATTORNEY_BRIEF.md` to counsel — every
 > jurisdiction row is `ratified_by='agent-research'`, and each row counsel ratifies is a market
 > that opens.

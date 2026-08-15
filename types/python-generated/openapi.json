@@ -10584,6 +10584,131 @@
         }
       }
     },
+    "/github-integrations/exchange": {
+      "post": {
+        "tags": [
+          "GitHub Integrations"
+        ],
+        "summary": "Exchange",
+        "operationId": "exchange_github_integrations_exchange_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GitHubExchangeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GitHubConnectionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/github-integrations/sync": {
+      "post": {
+        "tags": [
+          "GitHub Integrations"
+        ],
+        "summary": "Sync",
+        "operationId": "sync_github_integrations_sync_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GitHubConnectionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/github-integrations/connection": {
+      "delete": {
+        "tags": [
+          "GitHub Integrations"
+        ],
+        "summary": "Disconnect",
+        "operationId": "disconnect_github_integrations_connection_delete",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GitHubConnectionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/github-integrations/internal/access-token": {
+      "get": {
+        "tags": [
+          "GitHub Integrations (internal)"
+        ],
+        "summary": "Internal Access Token",
+        "operationId": "internal_access_token_github_integrations_internal_access_token_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/github-integrations/webhook": {
+      "post": {
+        "tags": [
+          "GitHub Integrations (internal)"
+        ],
+        "summary": "Webhook",
+        "operationId": "webhook_github_integrations_webhook_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GitHubWebhookResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/google-workspace/files/register": {
       "post": {
         "tags": [
@@ -87069,6 +87194,87 @@
           "related"
         ],
         "title": "GetToolResponse"
+      },
+      "GitHubConnectionResponse": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "title": "Connection Id"
+          },
+          "account_login": {
+            "type": "string",
+            "title": "Account Login"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "repository_count": {
+            "type": "integer",
+            "title": "Repository Count"
+          },
+          "installation_count": {
+            "type": "integer",
+            "title": "Installation Count"
+          },
+          "all_repositories": {
+            "type": "boolean",
+            "title": "All Repositories"
+          },
+          "mcp_connected": {
+            "type": "boolean",
+            "title": "Mcp Connected"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id",
+          "account_login",
+          "status",
+          "repository_count",
+          "installation_count",
+          "all_repositories",
+          "mcp_connected"
+        ],
+        "title": "GitHubConnectionResponse"
+      },
+      "GitHubExchangeRequest": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Code"
+          },
+          "redirect_uri": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Redirect Uri"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "redirect_uri"
+        ],
+        "title": "GitHubExchangeRequest"
+      },
+      "GitHubWebhookResponse": {
+        "properties": {
+          "accepted": {
+            "type": "boolean",
+            "title": "Accepted"
+          },
+          "processed_connections": {
+            "type": "integer",
+            "title": "Processed Connections"
+          }
+        },
+        "type": "object",
+        "required": [
+          "accepted",
+          "processed_connections"
+        ],
+        "title": "GitHubWebhookResponse"
       },
       "GoogleConnectionCredentialResponse": {
         "properties": {
