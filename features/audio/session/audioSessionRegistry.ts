@@ -99,16 +99,15 @@ export function registerSession(input: RegisterSessionInput): string {
   // system here so the panel mirror + lock arbiter exist. Idempotent latch.
   activateAudio();
   const id = nextId(input.direction === "recording" ? "rec" : "pb");
+  // SPREAD the input — never re-list its fields. A hand-listed rebuild silently
+  // drops every field added later (exactly how `posterUrl`/`rate` went missing
+  // for a session's whole first play), with no error and no log. The two
+  // computed fields are applied on top.
   const session: AudioSession = {
+    ...input,
     id,
-    direction: input.direction,
-    source: input.source,
-    medium: input.medium,
-    label: input.label,
-    text: input.text,
     status: input.status ?? "loading",
     createdAtMs: Date.now(),
-    canReplay: input.canReplay,
   };
   sessions = [...sessions, session];
   prune();

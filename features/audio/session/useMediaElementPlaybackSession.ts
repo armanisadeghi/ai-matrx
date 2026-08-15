@@ -67,6 +67,10 @@ export function useMediaElementPlaybackSession(opts: {
         : "audio");
     const safeLabel = label || (resolvedMedium === "video" ? "Video" : "Audio");
     if (isPlaying) {
+      // A video's poster is free thumbnail chrome for the Media panel row —
+      // read off the element, never persisted.
+      const poster =
+        el instanceof HTMLVideoElement && el.poster ? el.poster : undefined;
       let id = sessionIdRef.current;
       if (!id) {
         id = registerSession({
@@ -76,10 +80,17 @@ export function useMediaElementPlaybackSession(opts: {
           label: safeLabel,
           status: "active",
           canReplay: false,
+          posterUrl: poster,
+          rate: el?.playbackRate ?? 1,
         });
         sessionIdRef.current = id;
       } else {
-        updateSession(id, { status: "active", label: safeLabel });
+        updateSession(id, {
+          status: "active",
+          label: safeLabel,
+          posterUrl: poster,
+          rate: el?.playbackRate ?? 1,
+        });
       }
       const sid = id;
       setSessionControls(sid, {
@@ -91,6 +102,15 @@ export function useMediaElementPlaybackSession(opts: {
           if (!e) return;
           e.currentTime = 0;
           void e.play().catch(() => {});
+        },
+        // A real media element CAN change speed mid-playback (unlike a synthesis
+        // engine that bakes speed in), so the panel's speed control drives the
+        // element directly for this session.
+        setRate: (value: number) => {
+          const e = elementRef.current;
+          if (!e) return;
+          e.playbackRate = value;
+          updateSession(sid, { rate: value });
         },
       });
       // Claim AFTER registering so the panel always has a session for the

@@ -1,7 +1,12 @@
 /**
- * Catalog-routed durable speech playback adapter (legacy queue key: "groq").
+ * Catalog speech playback adapter — the non-streaming lane.
  *
- * Imperative twin of `useTextToSpeech`: POST text → durable URL → HTMLAudioElement.
+ * The browser never names a vendor: it asks the server catalog for speech and
+ * the catalog decides who synthesizes it, so changing that vendor is a server
+ * change with no client release. (This adapter was keyed "groq" until the AV
+ * service layer landed; the vendor name never belonged in the client.)
+ *
+ * POST text → durable URL → HTMLAudioElement.
  * Routes through the selected output device via `applySinkToMediaElement`
  * (HTMLMediaElement.setSinkId, Chromium) and supports live playback-rate change.
  */
@@ -16,8 +21,8 @@ import type {
   PlaybackItem,
 } from "../types";
 
-export const groqAdapter: PlaybackAdapter = {
-  provider: "groq",
+export const catalogAdapter: PlaybackAdapter = {
+  provider: "catalog",
 
   async start(
     item: PlaybackItem,
@@ -34,7 +39,7 @@ export const groqAdapter: PlaybackAdapter = {
       throw new Error("Nothing to speak");
     }
 
-    const speech = await generateSpeech(processed, { voice: item.groq?.voice });
+    const speech = await generateSpeech(processed, { voice: item.catalog?.voice });
     const url = speech.url;
 
     const audio = new Audio(url);

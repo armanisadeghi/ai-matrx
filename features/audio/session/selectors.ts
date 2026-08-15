@@ -61,9 +61,28 @@ export const selectPlaybackHistory = createSelector(
 
 // ─── Recording lane ───────────────────────────────────────────────────────────
 
+/**
+ * ONE HOME PER CAPTURE (the camera single-homing rule).
+ *
+ * A camera capture used to appear TWICE in the Media panel: as a bare row in the
+ * Recording tab and again in the Camera tab. The Camera tab is the authoritative
+ * home for VIDEO captures — it is the camera roll, with the poster thumbnail,
+ * live pause-aware clock, recovery, transport, and the full per-item action menu
+ * (preview / download / rename / share / transcribe / delete). The Recording tab
+ * is the audio-memo list and could only ever show a label, so the duplicate is
+ * dropped from there rather than from the richer surface.
+ *
+ * The rule keys on MEDIUM, not source: an audio-only Capture Studio recording is
+ * a voice memo and stays in Recording, where a user looks for it.
+ */
+function isVideoCapture(s: AudioSession): boolean {
+  return s.source === "media-capture" && s.medium === "video";
+}
+
 export const selectRecordingSessions = createSelector(
   selectAllAudioSessions,
-  (all): AudioSession[] => all.filter((s) => s.direction === "recording"),
+  (all): AudioSession[] =>
+    all.filter((s) => s.direction === "recording" && !isVideoCapture(s)),
 );
 
 export const selectCurrentRecording = createSelector(

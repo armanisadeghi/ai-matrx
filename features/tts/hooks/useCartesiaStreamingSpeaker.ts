@@ -30,7 +30,7 @@
  * Used by the genuine token-by-token streaming path (Scribe voice-out via
  * `useAutoVoiceResponse`), where audio must start before the LLM finishes. For
  * speaking COMPLETE text (the read-aloud "Speak" buttons) use the unified
- * playback queue (`useTtsSpeak` / `StreamingSpeakerButton`) instead — it lives
+ * playback queue (`useSpeech` / `StreamingSpeakerButton`) instead — it lives
  * outside React so audio survives navigation. The @cartesia/cartesia-js SDK is
  * imported statically here; it ships with the consumer's code-split chunk.
  */

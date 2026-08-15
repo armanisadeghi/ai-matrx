@@ -15,7 +15,7 @@ import {
   StopTapButton,
 } from "@/components/icons/tap-buttons";
 import { TapTargetButtonGroup } from "@/components/icons/TapTargetButton";
-import { useTtsSpeak } from "@/features/audio/playback/useTtsSpeak";
+import { useSpeech } from "@/features/audio/service/useSpeech";
 
 interface Props {
   text: string;
@@ -32,7 +32,7 @@ export default function SpeakerCompactGroupCore({
   className,
   disabled = false,
 }: Props) {
-  const { speak, status, itemId, pause, resume, remove } = useTtsSpeak({
+  const { speak, status, itemId, pause, resume, remove } = useSpeech({
     processMarkdown,
   });
 

@@ -4,6 +4,7 @@
 // the barrel creates a runtime initialization cycle under Turbopack/Next
 // ("Cannot access 'userPreferencesPolicy' before initialization").
 import { createSlice, type PayloadAction, type Draft } from "@reduxjs/toolkit";
+import type { CatalogVoice } from "@/features/audio/service/engines";
 import { definePolicy } from "@/lib/sync/policies/define";
 import {
   REHYDRATE_ACTION_TYPE,
@@ -51,17 +52,13 @@ export interface VoicePreferences {
   wakeWord: string;
 }
 
-// Text-to-Speech preferences (catalog default Groq Orpheus voices)
-export type GroqTtsVoice =
-  | "autumn"
-  | "diana"
-  | "hannah"
-  | "austin"
-  | "daniel"
-  | "troy";
+// Text-to-Speech preferences. The voice list is declared ONCE, in the AV engine
+// registry (`features/audio/service/engines.ts`) — a voice can never exist in
+// the settings picker and not in the synthesis call, or vice versa.
+export type CatalogTtsVoice = CatalogVoice;
 
 export interface TextToSpeechPreferences {
-  preferredVoice: GroqTtsVoice;
+  preferredVoice: CatalogTtsVoice;
   autoPlay: boolean;
   processMarkdown: boolean;
 }

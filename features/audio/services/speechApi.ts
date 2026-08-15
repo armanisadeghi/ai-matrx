@@ -2,6 +2,7 @@ import { apiMultipart, apiPost } from "@/lib/api/typed-client";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { components } from "@/types/python-generated/api-types";
 import type { TranscriptionOptions, TranscriptionResult } from "../types";
+import { CATALOG_VOICES } from "@/features/audio/service/engines";
 
 type TranscriptionWire = components["schemas"]["TranscriptionResponse"];
 type SpeechWire = components["schemas"]["SpeechResponse"];
@@ -27,14 +28,8 @@ function normalizeTranscription(data: TranscriptionWire): TranscriptionResult {
   };
 }
 
-const CATALOG_TTS_VOICES = new Set([
-  "autumn",
-  "diana",
-  "hannah",
-  "austin",
-  "daniel",
-  "troy",
-]);
+/** The catalog voice list is declared ONCE, in the engine registry. */
+const CATALOG_TTS_VOICES = new Set<string>(CATALOG_VOICES);
 
 export async function transcribeAudioFile(
   file: File,
@@ -44,6 +39,7 @@ export async function transcribeAudioFile(
   const form = new FormData();
   form.append("file", file);
   if (options?.language) form.append("language", options.language);
+  if (options?.model) form.append("model", options.model);
   const { data } = await apiMultipart("/audio/transcribe", form, request);
   return normalizeTranscription(data);
 }
@@ -89,6 +85,7 @@ export async function transcribeAudioUrl(
     url,
     language: options?.language,
     organization_id: resolvedOrganizationId,
+    ...(options?.model ? { model: options.model } : {}),
   });
   return normalizeTranscription(data);
 }
