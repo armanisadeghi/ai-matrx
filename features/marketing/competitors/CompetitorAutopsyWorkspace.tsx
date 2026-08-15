@@ -38,13 +38,16 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 import { createMarketingCompetitorsScope } from "@/features/surfaces/manifests/marketing-competitors.manifest";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { toast } from "@/lib/toast";
+import { supabase } from "@/utils/supabase/client";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { emitAssistTracked } from "@/features/assists/redux/emitTracked";
 
 import type {
   CompetitorOpportunityRow,
   CompetitorRow,
   CompetitorRunRow,
 } from "./data";
-import { updateCompetitorTracking, updateOpportunityStatus } from "./data";
+import { saveCompetitorClassification, updateCompetitorTracking, updateOpportunityStatus } from "./data";
 import {
   AUTOPSY_RUN_BOUND_CHOICES,
   parseAutopsyRunPlan,
@@ -56,6 +59,11 @@ import {
   type OpportunityStatus,
 } from "./autopsy-controls";
 import { useCompetitorAutopsy } from "./useCompetitorAutopsy";
+import {
+  CompetitorClassificationEditor,
+  ManualCompetitorAdd,
+  derivedCompetitorLabel,
+} from "./CompetitorIdentification";
 
 type Artifact = {
   executive_verdict?: string;
@@ -158,6 +166,7 @@ export default function CompetitorAutopsyWorkspace() {
   const [pagesPerCompetitor, setPagesPerCompetitor] = useState(3);
   const [forceRefresh, setForceRefresh] = useState(false);
   const queryClient = useQueryClient();
+  const dispatch = useAppDispatch();
   const { sites, workspace, run, start, resolvedSiteId } =
     useCompetitorAutopsy(siteId);
 
@@ -169,6 +178,44 @@ export default function CompetitorAutopsyWorkspace() {
   const tracked =
     data?.competitors.filter((item) => item.tracking_status === "tracked")
       .length ?? 0;
+  const proposed = useMemo(
+    () => data?.competitors.filter((item) => item.classification_status === "proposed") ?? [],
+    [data?.competitors],
+  );
+  const selectedSite = sites.data?.find((site) => site.id === resolvedSiteId) ?? null;
+
+  useEffect(() => {
+    if (!resolvedSiteId || !proposed.length) return;
+    void supabase.auth.getUser().then(({ data: auth }) => {
+      if (!auth.user) return;
+      for (const competitor of proposed) {
+        if (!competitor.business_overlap || !competitor.market_overlap || !competitor.entity_role || !competitor.posture) continue;
+        void emitAssistTracked(auth.user.id, {
+          sourceKind: competitor.resolved_assessment && typeof competitor.resolved_assessment === "object" && "layer" in competitor.resolved_assessment && competitor.resolved_assessment.layer === "deterministic" ? "deterministic" : "agent",
+          sourceKey: "seo.competitor_classification",
+          title: `Confirm ${competitor.display_name || competitor.display_domain}`,
+          body: `${derivedCompetitorLabel(competitor)} is proposed. Confirm it only if the axes match what you know.`,
+          reasoning: competitor.latest_autopsy && typeof competitor.latest_autopsy === "object" && "classification" in competitor.latest_autopsy ? "A deterministic rule or the competitor classifier proposed these axes; you remain the decision-maker." : undefined,
+          confidence: undefined,
+          surfaceName: "matrx-user/marketing-competitors",
+          entityType: "seo_competitor",
+          entityId: competitor.id,
+          dedupeKey: `seo.competitor_classification:${competitor.id}`,
+          priority: 80,
+          evidence: { kind: "competitor", label: competitor.display_name || competitor.display_domain, href: `https://${competitor.normalized_domain}`, ref: competitor.id },
+          action: { kind: "surface_write", surfaceName: "matrx-user/marketing-competitors", target: "competitor_classification", value: {
+            competitorId: competitor.id,
+            business_overlap: competitor.business_overlap,
+            market_overlap: competitor.market_overlap,
+            entity_role: competitor.entity_role,
+            posture: competitor.posture,
+            use_for_link_gap: competitor.use_for_link_gap,
+            custom_labels: competitor.custom_labels,
+          } },
+        }, dispatch);
+      }
+    });
+  }, [dispatch, proposed, resolvedSiteId]);
 
   const refresh = async () => {
     if (!resolvedSiteId) return;
@@ -188,7 +235,6 @@ export default function CompetitorAutopsyWorkspace() {
       await updateCompetitorTracking(id, status);
       await refresh();
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [resolvedSiteId, queryClient],
   );
 
@@ -197,7 +243,6 @@ export default function CompetitorAutopsyWorkspace() {
       await updateOpportunityStatus(id, status);
       await refresh();
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [resolvedSiteId, queryClient],
   );
 
@@ -309,6 +354,21 @@ export default function CompetitorAutopsyWorkspace() {
       );
       await applyOpportunityStatus(write.opportunityId, write.status);
     },
+    competitor_classification: async (value: unknown) => {
+      const write = object(value);
+      if (!write || typeof write.competitorId !== "string") throw new Error("Competitor confirmation is missing its record id.");
+      const row = liveRef.current.competitors.find((item) => item.id === write.competitorId);
+      if (!row) throw new Error("That competitor is no longer in this workspace.");
+      await saveCompetitorClassification(write.competitorId, {
+        business_overlap: String(write.business_overlap) as CompetitorRow["business_overlap"],
+        market_overlap: String(write.market_overlap) as CompetitorRow["market_overlap"],
+        entity_role: String(write.entity_role) as CompetitorRow["entity_role"],
+        posture: String(write.posture) as CompetitorRow["posture"],
+        use_for_link_gap: write.use_for_link_gap === true,
+        custom_labels: Array.isArray(write.custom_labels) ? write.custom_labels.map(String) : [],
+      }, true);
+      await refresh();
+    },
   });
 
   const competitorColumns = useMemo<MatrxColumnDef<CompetitorRow>[]>(
@@ -321,6 +381,14 @@ export default function CompetitorAutopsyWorkspace() {
         filter: "text",
       },
       { accessorKey: "tracking_status", header: "Tracking", filter: "select" },
+      {
+        id: "classification",
+        header: "Classification",
+        filter: "text",
+        accessorFn: (row) => derivedCompetitorLabel(row),
+        cell: (row) => <Badge variant={row.classification_status === "confirmed" ? "default" : "secondary"}>{derivedCompetitorLabel(row)}</Badge>,
+      },
+      { accessorKey: "classification_status", header: "Decision", filter: "select" },
       { accessorKey: "threat_level", header: "Threat", filter: "select" },
       {
         accessorKey: "relevance_score",
@@ -696,6 +764,21 @@ export default function CompetitorAutopsyWorkspace() {
           </div>
         ) : null}
 
+        <ManualCompetitorAdd site={selectedSite} onAdded={refresh} />
+
+        {proposed.length ? (
+          <Card className="border-amber-500/30 bg-amber-500/[0.04]">
+            <CardHeader className="pb-3"><CardTitle className="text-sm">Confirm the proposed classifications</CardTitle></CardHeader>
+            <CardContent className="flex flex-wrap gap-2">
+              {proposed.map((competitor) => (
+                <Button key={competitor.id} variant="outline" size="sm" className="h-auto gap-2 py-2" onClick={() => document.getElementById(`competitor-review-${competitor.id}`)?.scrollIntoView({ behavior: "smooth" })}>
+                  <span className="text-left"><span className="block font-medium">{competitor.display_name || competitor.display_domain}</span><span className="block text-xs text-muted-foreground">{derivedCompetitorLabel(competitor)} · review before it drives spend</span></span>
+                </Button>
+              ))}
+            </CardContent>
+          </Card>
+        ) : null}
+
         {latestArtifact?.executive_verdict ? (
           <Card className="border-primary/20">
             <CardHeader className="pb-2">
@@ -717,7 +800,7 @@ export default function CompetitorAutopsyWorkspace() {
           </Card>
         ) : null}
 
-        <Tabs defaultValue="opportunities" className="min-w-0">
+        <Tabs defaultValue="competitors" className="min-w-0">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <TabsList>
               <TabsTrigger value="opportunities">
@@ -825,8 +908,8 @@ export default function CompetitorAutopsyWorkspace() {
               getRowId={(row) => row.id}
               isLoading={workspace.isLoading}
               isFetching={workspace.isFetching}
-              detail={{ title: (row) => row.display_domain }}
-              window={{ title: (row) => row.display_domain, enabled: true }}
+              detail={{ title: (row) => row.display_name || row.display_domain, render: (row) => <div id={`competitor-review-${row.id}`}><CompetitorClassificationEditor row={row} onSaved={refresh} /></div> }}
+              window={{ title: (row) => row.display_name || row.display_domain, renderView: (row) => <CompetitorClassificationEditor row={row} onSaved={refresh} />, enabled: true }}
               rowActions={(row) =>
                 // "tracked" is the server's vocabulary (see autopsy-controls);
                 // this row action sent "tracking" until 2026-08-12, which the

@@ -30,7 +30,22 @@ competitor tab links here with the current site preselected. `AssistStrip` uses 
 `matrx-user/marketing-competitors` surface, whose runtime scope includes the selected
 site, loaded competitors and opportunities, latest persisted artifact, and active run.
 
+Identification is equally primary: the user types a known business name, web lookup
+returns likely official sites with external doors, and one click adds the selected
+identity for classification. Proposed rows open a full axis editor for business overlap,
+market overlap, entity role, posture, link-gap eligibility, and free-text custom labels.
+The visible type is always `derivedCompetitorLabel(...)`; no stored type exists.
+
+**AI and deterministic output are proposals.** Proposed rows emit canonical
+`platform.assists` chips on this surface. Accepting the chip uses the declared
+`competitor_classification` surface-write target and stamps human confirmation; the
+table editor uses the same writer. Paid work may consume only confirmed rows.
+
 ## Change log
+
+- 2026-08-15 — Added first-class typed-name web lookup + one-click add, deterministic-first
+  classification with the platform-agent fallback, assist-backed approvals, derived labels,
+  editable axes/link-gap choice, and custom labels.
 
 - 2026-08-11 — Claude: **the route this doc already claimed now exists.** `Status: live` was
   aspirational: `CompetitorAutopsyWorkspace` had no page anywhere and `/marketing/competitors`

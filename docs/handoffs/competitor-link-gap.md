@@ -81,16 +81,10 @@ Do not re-derive these from the docs; the docs are ambiguous on the one that mat
 ## Remaining work
 
 ### T1 — Competitor identification + classification surface  ⭐ Arman called this critical
-Owner: spawned as a background task chip, 2026-08-14.
-- Manual add: type a name → web lookup → confirm the site → one-click add.
-- The approval queue: deterministic + AI proposals land as `classification_status='proposed'`
-  with a one-click confirm per the assists doctrine (`common-docs/systems/assists/FEATURE.md`).
-- Axis editors + custom labels; every default overridable.
-- Wire `matrx_seo.competitor_classification` (layer 1) ahead of any AI call.
-- Build the AI classifier as a **platform agent** (a slot, like
-  `seo.competitor_opportunity_autopsy`), never hardcoded heuristics.
-- Surface lives under `/marketing/competitors`, but competitors must appear wherever they
-  are relevant — this is a marketing fact, not an SEO report row.
+**Complete 2026-08-15.** Typed-name web lookup, one-click add, deterministic-first
+classification, pinned platform-agent fallback, assist-backed confirmation, axis/link-gap
+editors, derived labels, custom labels, and real competitor doors ship at
+`/marketing/competitors`. Every machine result remains proposed until the user confirms it.
 
 ### T2 — Link-gap collection, persistence, ranking, CRM fold
 Owner: spawned as a background task chip, 2026-08-14.

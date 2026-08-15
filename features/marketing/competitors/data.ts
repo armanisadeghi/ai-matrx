@@ -1,5 +1,7 @@
 import type { Database } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";
+import { callApi } from "@/lib/api/call-api";
+import type { AppDispatch } from "@/lib/redux/store";
 import type {
   CompetitorTrackingStatus,
   OpportunityStatus,
@@ -13,7 +15,15 @@ export type CompetitorRunRow =
 export type CompetitorSite = Pick<
   Database["web"]["Tables"]["site"]["Row"],
   "id" | "name" | "domain" | "root_url" | "brand_id"
+  | "organization_id" | "created_by"
 >;
+
+export interface CompetitorLookupResult {
+  title: string;
+  url: string;
+  domain: string;
+  description: string;
+}
 
 function requireData<T>(data: T | null, error: unknown): T {
   if (error) throw error;
@@ -25,12 +35,94 @@ export async function listCompetitorSites(): Promise<CompetitorSite[]> {
   const { data, error } = await supabase
     .schema("web")
     .from("site")
-    .select("id,name,domain,root_url,brand_id")
+    .select("id,name,domain,root_url,brand_id,organization_id,created_by")
     .is("deleted_at", null)
     .eq("status", "active")
     .order("name")
     .limit(250);
   return requireData(data, error);
+}
+
+export async function lookupCompetitor(
+  siteId: string,
+  name: string,
+  dispatch: AppDispatch,
+): Promise<CompetitorLookupResult[]> {
+  const result = await dispatch(callApi({
+    path: "/seo/sites/{site_id}/competitors/lookup",
+    method: "POST",
+    pathParams: { site_id: siteId },
+    body: { name },
+  }));
+  if (result.error) throw new Error(result.error.message ?? "Competitor lookup failed");
+  const payload = result.data as { results?: CompetitorLookupResult[] } | null;
+  return payload?.results ?? [];
+}
+
+export async function addCompetitor(
+  site: CompetitorSite,
+  result: CompetitorLookupResult,
+): Promise<CompetitorRow> {
+  const now = new Date().toISOString();
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) throw new Error("Sign in to add a competitor.");
+  if (!site.organization_id) throw new Error("This site is missing its organization identity.");
+  const { data, error } = await supabase
+    .schema("seo")
+    .from("competitor")
+    .upsert({
+      site_id: site.id,
+      organization_id: site.organization_id,
+      created_by: auth.user.id,
+      normalized_domain: result.domain,
+      display_domain: result.domain,
+      display_name: result.title,
+      discovery_source: "manual",
+      tracking_status: "candidate",
+      classification_status: "unclassified",
+      provider_evidence: { lookup: result },
+      latest_autopsy: {}, human_ruling: {}, resolved_assessment: {},
+      custom_labels: [], metadata: {},
+      first_observed_at: now, last_observed_at: now,
+      created_at: now, updated_at: now,
+    }, { onConflict: "site_id,normalized_domain" })
+    .select("*")
+    .single();
+  return requireData(data, error);
+}
+
+export async function classifyCompetitor(siteId: string, competitorId: string, dispatch: AppDispatch): Promise<void> {
+  const result = await dispatch(callApi({
+    path: "/seo/sites/{site_id}/competitors/classify",
+    method: "POST",
+    pathParams: { site_id: siteId },
+    body: { competitor_id: competitorId },
+  }));
+  if (result.error) throw new Error(result.error.message ?? "Classification failed");
+}
+
+export type CompetitorClassificationPatch = Pick<CompetitorRow,
+  "business_overlap" | "market_overlap" | "entity_role" | "posture" |
+  "use_for_link_gap" | "custom_labels"
+>;
+
+export async function saveCompetitorClassification(
+  competitorId: string,
+  patch: CompetitorClassificationPatch,
+  confirm: boolean,
+): Promise<void> {
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) throw new Error("Sign in to classify a competitor.");
+  const now = new Date().toISOString();
+  const { error } = await supabase.schema("seo").from("competitor").update({
+    ...patch,
+    classification_status: confirm ? "confirmed" : "proposed",
+    classification_confirmed_at: confirm ? now : null,
+    classification_confirmed_by: confirm ? auth.user.id : null,
+    human_ruling: { source: "competitor_workspace", confirmed: confirm, decided_at: now },
+    updated_at: now,
+  }).eq("id", competitorId);
+  if (error) throw error;
 }
 
 export async function loadCompetitorWorkspace(siteId: string): Promise<{

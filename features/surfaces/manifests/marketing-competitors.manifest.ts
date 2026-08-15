@@ -117,6 +117,17 @@ const writeTargets: SurfaceWriteTarget[] = [
     sortOrder: 150,
   },
   {
+    name: "competitor_classification",
+    label: "Confirm competitor classification",
+    description: "Confirms one currently loaded proposed competitor classification exactly as shown in the approval chip. The user remains the decision-maker; the action writes the human confirmation timestamp and actor, never provider evidence or measured search overlap.",
+    valueType: "object",
+    updatesValue: "competitors",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "competitors",
+    sortOrder: 190,
+  },
+  {
     name: "competitor_tracking",
     label: "Competitor tracking status",
     description: `Sets one competitor's tracking status — the same change as the Track / Stop tracking row action, saved immediately through the canonical RPC. Send an object { "competitor_id": "<id from the competitors value>", "tracking_status": ${COMPETITOR_TRACKING_STATUS_QUOTED_LIST} }. The id must belong to a competitor currently loaded for this site — an unknown id changes nothing and returns the loaded count. This moves only the HUMAN ruling; every provider fact and AI judgment on the row is untouched. Refused while an autopsy is running, because a finishing run replaces these rows.`,
