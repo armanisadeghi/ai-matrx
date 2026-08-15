@@ -30,7 +30,7 @@
 - ✅ Wave E — `TableConfigModal`: changing a field's `data_type` now prompts a destructive-confirm with the old→new summary, then runs `udt_change_field_type({strategy:'cast_or_null'})` per changed column; result toast shows total rows rewritten.
 - ✅ Wave F — `UserTableViewer`: row-action `History` icon → Sheet with `VersionHistoryViewer`
 - ✅ Wave B (4 of 4) — `EditRowModal` → `upsertRow`; `UserTableViewer` HTML cleanup + expanded-text save → `upsertCell`; bulk HTML-cleanup loop → `bulkWrite({op:'merge'})`
-- ✅ Wave G — `TableSettingsModal`: strict-mode toggle persisting `validation_mode`
+- ✅ Wave G — `TableConfigModal` → Table Settings tab: strict-mode toggle persisting `validation_mode` (moved there 2026-08-14; the modal that originally held it was never mounted — D189)
 - ✅ **Inline cell editing** — every `UserTableViewer` cell now wraps in `EditableCell` (double-click → type-aware input → `upsertCell` → success or toast)
 - ✅ **Realtime sync** — `UserTableViewer` subscribes to `udt_dataset_rows` changes for its tableId; debounced 400ms refetch
 - ✅ **Column-type badges** — every header now shows the `data_type` under the display name
@@ -517,9 +517,12 @@ into:
 - ⏳ Future agent-tool inspector surfaces.
 
 **Wave G — strict-mode toggle.**
-- ✅ `components/user-generated-table-data/TableSettingsModal.tsx` — "Strict Validation" Switch
-  added. Writes `validation_mode` via `supabase.from('udt_datasets').update(...)` (the existing
-  RLS UPDATE policy already gates owner-or-editor). Only fires when the value actually changed.
+- ✅ `components/user-generated-table-data/TableConfigModal.tsx` → **Table Settings** tab —
+  "Strict Validation" Switch. Writes `validation_mode` through `setValidationMode()` in
+  `service.ts` (a direct RLS UPDATE on `workbench.udt_datasets`; the existing policy already
+  gates owner-or-editor, and the wrapper's `.select()` turns an RLS refusal — a silent zero-row
+  UPDATE — into a real error instead of a false "Saved"). Only fires when the value changed.
+  It lived in a `TableSettingsModal` nothing ever mounted until 2026-08-14 (D189).
 - ⏳ Auto-strict on import (`ImportTableModal`) — **deliberately deferred**. Defaulting newly
   imported tables to strict would surprise users mid-flow; the Settings toggle lets them opt
   in when they're ready.
@@ -532,6 +535,27 @@ into:
 Decide before agent-heavy workloads land.
 
 ## Change log
+
+- 2026-08-14 — claude: **ONE table-settings modal, and Strict Validation is reachable at last
+  (D189).** `TableSettingsModal` was the only surface carrying the strict-mode toggle and
+  **nothing mounted it** — the gear icon in `TableToolbar` has always opened `TableConfigModal`,
+  whose Table Settings tab had no `validation_mode` control. So the strict-mode enforcement
+  shipped in `udt_v2_backbone` could only be armed by raw SQL or an agent write; no user could
+  turn it on. `TableConfigModal` wins the merge (it is the reachable one, and its callsite
+  already feeds it the full `udt_datasets` row from `getTableMetadata`, so the current read path
+  — the one that fixed the switch reading "permissive" for every dataset — comes along for
+  free). The duplicate file is DELETED and the `showTableSettingsModal` props that opened
+  `TableConfigModal` are renamed to match what they open. New `setValidationMode()` in
+  `service.ts` owns the write. **The "Authenticated Access" switch was deliberately NOT ported:
+  `udt_datasets` has no `authenticated_read` column and `update_user_table_metadata` ignores
+  `p_authenticated_read`, so that control could never save anything — porting it forward would
+  have shipped a lie.** Two layout defects fixed on the way: the Table Settings tab had no
+  scroll area of its own (the parent `overflow-hidden` clipped its tail with no scrollbar,
+  which is how the new section first arrived unreachable), and the dialog's min-content width
+  exceeded a phone viewport, dragging Save off-screen for every control in it. Verified live:
+  toggled on → reload → switch reads the stored value; a paste of `not-a-number` into a
+  `number` column was refused by the DB with `udt_validate_row: field score value is not
+  numeric`; toggled back off → persisted. Light, dark, and 375px.
 
 - 2026-08-14 — claude: **Columns can finally be deleted; reorder-row labels fixed; display
   formats added.** (1) `udt_delete_field` — there had been NO delete-column path since
