@@ -233,9 +233,24 @@ is idempotent and derives the org from `web_site_id`, then the MAIN
 `settings.cms.site_id` pointer, then the owner's personal workspace — and leaves
 a row null-and-REPORTED rather than guessing when an owner belongs to several orgs.
 
-**Still owner-only on the agent side:** aidream's `services/cms/access.py::can_access`
-has not been swapped yet, so an agent cannot reach a teammate's site this repo
-now opens. Narrower, never wider — but do not assume parity.
+**The agent side matches (2026-08-15).** aidream's `services/cms/access.py` was
+swapped the same day: `can_access(caller, site, level)` is the same rule over the
+same three columns, and `resolve_cms_caller` reads MAIN `iam.memberships` through
+the Matrx ORM because the CMS project cannot join to it. Two differences worth
+knowing, both deliberate and both narrow-not-wide:
+
+- aidream reproduces `iam.organization_member` exactly, which includes
+  **`status='active'`**. Our `mbr_for_user` path does not filter status — no live
+  divergence today (every org membership is `active`), but a suspended-not-deleted
+  membership would keep reaching org sites here and stop reaching them there. If
+  you touch `resolveCmsCaller`, close that.
+- aidream's `CmsSiteService.create` stamps the org through the platform's
+  `resolve_effective_organization_id` (personal org when none is given), where
+  this repo's route yields an owner-only site if the org is omitted. Both fail
+  safe; neither invents an org the caller is not in.
+
+When you change the predicate here, change it there — and update the
+system-of-record, not just one repo's copy.
 
 **Version RPCs (aidream CMS migrations `0003` + `0006`).** `history` and `platform` are not exposed
 to PostgREST, so the routes reach the version system through a `public` façade that mirrors the main
