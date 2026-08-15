@@ -167,9 +167,9 @@ Same rule as migrations, one layer up: **a commit that is not pushed, and a push
 > `--no-migrate` / `--no-gates` flags, per-invocation.
 
 - **Deploy:** `./scripts/release.sh` / `./ship.sh` (applies pending FE migrations, bumps, tags, pushes). **Vercel builds ONLY for release-prefixed commits** (`vercel.json` → `scripts/vercel-ignore-build.sh`) — plain pushes to `main` are skipped so agent traffic cannot start a second overlapping ~20-minute production build. The prefix picks the deployment (see Build gate): `release:` → main app only; `release-admin:` / `release-demos:` → that subdomain only; `release-all:` → all three. Ship a satellite with `./ship.sh "msg" --target admin|demos|all`. Sibling repos: `aidream` → its own `./scripts/release.sh` (Coolify auto-deploys on push; `/health/version` returns the deployed git SHA — compare to `origin/main`). `my-matrx` → push to `main` (Vercel GitHub integration).
-- **PR/branch sessions: your code auto-merges to `main` and goes LIVE within ~30 minutes; branches are then deleted.** Nobody reviews PRs — they auto-approve. There is no not-yet-live code: never document "not deployed yet" / "pending merge" (false within the half hour, and Arman reviews only the live app), and never spend output deciding what to do with your PR.
-- **Report deployed state, never intended state.** "Built and verified" ≠ "shipped". If you didn't deploy, say so in the same breath as the completion claim.
-- **Verify against production, not localhost** — hit the real URL and confirm your change answers there.
+- **PR/branch sessions: your code auto-merges to `main`; branches are then deleted.** Nobody reviews PRs — they auto-approve. Never document "pending merge", and never spend output deciding what to do with your PR.
+- 🚨 **NEVER REPORT DEPLOYMENT STATUS TO ARMAN. A dedicated agent deploys every ~20 minutes. (Arman, 2026-08-15.)** No "not deployed yet", no "deploy tail", no "pending release", no "built vs. shipped" caveat, no "someone needs to run release.sh" — it is not your job and it is *not his job*; surfacing it makes it his problem, which is exactly what the deploy agent prevents. Delete that sentence from your summary on sight. Say what you built and how you verified it; "committed and pushed" needs no elaboration. **Don't run `release.sh` yourself unless Arman asks for a release right now** — the deploy agent owns the cadence, and a second releaser only collides with a ~20-minute production build.
+- **Verify what you can, where you are** — the dev server, the live DB, a real request. You are not expected to verify production for a deploy you didn't run.
 - **Half-deployed is the dangerous state.** For a cross-repo feature, shipping only some repos can break a surface that previously worked (page JS calling a global that exists only in the undeployed half fails harder than the old code did).
 - Ask first only when the blast radius is outside the task — a live client site, a destructive migration. Otherwise ship it.
 
@@ -548,6 +548,12 @@ Read the system-of-record docs before touching config or catalogs in ANY repo.
 ## Cross-Repo — Access Architecture (permissions, sharing, memberships, associations)
 
 How a row becomes visible platform-wide — ownership, `iam.permissions`, `iam.memberships`, `platform.associations` conveyance, `visibility`, admin level — spans this repo, aidream, and the shared DB. Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/access-architecture/FEATURE.md` — read it before touching any permission/sharing/scope-access code.
+
+---
+
+## Cross-Repo — Provenance stamping (`code | ai | human` on every change)
+
+Every change to a governed unit is stamped with **what KIND of actor** made it, on top of the `created_by`/`updated_by` that already say who: two session variables (`app.actor_tier` / `app.actor_system`) read by the shared DB hooks `platform._stamp_actor` and `platform._version_capture`, writing `updated_by_tier`/`updated_by_system` on `agent`/`tool`/`workflow.definition` + `platform.associations`, `created_by_tier`/`created_by_system` on the three `*_version` stores, and `history.row_versions.actor_tier`. **This repo sets nothing and needs to set nothing** — a signed-in user's RPC carries `auth.uid()`, so the documented default stamps `human`, which is correct. Set `app.actor_tier` explicitly only if a frontend path ever writes a governed unit on an AI's behalf. **A NULL tier is the pre-provenance era and is read as HUMAN — never backfill it.** Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/provenance-stamping/FEATURE.md` — read it before touching actor stamping in ANY repo.
 
 ---
 
