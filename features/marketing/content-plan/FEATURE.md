@@ -300,8 +300,11 @@ cms-starter-kit`. Guarded CMS writes (agent_write_policy + activity log live
    the count AND rewrites the slugs live), **the exact routes** then commit.
    It is a PERSISTENT readiness surface, not a day-zero wizard — the same
    screen answers "what is missing?" on an empty site, a half-built one, and a
-   finished one, and re-running it is safe. Under the foundation checklist sit
-   the **"Make it real" rungs** (`SetupBridgeSection`): 1 create-or-link the
+   finished one, and re-running it is safe. Between the counts and the rungs
+   sits the **guided setup checklist** (`marketing.content_plan_setup` on
+   `lib/guided-setup/`) — brand, a website to build into, its look and feel,
+   its menu, its pictures — which DIAGNOSES and does for the user what it can.
+   Under it sit the **"Make it real" rungs** (`SetupBridgeSection`): 1 create-or-link the
    CMS counterpart (CMS site via the existing `/api/cms` seam, **seeding
    `settings.agent_write_policy: "full"` — an unset policy is `blocked` and
    every later rung writes through aidream's policy-guarded seams**; link
@@ -366,6 +369,57 @@ The rules, live in `EntityManager.tsx`'s "Suggest from research" panel
 
 Every other AI-proposal surface here (Shape Planner, Family Namer, Plan
 Reviewer, Keyword Strategist, Entity Attacher) is held to the same rule.
+
+### Site Setup — the CHECKLIST and the METER are different things
+
+🚨 **`readiness.ts` measures; it never presents a step.** Since 2026-08-15 its
+two halves are rendered by two different systems, and putting a row in the wrong
+one is the defect to avoid:
+
+- **Pass/fail things a person does once** — belongs to a brand, has a website to
+  build into, that website has a look and feel / a menu / its pictures — are
+  steps on the platform primitive `lib/guided-setup/`, declared in
+  **`setup/contentPlanSetupChecklist.tsx`** (`marketing.content_plan_setup`,
+  scoped `{organizationId, targetKey: site.id}`). They persist per org,
+  re-verify on every return, and each failure carries its one-click way out.
+- **Coverage** — `families` (17 of 30 services planned), `corePages`,
+  `extraRoutes`, `nodesWithoutBrief`/`nodesWithoutKeyword` — stays a METER in
+  `SetupWorkOrderColumn`. A count that is *supposed* to climb over weeks is not
+  a tick box; forcing it into one produces a step that is never done and always
+  nagging.
+
+`buildReadiness` remains the ONE measurement for both halves (the checklist
+consumes `items`, never re-measures; the agent surface value
+`readiness_checklist` still reports every item). Its honesty rule is now also
+the primitive's rule 3: a website we could not read is `unknown` WITH the
+reason, never a red "you haven't done this".
+
+**What groups a checklist step is the ACTION that finishes it, not the
+requirement it measures.** The primitive *can* emit one step per requirement (a
+`steps` factory over the context), so this is a choice: `design` (one
+starter-kit call writes styles + header + footer), `menu` and `images` each
+cover several requirements and name every piece by state in their `detail`,
+because a step the user cannot finish is a dead end. Three rulings live in that
+split:
+
+- **The menu is NOT part of `design`.** aidream's starter kit seeds navigation
+  FROM the site's show-in-nav pages, so on a website whose pages do not exist
+  yet it writes the styles, header and footer and leaves the menu empty. Folded
+  into `design`, the step stayed red forever behind a button that would then
+  refuse ("the site is not empty") — a dead end wearing a fix's clothes. Found
+  by rendering it, not by review.
+- **`images` is `optional` because the product cannot close it.** The asset
+  library is complete end to end (`client_assets` + `/api/cms/assets` +
+  `CmsAssetService.createAsset`) but its only UI is `AssetsPanel` inside the
+  super-admin CMS-agents surface, so a site owner has nowhere to add a logo.
+  Tracked as the Coming Soon promise `cms.site-images`; the step's fix
+  announces it rather than pretending a door exists. **Ship that UI and this
+  step stops being optional.**
+- **Creating the website is ONE implementation, two entry points.**
+  `bridge.ts#createAndLinkCmsSite` is called by the checklist's "Set it up for
+  me" step and by "Make it real" rung 1's *Create & link* branch. The rung keeps
+  its own control because it ALSO offers linking a website that already exists —
+  a choice only a human can make. Never fork a second create-and-link path.
 
 ### Site Setup — the three rules that make it correct
 

@@ -22,18 +22,22 @@
  * straight over: a site whose website we could not read reads `unknown` WITH
  * the reason, never a red "you haven't done this".
  *
- * WHY THE FOUNDATION IS THREE STEPS AND NOT ONE-PER-REQUIREMENT. A
- * `ChecklistDefinition` has STATIC step ids (they are persistence keys), and an
- * archetype's foundation requirements are dynamic (`asset:service_icon` exists
- * only for shapes that declare it) — so one step per requirement is not
- * expressible, and would be wrong even if it were: the CMS starter kit writes
- * styles + header + footer in ONE guarded call, so three rows would print one
- * action three times (exactly the defect live rendering caught in the last
- * consumer). What GROUPS a step here is therefore the ACTION that finishes it:
- * `design` (one starter-kit call), `menu` (fills itself in from the pages, so
- * no button can finish it early — found by rendering it), `images` (nowhere in
- * the product to do it yet). Each step's `detail` still names every piece it
- * covers by state, so nothing measured is lost and nothing is said twice.
+ * WHY THE FOUNDATION IS THREE STEPS AND NOT ONE PER REQUIREMENT. The primitive
+ * can express one-per-requirement (`steps` accepts a pure factory over the
+ * context, so `asset:service_icon` could have its own row) — this is a
+ * deliberate choice, not a limitation. **What GROUPS a step here is the ACTION
+ * that finishes it**, because a step the user cannot finish is the dead end the
+ * primitive exists to delete:
+ *
+ *   `design` — ONE starter-kit call writes styles + header + footer, so three
+ *              rows would print one action three times.
+ *   `menu`   — no button can finish it early: the kit seeds the menu FROM the
+ *              site's pages, which do not exist yet. Found by RENDERING it.
+ *   `images` — there is nowhere in the product to do it at all (Coming Soon
+ *              `cms.site-images`), so N identical dead-ended rows help nobody.
+ *
+ * Each step's `detail` still names every piece it covers by state, so nothing
+ * measured is lost and nothing is said twice.
  */
 
 import Link from "next/link";
