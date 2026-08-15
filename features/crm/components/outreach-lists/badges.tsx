@@ -5,6 +5,11 @@
 // never wear two colors.
 
 import { cn } from "@/lib/utils";
+import {
+  INBOUND_LABEL_META,
+  toInboundLabel,
+  type InboundLabel,
+} from "../../inbox/attributes";
 import type {
   OutreachListKind,
   OutreachListStatus,
@@ -92,6 +97,46 @@ export function MemberStatusBadge({ status }: { status: string }) {
       )}
     >
       {status.replace(/_/g, " ")}
+    </span>
+  );
+}
+
+/**
+ * The inbound classifier's verdict on a reply. Lives HERE, beside the campaign
+ * and member status maps, because a status may never wear two colors — a
+ * second badge module in features/crm/inbox/ would be exactly that defect.
+ */
+const INBOUND_LABEL_TONE: Record<InboundLabel, string> = {
+  interested:
+    "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+  not_interested: "bg-destructive/15 text-destructive border-destructive/20",
+  unsubscribe: "bg-destructive/15 text-destructive border-destructive/20",
+  bounce:
+    "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/20",
+  ooo: "bg-muted text-muted-foreground border-border",
+  other: "bg-muted text-muted-foreground border-border",
+};
+
+export function InboundLabelBadge({ value }: { value: string | null }) {
+  const label = toInboundLabel(value);
+  // An unclassified reply says so plainly. "Unclassified" is a real state (the
+  // ingester has not run, or had nothing to go on) and pretending it is "other"
+  // would tell the user a model made a judgement it never made.
+  if (!label) {
+    return (
+      <span className="inline-flex items-center whitespace-nowrap rounded-full border border-dashed border-border px-2 py-0.5 text-[11px] font-medium leading-none text-muted-foreground">
+        Unclassified
+      </span>
+    );
+  }
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-medium leading-none",
+        INBOUND_LABEL_TONE[label],
+      )}
+    >
+      {INBOUND_LABEL_META[label].label}
     </span>
   );
 }

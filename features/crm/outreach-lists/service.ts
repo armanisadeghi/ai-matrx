@@ -207,6 +207,28 @@ export async function fetchOutreachListMembers(args: {
   return { rows: data ?? [], total: count ?? 0 };
 }
 
+/**
+ * ONE member by id, with its party embed — the same read shape the roster uses.
+ *
+ * Added for the unified inbox: a reply names a member id, and replying has to
+ * hand the CANONICAL `SingleSendDialog` a real member row. Extending this
+ * service is the reuse rung; a second member reader in features/crm/inbox/
+ * would be a second read shape for the same table.
+ */
+export async function fetchOutreachListMember(
+  memberId: string,
+): Promise<OutreachListMemberWithParty | null> {
+  const { data, error } = await crm()
+    .from("outreach_list_member")
+    .select(MEMBER_EMBED)
+    .eq("id", memberId)
+    .is("deleted_at", null)
+    .maybeSingle()
+    .returns<OutreachListMemberWithParty | null>();
+  if (error) throw pgError(error);
+  return data;
+}
+
 /** Per-status totals + the live "claimable now" count for the header. */
 export async function fetchMemberStatusCounts(
   listId: string,
