@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P6",
   "runId": "01a0058c-d8db-74d3-b638-f59fbb0a9407",
-  "state": "certifying",
-  "updatedAt": "2026-08-15T13:34:30.994Z",
-  "summary": "Resubmitted the corrected projection and unchanged 15-file product batch for exact-SHA certification.",
+  "state": "delivery_queued",
+  "updatedAt": "2026-08-15T18:29:33.810Z",
+  "summary": "Delivery reconciliation: the certified No Emojis cleanup was integrated into main and shipped in v0.4.673; recording the delivery queue before closing the shipped state.",
   "source": "01a0058c-d8db-74d3-b638-f59fbb0a9407.json",
-  "eventHash": "b80da9c65e854b8f973d79b5f0567a0e101f4a40a1cc180ade04aefaa0b7aff6"
+  "eventHash": "6becd0763e6b1f58429722f6abb939aa073bb19dc2c3cbfa07670d7c66ac48ad"
 }
