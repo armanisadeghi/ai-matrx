@@ -528,10 +528,6 @@ On a 325-page site the audit tab replaces the whole surface with a generic retry
 
 Per Arman's ruling, `platform._gc_entity_associations` tombstones (`deleted_at` + `deleted_via_*` stamp) instead of purging, restore un-tombstones exactly what that entity's trashing removed, and only a hard DELETE purges; conveyance is cut at `platform.containment_edges` and every reader reads `platform.associations_live`. Contract + live proof: `common-docs/systems/access-architecture/FEATURE.md` §2.4c. Edges destroyed before this migration are unrecoverable.
 
-### D133 (remainder) — no product path to move a site between organizations (2026-08-08)
-
-The wording/membership halves are resolved (AccessGate; Arman's rulings on the outsider test account and the aimatrx.com site move). Open gap: moving a site between orgs took a hand-written transaction — a site-settings "Move to organization" action is worth building.
-
 ### D132 (remainder) — session-identity drift under long-lived tabs (2026-08-08 incident)
 
 `AuthSessionWatcher` hard-stop shipped. Open: (a) preserve unsaved in-memory edits across the forced reload (local draft snapshot before blocking)? (b) escalate N consecutive autosave failures to a blocking editor banner; (c) convention: test-account logins use isolated profiles/incognito — document in the OAuth-verification plan.
@@ -796,7 +792,7 @@ One line per fix — title, date, pointer. History lives in git. Entries older t
 - **D149** — retired the dead `web.batch_*` marketing routes/views (never a working feature — zero rows ever linked); `/marketing/cost` survives as provider spend. Follow-on → D153. 2026-08-11.
 - **D148** — brokers feature deleted (RPCs deliberately dropped by aidream 0240; graveyard-only tables, zero consumers); type gate green. Detail: `features/agent-context/FEATURE.md` § Removal record. 2026-08-11.
 - **D154-capture** — pre-hydration error capture shipped (`20e226f37`); D154 reopens when prod data arrives. 2026-08-11.
-- **D133** — "site reads as deleted to non-members": AccessGate resolves the true state; aimatrx.com site moved to the shared org; outsider test account stays memberless by design. Remainder → D133 open entry. 2026-08-11.
+- **D133** — "site reads as deleted to non-members": AccessGate resolves the true state; aimatrx.com site moved to the shared org; outsider test account stays memberless by design. 2026-08-11. **Remainder CLOSED 2026-08-15**: the org move is a product action, not a hand-written transaction — `MoveSiteOrganizationCard` is mounted in `SiteSettingsWorkspace.tsx`. The open entry survived four days after its own fix shipped because nothing links a Done bullet back to it; found while auditing docs against code.
 - **D115** — in-session tool-viz repaint via `lib/invalidation/invalidation-registry.ts` (zero import edge between stream effects and heavy clusters; guarded by `tool-viz-repaint-invalidation.test.ts`). Known sibling not covered: `features/workflow-emit/emitRendererCache.ts`. 2026-08-09.
 - **D116** — both bespoke stream renderers deleted; `adoptForeignStream` closes the pipeline-run gap; `matrx/no-bespoke-stream-renderer` lint shipped. ⚠️ Verification debt: written where `pnpm install` failed — needs type-check + live exercise of `/marketing/keyword-research` (tracked in `docs/handoffs/canonical-stream-and-surface-writeback.md`). 2026-07-29.
 - **D124** — `claimTask` stamps `claim_protocol=2`. External-caller remainder → D124 open entry. 2026-08-04.
