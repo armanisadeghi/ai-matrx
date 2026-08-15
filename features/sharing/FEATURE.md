@@ -386,6 +386,39 @@ Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) 
     `workbench._bridge_legacy_owner` bridge until the ~30 RPCs, aidream's picklists router and ~15
     frontend files are converted — tracked in
     [`docs/handoffs/workbench-udt-canonicalization.md`](../../docs/handoffs/workbench-udt-canonicalization.md).
+- 2026-08-15 — Claude: **`context_item` finally has a single-id door — `/context-items?item={id}`.**
+  Closes the gap spun off from the D193 entry below.
+  - **No route was invented, and none may be.** The only id-addressable route needs THREE ids
+    (`/organizations/[orgId]/scopes/[typeId]/context-items/[itemId]`). A `/context-items/{id}` route
+    would give a **component** of a scope type its own identity — exactly what D193 forbids. So the
+    destination is the all-orgs hub focused on the item, the same shape as `code_file`'s `?open=`
+    and `code_folder`'s `?folder=`.
+  - `AllContextItemsHub` (`features/scope-system/components/ContextItemsHub.tsx`) resolves `?item=`
+    to `pending | found | missing` and **waits for every org's scope types AND every type's items
+    before judging**. That gate is load-bearing in *both* directions: resolving `missing` early is
+    the race that makes a working link look broken, and resolving `found` early is the race that
+    makes the scroll land nowhere.
+  - **A one-shot `scrollIntoView` does not work on this hub and the failures were not subtle.**
+    The page keeps growing and reflowing after the data is in the store: first measured a **10px**
+    scroll for a row that settled 5,100px down, then — after gating on full load — a **2,100px
+    overshoot**. The row now re-centres each frame until its position holds still (bounded by
+    frames, and it yields on the user's first wheel/touch/key: this owes the user one correct
+    landing, not control of their scrollbar). **Any future deep-link focus on a lazily-filling
+    list has this bug until it does the same.**
+  - An id the caller cannot reach renders `<AccessGate token="context_item" id>` in place of the
+    list — never a list that looks like the link worked. Access is unchanged: `context_items` still
+    has no `visibility`/`organization_id` column and still conveys from the parent.
+  - All four route authorities moved in one commit: `entityRegistry.hrefFor` (**the half
+    `getResourceSharePath` actually reads for this token** — the mirror alone would still return
+    `null`), the TS mirror, the live DB row (`migrations/sharing_registry_context_item_focus_param.sql`,
+    applied + ledgered), and the regenerated snapshot.
+  - **Browser-verified on the preview server against four states**, because
+    `registry.routes.test.ts` validates the PATH and is blind to every query param here: two real
+    items in different orgs and scope types (`Species` / Pets / admin's Workspace, `Jurisdiction` /
+    Practice Areas / Castellano & Reyes) each centred and highlighted; a fabricated uuid →
+    "We couldn't find this context item"; a real item in an org the caller isn't in → "You don't
+    have access to this context item · Grade Level". The fallback door drops the param and restores
+    the hub.
 - 2026-08-15 — Claude: **D193 (`context_item` half) — the registry declared a column that does not
   exist, on an entity that is not independently shareable.** `context_item` carried
   `is_public_column = 'visibility'`, but `context.context_items` has **no `visibility` column**
@@ -424,16 +457,13 @@ Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) 
     `platform.shareable_resource_registry` and touches neither `context.context_items` (203 rows,
     0 soft-deleted, newest row update still 2026-07-27) nor any of its 4 policies; 97 items remain
     visible to that user under RLS.
-  - **`url_path_template` stays `''`, and that is correct, not an oversight.** The only
+  - **`url_path_template` stayed `''` in this commit, and that was correct at the time.** The only
     id-addressable route is
     `app/(core)/organizations/[orgId]/scopes/[typeId]/context-items/[itemId]` — it needs **three**
-    ids, and a `{id}`-only template cannot build it; `/context-items` is an un-parameterized hub
+    ids, and a `{id}`-only template cannot build it; `/context-items` was an un-parameterized hub
     with no focus param. Per D138 an empty template is "no signed-in destination" and the surfaces
-    render no link rather than a 404. `entityRegistry` carries no `hrefFor` for `context_item` for
-    the same reason. **The door a user actually gets is the generic detail window**
-    (`features/item-presentation`, `open: { kind: "context_item" }`). No route was invented.
-    *Open gap, spun off:* there is still no single-id door to a context item; closing it means a
-    focus param on `/context-items` plus an `hrefFor`, which is a separate change.
+    render no link rather than a 404. **Closed 2026-08-15 by the focus param** — see the entry
+    above; the rule that produced the `''` is unchanged, only the destination now exists.
   - Migration `migrations/sharing_registry_context_item_conveyed_d193.sql`, applied live + ledgered
     (`source='matrx-frontend'`); TS mirror + snapshot moved in the same commit; parity (139 tests)
     and `pnpm check:shareable-registry` green.

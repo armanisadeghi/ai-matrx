@@ -134,9 +134,14 @@ export function AllContextItemsHub() {
   );
 
   // Resolution of `?item=`. Every org's scope types and every type's items load
-  // lazily and independently, so "not in the list" is only the truth once ALL
-  // of them have landed — declaring `missing` any earlier is the race that
-  // makes a working link look broken.
+  // lazily and independently, so this stays `pending` until ALL of them have
+  // landed — and that is load-bearing in BOTH directions:
+  //  - `missing` any earlier is the race that makes a working link look broken;
+  //  - `found` any earlier is the race that makes the scroll land nowhere. The
+  //    row is scrolled to on the render it becomes focused, so resolving while
+  //    sections below are still filling in scrolls to a position the row is
+  //    about to be pushed thousands of pixels off (measured: a 10px scroll for
+  //    a row that settled 5,100px down).
   const focusResolution = useAppSelector(
     (s): "idle" | "pending" | "found" | "missing" => {
       if (!focusItemId) return "idle";
@@ -146,12 +151,11 @@ export function AllContextItemsHub() {
         if (!selectScopeTypesLoadedForOrg(s, org.id)) return "pending";
         for (const t of selectScopeTypesByOrg(s, org.id)) typeIds.push(t.id);
       }
-      const knownTypeIds = new Set(typeIds);
-      const hit = selectAllContextItems(s).find((i) => i.id === focusItemId);
-      if (hit && knownTypeIds.has(hit.scope_type_id)) return "found";
       if (typeIds.some((id) => !selectItemsLoadedForType(s, id)))
         return "pending";
-      return "missing";
+      const knownTypeIds = new Set(typeIds);
+      const hit = selectAllContextItems(s).find((i) => i.id === focusItemId);
+      return hit && knownTypeIds.has(hit.scope_type_id) ? "found" : "missing";
     },
   );
 
@@ -698,10 +702,53 @@ function ContextItemListRow({
 }) {
   const rowRef = useRef<HTMLDivElement | null>(null);
 
+  // Bring the `?item=` target into view. A single scrollIntoView does NOT work
+  // here and the failures are not subtle: this hub lists every org, so it keeps
+  // growing and reflowing after the data is in the store — measured a 10px
+  // scroll for a row that settled 5,100px down, and after that was fixed, a
+  // 2,100px OVERSHOOT. So re-centre until the row's position holds still, then
+  // stop. Bounded by frames, and it yields the moment the user scrolls: this
+  // owes the user one correct landing, not control of their scrollbar.
   useEffect(() => {
-    if (focused) {
-      rowRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
-    }
+    if (!focused) return undefined;
+    let raf = 0;
+    let frames = 0;
+    let stable = 0;
+    let lastTop = Number.NaN;
+    let cancelled = false;
+
+    const stop = () => {
+      cancelled = true;
+      cancelAnimationFrame(raf);
+    };
+
+    const tick = () => {
+      const el = rowRef.current;
+      if (!el || cancelled) return;
+      const top = el.getBoundingClientRect().top;
+      if (Math.abs(top - lastTop) < 1) {
+        stable += 1;
+      } else {
+        stable = 0;
+        // Not smooth: the target can be thousands of pixels away, and a long
+        // smooth scroll is both slow and interrupted by the next re-centre.
+        el.scrollIntoView({ block: "center", behavior: "auto" });
+      }
+      lastTop = el.getBoundingClientRect().top;
+      frames += 1;
+      if (stable < 5 && frames < 180) raf = requestAnimationFrame(tick);
+    };
+
+    raf = requestAnimationFrame(tick);
+    window.addEventListener("wheel", stop, { passive: true });
+    window.addEventListener("touchstart", stop, { passive: true });
+    window.addEventListener("keydown", stop);
+    return () => {
+      stop();
+      window.removeEventListener("wheel", stop);
+      window.removeEventListener("touchstart", stop);
+      window.removeEventListener("keydown", stop);
+    };
   }, [focused]);
 
   return (
