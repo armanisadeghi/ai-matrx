@@ -54,12 +54,10 @@ export const MARKETING_SUBVIEW_ICONS: Record<string, LucideIcon> = {
   "structure:tree": ListTree,
   "structure:columns": Columns3,
 
+  // Library / Research / Sources / Generate moved to the brand asset desk on
+  // 2026-08-15; their icons live in `MARKETING_BRAND_ASSETS_VIEW_ICONS` below.
   "media:crawled": Globe,
   "media:videos": Film,
-  "media:library": FolderOpen,
-  "media:research": Lightbulb,
-  "media:sources": ImageDown,
-  "media:generate": ImagePlus,
   "media:standards": Ruler,
 
   "links:graph": Network,
@@ -103,6 +101,18 @@ export const MARKETING_SUBVIEW_ICONS: Record<string, LucideIcon> = {
   "settings:access-organizations": Building2,
   "settings:access-public": Globe,
   "settings:intake": Compass,
+};
+
+/**
+ * One icon per BRAND asset-desk view. Same reasoning as the site map above —
+ * the desk's own tab bar renders icon + label, and these four arrived here from
+ * `media:*` when the levels were split.
+ */
+export const MARKETING_BRAND_ASSETS_VIEW_ICONS: Record<string, LucideIcon> = {
+  library: FolderOpen,
+  research: Lightbulb,
+  sources: ImageDown,
+  generate: ImagePlus,
 };
 
 export function marketingSubViewIcon(

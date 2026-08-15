@@ -58,14 +58,16 @@ export const MARKETING_SITE_SUBVIEWS = [
     ],
   },
   {
+    // Media is what this WEBSITE's own media is: the images and videos
+    // observed on it, and the standards it holds them to. Library, Research,
+    // Sources and Generate moved to the brand's asset desk on 2026-08-15 —
+    // all four read brand- or org-scoped data, so rendering them here told two
+    // sites under one brand they each had their own library when they were
+    // editing the same rows. `marketingRoutes.brandAssets` is the door.
     section: "media",
     views: [
       { id: "crawled", label: "Crawled" },
       { id: "videos", label: "Videos" },
-      { id: "library", label: "Library" },
-      { id: "research", label: "Research" },
-      { id: "sources", label: "Sources" },
-      { id: "generate", label: "Generate" },
       { id: "standards", label: "Standards" },
     ],
   },

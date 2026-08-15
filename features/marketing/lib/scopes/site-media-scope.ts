@@ -3,11 +3,15 @@
  * (`/marketing/brands/[brandId]/sites/[siteId]/media`, `SiteMediaWorkspace`).
  *
  * Composes the inherited brand+site base (`useMarketingSiteSurfaceBase`) with
- * the media workspace's own values. Pure derivation only — the workspace reads
- * the views' React Query caches at trigger time (the views load their data
- * lazily, so the crawled / library / research inputs are opportunistic:
- * present whenever a visit has populated the cache) and this module reduces
- * the raw rows to the bounded summaries the manifest declares.
+ * this website's own media values. Pure derivation only — the workspace reads
+ * the crawled view's React Query cache at trigger time (the views load their
+ * data lazily, so the inventory input is opportunistic: present whenever a
+ * visit has populated the cache) and this module reduces the raw rows to the
+ * bounded summary the manifest declares.
+ *
+ * The brand-scoped projections (library assets, research images, the image
+ * order) left with their views on 2026-08-15 — they live in
+ * `brand-assets-scope.ts` now.
  */
 
 import { createMarketingSiteMediaScope } from "@/features/surfaces/manifests/marketing-site-media.manifest";
@@ -17,31 +21,10 @@ import {
   buildSnapshotMediaAssets,
   type SiteMediaPageRow,
 } from "@/features/marketing/lib/snapshot-media";
-import type {
-  ResearchImageRow,
-  SiteMediaStandards,
-} from "@/features/marketing/data/media-library";
-import {
-  MEDIA_ORDER_PRESETS,
-  resolveOrderDimensions,
-} from "@/features/marketing/lib/media-order-presets";
-import type { MediaOrderDraft } from "@/features/marketing/lib/site-media-write-targets";
-import type { BrandAsset } from "@/features/marketing/types";
+import type { SiteMediaStandards } from "@/features/marketing/data/media-library";
 
 export const MARKETING_SITE_MEDIA_SURFACE_NAME =
   "matrx-user/marketing-site-media" as const;
-
-/** How many per-topic research counts the summary carries at most. */
-const RESEARCH_TOPIC_LIMIT = 12;
-
-function hostnameOf(url: string | null): string | null {
-  if (!url) return null;
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return null;
-  }
-}
 
 /** Reduce the cached site-media rows to the manifest's inventory rollup. */
 export function summarizeMediaInventory(
@@ -83,84 +66,6 @@ export function summarizeMediaInventory(
   };
 }
 
-/** Project the brand's assets to the bounded fields the manifest declares. */
-export function projectBrandLibraryAssets(
-  assets: BrandAsset[],
-): Array<Record<string, unknown>> {
-  return assets.map((asset) => ({
-    id: asset.id,
-    kind: asset.kind,
-    source: asset.source,
-    title: asset.title,
-    is_primary: asset.is_primary,
-    has_file: Boolean(asset.file_id),
-    source_url: asset.source_url,
-    created_at: asset.created_at,
-  }));
-}
-
-/** Reduce the cached research images to the manifest's summary rollup. */
-export function summarizeResearchImages(
-  images: ResearchImageRow[],
-  siteRootUrl: string | null,
-): Record<string, unknown> {
-  const siteHost = hostnameOf(siteRootUrl);
-  const topicCounts = new Map<string, number>();
-  let ownDomain = 0;
-  for (const image of images) {
-    const topicName = image.topicName ?? "Untitled topic";
-    topicCounts.set(topicName, (topicCounts.get(topicName) ?? 0) + 1);
-    if (siteHost) {
-      const sourceHost = (image.sourceHostname ?? "").replace(/^www\./, "");
-      if (sourceHost === siteHost || hostnameOf(image.url) === siteHost) {
-        ownDomain += 1;
-      }
-    }
-  }
-  return {
-    total: images.length,
-    own_domain: ownDomain,
-    external: images.length - ownDomain,
-    topics: [...topicCounts.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, RESEARCH_TOPIC_LIMIT)
-      .map(([name, count]) => ({ name, count })),
-  };
-}
-
-/**
- * Project the staged image order, resolving what the order WOULD use so the
- * agent can see the effective size without re-deriving the standards match.
- */
-export function projectMediaOrderDraft(
-  order: MediaOrderDraft,
-  standards: SiteMediaStandards,
-): Record<string, unknown> {
-  const preset =
-    MEDIA_ORDER_PRESETS.find((item) => item.id === order.type) ??
-    MEDIA_ORDER_PRESETS[0];
-  const resolved = resolveOrderDimensions(preset, standards);
-  const overrideWidth = Number(order.width);
-  const overrideHeight = Number(order.height);
-  return {
-    type: order.type,
-    brief: order.brief,
-    style: order.style,
-    width: order.width,
-    height: order.height,
-    resolved_width:
-      order.width && Number.isFinite(overrideWidth) && overrideWidth > 0
-        ? overrideWidth
-        : resolved.width,
-    resolved_height:
-      order.height && Number.isFinite(overrideHeight) && overrideHeight > 0
-        ? overrideHeight
-        : resolved.height,
-    resolved_from: resolved.source,
-    resolved_slot_name: resolved.slotName,
-  };
-}
-
 export interface SiteMediaScopeInput {
   /** Inherited brand + site context, built by `useMarketingSiteSurfaceBase`. */
   base: MarketingSiteBaseValues;
@@ -168,27 +73,15 @@ export interface SiteMediaScopeInput {
   view: string;
   /** Parsed `site.settings.media_standards` — always available, may be empty. */
   standards: SiteMediaStandards;
-  /** The workspace-owned image order draft — always present, may be empty. */
-  order: MediaOrderDraft;
   /** Cached crawled-inventory rows (`useSiteMedia`), when loaded. */
   mediaRows?: SiteMediaPageRow[];
-  /** Cached brand assets (`useBrandAssets`), when loaded. */
-  brandAssets?: BrandAsset[];
-  /** Cached research images (`useResearchImages`), when loaded. */
-  researchImages?: ResearchImageRow[];
-  /** The site's root URL — classifies research images as own vs external. */
-  siteRootUrl: string | null;
 }
 
 export function buildSiteMediaScope({
   base,
   view,
   standards,
-  order,
   mediaRows,
-  brandAssets,
-  researchImages,
-  siteRootUrl,
 }: SiteMediaScopeInput): SurfaceScopePayload {
   return createMarketingSiteMediaScope({
     ...base,
@@ -197,15 +90,8 @@ export function buildSiteMediaScope({
       slots: standards.slots,
       notes: standards.notes,
     },
-    media_order_draft: projectMediaOrderDraft(order, standards),
     media_inventory_summary: mediaRows
       ? summarizeMediaInventory(mediaRows)
-      : undefined,
-    brand_library_assets: brandAssets
-      ? projectBrandLibraryAssets(brandAssets)
-      : undefined,
-    research_images_summary: researchImages
-      ? summarizeResearchImages(researchImages, siteRootUrl)
       : undefined,
   });
 }
