@@ -1180,6 +1180,23 @@ export interface ManagedAgentOptions {
   onConversationCreated?: (conversationId: string) => void;
 
   /**
+   * Fires the moment the request row exists — right after `executeInstance`
+   * resolves, BEFORE the run is polled to completion.
+   *
+   * `onConversationCreated` is not enough for a streaming UI: every live
+   * selector (`selectAccumulatedText`, `selectRequestStatus`, …) is keyed by
+   * `requestId`, not `conversationId`. Without this hook a caller can only
+   * learn the requestId from the awaited `LaunchResult`, which for
+   * direct/background runs arrives AFTER `pollForCompletion` — so the panel
+   * mounts already-finished and the whole response appears at once behind a
+   * spinner. That was the auto-create "nothing, then everything" bug.
+   *
+   * Purely a side-channel for the caller — the launch thunk still owns the
+   * request lifecycle.
+   */
+  onRequestId?: (requestId: string) => void;
+
+  /**
    * CLIENT-ONLY (read by `useAgentLauncher`, never forwarded to the thunk).
    *
    * Controls the managed-mode unmount cleanup:

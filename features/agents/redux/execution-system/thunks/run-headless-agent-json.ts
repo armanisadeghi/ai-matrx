@@ -393,6 +393,16 @@ async function launchAndWait(
 
   let conversationId: string | null = null;
 
+  // Fire-once: the launch thunk announces the requestId mid-run, and the
+  // fallback path below re-announces whatever it resolved. The caller must
+  // only ever see one.
+  let requestIdAnnounced = false;
+  const announceRequestId = (id: string) => {
+    if (requestIdAnnounced) return;
+    requestIdAnnounced = true;
+    opts.onRequestId?.(id);
+  };
+
   try {
     let executionIdentity: { agentId: string } | { slotKey: string };
     if (opts.slotKey !== undefined) {
@@ -429,6 +439,10 @@ async function launchAndWait(
           fuzzyOnFinalize: opts.fuzzyOnFinalize ?? true,
         },
         onConversationCreated: opts.onConversationCreated,
+        // Publish the requestId as soon as the request row exists so a
+        // streaming caller can bind its selectors mid-run. `announceRequestId`
+        // is fire-once, so the fallback call below is a no-op when this fired.
+        onRequestId: announceRequestId,
         runtime: {
           ...(opts.surfaceName ? { surfaceName: opts.surfaceName } : {}),
           ...(opts.variables ? { variables: opts.variables } : {}),
@@ -473,7 +487,7 @@ async function launchAndWait(
         conversationId,
       };
     }
-    opts.onRequestId?.(requestId);
+    announceRequestId(requestId);
 
     return await waitForExtraction(dispatch, getState, {
       conversationId,

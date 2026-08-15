@@ -41,9 +41,11 @@ export function UnsubscribeForm({
       const supabase = createClient();
       const { data, error } = await supabase.rpc("outreach_unsubscribe", {
         p_token: token,
+        // The generated RPC args are optional, not nullable — omit rather than
+        // widening the generated type.
         p_user_agent:
-          typeof navigator === "undefined" ? null : navigator.userAgent,
-        p_reason: reason.trim() || null,
+          typeof navigator === "undefined" ? undefined : navigator.userAgent,
+        p_reason: reason.trim() || undefined,
       });
       // The RPC is idempotent and returns ok for an already-unsubscribed token,
       // so anything falsy here is a genuine failure worth showing.

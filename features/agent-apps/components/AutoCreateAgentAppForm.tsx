@@ -252,6 +252,19 @@ function AutoCreateAgentAppFormWithAgent({
     );
   });
 
+  // Honest progress for the thin bar. The two stages own half the bar each,
+  // and within a stage the streamed text advances it toward that stage's
+  // ceiling — so the bar only ever moves because real bytes arrived.
+  const stageProgressPercent = (() => {
+    const grown = (text: string, expected: number) =>
+      Math.min(1, text.length / expected);
+    if (activeStage === "metadata") {
+      return Math.round(6 + 44 * grown(liveMetadataText, 1200));
+    }
+    if (isCodeStreamEnded) return 100;
+    return Math.round(50 + 48 * grown(liveCodeText, 9000));
+  })();
+
   // Extract variables from agent. Agents store their input contract in
   // `variable_definitions`; some legacy/migrated rows still expose
   // `variable_defaults` (the prompt-era name). Try both so either shape
@@ -477,7 +490,7 @@ function AutoCreateAgentAppFormWithAgent({
               {metadataTaskId && activeStage !== "metadata" ? (
                 <Check className="w-3 h-3" />
               ) : activeStage === "metadata" ? (
-                <Loader2 className="w-3 h-3 animate-spin" />
+                <span className="w-2 h-2 rounded-full bg-current animate-pulse inline-block" />
               ) : (
                 <span className="w-3 h-3 rounded-full border border-current inline-block" />
               )}
@@ -497,7 +510,7 @@ function AutoCreateAgentAppFormWithAgent({
               {isCodeStreamEnded ? (
                 <Check className="w-3 h-3" />
               ) : activeStage === "code" ? (
-                <Loader2 className="w-3 h-3 animate-spin" />
+                <span className="w-2 h-2 rounded-full bg-current animate-pulse inline-block" />
               ) : (
                 <span className="w-3 h-3 rounded-full border border-current inline-block" />
               )}
@@ -506,9 +519,14 @@ function AutoCreateAgentAppFormWithAgent({
           </div>
         </div>
 
-        {/* Thin progress bar */}
+        {/* Thin progress bar — real stage progress, not a decorative pulse.
+            A full-width bar that only pulses says nothing and reads as a
+            fifth spinner. */}
         <div className="w-full bg-muted rounded-full h-1 overflow-hidden">
-          <div className="h-full bg-gradient-to-r from-primary to-secondary animate-pulse w-full" />
+          <div
+            className="h-full bg-gradient-to-r from-primary to-secondary transition-[width] duration-700 ease-out"
+            style={{ width: `${stageProgressPercent}%` }}
+          />
         </div>
 
         {/* Background tab warning */}
@@ -522,8 +540,10 @@ function AutoCreateAgentAppFormWithAgent({
           </div>
         )}
 
-        {/* Metadata panel — always shown once metadataTaskId is set */}
-        {metadataTaskId && (
+        {/* Metadata panel — rendered as soon as the stage starts, not just
+            once its requestId lands, so the layout never jumps and the stage
+            is always visible. */}
+        {(metadataTaskId || activeStage === "metadata") && (
           <StreamPanel
             label="App metadata"
             taskLabel={isDebugMode ? metadataTaskId : undefined}
@@ -533,16 +553,8 @@ function AutoCreateAgentAppFormWithAgent({
           />
         )}
 
-        {/* Waiting for metadata to start */}
-        {!metadataTaskId && activeStage === "metadata" && (
-          <div className="flex items-center gap-2 py-3 text-sm text-muted-foreground">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            Initializing metadata generation...
-          </div>
-        )}
-
         {/* Code panel — appended below metadata once code stage starts */}
-        {codeTaskId && (
+        {(codeTaskId || activeStage === "code") && (
           <StreamPanel
             label="Component code"
             taskLabel={isDebugMode ? codeTaskId : undefined}
@@ -550,14 +562,6 @@ function AutoCreateAgentAppFormWithAgent({
             isActive={activeStage === "code"}
             isComplete={isCodeStreamEnded}
           />
-        )}
-
-        {/* Waiting for code to start (metadata done, code not yet) */}
-        {metadataTaskId && !codeTaskId && activeStage === "code" && (
-          <div className="flex items-center gap-2 py-3 text-sm text-muted-foreground">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            Initializing code generation...
-          </div>
         )}
 
         <p className="text-xs text-center text-muted-foreground pt-1">
@@ -1530,8 +1534,11 @@ function StreamPanel({
         )}
       >
         <div className="flex items-center gap-2">
+          {/* No spinner here on purpose. The ONE spinner on this screen lives
+              in the header; the active panel is already signalled by its
+              border, header tint and live char count. */}
           {isActive ? (
-            <Loader2 className="w-3.5 h-3.5 text-primary animate-spin" />
+            <span className="w-2 h-2 rounded-full bg-primary animate-pulse inline-block" />
           ) : isComplete ? (
             <Check className="w-3.5 h-3.5 text-success" />
           ) : (
@@ -1571,9 +1578,16 @@ function StreamPanel({
             />
           </div>
         ) : (
+          // Pre-first-token only, and now genuinely brief: the requestId is
+          // published as soon as the request row exists, so tokens land here
+          // within a second or two instead of after the whole run.
           <div className="flex items-center gap-2 p-4 text-sm text-muted-foreground">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            Waiting for response...
+            <span className="flex items-center gap-1" aria-hidden>
+              <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce [animation-delay:-0.3s]" />
+              <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce [animation-delay:-0.15s]" />
+              <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce" />
+            </span>
+            Connecting to the model…
           </div>
         )}
       </CardContent>

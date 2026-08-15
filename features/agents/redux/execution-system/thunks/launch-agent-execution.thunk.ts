@@ -343,6 +343,7 @@ export const launchAgentExecution = createAsyncThunk<
     runtime,
     config,
     onConversationCreated,
+    onRequestId,
     conversationId: providedConversationId,
     surfaceKey,
     organizationId,
@@ -1075,6 +1076,12 @@ export const launchAgentExecution = createAsyncThunk<
   ) {
     const result = await dispatch(executeInstance({ conversationId })).unwrap();
 
+    // Hand the caller its requestId NOW — before the poll below, which does
+    // not resolve until the run is over. A streaming UI keys every live
+    // selector on this id, so publishing it late is what makes a surface show
+    // spinners for the whole run and then paint the finished answer at once.
+    if (result.requestId) onRequestId?.(result.requestId);
+
     const responseText = await pollForCompletion(getState, result.requestId);
 
     // Note: widget handle's onComplete is fired from process-stream.ts at
@@ -1089,6 +1096,8 @@ export const launchAgentExecution = createAsyncThunk<
 
   if (isInteractive(resolvedDisplayMode) || resolvedDisplayMode === "toast") {
     const result = await dispatch(executeInstance({ conversationId })).unwrap();
+
+    if (result.requestId) onRequestId?.(result.requestId);
 
     return {
       conversationId,

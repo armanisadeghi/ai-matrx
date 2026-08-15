@@ -12449,6 +12449,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_send_eligibility: {
+        Args: {
+          p_identity_id?: string
+          p_list_id?: string
+          p_medium_id: string
+        }
+        Returns: Json
+      }
+      compute_sending_health: {
+        Args: { p_identity_id: string; p_window?: string }
+        Returns: Json
+      }
       issue_unsubscribe_token: {
         Args: {
           p_contact_medium_id: string
@@ -12466,6 +12478,7 @@ export type Database = {
           method: string
         }[]
       }
+      sweep_sending_health: { Args: { p_window?: string }; Returns: Json }
     }
     Enums: {
       [_ in never]: never
@@ -36769,6 +36782,14 @@ export type Database = {
         }
         Returns: Json
       }
+      crm_check_send_eligibility: {
+        Args: {
+          p_identity_id?: string
+          p_list_id?: string
+          p_medium_id: string
+        }
+        Returns: Json
+      }
       crm_detect_merge_candidates: { Args: { p_org: string }; Returns: Json }
       crm_dismiss_merge_candidate: {
         Args: { p_id: string }
@@ -36808,6 +36829,10 @@ export type Database = {
         Returns: string
       }
       crm_party_purge: { Args: { p_party: string }; Returns: undefined }
+      crm_resume_sending_identity: {
+        Args: { p_identity_id: string; p_note?: string }
+        Returns: Json
+      }
       crm_set_primary_contact_point: {
         Args: { p_id: string }
         Returns: undefined

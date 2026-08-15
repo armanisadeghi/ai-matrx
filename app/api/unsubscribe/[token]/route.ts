@@ -43,7 +43,9 @@ async function unsubscribe(
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("outreach_unsubscribe", {
     p_token: token,
-    p_user_agent: userAgent,
+    // The generated RPC args are optional, not nullable — pass undefined to
+    // omit rather than widening the generated type.
+    p_user_agent: userAgent ?? undefined,
     p_reason: reason,
   });
 

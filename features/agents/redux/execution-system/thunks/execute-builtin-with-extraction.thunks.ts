@@ -139,6 +139,11 @@ async function runBuiltinAgent(
       // closed tab mid-stream.
       isEphemeral: false,
       autoClearConversation: true,
+      // Publish the requestId the moment the request row exists. Without this
+      // the caller only learns it from the awaited result — i.e. after the run
+      // finished — so the generation UI streams nothing and then paints the
+      // whole component at once.
+      ...(payload.onTaskId ? { onRequestId: payload.onTaskId } : {}),
       config: {
         displayMode: "background",
         autoRun: true,
@@ -154,6 +159,9 @@ async function runBuiltinAgent(
     }),
   ).unwrap();
 
+  // Backstop only: `onRequestId` above already delivered this id mid-run. This
+  // covers a launch shape that never reached `executeInstance`. Callers set the
+  // same id twice, so it must stay idempotent on their side.
   if (launch.requestId) {
     payload.onTaskId?.(launch.requestId);
   }
