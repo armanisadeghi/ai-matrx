@@ -34,7 +34,7 @@ import {
   withLastResult,
   type LiveResults,
 } from "./engine";
-import { loadOrCreateRun, saveRunState } from "./service";
+import { ChecklistRunCreateError, loadOrCreateRun, saveRunState } from "./service";
 import type {
   CheckResult,
   ChecklistDefinition,
@@ -150,10 +150,17 @@ export function useGuidedChecklist<Ctx>(args: {
         if (cancelled) return;
         // A checklist that cannot persist still WORKS — every check is live.
         // Degrading to in-memory beats hiding the user's setup steps.
-        console.error("[guided-setup] could not load the saved checklist", cause);
-        setError(
-          "We couldn't load your saved progress, so anything you tick here won't be remembered yet.",
-        );
+        if (cause instanceof ChecklistRunCreateError) {
+          console.error("[guided-setup] could not create the saved checklist", cause);
+          setError(
+            "We couldn't start saving your progress, so anything you tick here won't be remembered yet.",
+          );
+        } else {
+          console.error("[guided-setup] could not load the saved checklist", cause);
+          setError(
+            "We couldn't load your saved progress, so anything you tick here won't be remembered yet.",
+          );
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);

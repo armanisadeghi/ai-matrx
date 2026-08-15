@@ -14,16 +14,6 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
-### D201 — guided setup cannot create its persisted run under ordinary product RLS (2026-08-15)
-
-Measured on the local production-backed Integrations route for `aimatrx.com`:
-`lib/guided-setup` calls `loadOrCreateRun`, but the insert into
-`platform.guided_checklist_run` returns `42501 new row violates row-level
-security policy`. The checklist renders a loud “saved progress” failure and
-cannot remember user changes. Fix the table/RPC write contract so an authorized
-site user can create the scoped checklist run through the canonical path; verify
-as a non-admin and keep cross-org runs unreadable. Do not hide or retry the 403.
-
 ### D200 — creating a personal (user-scoped) agent shortcut is IMPOSSIBLE — every path throws (2026-08-15)
 
 Measured live on production as a signed-in admin. `agentShortcutToInsert`
@@ -780,6 +770,7 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 
 ## RESOLVED
 
+- **D201 — Guided setup first-run persistence fixed (2026-08-15):** owner-keyed live INSERT policy plus honest create/load reporting and regression coverage — `lib/guided-setup/service.ts`.
 - **D180 — Root-document hydration mismatch on every Marketing route (2026-08-15):** `ChunkRecoveryBootScript` and `SyncBootScript` rendered raw `<script>` children; both now use tracked `next/script` `beforeInteractive` entries.
 - **D198 — Hands-free VAD voice chat revived (2026-08-15):** one live hook and reachable `/voice/playground` surface now use shared mic/VAD, canonical STT/agent/TTS, barge-in, auto-sleep, background pause, and brokered Cartesia credentials — see `hooks/tts/useVoiceChat.ts` and `features/audio/voice/HandsFreeVoiceChat.tsx`.
 

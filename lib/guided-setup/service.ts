@@ -33,6 +33,14 @@ interface RunRow {
   version: number;
 }
 
+/** Distinguishes first-run INSERT failures from failures reading an existing run. */
+export class ChecklistRunCreateError extends Error {
+  constructor(cause: unknown) {
+    super("Could not create the saved checklist run.", { cause });
+    this.name = "ChecklistRunCreateError";
+  }
+}
+
 /**
  * `state` is JSONB — anything could be in there, including rows written by an
  * older shape of this module. Narrow defensively and drop what we cannot read
@@ -133,7 +141,7 @@ export async function loadOrCreateRun(
     // A parallel tab won the unique index — its row is the right answer.
     const raced = await loadRun(checklistKey, scope);
     if (raced) return raced;
-    throw error;
+    throw new ChecklistRunCreateError(error);
   }
   return toRun(data as RunRow);
 }
