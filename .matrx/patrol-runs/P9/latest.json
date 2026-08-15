@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P9",
   "runId": "019ff9f6-6062-78f0-a8d2-e96ec520f635",
-  "state": "infrastructure_blocked",
-  "updatedAt": "2026-08-15T06:27:32.652Z",
-  "summary": "Final interaction certification is blocked because the managed preview twice exceeded its 96 GB cap and terminated automatically.",
+  "state": "escaped_delivery",
+  "updatedAt": "2026-08-15T06:39:40.465Z",
+  "summary": "Recorded the pre-controller P9 integration as an escaped delivery; certification remains incomplete.",
   "source": "019ff9f6-6062-78f0-a8d2-e96ec520f635.json",
-  "eventHash": "41b3abafb4443960bd795b1559b094c7a7c5d0a8035c6da978f2f404c50f4ccb"
+  "eventHash": "02a03d932cfe99defb68c523659d6a4e5b75823401bc57d4a2c0280d6493392b"
 }
