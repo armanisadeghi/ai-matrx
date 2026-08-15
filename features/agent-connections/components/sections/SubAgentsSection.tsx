@@ -4,6 +4,11 @@ import React, { useState } from "react";
 import { CircuitBoard } from "lucide-react";
 import { SectionToolbar } from "../SectionToolbar";
 import { SectionFooter } from "../SectionFooter";
+import { getComingSoon } from "@/lib/coming-soon/registry";
+
+// The promise + blocker are READ from the registry — deleting the entry when
+// sub-agents ship forces this copy to change with it (CLAUDE.md § Coming Soon).
+const COMING_SOON = getComingSoon("agent-connections.sub-agents");
 
 /**
  * Sub-agents are agent_definition rows where `kind = 'subagent'` — invoked by
@@ -24,16 +29,10 @@ export function SubAgentsSection() {
         <div className="flex flex-col items-center gap-2 text-center max-w-md px-8 py-12">
           <CircuitBoard className="h-10 w-10 text-muted-foreground/50" />
           <h3 className="text-sm font-semibold text-foreground mt-2">
-            Sub-agents coming soon
+            {COMING_SOON?.label ?? "Sub-agents"} — coming soon
           </h3>
           <p className="text-sm text-muted-foreground">
-            Specialist agents that another agent can hand work to — like a code
-            reviewer, performance optimizer, or migration helper. Once the
-            <code className="mx-1 px-1.5 py-0.5 rounded bg-muted text-xs">
-              agent_definition.kind
-            </code>
-            column lands, they&apos;ll show up here filtered out from the main
-            Agents list.
+            {COMING_SOON?.promise}
           </p>
         </div>
       </div>

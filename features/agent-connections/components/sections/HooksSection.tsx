@@ -4,6 +4,11 @@ import React, { useState } from "react";
 import { Zap } from "lucide-react";
 import { SectionToolbar } from "../SectionToolbar";
 import { SectionFooter } from "../SectionFooter";
+import { getComingSoon } from "@/lib/coming-soon/registry";
+
+// The promise text is READ from the registry — deleting the entry when hooks
+// ship forces this copy to change with it (CLAUDE.md § Coming Soon).
+const COMING_SOON = getComingSoon("agent-connections.hooks");
 
 export function HooksSection() {
   const [search, setSearch] = useState("");
@@ -18,11 +23,10 @@ export function HooksSection() {
         <div className="flex flex-col items-center gap-2 text-center max-w-sm px-8 py-12">
           <Zap className="h-10 w-10 text-muted-foreground/50" />
           <h3 className="text-sm font-semibold text-foreground mt-2">
-            No hooks yet
+            {COMING_SOON?.label ?? "Agent Hooks"} — coming soon
           </h3>
           <p className="text-sm text-muted-foreground">
-            Automated actions triggered at specific points in the agentic
-            lifecycle — coming soon.
+            {COMING_SOON?.promise}
           </p>
         </div>
       </div>
