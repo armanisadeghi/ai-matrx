@@ -337,9 +337,9 @@ arrive — check for the `Ignored` settle, don't poll the preview host.
 **1b. `pnpm check:doc-claims` is RED in any cloud/container session, and it is
 not your change.** CLAUDE.md links cross-repo docs by absolute path
 (`/Users/armanisadeghi/code/common-docs/...`), which only resolves on Arman's
-machine — in a remote session common-docs is checked out elsewhere (here:
-`/home/user/matrx-common-docs/`), so `doc-paths-resolve` reports ~11 dead
-pointers on a clean tree. Verified against `origin/main`. Read past that
+machine — in a remote session common-docs is checked out elsewhere (a
+container-local clone of the matrx-common-docs repo), so `doc-paths-resolve`
+reports ~11 dead pointers on a clean tree. Verified against `origin/main`. Read past that
 failure to the OTHER claims, which are real; do not "fix" it by rewriting the
 paths, which would break the check on the machine where it works.
 

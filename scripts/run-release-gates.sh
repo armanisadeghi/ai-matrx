@@ -71,6 +71,10 @@ if $STRICT; then
         "Access guard check|pnpm exec tsx scripts/check-access-guards.ts --strict"
         "Visibility vocabulary|pnpm exec tsx scripts/check-visibility-vocab.ts --strict"
         "Protocol mirror sync (aidream)|pnpm exec tsx scripts/check-protocol-sync.ts --strict"
+        # Docs guards went STRICT 2026-08-15 (guards-advisory-to-strict): both
+        # repos reached zero violations, so a finding here is new drift, not
+        # backlog. Allowlist additions go through scripts/docs-guards/ via PR.
+        "Docs guards (titles/root-md/pointers)|pnpm exec tsx scripts/check-docs-guards.ts"
         # NO DEAD ENDS stays ADVISORY even in strict mode. The tree carries a
         # known Door Law backlog (scoreboard: /administration/reporting/dead-ends,
         # worklist: docs/handoffs/no-dead-ends-sweep.md); hard-failing on it would
@@ -136,10 +140,8 @@ else
         "Visibility vocabulary|pnpm exec tsx scripts/check-visibility-vocab.ts"
         "Protocol mirror sync (aidream)|pnpm exec tsx scripts/check-protocol-sync.ts"
         "URL identity twins (TS vs Python)|pnpm exec tsx scripts/check-url-identity.ts"
-        # Advisory-only for now: known Wave-5 backlog (confident-title claims,
-        # stale common-docs pointers) would hard-block strict mode. Promote to
-        # the strict list once docs/handoffs/doc-consolidation-campaign.md
-        # Wave 5 cleanup lands.
+        # STRICT since 2026-08-15 (also in the strict list above): the Wave-5
+        # backlog is cleared, so a failure in a --strict run hard-fails it.
         "Docs guards (titles/root-md/pointers)|pnpm exec tsx scripts/check-docs-guards.ts"
         # THE DOOR LAW — surfaces that name a record without letting the user
         # open it. Advisory by design (Arman: no check blocks a build); the

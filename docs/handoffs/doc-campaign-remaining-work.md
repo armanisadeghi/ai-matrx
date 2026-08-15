@@ -22,8 +22,10 @@ complete list of what remains — each item is independent; pick any.
 
 ## Guard-violation backlog (mechanical, sizeable)
 
-The new advisory guards (`pnpm check:docs-guards` in ai-matrx; `scripts/check_docs_guards.py`
-in aidream, run inside release.sh) started at ~108 (ai-matrx) + ~83 (aidream) violations.
+The guards (`pnpm check:docs-guards` in ai-matrx; `scripts/check_docs_guards.py` in aidream,
+run inside release.sh) launched advisory and started at ~108 (ai-matrx) + ~83 (aidream)
+violations. **Strict since 2026-08-15** (guards-advisory-to-strict): a failure now blocks
+aidream's release.sh and hard-fails ai-matrx `check:release-gates:strict`.
 
 **Cleared by the 2026-07-26 docs-hygiene sweep:** all pointer-path violations in both repos
 (19 → 0; canonical spelling is now `/Users/armanisadeghi/code/common-docs/<systems|projects|
@@ -42,9 +44,8 @@ entries; escalations for Arman recorded in that doc). aidream's root-level stray
 gone — `python3 scripts/check_docs_guards.py` verified fully green on aidream main
 2026-08-15 (confident-title + root-.md + pointer-path all zero).
 
-**Remaining — the last step:** flip both guards from advisory to strict. Self-contained
-task doc: `/Users/armanisadeghi/code/common-docs/projects/guards-advisory-to-strict/TASK.md`.
-The weekly `docs-hygiene` sweep holds the line against creep meanwhile.
+Both guards reached zero, which unblocked the strict flip above (guards-advisory-to-strict
+close-out). Nothing remains in this section.
 
 ## Deferred / blocked small items
 

@@ -5,7 +5,7 @@ repos: [matrx-frontend]
 vision: [features/content-ir/FEATURE.md]
 ---
 
-# Canonical Component Law — repo sweep worklist
+# One-component-per-shape law — repo sweep worklist
 
 Audit only; nothing was changed. Every row below was read in the source, not inferred.
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env tsx
 /**
- * check-docs-guards.ts — Wave 5 doc-jungle prevention guards (advisory).
+ * check-docs-guards.ts — Wave 5 doc-jungle prevention guards (strict).
  *
  * Three checks over git-tracked *.md files (docs/archive/, node_modules/,
  * agent-instruction dirs excluded):
@@ -20,8 +20,11 @@
  *     `/Volumes/...` and `matrx-common-docs` spellings only resolve on one
  *     machine).
  *
- * ADVISORY: prints a loud report and exits 1 when violations exist, but it is
- * wired only into the advisory release-gates pass — it never blocks ship/push.
+ * STRICT: prints a loud report and exits 1 when violations exist, and it sits
+ * in the strict release-gates list — a `--strict` run (CI / manual hard-fail)
+ * fails on it. Flipped from advisory 2026-08-15 once both repos reached zero
+ * violations (guards-advisory-to-strict). The default advisory gates pass
+ * still reports it loudly without blocking, per repo-wide release doctrine.
  * Campaign doc: docs/archive/2026/handoff__doc-consolidation-campaign.md (Wave 5).
  *
  * Usage: pnpm check:docs-guards
@@ -204,5 +207,5 @@ if (pointerViolations.length) {
 }
 
 console.log("");
-console.log(`${total} error(s). Advisory — fix or allowlist via PR; see docs/archive/2026/handoff__doc-consolidation-campaign.md (Wave 5).`);
+console.log(`${total} error(s). Strict release gate — fix or allowlist via PR; see docs/archive/2026/handoff__doc-consolidation-campaign.md (Wave 5).`);
 process.exit(1);
