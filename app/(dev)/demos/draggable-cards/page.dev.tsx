@@ -114,7 +114,16 @@ export default function DraggableCardsDemoPage() {
               title="TransformableCard"
               note="drag to reposition; click the pill to collapse and restore"
             />
-            <TransformableCardContainer className="h-[520px] overflow-hidden rounded-md border border-border bg-card">
+            <p className="text-xs text-amber-600 dark:text-amber-500">
+              One card only, deliberately. Unlike its sibling,{" "}
+              <code>TransformableCard</code> wraps its motion layer in a{" "}
+              <code>relative</code> div, so each card anchors to its own
+              zero-height wrapper instead of this container and{" "}
+              <code>initialPosition</code> cannot separate two of them — they
+              stack on the same origin. Mounting a second one here would
+              misrepresent the primitive.
+            </p>
+            <TransformableCardContainer className="h-[460px] overflow-hidden rounded-md border border-border bg-card">
               <div className="absolute inset-0">
                 <TransformableCard
                   id="transformable-brief"
@@ -126,21 +135,10 @@ export default function DraggableCardsDemoPage() {
                 >
                   <CardFace
                     title="Research brief"
-                    body="Drag me anywhere. Collapse me and the pill view takes over; the pill is draggable too."
+                    body="Drag me anywhere in this frame. Collapse me and the pill view takes over; the pill is draggable too, and restores the full card."
                   />
                 </TransformableCard>
 
-                <TransformableCard
-                  id="transformable-notes"
-                  initialPosition={{ x: 420, y: 120 }}
-                  onPositionChange={trackPosition("transformable-notes")}
-                  pillView={<span className="px-2 text-sm">Notes</span>}
-                >
-                  <CardFace
-                    title="Notes"
-                    body="A second card proves independent position state and that the dragged card takes the higher z-index."
-                  />
-                </TransformableCard>
               </div>
             </TransformableCardContainer>
           </section>
