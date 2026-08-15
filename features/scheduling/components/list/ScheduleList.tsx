@@ -12,6 +12,7 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 import { createSchedulesScope } from "@/features/surfaces/manifests/schedules.manifest";
 import { useScheduledTasks } from "../../hooks/useScheduledTasks";
 import { buildScheduleRosterValues } from "../../lib/schedules-scope";
+import { scheduleKpis } from "../../lib/copy";
 import { ScheduleRow } from "./ScheduleRow";
 
 /**
@@ -76,8 +77,8 @@ function ScheduleListBody() {
         </div>
         <h2 className="text-xl font-semibold mb-2">No scheduled tasks yet</h2>
         <p className="text-muted-foreground mb-5 max-w-md">
-          Create one to have an agent run on a schedule, when a page matches,
-          or as a heartbeat conversation.
+          Create one to have an agent run on a schedule, when a page matches, or
+          as a heartbeat conversation.
         </p>
         <Button asChild>
           <Link href="/schedules/new" className="gap-2">
@@ -88,10 +89,12 @@ function ScheduleListBody() {
     );
   }
 
+  const kpis = scheduleKpis(tasks);
+
   return (
     <div className="flex flex-col gap-2">
       {tasks.map((task) => (
-        <ScheduleRow key={task.id} task={task} />
+        <ScheduleRow key={task.id} task={task} kpis={kpis} />
       ))}
     </div>
   );
