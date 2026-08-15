@@ -140,6 +140,118 @@ export type AssistAction =
       rationale: string;
     };
 
+/**
+ * URGENCY — a vocabulary over the `priority` column, not a new column.
+ *
+ * `platform.assists.priority` (smallint, indexed, already the queue's sort key)
+ * has been carrying urgency implicitly since day one: producers write 0 for
+ * "here is something you could do", 10 for a recovery/attention item, 20 for
+ * something a human has to decide. Naming those bands costs no migration and
+ * no producer fan-out, and it stops every surface from inventing its own
+ * threshold. If bands ever prove too loose, an explicit enum column can
+ * replace this helper — nothing else has to change, because nothing else
+ * reads `priority` directly for display.
+ *
+ * Bands: `< 10` normal · `10–19` elevated · `>= 20` urgent.
+ *
+ * Urgency NEVER changes what a click does — a chip still only expands, and
+ * only the card's verb button runs anything (THE INTENTIONAL-ACTION LAW).
+ */
+export type AssistUrgency = "normal" | "elevated" | "urgent";
+
+/** Inclusive lower bound of each band. The ONE place the numbers live. */
+export const ASSIST_URGENCY_MIN_PRIORITY: Record<AssistUrgency, number> = {
+  normal: 0,
+  elevated: 10,
+  urgent: 20,
+};
+
+export function urgencyFromPriority(
+  priority: number | null | undefined,
+): AssistUrgency {
+  if (typeof priority !== "number") return "normal";
+  if (priority >= ASSIST_URGENCY_MIN_PRIORITY.urgent) return "urgent";
+  if (priority >= ASSIST_URGENCY_MIN_PRIORITY.elevated) return "elevated";
+  return "normal";
+}
+
+/**
+ * The band as a server-side filter: inclusive `min`, exclusive `max` (null =
+ * unbounded). Used by the manager's urgency filter so paging and counts stay
+ * honest instead of filtering one page in the browser.
+ */
+export function priorityRangeForUrgency(urgency: AssistUrgency): {
+  min: number;
+  max: number | null;
+} {
+  if (urgency === "urgent") {
+    return { min: ASSIST_URGENCY_MIN_PRIORITY.urgent, max: null };
+  }
+  if (urgency === "elevated") {
+    return {
+      min: ASSIST_URGENCY_MIN_PRIORITY.elevated,
+      max: ASSIST_URGENCY_MIN_PRIORITY.urgent,
+    };
+  }
+  return { min: 0, max: ASSIST_URGENCY_MIN_PRIORITY.elevated };
+}
+
+/**
+ * How each band looks and reads. Colour is never the only signal — every
+ * non-normal band also carries a word and a distinct icon (see
+ * `components/urgency-icon.ts`), so the state survives greyscale, colour
+ * blindness, and a screen reader. Both themes are declared explicitly
+ * (light/dark integrity): amber and red both wash out if only one is.
+ */
+export const ASSIST_URGENCY_META: Record<
+  AssistUrgency,
+  {
+    /** Filter/badge word. Empty for `normal` — the quiet default says nothing. */
+    label: string;
+    /** One line for the card, in the user's language. */
+    note: string;
+    /** Chip container tint. */
+    chipClass: string;
+    /** Leading icon colour, chip and card. */
+    iconClass: string;
+    /** The card's badge; empty for `normal`. */
+    badgeClass: string;
+  }
+> = {
+  normal: {
+    label: "Normal",
+    note: "",
+    chipClass: "border-primary/30 bg-card",
+    iconClass: "text-primary",
+    badgeClass: "",
+  },
+  elevated: {
+    label: "Elevated",
+    note: "Worth looking at soon.",
+    chipClass:
+      "border-amber-500/50 bg-amber-50 dark:border-amber-400/40 dark:bg-amber-950/40",
+    iconClass: "text-amber-600 dark:text-amber-400",
+    badgeClass:
+      "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400",
+  },
+  urgent: {
+    label: "Urgent",
+    note: "This one is waiting on you.",
+    chipClass:
+      "border-red-500/60 bg-red-50 dark:border-red-400/50 dark:bg-red-950/40",
+    iconClass: "text-red-600 dark:text-red-400",
+    badgeClass:
+      "border-red-500/40 bg-red-500/10 text-red-700 dark:text-red-400",
+  },
+};
+
+/** The manager's filter order — quiet first, loudest last. */
+export const ASSIST_URGENCIES: readonly AssistUrgency[] = [
+  "normal",
+  "elevated",
+  "urgent",
+];
+
 /** The client-facing assist shape (the row, with `action` narrowed). */
 export interface Assist {
   id: string;
@@ -201,6 +313,10 @@ export interface AssistsQuery {
   maxConfidence: number | null;
   /** Inclusive lower bound on confidence. */
   minConfidence: number | null;
+  /** Inclusive lower bound on `priority` — the urgency band's floor. */
+  minPriority: number | null;
+  /** Exclusive upper bound on `priority` — the urgency band's ceiling. */
+  maxPriority: number | null;
   /** Include rows currently snoozed (`suppressed_until` in the future). */
   includeSnoozed: boolean;
   /** Only rows the user flagged for triage. */

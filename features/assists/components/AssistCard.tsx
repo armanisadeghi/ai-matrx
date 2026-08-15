@@ -12,7 +12,6 @@ import { lazy, Suspense, useState } from "react";
 import {
   Clock,
   ExternalLink,
-  Lightbulb,
   Loader2,
   Quote,
   VolumeX,
@@ -31,7 +30,12 @@ import { cn } from "@/lib/utils";
 import { useAssistRunner } from "../runtime/useAssistRunner";
 import { describeAssistAction } from "../runtime/action-descriptors";
 import { formatAssistSourceLabel } from "../source-suppression";
-import type { Assist } from "../types";
+import { ASSIST_URGENCY_ICON } from "./urgency-icon";
+import {
+  ASSIST_URGENCY_META,
+  urgencyFromPriority,
+  type Assist,
+} from "../types";
 
 // Markdown loads only when a card actually opens — chips stay feather-light.
 const BasicMarkdownContent = lazy(
@@ -130,6 +134,9 @@ export function AssistCard({
   const [silenceOpen, setSilenceOpen] = useState(false);
   const [silenceReason, setSilenceReason] = useState("");
   const descriptor = describeAssistAction(assist.action);
+  const urgency = urgencyFromPriority(assist.priority);
+  const urgencyMeta = ASSIST_URGENCY_META[urgency];
+  const UrgencyIcon = ASSIST_URGENCY_ICON[urgency];
   const history = firstSeenLine(assist);
   const sourceLabel = formatAssistSourceLabel(assist.sourceKey);
 
@@ -191,11 +198,30 @@ export function AssistCard({
   return (
     <div className="flex w-full flex-col">
       <div className="flex items-start gap-2 border-b border-border/60 px-3 py-2.5">
-        <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+        <UrgencyIcon
+          className={cn("mt-0.5 h-4 w-4 shrink-0", urgencyMeta.iconClass)}
+        />
         <div className="min-w-0">
           <div className="text-sm font-semibold leading-snug text-foreground">
             {assist.title}
           </div>
+          {urgency !== "normal" && (
+            // The word, not just the colour — and it says what it means
+            // rather than leaving a red border to be interpreted.
+            <div className="mt-1 flex items-center gap-1.5">
+              <span
+                className={cn(
+                  "rounded-full border px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide",
+                  urgencyMeta.badgeClass,
+                )}
+              >
+                {urgencyMeta.label}
+              </span>
+              <span className="text-[11px] text-muted-foreground">
+                {urgencyMeta.note}
+              </span>
+            </div>
+          )}
           <div className="mt-0.5 text-[11px] text-muted-foreground">
             {SOURCE_LABEL[assist.sourceKind]}
             {typeof assist.confidence === "number" &&

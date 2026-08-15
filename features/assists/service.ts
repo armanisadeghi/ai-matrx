@@ -260,6 +260,14 @@ export async function queryAssists(
   if (typeof query.minConfidence === "number") {
     request = request.gte("confidence", query.minConfidence);
   }
+  // Urgency is a band over `priority` (see `urgencyFromPriority`), filtered
+  // server-side so the count and the paging agree with what is on screen.
+  if (typeof query.minPriority === "number") {
+    request = request.gte("priority", query.minPriority);
+  }
+  if (typeof query.maxPriority === "number") {
+    request = request.lt("priority", query.maxPriority);
+  }
   if (!query.includeSnoozed) {
     const now = nowIso();
     request = request.or(`suppressed_until.is.null,suppressed_until.lt.${now}`);

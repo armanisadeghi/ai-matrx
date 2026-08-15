@@ -12,7 +12,7 @@
  */
 
 import { useCallback, useRef, useState } from "react";
-import { Lightbulb, X } from "lucide-react";
+import { X } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -21,7 +21,12 @@ import {
 import { cn } from "@/lib/utils";
 import { useAssistRunner } from "../runtime/useAssistRunner";
 import { AssistCard } from "./AssistCard";
-import type { Assist } from "../types";
+import { ASSIST_URGENCY_ICON } from "./urgency-icon";
+import {
+  ASSIST_URGENCY_META,
+  urgencyFromPriority,
+  type Assist,
+} from "../types";
 
 const HOVER_OPEN_MS = 120;
 const HOVER_CLOSE_MS = 250;
@@ -34,6 +39,10 @@ export function AssistChip({
   className?: string;
 }) {
   const { dismissAssist } = useAssistRunner();
+  // Urgency changes how the chip LOOKS, never what it does: expand only.
+  const urgency = urgencyFromPriority(assist.priority);
+  const urgencyMeta = ASSIST_URGENCY_META[urgency];
+  const UrgencyIcon = ASSIST_URGENCY_ICON[urgency];
   const [open, setOpen] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -60,7 +69,8 @@ export function AssistChip({
           onMouseEnter={hoverOpen}
           onMouseLeave={hoverClose}
           className={cn(
-            "group flex max-w-full items-center gap-1.5 rounded-full border border-primary/30 bg-card py-1 pl-2 pr-1 text-xs shadow-sm",
+            "group flex max-w-full items-center gap-1.5 rounded-full border py-1 pl-2 pr-1 text-xs shadow-sm",
+            urgencyMeta.chipClass,
             className,
           )}
         >
@@ -69,10 +79,16 @@ export function AssistChip({
               here would cancel Radix's in the same batch. */}
           <button
             type="button"
-            aria-label={`${assist.title} — expand for details and actions`}
+            aria-label={
+              urgency === "normal"
+                ? `${assist.title} — expand for details and actions`
+                : `${urgencyMeta.label}: ${assist.title} — expand for details and actions`
+            }
             className="flex min-w-0 items-center gap-1.5 text-left text-foreground hover:text-primary"
           >
-            <Lightbulb className="h-3.5 w-3.5 shrink-0 text-primary" />
+            <UrgencyIcon
+              className={cn("h-3.5 w-3.5 shrink-0", urgencyMeta.iconClass)}
+            />
             <span className="truncate">{assist.title}</span>
           </button>
           {assist.id && (

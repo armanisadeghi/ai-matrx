@@ -35,7 +35,13 @@ import { AssistChip } from "../components/AssistChip";
 import { SNOOZE_WINDOWS, isLowConfidence } from "../constants";
 import { useAssistsQuery } from "./useAssistsQuery";
 import { isSourceSuppressedUntil } from "../source-suppression";
-import type { Assist, AssistStatus } from "../types";
+import { ASSIST_URGENCY_ICON } from "../components/urgency-icon";
+import {
+  ASSIST_URGENCIES,
+  ASSIST_URGENCY_META,
+  urgencyFromPriority,
+} from "../types";
+import type { Assist, AssistStatus, AssistUrgency } from "../types";
 
 const STATUS_TABS: Array<{
   value: string;
@@ -94,6 +100,7 @@ export function AssistsManager() {
   const [starredOnly, setStarredOnly] = useState(false);
   const [unseenOnly, setUnseenOnly] = useState(false);
   const [showSilenced, setShowSilenced] = useState(false);
+  const [urgency, setUrgency] = useState<AssistUrgency | null>(null);
   const [confirmDismissAll, setConfirmDismissAll] = useState(false);
   const [bulkBusy, setBulkBusy] = useState(false);
 
@@ -126,6 +133,7 @@ export function AssistsManager() {
     includeSnoozed,
     starredOnly,
     unseenOnly,
+    urgency,
   });
 
   const shownIds = rows.filter((r) => r.status === "pending").map((r) => r.id);
@@ -213,6 +221,26 @@ export function AssistsManager() {
         accessorFn: (row) => row.surfaceName ?? "",
         filter: "text",
         cell: (row) => row.surfaceName ?? "Global",
+      },
+      {
+        id: "priority",
+        header: "Urgency",
+        accessorFn: (row) => row.priority,
+        // Filtering happens in the header band buttons, which filter the whole
+        // result set server-side — a per-page column filter would silently
+        // disagree with the count beside it.
+        filter: false,
+        cell: (row) => {
+          const band = urgencyFromPriority(row.priority);
+          const meta = ASSIST_URGENCY_META[band];
+          const Icon = ASSIST_URGENCY_ICON[band];
+          return (
+            <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+              <Icon className={`h-3 w-3 ${meta.iconClass}`} />
+              {meta.label}
+            </span>
+          );
+        },
       },
       {
         id: "confidence",
@@ -328,6 +356,28 @@ export function AssistsManager() {
             </Button>
           );
         })}
+        <span className="mx-1 h-4 w-px bg-border" aria-hidden />
+        {ASSIST_URGENCIES.map((band) => {
+          const meta = ASSIST_URGENCY_META[band];
+          const Icon = ASSIST_URGENCY_ICON[band];
+          const active = urgency === band;
+          return (
+            <Button
+              key={band}
+              size="sm"
+              variant={active ? "secondary" : "ghost"}
+              className="h-7 gap-1 px-2.5 text-xs"
+              // Clicking the active band clears it — the filter is a toggle,
+              // so "everything" never needs a fourth button.
+              onClick={() => setUrgency(active ? null : band)}
+              aria-pressed={active}
+            >
+              <Icon className={`h-3 w-3 ${meta.iconClass}`} />
+              {meta.label}
+            </Button>
+          );
+        })}
+        <span className="mx-1 h-4 w-px bg-border" aria-hidden />
         <Button
           size="sm"
           variant={includeSnoozed ? "secondary" : "ghost"}

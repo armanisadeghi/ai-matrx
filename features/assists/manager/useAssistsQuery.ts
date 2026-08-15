@@ -31,11 +31,13 @@ import {
 } from "../service";
 import { assistDecided, fetchMyAssists } from "../redux/assistsSlice";
 import { snoozeUntilIso, type SnoozeWindowKey } from "../constants";
+import { priorityRangeForUrgency } from "../types";
 import type {
   Assist,
   AssistSortField,
   AssistStats,
   AssistStatus,
+  AssistUrgency,
 } from "../types";
 import type { AssistSourceSuppression } from "../source-suppression";
 
@@ -93,6 +95,8 @@ export function useAssistsQuery(
     includeSnoozed: boolean;
     starredOnly: boolean;
     unseenOnly: boolean;
+    /** null = every band. A band filters server-side on `priority`. */
+    urgency: AssistUrgency | null;
   },
 ): AssistsManagerApi {
   const dispatch = useAppDispatch();
@@ -108,13 +112,15 @@ export function useAssistsQuery(
   const [nonce, setNonce] = useState(0);
   const requestId = useRef(0);
 
-  const { statuses, includeSnoozed, starredOnly, unseenOnly } = options;
+  const { statuses, includeSnoozed, starredOnly, unseenOnly, urgency } =
+    options;
   const statusKey = statuses.join(",");
 
   const query = useMemo(() => {
     const requestedSort = tableState.sort?.id ?? "created_at";
     const sortField =
       SORT_FIELDS.find((f) => f === requestedSort) ?? "created_at";
+    const band = urgency ? priorityRangeForUrgency(urgency) : null;
     return {
       statuses,
       sourceKey: selectFilter(tableState, "sourceKey"),
@@ -124,6 +130,8 @@ export function useAssistsQuery(
       search: tableState.search,
       maxConfidence: null,
       minConfidence: null,
+      minPriority: band ? band.min : null,
+      maxPriority: band ? band.max : null,
       includeSnoozed,
       starredOnly,
       unseenOnly,
@@ -134,7 +142,14 @@ export function useAssistsQuery(
     };
     // `statusKey` stands in for the array identity.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tableState, statusKey, includeSnoozed, starredOnly, unseenOnly]);
+  }, [
+    tableState,
+    statusKey,
+    includeSnoozed,
+    starredOnly,
+    unseenOnly,
+    urgency,
+  ]);
 
   useEffect(() => {
     if (!userId) return;

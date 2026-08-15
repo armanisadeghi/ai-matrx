@@ -10,6 +10,24 @@ Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/assi
 
 A chip NEVER runs from an ambiguous gesture. Hover expands the FULL card immediately (complete title, readable markdown, scrolls when long — Claude Code is the bar); clicking the chip expands, never runs; execution is a **verb-labeled button** whose one-line explainer says exactly what will happen BEFORE it happens, and a **receipt toast** says what happened after. Truncated text with no instant full reveal is banned everywhere in this feature. Every new action kind MUST add a descriptor in `runtime/action-descriptors.ts` — a kind without one renders a disabled action, never a mystery button.
 
+## Urgency is a BAND over `priority`, never a new column
+
+`platform.assists.priority` (smallint, indexed, already the queue's sort key) has always carried urgency implicitly — producers write 0 for "here is something you could do", 10 for recovery/attention, 20 for something a human must decide. Those bands are now named, in ONE place: `urgencyFromPriority()` + `ASSIST_URGENCY_MIN_PRIORITY` + `ASSIST_URGENCY_META` in `types.ts`.
+
+| Band | `priority` | Chip / card | Means |
+| --- | --- | --- | --- |
+| `normal` | `< 10` | primary lightbulb, unchanged | Something you could do |
+| `elevated` | `10–19` | amber, triangle icon, "Elevated" badge | Worth looking at soon |
+| `urgent` | `>= 20` | red, octagon icon, "Urgent" badge | Waiting on you |
+
+Rules that keep this honest:
+
+- **Never read `priority` directly for display.** Call the helper — that is what lets an explicit enum column replace bands later without touching a single surface.
+- **Colour is never the only signal.** Every non-normal band also carries a distinct icon (`components/urgency-icon.ts`) and the word itself, and both themes are declared explicitly. A red border alone is unreadable in greyscale and unsayable by a screen reader.
+- **Urgency changes how a chip LOOKS, never what a click DOES.** The chip still only expands; only the card's verb button runs anything (THE INTENTIONAL-ACTION LAW above). An urgent assist that auto-ran would be the exact violation the law exists to prevent.
+- **The manager's urgency filter is server-side** (`minPriority` / `maxPriority` on `AssistsQuery` → `priority >= min AND priority < max`), so the band's row count and paging agree with the header. A per-page column filter would quietly lie; the `priority` column therefore renders the band but does not filter.
+- Producers still just write a number. Mapping a domain's severity onto the bands is a constant map in the producer, not new plumbing here.
+
 ## The pieces (all in this feature unless noted)
 
 | Piece                | File                                | Rule                                                                                                                                                                                                                                                                                                                                                         |
@@ -168,6 +186,7 @@ an assist is personal and addressed to one person by design.
 
 ## Change Log
 
+- 2026-08-15 — **Urgency shipped as a vocabulary, not a migration** (dynamic-agent-graph plan Phase 0.3). `priority` had been indexed and sorted on since day one with zero visual treatment: every chip looked identical whether it was a nice-to-have or a human decision the system is blocked on. `urgencyFromPriority()` + the band constants live in `types.ts`; `AssistChip` and `AssistCard` render the three states (tint + distinct lucide icon + the word), and `/assists` gained a server-side band filter plus an Urgency column. No column, no producer fan-out, no change to what a click does. Still open from the plan: the aidream twin of the helper, and the producer pass that maps each domain's severity onto the bands.
 - 2026-08-13 — **Producer/check suppression shipped before assist volume.** The canonical card now offers **Every assist like this**, requires the user's reason, and writes `suppressed_until='infinity'` across every pending row for that `source_key`; a DB insert trigger makes future dedupe keys inherit the mute. `/assists` carries the visible Silenced inventory and one-click **Turn back on**. Finite timestamps remain ordinary per-row snoozes; status is untouched; the existing base `metadata` carries the suppression reason so prior decision notes cannot be erased. No new table, column, status, chip, or decision handler. The capability-inventory row moves **NOT YET → equal**; G-SUGGEST-FORK stays in progress because twelve other capabilities remain uncovered, and nothing is retired.
 - 2026-08-13 — **Finding delivery no longer waits for attention.** The live diagnosis was exactly render-gating: `FindingsAssistStrip` called the client producer from `useEffect`, once per site/browser session, so 5,506 findings had produced only six ledger rows at page-open timestamps. Production moved to one private pg_cron sweep every 15 minutes. The initial run emitted 15 pending site/check groups and superseded the five old pending render-era rows; later scheduled runs absorbed a newly analyzed PBW Law site without a page visit. Final post-deploy proof: 24 total ledger rows, 18 current groups with 18 distinct keys, exactly three each across six actionable sites, five superseded render-era rows, and one retained dismissal. `FindingsAssistStrip` is display-only; the existing ledger, strip, dock, runner, and navigate action are reused. Current limitation is explicit: assists are personal and addressed to the site owner, not every teammate.
 - 2026-08-13 — **The loop closes on the PAGE (`G-FINDING-FIX`).** `FindingFixCard` keeps the exact replacement + Apply-as-draft path (`applyFindingFix` → `updatePageIntent` + `executeCmsPush`) for an individual finding. The background coverage producer groups thousands of findings honestly and navigates to that canonical register/detail path; it does not pretend a grouped chip can safely batch-apply unlike fixes. No new write path and nothing publishes.
