@@ -273,6 +273,9 @@ export function appendPatrolRunEvent(
   if (!TRANSITIONS[previous.state].includes(input.state)) {
     throw new Error(`invalid patrol transition: ${previous.state} -> ${input.state}`);
   }
+  if (Date.parse(input.at) <= Date.parse(previous.at)) {
+    throw new Error("event timestamps must increase strictly");
+  }
   validateEventRequirements(input, record.events);
 
   const withoutHash: Omit<PatrolRunEvent, "eventHash"> = {

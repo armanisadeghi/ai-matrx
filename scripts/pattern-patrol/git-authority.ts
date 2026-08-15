@@ -25,6 +25,10 @@ function safeRef(ref: string): void {
   }
 }
 
+function expectedAuthorityRef(record: PatrolRunRecord): string {
+  return `refs/heads/patrol-runs/${record.patrolId}/${record.runId}`;
+}
+
 function remoteRefSha(repoRoot: string, ref: string): string | undefined {
   const output = git(repoRoot, ["ls-remote", "origin", ref]);
   return output.split(/\s+/)[0] || undefined;
@@ -70,23 +74,47 @@ export function publishPatrolRunAuthority(input: {
 }): string {
   const { repoRoot, record, candidateSha, authorityRef, actor } = input;
   safeRef(authorityRef);
+  if (authorityRef !== expectedAuthorityRef(record)) {
+    throw new Error(`authority ref must be ${expectedAuthorityRef(record)}`);
+  }
   const problems = validatePatrolRunRecord(record);
   if (problems.length > 0) throw new Error(`refusing to publish invalid run: ${problems.join("; ")}`);
   git(repoRoot, ["cat-file", "-e", `${candidateSha}^{commit}`]);
 
   const priorAuthority = remoteRefSha(repoRoot, authorityRef);
   if (priorAuthority) {
+    git(repoRoot, ["fetch", "--no-tags", "origin", authorityRef]);
     try {
       git(repoRoot, ["merge-base", "--is-ancestor", candidateSha, priorAuthority]);
     } catch {
       throw new Error(`authority ref ${authorityRef} does not preserve candidate ${candidateSha}`);
+    }
+    const priorPath = recordPath(record);
+    const prior = JSON.parse(git(repoRoot, ["show", `${priorAuthority}:${priorPath}`])) as PatrolRunRecord;
+    const priorProblems = validatePatrolRunRecord(prior);
+    if (priorProblems.length > 0) {
+      throw new Error(`remote authority record is invalid: ${priorProblems.join("; ")}`);
+    }
+    if (prior.patrolId !== record.patrolId || prior.runId !== record.runId) {
+      throw new Error("remote authority belongs to a different patrol run");
+    }
+    if (
+      prior.events.length > record.events.length ||
+      prior.events.some(
+        (event, index) => JSON.stringify(event) !== JSON.stringify(record.events[index]),
+      )
+    ) {
+      throw new Error("remote authority history is not an exact prefix of the new record");
+    }
+    if (canonicalPatrolRecordJson(prior) === canonicalPatrolRecordJson(record)) {
+      return priorAuthority;
     }
   }
 
   const temp = mkdtempSync(join(tmpdir(), "matrx-patrol-authority-"));
   try {
     const env = { ...process.env, GIT_INDEX_FILE: join(temp, "index") };
-    git(repoRoot, ["read-tree", candidateSha], { env });
+    git(repoRoot, ["read-tree", priorAuthority ?? candidateSha], { env });
     for (const [path, contents] of [
       [recordPath(record), canonicalPatrolRecordJson(record)],
       [latestPath(record), latestJson(record)],

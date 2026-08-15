@@ -587,9 +587,8 @@ else
 Push was rejected and we could not re-fetch $REMOTE.
 Your release commit and tag $NEW_TAG exist locally; nothing was force-pushed.
 Once you are back online:
-    git pull --rebase $REMOTE $BRANCH
-    git tag -f $NEW_TAG HEAD
-    git push --atomic $REMOTE $BRANCH $NEW_TAG
+    Ask the delivery controller to resume this release. It must reacquire the
+    lane and revalidate the exact HEAD. Do not push the branch or tag manually.
 EOF
 )"
 
@@ -608,8 +607,9 @@ EOF
             die_after_commit "$(cat <<EOF
 Rejected again right after a clean rebase — $REMOTE/$BRANCH is moving rapidly
 (someone else is pushing at the same moment). Your history is clean and linear
-locally; just push by hand when the dust settles:
-    git push --atomic $REMOTE $BRANCH $NEW_TAG
+locally. When the competing push finishes:
+    Ask the delivery controller to resume this release after the competing
+    push finishes. Do not push the branch or tag manually.
 EOF
 )"
         fi
@@ -623,7 +623,8 @@ Your release commit and tag $NEW_TAG exist locally; nothing was force-pushed.
 Resolve by hand:
     git rebase $REMOTE/$BRANCH        # fix the conflicts
     git tag -f $NEW_TAG HEAD          # re-point the tag onto the rebased commit
-    git push --atomic $REMOTE $BRANCH $NEW_TAG
+Then ask the delivery controller to resume, reacquire the lane, and revalidate
+the exact HEAD. Do not push the branch or tag manually.
 EOF
 )"
     fi

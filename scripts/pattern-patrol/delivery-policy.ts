@@ -1,5 +1,9 @@
 import { execFileSync, spawnSync } from "node:child_process";
-import { type PatrolRunRecord, validatePatrolRunRecord } from "./run-record";
+import {
+  canonicalPatrolRecordJson,
+  type PatrolRunRecord,
+  validatePatrolRunRecord,
+} from "./run-record";
 
 export interface PatrolCommitTrailers {
   patrolId: string;
@@ -51,6 +55,29 @@ function loadRecordAtRef(
   } catch {
     throw new Error(`missing permanent run record in ${recordRef}: ${path}`);
   }
+}
+
+function deterministicAuthorityRef(patrolId: string, runId: string): string {
+  return `refs/heads/patrol-runs/${patrolId}/${runId}`;
+}
+
+function loadRemoteAuthority(input: {
+  repoRoot: string;
+  patrolId: string;
+  runId: string;
+  candidateSha: string;
+}): { ref: string; record: PatrolRunRecord } {
+  const { repoRoot, patrolId, runId, candidateSha } = input;
+  const ref = deterministicAuthorityRef(patrolId, runId);
+  git(repoRoot, ["fetch", "--no-tags", "origin", ref]);
+  const remoteSha = git(repoRoot, ["ls-remote", "origin", ref]).split(/\s+/)[0];
+  if (!remoteSha) throw new Error(`missing remote run authority: ${ref}`);
+  try {
+    git(repoRoot, ["merge-base", "--is-ancestor", candidateSha, remoteSha]);
+  } catch {
+    throw new Error(`remote authority ${ref} does not preserve candidate ${candidateSha}`);
+  }
+  return { ref, record: loadRecordAtRef(repoRoot, remoteSha, patrolId, runId) };
 }
 
 function recordAppendProblems(repoRoot: string, commitSha: string, paths: readonly string[]): string[] {
@@ -127,6 +154,23 @@ export function authorizePatrolCommit(input: {
     problems.push("certified patrol delivery is missing Patrol-Candidate");
     return problems;
   }
+  let authority: { ref: string; record: PatrolRunRecord } | undefined;
+  try {
+    authority = loadRemoteAuthority({
+      repoRoot,
+      patrolId: trailers.patrolId,
+      runId: trailers.runId,
+      candidateSha,
+    });
+  } catch (error) {
+    problems.push((error as Error).message);
+  }
+  if (
+    authority &&
+    canonicalPatrolRecordJson(authority.record) !== canonicalPatrolRecordJson(record)
+  ) {
+    problems.push(`release record does not exactly match remote authority ${authority.ref}`);
+  }
   const certification = [...record.events]
     .reverse()
     .find(
@@ -145,6 +189,12 @@ export function authorizePatrolCommit(input: {
   const latest = record.events.at(-1);
   if (!latest || !["delivery_queued", "delivered"].includes(latest.state)) {
     problems.push(`run is ${latest?.state ?? "empty"}; latest state must be delivery_queued or delivered`);
+  }
+  if (latest?.delivery?.candidateSha !== candidateSha) {
+    problems.push(`latest delivery state does not name exact candidate ${candidateSha}`);
+  }
+  if (latest?.delivery?.preservedRef !== deterministicAuthorityRef(trailers.patrolId, trailers.runId)) {
+    problems.push("latest delivery state does not name the deterministic remote authority ref");
   }
   const productPaths = paths.filter((changedPath) => !changedPath.startsWith(".matrx/"));
   if (productPaths.length > 0 && commitSha !== candidateSha) {
@@ -218,8 +268,8 @@ export function checkContainedBlockedCandidates(input: {
     problems.push(...validation.map((problem) => `${path}: ${problem}`));
     if (validation.length > 0) continue;
     const latest = record.events.at(-1);
-    if (!latest || !["infrastructure_blocked", "escaped_delivery"].includes(latest.state)) continue;
-    const candidateSha = latest.blocker?.preservedSha ?? latest.escape?.candidateSha;
+    if (!latest || latest.state !== "infrastructure_blocked") continue;
+    const candidateSha = latest.blocker?.preservedSha;
     if (!candidateSha) continue;
     const contained = spawnSync("git", ["merge-base", "--is-ancestor", candidateSha, head], {
       cwd: repoRoot,
