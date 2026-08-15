@@ -67,7 +67,7 @@ export default function SchedulingAdminOverview() {
       </div>
 
       {error && (
-        <Alert variant="destructive">
+        <Alert variant="destructive" data-surface-value="overview_load_error">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
@@ -77,33 +77,39 @@ export default function SchedulingAdminOverview() {
           label="Total tasks"
           value={health?.taskCount}
           icon={ListChecks}
+          surfaceValue="task_total_count"
         />
         <Stat
           label="Enabled"
           value={health?.enabledCount}
           icon={CalendarCheck}
+          surfaceValue="task_enabled_count"
         />
         <Stat
           label="Due in next hour"
           value={health?.upcomingNextHour}
           icon={CalendarClock}
+          surfaceValue="task_due_next_hour_count"
         />
         <Stat
           label="Runs (24h)"
           value={health?.runsLast24h}
           icon={Activity}
+          surfaceValue="runs_last_24h_count"
         />
         <Stat
           label="Failures (24h)"
           value={health?.failuresLast24h}
           icon={ShieldAlert}
           tone={health && health.failuresLast24h > 0 ? "warning" : "default"}
+          surfaceValue="failures_last_24h_count"
         />
         <Stat
           label="Orphan leases"
           value={health?.orphanLeases}
           icon={AlertTriangle}
           tone={health && health.orphanLeases > 0 ? "warning" : "default"}
+          surfaceValue="orphan_lease_summary_count"
         />
       </div>
 
@@ -155,14 +161,16 @@ function Stat({
   value,
   icon: Icon,
   tone = "default",
+  surfaceValue,
 }: {
   label: string;
   value: number | undefined;
   icon: typeof Activity;
   tone?: "default" | "warning";
+  surfaceValue: string;
 }) {
   return (
-    <Card>
+    <Card data-surface-value={surfaceValue}>
       <CardContent className="p-3 flex items-center justify-between gap-3">
         <div className="min-w-0">
           <div className="text-xs text-muted-foreground">{label}</div>

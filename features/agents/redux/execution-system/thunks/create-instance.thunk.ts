@@ -48,12 +48,15 @@ import { initInstanceOverrides } from "../instance-model-overrides/instance-mode
 import { buildInstanceBaseSettings } from "../instance-model-overrides/base-settings";
 import {
   initInstanceVariables,
+  replaceSurfaceVariableValues,
+  setScopeVariableValues,
   setUserVariableValues,
   resetUserVariableValues,
 } from "../instance-variable-values/instance-variable-values.slice";
 import { initInstanceResources } from "../instance-resources/instance-resources.slice";
 import {
   initInstanceContext,
+  replaceSurfaceContextEntries,
   setContextEntries,
 } from "../instance-context/instance-context.slice";
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
@@ -479,7 +482,7 @@ export const createInstanceFromShortcut = createAsyncThunk<
     Object.keys(shortcut.defaultVariables).length > 0
   ) {
     dispatch(
-      setUserVariableValues({
+      setScopeVariableValues({
         conversationId,
         values: shortcut.defaultVariables,
       }),
@@ -562,19 +565,18 @@ export const createInstanceFromShortcut = createAsyncThunk<
         result.warnings,
       );
     }
-    if (Object.keys(result.variableValues).length > 0) {
-      dispatch(
-        setUserVariableValues({
-          conversationId,
-          values: result.variableValues,
-        }),
-      );
-    }
-    if (result.contextEntries.length > 0) {
-      dispatch(
-        setContextEntries({ conversationId, entries: result.contextEntries }),
-      );
-    }
+    dispatch(
+      replaceSurfaceVariableValues({
+        conversationId,
+        values: result.variableValues,
+      }),
+    );
+    dispatch(
+      replaceSurfaceContextEntries({
+        conversationId,
+        entries: result.contextEntries,
+      }),
+    );
     if (result.pendingPrompts.length > 0) {
       // Should be empty — the launch thunk drains prompt_user mappings into
       // direct_value entries (value-prompts dialog) before dispatching this

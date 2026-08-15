@@ -43,6 +43,13 @@ export interface InstanceVariableValuesEntry {
   /** Values auto-populated from scope/context at creation time */
   scopeValues: Record<string, unknown>;
 
+  /**
+   * Names contributed by the most recent surface-runtime mapping pass.
+   * Submit-time refresh replaces exactly this subset without erasing values
+   * supplied by the active-scope resolver.
+   */
+  surfaceValueNames: string[];
+
   /** Per-conversation overrides for media-variable resource-family policy. */
   resourcePolicies: Record<string, VariableResourceContextConfig>;
 }
@@ -86,6 +93,7 @@ const instanceVariableValuesSlice = createSlice({
         definitions,
         userValues: {},
         scopeValues,
+        surfaceValueNames: [],
         resourcePolicies: {},
       };
     },
@@ -190,6 +198,28 @@ const instanceVariableValuesSlice = createSlice({
     },
 
     /**
+     * Replace the surface-owned subset of `scopeValues` with a freshly mapped
+     * live provider scope. User values remain in their higher-priority tier;
+     * unrelated active-scope values remain untouched.
+     */
+    replaceSurfaceVariableValues(
+      state,
+      action: PayloadAction<{
+        conversationId: string;
+        values: Record<string, unknown>;
+      }>,
+    ) {
+      const { conversationId, values } = action.payload;
+      const entry = state.byConversationId[conversationId];
+      if (!entry) return;
+      for (const name of entry.surfaceValueNames ?? []) {
+        delete entry.scopeValues[name];
+      }
+      Object.assign(entry.scopeValues, values);
+      entry.surfaceValueNames = Object.keys(values);
+    },
+
+    /**
      * Reset all user values — fall back entirely to scope + defaults.
      */
     resetUserVariableValues(state, action: PayloadAction<string>) {
@@ -208,7 +238,9 @@ const instanceVariableValuesSlice = createSlice({
     ) {
       const entry = state.byConversationId[action.payload.conversationId];
       if (!entry) return;
-      for (const [name, submitted] of Object.entries(action.payload.submitted)) {
+      for (const [name, submitted] of Object.entries(
+        action.payload.submitted,
+      )) {
         const current = entry.resourcePolicies[name];
         if (current && JSON.stringify(current) === JSON.stringify(submitted)) {
           delete entry.resourcePolicies[name];
@@ -250,6 +282,7 @@ const instanceVariableValuesSlice = createSlice({
         definitions: variables?.definitions ?? [],
         userValues: {},
         scopeValues: variables?.scopeValues ?? {},
+        surfaceValueNames: [],
         resourcePolicies: {},
       };
     });
@@ -268,6 +301,7 @@ export const {
   setScopeVariableValues,
   setRuntimeVariableResourcePolicy,
   mergeScopeVariableValues,
+  replaceSurfaceVariableValues,
   resetUserVariableValues,
   clearSubmittedVariableResourcePolicies,
   updateInstanceDefinitions,

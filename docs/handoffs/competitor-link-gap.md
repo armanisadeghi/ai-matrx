@@ -1,8 +1,8 @@
 ---
 status: active
-updated: 2026-08-14
+updated: 2026-08-15
 repos: [aidream, matrx-frontend, common-docs]
-owner: partially built — see "What is built" before starting anything
+owner: unassigned — TWO code tasks left (T2, T7) plus one human step only Arman can do (T8)
 ---
 
 # Competitor link gap + competitor classification
@@ -36,7 +36,7 @@ seed rule. This file is only the work order.
 
 ---
 
-## What is built (verified, committed, NOT yet deployed)
+## What is built (verified against `origin/main`, 2026-08-15)
 
 | Piece | State | Where |
 |---|---|---|
@@ -47,8 +47,15 @@ seed rule. This file is only the work order.
 | Deterministic classifier (layer 1) | **Done + 38 tests** | `packages/matrx-seo/matrx_seo/competitor_classification.py` |
 | Link-gap normalizer | **Done + 14 tests against a real captured payload** | `packages/matrx-seo/matrx_seo/providers/dataforseo/link_gap.py` |
 
-⚠️ **Both new modules are BUILT AND NOT YET WIRED** — nothing calls them. That is
-deliberate staging, not abandoned work; the remaining tasks below are their consumers.
+| `seo.landscape_brief` + the staged-confidence gate | **LIVE**, 8 real briefs | `aidream/services/seo/landscape_brief.py`, SoR §8e |
+| Domain registry wiring (T6) | **LIVE**, 166 rows read per org | `aidream/services/seo/domain_registry.py` |
+| Classifier agent v3 (15 roles + `peer_scale` + the brief) | **LIVE**, slot repinned | `c1a55f02-9e10-4c2f-9a3b-6f0d1e7b4a21` |
+| `discover_and_classify_competitors` + `POST /seo/sites/{id}/competitors/discover` | **LIVE** | `services/seo/competitor_autopsy.py` |
+| The Review tab (brief card + ruling queue + ruling record) | **LIVE** | `features/marketing/competitors/` |
+
+⚠️ **The link-gap normalizer is still BUILT AND NOT WIRED** — nothing calls
+`normalize_link_gap_payload`. That is deliberate staging, not abandoned work; **T2 is its
+consumer.** The deterministic classifier and the page-level gap now both have theirs.
 
 ---
 
@@ -80,20 +87,20 @@ Do not re-derive these from the docs; the docs are ambiguous on the one that mat
 
 ## Remaining work
 
-### T1 — Competitor identification + classification surface ✅ DONE 2026-08-15
-Typed-name web lookup, one-click add, deterministic-first classification, pinned
-platform-agent fallback (`seo.competitor_classifier`), assist-backed confirmation, axis and
-link-gap editors, derived labels, custom labels, and real competitor doors ship at
-`/marketing/competitors`. Every machine result stays `proposed` until a human confirms.
-**Follow-up now needed:** surface the two NEW axes added 2026-08-15 (`peer_scale`, the
-widened `entity_role` list) — the columns are live but the UI predates them.
+**Everything below the line is SHIPPED and on `main`.** T1, T3, T5, T6 are done; T4 is
+superseded by T7. Three things are left: **T2** (the last code task with no dependencies),
+**T7** (design agreed, now with real evidence), and **T8** (waiting on Arman, not on code).
 
 ### T2 — Link-gap collection, persistence, ranking, CRM fold ⬅ **THE OPEN ONE**
-Not started. Verified 2026-08-15: no `aidream/services/seo/link_gap*.py`, no `party_link_gap`
-payload kind, `raw_only=True` still set on `BACKLINKS_INTERSECTIONS`.
+Not started. Re-verified against `origin/main` 2026-08-15: no `aidream/services/seo/link_gap*.py`,
+no `party_link_gap` payload kind, `raw_only=True` still set on `BACKLINKS_INTERSECTIONS`
+(`packages/matrx-seo/matrx_seo/providers/dataforseo/operations.py:378`).
 - Clear `raw_only`, wire `normalize_link_gap_payload` into the collector + repository.
 - Seed ONLY from `classification_status='confirmed'` AND link-gap-eligible competitors
   (`default_use_for_link_gap`, or the explicit `use_for_link_gap` override).
+  🚨 **There are currently ZERO confirmed competitors** — 84 sit `proposed`. Until Arman
+  rules (T8), a correct T2 implementation seeds nothing. That is the system working, not a
+  bug: build it, prove it against a hand-confirmed row, and it lights up the moment he rules.
 - **Minimum 2 matches** (Arman agreed; Ahrefs/Majestic default the same).
 - **Do NOT ship the provider default ordering** — see the warning above.
 - Human gate: rows land `review_status='pending'`; AI writes `priority_score` +
@@ -101,52 +108,112 @@ payload kind, `raw_only=True` still set on `BACKLINKS_INTERSECTIONS`.
 - CRM fold via `aidream/services/crm/seo_domains.py` with a new registered `party_link_gap`
   payload kind pinned to `(party, seo_link_gap_domain)`. Fold only APPROVED rows.
 
-### T3 — Page-level gap (`page_intersection`) ✅ DONE 2026-08-15
-`packages/matrx-seo/matrx_seo/page_link_gap.py` + `aidream/services/seo/test_page_link_gap.py`;
-the shared normalizer now handles both endpoints.
-
-### T4 — Multi-location competitor overlap (NEW, proposed, not started)
-Design is in the SoR §8a. Short version: **do not invent a location entity.** `crm.address`
-already carries lat/long on a `crm.party`, and a competitor IS a party (§7), so both sides
-are modelled. Add one join table `seo.competitor_location_overlap` (`competitor_id` × our
-`address_id`) with distance + in-radius + per-pair `market_overlap`; keep
-`seo.competitor.market_overlap` as the truthful roll-up so nothing built on it breaks.
-Blocked on one Arman answer: where per-location **service radius** comes from.
-
-### T5 — Platform-wide setting doors + admin-gated access requests (NEW)
-Owner: background task chip, 2026-08-15. **Not a competitor feature** — it came out of this
-conversation and is platform-wide: (a) any UI governed by a setting elsewhere gets a door to
-that exact setting, org-level and user-level alike; (b) the existing
-`matrx-frontend/features/access-gate/` primitive extends from gating PAGES to gating
-org-admin-only SETTINGS; (c) the request routes through the internal DM system carrying an
-inline action so the admin resolves it without navigating. Org-level competitor
-`custom_labels` is its first consumer.
-
----
-
-### T6 — Wire the domain registry (BLOCKING, small) ⬅ built-and-unwired
-`platform.domain_classification` is LIVE with 166 seeded rows and measured coverage
-(**34.7%** of our 12,322-URL research corpus, **23%** of the commercial SERP sample, up from
-15% hardcoded). **Nothing reads it yet.** Point
-`matrx_seo.competitor_classification` at it: the requesting org's row wins, else the
-system-org row (`Matrx System`, `39c38960-d30c-4840-b0c1-c9960de95582`). Keep the pure
-derive/default functions unchanged. First task of the ground-truth chip.
-
-### T7 — Service lines (NEW, design agreed, not built)
+### T7 — Service lines (design agreed, not built — now with real evidence)
 Market overlap is a property of **(service line × geography)**, not of a company or a
-location. All Green is national for ITAD/data destruction and SoCal-only for small-business
-e-waste pickup — a national ITAD rival is not a competitor for local pickup. See SoR §8a.
-Supersedes the location-only join in the earlier T4 sketch; the location detail hangs
-*beneath* the service line. Also adds `entity_role='franchise_sibling'` — same brand,
-separate P&L, real competition, never folded into "us".
+location. See SoR §8a. Supersedes T4's location-only join; the location detail hangs
+*beneath* the service line.
 
-### T8 — Ground truth with Arman (NEW)
-Owner: background task chip, 2026-08-15. Zero human rulings exist anywhere in the system, so
-every threshold is provisional and more API data does not help — the missing thing is
-labels. Arman is the subject; his site ids and the session protocol are in SoR §10. Must
-follow the staged-confidence pattern (SoR §8d), not be a taxonomy quiz.
+**What changed since the design:** eight real briefs now carry proposed service lines as
+`seo.landscape_brief.service_lines` jsonb — All Green came back with three or four, PBW Law
+with three (two regional, one national), Blanca with two. That jsonb is the *input* to T7,
+not a substitute for it: it cannot be joined, and `seo.competitor_service_overlap` needs a
+real `service_line_id`. Promote the confirmed lines into `seo.service_line`, keep the brief
+as the proposal surface, and keep `seo.competitor.market_overlap` as the truthful roll-up.
+
+Also add `entity_role='franchise_sibling'` — same brand, separate P&L, real competition,
+never folded into "us". ⚠️ It is agreed in SoR §8a but is **NOT in the live CHECK
+constraint** (`competitor_entity_role_valid`, 15 values). Adding it means the DDL *and* a new
+classifier agent version *and* repointing the slot — see "the lockstep" below.
+
+### T8 — Ground truth with Arman ⬅ **BUILT AND SEEDED; WAITING ON HIM, NOT ON CODE**
+Nothing to build. **Do not rebuild any of it.** The whole path is live and there are real
+rows waiting. What exists: SoR §8e.
+
+**Where he goes:** `/marketing/competitors` → pick a site → the **Review** tab.
+1. The brief card — what we think the business is, our own 1-5 certainty, the service lines
+   with a footprint each. He corrects it in one sentence; that text becomes
+   `seo.landscape_brief.guidance`, which every later agent reads as fact.
+2. The ruling queue — judgment calls first, deterministic registry rows last, Right / Wrong,
+   optional free-text why. Lands in `seo.competitor.human_ruling` with
+   `classification_status='confirmed'`.
+
+**Nothing blocks on him.** A brief lapses to `auto_accepted` 24h after generation and
+downstream work continues; a later correction still overrides it everywhere.
+
+**Seeded** (under his own user id — he owns every org involved): 8 briefs, 84 classified
+competitors, 12 distinct entity roles, 55 carrying `peer_scale`, 29 settled free by the
+registry. Sites: allgreenrecycling, datadestruction, cosmeticinjectables, prpinjectionmd,
+titaniummarketing, titaniumsuccess, pbwlaw (brief only), blancacleaningdfw.
+
+**Watch the All Green case.** The analyst called commercial e-waste pickup *national*; his own
+account is that small-business pickup is SoCal only. Get his words — it is the canonical
+multi-service-line case and it decides how T7 gets built.
+
+**What to do AFTER he rules — this is the payoff, do not skip it:**
+- Read `seo.competitor.human_ruling` back: `verdict` (agreed vs corrected), `changed_axes`,
+  and `why`. Those are the first labels this platform has ever had.
+- **Re-derive the PROVISIONAL band thresholds** in `matrx_seo.competitor_classification`
+  (`_BAND_THRESHOLDS`, `_ABSOLUTE_THRESHOLDS`) against them. That is what the whole exercise
+  was for, and the reason those constants still carry a PROVISIONAL comment.
+- Feed corrections back into `platform.domain_classification` where the correction is
+  viewer-independent (a genuinely universal truth), and into an ORG override row where it is
+  not. Never widen the system list from a single org's ruling.
 
 ---
+
+## The lockstep that bites — read before touching any axis vocabulary
+
+Widening a DB enum does **not** widen what the AI can propose. Found live 2026-08-15: the
+pinned classifier's `output_schema` still enumerated the ORIGINAL 8 `entity_role` values
+while the CHECK constraint had admitted 15 for hours — so `manufacturer`, `retail_channel`,
+`adversary`, `professional_body`, `complementary_vendor`, `irrelevant` and `spam` were
+**unreachable by the AI layer**, silently, with no error anywhere.
+
+A vocabulary change is done only when all four land together:
+1. the CHECK constraint,
+2. a NEW `agent.definition_version` with the widened `output_schema`,
+3. `agent.definition` itself (a run resolving the live definition rather than the pin would
+   otherwise still see the old enum), and
+4. the slot's `default_agent_version_id` repointed — slots pin with `use_latest: false`, so
+   bumping the agent alone changes nothing — plus `contract.required_output_keys`.
+
+Do NOT hand-insert a `definition_version` when creating a NEW agent: the definition's own
+version-capture trigger writes version 1, and an explicit insert collides on
+`agx_version_unique`. Insert the definition, then read the id the trigger created.
+
+---
+
+### T1 — Competitor identification + classification surface ✅ DONE 2026-08-15
+Typed-name web lookup, one-click add, deterministic-first classification, pinned
+platform-agent fallback, assist-backed confirmation, axis and link-gap editors, derived
+labels, custom labels, real competitor doors. The 2026-08-15 follow-up is also done: the
+editor carries `peer_scale` and the live 15-value `entity_role` list, and
+`derivedCompetitorLabel` handles every role plus "Aspirational model".
+
+### T3 — Page-level gap (`page_intersection`) ✅ DONE 2026-08-15
+`packages/matrx-seo/matrx_seo/page_link_gap.py` + `aidream/services/seo/test_page_link_gap.py`.
+
+### T4 — Multi-location competitor overlap — SUPERSEDED by T7
+A footprint belongs to a service line, not to a location. Do not build the location-only join.
+
+### T5 — Platform-wide setting doors + admin-gated access requests ✅ DONE 2026-08-15
+Shipped: `features/settings/doors/` (`SettingDoor`, `SettingAnchor`, `settingDoorTarget`),
+`features/access-gate/SettingAccessGate.tsx` + `SettingRequestActionButtons.tsx`, and the
+internal-DM request action. SoR: `common-docs/systems/setting-doors/FEATURE.md`. Org-level
+competitor `custom_labels` is its first consumer.
+
+### T6 — Wire the domain registry ✅ DONE 2026-08-15
+`classify_entity_role` takes a `DomainRuleset`; the hardcoded frozensets are gone.
+`aidream/services/seo/domain_registry.py` loads + caches system rows plus the asking org's own
+(org row wins, either load order). Live-verified: 12 of an 18-domain real sample settled with
+zero AI, every real business declined to the agent layer.
+
+### Known gap, not yet owned
+`labs.google.competitors_domain` returns nothing for some real domains — `pbwlaw.com` got a
+brief but zero competitors. `discover_and_classify_competitors` raises
+`ValueError("No relevant competitors were discovered or supplied")`, which the new
+"Find my competitors" button surfaces as a bare failure with no way forward. Needs a real
+fallback (SERP-derived candidates) or honest copy pointing at the typed-name add path.
 
 ## Evidence base — real SERPs, 5 industries (2026-08-15)
 
