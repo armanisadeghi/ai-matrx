@@ -94,29 +94,42 @@ column registry + the existing `buildCmsPageMenu` row-actions hook) and render `
 Content-volume column and the `matrx-user/cms-site` `SurfaceRoleAgentButton` + `onFocusPage` hover handoff —
 those are CMS-specific and must survive the move.
 
-### D195 — `TransformableCard` silently ignores `initialPosition` when more than one is mounted (2026-08-14)
+### D195 — `TransformableCard` silently ignores `initialPosition` when more than one is mounted — FIXED 2026-08-14
 
 **Surface:** `/demos/draggable-cards` (demos.aimatrx.com). **Action:** mount two `<TransformableCard>` with
 distinct `initialPosition` values in one `<TransformableCardContainer>`. **Wrong outcome:** both render on the
 same origin, the later one hiding the earlier, and `initialPosition` has no visible effect — verified live
-across v0.4.640–v0.4.643.
+across v0.4.640–v0.4.643. Fixed and verified live on demos.aimatrx.com.
 
-`components/ui/transformable-card.tsx` wraps its motion layer in
-`<div className="[perspective:3000px] z-20 relative">`. That `relative` makes each card its own containing
-block, and because the wrapper holds only an absolutely-positioned child it has **zero height** — so every
-card anchors to its own collapsed wrapper at the same flow position. Its near-twin
-`components/ui/enhanced-draggable-card.tsx` leaves the wrapper unpositioned, so its absolute layer resolves
-against the consumer's container and `initialPosition` behaves as true container coordinates; that half lays
-out two cards correctly today. The `relative` is probably load-bearing for the `[perspective:3000px]` tilt, so
-this is not a one-line removal. The pill/collapsed branch has the same wrapper shape.
+**The root cause was `transition-all`, NOT the wrapper.** The card's className ended in Tailwind's
+`transition-all`, which makes the browser transition the `transform` property. Motion writes `transform`
+every frame, so the CSS transition fought it — interpolating from `none` and leaving the computed transform
+at the identity matrix while motion's `x`/`y` held the correct values. The translate was silently discarded
+and every card sat at its wrapper origin. Measured live: inline style read
+`transform: perspective(3000px) translateX(24px) translateY(24px)` while `getComputedStyle().transform`
+returned `matrix(1, 0, 0, 1, 0, 0)`, with a running `CSSTransition` on `transform` keyframed from `"none"`;
+`getAnimations()` and stripping only that one class confirmed it. The near-twin
+`enhanced-draggable-card.tsx` never carried `transition-all`, which is the entire reason its half laid out
+two cards correctly.
+
+The earlier diagnosis in this entry — that the `relative` zero-height wrapper made each card its own
+containing block — was **wrong as a root cause**. Two zero-height wrappers stack at the same flow position,
+which is the container origin, so the translate would have separated them correctly. The wrapper was still
+changed, to an explicit zero-size anchor (`absolute top-0 left-0`) with the perspective moved onto the motion
+element as `transformPerspective` and z-index lifted to the wrapper: that makes "`initialPosition` is a
+container coordinate" true regardless of what else shares the container, and lets a dragged card rise above
+its siblings. That is a robustness improvement, not the fix.
+
+**Rule this leaves behind:** never put `transition-all` on a motion-driven element — transition named
+properties or none. One more instance is logged in `.matrx/PATROL_SIGHTINGS.md`
+(`features/agents/resources/ResourceChips.tsx:133`, `whileHover={{ scale }}` + `transition-all`).
 
 Never hit before because **both components had zero runtime consumers** — their only mounter was
 `/legacy/demo/component-demo/draggables/transformable-cards-demo`, deleted with the `(legacy)` route group.
-`pnpm check:unwired` surfaced them; `/demos/draggable-cards` is the new mounter and currently shows ONE
-`TransformableCard` with an in-place amber note, rather than a section that misrepresents the primitive.
-Remove that note in the change that restores the second card. Chipped to a focused session. Open question for
-Arman in that brief: these are two near-duplicate ~400-line components with the same drag/snap/container
-model — should they converge? Neither may be deleted (unfinished-work alarm).
+`/demos/draggable-cards` is the new mounter and now shows two cards at distinct positions. Open question for
+Arman: these are two near-duplicate ~400-line components (plus the untouched 191-line upstream original
+`draggable-card.tsx`, still with zero consumers) sharing one drag/snap/container model — should they
+converge? Neither may be deleted (unfinished-work alarm).
 
 ### D193 — Four user-content entities can't be shared with an organization at all (2026-08-15)
 

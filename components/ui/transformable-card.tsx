@@ -396,7 +396,8 @@ export const TransformableCard: React.FC<TransformableCardProps> = ({
           whileHover={{ scale: 1.05 }}
           onClick={handlePillClick}
           className={cn(
-            "flex items-center gap-2 px-3 py-2 bg-textured border-2 border-blue-400 dark:border-blue-600 rounded-full shadow-sm cursor-pointer transition-all",
+            // No `transition-all` — same reason as the full card below.
+            "flex items-center gap-2 px-3 py-2 bg-textured border-2 border-blue-400 dark:border-blue-600 rounded-full shadow-sm cursor-pointer",
             currentContainerId ? "ring-1 ring-blue-500" : "",
             isDragging ? "ring-2 ring-blue-500 shadow-lg z-50" : "",
             pillClassName
@@ -462,7 +463,12 @@ export const TransformableCard: React.FC<TransformableCardProps> = ({
         onPointerMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
         className={cn(
-          "relative min-h-80 w-80 overflow-hidden rounded-md bg-white p-6 border-2 border-indigo-400 dark:border-indigo-600 shadow-md dark:bg-gray-800 transition-all",
+          // NEVER `transition-all` on a motion-driven element. Motion writes
+          // `transform` every frame; a CSS transition on `transform` fights it,
+          // animating from `none` and pinning the card at its origin with the
+          // translate silently discarded — that is D195's actual root cause.
+          // Transition named properties if you need one, never `all`.
+          "relative min-h-80 w-80 overflow-hidden rounded-md bg-white p-6 border-2 border-indigo-400 dark:border-indigo-600 shadow-md dark:bg-gray-800",
           isReturningToCard ? "ring-2 ring-blue-500" : "",
           isDragging ? "shadow-xl ring-2 ring-indigo-500 dark:ring-indigo-400" : "",
           className

@@ -18,8 +18,9 @@ This doc carries the intent hunt already done on the largest items so the next b
   `/demos/draggable-cards` page, verified live on demos.aimatrx.com (drag moves the card and
   `onPositionChange` fires). Their only consumer had been a `(legacy)` route that died with the group.
   Mounting them immediately exposed a defect neither had ever been exercised enough to reveal —
-  `TransformableCard` ignores `initialPosition` with more than one card mounted (**D195**, chipped). The
-  demo shows one card and names the limitation in place rather than misrepresenting the primitive.
+  `TransformableCard` ignored `initialPosition` with more than one card mounted (**D195**). Fixed and
+  verified live 2026-08-14: the cause was `transition-all` on the motion element, not the wrapper CSS the
+  original brief blamed. The demo now shows two cards at distinct positions.
 
 ## Dispatched — briefs 1, 3, 4, 5, 6, 7, 9 are live chips
 
