@@ -27,9 +27,9 @@ const CRM_ADMIN_MAP: FeatureAdminMap = {
     },
     {
       url: "/crm/import",
-      label: "CSV import",
+      label: "Contact import",
       description:
-        "Import wizard: source file, column mapping, dedup dry-run preview, then commit through the canonical service (mediums, contact points, affiliations).",
+        "Native import wizard: CSV/TSV, Excel, or vCard source; source-aware column mapping; dedup dry-run preview; then commit through the canonical service (mediums, contact points, affiliations).",
       filePath: "app/(core)/crm/import/page.tsx",
       status: "Live",
     },
@@ -171,7 +171,7 @@ const CRM_ADMIN_MAP: FeatureAdminMap = {
       name: "ImportWizard",
       filePath: "features/crm/components/import/ImportWizard.tsx",
       description:
-        "CSV import steps (source, mapping, dry-run preview, results) over the engine in features/crm/import/.",
+        "Native contact import steps (source, mapping, dry-run preview, results) over the CSV/TSV, Excel, and vCard adapters in features/crm/import/.",
       tier: "internal",
       status: "Live",
     },

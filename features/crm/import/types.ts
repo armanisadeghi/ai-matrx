@@ -1,6 +1,6 @@
 // features/crm/import/types.ts
 //
-// Types for the CSV import wizard. The engine (engine.ts) is the only writer
+// Types for the contact import wizard. The engine (engine.ts) is the only writer
 // of these shapes; the wizard renders them. Row shapes never mirror DB rows —
 // the commit path writes through features/crm/service.ts.
 
@@ -30,8 +30,7 @@ export const ORG_IMPORT_FIELDS = [
 ] as const;
 
 export type ImportField =
-  | (typeof PERSON_IMPORT_FIELDS)[number]
-  | (typeof ORG_IMPORT_FIELDS)[number];
+  (typeof PERSON_IMPORT_FIELDS)[number] | (typeof ORG_IMPORT_FIELDS)[number];
 
 export const IMPORT_FIELD_LABELS: Record<ImportField, string> = {
   first_name: "First name",
@@ -51,12 +50,20 @@ export const IMPORT_FIELD_LABELS: Record<ImportField, string> = {
 /** CSV header (as parsed) → the field it feeds, or null = ignored. */
 export type ImportMapping = Record<string, ImportField | null>;
 
-export interface ParsedCsv {
+export type ImportFileFormat = "csv" | "tsv" | "xlsx" | "xls" | "vcard";
+
+export interface ParsedImportData {
   headers: string[];
   /** One record per data row, keyed by header. */
   rows: Record<string, string>[];
-  /** Papaparse-reported structural problems (wrong cell counts etc.). */
+  /** Structural problems (wrong cell counts, extra worksheets, etc.). */
   parseWarnings: string[];
+  /** Native container that was parsed before entering the shared mapping flow. */
+  format: ImportFileFormat;
+  /** Best-effort product/export recognition from native headers. */
+  sourceLabel: string;
+  /** Excel only: the first non-empty worksheet selected for import. */
+  sheetName?: string;
 }
 
 export type RowStatus =

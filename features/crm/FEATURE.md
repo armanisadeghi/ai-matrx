@@ -1,6 +1,6 @@
 # FEATURE.md — `crm`
 
-**Status:** `db-core live · route + WindowPanels live · outreach lists + call queue live · smart views live` · **Tier:** `1` · **Last updated:** `2026-08-14`
+**Status:** `db-core live · route + WindowPanels live · outreach lists + call queue live · smart views live · native contact import live` · **Tier:** `1` · **Last updated:** `2026-08-15`
 
 Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/crm/FEATURE.md` — read it before touching this feature in ANY repo.
 
@@ -8,8 +8,8 @@ Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/crm/
 
 ## Purpose
 
-**`crm.party` is the ONE record for a person or a company that is not one of our
-tenants** — an expert, a lead, a customer, a vendor, an author, a competitor. Before
+**`crm.party` is the ONE org-scoped record for a person or a company** — a user,
+expert, lead, customer, vendor, author, or competitor. Before
 this, every module grew its own half-copy (`plan.entity`, `web.brand`,
 `rag.kg_entities`, `users.invitation_requests`, `public.contact_submissions`,
 `users.user_form_profile`), and none could be reused by the next one.
@@ -282,10 +282,11 @@ surface → right-click → **Convert → Save as contact**.
   aidream `services/agent_slots/client_slots.py`. **Live status: blocked on an
   aidream deploy — see D192 in `FOUND_DEFECTS.md`.**
 
-## CSV import (`/crm/import`)
+## Native contact import (`/crm/import`)
 
-Wizard: source (file or pasted text) → column mapping (auto-guessed from header
-synonyms) → **dry-run preview** → commit. Engine in `features/crm/import/`
+Wizard: source (CSV/TSV/pasted text, Excel `.xlsx/.xls`, or vCard `.vcf/.vcard`)
+→ column mapping (auto-guessed from header synonyms and named export fingerprints)
+→ **dry-run preview** → commit. Engine in `features/crm/import/`
 (`engine.ts` — parse/guess/plan/commit; `types.ts`); UI in
 `components/import/ImportWizard.tsx`; bulk dedup lookups live in `service.ts`
 (`findExistingMediumOwners`, `findPartiesByNames`, `findPartiesByDomains`,
@@ -297,11 +298,29 @@ synonyms) → **dry-run preview** → commit. Engine in `features/crm/import/`
 - **Dedup identity:** people dedupe on normalized email/phone values already
   owned by a live party in the org (names are too weak to skip a person on —
   a person row with no valid email/phone re-imports; that is the resolver's
-  Wave 1 job, not the CSV wizard's). Companies dedupe on exact domain, then
+  Wave 1 job, not the import wizard's). Companies dedupe on exact domain, then
   case-insensitive exact name.
 - **Employer cells** find-or-create the company once per distinct name and add
   a current+primary `crm.affiliation` (the mirror trigger fills the list's
   Employer column).
+- **Every native format becomes the SAME tabular mapping shape.** There is no
+  Google/Outlook/Salesforce-specific commit path. Google Contacts, Outlook,
+  Salesforce, HubSpot, and LinkedIn fingerprints improve mapping and explain what
+  was detected; generic exports still work. CSV/TSV is parsed as a matrix, then
+  headers are deduped exactly once—PapaParse calls `transformHeader` twice, so a
+  stateful transform silently renamed every ordinary header to `Name (2)` and broke
+  all auto-mapping before the 2026-08-15 regression test caught it.
+- **Ragged rows never disappear.** Surplus cells get generated column names and a
+  visible warning; missing trailing cells stay blank. Files are capped at 20 MB and
+  10,000 rows with an actionable split-file error rather than freezing the tab.
+- **Excel is user-triggered code.** SheetJS loads through `await import("xlsx")`
+  only after a workbook is chosen; never pull it into the route's initial bundle.
+- **Every resolved identity is a door.** The selected organization, existing party,
+  existing employer, created parties/companies, and partially-created failed records
+  use `EntityRef` or a count link back to the CRM.
+- Cross-repo vision, exhaustive source inventory, official MCP shortlist, and
+  Extend/Local briefs:
+  `/Users/armanisadeghi/code/common-docs/systems/crm/IMPORT-SOURCES.md`.
 - **Component inserts never use RETURNING** — see the service comment on
   `addContactPoint` and D181 in `FOUND_DEFECTS.md`: the id-list `std_select`
   policy on component tables cannot see a row being inserted, so
@@ -311,7 +330,9 @@ synonyms) → **dry-run preview** → commit. Engine in `features/crm/import/`
   re-running converges to "exists" via email/phone dedup but does NOT backfill
   the missing pieces (no enrich-existing mode yet — that is the Wave 1 party
   resolver's territory). Rows with no valid email/phone dedupe by nothing and
-  re-import as new people.
+  re-import as new people. Excel uses the first non-empty worksheet and asks the
+  user to import other sheets separately; the durable paged/resumable import-job
+  spine is Wave 1 in the cross-repo program.
 
 ## Outreach lists + call queue (`/crm/outreach-lists`)
 
@@ -480,6 +501,17 @@ not an expert) and `ExpertStatusCard` on the record page.
 
 ## Change log
 
+- 2026-08-15 — **Native contact exports now enter the existing accountable preview.**
+  `/crm/import` accepts CSV/TSV/paste, Excel `.xlsx/.xls`, and multi-contact vCard
+  `.vcf/.vcard`; recognizes common Google Contacts, Outlook, Salesforce, HubSpot,
+  and LinkedIn headers; handles Google `:::` multi-value cells; and keeps SheetJS
+  off the initial route bundle. Eight parser/mapping regressions cover Google,
+  Outlook TSV, ragged rows, vCard channels, quoted-printable UTF-8, escaped vCard
+  delimiters, misleading email/phone metadata, and a real multi-sheet Excel file.
+  The tests exposed and fixed the
+  pre-existing PapaParse double-`transformHeader` bug that renamed every header and
+  defeated auto-mapping. Canonical multi-project program:
+  `common-docs/systems/crm/IMPORT-SOURCES.md`.
 - 2026-08-15 — **`PartyNotes` stopped reporting a failed load as an empty record.**
   A `cmt_list` failure left `comments` at `[]`, so the panel rendered a calm
   `0` count and "No notes yet" over a record that may have many notes — the

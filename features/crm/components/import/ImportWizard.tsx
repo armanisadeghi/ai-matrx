@@ -2,7 +2,7 @@
 
 // features/crm/components/import/ImportWizard.tsx
 //
-// The /crm/import wizard: source → map columns → dry-run preview → results.
+// The /crm/import wizard: native source → map columns → dry-run preview → results.
 // All parsing/planning/writing lives in features/crm/import/engine.ts; this
 // component is presentation + step state only.
 //
@@ -20,13 +20,13 @@ import {
   Building2,
   CheckCircle2,
   Download,
-  ExternalLink,
   FileUp,
   Loader2,
   UserRound,
   Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   Select,
   SelectContent,
@@ -45,7 +45,8 @@ import {
   commitImport,
   fieldsForKind,
   guessMapping,
-  parseCsv,
+  parseDelimitedText,
+  parseImportFile,
   planImport,
 } from "../../import/engine";
 import type {
@@ -53,7 +54,7 @@ import type {
   ImportMapping,
   ImportPlan,
   ImportResult,
-  ParsedCsv,
+  ParsedImportData,
   RowPlan,
 } from "../../import/types";
 import { IMPORT_FIELD_LABELS } from "../../import/types";
@@ -66,8 +67,7 @@ const STATUS_META: Record<
 > = {
   create: {
     label: "New",
-    className:
-      "bg-primary/10 text-primary border border-primary/30",
+    className: "bg-primary/10 text-primary border border-primary/30",
   },
   exists: {
     label: "Exists",
@@ -75,7 +75,8 @@ const STATUS_META: Record<
   },
   duplicate_in_file: {
     label: "Duplicate row",
-    className: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30",
+    className:
+      "bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30",
   },
   invalid: {
     label: "Invalid",
@@ -94,11 +95,15 @@ export function ImportWizard() {
   const [orgId, setOrgId] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [pastedText, setPastedText] = useState("");
-  const [parsed, setParsed] = useState<ParsedCsv | null>(null);
+  const [parsed, setParsed] = useState<ParsedImportData | null>(null);
+  const [readingFile, setReadingFile] = useState(false);
   const [mapping, setMapping] = useState<ImportMapping>({});
   const [plan, setPlan] = useState<ImportPlan | null>(null);
   const [planning, setPlanning] = useState(false);
-  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const [progress, setProgress] = useState<{
+    done: number;
+    total: number;
+  } | null>(null);
   const [result, setResult] = useState<ImportResult | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -119,9 +124,14 @@ export function ImportWizard() {
   }, []);
 
   const resolvedOrgId = orgId ?? effectiveOrgId ?? null;
+  const selectedOrg = orgs.find(
+    (organization) => organization.id === resolvedOrgId,
+  );
 
-  const loadCsvText = (text: string, name: string | null) => {
-    const nextParsed = parseCsv(text);
+  const loadParsedData = (
+    nextParsed: ParsedImportData,
+    name: string | null,
+  ) => {
     if (nextParsed.headers.length === 0 || nextParsed.rows.length === 0) {
       toast.error("Could not find a header row plus at least one data row");
       return;
@@ -137,12 +147,15 @@ export function ImportWizard() {
     if (!file) return;
     // Clear the input so choosing the SAME file again re-fires change.
     if (fileInputRef.current) fileInputRef.current.value = "";
+    setReadingFile(true);
     try {
-      loadCsvText(await file.text(), file.name);
+      loadParsedData(await parseImportFile(file), file.name);
     } catch (e) {
       toast.error(
         `Could not read the file: ${e instanceof Error ? e.message : String(e)}`,
       );
+    } finally {
+      setReadingFile(false);
     }
   };
 
@@ -151,7 +164,8 @@ export function ImportWizard() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = kind === "person" ? "contacts-template.csv" : "companies-template.csv";
+    a.download =
+      kind === "person" ? "contacts-template.csv" : "companies-template.csv";
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -187,7 +201,9 @@ export function ImportWizard() {
       setResult(res);
       setStep("done");
       if (res.failed.length === 0) {
-        toast.success(`Imported ${res.created.length} record${res.created.length === 1 ? "" : "s"}`);
+        toast.success(
+          `Imported ${res.created.length} record${res.created.length === 1 ? "" : "s"}`,
+        );
       } else {
         toast.error(
           `Imported ${res.created.length}, ${res.failed.length} failed — details below`,
@@ -268,7 +284,7 @@ export function ImportWizard() {
                   <Button
                     size="sm"
                     variant={kind === "person" ? "default" : "outline"}
-                    className="h-8 gap-1.5 text-xs"
+                    className="h-11 gap-1.5 text-sm sm:h-8 sm:text-xs"
                     onClick={() => setKind("person")}
                   >
                     <Users className="h-3.5 w-3.5" /> People
@@ -276,7 +292,7 @@ export function ImportWizard() {
                   <Button
                     size="sm"
                     variant={kind === "organization" ? "default" : "outline"}
-                    className="h-8 gap-1.5 text-xs"
+                    className="h-11 gap-1.5 text-sm sm:h-8 sm:text-xs"
                     onClick={() => setKind("organization")}
                   >
                     <Building2 className="h-3.5 w-3.5" /> Companies
@@ -291,7 +307,7 @@ export function ImportWizard() {
                   value={resolvedOrgId ?? undefined}
                   onValueChange={(v) => setOrgId(v)}
                 >
-                  <SelectTrigger className="h-8 text-xs">
+                  <SelectTrigger className="h-11 text-sm sm:h-8 sm:text-xs">
                     <SelectValue placeholder="Pick an organization" />
                   </SelectTrigger>
                   <SelectContent>
@@ -302,11 +318,21 @@ export function ImportWizard() {
                     ))}
                   </SelectContent>
                 </Select>
+                {selectedOrg && (
+                  <EntityRef
+                    token="organization"
+                    id={selectedOrg.id}
+                    name={selectedOrg.name}
+                    openInNewTab
+                    alwaysShowActions
+                    className="text-xs text-muted-foreground"
+                  />
+                )}
               </div>
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-8 gap-1.5 text-xs"
+                className="h-11 gap-1.5 text-sm sm:h-8 sm:text-xs"
                 onClick={downloadTemplate}
               >
                 <Download className="h-3.5 w-3.5" /> Template
@@ -317,21 +343,30 @@ export function ImportWizard() {
               type="button"
               className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-card px-6 py-12 text-center transition-colors hover:border-primary/50 hover:bg-accent/40"
               onClick={() => fileInputRef.current?.click()}
-              disabled={!resolvedOrgId}
+              disabled={!resolvedOrgId || readingFile}
             >
-              <FileUp className="h-6 w-6 text-muted-foreground" />
+              {readingFile ? (
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              ) : (
+                <FileUp className="h-6 w-6 text-muted-foreground" />
+              )}
               <span className="text-sm font-medium text-foreground">
-                Choose a CSV file
+                {readingFile ? "Reading export…" : "Choose a contact export"}
               </span>
               <span className="text-xs text-muted-foreground">
-                A header row plus one row per {kind === "person" ? "person" : "company"}.
-                Nothing is saved until you confirm the preview.
+                CSV, TSV, Excel (.xlsx/.xls), or vCard (.vcf) from Google
+                Contacts, Outlook, Apple Contacts, Salesforce, HubSpot,
+                LinkedIn, and most CRMs.
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Up to 20 MB and 10,000 rows. Nothing is saved until you confirm
+                the preview.
               </span>
             </button>
             <input
               ref={fileInputRef}
               type="file"
-              accept=".csv,text/csv,text/plain"
+              accept=".csv,.tsv,.txt,.xlsx,.xls,.vcf,.vcard,text/csv,text/tab-separated-values,text/vcard,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
               className="hidden"
               onChange={(e) => void onFile(e.target.files?.[0])}
             />
@@ -343,23 +378,27 @@ export function ImportWizard() {
 
             <div className="flex flex-col gap-1.5">
               <span className="text-xs font-medium text-muted-foreground">
-                Or paste CSV text (straight from a spreadsheet)
+                Or paste CSV or tab-separated text (straight from a spreadsheet)
               </span>
               <textarea
                 value={pastedText}
                 onChange={(e) => setPastedText(e.target.value)}
                 rows={5}
                 spellCheck={false}
-                placeholder={"Name,Email,Phone\nAda Lovelace,ada@example.com,+13105551234"}
-                className="w-full rounded-md border border-border bg-card px-2.5 py-1.5 font-mono text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                placeholder={
+                  "Name,Email,Phone\nAda Lovelace,ada@example.com,+13105551234"
+                }
+                className="w-full rounded-md border border-border bg-card px-2.5 py-1.5 font-mono text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring sm:text-xs"
               />
               <div>
                 <Button
                   size="sm"
                   variant="outline"
-                  className="h-7 gap-1 text-xs"
+                  className="h-11 gap-1 text-sm sm:h-7 sm:text-xs"
                   disabled={!pastedText.trim() || !resolvedOrgId}
-                  onClick={() => loadCsvText(pastedText, null)}
+                  onClick={() =>
+                    loadParsedData(parseDelimitedText(pastedText), null)
+                  }
                 >
                   <ArrowRight className="h-3.5 w-3.5" /> Use pasted text
                 </Button>
@@ -373,11 +412,20 @@ export function ImportWizard() {
             <div className="flex items-center justify-between gap-2">
               <p className="text-xs text-muted-foreground">
                 {fileName ? `${fileName} — ` : ""}
-                {parsed.rows.length} row{parsed.rows.length === 1 ? "" : "s"}.
-                Match each CSV column to a field, or leave it ignored.
+                Detected {parsed.sourceLabel}
+                {parsed.sheetName
+                  ? `, worksheet “${parsed.sheetName}”`
+                  : ""} — {parsed.rows.length} row
+                {parsed.rows.length === 1 ? "" : "s"}. Match each imported
+                column to a field, or leave it ignored.
               </p>
               <div className="flex gap-1.5">
-                <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" onClick={backToSource}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 gap-1 text-xs"
+                  onClick={backToSource}
+                >
                   <ArrowLeft className="h-3.5 w-3.5" /> Back
                 </Button>
                 <Button
@@ -406,7 +454,9 @@ export function ImportWizard() {
               <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b border-border bg-muted/50 text-left text-muted-foreground">
-                    <th className="px-2.5 py-1.5 font-medium">CSV column</th>
+                    <th className="px-2.5 py-1.5 font-medium">
+                      Imported column
+                    </th>
                     <th className="px-2.5 py-1.5 font-medium">Sample values</th>
                     <th className="px-2.5 py-1.5 font-medium">Imports as</th>
                   </tr>
@@ -419,7 +469,10 @@ export function ImportWizard() {
                       .slice(0, 2);
                     const current = mapping[header] ?? null;
                     return (
-                      <tr key={header} className="border-b border-border last:border-0">
+                      <tr
+                        key={header}
+                        className="border-b border-border last:border-0"
+                      >
                         <td className="px-2.5 py-1.5 font-medium text-foreground">
                           {header}
                         </td>
@@ -433,12 +486,15 @@ export function ImportWizard() {
                               setMapping((prev) => {
                                 const next: ImportMapping = { ...prev };
                                 const field =
-                                  v === "__ignore__" ? null : (v as ImportField);
+                                  v === "__ignore__"
+                                    ? null
+                                    : (v as ImportField);
                                 // A field feeds one column — take it from any
                                 // other header that held it.
                                 if (field) {
                                   for (const h of Object.keys(next)) {
-                                    if (h !== header && next[h] === field) next[h] = null;
+                                    if (h !== header && next[h] === field)
+                                      next[h] = null;
                                   }
                                 }
                                 next[header] = field;
@@ -446,15 +502,22 @@ export function ImportWizard() {
                               })
                             }
                           >
-                            <SelectTrigger className="h-7 w-48 text-xs">
+                            <SelectTrigger className="h-11 w-48 text-sm sm:h-7 sm:text-xs">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="__ignore__" className="text-xs text-muted-foreground">
+                              <SelectItem
+                                value="__ignore__"
+                                className="text-xs text-muted-foreground"
+                              >
                                 Ignore
                               </SelectItem>
                               {fieldsForKind(kind).map((f) => (
-                                <SelectItem key={f} value={f} className="text-xs">
+                                <SelectItem
+                                  key={f}
+                                  value={f}
+                                  className="text-xs"
+                                >
                                   {IMPORT_FIELD_LABELS[f]}
                                 </SelectItem>
                               ))}
@@ -498,12 +561,17 @@ export function ImportWizard() {
                 </span>
               )}
               <div className="ml-auto flex gap-1.5">
-                <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" onClick={() => setStep("map")}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-11 gap-1 text-sm sm:h-7 sm:text-xs"
+                  onClick={() => setStep("map")}
+                >
                   <ArrowLeft className="h-3.5 w-3.5" /> Back
                 </Button>
                 <Button
                   size="sm"
-                  className="h-7 gap-1 text-xs"
+                  className="h-11 gap-1 text-sm sm:h-7 sm:text-xs"
                   onClick={() => void runImport()}
                   disabled={plan.counts.create === 0 || progress !== null}
                 >
@@ -515,7 +583,8 @@ export function ImportWizard() {
                   ) : (
                     <>
                       <CheckCircle2 className="h-3.5 w-3.5" />
-                      Import {plan.counts.create} record{plan.counts.create === 1 ? "" : "s"}
+                      Import {plan.counts.create} record
+                      {plan.counts.create === 1 ? "" : "s"}
                     </>
                   )}
                 </Button>
@@ -538,8 +607,13 @@ export function ImportWizard() {
                 </thead>
                 <tbody>
                   {plan.rows.map((row) => (
-                    <tr key={row.rowNumber} className="border-b border-border last:border-0">
-                      <td className="px-2.5 py-1.5 text-muted-foreground">{row.rowNumber}</td>
+                    <tr
+                      key={row.rowNumber}
+                      className="border-b border-border last:border-0"
+                    >
+                      <td className="px-2.5 py-1.5 text-muted-foreground">
+                        {row.rowNumber}
+                      </td>
                       <td className="px-2.5 py-1.5 font-medium text-foreground">
                         <span className="inline-flex items-center gap-1.5">
                           {plan.kind === "person" ? (
@@ -556,10 +630,20 @@ export function ImportWizard() {
                       {plan.kind === "person" && (
                         <td className="px-2.5 py-1.5 text-muted-foreground">
                           {row.companyName ? (
-                            <span>
-                              {row.companyName}
-                              {row.existingEmployer ? "" : row.status === "create" ? " (new)" : ""}
-                            </span>
+                            row.existingEmployer ? (
+                              <EntityRef
+                                token="party"
+                                id={row.existingEmployer.id}
+                                name={row.existingEmployer.display_name}
+                                openInNewTab
+                                alwaysShowActions
+                              />
+                            ) : (
+                              <span>
+                                {row.companyName}
+                                {row.status === "create" ? " (new)" : ""}
+                              </span>
+                            )
                           ) : (
                             "—"
                           )}
@@ -577,20 +661,25 @@ export function ImportWizard() {
                       </td>
                       <td className="max-w-72 px-2.5 py-1.5 text-muted-foreground">
                         {row.existing && (
-                          <Link
-                            href={`/crm/${row.existing.id}`}
-                            target="_blank"
-                            className="inline-flex items-center gap-1 text-primary hover:underline"
-                          >
-                            {row.existing.display_name}
-                            <ExternalLink className="h-3 w-3" />
-                          </Link>
+                          <EntityRef
+                            token="party"
+                            id={row.existing.id}
+                            name={row.existing.display_name}
+                            openInNewTab
+                            alwaysShowActions
+                          />
                         )}
                         {row.duplicateOfRow !== undefined && (
                           <span>same as row {row.duplicateOfRow}</span>
                         )}
                         {row.problems.length > 0 && (
-                          <span className={cn(row.existing || row.duplicateOfRow !== undefined ? "ml-1.5" : "")}>
+                          <span
+                            className={cn(
+                              row.existing || row.duplicateOfRow !== undefined
+                                ? "ml-1.5"
+                                : "",
+                            )}
+                          >
                             {row.problems.join("; ")}
                           </span>
                         )}
@@ -608,29 +697,91 @@ export function ImportWizard() {
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-primary" />
               <p className="text-sm font-medium text-foreground">
-                Imported {result.created.length} record
-                {result.created.length === 1 ? "" : "s"}
+                <Link href="/crm" className="text-primary hover:underline">
+                  Imported {result.created.length} record
+                  {result.created.length === 1 ? "" : "s"}
+                </Link>
                 {result.companiesCreated.length > 0 &&
                   ` and created ${result.companiesCreated.length} compan${result.companiesCreated.length === 1 ? "y" : "ies"}`}
                 .
               </p>
             </div>
+            {result.created.length > 0 && (
+              <div className="rounded-lg border border-border bg-card p-2.5">
+                <p className="pb-1.5 text-xs font-medium text-foreground">
+                  Created contacts
+                </p>
+                <div className="flex flex-wrap gap-x-3 gap-y-1">
+                  {result.created
+                    .slice(0, 100)
+                    .map((created) =>
+                      created.partyId ? (
+                        <EntityRef
+                          key={created.partyId}
+                          token="party"
+                          id={created.partyId}
+                          name={created.displayName}
+                          openInNewTab
+                        />
+                      ) : null,
+                    )}
+                  {result.created.length > 100 && (
+                    <Link
+                      href="/crm"
+                      className="text-xs text-primary hover:underline"
+                    >
+                      Open {result.created.length - 100} more in CRM
+                    </Link>
+                  )}
+                </div>
+              </div>
+            )}
+            {result.companiesCreated.length > 0 && (
+              <div className="rounded-lg border border-border bg-card p-2.5">
+                <p className="pb-1.5 text-xs font-medium text-foreground">
+                  Created companies
+                </p>
+                <div className="flex flex-wrap gap-x-3 gap-y-1">
+                  {result.companiesCreated.slice(0, 100).map((company) => (
+                    <EntityRef
+                      key={company.id}
+                      token="party"
+                      id={company.id}
+                      name={company.display_name}
+                      openInNewTab
+                    />
+                  ))}
+                  {result.companiesCreated.length > 100 && (
+                    <Link
+                      href="/crm"
+                      className="text-xs text-primary hover:underline"
+                    >
+                      Open {result.companiesCreated.length - 100} more in CRM
+                    </Link>
+                  )}
+                </div>
+              </div>
+            )}
             {result.failed.length > 0 && (
               <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-2.5">
                 <p className="pb-1 text-xs font-medium text-destructive">
-                  {result.failed.length} row{result.failed.length === 1 ? "" : "s"} failed:
+                  {result.failed.length} row
+                  {result.failed.length === 1 ? "" : "s"} failed:
                 </p>
                 {result.failed.map((f) => (
-                  <p key={f.rowNumber} className="text-xs text-muted-foreground">
+                  <p
+                    key={f.rowNumber}
+                    className="text-xs text-muted-foreground"
+                  >
                     Row {f.rowNumber} (
                     {f.partyId ? (
-                      <Link
-                        href={`/crm/${f.partyId}`}
-                        target="_blank"
-                        className="text-primary hover:underline"
-                      >
-                        {f.displayName}
-                      </Link>
+                      <EntityRef
+                        token="party"
+                        id={f.partyId}
+                        name={f.displayName}
+                        openInNewTab
+                        alwaysShowActions
+                      />
                     ) : (
                       f.displayName
                     )}
@@ -640,12 +791,21 @@ export function ImportWizard() {
               </div>
             )}
             <div className="flex gap-1.5">
-              <Button size="sm" className="h-8 gap-1.5 text-xs" asChild>
+              <Button
+                size="sm"
+                className="h-11 gap-1.5 text-sm sm:h-8 sm:text-xs"
+                asChild
+              >
                 <Link href="/crm">
                   <Users className="h-3.5 w-3.5" /> Open CRM
                 </Link>
               </Button>
-              <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" onClick={reset}>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-11 gap-1.5 text-sm sm:h-8 sm:text-xs"
+                onClick={reset}
+              >
                 <FileUp className="h-3.5 w-3.5" /> Import another file
               </Button>
             </div>

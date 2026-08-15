@@ -7,12 +7,13 @@ import { ImportWizard } from "@/features/crm/components/import/ImportWizard";
 
 export const metadata: Metadata = {
   title: "Import contacts — CRM",
-  description: "Import people and companies into the CRM from a CSV file.",
+  description:
+    "Import people and companies from native CSV, TSV, Excel, and vCard exports.",
 };
 
 /**
- * /crm/import — CSV import wizard: source → map columns → dry-run preview →
- * commit. Nothing writes until the user confirms the preview.
+ * /crm/import — native contact import: source → map columns → dry-run preview
+ * → commit. Nothing writes until the user confirms the preview.
  */
 export default async function CrmImportRoute() {
   const { isAuthenticated } = await getServerAuth();
@@ -21,7 +22,7 @@ export default async function CrmImportRoute() {
       <ModuleSignInGate
         title="Import contacts"
         route="/crm/import"
-        description="Bring your people and companies into the CRM from a CSV export."
+        description="Bring your people and companies into the CRM from CSV, TSV, Excel, or vCard exports."
         icon={FileUp}
       />
     );
