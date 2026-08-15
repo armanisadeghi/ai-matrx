@@ -16,8 +16,27 @@ import {
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { CostValue } from "@/components/processing-units/CostValue";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
+import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
+import {
+  buildGroomerPresetPayload,
+  groomerPresetVariants,
+  type AgentCopyGroomerConfig,
+  type AgentCopyGroomerSection,
+} from "@/components/agent-copy/groomer-types";
+import {
+  researchKpiAttributes,
+  researchKpiLines,
+  researchKpis,
+  researchLocation,
+  sourceBrief,
+  SOURCE_CSV_COLUMNS,
+} from "@/features/research/copy";
 import type {
   ResearchProgress,
+  ResearchSource,
   ScrapeStatus,
   TopicCostSummary,
 } from "../../../types";
@@ -216,6 +235,128 @@ export function LastRunSummary({
     );
   }, [sources]);
 
+  // ── Copy / export wiring ────────────────────────────────────────────────
+  //
+  // This component owns every number the topic page leads with, so it is where
+  // the page-level payload is assembled. ONE section list feeds the Groomer
+  // window AND the graded preset variants (via the shared
+  // `groomerPresetVariants` / `buildGroomerPresetPayload` helpers) — the page
+  // never maintains two lists.
+  const kpis = researchKpis(progress, costSummary);
+  const surface = "Topic overview";
+
+  /** Every included, authority-scored source — ALL of them, never the grid's visible slice. */
+  const rankedSources = (): ResearchSource[] =>
+    (sources ?? [])
+      .filter((s) => (s.is_included ?? false) && s.authority_score != null)
+      .sort((a, b) => (b.authority_score ?? 0) - (a.authority_score ?? 0));
+
+  const receiptLines = () => ({
+    keywords: progress?.total_keywords ?? 0,
+    sources_discovered: `${progress?.included_sources ?? 0} / ${progress?.total_sources ?? 0}`,
+    pages_read:
+      attempted != null ? `${pagesRead} / ${attempted}` : String(pagesRead),
+    pages_analyzed: `${progress?.total_analyses ?? 0} / ${progress?.total_eligible_for_analysis ?? 0}`,
+    keyword_syntheses: `${progress?.keyword_syntheses ?? 0} / ${progress?.total_keywords ?? 0}`,
+    project_report: hasReport ? "Generated" : "Not yet",
+    ai_cost_usd: costSummary?.total_estimated_cost_usd ?? 0,
+    status:
+      failures > 0 ? "attention" : hasReport ? "latest results" : "in progress",
+    failures,
+    last_finished_at: finishedAt ?? null,
+  });
+
+  const groomerSections = (): AgentCopyGroomerSection[] => {
+    const ranked = rankedSources();
+    const mediaItems = media ?? [];
+    return [
+      {
+        id: "receipt",
+        title: "Pipeline receipt",
+        description: "The status lines this page opens with.",
+        build: () => receiptLines(),
+        levelLabels: {
+          full: "Every line",
+          compact: "Every line",
+          brief: "Every line",
+        },
+      },
+      {
+        id: "kpis",
+        title: "Stat rail",
+        description: "The six metric tiles, exactly as rendered.",
+        build: () => kpis,
+      },
+      {
+        id: "top_sources",
+        title: "Ranked sources",
+        description: `${ranked.length} included sources with an authority score.`,
+        cuttable: true,
+        levelLabels: {
+          full: `All ${ranked.length} ranked`,
+          compact: "Top 25",
+          brief: "Counts only",
+        },
+        build: (level) =>
+          level === "full"
+            ? ranked.map(sourceBrief)
+            : level === "compact"
+              ? ranked.slice(0, 25).map(sourceBrief)
+              : {
+                  ranked_sources: ranked.length,
+                  top_authority: ranked[0]?.authority_score ?? null,
+                },
+      },
+      {
+        id: "media",
+        title: "Media",
+        description: `${mediaItems.length} media items captured.`,
+        cuttable: true,
+        levelLabels: {
+          full: `All ${mediaItems.length}`,
+          compact: "First 25",
+          brief: "Counts only",
+        },
+        build: (level) =>
+          level === "full"
+            ? mediaItems
+            : level === "compact"
+              ? mediaItems.slice(0, 25)
+              : { media_items: mediaItems.length },
+      },
+      {
+        id: "cost",
+        title: "AI cost",
+        description: "Spend and token usage behind these results.",
+        cuttable: true,
+        build: (level) =>
+          !costSummary
+            ? null
+            : level === "full"
+              ? costSummary
+              : {
+                  total_llm_calls: costSummary.total_llm_calls,
+                  total_estimated_cost_usd:
+                    costSummary.total_estimated_cost_usd,
+                  total_input_tokens: costSummary.total_input_tokens,
+                  total_output_tokens: costSummary.total_output_tokens,
+                },
+      },
+    ];
+  };
+
+  const groomerConfig = (): AgentCopyGroomerConfig => ({
+    label: "Research topic overview",
+    kind: "research-topic-overview",
+    location: researchLocation(surface),
+    description:
+      "Everything on the research topic overview — receipt, stat rail, ranked sources, media and cost.",
+    attributes: { ...researchKpiAttributes(kpis), topic_id: topicId },
+    context: { variant, finished_at: finishedAt ?? undefined },
+    summary: researchKpiLines(kpis),
+    sections: groomerSections(),
+  });
+
   return (
     <div className="space-y-3">
       {/* ── Tidy pipeline receipt (the scannable "latest results" summary) ── */}
@@ -246,6 +387,48 @@ export function LastRunSummary({
               {when}
             </span>
           )}
+          <div className={cn("flex items-center gap-1", !when && "ml-auto")}>
+            {/* Quick pair — plain click copies the what-I-see page payload;
+                Balanced/Minimal come from the SAME section list as the
+                Groomer window below. */}
+            <CopyButtons
+              size="icon"
+              label="Research topic overview"
+              human={() => researchKpiLines(kpis)}
+              agent={() =>
+                buildGroomerPresetPayload(groomerConfig(), "everything")
+              }
+              agentVariant={{
+                id: "everything",
+                label: "Everything",
+                hint: "Full page payload — never lossy",
+                position: "last",
+              }}
+              aiVariants={groomerPresetVariants(groomerConfig)}
+            />
+            <ExportMenu
+              label="Research topic overview"
+              items={[
+                jsonExportItem(() => ({
+                  receipt: receiptLines(),
+                  kpis,
+                  ranked_sources: rankedSources().map(sourceBrief),
+                  media: media ?? [],
+                  cost: costSummary ?? null,
+                })),
+                csvExportItem(
+                  () => rankedSources().map(sourceBrief),
+                  "CSV (all ranked sources)",
+                  SOURCE_CSV_COLUMNS,
+                ),
+              ]}
+            />
+            <AgentCopyGroomerLauncher
+              config={groomerConfig}
+              buttonLabel="Groom"
+              className="h-7 px-2 text-[11px]"
+            />
+          </div>
         </div>
 
         <div className="p-1 space-y-px">
@@ -319,7 +502,10 @@ export function LastRunSummary({
       </div>
 
       {/* ── Results showcase — folded in from the retired /results page ──── */}
-      <ResultsHeroMetrics metrics={metrics} />
+      <ResultsHeroMetrics
+        metrics={metrics}
+        copyContext={{ surface, topicId, kpis }}
+      />
 
       {hasRankedSources && sources && (
         <TopSourcesGrid sources={sources} topicId={topicId} />
