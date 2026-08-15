@@ -17,11 +17,18 @@ canonical marketing data model.
 ## Entry points
 
 - `/marketing/connections/bing` — guided account connection and site matching.
+- `/marketing/connections/bing/callback` — secure Bing OAuth return and token
+  exchange completion.
 - `BingConnectionsWorkspace` (`BingConnectionsWorkspace.tsx`) — connection UI.
-- `useBingConnectionInventory()`, `useConnectBingApiKey()`,
-  `useBindBingSite()`, `useDisconnectBing()` (`hooks.ts`) — lifecycle hooks.
+- `useBingConnectionInventory()`, `useStartBingOAuth()`,
+  `useCompleteBingOAuth()`, `useConnectBingApiKey()`, `useBindBingSite()`,
+  `useDisconnectBing()` (`hooks.ts`) — lifecycle hooks.
 - `service.ts` — direct RLS-protected inventory reads plus credential-bearing
   aidream calls.
+- `GET /api/bing-integrations/authorize-url` — issue a server-bound OAuth state
+  and return Bing's authorization URL.
+- `POST /api/bing-integrations/exchange` — exchange the one-time callback code
+  with server-held app credentials, vault the refresh token, and discover sites.
 - `POST /api/bing-integrations/api-key` — vault the key and discover properties.
 - `POST /api/bing-integrations/bind-site` — persist the exact site binding.
 - `POST /seo/sites/{site_id}/bing/search-performance/sync` — collect canonical
@@ -46,12 +53,18 @@ canonical marketing data model.
 
 ### Connect an account
 
-1. The page shows Bing's real path: Settings → API access → API Key.
-2. The user opens Bing, generates a key, and pastes it into the focused field.
+1. OAuth is the primary path. The user selects organization or personal
+   ownership, signs in on Bing, grants `webmaster.read`, and returns through the
+   dedicated callback.
+2. The OAuth client id, secret, redirect URI, selected owner, and one-time state
+   stay server-controlled. The browser receives only the authorization URL and
+   later returns Bing's short-lived `code` and opaque `state`.
 3. Organization ownership is primary when an active organization exists;
    personal ownership remains available.
 4. aidream stores the credential in the canonical vault and discovers every
-   verified property. The browser retains no key after submission.
+   verified property.
+5. API key connection remains available behind “Use an API key instead” as a
+   fallback, with the exact Bing settings path and a focused key field.
 
 ### Connect a managed site
 
@@ -69,8 +82,10 @@ canonical marketing data model.
 
 - **Never show binding controls before a usable connection exists.** A disabled
   multi-select form is a dead end, not setup guidance.
-- **Never expose backend OAuth routes or credential-exchange jargon in this UI.**
-  API key is the supported product path until a complete OAuth product flow ships.
+- **OAuth is the primary path; API key is fallback.** Do not make ordinary users
+  register a Bing client, carry a client secret, or understand token exchange.
+- **The browser never receives the OAuth client secret.** aidream owns the app
+  registration, exact callback, state, code exchange, token refresh, and vault.
 - **Never display or persist the API key after submission.** aidream vaults it;
   frontend tables contain only a vault reference and safe metadata.
 - **Scope managed sites to the active organization.** An organization-owned
@@ -109,8 +124,8 @@ canonical marketing data model.
 
 ## Current work / migration state
 
-API-key connection, property discovery, binding, and streamed performance sync
-are live. OAuth exists only as backend capability and is not a product workflow.
+OAuth and API-key connection converge on the same property discovery, binding,
+credential vault, token-refresh, and streamed performance-sync lifecycle.
 
 ---
 
@@ -120,3 +135,7 @@ are live. OAuth exists only as backend capability and is not a product workflow.
   flow, hid impossible binding controls, added the direct Bing handoff, focused
   key entry, organization-first ownership, active-org site scoping, automatic
   property matching, and human connection names.
+- 2026-08-15 — Codex: Finished the previously server-only Bing OAuth work as a
+  product flow, moved app credentials and owner intent fully server-side, added
+  the callback route, made OAuth primary, and retained API key as a disclosed
+  fallback.

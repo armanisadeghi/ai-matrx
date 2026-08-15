@@ -9,7 +9,9 @@ import {
   KeyRound,
   Link2,
   Loader2,
+  LogIn,
   RefreshCw,
+  ShieldCheck,
   Unplug,
   UserRound,
 } from "lucide-react";
@@ -32,6 +34,7 @@ import {
   useBingConnectionInventory,
   useConnectBingApiKey,
   useDisconnectBing,
+  useStartBingOAuth,
 } from "@/features/marketing/bing/hooks";
 import type { BingConnectionSummary } from "@/features/marketing/bing/types";
 import { parseBingSiteBinding } from "@/features/marketing/bing/binding";
@@ -75,6 +78,7 @@ export function BingConnectionsWorkspace() {
   const organizations = useActiveOrganizationPicker();
   const inventory = useBingConnectionInventory();
   const connect = useConnectBingApiKey();
+  const oauth = useStartBingOAuth();
   const bind = useBindBingSite();
   const disconnect = useDisconnectBing();
 
@@ -86,6 +90,7 @@ export function BingConnectionsWorkspace() {
   const [connectionId, setConnectionId] = useState("");
   const [resourceRef, setResourceRef] = useState("");
   const [showAddConnection, setShowAddConnection] = useState(false);
+  const [showApiKeyFallback, setShowApiKeyFallback] = useState(false);
 
   const connections = inventory.data?.connections ?? [];
   const availableConnections = connections.filter(
@@ -150,7 +155,28 @@ export function BingConnectionsWorkspace() {
   const showConnectionForm =
     !inventory.isLoading && (!usableConnections.length || showAddConnection);
 
-  const startConnect = async (owner: "user" | "organization") => {
+  const ownerFor = (owner: "user" | "organization") =>
+    owner === "organization" && organizations.activeOrgId
+      ? ({
+          type: "organization" as const,
+          organizationId: organizations.activeOrgId,
+        } as const)
+      : ({ type: "user" as const } as const);
+
+  const startOAuth = async (owner: "user" | "organization") => {
+    setConnectingOwner(owner);
+    try {
+      const authorizationUrl = await oauth.mutateAsync(ownerFor(owner));
+      window.location.assign(authorizationUrl);
+    } catch (error) {
+      toast.error("Could not start Bing sign-in", {
+        description: error instanceof Error ? error.message : undefined,
+      });
+      setConnectingOwner(null);
+    }
+  };
+
+  const startApiKeyConnect = async (owner: "user" | "organization") => {
     if (!apiKey.trim()) {
       toast.error("Enter a Bing Webmaster API key first.");
       return;
@@ -159,13 +185,7 @@ export function BingConnectionsWorkspace() {
     try {
       await connect.mutateAsync({
         apiKey: apiKey.trim(),
-        owner:
-          owner === "organization" && organizations.activeOrgId
-            ? {
-                type: "organization",
-                organizationId: organizations.activeOrgId,
-              }
-            : { type: "user" },
+        owner: ownerFor(owner),
       });
       setApiKey("");
       setShowAddConnection(false);
@@ -244,8 +264,8 @@ export function BingConnectionsWorkspace() {
                     </Badge>
                   </div>
                   <p className="mt-0.5 text-[10px] text-muted-foreground">
-                    AI Matrx uses a Bing API key to discover your verified sites
-                    and sync their search data.
+                    Sign in securely with Bing. AI Matrx requests read-only
+                    access to discover verified sites and sync search data.
                   </p>
                 </div>
               </div>
@@ -281,76 +301,28 @@ export function BingConnectionsWorkspace() {
             ) : null}
 
             {showConnectionForm ? (
-              <div className="grid gap-4 p-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-                <div className="rounded-lg border border-border bg-muted/30 p-3">
-                  <p className="text-xs font-semibold">Get your API key</p>
-                  <ol className="mt-2 list-decimal space-y-1.5 pl-4 text-xs text-muted-foreground marker:font-semibold marker:text-foreground">
-                    <li>Open Bing Webmaster Tools and sign in.</li>
-                    <li>
-                      Click{" "}
-                      <span className="font-medium text-foreground">
-                        Settings
-                      </span>
-                      , then{" "}
-                      <span className="font-medium text-foreground">
-                        API access
-                      </span>
-                      .
-                    </li>
-                    <li>
-                      Choose{" "}
-                      <span className="font-medium text-foreground">
-                        API Key
-                      </span>
-                      , generate the key, and copy it.
-                    </li>
-                  </ol>
-                  <Button
-                    asChild
-                    size="sm"
-                    variant="outline"
-                    className="mt-3 gap-1.5"
-                  >
-                    <a
-                      href={BING_WEBMASTER_URL}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Open Bing Webmaster
-                      <ExternalLink className="h-3.5 w-3.5" />
-                    </a>
-                  </Button>
-                </div>
-
-                <div className="flex flex-col justify-center">
-                  <Label
-                    htmlFor="bing-api-key"
-                    className="text-xs font-semibold"
-                  >
-                    Paste your Bing API key
-                  </Label>
-                  <p className="mt-1 text-[10px] text-muted-foreground">
-                    The key is saved securely and is not shown again after
-                    connection.
-                  </p>
-                  <Input
-                    id="bing-api-key"
-                    type="password"
-                    autoFocus={!usableConnections.length}
-                    autoComplete="off"
-                    spellCheck={false}
-                    className="mt-2 h-9 w-full font-mono text-xs"
-                    placeholder="Paste API key here"
-                    value={apiKey}
-                    onChange={(event) => setApiKey(event.target.value)}
-                  />
-                  <div className="mt-2 flex flex-wrap gap-2">
+              <div className="space-y-3 p-3">
+                <div className="rounded-lg border border-primary/25 bg-primary/5 p-3">
+                  <div className="flex items-start gap-2.5">
+                    <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+                    <div>
+                      <p className="text-xs font-semibold">
+                        Recommended — connect with Bing
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        You&apos;ll sign in on Bing and approve read-only
+                        access, then return here automatically. AI Matrx never
+                        sees your Microsoft password.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
                     {organizations.activeOrgId ? (
                       <Button
                         size="sm"
                         className="h-8 gap-1.5"
-                        disabled={connectingOwner !== null || !apiKey.trim()}
-                        onClick={() => void startConnect("organization")}
+                        disabled={connectingOwner !== null}
+                        onClick={() => void startOAuth("organization")}
                       >
                         {connectingOwner === "organization" ? (
                           <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -367,13 +339,13 @@ export function BingConnectionsWorkspace() {
                         organizations.activeOrgId ? "outline" : "default"
                       }
                       className="h-8 gap-1.5"
-                      disabled={connectingOwner !== null || !apiKey.trim()}
-                      onClick={() => void startConnect("user")}
+                      disabled={connectingOwner !== null}
+                      onClick={() => void startOAuth("user")}
                     >
                       {connectingOwner === "user" ? (
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       ) : (
-                        <UserRound className="h-3.5 w-3.5" />
+                        <LogIn className="h-3.5 w-3.5" />
                       )}
                       Only for me
                     </Button>
@@ -383,7 +355,7 @@ export function BingConnectionsWorkspace() {
                         variant="ghost"
                         className="h-8"
                         onClick={() => {
-                          setApiKey("");
+                          setShowApiKeyFallback(false);
                           setShowAddConnection(false);
                         }}
                       >
@@ -399,6 +371,144 @@ export function BingConnectionsWorkspace() {
                     </p>
                   ) : null}
                 </div>
+
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 gap-1.5 text-xs"
+                  onClick={() => setShowApiKeyFallback((value) => !value)}
+                >
+                  <KeyRound className="h-3.5 w-3.5" />
+                  {showApiKeyFallback
+                    ? "Hide API key option"
+                    : "Use an API key instead"}
+                </Button>
+
+                {showApiKeyFallback ? (
+                  <div className="grid gap-4 rounded-lg border border-border p-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+                    <div className="rounded-lg bg-muted/30 p-3">
+                      <p className="text-xs font-semibold">Get your API key</p>
+                      <ol className="mt-2 list-decimal space-y-1.5 pl-4 text-xs text-muted-foreground marker:font-semibold marker:text-foreground">
+                        <li>Open Bing Webmaster Tools and sign in.</li>
+                        <li>
+                          Click{" "}
+                          <span className="font-medium text-foreground">
+                            Settings
+                          </span>
+                          , then{" "}
+                          <span className="font-medium text-foreground">
+                            API access
+                          </span>
+                          .
+                        </li>
+                        <li>
+                          Choose{" "}
+                          <span className="font-medium text-foreground">
+                            API Key
+                          </span>
+                          , generate the key, and copy it.
+                        </li>
+                      </ol>
+                      <Button
+                        asChild
+                        size="sm"
+                        variant="outline"
+                        className="mt-3 gap-1.5"
+                      >
+                        <a
+                          href={BING_WEBMASTER_URL}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Open Bing Webmaster
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
+                      </Button>
+                    </div>
+
+                    <div className="flex flex-col justify-center">
+                      <Label
+                        htmlFor="bing-api-key"
+                        className="text-xs font-semibold"
+                      >
+                        Paste your Bing API key
+                      </Label>
+                      <p className="mt-1 text-[10px] text-muted-foreground">
+                        The key is saved securely and is not shown again after
+                        connection.
+                      </p>
+                      <Input
+                        id="bing-api-key"
+                        type="password"
+                        autoFocus={!usableConnections.length}
+                        autoComplete="off"
+                        spellCheck={false}
+                        className="mt-2 h-9 w-full font-mono text-xs"
+                        placeholder="Paste API key here"
+                        value={apiKey}
+                        onChange={(event) => setApiKey(event.target.value)}
+                      />
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {organizations.activeOrgId ? (
+                          <Button
+                            size="sm"
+                            className="h-8 gap-1.5"
+                            disabled={
+                              connectingOwner !== null || !apiKey.trim()
+                            }
+                            onClick={() =>
+                              void startApiKeyConnect("organization")
+                            }
+                          >
+                            {connectingOwner === "organization" ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <Building2 className="h-3.5 w-3.5" />
+                            )}
+                            Connect for{" "}
+                            {organizations.activeOrgName ?? "organization"}
+                          </Button>
+                        ) : null}
+                        <Button
+                          size="sm"
+                          variant={
+                            organizations.activeOrgId ? "outline" : "default"
+                          }
+                          className="h-8 gap-1.5"
+                          disabled={connectingOwner !== null || !apiKey.trim()}
+                          onClick={() => void startApiKeyConnect("user")}
+                        >
+                          {connectingOwner === "user" ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <UserRound className="h-3.5 w-3.5" />
+                          )}
+                          Only for me
+                        </Button>
+                        {usableConnections.length ? (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8"
+                            onClick={() => {
+                              setApiKey("");
+                              setShowAddConnection(false);
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        ) : null}
+                      </div>
+                      {organizations.activeOrgId ? (
+                        <p className="mt-2 text-[10px] text-muted-foreground">
+                          Recommended: connect for{" "}
+                          {organizations.activeOrgName ?? "your organization"}{" "}
+                          so teammates can use the same verified properties.
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : null}
               </div>
             ) : null}
 

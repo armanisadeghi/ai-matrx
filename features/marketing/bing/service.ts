@@ -131,7 +131,8 @@ async function aidreamPost(
   const {
     data: { session },
   } = await supabase.auth.getSession();
-  if (!session?.access_token) throw new Error("Sign in to manage Bing Webmaster.");
+  if (!session?.access_token)
+    throw new Error("Sign in to manage Bing Webmaster.");
   const response = await fetch(`${backendBase()}${path}`, {
     method: "POST",
     headers: {
@@ -158,8 +159,61 @@ async function aidreamPost(
 function ownerBody(owner: BingConnectionOwner): Record<string, unknown> {
   return {
     owner_type: owner.type,
-    organization_id: owner.type === "organization" ? owner.organizationId : null,
+    organization_id:
+      owner.type === "organization" ? owner.organizationId : null,
   };
+}
+
+export async function startBingOAuth(
+  owner: BingConnectionOwner,
+): Promise<string> {
+  const supabase = createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session?.access_token)
+    throw new Error("Sign in to connect Bing Webmaster.");
+  const query = new URLSearchParams({ owner_type: owner.type });
+  if (owner.type === "organization") {
+    query.set("organization_id", owner.organizationId);
+  }
+  const response = await fetch(
+    `${backendBase()}/api/bing-integrations/authorize-url?${query.toString()}`,
+    { headers: { Authorization: `Bearer ${session.access_token}` } },
+  );
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => ({}))) as {
+      detail?: unknown;
+    };
+    throw new Error(
+      typeof payload.detail === "string"
+        ? payload.detail
+        : "Unable to start Bing sign-in.",
+    );
+  }
+  const body = (await response.json()) as { authorization_url?: unknown };
+  if (typeof body.authorization_url !== "string") {
+    throw new Error("Bing sign-in did not return an authorization link.");
+  }
+  return body.authorization_url;
+}
+
+export async function completeBingOAuth(
+  code: string,
+  returnedState: string,
+): Promise<BingConnectionResult> {
+  const response = await aidreamPost(
+    "/api/bing-integrations/exchange",
+    { code, returned_state: returnedState },
+    "Unable to finish Bing sign-in.",
+  );
+  const body = (await response.json()) as { connection_id?: unknown };
+  if (typeof body.connection_id !== "string") {
+    throw new Error(
+      "Bing Webmaster connected without returning a connection ID.",
+    );
+  }
+  return { connectionId: body.connection_id };
 }
 
 export async function connectBingApiKey(
@@ -173,7 +227,9 @@ export async function connectBingApiKey(
   );
   const body = (await response.json()) as { connection_id?: unknown };
   if (typeof body.connection_id !== "string") {
-    throw new Error("Bing Webmaster connected without returning a connection ID.");
+    throw new Error(
+      "Bing Webmaster connected without returning a connection ID.",
+    );
   }
   return { connectionId: body.connection_id };
 }

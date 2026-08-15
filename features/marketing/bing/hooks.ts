@@ -3,9 +3,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   bindBingSite,
+  completeBingOAuth,
   connectBingApiKey,
   disconnectBing,
   listBingConnectionInventory,
+  startBingOAuth,
 } from "@/features/marketing/bing/service";
 import type { BingConnectionOwner } from "@/features/marketing/bing/types";
 import { marketingKeys } from "@/features/marketing/data/hooks";
@@ -37,6 +39,20 @@ export function useConnectBingApiKey() {
   });
 }
 
+export function useStartBingOAuth() {
+  return useMutation({ mutationFn: startBingOAuth });
+}
+
+export function useCompleteBingOAuth() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ code, state }: { code: string; state: string }) =>
+      completeBingOAuth(code, state),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: bingConnectionKeys.inventory }),
+  });
+}
+
 export function useBindBingSite() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -61,7 +77,9 @@ export function useDisconnectBing() {
       organizationId?: string | null;
     }) => disconnectBing(connectionId, organizationId),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: bingConnectionKeys.inventory });
+      void queryClient.invalidateQueries({
+        queryKey: bingConnectionKeys.inventory,
+      });
       void queryClient.invalidateQueries({ queryKey: marketingKeys.root });
     },
   });
