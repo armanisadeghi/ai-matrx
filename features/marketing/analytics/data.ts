@@ -5,6 +5,7 @@ import { parseStreamError, type BackendApiError } from "@/lib/api/errors";
 import { getLatestCollectionFailure } from "@/features/marketing/data/collection-runs";
 import type { TypedStreamEvent } from "@/lib/api/types";
 import type { AppDispatch } from "@/lib/redux/store";
+import { assertGoogleAnalyticsCampaignActive } from "@/features/marketing/google/ga4-campaign";
 
 /**
  * GA4 persisted read/sync (M-74, WS-12).
@@ -97,6 +98,9 @@ export async function syncSiteAnalytics(
   options: { windowDays?: number } = {},
   callbacks: AnalyticsSyncCallbacks = {},
 ): Promise<AnalyticsSyncResult> {
+  // Frontend safety layer. aidream independently refuses the same request so
+  // a stale client or direct API call cannot bypass the campaign pause.
+  assertGoogleAnalyticsCampaignActive();
   let runId: string | null = null;
   let streamError: Error | null = null;
   const response = await dispatch(

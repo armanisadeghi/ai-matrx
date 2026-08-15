@@ -51,6 +51,11 @@ import {
 import { syncGscSearchPerformance } from "@/features/marketing/search-console/sync";
 import { syncSiteAnalytics } from "@/features/marketing/analytics/data";
 import type { MarketingSite } from "@/features/marketing/types";
+import {
+  GOOGLE_ANALYTICS_CAMPAIGN_PAUSE_REASON,
+  assertGoogleAnalyticsCampaignActive,
+  isGoogleAnalyticsCampaignActive,
+} from "@/features/marketing/google/ga4-campaign";
 
 export function CollectionStatusPanel({
   site,
@@ -66,6 +71,7 @@ export function CollectionStatusPanel({
   const status = useCollectionStatus(site, sitePath);
 
   const rows = useMemo(() => status.data ?? [], [status.data]);
+  const analyticsCampaignActive = isGoogleAnalyticsCampaignActive();
   const attention = rows.filter(
     (row) => row.health === "failing" || row.health === "not_connected",
   );
@@ -76,6 +82,7 @@ export function CollectionStatusPanel({
       if (row.key === "gsc") {
         await syncGscSearchPerformance(dispatch, site.id, site.organization_id);
       } else if (row.key === "ga4") {
+        assertGoogleAnalyticsCampaignActive();
         await syncSiteAnalytics(dispatch, site.id, site.organization_id);
       } else {
         return;
@@ -280,7 +287,15 @@ export function CollectionStatusPanel({
                   size="sm"
                   variant="outline"
                   className="h-6 gap-1 px-1.5 text-[11px]"
-                  disabled={running !== null}
+                  disabled={
+                    running !== null ||
+                    (row.key === "ga4" && !analyticsCampaignActive)
+                  }
+                  title={
+                    row.key === "ga4" && !analyticsCampaignActive
+                      ? GOOGLE_ANALYTICS_CAMPAIGN_PAUSE_REASON
+                      : undefined
+                  }
                   aria-label={`Run ${row.label} now`}
                   onClick={(event) => {
                     event.stopPropagation();
@@ -292,7 +307,9 @@ export function CollectionStatusPanel({
                   ) : (
                     <RefreshCw className="h-3 w-3" />
                   )}
-                  Run now
+                  {row.key === "ga4" && !analyticsCampaignActive
+                    ? "Paused"
+                    : "Run now"}
                 </Button>
               ) : null}
               {(row.health === "not_connected" || row.health === "failing") &&
