@@ -90,6 +90,7 @@ import type {
   McpEnvSchemaField,
 } from "@/features/agents/types/mcp.types";
 import { MCP_CATEGORY_META } from "@/features/agents/types/mcp.types";
+import { startMcpOAuthPopup } from "@/features/agents/services/mcp-oauth/popup";
 import { fetchMcpServerConfigs } from "@/features/agents/services/mcp.service";
 import { headerFieldKey } from "@/features/agents/services/mcp-connections.service";
 import type { DatabaseTool } from "@/utils/supabase/tools-service";
@@ -2436,28 +2437,26 @@ function McpToolsTab({
     }
   }, [catalogStatus, dispatch]);
 
-  useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      if (event.origin !== window.location.origin) return;
-      const data = event.data;
-      if (data?.type === "mcp_oauth_complete") {
+  // The OAuth popup flow lives in ONE place — `startMcpOAuthPopup` — which
+  // owns the window, the origin-checked listener, and its cleanup. This
+  // component only reacts to the outcome. (D128)
+  const connectViaOAuth = useCallback(
+    async (serverId: string) => {
+      const outcome = await startMcpOAuthPopup(serverId, window.location.href);
+      if (outcome.ok) {
         dispatch(fetchCatalog());
         setOauthFeedback({
           type: "success",
           message: "Connected successfully!",
         });
         setTimeout(() => setOauthFeedback(null), 5000);
-      } else if (data?.type === "mcp_oauth_error") {
-        setOauthFeedback({
-          type: "error",
-          message: data.error ?? "OAuth connection failed",
-        });
+      } else if (!outcome.cancelled) {
+        setOauthFeedback({ type: "error", message: outcome.error });
         setTimeout(() => setOauthFeedback(null), 10000);
       }
-    };
-    window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
-  }, [dispatch]);
+    },
+    [dispatch],
+  );
 
   const addToAgent = useCallback(
     (serverId: string) => {
@@ -2504,11 +2503,7 @@ function McpToolsTab({
             return;
           }
           if (entry.authStrategy === "oauth_discovery") {
-            window.open(
-              `/api/mcp/oauth/start?server_id=${entry.serverId}&return_url=${encodeURIComponent(window.location.href)}`,
-              "_blank",
-              "width=600,height=700",
-            );
+            void connectViaOAuth(entry.serverId);
             return;
           }
           setShowCatalog(false);
@@ -2631,11 +2626,7 @@ function McpToolsTab({
             onRemove={() => removeFromAgent(entry.serverId)}
             onConnect={(entry) => {
               if (entry.authStrategy === "oauth_discovery") {
-                window.open(
-                  `/api/mcp/oauth/start?server_id=${entry.serverId}&return_url=${encodeURIComponent(window.location.href)}`,
-                  "_blank",
-                  "width=600,height=700",
-                );
+                void connectViaOAuth(entry.serverId);
               }
             }}
             onDisconnect={(serverId) => dispatch(disconnectServer(serverId))}
