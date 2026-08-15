@@ -411,6 +411,26 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
       "The blur-faces control is built, but face detection is disabled in IMAGE_STUDIO_BACKEND_CAPABILITIES until the deployed endpoint is available.",
     surfaces: ["Image Studio annotate mode"],
   },
+  "agent-connections.hooks": {
+    id: "agent-connections.hooks",
+    label: "Agent Hooks",
+    owner: "agent-connections",
+    promise:
+      "Run an automated action at a specific point in an agent's lifecycle — before it starts, after a tool runs, when it finishes.",
+    stage: "planned",
+    surfaces: ["/agent-connections/hooks empty state"],
+  },
+  "agent-connections.sub-agents": {
+    id: "agent-connections.sub-agents",
+    label: "Sub-agents",
+    owner: "agent-connections",
+    promise:
+      "Hand a focused job to a specialist agent — a code reviewer, a performance optimizer, a migration helper — that another agent calls on demand.",
+    stage: "blocked",
+    blockedBy:
+      "Sub-agents have no way to be distinguished from top-level agents until the agent_definition.kind column lands; until then they cannot be listed or filtered out of the Agents list.",
+    surfaces: ["/agent-connections/sub-agents empty state"],
+  },
   "education.premium-checkout": {
     id: "education.premium-checkout",
     label: "Education Premium Checkout",
