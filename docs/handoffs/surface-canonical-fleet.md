@@ -39,11 +39,13 @@ vision: []
 
 `/marketing/{ranks,analytics,campaigns,competitors,content-studio,reports,social,email}` render `MarketingComingSoon` and load nothing — no manifests until the features ship ("never declare what nothing emits"). Same for `/administration/automation/scheduling`'s Templates tab (hardcoded SEEDS array awaiting a `sch_template` table). **Audit the live page before trusting an inherited manifest** — two manifests once described pages that never existed.
 
-## Remaining work — the board drives everything (live 2026-08-15: **71 verified / 87 partial / 5 stub / 7 unregistered-active** of 170 active — always read fresh counts from the board)
+## Remaining work — the board drives everything (live 2026-08-15 late: **71 verified / 92 partial / 1 stub / 7 unregistered-active** of 171 active — always read fresh counts from the board)
 
 > **Registration is DONE. The campaign's remaining line is PROMOTION.** Every real page and overlay that should own a surface owns one; the 7 "unregistered" rows are deliberate non-web contract rows (item 5). What separates most partials from `verified` is a browser pass, not code.
 >
-> **One item below is already CHIPPED** (a chip is a one-click focused session; do not duplicate it): item 1+6+9 → "Browser-verify surface partials and promote". (Item 4's shell-kind chip, "Fix agent apps launching with no surface identity", is DONE — 2026-08-15.)
+> **CHIPPED — do not duplicate** (a chip is a one-click focused session): item 1+6+9 → "Browser-verify surface partials and promote"; item 4's remaining launch-scope gap → "Bind run input on agent-app shell launches"; item 1's modal blocker → "Make the feedback detail dialog agent-reachable". Item 4's shell-kind chip and the four admin-stub emitters both landed 2026-08-15.
+>
+> **The stub column is effectively cleared: 5 → 1.** The survivor is a deliberate hold awaiting Arman's call, not debt — see Decisions needed.
 
 1. **Admin fleet: partial → verified — the remaining gap is BROWSER PASSES, not emitters.** Every wave-1 admin surface now has a live emitter (verified in code 2026-08-12: server-logs, sandbox, email, feedback, scheduling ×7 tabs, official-components ×2 routes, plus the wave-2 verified group). Real named exceptions: `feedback` needs a UI change — `FeedbackDetailDialog` renders through `components/ui/dialog.tsx`, which defaults to Radix `modal={true}` and so puts `pointer-events: none` on the body, blocking the floating agent chat and making its authored fields unreachable by agents. **The fix path already exists in-repo**: that dialog accepts a `modal` prop and there is a `RadixDialogModalProvider` / `radix-dialog-modal-context` primitive built for exactly this — pass `modal={false}` and verify the agent chat stays interactive (re-verified 2026-08-14); `server-logs` caps `raw_logs`/`visible_log_lines` by design. Next concrete step: browser-verify each partial on a dev server and promote.
 2. **Admin families still unregistered** (resolve to null, which is honest): `/administration` dashboard itself, agents hub + executor-surfaces + relationships/actions + reports/agent-drift, `ai` hub + ai-tasks, `automation` hub, `chat` hub, `compute` hub + resilience-lab + sandbox-infra, `scopes-context`, `shared-knowledge`, `ui` hub + experimental-routes + the surfaces board itself, users subroutes beyond the hub (admins, announcements, entitlements, invitations, organizations, preferences, usage — attributed to the users hub surface, which is correct).
@@ -79,4 +81,8 @@ vision: []
 
 ## Decisions needed
 
-*(none)*
+**Should `/education/learn` become agent-reachable at the cost of its server rendering?**
+
+*Situation.* The study-guide reader (`/education/learn` and `/education/learn/[...slug]`) is built entirely from React Server Components, which is why it is fast and indexable — these are public SEO pages. A surface emitter has to run in the browser, so today an agent standing on a study guide receives nothing about it. It is the last `stub` on the board, and every other surface is registered.
+
+*Decide.* (a) Accept it permanently — record "no emitter by design, SEO pages" in the manifest and stop counting it as debt; (b) wrap only the interactive slice of the page in a client shell so the agent sees the guide identity without changing how the article itself renders; or (c) make the reader a client component — fastest to build, and the option that puts the SEO value at risk. Nobody should pick (c) to clear a number.
