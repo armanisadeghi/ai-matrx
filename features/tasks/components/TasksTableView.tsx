@@ -31,6 +31,17 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
+import { keyFieldsAiVariant } from "@/features/marketing/lib/copy-payloads";
+import {
+  TASKS_LOCATION,
+  buildTaskListPayload,
+  taskCsvRows,
+  taskListHuman,
+  taskRow,
+} from "@/features/tasks/lib/copy";
 import { Badge } from "@/components/ui/badge";
 import {
   Popover,
@@ -56,21 +67,10 @@ import {
 import type { TaskWithProject } from "@/features/tasks/types";
 
 type SortKey =
-  | "status"
-  | "title"
-  | "project"
-  | "priority"
-  | "dueDate"
-  | "updated";
+  "status" | "title" | "project" | "priority" | "dueDate" | "updated";
 
 type UpdatedFilter =
-  | "any"
-  | "hour"
-  | "today"
-  | "week"
-  | "month"
-  | "quarter"
-  | "year";
+  "any" | "hour" | "today" | "week" | "month" | "quarter" | "year";
 
 type DueFilter = "any" | "overdue" | "today" | "week" | "none";
 
@@ -471,21 +471,74 @@ export default function TasksTableView() {
 
   return (
     <div className="h-full min-h-0 flex flex-col">
-      {filtersActive && (
-        <div className="shrink-0 flex items-center justify-between gap-2 border-b border-border bg-muted/20 px-2 py-1">
-          <span className="text-[11px] text-muted-foreground">
-            Column filters active
-          </span>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 px-2 text-[11px]"
-            onClick={() => setColumnFilters(EMPTY_COLUMN_FILTERS)}
-          >
-            Clear all
-          </Button>
+      <div className="shrink-0 flex items-center justify-between gap-2 border-b border-border bg-muted/20 px-2 py-1">
+        <span className="text-[11px] text-muted-foreground">
+          {filtersActive ? "Column filters active" : null}
+        </span>
+        <div className="flex items-center gap-0.5">
+          {filtersActive && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-[11px]"
+              onClick={() => setColumnFilters(EMPTY_COLUMN_FILTERS)}
+            >
+              Clear all
+            </Button>
+          )}
+          {sorted.length > 0 && (
+            <>
+              {/* Copy/export cover every row this table is showing, and the
+                  envelope names the active column filters so an agent is
+                  never told a filtered set is the whole list. */}
+              <CopyButtons
+                size="xs"
+                label="Task table"
+                human={() => taskListHuman(sorted)}
+                json={() => sorted.map(taskRow)}
+                agent={() =>
+                  buildTaskListPayload({
+                    tasks: sorted,
+                    view: {
+                      searchQuery: filtersActive
+                        ? JSON.stringify(columnFilters)
+                        : null,
+                    },
+                  })
+                }
+                aiVariants={[
+                  keyFieldsAiVariant({
+                    kind: "tasks-list",
+                    location: TASKS_LOCATION,
+                    description:
+                      "The visible task rows projected to title, status, project, priority and due date.",
+                    visible: sorted,
+                    project: (task) => ({
+                      id: task.id,
+                      title: task.title,
+                      status: task.status,
+                      project: task.projectName,
+                      priority: task.priority ?? null,
+                      due_date: task.dueDate || null,
+                    }),
+                    query: filtersActive ? columnFilters : undefined,
+                  }),
+                ]}
+              />
+              <ExportMenu
+                label="Tasks table"
+                items={[
+                  jsonExportItem(() => sorted.map(taskRow)),
+                  csvExportItem(
+                    () => taskCsvRows(sorted),
+                    "CSV (every row in this table)",
+                  ),
+                ]}
+              />
+            </>
+          )}
         </div>
-      )}
+      </div>
       <div className="flex-1 min-h-0 overflow-auto">
         <Table>
           <TableHeader className="sticky top-0 z-10 bg-background">
