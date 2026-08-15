@@ -42,6 +42,16 @@ import {
   restoreVersion as restoreVersionThunk,
 } from "@/features/files/redux/thunks";
 import { formatFileSize } from "@/features/files/utils/format";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
+import {
+  versionAgentData,
+  versionRowSummary,
+  versionsAgentData,
+  versionsExportRows,
+  versionsHumanSummary,
+} from "@/features/files/utils/version-copy";
 
 export interface FileVersionsListProps {
   fileId: string;
@@ -190,6 +200,8 @@ export function FileVersionsList({ fileId, className }: FileVersionsListProps) {
   });
   const latest = sorted[0]?.versionNumber ?? null;
   const currentVersion = (file as { version?: number } | null)?.version ?? latest;
+  const fileName =
+    (file as { fileName?: string } | null)?.fileName ?? "this file";
 
   return (
     <div className={cn("flex h-full w-full flex-col overflow-hidden", className)}>
@@ -200,14 +212,65 @@ export function FileVersionsList({ fileId, className }: FileVersionsListProps) {
             Versions ({versions.length})
           </h3>
         </div>
-        <button
-          type="button"
-          onClick={() => void fetchVersions()}
-          disabled={loading}
-          className="text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
-        >
-          {loading ? "Refreshing…" : "Refresh"}
-        </button>
+        <div className="flex items-center gap-1">
+          <CopyButtons
+            size="icon"
+            label={`Versions — ${fileName}`}
+            human={() =>
+              versionsHumanSummary(fileName, sorted, currentVersion)
+            }
+            json={() =>
+              versionsAgentData({
+                fileId,
+                fileName,
+                versions: sorted,
+                currentVersion,
+              })
+            }
+            agent={() => ({
+              kind: "cloud-file-versions",
+              location: "AI Matrx — Cloud Files — version history",
+              description:
+                "Every persisted version of the file, newest first, as the version panel renders them.",
+              data: versionsAgentData({
+                fileId,
+                fileName,
+                versions: sorted,
+                currentVersion,
+              }),
+              summary: versionsHumanSummary(fileName, sorted, currentVersion),
+              attributes: {
+                "file-id": fileId,
+                versions: sorted.length,
+                "current-version": currentVersion ?? "",
+              },
+            })}
+          />
+          <ExportMenu
+            label={`versions-${fileName}`}
+            items={[
+              jsonExportItem(() =>
+                versionsAgentData({
+                  fileId,
+                  fileName,
+                  versions: sorted,
+                  currentVersion,
+                }),
+              ),
+              csvExportItem(() =>
+                versionsExportRows(sorted, currentVersion),
+              ),
+            ]}
+          />
+          <button
+            type="button"
+            onClick={() => void fetchVersions()}
+            disabled={loading}
+            className="text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
+          >
+            {loading ? "Refreshing…" : "Refresh"}
+          </button>
+        </div>
       </div>
 
       <ul className="flex-1 overflow-auto divide-y divide-border">
@@ -216,7 +279,7 @@ export function FileVersionsList({ fileId, className }: FileVersionsListProps) {
           return (
             <li
               key={v.id}
-              className="flex items-start gap-3 px-3 py-2.5 hover:bg-accent/30"
+              className="group/version flex items-start gap-3 px-3 py-2.5 hover:bg-accent/30"
             >
               <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold tabular-nums">
                 v{v.versionNumber}
@@ -252,6 +315,26 @@ export function FileVersionsList({ fileId, className }: FileVersionsListProps) {
                   </p>
                 ) : null}
               </div>
+              <span className="shrink-0 opacity-0 transition-opacity group-hover/version:opacity-100 focus-within:opacity-100">
+                <CopyButtons
+                  size="xs"
+                  label={`${fileName} v${v.versionNumber}`}
+                  human={() => versionRowSummary(v, isCurrent)}
+                  json={() => versionAgentData(v, isCurrent)}
+                  agent={() => ({
+                    kind: "cloud-file-version",
+                    location: "AI Matrx — Cloud Files — version history",
+                    description: "A single version of the file.",
+                    data: versionAgentData(v, isCurrent),
+                    summary: versionRowSummary(v, isCurrent),
+                    attributes: {
+                      "file-id": fileId,
+                      version: v.versionNumber ?? "",
+                      current: isCurrent,
+                    },
+                  })}
+                />
+              </span>
               {!isCurrent ? (
                 <button
                   type="button"
