@@ -20,6 +20,7 @@ import {
   clearFocus,
 } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
 import { consumeChatDraftTransfer } from "./chat-draft-transfer";
+import { chatRouteSurfaceKey } from "./begin-fresh-chat";
 import { selectChatIncognitoActive } from "./chat-incognito.slice";
 import { selectChatFreshSessionNonce } from "./chat-route.slice";
 import { patchConversation } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
@@ -113,7 +114,10 @@ export function ChatRoomClient({
   const store = useAppStore();
   const router = useRouter();
 
-  const surfaceKey = `${SOURCE_FEATURE}:${agentId}`;
+  // ONE helper owns this string (see `chatRouteSurfaceKey`). This client is the
+  // surface that REGISTERS the focus entry, so every reader — the header's
+  // agent switch, `/chat/new`, `beginFreshChat` — must derive the same key.
+  const surfaceKey = chatRouteSurfaceKey(agentId);
   const authReady = useAppSelector(selectAuthReady);
   const isIncognito = useAppSelector(selectChatIncognitoActive);
   const freshSessionKey = useAppSelector(selectChatFreshSessionNonce);
@@ -169,7 +173,7 @@ export function ChatRoomClient({
 
   // ── Fresh-start guard (agent route only) ─────────────────────────────────
   // The agent route means "start a NEW conversation with this agent." The
-  // surface key is `chat-route:<agentId>`, and the focus slice retains the
+  // surface key is `chatRouteSurfaceKey(agentId)`, and the focus slice retains the
   // last conversation per surface across route changes (the launcher uses
   // `retainOnUnmount` so non-empty conversations stay cached). Without this,
   // returning to an agent you recently used would revive that agent's old

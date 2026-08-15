@@ -48,6 +48,7 @@ import {
 } from "@/features/content-ir/redux/render-block-envelope";
 import { readObjectKind } from "@/features/content-ir/core/kind-schema.types";
 import { wrapArtifactText } from "./artifactWire";
+import { parseDiagramJSON } from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
 
 export interface PlannedArtifact {
   /** Stable 1-based order within the message (= canvas_items.artifact_index). */
@@ -127,6 +128,35 @@ interface StructuredDetection {
   kind: string;
   /** Zero-loss value object (carries `__kind` — self-describing). */
   structured: Record<string, unknown>;
+}
+
+/** Enrich a diagram without discarding kind discriminators or residue. */
+function materializeDiagramValue(
+  value: Record<string, unknown>,
+): Record<string, unknown> {
+  const normalized = parseDiagramJSON(JSON.stringify(value));
+  const authoredNodes = Array.isArray(value.nodes) ? value.nodes : [];
+  const authoredEdges = Array.isArray(value.edges) ? value.edges : [];
+  return {
+    ...value,
+    ...normalized,
+    nodes: normalized.nodes.map((node, index) => ({
+      ...(typeof authoredNodes[index] === "object" &&
+      authoredNodes[index] !== null &&
+      !Array.isArray(authoredNodes[index])
+        ? (authoredNodes[index] as Record<string, unknown>)
+        : {}),
+      ...node,
+    })),
+    edges: normalized.edges.map((edge, index) => ({
+      ...(typeof authoredEdges[index] === "object" &&
+      authoredEdges[index] !== null &&
+      !Array.isArray(authoredEdges[index])
+        ? (authoredEdges[index] as Record<string, unknown>)
+        : {}),
+      ...edge,
+    })),
+  };
 }
 
 /**
@@ -278,11 +308,19 @@ export function planMaterialization(
       ) {
         flushTextRun();
         position += 1;
+        let structured = structuredHit.structured;
+        if (structuredHit.def.canvasType === "diagram") {
+          try {
+            structured = materializeDiagramValue(structuredHit.structured);
+          } catch {
+            // Invalid complete values retain the existing zero-loss path.
+          }
+        }
         const title =
           firstNonEmptyString(
-            structuredHit.structured.title,
-            structuredHit.structured.set_title,
-            structuredHit.structured.name,
+            structured.title,
+            structured.set_title,
+            structured.name,
             sb.metadata?.artifactTitle,
           ) ?? titleFor(structuredHit.def.canvasType, sb.metadata, position);
         artifacts.push({
@@ -291,8 +329,8 @@ export function planMaterialization(
           title,
           // Wire form: the `<artifact>` tag body is compact canonical JSON —
           // model-readable and durable; the UI routes by UUID.
-          content: JSON.stringify(structuredHit.structured),
-          structured: structuredHit.structured,
+          content: JSON.stringify(structured),
+          structured,
           metadata: { kind: structuredHit.kind },
         });
         rewritten.push({
@@ -320,19 +358,37 @@ export function planMaterialization(
       position += 1;
       let title = titleFor(sb.type, sb.metadata, position);
       let artifactMetadata: Record<string, unknown> | undefined;
+      let structured: Record<string, unknown> | undefined;
       if (canvasType === "mermaid") {
         // Mermaid identity travels in metadata: the user-facing label is the
         // diagram type's feature name (Flowchart, Mind Map, …), never "mermaid".
         const source = sb.content ?? "";
         const diagramType = detectDiagramType(source);
-        title = extractMermaidTitle(source) ?? getCatalogEntry(diagramType).label;
+        title =
+          extractMermaidTitle(source) ?? getCatalogEntry(diagramType).label;
         artifactMetadata = { diagramType, title };
+      } else if (canvasType === "diagram") {
+        try {
+          structured = materializeDiagramValue(
+            parseDiagramJSON(sb.content ?? "") as unknown as Record<
+              string,
+              unknown
+            >,
+          );
+          title =
+            typeof structured.title === "string" && structured.title
+              ? structured.title
+              : title;
+        } catch {
+          // Preserve the previous string path when diagram parsing fails.
+        }
       }
       artifacts.push({
         artifactIndex: position,
         canvasType,
         title,
         content: sb.content ?? "",
+        structured,
         metadata: artifactMetadata,
       });
       rewritten.push({

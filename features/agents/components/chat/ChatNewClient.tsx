@@ -2,6 +2,7 @@
 
 import { CircleAlert } from "lucide-react";
 import { ChatRoomClient } from "./ChatRoomClient";
+import { chatRouteSurfaceKey } from "./begin-fresh-chat";
 import { NewChatGreeting } from "./NewChatGreeting";
 import { DEFAULT_NEW_CHAT_SLOT_KEY } from "./chat-quick-actions.config";
 import { useAgentSlot } from "@/features/agents/slots/useAgentSlot";
@@ -68,11 +69,10 @@ function ChatNewBody({ agentId }: { agentId: string }) {
   // everywhere else in the app.
 
   // The greeting reads the in-progress draft from whichever conversation the
-  // launcher has bound to the input. The chat route uses the
-  // `chat-route:<agentId>` surface key (see ChatRoomClient.SOURCE_FEATURE);
-  // subscribe to that surface's `input` focus so the greeting always has the
-  // current target — including the brief autoclear-split window.
-  const surfaceKey = `chat-route:${agentId}`;
+  // launcher has bound to the input. ONE helper owns the chat-route surface
+  // key (`chatRouteSurfaceKey`) — hand-building it here is what silently
+  // de-synced this landing from the surface `ChatRoomClient` registers.
+  const surfaceKey = chatRouteSurfaceKey(agentId);
   return (
     <ChatRoomClient
       agentId={agentId}

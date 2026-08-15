@@ -57,7 +57,97 @@ import {
   Key,
   CloudIcon,
   ShieldUser,
+  CheckCircle2,
+  XCircle,
+  Cpu,
+  HardDrive,
+  Clock,
+  Table as TableIcon,
+  Square,
+  type LucideIcon,
 } from "lucide-react";
+import type { DiagramIconName } from "./diagram-visual-defaults";
+
+const DIAGRAM_ICON_COMPONENTS: Record<
+  Exclude<DiagramIconName, "none">,
+  LucideIcon
+> = {
+  square: Square,
+  "circle-check": CheckCircle2,
+  "circle-x": XCircle,
+  settings: Settings,
+  "git-branch": GitBranch,
+  database: Database,
+  users: Users,
+  "user-check": UserCheck,
+  crown: Crown,
+  building: Building,
+  briefcase: Briefcase,
+  lightbulb: Lightbulb,
+  target: Target,
+  heart: Heart,
+  globe: Globe,
+  server: Server,
+  cpu: Cpu,
+  "hard-drive": HardDrive,
+  clock: Clock,
+  table: TableIcon,
+  code: Code,
+  chart: BarChart,
+  search: Search,
+  mail: Mail,
+  shield: Shield,
+  palette: Palette,
+  wrench: Wrench,
+  package: Package,
+  "shield-user": ShieldUser,
+  calculator: Calculator,
+  cog: Cog,
+  megaphone: Megaphone,
+  box: Box,
+  "trending-up": TrendingUp,
+  "user-plus": UserPlus,
+  "pen-tool": PenTool,
+  radio: Radio,
+  layers: Layers,
+  monitor: Monitor,
+  phone: Phone,
+  "clipboard-list": ClipboardList,
+  camera: Camera,
+  film: Film,
+  zap: Zap,
+  "pie-chart": PieChart,
+  "graduation-cap": GraduationCap,
+  award: Award,
+  headphones: HeadphonesIcon,
+  truck: Truck,
+  warehouse: Warehouse,
+  factory: Factory,
+  "dollar-sign": DollarSign,
+  "file-text": FileText,
+  lock: Lock,
+  key: Key,
+  cloud: CloudIcon,
+  bell: Bell,
+  microscope: Microscope,
+  stethoscope: Stethoscope,
+  hammer: Hammer,
+  plane: Plane,
+  newspaper: Newspaper,
+  music: Music,
+  "book-open": BookOpen,
+  "shopping-cart": ShoppingCart,
+};
+
+/** Render the finite, persisted diagram icon vocabulary. */
+export function getDiagramIconByName(
+  name: string | undefined,
+): React.ReactNode {
+  if (name === "none") return null;
+  const Icon =
+    DIAGRAM_ICON_COMPONENTS[name as Exclude<DiagramIconName, "none">] ?? Square;
+  return <Icon className="h-4 w-4" />;
+}
 
 // Utility function to format diagram type names nicely
 export const formatDiagramType = (type: string): string => {

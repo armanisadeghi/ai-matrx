@@ -43,8 +43,17 @@ import { getAgentModeHref } from "@/features/agents/components/shared/AgentModeC
 import { AgentDiffViewer } from "@/features/agents/components/diff/AgentDiffViewer";
 import { SlotOverridePanel } from "@/features/agents/slots/components/SlotOverridePanel";
 import { SlotResolutionRibbon } from "@/features/agents/slots/components/SlotResolutionRibbon";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { CopyButton } from "@/components/matrx/buttons/CopyButton";
+import { parseSlotContract } from "@/features/agents/slots/overrides";
 import { SlotTestBench } from "./SlotTestBench";
 import { SlotInputsCell, SlotOutputCell } from "./slot-contract-cells";
+import { useGuardedRepin } from "./useGuardedRepin";
+import {
+  buildRepinFixBrief,
+  computeRepinImpact,
+  type RepinImpact,
+} from "./repin-impact";
 import {
   CreateSystemTwinButton,
   LineageChip,
@@ -153,6 +162,12 @@ function DriftPanel({
   } | null>(null);
   const [diffError, setDiffError] = useState<string | null>(null);
   const [busy, setBusy] = useState<"pin" | "latest" | null>(null);
+  // Set when a version bump would drop variables — the write waits for an
+  // explicit confirmation instead of silently changing what reaches the prompt.
+  const [versionImpact, setVersionImpact] = useState<{
+    mode: "pin" | "latest";
+    impact: RepinImpact;
+  } | null>(null);
 
   useEffect(() => {
     if (!agentId) return;
@@ -206,7 +221,9 @@ function DriftPanel({
 
   if (!agentId) return null;
 
-  const updateToLatest = async (mode: "pin" | "latest") => {
+  /** The write itself, with no checks — reached either by a clean pre-flight
+   * or by the admin explicitly confirming a lossy bump. */
+  const writeVersionPin = async (mode: "pin" | "latest") => {
     setBusy(mode);
     try {
       await updateSlotDefinition(row.slot.id, {
@@ -220,12 +237,49 @@ function DriftPanel({
           ? `${row.slotKey} updated to v${latestSaved?.versionNumber}.`
           : `${row.slotKey} now tracks latest — it picks up every new version automatically.`,
       );
+      setVersionImpact(null);
       onSaved();
     } catch (error: unknown) {
       toast.error(`Update failed: ${describeError(error)}`);
     } finally {
       setBusy(null);
     }
+  };
+
+  const updateToLatest = async (mode: "pin" | "latest") => {
+    setBusy(mode);
+    try {
+      // A VERSION bump changes variables too — "updating an agent can break
+      // things" is the first failure Arman named. Compare the two snapshots'
+      // declarations before writing; loud, never blocking.
+      if (pinnedNumber != null && latestSaved) {
+        const [oldSnap, nextSnap] = await Promise.all([
+          fetchVersionSnapshotDefinition(agentId, pinnedNumber),
+          fetchVersionSnapshotDefinition(agentId, latestSaved.versionNumber),
+        ]);
+        if (oldSnap && nextSnap) {
+          const impact = computeRepinImpact({
+            currentVariables: oldSnap.variableDefinitions ?? [],
+            candidateVariables: nextSnap.variableDefinitions ?? [],
+            contractRequired: parseSlotContract(row.slot.contract)
+              .requiredVariables,
+          });
+          if (impact.breaking.length > 0) {
+            setVersionImpact({ mode, impact });
+            setBusy(null);
+            return;
+          }
+        }
+      }
+    } catch (error: unknown) {
+      // A failed pre-flight must not silently become an unchecked write.
+      toast.error(
+        `Couldn't check what this version changes: ${describeError(error)}`,
+      );
+      setBusy(null);
+      return;
+    }
+    await writeVersionPin(mode);
   };
 
   return (
@@ -327,6 +381,64 @@ function DriftPanel({
         </Button>
       </div>
 
+      {versionImpact && (
+        <ConfirmDialog
+          open
+          onOpenChange={(open) => !open && setVersionImpact(null)}
+          title="This version drops variables the slot supplies"
+          description={`v${latestSaved?.versionNumber} does not declare everything v${pinnedNumber} did. Updating changes what actually reaches the prompt.`}
+          content={
+            <div className="space-y-2 text-xs">
+              <ul className="rounded border border-border bg-muted/30 p-2">
+                {versionImpact.impact.variables
+                  .filter((item) => item.verdict !== "ok")
+                  .map((item) => (
+                    <li
+                      key={`${item.name}-${item.verdict}`}
+                      className="flex flex-wrap items-center gap-1.5 py-0.5"
+                    >
+                      <code className="rounded bg-muted px-1 py-0.5 font-mono text-[11px]">
+                        {item.name}
+                      </code>
+                      <Badge
+                        variant={
+                          item.verdict === "lost" ||
+                          item.verdict === "unsupplied_required"
+                            ? "destructive"
+                            : "outline"
+                        }
+                        className="h-4 px-1 text-[10px]"
+                      >
+                        {item.verdict === "lost"
+                          ? "stops reaching the agent"
+                          : item.verdict === "unsupplied_required"
+                            ? "required, nothing supplies it"
+                            : item.verdict === "rename_candidate"
+                              ? `renamed → ${item.suggestedMapping}`
+                              : "agent default will be used"}
+                      </Badge>
+                    </li>
+                  ))}
+              </ul>
+              <CopyButton
+                content={buildRepinFixBrief({
+                  slotKey: row.slotKey,
+                  candidateName: `${row.agentName} v${latestSaved?.versionNumber}`,
+                  impact: versionImpact.impact,
+                })}
+                label="Copy fix brief for AI"
+                tooltip="A paste-ready brief naming the mismatch and every call site to update"
+                size="sm"
+              />
+            </div>
+          }
+          confirmLabel="Update anyway"
+          variant="destructive"
+          busy={busy !== null}
+          onConfirm={() => void writeVersionPin(versionImpact.mode)}
+        />
+      )}
+
       {diffOpen && (
         <div className="rounded-md border border-border bg-card">
           {diffError ? (
@@ -392,7 +504,12 @@ function NonSystemPanel({
         {twin ? (
           <>
             <LineageChip label="system twin" agent={twin} Icon={ShieldCheck} />
-            <RepinToTwinButton slot={row.slot} twin={twin} onSaved={onSaved} />
+            <RepinToTwinButton
+              slot={row.slot}
+              twin={twin}
+              currentAgentId={row.agentId}
+              onSaved={onSaved}
+            />
             <LinkedSyncButton
               agentId={row.agentId}
               label="Compare with twin…"
@@ -561,6 +678,7 @@ function UnresolvedPinPanel({
                     agentType: "builtin",
                     isSystem: true,
                   }}
+                  currentAgentId={agent.id}
                   onSaved={onSaved}
                 />
               </>
@@ -757,13 +875,22 @@ function SlotEditor({
   slot,
   data,
   builtinAgentsById,
+  currentAgentId,
   onSaved,
 }: {
   slot: SlotDefinitionRow;
   data: SlotConsoleData;
   builtinAgentsById: ReadonlyMap<string, string>;
+  /** The agent bound today — the baseline THE REPIN GUARD compares against. */
+  currentAgentId: string | null;
   onSaved: () => void;
 }) {
+  const {
+    requestRepin,
+    dialog: repinDialog,
+    checking,
+    saving: repinSaving,
+  } = useGuardedRepin({ slot, currentAgentId, onSaved });
   const pinnedVersion = slot.default_agent_version_id
     ? data.versionsById[slot.default_agent_version_id]
     : undefined;
@@ -781,7 +908,7 @@ function SlotEditor({
     agentId: string;
     rows: SlotVersionInfo[];
   } | null>(null);
-  const [saving, setSaving] = useState(false);
+  const saving = repinSaving || checking;
   const versions =
     loadedVersions?.agentId === agentId ? loadedVersions.rows : [];
   const loadingVersions =
@@ -819,20 +946,15 @@ function SlotEditor({
       toast.error("Pick a version to pin, or switch to latest.");
       return;
     }
-    setSaving(true);
-    try {
-      await updateSlotDefinition(slot.id, {
-        default_agent_id: agentId,
-        default_agent_version_id: useLatest ? null : versionId,
-        use_latest: useLatest,
-      });
-      toast.success(`${slot.slot_key} repinned.`);
-      onSaved();
-    } catch (error: unknown) {
-      toast.error(`Repin failed: ${describeError(error)}`);
-    } finally {
-      setSaving(false);
-    }
+    // Routed through THE REPIN GUARD — a manual repin is the same swap the
+    // one-click remedies perform, and gets the same variable check.
+    await requestRepin({
+      agentId,
+      agentName: builtinAgentsById.get(agentId) ?? "the selected agent",
+      versionId: useLatest ? null : versionId,
+      useLatest,
+      successMessage: `${slot.slot_key} repinned.`,
+    });
   };
 
   const selectableAgentId =
@@ -899,6 +1021,7 @@ function SlotEditor({
           )}
         </div>
       )}
+      {repinDialog}
       <Button size="sm" onClick={() => void save()} disabled={saving}>
         {saving && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
         Save pin
@@ -1025,6 +1148,7 @@ export function SlotDetail({
           slot={row.slot}
           data={data}
           builtinAgentsById={builtinAgentsById}
+          currentAgentId={row.agentId}
           onSaved={onSaved}
         />
       </Section>

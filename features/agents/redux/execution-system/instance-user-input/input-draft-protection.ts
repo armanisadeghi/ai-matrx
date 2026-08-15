@@ -61,6 +61,7 @@
 // ============================================================================
 
 import type { InstanceUserInputState } from "@/features/agents/types/instance.types";
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 
 /**
  * True when `entry.text` holds a live next-message draft that MUST NOT be
@@ -106,12 +107,29 @@ export function reportPreInitInputCapture(
   conversationId: string,
   textLength: number,
 ): void {
-  console.warn(
+  const message =
     `[smart-input/PRE-INIT] setUserInputText ran before the input entry for ` +
-      `conversation "${conversationId}" existed (${textLength} chars). The ` +
-      `text was CAPTURED (entry created early; init preserves it) — nothing ` +
-      `was lost. See input-draft-protection.ts.`,
-  );
+    `conversation "${conversationId}" existed (${textLength} chars). The ` +
+    `text was CAPTURED (entry created early; init preserves it) — nothing ` +
+    `was lost. See input-draft-protection.ts.`;
+  console.warn(message);
+  // Land it in the Error Inspector too. A console line nobody has open is how
+  // the ORIGINAL `if (!entry) return;` stayed invisible for months (D60) — a
+  // recovery that fires silently is indistinguishable from no bug at all.
+  // `captureError` defers its subscriber notify to a microtask internally
+  // (D61/D76), so this is safe from a reducer running inside a render-phase
+  // dispatch.
+  captureError({
+    source: "unsaved-work",
+    code: "smart-input-pre-init-capture",
+    message,
+    userMessage: "Your typing was kept while the chat finished loading.",
+    recoverable: true,
+    level: "medium",
+    conversationId,
+    callSite: "instance-user-input.slice.setUserInputText",
+    details: `textLength=${textLength}`,
+  });
 }
 
 export function reportInputDraftViolation(
@@ -119,10 +137,21 @@ export function reportInputDraftViolation(
   conversationId: string,
   preservedTextLength: number,
 ): void {
-  console.error(
+  const message =
     `[smart-input/PROTECTED] ${scope} tried to clear a live composer draft on ` +
-      `conversation "${conversationId}" (${preservedTextLength} chars). ` +
-      `The draft was PRESERVED. The smart-input draft must never be cleared by ` +
-      `conversation/stream events — see input-draft-protection.ts. This is a bug.`,
-  );
+    `conversation "${conversationId}" (${preservedTextLength} chars). ` +
+    `The draft was PRESERVED. The smart-input draft must never be cleared by ` +
+    `conversation/stream events — see input-draft-protection.ts. This is a bug.`;
+  console.error(message);
+  captureError({
+    source: "unsaved-work",
+    code: "smart-input-draft-clear-blocked",
+    message,
+    userMessage: "Your unsent message was protected from being cleared.",
+    recoverable: true,
+    level: "high",
+    conversationId,
+    callSite: `instance-user-input.slice.${scope}`,
+    details: `preservedTextLength=${preservedTextLength}`,
+  });
 }

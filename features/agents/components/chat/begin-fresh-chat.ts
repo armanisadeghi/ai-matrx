@@ -61,8 +61,24 @@ export function getFreshChatHref(
   return `/chat/a/${encodeURIComponent(activeAgentId)}`;
 }
 
+/**
+ * THE ONE chat-route surface key. Every chat surface — the room client that
+ * REGISTERS the focus entry, the header picker that reads a draft off it, the
+ * `/chat/new` landing, and `beginFreshChat`'s stale-focus clear — must derive
+ * it from here.
+ *
+ * It is `chat:<agentId>` because that is what `ChatRoomClient` has always
+ * registered (`sourceFeature` "chat" + agent id). Three call sites hand-built
+ * `chat-route:<agentId>` instead — the SourceFeature literal `"chat-route"`
+ * used by the context-menu props, which is a different axis entirely. Every one
+ * of those lookups missed silently: `beginFreshChat` cleared nothing, and the
+ * header's agent switch read an empty draft and so stashed NOTHING, which is
+ * why switching agents mid-typing destroyed the text (FOUND_DEFECTS D60).
+ * A miss here can never throw — it just returns undefined — so never inline
+ * this string again.
+ */
 export function chatRouteSurfaceKey(agentId: string): string {
-  return `chat-route:${agentId}`;
+  return `chat:${agentId}`;
 }
 
 /** Start a brand-new chat: drop stale surface focus, bump the fresh-session

@@ -32,14 +32,43 @@ before changing MCP credential storage or resolution in any repo.
 - OAuth tokens stay server-side; the client never sees raw credentials.
 - Agent tool lists are server-computed; the client never mints tool definitions.
 
-## Known state
+## Known state (D128)
 
-MCP user connections have not completed a successful connect since the vault cutover — see
-FOUND_DEFECTS.md **D128** (all `tool.mcp_user_conn` rows expired, zero `mcp_discovered`
-tools ever synced; the OAuth-popup logic is hand-copied in three places — consolidate when
-touched).
+**The connect → discover → invoke loop has now run end-to-end against real remote MCP
+servers (DeepWiki, Context7).** It had never worked in production; four independent
+defects each broke it on their own:
+
+1. **aidream, ORM misuse** — every `await McpServer.filter(...)` / `await McpUserConn.filter(...)`
+   in `services/mcp_connections/service.py` + `api/routers/mcp_connections.py` awaited a
+   `QueryBuilder`, which is not awaitable. Every call 500'd with
+   `TypeError: object QueryBuilder can't be used in 'await' expression`. The unit-test fake
+   defined `__await__`, so the suite passed while nothing worked. Fixed with `.all()`; the
+   fake now mirrors the real builder.
+2. **matrx-ai, transport** — `ExternalMCPClient` spoke plain JSON-RPC-over-POST. The MCP
+   Streamable HTTP transport requires `Accept: application/json, text/event-stream`
+   (compliant servers answer **406** without it), an `initialize` /
+   `notifications/initialized` handshake with `Mcp-Session-Id`, and SSE response bodies.
+   All three implemented.
+3. **matrx-ai, name mangling** — `_strip_namespace` fell back to splitting on the first
+   underscore when a name had no `:`, so DeepWiki's `ask_question` became `question`. It
+   corrupted both invocation and the names `mcp_sync` registers from discovery. Removed.
+4. **DB + FE, connecting at all** — `public.upsert_mcp_connection` omitted the NOT NULL
+   `display_name`, so the metadata-only connect RPC raised 23502 for every server/user
+   (migration `mcp_upsert_connection_display_name.sql`). And the no-auth Connect button
+   sent an *empty bearer token* to aidream's credentials endpoint (422) instead of calling
+   the metadata-only RPC.
+
+**Still open:** aidream is NOT deployed — production still returns the fix-1 500 on
+`/api/mcp-connections/{id}/tools`. Until it ships, discovery and invocation stay broken in
+prod even though connecting now works. `tool.definition` still has zero
+`source_kind='mcp_discovered'` rows; the only caller of `mcp_sync.sync_server` is
+`bundle_lister`, so nothing routinely syncs a server's catalog.
+
+The OAuth popup is no longer hand-copied — `services/mcp-oauth/popup.ts` is the one
+implementation (it also adds the origin check and listener cleanup the settings copy lacked).
 
 ## Change log
 
+- `2026-08-15` — D128: fixed the four defects above; first successful MCP connection since the vault cutover; OAuth popup consolidated onto `mcp-oauth/popup.ts`.
 - `2026-08-12` — rewritten as an index card (D127): the described catalog feature never existed here; pointers corrected to the real agents-tree code.
 - `2026-07-23` — linked the Unified Credential Vault plan.

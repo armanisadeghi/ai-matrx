@@ -2,7 +2,11 @@
 
 import { Suspense, useMemo } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
-import { parseDiagramJSON } from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
+import {
+  materializeDiagramDefaults,
+  parseDiagramJSON,
+  type DiagramData,
+} from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
 import { resolveJsonPayload, artifactDedupKey } from "../artifact-renderers";
 import InteractiveDiagramBlock from "@/components/mardown-display/blocks/diagram/InteractiveDiagramBlock";
 import type { ArtifactRendererProps } from "../types";
@@ -25,13 +29,18 @@ export default function DiagramArtifact({
 }: ArtifactRendererProps) {
   const diagram = useMemo(
     () =>
-      resolveJsonPayload({
-        serverData,
-        data,
-        raw,
-        isStreamActive,
-        parse: (s) => parseDiagramJSON(s),
-      }),
+      (() => {
+        const resolved = resolveJsonPayload({
+          serverData,
+          data,
+          raw,
+          isStreamActive,
+          parse: (s) => parseDiagramJSON(s),
+        });
+        return resolved
+          ? materializeDiagramDefaults(resolved as DiagramData)
+          : null;
+      })(),
     [serverData, data, raw, isStreamActive],
   );
 

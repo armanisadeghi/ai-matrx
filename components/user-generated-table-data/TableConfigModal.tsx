@@ -610,7 +610,12 @@ export default function TableConfigModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[800px] max-h-[90dvh] overflow-hidden">
+      {/* The width clamp is load-bearing on a phone: the Fields tab's
+          fixed-width selects push the dialog's min-content width past 375px,
+          which dragged the footer's Save button off-screen for EVERY control
+          in here. Clamp the frame to the viewport and let the wide tab scroll
+          sideways inside its own box instead of the page. */}
+      <DialogContent className="w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] sm:w-full sm:max-w-[800px] max-h-[90dvh] overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Settings className="h-5 w-5" />
@@ -628,7 +633,7 @@ export default function TableConfigModal({
           <TabsContent value="fields" className="flex-1 overflow-hidden mt-4">
             <div
               ref={scrollRef}
-              className="space-y-2 max-h-[50dvh] overflow-y-auto pr-2 scroll-smooth"
+              className="space-y-2 max-h-[50dvh] overflow-y-auto overflow-x-auto pr-2 scroll-smooth"
               onDragOver={(e) => {
                 // Keep auto-scroll responsive even when hovering gaps between cards.
                 if (draggedField) {

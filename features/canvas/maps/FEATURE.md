@@ -24,13 +24,13 @@ existing diagram renderer running in authoring mode.
 
 ### What already existed (the inventory that forced this answer)
 
-| Piece                                        | Where it already lives                                                                                                                                                                |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The data shape                               | `DiagramData` (`components/mardown-display/blocks/diagram/parseDiagramJSON.ts`)                                                                                                       |
-| The AI-emittable form of that shape          | `diagram_spec` content-IR kind (`features/content-ir/kinds/diagram-spec.ts`) — an agent already emits maps in chat                                                                    |
-| The renderer                                 | `InteractiveDiagramBlock` — XYFlow 12, 10 box kinds, resizable visual sections, dagre/radial/org/pedigree layouts, configurable arrows, PNG + JSON export, print/PDF, canvas hand-off |
-| Persistence, versioning, favourites, sharing | `canvas.canvas_items` + `canvasItemsService` (+ `canvas_save_user_version`, `canvas_publish`, `canvas_get_version_history` RPCs)                                                      |
-| The list shell                               | `lib/entity-list` (`/agents/all`, `/transcripts`)                                                                                                                                     |
+| Piece                                        | Where it already lives                                                                                                                                                                                                                                           |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The data shape                               | `DiagramData` (`components/mardown-display/blocks/diagram/parseDiagramJSON.ts`)                                                                                                                                                                                  |
+| The AI-emittable form of that shape          | `diagram_spec` content-IR kind (`features/content-ir/kinds/diagram-spec.ts`) — an agent already emits maps in chat                                                                                                                                               |
+| The renderer                                 | `InteractiveDiagramBlock` — XYFlow 12, resizable boxes and visual sections, six shapes, chosen colors/icons/borders, dagre/radial/org/pedigree layouts, configurable arrows, snapping/background/minimap controls, PNG + JSON export, print/PDF, canvas hand-off |
+| Persistence, versioning, favourites, sharing | `canvas.canvas_items` + `canvasItemsService` (+ `canvas_save_user_version`, `canvas_publish`, `canvas_get_version_history` RPCs)                                                                                                                                 |
+| The list shell                               | `lib/entity-list` (`/agents/all`, `/transcripts`)                                                                                                                                                                                                                |
 
 Four of the five pieces of "let users make maps" were already built. The only
 missing piece was **authoring**: nothing let a person rename a box, add one,
@@ -95,7 +95,8 @@ AI drafts, the person refines. Neither half needed a new system.
 **Feature code — `features/canvas/maps/`**
 
 - `types.ts` — `MapListRow`, `starterMap`, `draftMapFromLines`,
-  `diagramFromCanvasContent`. No new persisted shape: it is all `DiagramData`.
+  `diagramFromCanvasContent`. The decoder accepts both current object data and
+  historical model-direct string data; both become the same `DiagramData`.
 - `service.ts` — the entity-list read triple (direct `canvas.canvas_items`
   select) + `createMap` / `getMap` / `saveMap` / `deleteMap` / `duplicateMap` /
   `saveMapRowEdit`, all of which delegate writes to `canvasItemsService`.
@@ -155,6 +156,18 @@ AI drafts, the person refines. Neither half needed a new system.
     starts below the glass shell header, and gives XYFlow every remaining pixel.
     The renderer's embeddable card stays capped; only `presentation="workspace"`
     removes the width/height cap and repeated metadata.
+11. **Automatic appearance becomes explicit document data.** Every accepted or
+    newly drafted diagram passes through `materializeDiagramDefaults` before it
+    renders or persists. It fills missing box color, icon, shape, border,
+    alignment and size; arrow color, width, path, line, direction and motion;
+    layout; and workspace background/minimap/snap/control hints. Explicit values
+    always win. Thus old and terse agent output keeps the same automatic look,
+    while a person's overrides survive save, reload, chat, and future agents.
+12. **Historical model-direct diagrams remain first-class.** A canvas item whose
+    `content.data` is a valid JSON string is parsed, defaulted, and listed using
+    its embedded title and real object counts. It is never hidden or deleted.
+    Its next ordinary save canonicalizes it to object data through the same save
+    path as every new map.
 
 ---
 
@@ -182,7 +195,10 @@ and never claims a failed save succeeded.
 **Organize without turning it into a workflow.** Add a resizable visual section,
 choose solid/dashed/dotted framing, and place boxes inside it. Arrows may be
 curved, rounded, stepped, or straight; solid, dashed, or dotted; animated or
-still; with or without arrowheads. These are presentation choices only.
+still; and point forward, backward, both ways, or nowhere. Boxes may use any of
+six shapes, a chosen semantic or custom color, an explicit icon, border style,
+alignment, and size. The map may use dots, lines, or crosses; snapping and the
+minimap are optional. These are presentation choices only.
 
 **Work with an agent.** The open editor is the declared `matrx-user/maps`
 surface. Its agent context includes `map_json`, convenient box/arrow lists,
@@ -212,6 +228,14 @@ sees the standard in-place confirmation before the canonical save path runs.
 
 ## Change Log
 
+- **2026-08-14** — Made automatic diagram styling an explicit, overrideable part
+  of the canonical document before render/persistence: colors, icons, shapes,
+  borders, alignment, dimensions, arrow markers/weight/style/motion, layout,
+  background, minimap, snapping and controls. Added the matching workspace
+  inspector controls while retaining identical automatic behavior for terse
+  agent diagrams and the default chat card. Added compatibility decoding for
+  historical model-direct canvas rows whose `content.data` is JSON text, so
+  their embedded names and counts list correctly and all valid rows open.
 - **2026-08-14** — Promoted the dedicated editor from an embedded diagram card
   to a true route workspace after live comparison with Growth Loop: full
   available height and width below the glass shell header, a persistent right

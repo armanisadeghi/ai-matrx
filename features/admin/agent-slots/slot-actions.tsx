@@ -20,6 +20,7 @@ import type { AgentLineageRef } from "@/features/agents/redux/agent-definition/s
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useOpenAgentConvertSystemWindow } from "@/features/overlays/openers/agentConvertSystemWindow";
 import { agentHref } from "./slot-health";
+import { useGuardedRepin } from "./useGuardedRepin";
 import { updateSlotDefinition, type SlotDefinitionRow } from "./service";
 
 /** A lineage relative, always rendered with a door. */
@@ -62,53 +63,51 @@ export function LineageChip({
 export function RepinToTwinButton({
   slot,
   twin,
+  currentAgentId,
   onSaved,
 }: {
   slot: SlotDefinitionRow;
   twin: AgentLineageRef;
+  /** The agent bound today — the baseline the guard compares against. */
+  currentAgentId: string | null;
   onSaved: () => void;
 }) {
-  const [busy, setBusy] = useState(false);
+  // THE GUARD. This exact button is what broke `podcast.deep_research`: the
+  // console offered a correct remedy and applied it without checking whether
+  // the twin declares the variables the slot actually passes.
+  const { requestRepin, dialog, checking, saving } = useGuardedRepin({
+    slot,
+    currentAgentId,
+    onSaved,
+  });
+  const busy = checking || saving;
   return (
-    <Button
-      size="sm"
-      variant="outline"
-      className="h-6 gap-1 px-1.5 text-[11px]"
-      disabled={busy}
-      title={`Repin ${slot.slot_key} to the system agent "${twin.name}" (tracks latest)`}
-      onClick={async (e) => {
-        e.stopPropagation();
-        setBusy(true);
-        try {
-          await updateSlotDefinition(slot.id, {
-            default_agent_id: twin.id,
-            default_agent_version_id: null,
-            use_latest: true,
+    <>
+      <Button
+        size="sm"
+        variant="outline"
+        className="h-6 gap-1 px-1.5 text-[11px]"
+        disabled={busy}
+        title={`Repin ${slot.slot_key} to the system agent "${twin.name}" (tracks latest)`}
+        onClick={(e) => {
+          e.stopPropagation();
+          void requestRepin({
+            agentId: twin.id,
+            agentName: twin.name,
+            useLatest: true,
+            successMessage: `${slot.slot_key} repinned to ${twin.name} (latest).`,
           });
-          // The toast names the agent it just repinned to and holds its id,
-          // routed through `agentHref` so it opens in the right shell.
-          toast.success(`${slot.slot_key} repinned to ${twin.name} (latest).`, {
-            action: toastDoor("agent", twin.id, {
-              href: agentHref(twin.id, twin.agentType),
-            }),
-          });
-          onSaved();
-        } catch (error: unknown) {
-          toast.error(
-            `Repin failed: ${error instanceof Error ? error.message : String(error)}`,
-          );
-        } finally {
-          setBusy(false);
-        }
-      }}
-    >
-      {busy ? (
-        <Loader2 className="h-3 w-3 animate-spin" />
-      ) : (
-        <ShieldCheck className="h-3 w-3" />
-      )}
-      Repin to system twin
-    </Button>
+        }}
+      >
+        {busy ? (
+          <Loader2 className="h-3 w-3 animate-spin" />
+        ) : (
+          <ShieldCheck className="h-3 w-3" />
+        )}
+        Repin to system twin
+      </Button>
+      {dialog}
+    </>
   );
 }
 

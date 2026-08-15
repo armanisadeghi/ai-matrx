@@ -4,6 +4,7 @@ import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   fetchCatalog,
+  connectServer,
   connectServerWithCredentials,
   disconnectServer,
   selectMcpCatalog,
@@ -12,6 +13,8 @@ import {
   selectMcpConnectingServerId,
 } from "@/features/agents/redux/mcp/mcp.slice";
 import type { McpCatalogEntry } from "@/features/agents/types/mcp.types";
+import { startMcpOAuthPopup } from "@/features/agents/services/mcp-oauth/popup";
+import { toast } from "@/lib/toast";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
@@ -219,19 +222,16 @@ export default function IntegrationsPage() {
   // ── Handlers ───────────────────────────────────────────────────────────────
 
   const handleOAuthConnect = useCallback(
-    (entry: McpCatalogEntry) => {
-      window.open(
-        `/api/mcp/oauth/start?server_id=${entry.serverId}&return_url=${encodeURIComponent(window.location.pathname)}`,
-        "mcp_oauth",
-        "width=600,height=700,popup=yes",
-      );
-      const handler = (event: MessageEvent) => {
-        if (event.data?.type === "mcp_oauth_complete") {
-          window.removeEventListener("message", handler);
-          dispatch(fetchCatalog());
-        }
-      };
-      window.addEventListener("message", handler);
+    async (entry: McpCatalogEntry) => {
+      const outcome = await startMcpOAuthPopup(entry.serverId);
+      if (outcome.ok) {
+        dispatch(fetchCatalog());
+        toast.success(`Connected to ${entry.name}`);
+      } else if (!outcome.cancelled) {
+        toast.error(`Could not connect to ${entry.name}`, {
+          description: outcome.error,
+        });
+      }
     },
     [dispatch],
   );
@@ -246,6 +246,32 @@ export default function IntegrationsPage() {
           transport: "http",
         }),
       );
+    },
+    [dispatch],
+  );
+
+  /**
+   * A server with `auth_strategy: "none"` has NO credential to store. This
+   * used to call `onBearerConnect("")`, which sent an empty bearer token to
+   * aidream's credentials endpoint — which rejects empty field values (422),
+   * so connecting a no-auth server always failed. The right call is the
+   * metadata-only connection RPC. (D128)
+   */
+  const handleNoAuthConnect = useCallback(
+    async (entry: McpCatalogEntry) => {
+      try {
+        await dispatch(
+          connectServer({
+            serverId: entry.serverId,
+            transport: entry.transport,
+          }),
+        ).unwrap();
+        toast.success(`Connected to ${entry.name}`);
+      } catch (error) {
+        toast.error(`Could not connect to ${entry.name}`, {
+          description: error instanceof Error ? error.message : String(error),
+        });
+      }
     },
     [dispatch],
   );
@@ -460,6 +486,7 @@ export default function IntegrationsPage() {
                 onBearerConnect={(token) =>
                   handleBearerConnect(entry.serverId, token)
                 }
+                onNoAuthConnect={() => handleNoAuthConnect(entry)}
                 onDisconnect={() => handleDisconnect(entry.serverId)}
               />
             ))}
@@ -479,6 +506,7 @@ interface ServerCardProps {
   isConnecting: boolean;
   onOAuthConnect: () => void;
   onBearerConnect: (token: string) => void;
+  onNoAuthConnect: () => void;
   onDisconnect: () => void;
 }
 
@@ -489,6 +517,7 @@ function ServerCard({
   isConnecting,
   onOAuthConnect,
   onBearerConnect,
+  onNoAuthConnect,
   onDisconnect,
 }: ServerCardProps) {
   const isComingSoon = entry.serverStatus === "coming_soon";
@@ -709,7 +738,7 @@ function ServerCard({
             <Button
               size="sm"
               className="h-7 text-xs flex-1"
-              onClick={() => onBearerConnect("")}
+              onClick={onNoAuthConnect}
               disabled={isConnecting}
             >
               {isConnecting ? (

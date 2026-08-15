@@ -1,8 +1,9 @@
 import {
+  materializeDiagramDefaults,
   parseDiagramJSON,
   validateDiagram,
 } from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
-import { draftMapFromLines } from "../types";
+import { diagramFromCanvasContent, draftMapFromLines } from "../types";
 
 describe("visual map document", () => {
   it("preserves XYFlow sections and rich arrow options", () => {
@@ -66,5 +67,75 @@ describe("visual map document", () => {
     const invalidParent = draftMapFromLines("Parent", "One\nTwo");
     invalidParent.nodes[1].parentId = invalidParent.nodes[0].id;
     expect(validateDiagram(invalidParent)).toBe(false);
+  });
+
+  it("materializes automatic visuals while preserving manual overrides", () => {
+    const diagram = parseDiagramJSON(
+      JSON.stringify({
+        title: "Team",
+        type: "orgchart",
+        nodes: [
+          { id: "ceo", label: "Maya — CEO", type: "user" },
+          {
+            id: "ops",
+            label: "Jordan — Operations",
+            type: "process",
+            color: "#123456",
+            icon: "heart",
+            shape: "hexagon",
+          },
+        ],
+        edges: [{ from: "ceo", to: "ops" }],
+      }),
+    );
+
+    expect(diagram.nodes[0]).toMatchObject({
+      color: "indigo",
+      icon: "crown",
+      shape: "rounded",
+      borderStyle: "solid",
+      textAlign: "center",
+    });
+    expect(diagram.nodes[1]).toMatchObject({
+      color: "#123456",
+      icon: "heart",
+      shape: "hexagon",
+    });
+    expect(diagram.edges[0]).toMatchObject({
+      color: "gray",
+      lineStyle: "solid",
+      strokeWidth: 2,
+      marker: "end",
+      animated: false,
+    });
+    expect(diagram.renderHints).toMatchObject({
+      background: "dots",
+      showMiniMap: false,
+      snapToGrid: false,
+      showControls: true,
+    });
+    expect(materializeDiagramDefaults(diagram)).toEqual(diagram);
+  });
+
+  it("opens historical canvas rows whose data is JSON text", () => {
+    const diagram = diagramFromCanvasContent(
+      {
+        type: "diagram",
+        data: JSON.stringify({
+          diagram: {
+            title: "Legacy agent map",
+            type: "flowchart",
+            nodes: [{ id: "one", label: "One" }],
+            edges: [],
+          },
+        }),
+      },
+      "Diagram 7",
+    );
+
+    expect(diagram).toMatchObject({
+      title: "Legacy agent map",
+      nodes: [{ id: "one", label: "One", color: "gray", icon: "square" }],
+    });
   });
 });
