@@ -60,9 +60,9 @@ whole page · **SKIP** non-record tool.
 
 | Surface | Element | Class | Current | Planned control |
 |---|---|---|---|---|
-| `components/PublicImagesSection.tsx` | public image grid | L | none | view copy + ExportMenu; `file_id` + cdnUrl only |
-| `components/StudioLibraryTab.tsx` | studio library grid | L | none | view copy + ExportMenu |
-| `components/CloudFileMetadataSheet.tsx` | per-image metadata | R | none | header `sm` pair (sanitized) |
+| `components/CloudFileMetadataSheet.tsx` | per-image metadata | R | **DONE** | header `sm` pair, sanitized via shared `lib/copy-format.ts` |
+| `components/StudioLibraryTab.tsx` | studio library grid | L (wrapper) | none | thin wrapper — the `.map()` is in `components/image/cloud/CloudFilesTab.tsx`; wire there so every cloud-file grid benefits |
+| `components/PublicImagesSection.tsx` | curated covers + Unsplash search | SKIP | — | reclassified on inspection: an image **picker** over external Unsplash results + a static preset catalog, not a record list |
 | `components/ToolsTab.tsx` | tool launcher grid | SKIP | — | non-record tool |
 | `components/BrandedUploadTab`, `ProfilePhotoTab`, `AIGenerateHero`, `FullImageStudioTab` | composers/editors | SKIP | — | — |
 
