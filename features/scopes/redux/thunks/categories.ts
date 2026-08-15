@@ -20,12 +20,14 @@ type AppThunk<R = void> = ThunkAction<R, RootState, unknown, UnknownAction>;
 
 const inFlight = new Map<string, Promise<void>>();
 
-export interface CategoryCreateResult {
+export interface CategoryMutationResult {
   ok: boolean;
-  /** Set on a successful create. */
+  /** Set on a successful mutation. */
   id?: string;
   error?: string;
 }
+
+export type CategoryCreateResult = CategoryMutationResult;
 
 /**
  * Lazy load of every category in `dimension` (system + the caller's orgs).
@@ -113,6 +115,57 @@ export function createCategory(args: {
         category: optimistic,
       }),
     );
+    await dispatch(loadCategories({ dimension: args.dimension, force: true }));
+    return { ok: true, id: res.data.id };
+  };
+}
+
+/** Replace one category's editable scalar fields, then refresh its facet. */
+export function updateCategory(args: {
+  dimension: CategoryDimension;
+  id: string;
+  name: string;
+  slug: string | null;
+  color: string | null;
+  icon: string | null;
+  position: number | null;
+}): AppThunk<Promise<CategoryMutationResult>> {
+  return async (dispatch) => {
+    const res = await categoriesService.update(args);
+    if (isScopesRpcErr(res)) {
+      return { ok: false, error: res.error.message };
+    }
+    await dispatch(loadCategories({ dimension: args.dimension, force: true }));
+    return { ok: true, id: res.data.id };
+  };
+}
+
+/** Move one category to the root or directly beneath a root category. */
+export function reparentCategory(args: {
+  dimension: CategoryDimension;
+  id: string;
+  parentId: string | null;
+}): AppThunk<Promise<CategoryMutationResult>> {
+  return async (dispatch) => {
+    const res = await categoriesService.reparent(args);
+    if (isScopesRpcErr(res)) {
+      return { ok: false, error: res.error.message };
+    }
+    await dispatch(loadCategories({ dimension: args.dimension, force: true }));
+    return { ok: true, id: res.data.id };
+  };
+}
+
+/** Soft-delete one leaf category, then refresh its facet. */
+export function deleteCategory(args: {
+  dimension: CategoryDimension;
+  id: string;
+}): AppThunk<Promise<CategoryMutationResult>> {
+  return async (dispatch) => {
+    const res = await categoriesService.delete(args.id);
+    if (isScopesRpcErr(res)) {
+      return { ok: false, error: res.error.message };
+    }
     await dispatch(loadCategories({ dimension: args.dimension, force: true }));
     return { ok: true, id: res.data.id };
   };

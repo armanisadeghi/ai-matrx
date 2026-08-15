@@ -39,10 +39,9 @@ describe("what the site header renders", () => {
   });
 
   it("shows nothing for a section that has no sub-views", () => {
-    // 16 of the 26 are single-surface sections. An empty header centre is
+    // Single-surface sections correctly leave the header centre empty.
     // correct — the page's own title says where you are.
     expect(navFor(`${SITE}/audit`).modes).toEqual([]);
-    expect(navFor(`${SITE}/settings`).modes).toEqual([]);
     expect(navFor(SITE).modes).toEqual([]);
   });
 
@@ -70,8 +69,8 @@ describe("what the site header renders", () => {
     expect(navFor(`${SITE}/media`, "library").activeHref).toBe(
       `${SITE}/media?view=library`,
     );
-    expect(navFor(`${SITE}/access`, "public").activeHref).toBe(
-      `${SITE}/access?view=public`,
+    expect(navFor(`${SITE}/settings`, "access-public").activeHref).toBe(
+      `${SITE}/settings?view=access-public`,
     );
   });
 
@@ -108,18 +107,18 @@ describe("resolveMarketingSubView", () => {
   it("falls back to the section's default", () => {
     expect(resolveMarketingSubView("media", null)).toBe("crawled");
     expect(resolveMarketingSubView("media", "nonsense")).toBe("crawled");
-    expect(resolveMarketingSubView("settings", null)).toBe("");
+    expect(resolveMarketingSubView("settings", null)).toBe("site");
   });
 
   it("accepts a declared view", () => {
-    expect(resolveMarketingSubView("access", "organizations")).toBe(
-      "organizations",
+    expect(resolveMarketingSubView("settings", "access-organizations")).toBe(
+      "access-organizations",
     );
   });
 
   it("refuses another section's view id", () => {
-    // `?view=anchors` on Access is not Access's business.
-    expect(resolveMarketingSubView("access", "anchors")).toBe("users");
+    // `?view=anchors` on Settings is not Settings's business.
+    expect(resolveMarketingSubView("settings", "anchors")).toBe("site");
   });
 });
 

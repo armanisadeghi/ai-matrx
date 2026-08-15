@@ -17,13 +17,14 @@
 
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import {
+  ROUTE_MENU_ICON_SIZE,
+  ROUTE_MENU_ICON_STROKE_WIDTH,
+  ROUTE_MENU_NAV_ITEM_CLASS,
+} from "@/features/shell/constants/route-menu-style";
 import { selectActiveView, setActiveView } from "../redux/codeWorkspaceSlice";
 import { ACTIVITY_VIEWS } from "../activity-bar/activity-views";
 import type { ActivityViewId } from "../types";
-
-const NAV_ITEM_CLASS = "shell-nav-item shell-nav-stable shell-tactile-subtle";
-const ICON_SIZE = 18;
-const ICON_STROKE = 1.75;
 
 interface CodeSidebarMenuProps {
   expanded: boolean;
@@ -53,11 +54,17 @@ export default function CodeSidebarMenu({
             }
             aria-label={view.label}
             aria-current={isActive ? "page" : undefined}
-            className={cn(NAV_ITEM_CLASS, isActive && "shell-active-pill")}
+            className={cn(
+              ROUTE_MENU_NAV_ITEM_CLASS,
+              isActive && "shell-active-pill",
+            )}
             onClick={() => selectView(view.id)}
           >
             <span className="shell-nav-icon">
-              <Icon size={ICON_SIZE} strokeWidth={ICON_STROKE} />
+              <Icon
+                size={ROUTE_MENU_ICON_SIZE}
+                strokeWidth={ROUTE_MENU_ICON_STROKE_WIDTH}
+              />
             </span>
             <span className="shell-nav-label">{view.label}</span>
           </button>

@@ -31,6 +31,12 @@ describe("surfaceFromPathname — marketing tree", () => {
     );
   });
 
+  it("resolves the brand-wide discovery inbox", () => {
+    expect(surfaceFromPathname(`/marketing/brands/${B}/discovery`)).toBe(
+      "matrx-user/marketing-discovery",
+    );
+  });
+
   it("resolves the site root and folded verticals to marketing-site", () => {
     expect(surfaceFromPathname(SITE)).toBe("matrx-user/marketing-site");
     for (const folded of ["access", "cost"]) {
@@ -54,8 +60,6 @@ describe("surfaceFromPathname — marketing tree", () => {
       ["coverage", "matrx-user/marketing-coverage"],
       ["sitemaps", "matrx-user/marketing-sitemaps"],
       [`sitemaps/${P}`, "matrx-user/marketing-sitemaps"],
-      ["discovery", "matrx-user/marketing-discovery"],
-      ["integrations", "matrx-user/marketing-integrations"],
       ["settings", "matrx-user/marketing-site-settings"],
       ["keywords", "matrx-user/marketing-site-keywords"],
       ["media", "matrx-user/marketing-site-media"],

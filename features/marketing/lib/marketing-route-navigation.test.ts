@@ -8,6 +8,9 @@ const INTENTIONALLY_INTERNAL_TOP_LEVEL_ROUTES = new Set([
   // Privileged maintenance destinations are reached through administration,
   // not the customer-facing Marketing map.
   "/marketing/admin",
+  // Legacy duplicate; redirects to the site inventory where each site's
+  // canonical AI Visibility workspace is reachable.
+  "/marketing/ai-visibility",
 ]);
 
 describe("Marketing top-level navigation inventory", () => {

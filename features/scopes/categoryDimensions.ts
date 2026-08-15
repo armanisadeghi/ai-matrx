@@ -34,6 +34,8 @@ export const CATEGORY_DIMENSIONS = {
   crmLifecycleStage: "crm_lifecycle_stage",
   /** CRM — crm.party.rating_id (FK column). System seeds, public. */
   crmRating: "crm_rating",
+  /** Web/entity classification — category + subcategory (the first canonical two-level facet). */
+  webEntityType: "web_entity_type",
 } as const;
 
 export type KnownCategoryDimension =

@@ -1,11 +1,11 @@
-import { Suspense } from "react";
-import { DiscoveryInbox } from "@/features/marketing/components/discovery/DiscoveryInbox";
-import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
+import { redirect } from "next/navigation";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 
-export default function MarketingSiteDiscoveryPage() {
-  return (
-    <Suspense fallback={<LoadingSurface label="Loading discoveries…" />}>
-      <DiscoveryInbox />
-    </Suspense>
-  );
+export default async function MarketingSiteDiscoveryPage({
+  params,
+}: {
+  params: Promise<{ brandId: string }>;
+}) {
+  const { brandId } = await params;
+  redirect(marketingRoutes.brandDiscovery(brandId));
 }

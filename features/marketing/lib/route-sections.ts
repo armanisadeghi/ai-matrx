@@ -43,13 +43,20 @@ export interface MarketingRouteSection {
 export interface MarketingSiteRouteSection extends MarketingRouteSection {
   /** Parent category in the sidebar. Every site section has one. */
   group: MarketingSectionGroup;
-  /**
-   * The section's data is not actually site-scoped and it is scheduled to move
-   * (see docs/handoffs/marketing-navigation-hierarchy.md). Recorded here so the
-   * move cannot be forgotten and so nothing builds new site-level work on it.
-   */
-  pendingMoveTo?: "brand" | "marketing";
 }
+
+/**
+ * Website URLs retained only as redirects after their surfaces moved.
+ * The filesystem inventory test subtracts exactly this list before comparing
+ * live site sections, so a redirect can never masquerade as a visible surface.
+ */
+export const MARKETING_SITE_LEGACY_REDIRECTS = [
+  "access",
+  "capabilities",
+  "discovery",
+  "integrations",
+  "intake",
+] as const;
 
 export interface MarketingRouteMode extends MarketingRouteSection {
   href: string;
@@ -78,16 +85,6 @@ export const MARKETING_SITE_SECTIONS = [
       "Run this site end to end — research, plan, write, publish, crawl, measure, improve — and act on whatever the loop is waiting on.",
     letter: "Gl",
     group: "Command",
-  },
-  {
-    slug: "capabilities",
-    name: "Capabilities",
-    titlePrefix: "SEO Capabilities",
-    description:
-      "See what this site can measure, where each result lives, and which system produces it.",
-    letter: "Cp",
-    group: "Command",
-    pendingMoveTo: "marketing",
   },
   {
     slug: "pages",
@@ -138,15 +135,6 @@ export const MARKETING_SITE_SECTIONS = [
     description: "Inspect and run website crawl sessions.",
     letter: "Cr",
     group: "Collection",
-  },
-  {
-    slug: "discovery",
-    name: "Discovery",
-    titlePrefix: "Discovery",
-    description: "Review discovered brand assets and business facts.",
-    letter: "Di",
-    group: "Collection",
-    pendingMoveTo: "brand",
   },
   {
     slug: "audit",
@@ -256,33 +244,9 @@ export const MARKETING_SITE_SECTIONS = [
     slug: "settings",
     name: "Settings",
     titlePrefix: "Settings",
-    description: "Configure website identity and crawl behavior.",
-    letter: "Se",
-    group: "Configuration",
-  },
-  {
-    slug: "integrations",
-    name: "Integrations",
-    titlePrefix: "Integrations",
-    description: "Configure this site's marketing data providers.",
-    letter: "In",
-    group: "Configuration",
-  },
-  {
-    slug: "access",
-    name: "Access",
-    titlePrefix: "Access",
-    description: "Manage site access and sharing.",
-    letter: "Ac",
-    group: "Configuration",
-  },
-  {
-    slug: "intake",
-    name: "Intake",
-    titlePrefix: "Site Intake",
     description:
-      "Review and complete the site information needed by marketing systems.",
-    letter: "It",
+      "Configure website identity, crawl behavior, providers, sharing, and intake.",
+    letter: "Se",
     group: "Configuration",
   },
 ] as const satisfies readonly MarketingSiteRouteSection[];

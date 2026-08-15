@@ -2,17 +2,11 @@
 //
 // "What can I attach?" — the generic candidate reader behind every association
 // picker. Given an entity TOKEN, it resolves the backing table from the entity
-// registry (generated `schema`/`table` + FE `titleColumn`) and reads the rows
-// the current user may attach, as `{ id, title }`.
+// registry and reads the rows the current user may attach, as `{ id, title }`.
 //
-// Fully token-driven: NO per-entity code. Add a token's `titleColumn` to the
-// registry overlay and its picker works. RLS is the real visibility gate; the
-// `ownerColumn` (`created_by` by convention) just narrows to the user's rows.
-//
-// LOUD RECOVERY: if the owner-column filter hits a missing-column error (42703 —
-// a divergent table the registry convention doesn't fit), it screams to the
-// console and RETRIES with RLS-only filtering rather than surfacing a hard 400.
-// A recovery firing means the registry overlay needs an `ownerColumn` override.
+// Fully token-driven: NO per-entity code. Candidate visibility and any
+// entity-specific equality predicates come from `platform.entity_types` and
+// are enforced by `public.reference_search_candidates`.
 //
 // Reads go DIRECT to Postgres via supabase-js (CLAUDE.md data-flow rule: pure
 // table reads never round-trip through Python/Next).
@@ -66,7 +60,7 @@ export type CandidatesResult =
 export async function listAssociationCandidates(
   args: ListCandidatesArgs,
 ): Promise<CandidatesResult> {
-  const { token, ownerId, search, limit = 100 } = args;
+  const { token, search, limit = 100 } = args;
   const info = getEntityInfo(token);
 
   // Registry-declared candidate-source override — for tokens whose backing
@@ -93,97 +87,25 @@ export async function listAssociationCandidates(
     console.error(`[listAssociationCandidates] ${msg}`);
     return { ok: false, error: msg };
   }
-  const titleCol = info.titleColumn;
-
-  // CANONICAL PATH: the universal SECURITY DEFINER reader — works for every
-  // pickable token regardless of PostgREST schema exposure or per-table RLS
-  // shape. The direct table read below is the legacy fallback, kept only
-  // until `reference_search_candidates` is live everywhere.
-  {
-    const { data, error } = await callReferenceSearchCandidates({
-      p_token: token,
-      p_search: search?.trim() || undefined,
-      p_limit: limit,
+  const { data, error } = await callReferenceSearchCandidates({
+    p_token: token,
+    p_search: search?.trim() || undefined,
+    p_limit: limit,
+  });
+  if (error) {
+    console.error("[listAssociationCandidates] candidate RPC failed", {
+      token,
+      error,
     });
-    if (!error) {
-      return {
-        ok: true,
-        data: data.map((r) => ({
-          id: String(r.id),
-          title: String(r.title ?? "").trim() || "Untitled",
-        })),
-      };
-    }
-    console.warn(
-      `[listAssociationCandidates] reference_search_candidates unavailable for ` +
-        `"${token}" (${error.message}) — falling back to direct table read.`,
-    );
+    return { ok: false, error: error.message };
   }
-
-  // Dynamic schema/table read — mirrors the established org-inventory pattern:
-  // cast the schema to a known literal so supabase-js accepts a runtime value,
-  // then `as never` the table/column args. Row shape is unknown → cast on read.
-  const db = (
-    info.schema && info.schema !== "public"
-      ? supabase.schema(info.schema as "files")
-      : supabase
-  ) as typeof supabase;
-
-  const runQuery = async (applyOwnerFilter: boolean) => {
-    // VIEW LAW: owner filter applied conditionally below via info.ownerColumn/ownerId
-    // when the entity type is caller-owned; RPC-first path above is preferred, this
-    // dynamic table read is the documented legacy fallback.
-    let q = db
-      .from(info.table as never)
-      .select(`id, ${titleCol}`)
-      .order(titleCol as never, { ascending: true })
-      .limit(limit);
-    if (applyOwnerFilter && info.ownerColumn && ownerId) {
-      q = q.eq(info.ownerColumn as never, ownerId as never);
-    }
-    if (search && search.trim()) {
-      q = q.ilike(titleCol as never, `%${search.trim()}%`);
-    }
-    return q;
+  return {
+    ok: true,
+    data: data.map((row) => ({
+      id: row.id,
+      title: row.title?.trim() || "Untitled",
+    })),
   };
-
-  try {
-    const wantOwnerFilter = Boolean(info.ownerColumn && ownerId);
-    let { data, error } = await runQuery(wantOwnerFilter);
-
-    // Loud recovery: the owner column doesn't exist on this table. Scream, then
-    // retry RLS-only so the picker still works instead of erroring out.
-    if (error && error.code === "42703" && wantOwnerFilter) {
-      console.error(
-        `[listAssociationCandidates] owner column "${info.ownerColumn}" missing on ` +
-          `${info.schema}.${info.table} for token "${token}" — add an ownerColumn ` +
-          `override in entityRegistry.ts. Falling back to RLS-only listing.`,
-        { token, error },
-      );
-      ({ data, error } = await runQuery(false));
-    }
-
-    if (error) {
-      console.error("[listAssociationCandidates] query failed", {
-        token,
-        error,
-      });
-      return { ok: false, error: error.message };
-    }
-    const rows = (data as Array<Record<string, unknown>>) ?? [];
-    return {
-      ok: true,
-      data: rows.map((r) => ({
-        id: String(r.id),
-        title: String(r[titleCol] ?? "").trim() || "Untitled",
-      })),
-    };
-  } catch (err) {
-    const msg =
-      err instanceof Error ? err.message : "Failed to load candidates";
-    console.error("[listAssociationCandidates] exception", { token, err });
-    return { ok: false, error: msg };
-  }
 }
 
 // ─── Universal (cross-token) search ─────────────────────────────────────────
@@ -213,13 +135,7 @@ export interface SearchAcrossTokensArgs {
 export async function searchCandidatesAcrossTokens(
   args: SearchAcrossTokensArgs,
 ): Promise<UniversalCandidate[]> {
-  const {
-    tokens,
-    search,
-    ownerId,
-    perTokenLimit = 5,
-    concurrency = 6,
-  } = args;
+  const { tokens, search, ownerId, perTokenLimit = 5, concurrency = 6 } = args;
   const list = tokens ?? curatedTokens();
   if (list.length === 0) return [];
 

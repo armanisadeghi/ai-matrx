@@ -5,9 +5,9 @@
 // One table, partitioned by `dimension` (the facet), replacing the fragmented
 // per-feature category systems (`shortcut_categories`, `skill.category`, the
 // hardcoded INDUSTRY/DEFAULT arrays). The client has NO direct grant on
-// `platform.categories`; every read/write goes through the two PUBLIC
-// SECURITY-DEFINER RPCs (`cat_list` / `cat_create`) — and every call to those
-// RPCs goes through THIS file. No other file is allowed to call them. Like
+// `platform.categories`; every read/write goes through the PUBLIC
+// SECURITY-DEFINER `cat_*` RPCs — and every call to those RPCs goes through
+// THIS file. No other file is allowed to call them. Like
 // `associationsService`, methods always return a `ScopesRpcResult` and NEVER
 // throw.
 //
@@ -33,20 +33,9 @@ import type {
   PlatformCategory,
   ScopesRpcResult,
 } from "@/features/scopes/types";
+import type { Database } from "@/types/database.types";
 
-// Shape of one `cat_list` row (snake_case, straight from PG).
-interface CatListRow {
-  id: string;
-  organization_id: string | null;
-  dimension: string;
-  name: string;
-  slug: string | null;
-  parent_id: string | null;
-  is_system: boolean;
-  color: string | null;
-  icon: string | null;
-  position: number | null;
-}
+type CatListRow = Database["public"]["Functions"]["cat_list"]["Returns"][number];
 
 function toCategory(row: CatListRow): PlatformCategory {
   return {
@@ -85,7 +74,7 @@ export const categoriesService = {
         p_dimension: dimension,
       });
       if (error) return err(...mapPgErrorPair(error));
-      const rows = (Array.isArray(data) ? data : []) as CatListRow[];
+      const rows: CatListRow[] = Array.isArray(data) ? data : [];
       return ok({ categories: rows.map(toCategory) });
     } catch (e) {
       return { ok: false, error: mapPgError(e) };
@@ -127,6 +116,77 @@ export const categoriesService = {
       if (error) return err(...mapPgErrorPair(error));
       if (!data || typeof data !== "string") {
         return err("internal", "cat_create returned no category id");
+      }
+      return ok({ id: data });
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
+
+  /**
+   * Replace the editable scalar fields of one category. The caller supplies
+   * the complete desired state so nullable fields can be cleared without a
+   * JSON patch or a second interpretation of `undefined`.
+   */
+  async update(args: {
+    id: string;
+    name: string;
+    slug: string | null;
+    color: string | null;
+    icon: string | null;
+    position: number | null;
+  }): Promise<ScopesRpcResult<{ id: string }>> {
+    try {
+      requireUserId();
+      const { data, error } = await supabase.rpc("cat_update", {
+        p_category_id: args.id,
+        p_name: args.name,
+        p_slug: args.slug ?? undefined,
+        p_color: args.color ?? undefined,
+        p_icon: args.icon ?? undefined,
+        p_position: args.position ?? undefined,
+      });
+      if (error) return err(...mapPgErrorPair(error));
+      if (!data || typeof data !== "string") {
+        return err("internal", "cat_update returned no category id");
+      }
+      return ok({ id: data });
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
+
+  /** Move a category to the root or directly beneath one root category. */
+  async reparent(args: {
+    id: string;
+    parentId: string | null;
+  }): Promise<ScopesRpcResult<{ id: string }>> {
+    try {
+      requireUserId();
+      const { data, error } = await supabase.rpc("cat_reparent", {
+        p_category_id: args.id,
+        p_parent_id: args.parentId ?? undefined,
+      });
+      if (error) return err(...mapPgErrorPair(error));
+      if (!data || typeof data !== "string") {
+        return err("internal", "cat_reparent returned no category id");
+      }
+      return ok({ id: data });
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
+
+  /** Soft-delete a leaf category. Parents with live children are rejected. */
+  async delete(id: string): Promise<ScopesRpcResult<{ id: string }>> {
+    try {
+      requireUserId();
+      const { data, error } = await supabase.rpc("cat_delete", {
+        p_category_id: id,
+      });
+      if (error) return err(...mapPgErrorPair(error));
+      if (!data || typeof data !== "string") {
+        return err("internal", "cat_delete returned no category id");
       }
       return ok({ id: data });
     } catch (e) {

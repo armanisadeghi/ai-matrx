@@ -52,6 +52,11 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
+import {
+  ROUTE_MENU_ICON_SIZE,
+  ROUTE_MENU_ICON_STROKE_WIDTH,
+  ROUTE_MENU_NAV_ITEM_CLASS,
+} from "@/features/shell/constants/route-menu-style";
 import { ChatHistorySidebar } from "./ChatHistorySidebar";
 import { PinnedAgentsSection } from "./PinnedAgentsSection";
 import { beginFreshChat, parseChatPath } from "./begin-fresh-chat";
@@ -75,11 +80,6 @@ const CHAT_HOME_HREF = "/chat/new";
  *  produces a ~7px-per-row drift visible when the sidebar opens or
  *  closes). The label visibility and icon centering on collapse are
  *  handled entirely by shell.css. */
-const NAV_ITEM_CLASS = "shell-nav-item shell-nav-stable shell-tactile-subtle";
-/** Lucide size + stroke that match NavItem.tsx exactly. */
-const ICON_SIZE = 18;
-const ICON_STROKE = 1.75;
-
 interface ChatSidebarMenuProps {
   expanded: boolean;
 }
@@ -123,10 +123,16 @@ export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
         title="Chat"
         aria-label="Chat"
         aria-current={isChatHome ? "page" : undefined}
-        className={cn(NAV_ITEM_CLASS, isChatHome && "shell-active-pill")}
+        className={cn(
+          ROUTE_MENU_NAV_ITEM_CLASS,
+          isChatHome && "shell-active-pill",
+        )}
       >
         <span className="shell-nav-icon">
-          <MessageCircle size={ICON_SIZE} strokeWidth={ICON_STROKE} />
+          <MessageCircle
+            size={ROUTE_MENU_ICON_SIZE}
+            strokeWidth={ROUTE_MENU_ICON_STROKE_WIDTH}
+          />
         </span>
         <span className="shell-nav-label">Chat</span>
       </Link>
@@ -138,7 +144,7 @@ export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
         type="button"
         title="New chat"
         aria-label="New chat"
-        className={NAV_ITEM_CLASS}
+        className={ROUTE_MENU_NAV_ITEM_CLASS}
         onClick={(event) => {
           if (event.metaKey || event.ctrlKey) {
             window.open("/chat/new", "_blank", "noopener,noreferrer");
@@ -153,7 +159,10 @@ export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
         }}
       >
         <span className="shell-nav-icon">
-          <Plus size={ICON_SIZE} strokeWidth={ICON_STROKE} />
+          <Plus
+            size={ROUTE_MENU_ICON_SIZE}
+            strokeWidth={ROUTE_MENU_ICON_STROKE_WIDTH}
+          />
         </span>
         <span className="shell-nav-label">New chat</span>
       </button>
@@ -166,10 +175,13 @@ export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
             type="button"
             title="Search chats"
             aria-label="Search chats"
-            className={NAV_ITEM_CLASS}
+            className={ROUTE_MENU_NAV_ITEM_CLASS}
           >
             <span className="shell-nav-icon">
-              <Search size={ICON_SIZE} strokeWidth={ICON_STROKE} />
+              <Search
+                size={ROUTE_MENU_ICON_SIZE}
+                strokeWidth={ROUTE_MENU_ICON_STROKE_WIDTH}
+              />
             </span>
             <span className="shell-nav-label">Search chats</span>
           </button>
@@ -207,13 +219,16 @@ export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
             type="button"
             title="Search agents"
             aria-label="Search agents"
-            className={NAV_ITEM_CLASS}
+            className={ROUTE_MENU_NAV_ITEM_CLASS}
           >
             <span className="shell-nav-icon">
               {/* Webhook mirrors the app's "Agents" nav icon for a
                   consistent visual language (Bot is banned as an AI-cliché
                   glyph by matrx/no-banned-lucide-icons). */}
-              <Webhook size={ICON_SIZE} strokeWidth={ICON_STROKE} />
+              <Webhook
+                size={ROUTE_MENU_ICON_SIZE}
+                strokeWidth={ROUTE_MENU_ICON_STROKE_WIDTH}
+              />
             </span>
             <span className="shell-nav-label">Search agents</span>
           </button>
@@ -227,10 +242,16 @@ export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
         title="Voice agent"
         aria-label="Voice agent"
         aria-current={isVoiceRoute ? "page" : undefined}
-        className={cn(NAV_ITEM_CLASS, isVoiceRoute && "shell-active-pill")}
+        className={cn(
+          ROUTE_MENU_NAV_ITEM_CLASS,
+          isVoiceRoute && "shell-active-pill",
+        )}
       >
         <span className="shell-nav-icon">
-          <Mic size={ICON_SIZE} strokeWidth={ICON_STROKE} />
+          <Mic
+            size={ROUTE_MENU_ICON_SIZE}
+            strokeWidth={ROUTE_MENU_ICON_STROKE_WIDTH}
+          />
         </span>
         <span className="shell-nav-label">Voice agent</span>
       </Link>

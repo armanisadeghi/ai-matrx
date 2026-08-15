@@ -55,6 +55,8 @@ import type { MediumBlock } from "./reachability";
 import { blocksSurvivingUnsuppress } from "./reachability";
 import type { EntityScopeCounts } from "@/lib/entity-list/types";
 
+const CRM_PRIMARY_RECORD_CLASS = "contact";
+
 // ── Error mapping ───────────────────────────────────────────────────────────
 
 function pgError(error: { message?: string; code?: string }): Error {
@@ -62,7 +64,7 @@ function pgError(error: { message?: string; code?: string }): Error {
     error.message?.trim()
       ? `${error.message}${error.code ? ` (${error.code})` : ""}`
       : "Supabase returned an error with no message — usually a gateway/PostgREST " +
-        "failure rather than a query error.",
+          "failure rather than a query error.",
   );
 }
 
@@ -340,7 +342,9 @@ export async function fetchPartiesByIds(ids: string[]): Promise<PartyRow[]> {
     .from("party")
     .select("*")
     .in("id", ids)
-    .is("deleted_at", null);
+    .is("deleted_at", null)
+    .is("canonical_id", null)
+    .eq("record_class", CRM_PRIMARY_RECORD_CLASS);
   if (error) throw pgError(error);
   return data ?? [];
 }
@@ -589,7 +593,9 @@ export async function unsuppressMedium(args: {
   const medium = current.data;
 
   const details =
-    medium.details && typeof medium.details === "object" && !Array.isArray(medium.details)
+    medium.details &&
+    typeof medium.details === "object" &&
+    !Array.isArray(medium.details)
       ? (medium.details as Record<string, unknown>)
       : {};
   const priorHistory = Array.isArray(details.suppression_history)
@@ -967,6 +973,7 @@ export async function searchPartiesByName(args: {
     .eq("organization_id", args.orgId)
     .is("deleted_at", null)
     .is("canonical_id", null)
+    .eq("record_class", CRM_PRIMARY_RECORD_CLASS)
     .order("display_name", { ascending: true })
     .limit(12);
   const term = sanitizeSearch(args.search);
@@ -993,6 +1000,7 @@ export async function searchEmployerCandidates(args: {
     .eq("party_kind", "organization")
     .is("deleted_at", null)
     .is("canonical_id", null)
+    .eq("record_class", CRM_PRIMARY_RECORD_CLASS)
     .order("display_name", { ascending: true })
     .limit(12);
   const term = sanitizeSearch(args.search);
@@ -1008,7 +1016,8 @@ export async function searchEmployerCandidates(args: {
 /** Chunk a key list so no single PostgREST `in()` grows unbounded. */
 function chunk<T>(items: T[], size: number): T[][] {
   const out: T[][] = [];
-  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
+  for (let i = 0; i < items.length; i += size)
+    out.push(items.slice(i, i + size));
   return out;
 }
 
@@ -1039,7 +1048,8 @@ export async function findExistingMediumOwners(args: {
       .eq("medium.channel", args.channel)
       .in("medium.value_key", keys)
       .is("party.deleted_at", null)
-      .is("party.canonical_id", null);
+      .is("party.canonical_id", null)
+      .eq("party.record_class", CRM_PRIMARY_RECORD_CLASS);
     if (error) throw pgError(error);
     for (const row of data ?? []) {
       const key = row.medium?.value_key;
@@ -1086,6 +1096,7 @@ export async function findPartiesByNames(args: {
       .eq("party_kind", args.kind)
       .is("deleted_at", null)
       .is("canonical_id", null)
+      .eq("record_class", CRM_PRIMARY_RECORD_CLASS)
       .or(names.map((n) => `display_name.ilike.${quote(n)}`).join(","));
     if (error) throw pgError(error);
     for (const row of data ?? []) {
@@ -1105,7 +1116,9 @@ export async function findPartiesByDomains(args: {
   domains: string[];
 }): Promise<Map<string, PartyRef>> {
   const out = new Map<string, PartyRef>();
-  const domains = args.domains.map((d) => d.trim().toLowerCase()).filter(Boolean);
+  const domains = args.domains
+    .map((d) => d.trim().toLowerCase())
+    .filter(Boolean);
   if (domains.length === 0) return out;
 
   for (const batch of chunk(domains, 200)) {
@@ -1117,6 +1130,7 @@ export async function findPartiesByDomains(args: {
       .eq("party_kind", "organization")
       .is("deleted_at", null)
       .is("canonical_id", null)
+      .eq("record_class", CRM_PRIMARY_RECORD_CLASS)
       .in("primary_domain", batch);
     if (error) throw pgError(error);
     for (const row of data ?? []) {
@@ -1170,8 +1184,10 @@ export async function findOrCreateCompanyByName(args: {
 // Candidate embeds target the FK COLUMN (same rationale as EMPLOYER_EMBED —
 // self-joins to crm.party are directionally ambiguous by table/FK name).
 const MERGE_PARTY_COLS =
-  "id,display_name,party_kind,job_title,primary_domain,created_at,canonical_id,deleted_at,organization_id";
-const CANDIDATE_EMBED = `*, source:source_id(${MERGE_PARTY_COLS}), target:target_id(${MERGE_PARTY_COLS})`;
+  "id,display_name,party_kind,job_title,primary_domain,created_at,canonical_id,deleted_at,organization_id,record_class";
+const CANDIDATE_EMBED = `*, source:source_id!inner(${MERGE_PARTY_COLS}), target:target_id!inner(${MERGE_PARTY_COLS})`;
+const CANDIDATE_COUNT_EMBED =
+  "id,source:source_id!inner(id),target:target_id!inner(id)";
 
 /**
  * Run detection for ONE org: auto-merges both-sides identity-key medium
@@ -1205,21 +1221,19 @@ export async function fetchMergeCandidates(
     .eq("status", "pending")
     .is("deleted_at", null)
     .in("organization_id", orgIds)
+    .is("source.deleted_at", null)
+    .is("source.canonical_id", null)
+    .eq("source.record_class", CRM_PRIMARY_RECORD_CLASS)
+    .is("target.deleted_at", null)
+    .is("target.canonical_id", null)
+    .eq("target.record_class", CRM_PRIMARY_RECORD_CLASS)
     .order("confidence", { ascending: false })
     .order("last_detected_at", { ascending: false })
     .order("id", { ascending: true })
     .limit(200)
     .returns<MergeCandidateWithParties[]>();
   if (error) throw pgError(error);
-  return (data ?? []).filter(
-    (c) =>
-      c.source &&
-      c.target &&
-      !c.source.deleted_at &&
-      !c.target.deleted_at &&
-      !c.source.canonical_id &&
-      !c.target.canonical_id,
-  );
+  return data ?? [];
 }
 
 /** True pending-suggestion count for the /crm indicator badge. */
@@ -1230,10 +1244,16 @@ export async function fetchPendingCandidateCount(
   const { count, error } = await supabase
     .schema("crm")
     .from("merge_candidate")
-    .select("id", { count: "exact", head: true })
+    .select(CANDIDATE_COUNT_EMBED, { count: "exact", head: true })
     .eq("status", "pending")
     .is("deleted_at", null)
-    .in("organization_id", orgIds);
+    .in("organization_id", orgIds)
+    .is("source.deleted_at", null)
+    .is("source.canonical_id", null)
+    .eq("source.record_class", CRM_PRIMARY_RECORD_CLASS)
+    .is("target.deleted_at", null)
+    .is("target.canonical_id", null)
+    .eq("target.record_class", CRM_PRIMARY_RECORD_CLASS);
   if (error) throw pgError(error);
   return count ?? 0;
 }
@@ -1249,18 +1269,16 @@ export async function fetchCandidatesForParty(
     .eq("status", "pending")
     .is("deleted_at", null)
     .or(`source_id.eq.${partyId},target_id.eq.${partyId}`)
+    .is("source.deleted_at", null)
+    .is("source.canonical_id", null)
+    .eq("source.record_class", CRM_PRIMARY_RECORD_CLASS)
+    .is("target.deleted_at", null)
+    .is("target.canonical_id", null)
+    .eq("target.record_class", CRM_PRIMARY_RECORD_CLASS)
     .order("confidence", { ascending: false })
     .returns<MergeCandidateWithParties[]>();
   if (error) throw pgError(error);
-  return (data ?? []).filter(
-    (c) =>
-      c.source &&
-      c.target &&
-      !c.source.deleted_at &&
-      !c.target.deleted_at &&
-      !c.source.canonical_id &&
-      !c.target.canonical_id,
-  );
+  return data ?? [];
 }
 
 /** "Not duplicates" — durable: no future scan resurrects the pair. */
@@ -1308,10 +1326,12 @@ export async function fetchRecentMerges(
     .schema("crm")
     .from("party_merge")
     .select(
-      "*, winner:winner_id(id,display_name,party_kind), loser:loser_id(id,display_name,party_kind)",
+      "*, winner:winner_id!inner(id,display_name,party_kind), loser:loser_id!inner(id,display_name,party_kind)",
     )
     .is("unmerged_at", null)
     .in("organization_id", orgIds)
+    .eq("winner.record_class", CRM_PRIMARY_RECORD_CLASS)
+    .eq("loser.record_class", CRM_PRIMARY_RECORD_CLASS)
     .order("merged_at", { ascending: false })
     .order("id", { ascending: true })
     .limit(25)
@@ -1328,9 +1348,11 @@ export async function fetchMergesForParty(
     .schema("crm")
     .from("party_merge")
     .select(
-      "*, winner:winner_id(id,display_name,party_kind), loser:loser_id(id,display_name,party_kind)",
+      "*, winner:winner_id!inner(id,display_name,party_kind), loser:loser_id!inner(id,display_name,party_kind)",
     )
     .or(`winner_id.eq.${partyId},loser_id.eq.${partyId}`)
+    .eq("winner.record_class", CRM_PRIMARY_RECORD_CLASS)
+    .eq("loser.record_class", CRM_PRIMARY_RECORD_CLASS)
     .order("merged_at", { ascending: false })
     .order("id", { ascending: true })
     .limit(25)

@@ -20,7 +20,14 @@
 // association pairs.
 
 import { useState } from "react";
-import { Check, ChevronsUpDown, Loader2, Tag, X } from "lucide-react";
+import {
+  Check,
+  ChevronsUpDown,
+  CornerDownRight,
+  Loader2,
+  Tag,
+  X,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,11 +44,22 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { toast } from "@/lib/toast";
 import { useCategories } from "@/features/scopes/hooks/useCategories";
 import { useAssociations } from "@/features/scopes/hooks/useAssociations";
 import type { CategoryDimension } from "@/features/scopes/types";
+import { buildCategoryHierarchy } from "@/features/scopes/utils/categoryHierarchy";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
+
+const ROOT_PARENT = "__root__";
 
 export interface CategoryTagPickerProps {
   /** The tagged entity's registered association type (e.g. "fc_set", "party"). */
@@ -62,6 +80,11 @@ export interface CategoryTagPickerProps {
   icon?: LucideIcon;
   /** Offer "Create <term>" for unmatched search terms. Default true. */
   allowCreate?: boolean;
+  /**
+   * Force the two-level face on or off. Omit to detect it from parentId rows,
+   * which leaves every existing flat facet visually unchanged.
+   */
+  hierarchical?: boolean;
   emptyText?: string;
 }
 
@@ -79,6 +102,7 @@ export function CategoryTagPicker({
   addLabel = "Add tag",
   icon: Icon = Tag,
   allowCreate = true,
+  hierarchical,
   emptyText = "No categories yet.",
 }: CategoryTagPickerProps) {
   const [open, setOpen] = useState(false);
@@ -88,12 +112,18 @@ export function CategoryTagPicker({
   // One write at a time.
   const [writing, setWriting] = useState(false);
   const [search, setSearch] = useState("");
+  const [createParentId, setCreateParentId] = useState(ROOT_PARENT);
   const { categories, create: createCategory, reload: reloadCategories } =
     useCategories({ dimension });
   const { edges, setTargets } = useAssociations({
     type: entityType,
     id: entityId,
   });
+  const hierarchy = buildCategoryHierarchy(categories);
+  const showHierarchy = hierarchical ?? hierarchy.hasHierarchy;
+  const hierarchyById = new Map(
+    hierarchy.items.map((item) => [item.category.id, item]),
+  );
 
   // Every current category edge with this role — INCLUDING other dimensions'
   // (see EDGE SEMANTICS above); display intersects with this dimension.
@@ -124,6 +154,7 @@ export function CategoryTagPicker({
       });
       if (!res.ok) {
         console.error("[CategoryTagPicker] setTargets failed:", res.error);
+        toast.error(res.error ?? "Could not update categories");
       }
     } finally {
       setWriting(false);
@@ -136,14 +167,24 @@ export function CategoryTagPicker({
     setCreating(true);
     try {
       const resolvedOrgId = await ensureOrgId(orgId ?? null);
-      const createRes = await createCategory({ name, orgId: resolvedOrgId });
+      const parentId =
+        showHierarchy && createParentId !== ROOT_PARENT
+          ? createParentId
+          : null;
+      const createRes = await createCategory({
+        name,
+        orgId: resolvedOrgId,
+        parentId,
+      });
       if (!createRes.ok || !createRes.id) {
         console.error("[CategoryTagPicker] create failed:", createRes);
+        toast.error(createRes.error ?? "Could not create the category");
         return;
       }
       await reloadCategories();
       await toggle(createRes.id);
       setSearch("");
+      setCreateParentId(ROOT_PARENT);
     } finally {
       setCreating(false);
     }
@@ -151,6 +192,9 @@ export function CategoryTagPicker({
 
   const filtered = categories.filter((c) =>
     c.name.toLowerCase().includes(search.trim().toLowerCase()),
+  );
+  const filteredHierarchy = hierarchy.items.filter((item) =>
+    item.displayName.toLowerCase().includes(search.trim().toLowerCase()),
   );
   const exactMatch = categories.some(
     (c) => c.name.toLowerCase() === search.trim().toLowerCase(),
@@ -164,7 +208,9 @@ export function CategoryTagPicker({
           variant="secondary"
           className="gap-1 pr-1 text-xs font-medium"
         >
-          {c.name}
+          {showHierarchy
+            ? (hierarchyById.get(c.id)?.displayName ?? c.name)
+            : c.name}
           <button
             type="button"
             onClick={() => void toggle(c.id)}
@@ -200,25 +246,75 @@ export function CategoryTagPicker({
                 {search.trim() ? "No match." : emptyText}
               </CommandEmpty>
               <CommandGroup>
-                {filtered.map((c) => (
-                  <CommandItem
-                    key={c.id}
-                    value={c.id}
-                    onSelect={() => void toggle(c.id)}
-                    className="text-xs"
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-3.5 w-3.5",
-                        selectedIds.has(c.id) ? "opacity-100" : "opacity-0",
-                      )}
-                    />
-                    {c.name}
-                  </CommandItem>
-                ))}
+                {showHierarchy
+                  ? filteredHierarchy.map(({ category, depth, parent }) => (
+                      <CommandItem
+                        key={category.id}
+                        value={category.id}
+                        keywords={parent ? [parent.name, category.name] : []}
+                        onSelect={() => void toggle(category.id)}
+                        className={cn("text-xs", depth === 1 && "pl-6")}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-3.5 w-3.5",
+                            selectedIds.has(category.id)
+                              ? "opacity-100"
+                              : "opacity-0",
+                          )}
+                        />
+                        {depth === 1 ? (
+                          <CornerDownRight className="mr-1.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                        ) : null}
+                        <span className={cn(depth === 0 && "font-medium")}>
+                          {category.name}
+                        </span>
+                      </CommandItem>
+                    ))
+                  : filtered.map((c) => (
+                      <CommandItem
+                        key={c.id}
+                        value={c.id}
+                        onSelect={() => void toggle(c.id)}
+                        className="text-xs"
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-3.5 w-3.5",
+                            selectedIds.has(c.id)
+                              ? "opacity-100"
+                              : "opacity-0",
+                          )}
+                        />
+                        {c.name}
+                      </CommandItem>
+                    ))}
               </CommandGroup>
               {allowCreate && search.trim() && !exactMatch ? (
                 <CommandGroup>
+                  {showHierarchy ? (
+                    <div className="space-y-1.5 px-2 pb-2">
+                      <p className="text-[11px] font-medium text-muted-foreground">
+                        Place in
+                      </p>
+                      <Select
+                        value={createParentId}
+                        onValueChange={setCreateParentId}
+                      >
+                        <SelectTrigger size="sm" className="bg-background">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={ROOT_PARENT}>Top level</SelectItem>
+                          {hierarchy.roots.map((root) => (
+                            <SelectItem key={root.id} value={root.id}>
+                              {root.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ) : null}
                   <CommandItem
                     value={`__create__${search}`}
                     onSelect={() => void createAndAttach()}

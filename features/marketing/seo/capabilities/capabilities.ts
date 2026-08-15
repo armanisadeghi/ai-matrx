@@ -15,6 +15,7 @@ export interface SeoCapability {
  * owned by their existing workspaces.
  */
 export function siteSeoCapabilities(sitePath: string): SeoCapability[] {
+  const settingsPath = `${sitePath}/settings?view=integrations`;
   return [
     {
       key: "snapshot-audit",
@@ -85,7 +86,7 @@ export function siteSeoCapabilities(sitePath: string): SeoCapability[] {
       description:
         "See which Google and custom data sources are connected before diagnosing missing provider evidence.",
       group: "provider",
-      destination: `${sitePath}/integrations`,
+      destination: settingsPath,
       evidenceLabel: "Manage connections",
     },
   ];

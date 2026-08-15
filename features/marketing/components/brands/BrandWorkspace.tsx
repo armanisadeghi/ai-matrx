@@ -415,9 +415,6 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
   const socialProperties = (properties.data ?? []).filter(
     (property) => property.kind !== "website",
   );
-  const primarySiteDiscovery = websiteSites[0]
-    ? marketingRoutes.site(brandId, websiteSites[0].id, "/discovery")
-    : null;
   const factRows = facts.data ?? [];
   const assetRows = assets.data ?? [];
 
@@ -713,7 +710,7 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                   variant="outline"
                   className="h-8 gap-1.5"
                 >
-                  <Link href={primarySiteDiscovery ?? marketingRoutes.brands()}>
+                  <Link href={marketingRoutes.brandDiscovery(brandId)}>
                     <Inbox className="h-3.5 w-3.5" />
                     {pending.data.toLocaleString()} to review
                   </Link>

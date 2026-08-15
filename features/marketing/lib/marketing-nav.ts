@@ -429,12 +429,19 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
       "Find expert source material, understand how the market searches, and track where you appear.",
     iconName: "Search",
     landingItems: [
+      "SEO capability catalogue",
       "Search Console dashboard",
       "Keyword research",
       "Cross-site rank tracking",
-      "AI visibility",
     ],
     entries: [
+      {
+        label: "SEO Capabilities",
+        href: marketingRoutes.capabilities(),
+        description:
+          "Browse the shared measurement catalogue and open each capability's evidence for a managed website.",
+        iconName: "Wrench",
+      },
       {
         label: "Keyword Research",
         href: marketingRoutes.keywordResearch(),
@@ -462,13 +469,6 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
         description:
           "Every tracked keyword across every brand and site — position, movement, and freshness in one view.",
         iconName: "TrendingUp",
-      },
-      {
-        label: "AI Visibility",
-        href: marketingRoutes.aiVisibility(),
-        description:
-          "Whether AI assistants cite you — prompt-set monitoring, share of answer, source gaps.",
-        iconName: "MessageSquareQuote",
       },
     ],
   },

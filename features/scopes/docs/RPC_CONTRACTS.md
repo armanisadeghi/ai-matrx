@@ -1,10 +1,10 @@
 # RPC_CONTRACTS.md — `features/scopes`
 
-**Status:** `proposed` — first round for Python-team review. Locking the surface before client code lands.
+**Status:** `live + evolving` — shipped contracts are named as live; proposed scope contracts remain design targets.
 **Owner:** `features/scopes` (frontend authoritative for shape; Python team authoritative for implementation, RLS, and indexes).
-**Last updated:** `2026-05-16`
+**Last updated:** `2026-08-15`
 
-> This doc specifies the **only** RPC surface that `features/scopes/service/scopesService.ts` is allowed to call. The frontend never queries `ctx_*` tables directly — all reads and writes go through the RPCs listed here. ESLint enforces the chokepoint.
+> This doc specifies the RPC surfaces owned by `features/scopes`. Scope/context RPCs go through `scopesService.ts`; category RPCs go through `categoriesService.ts`. UI consumes their hooks, never the RPCs directly.
 
 ---
 
@@ -313,6 +313,18 @@ Batch variant for list views (notes list, tasks list) that need scope chips per 
 
 ## Mutation RPCs
 
+### Categories (live)
+
+`platform.categories` is one faceted table keyed by `dimension`. Its canonical browser contract is:
+
+- `cat_list(p_dimension text default null)` — public system + accessible-org rows, including `parent_id`.
+- `cat_create(p_dimension, p_name, p_org_id, p_parent_id default null, p_color default null, p_icon default null, p_slug default null)` — creates an org-owned row and returns its id.
+- `cat_update(p_category_id, p_name, p_slug default null, p_color default null, p_icon default null, p_position default null)` — replaces the editable scalar fields and returns the id.
+- `cat_reparent(p_category_id, p_parent_id default null)` — moves a row to root or directly under a root and returns the id.
+- `cat_delete(p_category_id)` — soft-deletes one leaf and returns the id; a parent with live children is rejected.
+
+All calls require `auth.uid()`. Writes require access to the owning org; system-row update/reparent/delete requires super-admin. `_category_two_level_guard` is authoritative for every writer: exactly two levels, same dimension, no cycles, no missing/deleted parents, and cross-org children only beneath public system roots. Frontend contract: `categoriesService` → category thunks → `useCategories`. Live SQL record: `migrations/category_two_level_primitives.sql`.
+
 ### Scope types
 
 #### `create_scope_type(p_org_id uuid, p_payload jsonb)`
@@ -582,4 +594,5 @@ Updates the `was_useful` flag on an access log row. Drives usage analytics for r
 
 ## Change log
 
+- `2026-08-15` — codex: added the live five-RPC category contract and its database-wide two-level shape guard; recorded `categoriesService` as the category chokepoint.
 - `2026-05-16` — composer: initial draft of the RPC surface for Python-team review. Specifies read RPCs (tree, tasks, orphans, items, values, templates, entity scopes), mutation RPCs (CRUD for scope types / scopes / context items / values / assignments / template apply), resolution RPCs (`resolve_active_context`, `resolve_local_context`, `preview_resolution`), and audit RPCs (`log_context_access`, `mark_context_access_useful`). Open questions listed for review.

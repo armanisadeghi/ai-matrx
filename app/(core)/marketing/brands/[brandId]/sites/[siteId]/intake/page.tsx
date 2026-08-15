@@ -1,11 +1,11 @@
-import { Suspense } from "react";
-import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
-import { SiteIntakeWizard } from "@/features/marketing/search-console/intake/SiteIntakeWizard";
+import { redirect } from "next/navigation";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 
-export default function MarketingSiteIntakePage() {
-  return (
-    <Suspense fallback={<LoadingSurface label="Loading site intake…" />}>
-      <SiteIntakeWizard />
-    </Suspense>
-  );
+export default async function MarketingSiteIntakePage({
+  params,
+}: {
+  params: Promise<{ brandId: string; siteId: string }>;
+}) {
+  const { brandId, siteId } = await params;
+  redirect(marketingRoutes.siteSettings(brandId, siteId, "intake"));
 }

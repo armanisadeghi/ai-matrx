@@ -279,8 +279,6 @@ const MARKETING_SITE_VERTICAL_SURFACES: Readonly<Record<string, string>> = {
   ranks: "matrx-user/marketing-ranks",
   coverage: "matrx-user/marketing-coverage",
   sitemaps: "matrx-user/marketing-sitemaps",
-  discovery: "matrx-user/marketing-discovery",
-  integrations: "matrx-user/marketing-integrations",
   settings: "matrx-user/marketing-site-settings",
   keywords: "matrx-user/marketing-site-keywords",
   media: "matrx-user/marketing-site-media",
@@ -314,6 +312,9 @@ function resolveMarketingSurface(stripped: string): string | null {
 
   // /marketing/brands/[brandId][...]
   if (segments[1] === "brands" && segments.length >= 3) {
+    if (segments[3] === "discovery") {
+      return "matrx-user/marketing-discovery";
+    }
     // /marketing/brands/[brandId]/sites/[siteId][...]
     if (segments[3] === "sites" && segments.length >= 5) {
       const vertical = segments[5];

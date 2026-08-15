@@ -4,7 +4,6 @@
    All CSS for the glassmorphic, zero-JS application shell.
    Uses --shell-* prefix to avoid collisions with existing globals.css variables.
    ============================================================================= */
-
 /* ---------------------------------------------------------------------------
    1. CSS Custom Properties — Geometry & Layout
    --------------------------------------------------------------------------- */
@@ -721,7 +720,8 @@ button.shell-nav-item {
 }
 
 /* Tooltip on collapsed sidebar */
-.shell-root:not(:has(#shell-sidebar-toggle:checked)) .shell-nav-item[title]:hover::after {
+.shell-root:not(:has(#shell-sidebar-toggle:checked))
+  :is(.shell-nav-item, .shell-sidebar-switch)[title]:hover::after {
   content: attr(title);
   position: absolute;
   left: calc(100% + 0.5rem);
@@ -975,6 +975,7 @@ button.shell-nav-flyout-item {
 /* Switch button — top of nav section, visible only when route menu exists */
 .shell-sidebar-switch {
   display: none;
+  position: relative;
   align-items: center;
   justify-content: center;
   gap: 0.375rem;

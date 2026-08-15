@@ -1,5 +1,5 @@
-import { SiteSettingsWorkspace } from "@/features/marketing/components/settings/SiteSettingsWorkspace";
+import { SiteConfigurationWorkspace } from "@/features/marketing/components/settings/SiteConfigurationWorkspace";
 
 export default function MarketingSiteSettingsPage() {
-  return <SiteSettingsWorkspace />;
+  return <SiteConfigurationWorkspace />;
 }

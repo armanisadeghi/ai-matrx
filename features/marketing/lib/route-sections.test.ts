@@ -4,9 +4,9 @@ import { join, resolve } from "node:path";
 import { resolveActiveRouteMode } from "@/features/shell/components/header/route-mode-match";
 import { generateSVGFavicon, svgToDataURI } from "@/utils/favicon-utils";
 import { getMarketingRouteMetadata } from "./route-metadata";
-import type { MarketingSiteRouteSection } from "./route-sections";
 import {
   MARKETING_CRAWL_SECTIONS,
+  MARKETING_SITE_LEGACY_REDIRECTS,
   MARKETING_SITE_SECTIONS,
   listMarketingCrawlModes,
   listMarketingSiteModeGroups,
@@ -52,7 +52,11 @@ describe("marketing route section registries", () => {
       .map((section) => section.slug)
       .sort();
 
-    expect(registered).toEqual(childRouteDirectories(routeDirectory));
+    const liveDirectories = childRouteDirectories(routeDirectory).filter(
+      (slug) =>
+        !(MARKETING_SITE_LEGACY_REDIRECTS as readonly string[]).includes(slug),
+    );
+    expect(registered).toEqual(liveDirectories);
   });
 
   it("registers every crawl-detail route that exists on disk", () => {
@@ -116,34 +120,18 @@ describe("marketing route section registries", () => {
     ]);
   });
 
-  it("keeps the sections that are scheduled to leave the site visible", () => {
-    // These render under a site today and their data is not site-scoped. The
-    // list shrinks to empty as each moves; it must never grow silently.
-    // `as const satisfies` narrows each entry to its literal shape, so the
-    // optional field is absent from the union — read at the declared width.
-    const sections: readonly MarketingSiteRouteSection[] =
-      MARKETING_SITE_SECTIONS;
-    expect(
-      sections
-        .filter((section) => section.pendingMoveTo)
-        .map((section) => [section.slug, section.pendingMoveTo]),
-    ).toEqual([
-      ["capabilities", "marketing"],
-      ["discovery", "brand"],
+  it("pins every redirect-only site route outside visible navigation", () => {
+    expect(MARKETING_SITE_LEGACY_REDIRECTS).toEqual([
+      "access",
+      "capabilities",
+      "discovery",
+      "integrations",
+      "intake",
     ]);
-  });
-
-  it("identifies capabilities instead of falling back to Overview", () => {
-    const capabilitiesPath = `${SITE_PATH}/capabilities`;
-    expect(
-      resolveActiveRouteMode(
-        listMarketingSiteModes(SITE_PATH),
-        capabilitiesPath,
-      )?.name,
-    ).toBe("Capabilities");
-    expect(marketingSiteSectionSuffix(capabilitiesPath, SITE_PATH)).toBe(
-      "/capabilities",
-    );
+    const visible = new Set(MARKETING_SITE_SECTIONS.map((item) => item.slug));
+    for (const legacy of MARKETING_SITE_LEGACY_REDIRECTS) {
+      expect(visible.has(legacy)).toBe(false);
+    }
   });
 
   it("keeps nested detail routes connected to their visible parent mode", () => {

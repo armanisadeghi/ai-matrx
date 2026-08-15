@@ -16,13 +16,16 @@ import {
   findAdminNavigationDomainByPathname,
   findAdminNavigationLocation,
 } from "@/features/admin/constants/admin-navigation";
+import {
+  ROUTE_MENU_ICON_SIZE,
+  ROUTE_MENU_ICON_STROKE_WIDTH,
+  ROUTE_MENU_NAV_ITEM_CLASS,
+} from "@/features/shell/constants/route-menu-style";
 import { cn } from "@/lib/utils";
 
 interface AdminRouteSidebarMenuProps {
   expanded: boolean;
 }
-
-const navRow = "shell-nav-item shell-nav-stable shell-tactile-subtle";
 
 export default function AdminRouteSidebarMenu({
   expanded,
@@ -40,14 +43,19 @@ export default function AdminRouteSidebarMenu({
           title="Administration"
           aria-label="Administration"
           className={cn(
-            navRow,
+            ROUTE_MENU_NAV_ITEM_CLASS,
             pathname === "/administration" && "shell-active-pill",
           )}
         >
           <span className="shell-nav-icon">
             <IconResolver
               iconName="ShieldCheck"
-              className="h-[18px] w-[18px]"
+              size={ROUTE_MENU_ICON_SIZE}
+              style={{
+                width: ROUTE_MENU_ICON_SIZE,
+                height: ROUTE_MENU_ICON_SIZE,
+                strokeWidth: ROUTE_MENU_ICON_STROKE_WIDTH,
+              }}
             />
           </span>
           <span className="shell-nav-label">Administration</span>
@@ -60,14 +68,19 @@ export default function AdminRouteSidebarMenu({
             title={domain.name}
             aria-label={domain.name}
             className={cn(
-              navRow,
+              ROUTE_MENU_NAV_ITEM_CLASS,
               activeDomain?.name === domain.name && "shell-active-pill",
             )}
           >
             <span className="shell-nav-icon">
               <IconResolver
                 iconName={domain.iconName}
-                className="h-[18px] w-[18px]"
+                size={ROUTE_MENU_ICON_SIZE}
+                style={{
+                  width: ROUTE_MENU_ICON_SIZE,
+                  height: ROUTE_MENU_ICON_SIZE,
+                  strokeWidth: ROUTE_MENU_ICON_STROKE_WIDTH,
+                }}
               />
             </span>
             <span className="shell-nav-label">{domain.name}</span>
@@ -94,7 +107,13 @@ export default function AdminRouteSidebarMenu({
         >
           <IconResolver
             iconName="LayoutDashboard"
-            className="h-[18px] w-[18px] shrink-0"
+            className="shrink-0"
+            size={ROUTE_MENU_ICON_SIZE}
+            style={{
+              width: ROUTE_MENU_ICON_SIZE,
+              height: ROUTE_MENU_ICON_SIZE,
+              strokeWidth: ROUTE_MENU_ICON_STROKE_WIDTH,
+            }}
           />
           <span className="min-w-0 flex-1 truncate">Dashboard</span>
         </Link>
@@ -133,7 +152,13 @@ export default function AdminRouteSidebarMenu({
                       >
                         <IconResolver
                           iconName={item.iconName}
-                          className="h-[18px] w-[18px] shrink-0"
+                          className="shrink-0"
+                          size={ROUTE_MENU_ICON_SIZE}
+                          style={{
+                            width: ROUTE_MENU_ICON_SIZE,
+                            height: ROUTE_MENU_ICON_SIZE,
+                            strokeWidth: ROUTE_MENU_ICON_STROKE_WIDTH,
+                          }}
                         />
                         <span className="min-w-0 flex-1 truncate">
                           {item.title}

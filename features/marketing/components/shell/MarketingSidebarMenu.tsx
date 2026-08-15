@@ -27,16 +27,17 @@ import { ChevronLeft, Globe, TrendingUp } from "lucide-react";
 
 import IconResolver from "@/components/official/icons/IconResolver";
 import { resolveActiveRouteMode } from "@/features/shell/components/header/route-mode-match";
+import {
+  ROUTE_MENU_ICON_SIZE,
+  ROUTE_MENU_ICON_STROKE_WIDTH,
+  ROUTE_MENU_NAV_ITEM_CLASS,
+} from "@/features/shell/constants/route-menu-style";
 import { MARKETING_PILLARS } from "@/features/marketing/lib/marketing-nav";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { listMarketingSiteModeGroups } from "@/features/marketing/lib/route-sections";
 import { MARKETING_SITE_SECTION_ICONS } from "@/features/marketing/lib/site-section-icons";
 import { useSite } from "@/features/marketing/data/hooks";
 import { cn } from "@/lib/utils";
-
-const NAV_ITEM_CLASS = "shell-nav-item shell-nav-stable shell-tactile-subtle";
-const ICON_SIZE = 18;
-const ICON_STROKE = 1.75;
 
 /** `/marketing/brands/<brandId>/sites/<siteId>` and anything under it. */
 const SITE_PATH_PATTERN =
@@ -51,7 +52,13 @@ interface MarketingSidebarMenuProps {
  * the grouping survives as a rule instead of vanishing — the rail keeps the
  * same rhythm as the expanded menu rather than becoming one long icon run.
  */
-function GroupHeading({ label, expanded }: { label: string; expanded: boolean }) {
+function GroupHeading({
+  label,
+  expanded,
+}: {
+  label: string;
+  expanded: boolean;
+}) {
   if (!expanded) return <div className="mx-2 my-1 border-t border-border/70" />;
   return (
     <div className="px-1.5 pb-0.5 pt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
@@ -125,10 +132,13 @@ function SiteSections({
         href={marketingRoutes.brand(brandId)}
         title="Back to brand"
         aria-label="Back to brand"
-        className={NAV_ITEM_CLASS}
+        className={ROUTE_MENU_NAV_ITEM_CLASS}
       >
         <span className="shell-nav-icon">
-          <ChevronLeft size={ICON_SIZE} strokeWidth={ICON_STROKE} />
+          <ChevronLeft
+            size={ROUTE_MENU_ICON_SIZE}
+            strokeWidth={ROUTE_MENU_ICON_STROKE_WIDTH}
+          />
         </span>
         <span className="shell-nav-label truncate">Back to brand</span>
       </Link>
@@ -137,10 +147,13 @@ function SiteSections({
         href={base}
         title={site.data?.name ?? "This website"}
         aria-label={site.data?.name ?? "This website"}
-        className={cn(NAV_ITEM_CLASS, "font-medium")}
+        className={cn(ROUTE_MENU_NAV_ITEM_CLASS, "font-medium")}
       >
         <span className="shell-nav-icon">
-          <Globe size={ICON_SIZE} strokeWidth={ICON_STROKE} />
+          <Globe
+            size={ROUTE_MENU_ICON_SIZE}
+            strokeWidth={ROUTE_MENU_ICON_STROKE_WIDTH}
+          />
         </span>
         <span className="shell-nav-label truncate">
           {site.data?.name ?? "This website"}
@@ -161,10 +174,16 @@ function SiteSections({
                 title={mode.name}
                 aria-label={mode.name}
                 aria-current={isActive ? "page" : undefined}
-                className={cn(NAV_ITEM_CLASS, isActive && "shell-active-pill")}
+                className={cn(
+                  ROUTE_MENU_NAV_ITEM_CLASS,
+                  isActive && "shell-active-pill",
+                )}
               >
                 <span className="shell-nav-icon">
-                  <Icon size={ICON_SIZE} strokeWidth={ICON_STROKE} />
+                  <Icon
+                    size={ROUTE_MENU_ICON_SIZE}
+                    strokeWidth={ROUTE_MENU_ICON_STROKE_WIDTH}
+                  />
                 </span>
                 <span className="shell-nav-label truncate">{mode.name}</span>
               </Link>
@@ -192,12 +211,15 @@ function MarketingPillars({
         aria-label="Marketing Hub"
         aria-current={pathname === "/marketing" ? "page" : undefined}
         className={cn(
-          NAV_ITEM_CLASS,
+          ROUTE_MENU_NAV_ITEM_CLASS,
           pathname === "/marketing" && "shell-active-pill",
         )}
       >
         <span className="shell-nav-icon">
-          <TrendingUp size={ICON_SIZE} strokeWidth={ICON_STROKE} />
+          <TrendingUp
+            size={ROUTE_MENU_ICON_SIZE}
+            strokeWidth={ROUTE_MENU_ICON_STROKE_WIDTH}
+          />
         </span>
         <span className="shell-nav-label truncate">Marketing Hub</span>
       </Link>
@@ -222,7 +244,7 @@ function MarketingPillars({
                   aria-label={entry.label}
                   aria-current={isActive ? "page" : undefined}
                   className={cn(
-                    NAV_ITEM_CLASS,
+                    ROUTE_MENU_NAV_ITEM_CLASS,
                     isActive && "shell-active-pill",
                   )}
                   {...(entry.external
@@ -232,7 +254,12 @@ function MarketingPillars({
                   <span className="shell-nav-icon">
                     <IconResolver
                       iconName={entry.iconName}
-                      className="h-[18px] w-[18px]"
+                      size={ROUTE_MENU_ICON_SIZE}
+                      style={{
+                        width: ROUTE_MENU_ICON_SIZE,
+                        height: ROUTE_MENU_ICON_SIZE,
+                        strokeWidth: ROUTE_MENU_ICON_STROKE_WIDTH,
+                      }}
                     />
                   </span>
                   <span className="shell-nav-label truncate">

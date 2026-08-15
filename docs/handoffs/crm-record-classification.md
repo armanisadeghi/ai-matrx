@@ -82,12 +82,10 @@ blog"*), never a type — which is why it must not become a peer of `media outle
 
 ## Remaining work
 
-1. **Discovered records must vanish from general surfaces** — the doctrine above is not enforced
-   outside `/crm`'s list. Chipped: *Filter discovered records out of every party picker*.
-2. **The dedicated pages that DO show them** — Arman's "somewhere in the CRM we have the pages that
+1. **The dedicated pages that DO show them** — Arman's "somewhere in the CRM we have the pages that
    show these things". Nothing exists yet. This is the visual he asked to see, and the natural home
    for bulk promotion.
-3. **Human promotion, single + bulk**, on the keyword-classification model: multi-layer filtering,
+2. **Human promotion, single + bulk**, on the keyword-classification model: multi-layer filtering,
    server-side select-all over the whole filtered set (copy the shape of `getGscClassReviewAll`,
    `data-classification.ts:141-163`), a count before commit, and the **unconfirmed quarantine**
    (Arman's rule: anything applied off-screen wears a warning ring until a human looks).
@@ -97,11 +95,11 @@ blog"*), never a type — which is why it must not become a peer of `media outle
      {batch_id, applied_at, actor}` and let the success toast offer "Undo this batch (N records)".
    - Promotion must NOT erase origin — `source_party_id` + `locked_fields` are how a promoted row
      stays non-primary. No competitor does this; it is Arman's explicit ruling.
-4. **Persisted per-user display/search preference.** Three homes already exist: a global default in
+3. **Persisted per-user display/search preference.** Three homes already exist: a global default in
    `userPreferences` via the settings registry, per-surface memory on
    `useListViewPrefs("crm-parties")`, a named opt-in in `crm.saved_view`. **A fourth store is the
    failure mode.**
-5. **Curate discovered channels into shared lists** (Arman, above) — now unblocked by
+4. **Curate discovered channels into shared lists** (Arman, above) — now unblocked by
    `platform.entity_grants`. Publish a `crm.outreach_list` of vetted channels from the Matrx
    Library org with `entity_type='outreach_list'`, industry-gated. **Register an AFTER DELETE purge
    trigger for that entity type** (see `platform.entity_grants_purge_data_store`) — a generic
@@ -111,13 +109,13 @@ blog"*), never a type — which is why it must not become a peer of `media outle
    it. That is how `library_grant_publish` and `library_subscribe` were lost and restored on
    2026-08-15. And restore from the LIVE definition, never from a migration file — the file was
    stale and reintroduced two already-fixed bugs.
-6. **The same axis on other CRM tables.** `crm.interaction` and `crm.outreach_list_member` have no
+5. **The same axis on other CRM tables.** `crm.interaction` and `crm.outreach_list_member` have no
    `record_class` **and no `source` column at all**. Neither has an automated writer yet;
    `crm.sending_event` already does (`aidream/services/sending_identity/gate.py:654`).
-7. **Our own users become parties** — resolve the tier question BEFORE signup starts minting them.
+6. **Our own users become parties** — resolve the tier question BEFORE signup starts minting them.
    `claimed_by` is currently 0 across all 1,187 rows, so the ratified rule is unimplemented and the
    two-value enum has no slot for this third population.
-8. **Stale artifact:** `migrations/crm_list_scope_counts.sql` still declares the 3-arg signature;
+7. **Stale artifact:** `migrations/crm_list_scope_counts.sql` still declares the 3-arg signature;
    `types/database.types.ts` shows both overloads live, and the 3-arg one silently ignores record
    class.
 
@@ -131,6 +129,9 @@ blog"*), never a type — which is why it must not become a peer of `media outle
 
 ## Done
 
+- General party pickers, imports, and dedup surfaces are contact-only and canonical-only;
+  the generic picker uses registry predicates — see
+  `migrations/filter_party_picker_candidates.sql` and `features/crm/service.ts`.
 - `crm.party.record_class` + producers + list default + scope counts — see
   `aidream/services/crm/FEATURE.md` § `record_class`.
 - Three parsers silently dropped the `record_class` value after their allow-list accepted it (agent

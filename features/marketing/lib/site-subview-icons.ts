@@ -15,6 +15,7 @@ import {
   BookOpen,
   Briefcase,
   Building2,
+  Compass,
   CircleDashed,
   ClipboardList,
   Columns3,
@@ -36,9 +37,11 @@ import {
   Network,
   Newspaper,
   Radar,
+  Plug,
   Route,
   Ruler,
   Swords,
+  Settings,
   Table2,
   Tags,
   TrendingUp,
@@ -94,9 +97,12 @@ export const MARKETING_SUBVIEW_ICONS: Record<string, LucideIcon> = {
   "ai-visibility:signals": Radar,
   "ai-visibility:history": History,
 
-  "access:users": Users,
-  "access:organizations": Building2,
-  "access:public": Globe,
+  "settings:site": Settings,
+  "settings:integrations": Plug,
+  "settings:access-users": Users,
+  "settings:access-organizations": Building2,
+  "settings:access-public": Globe,
+  "settings:intake": Compass,
 };
 
 export function marketingSubViewIcon(

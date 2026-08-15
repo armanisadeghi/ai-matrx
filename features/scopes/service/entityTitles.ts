@@ -5,17 +5,16 @@
 // Association edges SHOULD carry a `label` stamped at attach time; this service
 // covers the rest (legacy unlabeled edges, rows renamed since attach). Given a
 // token + ids, it reads `id, <titleColumn>` from the registry-resolved backing
-// table in chunks, RLS-scoped, and memoizes per session. Tokens without a
+// table through the registry-driven candidate RPC and memoizes per session. Tokens without a
 // title column (or unregistered tokens) resolve to nothing — callers fall back
 // to `Untitled <label>` via `entityTitleFallback`.
 //
 // Reads go DIRECT to Postgres via supabase-js (CLAUDE.md data-flow rule).
 
-import { supabase } from "@/utils/supabase/client";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { callReferenceSearchCandidates } from "@/features/scopes/service/associationCandidates";
 
-const CHUNK = 100;
+const CHUNK = 200;
 
 /** `${token}:${id}` → resolved title. Session-lifetime; titles change rarely. */
 const titleCache = new Map<string, string>();
@@ -33,7 +32,11 @@ export function getCachedEntityTitle(token: string, id: string): string | null {
  * Push a known-fresh title into the cache (after a rename or a create), so
  * surfaces that resolve through this service never show a stale name.
  */
-export function primeEntityTitle(token: string, id: string, title: string): void {
+export function primeEntityTitle(
+  token: string,
+  id: string,
+  title: string,
+): void {
   const trimmed = title.trim();
   if (trimmed) titleCache.set(entityTitleCacheKey(token, id), trimmed);
 }
@@ -64,53 +67,27 @@ export async function fetchEntityTitles(
   }
   if (missing.length === 0 || !info?.titleColumn) return out;
 
-  // CANONICAL PATH: the universal SECURITY DEFINER reader (see
-  // associationCandidates.ts). Direct table read below is the legacy fallback.
-  {
+  for (let index = 0; index < missing.length; index += CHUNK) {
+    const ids = missing.slice(index, index + CHUNK);
     const { data, error } = await callReferenceSearchCandidates({
       p_token: token,
-      p_ids: missing,
-      p_limit: missing.length,
+      p_ids: ids,
+      p_limit: ids.length,
     });
-    if (!error) {
-      for (const r of data) {
-        const title = String(r.title ?? "").trim();
-        if (!title) continue;
-        titleCache.set(entityTitleCacheKey(token, String(r.id)), title);
-        out.set(String(r.id), title);
-      }
-      return out;
-    }
-    console.warn(
-      `[fetchEntityTitles] reference_search_candidates unavailable for "${token}" ` +
-        `(${error.message}) — falling back to direct table read.`,
-    );
-  }
-
-  const titleCol = info.titleColumn;
-  const db = (
-    info.schema && info.schema !== "public"
-      ? supabase.schema(info.schema as "files")
-      : supabase
-  ) as typeof supabase;
-
-  for (let i = 0; i < missing.length; i += CHUNK) {
-    const chunk = missing.slice(i, i + CHUNK);
-    const { data, error } = await db
-      .from(info.table as never)
-      .select(`id, ${titleCol}`)
-      .in("id" as never, chunk as never[]);
     if (error) {
-      // Loud but non-fatal: rows render with their fallback until fixed.
-      console.error("[fetchEntityTitles] query failed", { token, error });
+      console.error("[fetchEntityTitles] candidate RPC failed", {
+        token,
+        chunkStart: index,
+        chunkSize: ids.length,
+        error,
+      });
       continue;
     }
-    for (const r of (data as Array<Record<string, unknown>>) ?? []) {
-      const id = String(r.id);
-      const title = String(r[titleCol] ?? "").trim();
+    for (const row of data) {
+      const title = row.title?.trim();
       if (!title) continue;
-      titleCache.set(entityTitleCacheKey(token, id), title);
-      out.set(id, title);
+      titleCache.set(entityTitleCacheKey(token, row.id), title);
+      out.set(row.id, title);
     }
   }
   return out;

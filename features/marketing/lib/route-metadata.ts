@@ -29,7 +29,6 @@ const MARKETING_ROOT: MarketingRouteIdentity = {
  */
 const RESERVED_LETTERS: Readonly<Record<string, string>> = {
   "/marketing/ads": "Ad",
-  "/marketing/ai-visibility": "Ai",
   "/marketing/analytics": "An",
   "/marketing/audience": "Au",
   "/marketing/automations": "At",
@@ -71,6 +70,17 @@ const STATIC_ROUTES: Readonly<Record<string, MarketingRouteIdentity>> = {
     description:
       "Manage brand identity, properties, assets, and business facts.",
     letter: "Br",
+  },
+  "/marketing/capabilities": {
+    titlePrefix: "SEO Capabilities",
+    description:
+      "Browse the shared Marketing measurement catalogue and open website evidence.",
+    letter: "Cp",
+  },
+  "/marketing/ai-visibility": {
+    titlePrefix: "Opening Sites",
+    description: "Opening the canonical website AI Visibility workspaces.",
+    letter: "Ai",
   },
   "/marketing/connections": {
     titlePrefix: "Connections",
@@ -181,6 +191,15 @@ export function getMarketingRouteMetadata(pathname: string): Metadata {
       titlePrefix: "Brand",
       description: "Manage a brand's identity, properties, assets, and facts.",
       letter: "Bd",
+    });
+  }
+
+  if (segments[3] === "discovery") {
+    return createMarketingMetadata(normalizedPath, {
+      titlePrefix: "Brand Discovery",
+      description:
+        "Review discovered brand assets, properties, and business facts.",
+      letter: "Di",
     });
   }
 

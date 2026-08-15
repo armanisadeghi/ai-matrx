@@ -1,11 +1,11 @@
-import { Suspense } from "react";
-import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
-import { SeoCapabilitiesWorkspace } from "@/features/marketing/seo/capabilities/SeoCapabilitiesWorkspace";
+import { redirect } from "next/navigation";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 
-export default function MarketingSiteSeoCapabilitiesPage() {
-  return (
-    <Suspense fallback={<LoadingSurface label="Loading SEO capabilities…" />}>
-      <SeoCapabilitiesWorkspace />
-    </Suspense>
-  );
+export default async function MarketingSiteSeoCapabilitiesPage({
+  params,
+}: {
+  params: Promise<{ siteId: string }>;
+}) {
+  const { siteId } = await params;
+  redirect(marketingRoutes.capabilities(siteId));
 }

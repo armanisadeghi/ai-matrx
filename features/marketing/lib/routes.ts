@@ -36,6 +36,11 @@ export const marketingRoutes = {
   tools: () => "/marketing/tools",
   /** Marketing cost — provider spend against the org's monthly ceilings. */
   cost: () => "/marketing/cost",
+  /** Shared catalogue of Marketing's SEO measurement capabilities. */
+  capabilities: (siteId?: string) =>
+    siteId
+      ? `/marketing/capabilities?site=${encodeURIComponent(siteId)}`
+      : "/marketing/capabilities",
 
   // ── Reserved routes ────────────────────────────────────────────────────
   // These render <MarketingComingSoon> today. They are REAL routes, declared
@@ -61,6 +66,9 @@ export const marketingRoutes = {
   reports: () => "/marketing/reports",
   automations: () => "/marketing/automations",
   brand: (brandId: string) => `/marketing/brands/${brandId}`,
+  /** Brand-wide review inbox for discovered assets, properties, and facts. */
+  brandDiscovery: (brandId: string) =>
+    `/marketing/brands/${brandId}/discovery`,
   sites: () => "/marketing/sites",
   /** Pass a brandId to pre-bind the new site to that brand (`?brand=`). */
   newSite: (brandId?: string) =>
@@ -77,6 +85,21 @@ export const marketingRoutes = {
     brandId
       ? `/marketing/brands/${brandId}/sites/${siteId}${sub}`
       : `/marketing/sites/${siteId}${sub}`,
+  /** One configuration destination with durable, linkable Settings views. */
+  siteSettings: (
+    brandId: string | null | undefined,
+    siteId: string,
+    view:
+      | "site"
+      | "integrations"
+      | "access-users"
+      | "access-organizations"
+      | "access-public"
+      | "intake" = "site",
+  ) => {
+    const base = marketingRoutes.site(brandId, siteId, "/settings");
+    return view === "site" ? base : `${base}?view=${view}`;
+  },
   /** Site-wide internal authority flow: backlinks → crawl graph → priority pages. */
   siteAuthority: (brandId: string | null | undefined, siteId: string) =>
     brandId

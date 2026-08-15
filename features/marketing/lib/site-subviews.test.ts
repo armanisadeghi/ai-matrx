@@ -69,10 +69,10 @@ describe("marketing site sub-view registry", () => {
   });
 
   it("returns an empty list for a section with no sub-views", () => {
-    expect(listMarketingSubViews("settings")).toEqual([]);
-    expect(defaultMarketingSubView("settings")).toBeUndefined();
-    expect(marketingSubViewHref(`${SITE_PATH}/settings`, "settings", "x")).toBe(
-      `${SITE_PATH}/settings`,
+    expect(listMarketingSubViews("audit")).toEqual([]);
+    expect(defaultMarketingSubView("audit")).toBeUndefined();
+    expect(marketingSubViewHref(`${SITE_PATH}/audit`, "audit", "x")).toBe(
+      `${SITE_PATH}/audit`,
     );
   });
 
@@ -96,15 +96,18 @@ describe("marketing site sub-view registry", () => {
    * surface moved, in the same commit, is not.
    */
   it("accounts for every destination a website has", () => {
-    expect(MARKETING_SITE_SECTIONS.length).toBe(26);
+    // Discovery moved to the brand cockpit; Capabilities moved to Marketing.
+    // Access, Integrations, and Intake folded into Settings without losing a
+    // destination: Settings now owns six declared views instead of Access's 3.
+    expect(MARKETING_SITE_SECTIONS.length).toBe(21);
     expect(
       MARKETING_SITE_SUBVIEWS.reduce(
         (total, entry) => total + entry.views.length,
         0,
       ),
-    ).toBe(40);
+    ).toBe(43);
     expect(countMarketingSiteDestinations(MARKETING_SITE_SECTIONS.length)).toBe(
-      66,
+      64,
     );
   });
 });

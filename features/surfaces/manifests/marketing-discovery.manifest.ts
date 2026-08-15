@@ -2,17 +2,17 @@
  * Surface manifest — Marketing discovery inbox
  * (`matrx-user/marketing-discovery`).
  *
- * Drives `/marketing/brands/[brandId]/sites/[siteId]/discovery` — the
+ * Drives `/marketing/brands/[brandId]/discovery` — the
  * review inbox of the Marketing system (`features/marketing`,
  * `DiscoveryInbox`): machine-discovered candidates (`web.discovered_item` —
  * media, identity copy, social profiles, business facts, notable links)
  * grouped by category with pending/confirmed/dismissed tabs, where a human
  * promotes candidates to confirmed brand truth or dismisses them. Inherits
- * the shared brand + site context blocks from `matrx-user/marketing-site`.
+ * the shared brand context block from `matrx-user/marketing-brand`.
  *
  * Runtime emitter: `DiscoveryInbox` mounts a nested SurfaceRuntimeProvider and
- * spreads `useMarketingSiteSurfaceBase().getBaseValues()` (the inherited
- * brand/site block) into `createMarketingDiscoveryScope`.
+ * emits the loaded brand row and brand-context XML into
+ * `createMarketingDiscoveryScope`.
  *
  * The write half (`writeTargets`, below) covers the other direction: an agent
  * can STAGE the per-item classification the reviewer confirms with — never
@@ -206,12 +206,12 @@ export const marketingDiscoveryManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-discovery",
   readiness: "verified",
   label: "Marketing Discovery Inbox",
-  urlPattern: "/marketing/brands/[brandId]/sites/[siteId]/discovery",
-  inheritsFrom: "matrx-user/marketing-site",
+  urlPattern: "/marketing/brands/[brandId]/discovery",
+  inheritsFrom: "matrx-user/marketing-brand",
   intro: `<surface_intro>
 You are on the Marketing discovery inbox: the review queue where machine-discovered candidates about this brand (logos and imagery, identity copy, social profiles, phone/fax/address facts, notable links) wait for a human decision. Each pending item carries the machine's guess (guessed_kind), its source URL, and a label; the user confirms it into brand truth, dismisses it, or deletes it.
 The one invariant that governs this surface: the machine writes ONLY discovered_item candidates — promotion to confirmed truth (properties, brand assets, business facts) is a human, explicit act. You recommend confirm or dismiss with reasoning grounded in the item's evidence and the brand context; you never write confirmed rows, never treat a pending guess as established fact, and never invent candidates that are not in the inbox.
-Use the inherited brand_context and site_context to judge whether a candidate fits the client (right company, right domain, plausible fact) before recommending confirmation.
+Use the inherited brand_context to judge whether a candidate fits the client (right company, right properties, plausible fact) before recommending confirmation.
 Read active_status FIRST: the inbox shows one queue at a time, and discovered_items holds only that tab's rows. pending_items is populated only while the Pending tab is active. An empty item list means not-yet-loaded or that tab is empty — pending_count (brand-wide, tab-independent) at zero is the only proof the inbox is clear.
 The ONE thing you can change here is the CLASSIFICATION: item_classifications stages the type (and label) a pending row will be confirmed with, exactly as the user's own type dropdown does, and staged_classifications reads it back. That is the half of review you can do. The decisions themselves — confirm, dismiss, delete — stay with the user; stage the types, then say which items you would confirm and why.
 </surface_intro>`,
@@ -246,21 +246,16 @@ The ONE thing you can change here is the CLASSIFICATION: item_classifications st
 /**
  * Type-safe payload helper — the "a UI cannot lie" enforcement.
  * Required keys ↔ every `alwaysAvailable: true` value, INCLUDING those
- * inherited from `matrx-user/marketing-site` (site block) and its parent
- * `matrx-user/marketing-brand` (brand block): `brand_id` + `site_id`.
+ * inherited from `matrx-user/marketing-brand`: `brand_id`.
  */
 export function createMarketingDiscoveryScope(values: {
   // Inherited alwaysAvailable: true → required
   brand_id: string;
-  site_id: string;
   // Inherited alwaysAvailable: false → optional
   brand_name?: string;
   brand_context?: string;
   brand_profile?: Record<string, unknown>;
-  site_name?: string;
-  site_root_url?: string;
-  site_context?: string;
-  gsc_synced_at?: string;
+  pending_review_count?: number;
   // Own alwaysAvailable: true → required
   active_status: string;
   loaded_count: number;

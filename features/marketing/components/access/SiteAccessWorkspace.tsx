@@ -13,7 +13,6 @@ import {
   type AccessSummaryState,
 } from "@/features/sharing/components/AccessSummaryPanel";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
-import { useMarketingSubView } from "@/features/marketing/lib/useMarketingSubView";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
@@ -50,12 +49,14 @@ const NOT_OWNER_NOTICE = "Only the site owner can change sharing.";
  * panel (precedent: AgentSharePanel). One grant on `web_site` conveys the
  * whole subtree (pages, crawls, snapshots, findings) via reachability.
  */
-export function SiteAccessWorkspace() {
+export function SiteAccessWorkspace({
+  view,
+}: {
+  view: "users" | "organizations" | "public";
+}) {
   const { site } = useMarketingSite();
-  // The three views are declared in `lib/site-subviews.ts` and rendered by the
-  // SITE HEADER, which owns switching — so `?view=organizations` and
-  // `?view=public` are linkable. This file only reads which one is active.
-  const view = useMarketingSubView("access");
+  // Settings owns switching and passes the normalized sharing mode. Keeping
+  // this panel controlled prevents a second, competing URL vocabulary.
   const activeTabLabel = SUB_TAB_LABEL[view] ?? view;
 
   const ownership = useIsOwner("web_site", site.id);

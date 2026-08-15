@@ -1,18 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Database, Gauge, SearchCheck } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ArrowRight, Database, Gauge, Globe2, SearchCheck } from "lucide-react";
 
-import { CatalogueAnalysisPanel } from "@/features/marketing/components/analysis/CatalogueAnalysisPanel";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   LoadingSurface,
   QueryError,
 } from "@/features/marketing/components/shared/MarketingUi";
-import {
-  useSiteAuditRollup,
-  useSiteOverview,
-} from "@/features/marketing/data/hooks";
+import { useSiteOptions } from "@/features/marketing/data/hooks";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import {
   siteSeoCapabilities,
   type SeoCapabilityGroup,
@@ -43,53 +47,70 @@ const groupCopy: Record<
 };
 
 export function SeoCapabilitiesWorkspace() {
-  const { site, sitePath } = useMarketingSite();
-  const audit = useSiteAuditRollup(site.id);
-  const overview = useSiteOverview(site.id);
-  const capabilities = siteSeoCapabilities(sitePath);
+  const router = useRouter();
+  const params = useSearchParams();
+  const sites = useSiteOptions();
 
-  if (audit.isPending || overview.isPending) {
+  if (sites.isPending) {
     return <LoadingSurface label="Loading SEO capabilities…" />;
   }
-  if (audit.isError) {
+  if (sites.isError) {
     return (
-      <QueryError error={audit.error} onRetry={() => void audit.refetch()} />
+      <QueryError error={sites.error} onRetry={() => void sites.refetch()} />
     );
   }
-  if (overview.isError) {
+  const options = sites.data ?? [];
+  const selectedId = params.get("site");
+  const site = options.find((item) => item.id === selectedId) ?? options[0];
+  if (!site) {
     return (
-      <QueryError
-        error={overview.error}
-        onRetry={() => void overview.refetch()}
-      />
+      <main className="flex h-full items-center justify-center bg-textured p-6">
+        <div className="max-w-md rounded-xl border border-border bg-card p-6 text-center">
+          <Globe2 className="mx-auto h-8 w-8 text-muted-foreground" />
+          <h1 className="mt-3 text-base font-semibold">Add a site first</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            The catalogue is shared, but its evidence doors open a managed
+            website workspace.
+          </p>
+          <Link
+            href={marketingRoutes.newSite()}
+            className="mt-3 inline-flex text-sm font-medium text-primary hover:underline"
+          >
+            Add a site
+          </Link>
+        </div>
+      </main>
     );
   }
-
-  const liveAudit = audit.data;
-  const liveOverview = overview.data;
-  const snapshotStatus = `${liveAudit.auditedPages.toLocaleString()} of ${liveAudit.totalPages.toLocaleString()} pages audited`;
-  const providerStatus: Partial<Record<string, string>> = {
-    "search-console": `${liveOverview.pagesInGsc.toLocaleString()} pages seen in Search Console`,
-    "page-speed": "Open to see current measurement coverage",
-    backlinks: "Open to see the latest provider snapshot",
-    "rank-tracking": "Open to see tracked keyword coverage",
-    "provider-connections": "Open to verify connection health",
-  };
+  const sitePath = marketingRoutes.site(site.brand_id, site.id);
+  const capabilities = siteSeoCapabilities(sitePath);
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 p-4 lg:p-6">
       <header className="space-y-1">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          {site.domain}
-        </p>
         <h1 className="text-2xl font-semibold tracking-tight">
           SEO capabilities
         </h1>
         <p className="max-w-3xl text-sm text-muted-foreground">
-          One place to find what this site can measure, where each result lives,
-          and which system produces it. Every capability below opens its working
-          destination.
+          The shared catalogue of what Marketing can measure, where each result
+          lives, and which system produces it. Choose a website only to open
+          that capability's evidence.
         </p>
+        <Select
+          value={site.id}
+          onValueChange={(siteId) => router.replace(marketingRoutes.capabilities(siteId))}
+        >
+          <SelectTrigger className="mt-3 h-8 w-full sm:w-80" aria-label="Website for evidence links">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {options.map((option) => (
+              <SelectItem key={option.id} value={option.id}>
+                {option.name} · {option.domain || option.root_url}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </header>
 
       {(["snapshot", "catalogue", "provider"] as const).map((group) => {
@@ -113,10 +134,6 @@ export function SeoCapabilitiesWorkspace() {
               {capabilities
                 .filter((capability) => capability.group === group)
                 .map((capability) => {
-                  const status =
-                    capability.key === "snapshot-audit"
-                      ? snapshotStatus
-                      : providerStatus[capability.key];
                   return (
                     <Link
                       key={capability.key}
@@ -129,11 +146,6 @@ export function SeoCapabilitiesWorkspace() {
                       <p className="mt-1 flex-1 text-xs leading-5 text-muted-foreground">
                         {capability.description}
                       </p>
-                      {status ? (
-                        <p className="mt-2 text-[11px] font-medium text-foreground">
-                          {status}
-                        </p>
-                      ) : null}
                       <span className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary">
                         {capability.evidenceLabel}
                         <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
@@ -146,7 +158,6 @@ export function SeoCapabilitiesWorkspace() {
         );
       })}
 
-      <CatalogueAnalysisPanel />
     </div>
   );
 }

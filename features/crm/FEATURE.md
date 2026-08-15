@@ -90,6 +90,12 @@ DDL: [`migrations/crm_01_schema.sql`](../../migrations/crm_01_schema.sql),
     change it. Hidden is never unreachable.
   - `crm_list_scope_counts` takes the SAME `p_record_class` — a tab reading 1,181 above a
     list of 6 rows is a bug, so the RPC and the predicate change together, always.
+  - **Every general party selector is contact-only.** Universal reference/association
+    pickers inherit `record_class='contact'` from
+    `platform.entity_types.reference_candidate_predicates`; direct CRM name/employer
+    pickers, import dedup lookups, and duplicate-candidate reads apply the same predicate.
+    All also exclude `canonical_id IS NOT NULL`. Dedicated discovered-record surfaces are
+    the only place allowed to opt into discovered rows.
   - **Not `platform.categories`** — that is the user's taxonomy (lifecycle, rating,
     segments). This is a system-owned structural axis.
   - Promotion (`discovered` → `contact`) is a human act; the server never reverses it.
@@ -121,10 +127,11 @@ DDL: [`migrations/crm_01_schema.sql`](../../migrations/crm_01_schema.sql),
   move would not collide, records every moved id in `crm.party_merge.moved`, and sets
   `canonical_id` on the loser — which stays live. `crm_unmerge_parties` replays that
   record exactly. Children that _would_ collide stay on the loser on purpose.
-- **Dedup (crm_03_dedup.sql): only identity-key collisions auto-merge.**
+- **Dedup (crm_03_dedup.sql): only contact identity-key collisions auto-merge.**
   `public.crm_detect_merge_candidates(p_org)` merges two live canonical parties
   automatically ONLY when both hold the same live email/phone medium through
-  contact points BOTH flagged `is_identity_key` (earlier-created party wins,
+  contact points BOTH flagged `is_identity_key` and both carry
+  `record_class='contact'` (earlier-created party wins,
   method `'auto'`). Everything weaker — shared medium without both flags, same
   `name_key`, company domain in another company's emails — lands in
   `crm.merge_candidate` as a suggestion (`CHECK (source_id < target_id)`, one
@@ -501,6 +508,15 @@ not an expert) and `ExpertStatusCard` on the record page.
 
 ## Change log
 
+- 2026-08-15 — **Discovered records and merge losers are gone from every party
+  picker/import/dedup surface.** The universal candidate RPC now reads structured
+  equality predicates from `platform.entity_types.reference_candidate_predicates`;
+  `party` declares `record_class='contact'`, while `canonical_id IS NULL` applies
+  generically to every registered table that has the column. CRM direct reads and
+  `crm_detect_merge_candidates` enforce the same contact-only boundary, including the
+  `/crm` duplicate badge. The unsafe direct-table picker/title fallbacks were removed.
+  Live verification: 6 contact rows returned, 0 of 1,181 discovered rows, 0 merge losers;
+  mixed by-id resolution returned only the contact.
 - 2026-08-15 — **Native contact exports now enter the existing accountable preview.**
   `/crm/import` accepts CSV/TSV/paste, Excel `.xlsx/.xls`, and multi-contact vCard
   `.vcf/.vcard`; recognizes common Google Contacts, Outlook, Salesforce, HubSpot,

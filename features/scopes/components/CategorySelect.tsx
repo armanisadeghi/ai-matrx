@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/select";
 import { useCategories } from "@/features/scopes/hooks/useCategories";
 import type { CategoryDimension } from "@/features/scopes/types";
+import { buildCategoryHierarchy } from "@/features/scopes/utils/categoryHierarchy";
+import { CornerDownRight } from "lucide-react";
 
 const NONE = "__none__";
 
@@ -37,6 +39,10 @@ export function CategorySelect({
   disabled?: boolean;
 }) {
   const { categories, status, error } = useCategories({ dimension });
+  const hierarchy = buildCategoryHierarchy(categories);
+  const selectedItem = hierarchy.items.find(
+    (item) => item.category.id === value,
+  );
 
   return (
     <div>
@@ -46,7 +52,10 @@ export function CategorySelect({
         disabled={disabled || status === "loading"}
       >
         <SelectTrigger className="h-8 text-sm">
-          <SelectValue placeholder={placeholder} />
+          <SelectValue placeholder={placeholder}>
+            {selectedItem?.displayName ??
+              (value === null && allowNone ? "None" : undefined)}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
           {allowNone ? (
@@ -54,11 +63,30 @@ export function CategorySelect({
               <span className="text-muted-foreground">None</span>
             </SelectItem>
           ) : null}
-          {categories.map((category) => (
-            <SelectItem key={category.id} value={category.id}>
-              {category.name}
-            </SelectItem>
-          ))}
+          {hierarchy.hasHierarchy
+            ? hierarchy.items.map(({ category, depth, parent }) => (
+                <SelectItem
+                  key={category.id}
+                  value={category.id}
+                  aria-label={
+                    parent ? `${parent.name}, ${category.name}` : category.name
+                  }
+                >
+                  {depth === 0 ? (
+                    <span className="font-medium">{category.name}</span>
+                  ) : (
+                    <span className="flex items-center gap-1.5 pl-3 text-muted-foreground">
+                      <CornerDownRight className="h-3.5 w-3.5 shrink-0" />
+                      <span className="text-foreground">{category.name}</span>
+                    </span>
+                  )}
+                </SelectItem>
+              ))
+            : categories.map((category) => (
+                <SelectItem key={category.id} value={category.id}>
+                  {category.name}
+                </SelectItem>
+              ))}
         </SelectContent>
       </Select>
       {error ? <p className="mt-1 text-xs text-destructive">{error}</p> : null}

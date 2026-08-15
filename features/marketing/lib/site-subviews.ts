@@ -1,7 +1,7 @@
 /**
  * The SECOND level of a website: every sub-view inside a site section.
  *
- * `route-sections.ts` declares the 26 sections (level 1 — real routes). This
+ * `route-sections.ts` declares the 21 sections (level 1 — real routes). This
  * file declares what lives INSIDE them. Before it existed, twelve sections
  * carried their own sub-navigation built five different ways — Radix `Tabs`,
  * `?view=`, `?tab=`, plain `useState`, and one real sub-route family — so the
@@ -133,11 +133,14 @@ export const MARKETING_SITE_SUBVIEWS = [
     hrefStyle: "path",
   },
   {
-    section: "access",
+    section: "settings",
     views: [
-      { id: "users", label: "Users" },
-      { id: "organizations", label: "Organizations" },
-      { id: "public", label: "Public" },
+      { id: "site", label: "Site" },
+      { id: "integrations", label: "Integrations" },
+      { id: "access-users", label: "User access" },
+      { id: "access-organizations", label: "Organization access" },
+      { id: "access-public", label: "Public access" },
+      { id: "intake", label: "Intake" },
     ],
   },
 ] as const satisfies readonly MarketingSectionSubViews[];

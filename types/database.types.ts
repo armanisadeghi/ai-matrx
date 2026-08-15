@@ -31382,6 +31382,7 @@ export type Database = {
           is_versioned: boolean
           label: string
           notes: string | null
+          reference_candidate_predicates: Json
           reference_category: string | null
           reference_pickable: boolean
           rls_variant: string
@@ -31418,6 +31419,7 @@ export type Database = {
           is_versioned?: boolean
           label: string
           notes?: string | null
+          reference_candidate_predicates?: Json
           reference_category?: string | null
           reference_pickable?: boolean
           rls_variant?: string
@@ -31454,6 +31456,7 @@ export type Database = {
           is_versioned?: boolean
           label?: string
           notes?: string | null
+          reference_candidate_predicates?: Json
           reference_category?: string | null
           reference_pickable?: boolean
           rls_variant?: string
@@ -36733,6 +36736,7 @@ export type Database = {
         }
         Returns: string
       }
+      cat_delete: { Args: { p_category_id: string }; Returns: string }
       cat_list: {
         Args: { p_dimension?: string }
         Returns: {
@@ -36747,6 +36751,21 @@ export type Database = {
           position: number
           slug: string
         }[]
+      }
+      cat_reparent: {
+        Args: { p_category_id: string; p_parent_id?: string }
+        Returns: string
+      }
+      cat_update: {
+        Args: {
+          p_category_id: string
+          p_color?: string
+          p_icon?: string
+          p_name: string
+          p_position?: number
+          p_slug?: string
+        }
+        Returns: string
       }
       check_file_rate_limit: {
         Args: { p_actor_id: string; p_kind: string; p_limit: number }
@@ -47625,6 +47644,7 @@ export type Database = {
           normalized_domain: string
           organic_keywords: number | null
           organization_id: string
+          peer_scale: string | null
           posture: string | null
           provider_evidence: Json
           relevance_score: number | null
@@ -47665,6 +47685,7 @@ export type Database = {
           normalized_domain: string
           organic_keywords?: number | null
           organization_id: string
+          peer_scale?: string | null
           posture?: string | null
           provider_evidence?: Json
           relevance_score?: number | null
@@ -47705,6 +47726,7 @@ export type Database = {
           normalized_domain?: string
           organic_keywords?: number | null
           organization_id?: string
+          peer_scale?: string | null
           posture?: string | null
           provider_evidence?: Json
           relevance_score?: number | null
@@ -51133,6 +51155,7 @@ export type Database = {
           normalized_domain: string
           organic_keywords: number | null
           organization_id: string
+          peer_scale: string | null
           posture: string | null
           provider_evidence: Json
           relevance_score: number | null

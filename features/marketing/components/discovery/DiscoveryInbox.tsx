@@ -56,13 +56,18 @@ import {
 } from "@/components/ui/select";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingDiscoveryScope } from "@/features/surfaces/manifests/marketing-discovery.manifest";
-import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
-import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 import {
   useBulkConfirmDiscoveredItems,
   useBulkDeleteDiscoveredItems,
   useBulkDismissDiscoveredItems,
   useBulkUndismissDiscoveredItems,
+  useBrand,
+  useBrandAssets,
+  useBrandProperties,
+  useBrandSites,
+  useBusinessFacts,
   useConfirmDiscoveredAsset,
   useConfirmDiscoveredFact,
   useConfirmDiscoveredProperty,
@@ -79,6 +84,7 @@ import {
 import {
   isPropertyKind,
   isJsonRecord,
+  parseBrandProfile,
   type DiscoveredItem,
   type DiscoveredItemStatus,
   type PropertyKind,
@@ -99,6 +105,8 @@ import {
 import { extractErrorMessage } from "@/utils/errors";
 import { cn } from "@/lib/utils";
 import { describeDiscoveredSocialProfile } from "@/features/marketing/lib/discovery-promotion";
+import { buildBrandContextXml } from "@/features/marketing/lib/surface-context";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 
 const STATUS_TABS: Array<{ value: DiscoveredItemStatus; label: string }> = [
   { value: "pending", label: "Pending" },
@@ -154,9 +162,12 @@ function itemContextSnippet(item: DiscoveredItem): string | null {
   return null;
 }
 
-export function DiscoveryInbox() {
-  const { site } = useMarketingSite();
-  const { getBaseValues } = useMarketingSiteSurfaceBase();
+export function DiscoveryInbox({ brandId }: { brandId: string }) {
+  const brand = useBrand(brandId);
+  const brandSites = useBrandSites(brandId);
+  const properties = useBrandProperties(brandId);
+  const assets = useBrandAssets(brandId);
+  const facts = useBusinessFacts(brandId);
   const [status, setStatusState] = useState<DiscoveredItemStatus>("pending");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
@@ -172,7 +183,7 @@ export function DiscoveryInbox() {
     {},
   );
   const [confirmingBulkDelete, setConfirmingBulkDelete] = useState(false);
-  const pendingCount = usePendingDiscoveredCount(site.brand_id);
+  const pendingCount = usePendingDiscoveredCount(brandId);
   const bulkConfirm = useBulkConfirmDiscoveredItems();
   const bulkDismiss = useBulkDismissDiscoveredItems();
   const bulkUndismiss = useBulkUndismissDiscoveredItems();
@@ -185,7 +196,7 @@ export function DiscoveryInbox() {
   const [knownTotal, setKnownTotal] = useState(0);
   const knownPageCount = Math.max(1, Math.ceil(knownTotal / pageSize));
   const currentPage = Math.min(page, knownPageCount);
-  const items = useDiscoveredItems(site.brand_id, status, currentPage, pageSize);
+  const items = useDiscoveredItems(brandId, status, currentPage, pageSize);
 
   const rows = useMemo(() => items.data?.rows ?? [], [items.data]);
   const total = items.data?.total ?? 0;
@@ -358,33 +369,37 @@ export function DiscoveryInbox() {
     }
   };
 
-  if (!site.brand_id) {
+  if (brand.isLoading || items.isLoading) {
+    return <LoadingSurface label="Loading discoveries…" />;
+  }
+  if (brand.isError || !brand.data) {
     return (
-      <QueryError
-        error={
-          new Error(
-            "This site has no brand link — a data integrity bug. Report it.",
-          )
-        }
-      />
+      <QueryError error={brand.error} onRetry={() => void brand.refetch()} />
     );
   }
-  if (items.isLoading) return <LoadingSurface label="Loading discoveries…" />;
   if (items.isError) {
     return (
       <QueryError error={items.error} onRetry={() => void items.refetch()} />
     );
   }
 
+  const currentBrand = brand.data;
+  const brandContext = buildBrandContextXml({
+    brand: currentBrand,
+    sites: brandSites.data ?? [],
+    properties: properties.data ?? [],
+    assets: assets.data ?? [],
+    facts: facts.data ?? [],
+  });
   const inboxCopy = webCopy({
     kind: "web-discovery-inbox",
     label: `Discovery inbox (${status})`,
     description:
       "Machine-discovered brand candidates awaiting human review; confirming promotes an item to confirmed brand assets/facts/properties.",
-    surface: `Discovery inbox — ${site.name} (${status})`,
+    surface: `Discovery inbox — ${currentBrand.name} (${status})`,
     data: rows,
     lines: [
-      ["Site", site.domain],
+      ["Brand", currentBrand.name],
       ["Status filter", status],
       ["Total items", total],
       ["Loaded on this page", rows.length],
@@ -397,8 +412,7 @@ export function DiscoveryInbox() {
       ),
     ],
     attributes: {
-      site_id: site.id,
-      brand_id: site.brand_id,
+      brand_id: brandId,
       status,
       count: rows.length,
       total,
@@ -406,7 +420,7 @@ export function DiscoveryInbox() {
     },
   });
 
-  const pageLocation = `AI Matrx — Marketing — Discovery inbox — ${site.name}`;
+  const pageLocation = `AI Matrx — Marketing — Discovery inbox — ${currentBrand.name}`;
   const groomerSections = (): AgentCopyGroomerSection[] => [
     {
       id: "pending_count",
@@ -436,11 +450,11 @@ export function DiscoveryInbox() {
     },
   ];
   const groomerConfig = (): AgentCopyGroomerConfig => ({
-    label: `Discovery inbox — ${site.name}`,
+    label: `Discovery inbox — ${currentBrand.name}`,
     kind: "marketing-discovery-page",
     location: pageLocation,
-    description: `Machine-discovered brand candidates for ${site.name} (${status} tab).`,
-    attributes: { site_id: site.id, brand_id: site.brand_id, status },
+    description: `Machine-discovered candidates for ${currentBrand.name} (${status} tab).`,
+    attributes: { brand_id: brandId, status },
     summary: inboxCopy.human(),
     sections: groomerSections(),
   });
@@ -571,7 +585,11 @@ export function DiscoveryInbox() {
                 status: item.status,
               }));
         return createMarketingDiscoveryScope({
-          ...getBaseValues(),
+          brand_id: brandId,
+          brand_name: currentBrand.name,
+          brand_context: brandContext,
+          brand_profile: parseBrandProfile(currentBrand.profile),
+          pending_review_count: pendingCount.data,
           active_status: status,
           loaded_count: rows.length,
           category_counts: grouped.map(([category, categoryItems]) => ({
@@ -603,7 +621,20 @@ export function DiscoveryInbox() {
         });
       }}
     >
-    <main className="h-full overflow-y-auto bg-textured p-3 sm:p-4">
+    <RouteHeader
+      left={
+        <div className="flex min-w-0 items-center gap-2">
+          <ChevronLeftTapButton
+            href={marketingRoutes.brand(brandId)}
+            ariaLabel={`Back to ${currentBrand.name}`}
+          />
+          <h1 className="truncate text-sm font-medium text-foreground">
+            {currentBrand.name} · Discovery
+          </h1>
+        </div>
+      }
+    />
+    <main className="h-full overflow-y-auto bg-textured p-3 pt-[calc(var(--shell-header-h)+0.5rem)] sm:p-4 sm:pt-[calc(var(--shell-header-h)+0.75rem)]">
       <div className="grid w-full gap-3">
         <header className="flex flex-wrap items-center justify-between gap-2">
           <div>
@@ -614,9 +645,9 @@ export function DiscoveryInbox() {
               </span>
             </h1>
             <p className="text-xs text-muted-foreground">
-              Everything found on this site that needs a human to say what it
-              is. Confirming promotes an item to the brand's confirmed assets
-              and facts.
+              Everything found for this brand that needs a human to say what
+              it is. Confirming promotes an item to confirmed assets, facts,
+              and properties.
             </p>
           </div>
           <div className="flex items-center gap-1.5">
@@ -636,7 +667,7 @@ export function DiscoveryInbox() {
           ) : null}
           {rows.length > 0 ? (
             <ExportMenu
-              label={`discovery-inbox-${site.domain}-${status}`}
+              label={`discovery-inbox-${currentBrand.name}-${status}`}
               items={[
                 jsonExportItem(() => rows, "JSON (loaded items, raw)"),
                 {

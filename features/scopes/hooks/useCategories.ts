@@ -21,9 +21,15 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectCategoriesFor } from "@/features/scopes/redux/selectors/categories";
 import {
   createCategory as createCategoryThunk,
+  deleteCategory as deleteCategoryThunk,
   loadCategories as loadCategoriesThunk,
+  reparentCategory as reparentCategoryThunk,
+  updateCategory as updateCategoryThunk,
 } from "@/features/scopes/redux/thunks/categories";
-import type { CategoryCreateResult } from "@/features/scopes/redux/thunks/categories";
+import type {
+  CategoryCreateResult,
+  CategoryMutationResult,
+} from "@/features/scopes/redux/thunks/categories";
 import type {
   CategoriesEntry,
   CategoryDimension,
@@ -56,6 +62,22 @@ export interface UseCategoriesReturn {
     icon?: string | null;
     slug?: string | null;
   }) => Promise<CategoryCreateResult>;
+  /** Replace one category's editable scalar fields. */
+  update: (args: {
+    id: string;
+    name: string;
+    slug: string | null;
+    color: string | null;
+    icon: string | null;
+    position: number | null;
+  }) => Promise<CategoryMutationResult>;
+  /** Move a category to the root or directly under a root category. */
+  reparent: (
+    id: string,
+    parentId: string | null,
+  ) => Promise<CategoryMutationResult>;
+  /** Soft-delete a leaf category. */
+  remove: (id: string) => Promise<CategoryMutationResult>;
   /** Force a refetch of this facet's categories. */
   reload: () => Promise<void>;
 }
@@ -92,6 +114,28 @@ export function useCategories(args: UseCategoriesArgs): UseCategoriesReturn {
           slug,
         }),
       );
+    },
+    update: async ({ id, name, slug, color, icon, position }) => {
+      if (!dimension) return { ok: false, error: "Missing dimension" };
+      return dispatch(
+        updateCategoryThunk({
+          dimension,
+          id,
+          name,
+          slug,
+          color,
+          icon,
+          position,
+        }),
+      );
+    },
+    reparent: async (id, parentId) => {
+      if (!dimension) return { ok: false, error: "Missing dimension" };
+      return dispatch(reparentCategoryThunk({ dimension, id, parentId }));
+    },
+    remove: async (id) => {
+      if (!dimension) return { ok: false, error: "Missing dimension" };
+      return dispatch(deleteCategoryThunk({ dimension, id }));
     },
     reload: async () => {
       if (!dimension) return;

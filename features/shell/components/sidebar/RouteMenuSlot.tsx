@@ -182,6 +182,7 @@ export default function RouteMenuSlot() {
       <button
         type="button"
         className="shell-sidebar-switch"
+        title={`Switch to ${switchLabel}`}
         data-visible={switchVisible ? "true" : undefined}
         onClick={handleSwitch}
         disabled={loading}

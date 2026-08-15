@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-08-15T08:07:12.201Z",
-  "commit": "1289bd7f513ec882a0953199172c18c413ca4c7b",
-  "aidreamCommit": "631377d28856d992e051891cfdd57b1bd1355a26",
+  "generatedAt": "2026-08-15T16:38:15.313Z",
+  "commit": "b645f2f2c511f44dd5c309e6160a259569a2b75a",
+  "aidreamCommit": "ec817f6c6d00ec2e20de4665a5d8e90bed101ac6",
   "totals": {
     "findings": 747,
-    "lines": 33930,
+    "lines": 33931,
     "filesWithFindings": 564,
-    "filesScanned": 13563,
+    "filesScanned": 13582,
     "suppressed": 5,
     "byDetector": {
       "react-component-unmounted": 358,
@@ -907,6 +907,20 @@
     },
     {
       "repository": "matrx-frontend",
+      "detector": "react-component-unmounted",
+      "file": "app/(dev)/demos/tests/google-apis/pagespeed/components/PageSpeedForm.tsx",
+      "line": 23,
+      "column": 1,
+      "symbol": "PageSpeedForm",
+      "lines": 159,
+      "title": "PageSpeedForm appears unfinished — it is built but has no runtime consumer",
+      "evidence": "no JSX tag in the runtime TypeScript graph resolves to this exported component",
+      "intent": "an exported component with 159 implementation line(s)",
+      "remains": "mount it from the page, panel, overlay, or parent surface it was built for, then exercise that user path",
+      "feature": "app/(dev)/demos"
+    },
+    {
+      "repository": "matrx-frontend",
       "detector": "export-unimported",
       "file": "features/flashcards/hooks/useFlashcardStudy.ts",
       "line": 105,
@@ -918,20 +932,6 @@
       "intent": "an exported hook with 159 implementation line(s)",
       "remains": "wire the runtime consumer it was built for, then prove a real page, action, producer, or workflow reaches it",
       "feature": "features/flashcards"
-    },
-    {
-      "repository": "matrx-frontend",
-      "detector": "react-component-unmounted",
-      "file": "app/(dev)/demos/tests/google-apis/pagespeed/components/PageSpeedForm.tsx",
-      "line": 23,
-      "column": 1,
-      "symbol": "PageSpeedForm",
-      "lines": 158,
-      "title": "PageSpeedForm appears unfinished — it is built but has no runtime consumer",
-      "evidence": "no JSX tag in the runtime TypeScript graph resolves to this exported component",
-      "intent": "an exported component with 158 implementation line(s)",
-      "remains": "mount it from the page, panel, overlay, or parent surface it was built for, then exercise that user path",
-      "feature": "app/(dev)/demos"
     },
     {
       "repository": "matrx-frontend",
