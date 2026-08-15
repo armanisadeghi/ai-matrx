@@ -450,6 +450,25 @@
         }
       }
     },
+    "/ai/prompts/builtins": {
+      "get": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Get All Prompt Builtins",
+        "operationId": "get_all_prompt_builtins_ai_prompts_builtins_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/ai/prompts/{prompt_id}/warm": {
       "post": {
         "tags": [
@@ -1603,6 +1622,44 @@
                   "type": "object",
                   "title": "Response List Scenarios Ai Mock Stream Scenarios Get"
                 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/prompts": {
+      "get": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Get User Prompts",
+        "operationId": "get_user_prompts_ai_prompts_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/prompts/all": {
+      "get": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Get User Prompts And Builtins",
+        "operationId": "get_user_prompts_and_builtins_ai_prompts_all_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           }
@@ -10527,6 +10584,131 @@
         }
       }
     },
+    "/github-integrations/exchange": {
+      "post": {
+        "tags": [
+          "GitHub Integrations"
+        ],
+        "summary": "Exchange",
+        "operationId": "exchange_github_integrations_exchange_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GitHubExchangeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GitHubConnectionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/github-integrations/sync": {
+      "post": {
+        "tags": [
+          "GitHub Integrations"
+        ],
+        "summary": "Sync",
+        "operationId": "sync_github_integrations_sync_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GitHubConnectionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/github-integrations/connection": {
+      "delete": {
+        "tags": [
+          "GitHub Integrations"
+        ],
+        "summary": "Disconnect",
+        "operationId": "disconnect_github_integrations_connection_delete",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GitHubConnectionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/github-integrations/internal/access-token": {
+      "get": {
+        "tags": [
+          "GitHub Integrations (internal)"
+        ],
+        "summary": "Internal Access Token",
+        "operationId": "internal_access_token_github_integrations_internal_access_token_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/github-integrations/webhook": {
+      "post": {
+        "tags": [
+          "GitHub Integrations (internal)"
+        ],
+        "summary": "Webhook",
+        "operationId": "webhook_github_integrations_webhook_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GitHubWebhookResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/google-workspace/files/register": {
       "post": {
         "tags": [
@@ -11212,6 +11394,216 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/sites/{site_id}/competitors/discover": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Discover Site Competitors",
+        "description": "Find the rivals and classify each one — WITHOUT buying a page-crawl autopsy.\n\nThe cheap half of the autopsy, on its own. Every row lands `proposed` and\nwaits for a human: nothing becomes a competitor because software said so.",
+        "operationId": "discover_site_competitors_seo_sites__site_id__competitors_discover_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompetitorDiscoverBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Discover Site Competitors Seo Sites  Site Id  Competitors Discover Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/sites/{site_id}/landscape-brief": {
+      "get": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Get Site Landscape Brief",
+        "description": "The brief as it stands, whatever its review state.",
+        "operationId": "get_site_landscape_brief_seo_sites__site_id__landscape_brief_get",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Site Landscape Brief Seo Sites  Site Id  Landscape Brief Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/sites/{site_id}/landscape-brief/generate": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Generate Site Landscape Brief",
+        "description": "Stage 1 of the staged-confidence pattern: establish the ground facts.\n\nLeaves the brief `awaiting_review` with a 24-hour deadline — after which\ndownstream work proceeds on these assumptions rather than stalling.",
+        "operationId": "generate_site_landscape_brief_seo_sites__site_id__landscape_brief_generate_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptsInjectedScope"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Generate Site Landscape Brief Seo Sites  Site Id  Landscape Brief Generate Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/sites/{site_id}/landscape-brief/ruling": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Rule On Site Landscape Brief",
+        "description": "The owner's correction, in their own words — the guidance every later\nagent inherits.",
+        "operationId": "rule_on_site_landscape_brief_seo_sites__site_id__landscape_brief_ruling_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LandscapeBriefRulingBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Rule On Site Landscape Brief Seo Sites  Site Id  Landscape Brief Ruling Post"
+                }
               }
             }
           },
@@ -25036,6 +25428,102 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/crm/parties/{outlet_party_id}/contact-candidates": {
+      "get": {
+        "tags": [
+          "CRM"
+        ],
+        "summary": "List Outlet Contact Candidates",
+        "description": "Return current crawl-backed people and address suggestions. Writes nothing.",
+        "operationId": "list_outlet_contact_candidates_crm_parties__outlet_party_id__contact_candidates_get",
+        "parameters": [
+          {
+            "name": "outlet_party_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Outlet Party Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutletContactExtraction"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/crm/parties/{outlet_party_id}/contact-candidates/confirm": {
+      "post": {
+        "tags": [
+          "CRM"
+        ],
+        "summary": "Confirm Outlet Contact Candidate",
+        "description": "Human-confirm one current person and selected literally observed addresses.",
+        "operationId": "confirm_outlet_contact_candidate_crm_parties__outlet_party_id__contact_candidates_confirm_post",
+        "parameters": [
+          {
+            "name": "outlet_party_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Outlet Party Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmOutletContactRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfirmedOutletContact"
+                }
               }
             }
           },
@@ -49981,6 +50469,49 @@
         ],
         "title": "AcceptBriefResult"
       },
+      "AcceptsInjectedScope": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          }
+        },
+        "type": "object",
+        "title": "AcceptsInjectedScope",
+        "description": "Fields the FE ``callApi`` may inject on every POST/PUT/PATCH body.\n\n``lib/api/call-api.ts::buildRequestBody`` always merges\n``organization_id`` / ``project_id`` / ``task_id`` from the active app\ncontext onto the JSON body. A request model with ``extra=\"forbid\"`` that\nomits these fields 422s with ``extra_forbidden`` the moment the user has\nan org selected — the entire class of failure behind the 2026-07-15\n``/skills/ingest`` incident.\n\n**Rule:** every FastAPI body model that sets ``extra=\"forbid\"`` MUST\ninherit this (or :class:`ScopedRequest`, which does). Guard:\n``scripts/check_request_accepts_org_scope.py``."
+      },
       "ActionApplyResult": {
         "properties": {
           "type": {
@@ -69552,6 +70083,81 @@
         ],
         "title": "CompetitorClassifyBody"
       },
+      "CompetitorDiscoverBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "competitor_domains": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 25,
+            "title": "Competitor Domains"
+          },
+          "location_code": {
+            "type": "integer",
+            "title": "Location Code",
+            "default": 2840
+          },
+          "language_code": {
+            "type": "string",
+            "maxLength": 10,
+            "minLength": 2,
+            "title": "Language Code",
+            "default": "en"
+          },
+          "max_competitors": {
+            "type": "integer",
+            "maximum": 25,
+            "minimum": 1,
+            "title": "Max Competitors",
+            "default": 12
+          },
+          "force_refresh": {
+            "type": "boolean",
+            "title": "Force Refresh",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "CompetitorDiscoverBody"
+      },
       "CompetitorLookupBody": {
         "properties": {
           "organization_id": {
@@ -70316,6 +70922,128 @@
         "title": "ComputeTargetRef",
         "description": "Compact reference posted by clients when they bind a target to a\nconversation. The full binding (base_url / access_token / root_path) is\nresolved server-side from this ref."
       },
+      "ConfirmOutletContactRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "candidate_key": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Candidate Key"
+          },
+          "email_keys": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Email Keys"
+          },
+          "accept_low_confidence": {
+            "type": "boolean",
+            "title": "Accept Low Confidence",
+            "default": false
+          },
+          "accept_role_address": {
+            "type": "boolean",
+            "title": "Accept Role Address",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "candidate_key"
+        ],
+        "title": "ConfirmOutletContactRequest"
+      },
+      "ConfirmedOutletContact": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "party_id": {
+            "type": "string",
+            "title": "Party Id"
+          },
+          "created": {
+            "type": "boolean",
+            "title": "Created"
+          },
+          "matched_by": {
+            "type": "string",
+            "title": "Matched By"
+          },
+          "affiliation_id": {
+            "type": "string",
+            "title": "Affiliation Id"
+          },
+          "affiliation_created": {
+            "type": "boolean",
+            "title": "Affiliation Created"
+          },
+          "email_keys": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Email Keys"
+          },
+          "contact_points_added": {
+            "type": "integer",
+            "title": "Contact Points Added",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "display_name",
+          "party_id",
+          "created",
+          "matched_by",
+          "affiliation_id",
+          "affiliation_created"
+        ],
+        "title": "ConfirmedOutletContact"
+      },
       "ConformanceState": {
         "type": "string",
         "enum": [
@@ -70485,6 +71213,53 @@
         ],
         "title": "ConnectionSummary",
         "description": "Non-secret connection state — what the FE reads after any operation."
+      },
+      "ContactEvidence": {
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "title": "Source Id"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "byline",
+              "editor",
+              "author_profile",
+              "credentialed_author",
+              "quote",
+              "mention"
+            ],
+            "title": "Kind"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_id",
+          "url",
+          "kind",
+          "detail"
+        ],
+        "title": "ContactEvidence"
       },
       "ContentEditRequest": {
         "properties": {
@@ -86838,6 +87613,87 @@
         ],
         "title": "GetToolResponse"
       },
+      "GitHubConnectionResponse": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "title": "Connection Id"
+          },
+          "account_login": {
+            "type": "string",
+            "title": "Account Login"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "repository_count": {
+            "type": "integer",
+            "title": "Repository Count"
+          },
+          "installation_count": {
+            "type": "integer",
+            "title": "Installation Count"
+          },
+          "all_repositories": {
+            "type": "boolean",
+            "title": "All Repositories"
+          },
+          "mcp_connected": {
+            "type": "boolean",
+            "title": "Mcp Connected"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id",
+          "account_login",
+          "status",
+          "repository_count",
+          "installation_count",
+          "all_repositories",
+          "mcp_connected"
+        ],
+        "title": "GitHubConnectionResponse"
+      },
+      "GitHubExchangeRequest": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Code"
+          },
+          "redirect_uri": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Redirect Uri"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "redirect_uri"
+        ],
+        "title": "GitHubExchangeRequest"
+      },
+      "GitHubWebhookResponse": {
+        "properties": {
+          "accepted": {
+            "type": "boolean",
+            "title": "Accepted"
+          },
+          "processed_connections": {
+            "type": "integer",
+            "title": "Processed Connections"
+          }
+        },
+        "type": "object",
+        "required": [
+          "accepted",
+          "processed_connections"
+        ],
+        "title": "GitHubWebhookResponse"
+      },
       "GoogleConnectionCredentialResponse": {
         "properties": {
           "refresh_token": {
@@ -92751,6 +93607,84 @@
         "type": "object",
         "title": "LabelRequest"
       },
+      "LandscapeBriefRulingBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "guidance": {
+            "type": "string",
+            "maxLength": 8000,
+            "minLength": 1,
+            "title": "Guidance"
+          },
+          "service_lines": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Service Lines"
+          },
+          "brief_markdown": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brief Markdown"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "guidance"
+        ],
+        "title": "LandscapeBriefRulingBody"
+      },
       "LeakRule": {
         "type": "string",
         "enum": [
@@ -98641,6 +99575,69 @@
         ],
         "title": "OauthStartResponse"
       },
+      "ObservedEmailCandidate": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "address": {
+            "type": "string",
+            "title": "Address"
+          },
+          "confidence": {
+            "type": "integer",
+            "title": "Confidence"
+          },
+          "tier": {
+            "type": "string",
+            "enum": [
+              "observed_personal",
+              "observed_role"
+            ],
+            "title": "Tier"
+          },
+          "is_role_address": {
+            "type": "boolean",
+            "title": "Is Role Address"
+          },
+          "why": {
+            "type": "string",
+            "title": "Why"
+          },
+          "source_id": {
+            "type": "string",
+            "title": "Source Id"
+          },
+          "source_url": {
+            "type": "string",
+            "title": "Source Url"
+          },
+          "source_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Title"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "address",
+          "confidence",
+          "tier",
+          "is_role_address",
+          "why",
+          "source_id",
+          "source_url"
+        ],
+        "title": "ObservedEmailCandidate"
+      },
       "OccupationalCodesResponse": {
         "properties": {
           "codes": {
@@ -100085,6 +101082,144 @@
         "additionalProperties": false,
         "type": "object",
         "title": "OrganizationSecretUpdateRequest"
+      },
+      "OutletContactCandidate": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "confidence": {
+            "type": "integer",
+            "title": "Confidence"
+          },
+          "tier": {
+            "type": "string",
+            "enum": [
+              "strong",
+              "probable",
+              "weak"
+            ],
+            "title": "Tier"
+          },
+          "why": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Why"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/ContactEvidence"
+            },
+            "type": "array",
+            "title": "Evidence"
+          },
+          "observed_emails": {
+            "items": {
+              "$ref": "#/components/schemas/ObservedEmailCandidate"
+            },
+            "type": "array",
+            "title": "Observed Emails"
+          },
+          "existing_party_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Existing Party Id"
+          },
+          "existing_affiliation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Existing Affiliation Id"
+          },
+          "existing_email_keys": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Existing Email Keys"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "display_name",
+          "role",
+          "confidence",
+          "tier"
+        ],
+        "title": "OutletContactCandidate"
+      },
+      "OutletContactExtraction": {
+        "properties": {
+          "outlet_party_id": {
+            "type": "string",
+            "title": "Outlet Party Id"
+          },
+          "outlet_name": {
+            "type": "string",
+            "title": "Outlet Name"
+          },
+          "outlet_domain": {
+            "type": "string",
+            "title": "Outlet Domain"
+          },
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id"
+          },
+          "sources_analyzed": {
+            "type": "integer",
+            "title": "Sources Analyzed"
+          },
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/OutletContactCandidate"
+            },
+            "type": "array",
+            "title": "Candidates"
+          },
+          "rejected": {
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Rejected"
+          }
+        },
+        "type": "object",
+        "required": [
+          "outlet_party_id",
+          "outlet_name",
+          "outlet_domain",
+          "organization_id",
+          "sources_analyzed"
+        ],
+        "title": "OutletContactExtraction"
       },
       "OutputSchemaEnvelope": {
         "properties": {
