@@ -8652,8 +8652,10 @@ export type Database = {
       }
       sms_conversations: {
         Row: {
+          agent_id: string | null
           agent_version_id: string | null
           ai_agent_id: string | null
+          canonical_agent_version_id: string | null
           chat_conversation_id: string | null
           contact_medium_id: string | null
           contact_point_id: string | null
@@ -8686,8 +8688,10 @@ export type Database = {
           visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
+          agent_id?: string | null
           agent_version_id?: string | null
           ai_agent_id?: string | null
+          canonical_agent_version_id?: string | null
           chat_conversation_id?: string | null
           contact_medium_id?: string | null
           contact_point_id?: string | null
@@ -8720,8 +8724,10 @@ export type Database = {
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
+          agent_id?: string | null
           agent_version_id?: string | null
           ai_agent_id?: string | null
+          canonical_agent_version_id?: string | null
           chat_conversation_id?: string | null
           contact_medium_id?: string | null
           contact_point_id?: string | null
@@ -8859,6 +8865,7 @@ export type Database = {
           num_media: number
           num_segments: number | null
           organization_id: string
+          outcome_uncertain_at: string | null
           price: number | null
           price_unit: string | null
           processing_worker_id: string | null
@@ -8902,6 +8909,7 @@ export type Database = {
           num_media?: number
           num_segments?: number | null
           organization_id: string
+          outcome_uncertain_at?: string | null
           price?: number | null
           price_unit?: string | null
           processing_worker_id?: string | null
@@ -8945,6 +8953,7 @@ export type Database = {
           num_media?: number
           num_segments?: number | null
           organization_id?: string
+          outcome_uncertain_at?: string | null
           price?: number | null
           price_unit?: string | null
           processing_worker_id?: string | null
@@ -9000,6 +9009,8 @@ export type Database = {
           metadata: Json
           organization_id: string
           phone_number: string | null
+          preferred_agent_id: string | null
+          preferred_agent_version_id: string | null
           preferred_ai_agent_id: string | null
           preferred_ai_agent_version_id: string | null
           quiet_hours_enabled: boolean
@@ -9029,6 +9040,8 @@ export type Database = {
           metadata?: Json
           organization_id: string
           phone_number?: string | null
+          preferred_agent_id?: string | null
+          preferred_agent_version_id?: string | null
           preferred_ai_agent_id?: string | null
           preferred_ai_agent_version_id?: string | null
           quiet_hours_enabled?: boolean
@@ -9058,6 +9071,8 @@ export type Database = {
           metadata?: Json
           organization_id?: string
           phone_number?: string | null
+          preferred_agent_id?: string | null
+          preferred_agent_version_id?: string | null
           preferred_ai_agent_id?: string | null
           preferred_ai_agent_version_id?: string | null
           quiet_hours_enabled?: boolean
@@ -9374,12 +9389,12 @@ export type Database = {
       finalize_sms_agent_turn: {
         Args: {
           p_error_code?: string
+          p_execution_known_not_started?: boolean
           p_inbound_message_id: string
           p_operator_detail?: string
           p_reply?: string
           p_request_id?: string
           p_retry_after_seconds?: number
-          p_retryable?: boolean
           p_status: string
           p_worker_id: string
         }
@@ -9390,9 +9405,9 @@ export type Database = {
           p_error_code?: string
           p_error_message?: string
           p_outbound_message_id: string
+          p_provider_creation_outcome: string
           p_provider_message_id?: string
           p_retry_after_seconds?: number
-          p_retryable?: boolean
           p_status: string
           p_worker_id: string
         }
