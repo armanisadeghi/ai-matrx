@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * AgentCardShell — the shared chrome for every inline agent card (asks +
  * approvals) that sits above the chat input.
@@ -11,6 +13,19 @@
  * share spacing, rounding, elevation, and hierarchy — the card just supplies its
  * header text, body, and actions.
  *
+ * Scroll behavior (Arman, 2026-08-15): the QUESTION and the ANSWERS share ONE
+ * scroll region — never two. The old design gave the title its own capped scroll
+ * and the body another, so a long question starved the answers into a tiny slot.
+ * Now:
+ *   - Mobile: the card flows at natural height and the host bottom-drawer owns the
+ *     single scroll, so the whole question+answers scroll as one and the user
+ *     spends the space however they want.
+ *   - Desktop: the card caps itself (so the chat input stays reachable) and
+ *     scrolls its own question+answers region as one, with a soft edge fade
+ *     (useScrollFade) cueing that there's more above/below.
+ * Only the small meta row (icon/eyebrow/dismiss), the footer action band, and the
+ * countdown stay pinned.
+ *
  * Tone drives the accent strip + icon color; "neutral" hides the strip. The icon
  * carries no chip background/padding — the tone reads via the strip + icon tint.
  */
@@ -19,6 +34,8 @@ import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useScrollFade } from "@/components/ui/scroll-fade";
 
 export type AccentTone =
   "neutral" | "primary" | "info" | "success" | "warning" | "danger" | "violet";
@@ -87,15 +104,20 @@ export function AgentCardShell({
   className,
   "aria-label": ariaLabel,
 }: AgentCardShellProps) {
+  const isMobile = useIsMobile();
+  // Desktop caps + scrolls the card itself (keeps the chat input reachable);
+  // mobile lets the host drawer own the single scroll (card flows naturally).
+  const cardScrolls = !isMobile;
+  const fade = useScrollFade<HTMLDivElement>();
+
   return (
     <div
       className={cn(
-        // Cap the card so it can never outgrow the viewport (the chat input +
-        // messages must stay reachable, especially on mobile). The header stays
-        // pinned, the body scrolls internally, and the footer/countdown stay
-        // pinned at the bottom — so the primary action is always accessible no
-        // matter how long the question or how many options.
-        "group relative flex max-h-[70dvh] flex-col overflow-hidden rounded-2xl border border-border/70 bg-card text-card-foreground",
+        // overflow-hidden always clips to the rounded corners. On desktop the
+        // card also caps its height so it can never outgrow the viewport; on
+        // mobile it flows at natural height and the host drawer scrolls it.
+        "group relative flex flex-col overflow-hidden rounded-2xl border border-border/70 bg-card text-card-foreground",
+        cardScrolls && "max-h-[70dvh]",
         "shadow-[0_10px_30px_-14px_rgb(0_0_0/0.45)] ring-1 ring-black/[0.03] dark:ring-white/[0.04]",
         "animate-in fade-in slide-in-from-bottom-2 duration-300",
         pending && "opacity-50 pointer-events-none",
@@ -113,69 +135,74 @@ export function AgentCardShell({
         />
       )}
 
-      <div className="flex shrink-0 flex-col px-4 pt-3">
-        {/* Top row: plain icon + eyebrow + badge + dismiss. Compact — the
-            question no longer lives boxed between the icon and the ×. */}
-        <div className="flex items-center gap-2">
-          {Icon && (
-            <Icon
-              className={cn("size-[18px] shrink-0", ICON_TONE[tone])}
-              strokeWidth={2.25}
-            />
-          )}
-          {eyebrow && (
-            <div className="min-w-0 flex-1 truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-              {eyebrow}
-            </div>
-          )}
-          {badge && (
-            <span
-              className={cn(
-                "shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-muted-foreground",
-                !eyebrow && "ml-auto",
-              )}
-            >
-              {badge}
-            </span>
-          )}
-          {onDismiss && (
-            <button
-              type="button"
-              onClick={onDismiss}
-              className={cn(
-                "-mr-1 shrink-0 rounded-md p-1 text-muted-foreground/70 transition-colors hover:bg-muted hover:text-foreground",
-                !eyebrow && !badge && "ml-auto",
-              )}
-              title={dismissLabel}
-              aria-label={dismissLabel}
-            >
-              <X className="size-4" />
-            </button>
-          )}
-        </div>
+      {/* Pinned meta row: plain icon + eyebrow + badge + dismiss. Stays put so
+          the dismiss × is always reachable while the question+answers scroll. */}
+      <div className="flex shrink-0 items-center gap-2 px-4 pt-3">
+        {Icon && (
+          <Icon
+            className={cn("size-[18px] shrink-0", ICON_TONE[tone])}
+            strokeWidth={2.25}
+          />
+        )}
+        {eyebrow && (
+          <div className="min-w-0 flex-1 truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            {eyebrow}
+          </div>
+        )}
+        {badge && (
+          <span
+            className={cn(
+              "shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-muted-foreground",
+              !eyebrow && "ml-auto",
+            )}
+          >
+            {badge}
+          </span>
+        )}
+        {onDismiss && (
+          <button
+            type="button"
+            onClick={onDismiss}
+            className={cn(
+              "-mr-1 shrink-0 rounded-md p-1 text-muted-foreground/70 transition-colors hover:bg-muted hover:text-foreground",
+              !eyebrow && !badge && "ml-auto",
+            )}
+            title={dismissLabel}
+            aria-label={dismissLabel}
+          >
+            <X className="size-4" />
+          </button>
+        )}
+      </div>
 
-        {/* Title on its OWN full-width row — spans the entire card width
-            instead of being squeezed into a middle column. */}
+      {/* ONE scroll region: the question (title) and the answers (children)
+          scroll together, so a long question never starves the answers. On
+          desktop this region scrolls + fades; on mobile it flows and the host
+          drawer scrolls. */}
+      <div
+        ref={cardScrolls ? fade.ref : undefined}
+        style={cardScrolls ? fade.style : undefined}
+        className={cn(
+          "flex flex-col",
+          cardScrolls
+            ? "min-h-0 flex-1 overflow-y-auto overscroll-contain"
+            : "",
+          !footer && "pb-3.5",
+        )}
+      >
+        {/* Title on its OWN full-width row — spans the entire card width. */}
         {title && (
-          <div className="mt-1.5 max-h-[28dvh] overflow-y-auto overscroll-contain whitespace-pre-wrap text-[15px] font-semibold leading-snug text-foreground">
+          <div className="mt-1.5 whitespace-pre-wrap px-4 text-[15px] font-semibold leading-snug text-foreground">
             {title}
           </div>
         )}
         {subtitle && (
-          <div className="mt-1 text-xs text-muted-foreground">{subtitle}</div>
+          <div className="mt-1 px-4 text-xs text-muted-foreground">
+            {subtitle}
+          </div>
         )}
+        {children ? <div className="px-4 pt-3">{children}</div> : null}
       </div>
-
-      {children ? (
-        <div
-          className={cn(
-            "min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-3",
-            !footer && "pb-3.5",
-          )}
-        >
-          {children}
-        </div>
-      ) : null}
 
       {footer && (
         <div className="shrink-0 border-t border-border/60 bg-muted/30 px-4 py-3">
