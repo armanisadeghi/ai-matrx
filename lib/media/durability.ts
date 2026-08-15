@@ -21,10 +21,24 @@ const UUID_RE =
 
 export type MediaUrlKind = "empty" | "durable" | "expiring";
 
+/**
+ * A revocable share link (`…/share/<token>/download`) is never a durable
+ * identity for an asset — being revocable and expirable is the entire POINT of
+ * a share link. It carries no signature, so the signed-URL test alone called it
+ * durable, and that is exactly how D108's seven feedback screenshots became
+ * dead pointers: the files were public and alive the whole time, but the link
+ * that named them had been revoked. The durable ref is the CDN/public URL, or
+ * the `file_id` re-minted on read.
+ *
+ * Keep in parity with the DB twin `public.mtx_is_durable_media_url`.
+ */
+const REVOCABLE_SHARE_URL_RE = /\/share\/[0-9a-f-]{8,}\/(download|view|raw)(\?|$)/i;
+
 /** Mirror of the DB `mtx_is_durable_media_url` classifier. */
 export function classifyMediaUrl(url: string | null | undefined): MediaUrlKind {
   if (!url) return "empty";
-  return isSignedUrl(url) ? "expiring" : "durable";
+  if (isSignedUrl(url) || REVOCABLE_SHARE_URL_RE.test(url)) return "expiring";
+  return "durable";
 }
 
 export function isDurableMediaUrl(url: string | null | undefined): boolean {
