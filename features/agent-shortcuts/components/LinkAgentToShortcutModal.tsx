@@ -65,6 +65,23 @@ import type { AgentVariableDefinition } from "./ScopeMappingEditor";
 import type { ScopeProps } from "../types";
 import { parseShortcutContextsInput } from "../utils/enabled-contexts";
 
+/**
+ * RTK's `unwrap()` rejects with a PLAIN OBJECT (`miniSerializeError`), not an
+ * `Error` — so the usual `err instanceof Error ? err.message : "…"` check always
+ * falls through and shows the generic fallback, hiding the real cause. That
+ * masking turned a one-line diagnosis ("cannot insert a shortcut without an
+ * organization", FOUND_DEFECTS D200) into a full debugging session.
+ */
+function errorMessage(err: unknown, fallback: string): string {
+  if (err instanceof Error && err.message) return err.message;
+  if (typeof err === "string" && err) return err;
+  if (err && typeof err === "object") {
+    const m = (err as { message?: unknown }).message;
+    if (typeof m === "string" && m) return m;
+  }
+  return fallback;
+}
+
 export interface LinkAgentToShortcutModalProps extends ScopeProps {
   isOpen: boolean;
   onClose: () => void;
@@ -229,7 +246,7 @@ export function LinkAgentToShortcutModal({
       onClose();
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Failed to create shortcut";
+        errorMessage(err, "Failed to create shortcut");
       setError(message);
     } finally {
       setIsProcessing(false);
@@ -259,7 +276,7 @@ export function LinkAgentToShortcutModal({
       onClose();
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Failed to link agent";
+        errorMessage(err, "Failed to link agent");
       setError(message);
     } finally {
       setIsProcessing(false);

@@ -14,6 +14,40 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D200 — creating a personal (user-scoped) agent shortcut is IMPOSSIBLE — every path throws (2026-08-15)
+
+Measured live on production as a signed-in admin. `agentShortcutToInsert`
+(`features/agents/redux/agent-shortcuts/converters.ts:321`) hard-throws
+`"cannot insert a shortcut without an organization"` when `organizationId` is
+null — and **all three create callsites pass `organizationId: null`**:
+`ShortcutForm.tsx:338`, `useShortcutQuickCreate.ts:304`, and
+`LinkAgentToShortcutModal.handleCreate`. `applyScopeToRowFields`
+(`features/agent-shortcuts/hooks/useAgentShortcutCrud.ts`) only fills the org for
+`organization`/`project`/`task` scopes, and the `createShortcut` thunk
+(`thunks.ts:618`) stamps `userId` but never an org. So **scope `user` can never
+insert** — which is why `/agents/[id]/shortcuts` reads "Your shortcuts: 0" for an
+account that has been trying.
+
+Two things make it invisible: the failure is client-side (no request is ever
+sent, so a network tab shows nothing), and `unwrap()` throws a plain RTK object,
+so the modal's `err instanceof Error` check misses and every caller renders its
+generic fallback string instead of the real message. **Fix that masking
+regardless** — it cost an entire debugging session here.
+
+**Arman decides the semantics, not an agent:** which organization owns a
+*personal* shortcut, and what happens when the user has **no active org** (this
+very account shows the "Choose your organization — no active organization is
+set" prompt). Stamping from the active org would also collide with db-rules §6
+("access NEVER depends on the active organization"). Candidate answers: make
+`organization_id` nullable for user-scoped rows; or resolve the owner's personal
+org server-side from `auth.uid()`; or route creates through the
+`createShortcutForAgent` RPC, which already takes `p_organization_id`.
+
+Found while mounting `LinkAgentToShortcutModal` (that mount shipped, v0.4.660/664).
+Everything upstream of the insert is verified working live: both entry points,
+the modal, inline category create (`crm`-style POST returns 201), and the
+auto-select. Only the final insert is blocked.
+
 ### D199 — Dig Here + keyword-class rules are DARK in production (2026-08-14)
 
 Measured live as a real signed-in user: **`seo.gsc_dig_rule` 0 of 8 rows visible,
