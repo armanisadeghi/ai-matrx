@@ -23,6 +23,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   CircleCheck,
@@ -42,6 +43,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { UserIdentity } from "@/components/user/UserIdentity";
+import { SettingRequestActionButtons } from "@/features/access-gate/components/SettingRequestActionButtons";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { RefreshCwTapButton } from "@/components/icons/tap-buttons";
 import {
@@ -118,6 +120,21 @@ async function fetchBoxes(): Promise<{
 /** The record the ask is about. A door where one resolves, plain text where not. */
 function EntityCell({ row }: { row: AccessRequestRow }) {
   const label = row.entityLabel ?? "Item";
+  if (row.requestKind === "setting" && row.settingRequest) {
+    return (
+      <span className="flex min-w-0 items-center gap-1.5 text-sm">
+        <span className="shrink-0 text-xs uppercase tracking-wide text-muted-foreground">
+          Setting
+        </span>
+        <Link
+          href={row.settingRequest.href}
+          className="min-w-0 truncate font-medium text-primary hover:underline"
+        >
+          {row.settingRequest.settingLabel}
+        </Link>
+      </span>
+    );
+  }
   if (!row.entityTitle) {
     // No title to show, and an 8-character uuid stem is not a name. Say the
     // kind and stop — never print an id the user cannot open.
@@ -423,8 +440,13 @@ export function AccessRequestsSurface() {
                             ) : (
                               <span className="font-medium">You</span>
                             )}{" "}
-                            asked to{" "}
-                            {row.requestedLevel === "editor" ? "edit" : "view"}
+                            {row.requestKind === "setting"
+                              ? "asked for a setting change"
+                              : `asked to ${
+                                  row.requestedLevel === "editor"
+                                    ? "edit"
+                                    : "view"
+                                }`}
                           </p>
                           <EntityCell row={row} />
                         </div>
@@ -466,7 +488,16 @@ export function AccessRequestsSurface() {
                       </p>
                     )}
 
-                    {box === "inbox" ? (
+                    {box === "inbox" &&
+                    row.requestKind === "setting" &&
+                    row.settingRequest ? (
+                      <SettingRequestActionButtons
+                        requestId={row.id}
+                        href={row.settingRequest.href}
+                        actionKey={row.settingRequest.actionKey}
+                        onDone={() => void refresh()}
+                      />
+                    ) : box === "inbox" ? (
                       <div className="flex flex-wrap gap-2">
                         <Button
                           size="sm"

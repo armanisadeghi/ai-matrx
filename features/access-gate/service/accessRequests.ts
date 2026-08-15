@@ -15,12 +15,14 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { sendDirectActionMessage } from "@/features/messaging/service/sendDirectActionMessage";
+import { isJsonObject, type JsonObject } from "@/types/json";
 import type {
   AccessRequestCreated,
   AccessRequestRecipient,
   AccessRequestRow,
   AccessRequestStatus,
   RequestedLevel,
+  SettingRequestPayload,
 } from "@/features/access-gate/types";
 
 function rec(value: unknown): Record<string, unknown> | null {
@@ -31,6 +33,22 @@ function rec(value: unknown): Record<string, unknown> | null {
 
 function str(value: unknown): string | null {
   return typeof value === "string" && value.length > 0 ? value : null;
+}
+
+function responseRecord(value: unknown): Record<string, unknown> {
+  const payload = rec(value);
+  if (!payload) {
+    throw new Error("The access request response was incomplete.");
+  }
+  return payload;
+}
+
+function responseString(payload: Record<string, unknown>, key: string): string {
+  const value = str(payload[key]);
+  if (!value) {
+    throw new Error("The access request response was incomplete.");
+  }
+  return value;
 }
 
 function parseStatus(raw: unknown): AccessRequestStatus {
@@ -55,11 +73,26 @@ function parseRecipients(raw: unknown): AccessRequestRecipient[] {
     return [
       {
         userId,
-        reason: row?.reason === "org_admin" ? "org_admin" : "owner",
+        reason:
+          row?.reason === "org_admin" || row?.role === "admin"
+            ? "org_admin"
+            : "owner",
         displayName: str(row?.display_name),
       } satisfies AccessRequestRecipient,
     ];
   });
+}
+
+function parseSettingRequest(raw: unknown): SettingRequestPayload | null {
+  if (!isJsonObject(raw)) return null;
+  const settingLabel = str(raw.setting_label);
+  const href = str(raw.href);
+  const actionKey = str(raw.action_key);
+  const actionPayload = isJsonObject(raw.action_payload)
+    ? raw.action_payload
+    : null;
+  if (!settingLabel || !href || !actionKey || !actionPayload) return null;
+  return { settingLabel, href, actionKey, actionPayload };
 }
 
 /**
@@ -118,9 +151,9 @@ export async function createAccessRequest(args: {
   });
   if (error) throw rpcError(error);
 
-  const payload = rec(data) ?? {};
+  const payload = responseRecord(data);
   const created: AccessRequestCreated = {
-    requestId: str(payload.request_id) ?? "",
+    requestId: responseString(payload, "request_id"),
     status: parseStatus(payload.status),
     already: payload.already === true,
     level: payload.level === "editor" ? "editor" : "viewer",
@@ -133,6 +166,97 @@ export async function createAccessRequest(args: {
     created.delivered = await notifyRecipients(created, args);
   }
   return created;
+}
+
+export interface SettingAccessRequestCreated {
+  requestId: string;
+  already: boolean;
+  recipients: AccessRequestRecipient[];
+  delivered?: number;
+}
+
+/** File an admin-only setting request, then deliver the same durable row by DM. */
+export async function createSettingAccessRequest(args: {
+  organizationId: string;
+  settingKey: string;
+  settingLabel: string;
+  href: string;
+  actionKey: string;
+  actionPayload: JsonObject;
+  message?: string;
+  currentUserId?: string | null;
+}): Promise<SettingAccessRequestCreated> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("setting_access_request_create", {
+    p_org_id: args.organizationId,
+    p_setting_key: args.settingKey,
+    p_setting_label: args.settingLabel,
+    p_setting_href: args.href,
+    p_action_key: args.actionKey,
+    p_action_payload: args.actionPayload,
+    p_message: args.message?.trim() || undefined,
+  });
+  if (error) throw rpcError(error);
+
+  const payload = responseRecord(data);
+  const created: SettingAccessRequestCreated = {
+    requestId: responseString(payload, "request_id"),
+    already: payload.already === true,
+    recipients: parseRecipients(payload.recipients),
+  };
+
+  const currentUserId = args.currentUserId;
+  if (!created.already && currentUserId) {
+    const body = args.message?.trim()
+      ? `${args.settingLabel}: ${args.message.trim()}`
+      : `Please update ${args.settingLabel}.`;
+    const results = await Promise.allSettled(
+      created.recipients.map((recipient) =>
+        sendDirectActionMessage({
+          currentUserId,
+          recipientId: recipient.userId,
+          content: body,
+          actionData: {
+            kind: "setting_access_request",
+            version: 1,
+            payload: {
+              request_id: created.requestId,
+              organization_id: args.organizationId,
+              setting_key: args.settingKey,
+              setting_label: args.settingLabel,
+              href: args.href,
+              action_key: args.actionKey,
+              action_payload: args.actionPayload,
+              note: args.message?.trim() || null,
+            },
+          },
+        }),
+      ),
+    );
+    created.delivered = results.filter(
+      (result) => result.status === "fulfilled",
+    ).length;
+  }
+  return created;
+}
+
+export async function decideSettingAccessRequest(args: {
+  requestId: string;
+  decision: "complete" | "decline";
+  note?: string;
+}): Promise<{ status: AccessRequestStatus; already: boolean }> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("setting_access_request_decide", {
+    p_request_id: args.requestId,
+    p_decision: args.decision,
+    p_note: args.note?.trim() || undefined,
+  });
+  if (error) throw rpcError(error);
+  const payload = responseRecord(data);
+  return {
+    status: parseStatus(payload.status),
+    already: payload.already === true,
+  };
 }
 
 /**
@@ -203,7 +327,7 @@ export async function decideAccessRequest(args: {
   });
   if (error) throw rpcError(error);
 
-  const payload = rec(data) ?? {};
+  const payload = responseRecord(data);
   const status = parseStatus(payload.status);
   const already = payload.already === true;
 
@@ -211,12 +335,7 @@ export async function decideAccessRequest(args: {
   // `resource_shared` card is the canonical "you now have this" message, so a
   // grant looks identical to any other share.
   const requesterId = str(payload.requester_id);
-  if (
-    !already &&
-    status === "granted" &&
-    requesterId &&
-    args.currentUserId
-  ) {
+  if (!already && status === "granted" && requesterId && args.currentUserId) {
     const resourceType = str(payload.resource_type);
     const resourceId = str(payload.resource_id);
     if (resourceType && resourceId) {
@@ -274,6 +393,7 @@ function parseRow(raw: unknown): AccessRequestRow | null {
 
   const requester = rec(row?.requester);
   const requesterId = requester ? str(requester.user_id) : null;
+  const requestKey = str(row?.request_key);
 
   return {
     id,
@@ -287,6 +407,13 @@ function parseRow(raw: unknown): AccessRequestRow | null {
     resourceId,
     entityLabel: str(row?.entity_label),
     entityTitle: str(row?.entity_title),
+    requestKind:
+      row?.request_kind === "setting" ? "setting" : "resource_access",
+    requestKey: requestKey ? requestKey : "",
+    settingRequest:
+      row?.request_kind === "setting"
+        ? parseSettingRequest(row?.request_payload)
+        : null,
     requester: requesterId
       ? {
           userId: requesterId,
@@ -313,4 +440,24 @@ export async function listAccessRequests(
   return (Array.isArray(data) ? data : [])
     .map(parseRow)
     .filter((row): row is AccessRequestRow => row !== null);
+}
+
+/**
+ * Resolve an inline setting action from the durable, caller-authorized inbox.
+ * DM action_data is presentation context, never the authority for a write.
+ */
+export async function getSettingAccessRequestForDecision(
+  requestId: string,
+): Promise<AccessRequestRow & { settingRequest: SettingRequestPayload }> {
+  const rows = await listAccessRequests("inbox");
+  const request = rows.find((row) => row.id === requestId);
+  if (
+    !request ||
+    request.status !== "pending" ||
+    request.requestKind !== "setting" ||
+    !request.settingRequest
+  ) {
+    throw new Error("This setting request is no longer available.");
+  }
+  return { ...request, settingRequest: request.settingRequest };
 }

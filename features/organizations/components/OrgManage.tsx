@@ -31,6 +31,7 @@ import {
   User as UserIcon,
   KeyRound,
   UserCog,
+  Tags,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -54,6 +55,7 @@ import { OrgModuleSettings } from "./OrgModuleSettings";
 import { DictionarySection } from "@/features/dictionary/components/DictionarySection";
 import { VaultWorkspace } from "@/features/secrets/components/VaultWorkspace";
 import { OrganizationAbbreviation } from "./OrganizationAbbreviation";
+import { OrgCompetitorLabelsSettings } from "@/features/marketing/competitors/OrgCompetitorLabelsSettings";
 
 interface OrgManageProps {
   organization: Organization;
@@ -105,6 +107,12 @@ export function OrgManage({
       label: "Scopes",
       icon: FolderTree,
       show: canManageSettings,
+    },
+    {
+      id: "competitor-labels",
+      label: "Competitor labels",
+      icon: Tags,
+      show: true,
     },
     {
       id: "modules",
@@ -342,6 +350,19 @@ export function OrgManage({
           <section className="px-1">
             <OrgIndustriesSection orgId={displayOrganization.id} />
           </section>
+
+          <SectionCard
+            id="competitor-labels"
+            icon={Tags}
+            title="Competitor labels"
+            description="Shared labels available in every competitor classification dropdown for this organization."
+          >
+            <OrgCompetitorLabelsSettings
+              orgId={displayOrganization.id}
+              orgSlugOrId={slug}
+              canEdit={canManageSettings}
+            />
+          </SectionCard>
 
           {/* Module settings — per-kind org rules (placeholder tasklist UI) */}
           {canManageSettings && (

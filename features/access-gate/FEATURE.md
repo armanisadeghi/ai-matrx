@@ -1,6 +1,6 @@
 # Access Gate — nobody sees an access error, ever
 
-**Status:** live (2026-08-11). DB + surface + owner-side approval verified end to end in the browser against real data.
+**Status:** live (2026-08-15). Resource access and admin-gated setting requests are verified end to end against real data.
 
 The platform answer to "you can't open this". One screen, one honest sentence, and
 always a way forward — plus a one-click way for the owner to say yes.
@@ -38,6 +38,9 @@ no `AccessDenied` component at all, and no way for a blocked user to ask.
 | The **surface** | this feature                                                                 | Asks the platform which of the four it actually is, reconciles that truth onto the same inspector row, says it in human words, and offers the next step. |
 
 They compose. Do not add a third marker error.
+
+The setting-specific extension is governed by the cross-repo contract in
+[`common-docs/systems/setting-doors/FEATURE.md`](../../../common-docs/systems/setting-doors/FEATURE.md).
 
 **Pass the `token` when you throw.** `recordUnavailable({ entity, recordId, token })` carries the canonical entity token, and any renderer holding one should defer to `<AccessGate token id/>` rather than reciting both possibilities — describing the ambiguity is the best answer only while we cannot get the real one (live example: `features/marketing/components/shared/RecordUnavailableNotice.tsx`). A **proven** deletion is already the truth and needs no gate.
 
@@ -86,9 +89,11 @@ is the same class of lie this feature exists to kill.
 | `components/AccessRequestsSurface.tsx`                       | The INBOX — both directions, at `/settings/access-requests`. Answers with the same service calls the DM chip uses; never its own copy.                                                                                                                                                             |
 | `../../app/(core)/settings/access-requests/page.tsx`         | The route. Signed-out → `ModuleSignInGate`. Reached from the settings nav (`Access requests`).                                                                                                                                                                                                     |
 | `components/RequestAccessPanel.tsx`                          | Ask → pending → answered, in place.                                                                                                                                                                                                                                                                |
+| `components/SettingAccessGate.tsx`                           | Org-admin setting composition: admins get the control; members get a contextual request.                                                                                                                                                                                                           |
+| `components/SettingRequestActionButtons.tsx`                 | One inline apply/open/decline component reused by DM bubbles and the durable inbox.                                                                                                                                                                                                                |
 | `hooks/useAccessGate.ts`                                     | `(token, id) → status + context`; reconciles a passed `RecordUnavailableError` capture before rendering.                                                                                                                                                                                           |
 | `service/accessDeniedContext.ts`                             | Client half of `access_denied_context`.                                                                                                                                                                                                                                                            |
-| `service/accessRequests.ts`                                  | create / list / decide / report / withdraw + DM delivery.                                                                                                                                                                                                                                          |
+| `service/accessRequests.ts`                                  | resource + setting create/list/decide/report/withdraw and DM delivery.                                                                                                                                                                                                                             |
 | —                                                            | **No variant registry.** A feature that earns a bespoke screen composes the exported `AccessDeniedView`. A token→component map consulted during render is a dynamic component boundary for an extension point with zero users — speculative abstraction, and React Compiler lint rightly flags it. |
 | `classifyDataError.ts`                                       | Access question vs real fault.                                                                                                                                                                                                                                                                     |
 
@@ -99,6 +104,7 @@ is the same class of lie this feature exists to kill.
 | `public.access_denied_context(type, id)`                    | THE resolver. Returns kind, title, owner, org, nearest reachable ancestor, the caller's own request. **Never row content.**                                               |
 | `iam.access_requests`                                       | The ask ledger. Requester sees their own rows via RLS; the decider's inbox comes from the RPC (no per-row access resolution — the 2026-08-08 component-access precedent). |
 | `access_request_create / list / decide / report / withdraw` | The verb family.                                                                                                                                                          |
+| `setting_access_request_create / decide`                    | Contextual org-setting ask + completion/decline; reuses the same ledger and inbox.                                                                                        |
 | `platform.entity_types.allow_preview`                       | Per-kind disclosure switch. ONE place. `true` (default) = name+owner+org; `false` = kind only. Flip with `admin_set_entity_type_preview` (super-admin).                   |
 
 ## Invariants
@@ -216,6 +222,17 @@ uuid)` needs the uuid, and `/organizations/[orgId]` accepts a slug. When the
   `recordUnavailable`, assert some consumer reads `.isError`/`.error`.
 
 ## Change Log
+
+- **2026-08-15** — **Access Gate now covers admin-only organization settings.**
+  `iam.access_requests` distinguishes resource and setting asks while retaining
+  one ledger and one inbox. `SettingAccessGate` pre-fills the setting identity,
+  attempted change, requested value, and note; the DM carries a generic setting
+  action. DM and inbox render the same action buttons, and the first registered
+  action adds an organization competitor label through the canonical module
+  settings service. The action component treats DM JSON as display context and
+  re-resolves the durable authorized inbox row before any write. Live role proof
+  covered member refusal/request and admin inline apply/completion; exact-repeat
+  requests deduplicate without collapsing different requested values.
 
 - **2026-08-13** — **Resolved denials stopped masquerading as Clear Errors.**
   `recordUnavailable()` still captures the ambiguous zero-row read immediately,

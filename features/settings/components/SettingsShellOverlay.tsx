@@ -24,6 +24,7 @@ import { SettingsShell } from "./SettingsShell";
 type OverlayData = {
   initialTab?: string;
   initialTabId?: string;
+  initialControlId?: string;
   isAdmin?: boolean;
 };
 
@@ -69,6 +70,7 @@ export function SettingsShellOverlay() {
       initialTabId={
         data?.initialTabId ?? mapLegacyTab(data?.initialTab) ?? undefined
       }
+      initialControlId={data?.initialControlId}
       isAdmin={data?.isAdmin ?? isAdmin}
     />
   );

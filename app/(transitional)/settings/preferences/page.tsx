@@ -44,17 +44,21 @@ function SettingsPreferencesInner() {
   const router = useRouter();
   const params = useSearchParams();
   const rawTab = params.get("tab") ?? undefined;
+  const controlId = params.get("control") ?? undefined;
   const tabId = rawTab ? (LEGACY_TAB_ALIASES[rawTab] ?? rawTab) : undefined;
 
   useEffect(() => {
     dispatch(
       openOverlay({
         overlayId: "userPreferencesWindow",
-        data: tabId ? { initialTabId: tabId } : {},
+        data: {
+          ...(tabId ? { initialTabId: tabId } : {}),
+          ...(controlId ? { initialControlId: controlId } : {}),
+        },
       }),
     );
     router.replace("/dashboard");
-  }, [dispatch, router, tabId]);
+  }, [controlId, dispatch, router, tabId]);
 
   return (
     <div className="min-h-dvh flex items-center justify-center bg-background">
