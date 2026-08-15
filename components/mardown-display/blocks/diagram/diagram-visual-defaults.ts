@@ -151,76 +151,88 @@ export function isCustomDiagramColor(color: unknown): color is string {
   );
 }
 
-export const DIAGRAM_ICON_OPTIONS = [
-  { value: "none", label: "No icon" },
-  { value: "square", label: "Square" },
-  { value: "circle-check", label: "Check" },
-  { value: "circle-x", label: "Finish" },
-  { value: "settings", label: "Process" },
-  { value: "git-branch", label: "Decision" },
-  { value: "database", label: "Data" },
-  { value: "users", label: "People" },
-  { value: "user-check", label: "Person" },
-  { value: "crown", label: "Leader" },
-  { value: "building", label: "Organization" },
-  { value: "briefcase", label: "Business" },
-  { value: "lightbulb", label: "Idea" },
-  { value: "target", label: "Goal" },
-  { value: "heart", label: "Care" },
-  { value: "globe", label: "Web" },
-  { value: "server", label: "System" },
-  { value: "cpu", label: "Compute" },
-  { value: "hard-drive", label: "Storage" },
-  { value: "clock", label: "Event" },
-  { value: "table", label: "Table" },
-  { value: "code", label: "Code" },
-  { value: "chart", label: "Analytics" },
-  { value: "search", label: "Search" },
-  { value: "mail", label: "Message" },
-  { value: "shield", label: "Security" },
-  { value: "palette", label: "Design" },
-  { value: "wrench", label: "Tools" },
-  { value: "package", label: "Package" },
-  { value: "shield-user", label: "Executive" },
-  { value: "calculator", label: "Accounting" },
-  { value: "cog", label: "Operations" },
-  { value: "megaphone", label: "Marketing" },
-  { value: "box", label: "Product" },
-  { value: "trending-up", label: "Growth" },
-  { value: "user-plus", label: "Recruiting" },
-  { value: "pen-tool", label: "Writing" },
-  { value: "radio", label: "Communications" },
-  { value: "layers", label: "Full stack" },
-  { value: "monitor", label: "Technology" },
-  { value: "phone", label: "Mobile" },
-  { value: "clipboard-list", label: "Checklist" },
-  { value: "camera", label: "Visual" },
-  { value: "film", label: "Motion" },
-  { value: "zap", label: "AI" },
-  { value: "pie-chart", label: "Intelligence" },
-  { value: "graduation-cap", label: "Learning" },
-  { value: "award", label: "Benefits" },
-  { value: "headphones", label: "Support" },
-  { value: "truck", label: "Supply chain" },
-  { value: "warehouse", label: "Inventory" },
-  { value: "factory", label: "Manufacturing" },
-  { value: "dollar-sign", label: "Finance" },
-  { value: "file-text", label: "Document" },
-  { value: "lock", label: "Security analyst" },
-  { value: "key", label: "Risk" },
-  { value: "cloud", label: "Cloud" },
-  { value: "bell", label: "Reception" },
-  { value: "microscope", label: "Research" },
-  { value: "stethoscope", label: "Healthcare" },
-  { value: "hammer", label: "Construction" },
-  { value: "plane", label: "Travel" },
-  { value: "newspaper", label: "Publishing" },
-  { value: "music", label: "Audio" },
-  { value: "book-open", label: "Education" },
-  { value: "shopping-cart", label: "Retail" },
-] as const;
+/**
+ * Historical diagram ids predate the canonical icon registry. Normalize them
+ * once at the document boundary; arbitrary Lucide/custom/svg ids pass through.
+ */
+const LEGACY_DIAGRAM_ICON_NAMES = {
+  none: "none",
+  square: "Square",
+  "circle-check": "CheckCircle2",
+  "circle-x": "XCircle",
+  settings: "Settings",
+  "git-branch": "GitBranch",
+  database: "Database",
+  users: "Users",
+  "user-check": "UserCheck",
+  crown: "Crown",
+  building: "Building",
+  briefcase: "Briefcase",
+  lightbulb: "Lightbulb",
+  target: "Target",
+  heart: "Heart",
+  globe: "Globe",
+  server: "Server",
+  cpu: "Cpu",
+  "hard-drive": "HardDrive",
+  clock: "Clock",
+  table: "Table",
+  code: "Code",
+  chart: "BarChart",
+  search: "Search",
+  mail: "Mail",
+  shield: "Shield",
+  palette: "Palette",
+  wrench: "Wrench",
+  package: "Package",
+  "shield-user": "ShieldUser",
+  calculator: "Calculator",
+  cog: "Cog",
+  megaphone: "Megaphone",
+  box: "Box",
+  "trending-up": "TrendingUp",
+  "user-plus": "UserPlus",
+  "pen-tool": "PenTool",
+  radio: "Radio",
+  layers: "Layers",
+  monitor: "Monitor",
+  phone: "Phone",
+  "clipboard-list": "ClipboardList",
+  camera: "Camera",
+  film: "Film",
+  zap: "Zap",
+  "pie-chart": "PieChart",
+  "graduation-cap": "GraduationCap",
+  award: "Award",
+  headphones: "Headphones",
+  truck: "Truck",
+  warehouse: "Warehouse",
+  factory: "Factory",
+  "dollar-sign": "DollarSign",
+  "file-text": "FileText",
+  lock: "Lock",
+  key: "Key",
+  cloud: "Cloud",
+  bell: "Bell",
+  microscope: "Microscope",
+  stethoscope: "Stethoscope",
+  hammer: "Hammer",
+  plane: "Plane",
+  newspaper: "Newspaper",
+  music: "Music",
+  "book-open": "BookOpen",
+  "shopping-cart": "ShoppingCart",
+} as const;
 
-export type DiagramIconName = (typeof DIAGRAM_ICON_OPTIONS)[number]["value"];
+type LegacyDiagramIconName = keyof typeof LEGACY_DIAGRAM_ICON_NAMES;
+
+export function normalizeDiagramIconName(
+  iconName: string | null | undefined,
+): string {
+  const trimmed = iconName?.trim();
+  if (!trimmed) return "none";
+  return LEGACY_DIAGRAM_ICON_NAMES[trimmed as LegacyDiagramIconName] ?? trimmed;
+}
 
 interface VisualInferenceInput {
   diagramType: string;
@@ -233,7 +245,7 @@ interface VisualInferenceInput {
 
 const ORG_ICON_PATTERNS: ReadonlyArray<{
   keywords: readonly string[];
-  icon: DiagramIconName;
+  icon: LegacyDiagramIconName;
 }> = [
   { keywords: ["ceo", "chief executive", "founder"], icon: "crown" },
   {
@@ -377,21 +389,21 @@ export function inferOrgChartRoleIconName(
   label: string,
   description?: string,
   details?: string,
-): DiagramIconName {
+): string {
   const searchText = [label, description, details]
     .filter(Boolean)
     .join(" ")
     .toLowerCase();
-  return (
+  return normalizeDiagramIconName(
     ORG_ICON_PATTERNS.find((pattern) =>
       pattern.keywords.some((keyword) => searchText.includes(keyword)),
-    )?.icon ?? "users"
+    )?.icon ?? "users",
   );
 }
 
 export function inferDiagramNodeVisuals(input: VisualInferenceInput): {
   color: string;
-  icon: DiagramIconName;
+  icon: string;
   shape: DiagramNodeShape;
   borderStyle: DiagramBorderStyle;
   textAlign: "left" | "center";
@@ -408,7 +420,7 @@ export function inferDiagramNodeVisuals(input: VisualInferenceInput): {
 
   const byType: Record<
     string,
-    { color: DiagramColorPreset; icon: DiagramIconName }
+    { color: DiagramColorPreset; icon: LegacyDiagramIconName }
   > = {
     start: { color: "green", icon: "circle-check" },
     end: { color: "red", icon: "circle-x" },
@@ -431,7 +443,7 @@ export function inferDiagramNodeVisuals(input: VisualInferenceInput): {
 
   return {
     color: inferred.color,
-    icon:
+    icon: normalizeDiagramIconName(
       input.diagramType === "orgchart"
         ? inferOrgChartRoleIconName(
             input.label,
@@ -439,6 +451,7 @@ export function inferDiagramNodeVisuals(input: VisualInferenceInput): {
             input.details,
           )
         : inferred.icon,
+    ),
     // Existing generated diagrams have always rendered as rounded cards. The
     // explicit default keeps that appearance while making alternatives editable.
     shape: "rounded",

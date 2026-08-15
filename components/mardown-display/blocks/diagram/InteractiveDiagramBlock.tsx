@@ -78,6 +78,8 @@ import {
 } from "lucide-react";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import IconButton from "@/components/official/IconButton";
+import IconResolver from "@/components/official/icons/IconResolver";
+import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation.dynamic";
 import {
   getLayoutedElements,
   getLayoutOptionsForDiagramType,
@@ -86,11 +88,7 @@ import {
   getOrgChartLayout,
   getPedigreeLayout,
 } from "./layout-utils";
-import {
-  getDiagramIconByName,
-  getOrgChartRoleIcon,
-  formatDiagramType,
-} from "./ui-utils";
+import { formatDiagramType } from "./ui-utils";
 import {
   materializeDiagramDefaults,
   type DiagramData,
@@ -99,10 +97,10 @@ import {
 } from "./parseDiagramJSON";
 import {
   DIAGRAM_COLOR_PRESETS,
-  DIAGRAM_ICON_OPTIONS,
   getDiagramColorHex,
   getDiagramNodeColorClass,
   isCustomDiagramColor,
+  normalizeDiagramIconName,
   type DiagramBorderStyle,
   type DiagramEdgeMarker,
   type DiagramNodeShape,
@@ -404,46 +402,17 @@ const CustomNode = ({
   const details = typeof data.details === "string" ? data.details : undefined;
 
   const getNodeIcon = () => {
-    if (typeof data.icon === "string") {
-      return getDiagramIconByName(data.icon);
-    }
-    if (data.diagramType === "orgchart") {
-      return getOrgChartRoleIcon(
-        data.label as string,
-        data.description as string,
-        data.details as string,
-      );
-    }
-    switch (data.nodeType) {
-      case "process":
-        return <Settings className="h-4 w-4" />;
-      case "decision":
-        return <GitBranch className="h-4 w-4" />;
-      case "data":
-        return <Database className="h-4 w-4" />;
-      case "start":
-        return <CheckCircle2 className="h-4 w-4" />;
-      case "end":
-        return <XCircle className="h-4 w-4" />;
-      case "user":
-        return <Users className="h-4 w-4" />;
-      case "system":
-        return <Server className="h-4 w-4" />;
-      case "api":
-        return <Globe className="h-4 w-4" />;
-      case "compute":
-        return <Cpu className="h-4 w-4" />;
-      case "storage":
-        return <HardDrive className="h-4 w-4" />;
-      case "event":
-        return <Clock className="h-4 w-4" />;
-      case "entity":
-        return <Table className="h-4 w-4" />;
-      case "gateway":
-        return <ArrowRight className="h-4 w-4" />;
-      default:
-        return <Square className="h-4 w-4" />;
-    }
+    const iconName = normalizeDiagramIconName(
+      typeof data.icon === "string" ? data.icon : "Square",
+    );
+    if (iconName === "none") return null;
+    return (
+      <IconResolver
+        iconName={iconName}
+        fallbackIcon="Square"
+        className="h-4 w-4 shrink-0"
+      />
+    );
   };
 
   const getNodeColor = () => {
@@ -524,6 +493,7 @@ const CustomNode = ({
         ? "border-dotted"
         : "border-solid";
   const centered = data.textAlign === "center";
+  const hasExplicitWidth = data.hasExplicitWidth === true;
   const shapeSizeClass =
     shape === "circle"
       ? "aspect-square w-[200px] min-w-[160px]"
@@ -532,8 +502,8 @@ const CustomNode = ({
         : shape === "hexagon"
           ? "min-h-[140px] w-[260px] min-w-[220px]"
           : isOrgChart
-            ? "min-w-[200px]"
-            : "min-w-[120px]";
+            ? `min-w-[200px] ${hasExplicitWidth ? "" : "max-w-[280px]"}`
+            : `min-w-[120px] ${hasExplicitWidth ? "" : "max-w-[280px]"}`;
   const shapePaddingClass =
     shape === "diamond"
       ? "px-12 py-10"
@@ -574,35 +544,45 @@ const CustomNode = ({
         style={{ ...inlineStyle, clipPath }}
       >
         {isOrgChart ? (
-          <div className="w-full text-center">
+          <div className="w-full min-w-0 text-center">
             <div className="flex items-center justify-center gap-2 mb-2">
               {getNodeIcon()}
-              <div className="font-bold text-base">{data.label as string}</div>
-            </div>
-            {description && (
-              <div className="text-sm font-medium opacity-90 mb-1">
-                {description}
-              </div>
-            )}
-            {details && (
-              <div className="text-xs opacity-70 italic">{details}</div>
-            )}
-          </div>
-        ) : (
-          <div className={`w-full ${centered ? "text-center" : "text-left"}`}>
-            <div
-              className={`mb-1 flex items-center gap-2 ${centered ? "justify-center" : ""}`}
-            >
-              {getNodeIcon()}
-              <div className="font-semibold text-sm">
+              <div className="min-w-0 break-words text-base font-bold [overflow-wrap:anywhere]">
                 {data.label as string}
               </div>
             </div>
             {description && (
-              <div className="text-xs opacity-80 mt-1">{description}</div>
+              <div className="mb-1 break-words text-sm font-medium opacity-90 [overflow-wrap:anywhere]">
+                {description}
+              </div>
             )}
             {details && (
-              <div className="text-xs opacity-70 mt-1 italic">{details}</div>
+              <div className="break-words text-xs italic opacity-70 [overflow-wrap:anywhere]">
+                {details}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div
+            className={`w-full min-w-0 ${centered ? "text-center" : "text-left"}`}
+          >
+            <div
+              className={`mb-1 flex items-center gap-2 ${centered ? "justify-center" : ""}`}
+            >
+              {getNodeIcon()}
+              <div className="min-w-0 break-words text-sm font-semibold [overflow-wrap:anywhere]">
+                {data.label as string}
+              </div>
+            </div>
+            {description && (
+              <div className="mt-1 break-words text-xs opacity-80 [overflow-wrap:anywhere]">
+                {description}
+              </div>
+            )}
+            {details && (
+              <div className="mt-1 break-words text-xs italic opacity-70 [overflow-wrap:anywhere]">
+                {details}
+              </div>
             )}
           </div>
         )}
@@ -735,6 +715,7 @@ function buildReactFlowNodes(diagram: DiagramData, editing = false): Node[] {
       borderStyle: node.borderStyle,
       textAlign: node.textAlign,
       attributes: node.metadata?.attributes as string[] | undefined,
+      hasExplicitWidth: node.width !== undefined,
     },
     parentId: node.parentId,
     extent: node.parentId ? "parent" : undefined,
@@ -1381,6 +1362,11 @@ const DiagramFlow: React.FC<{
     ? edges.find((e) => e.id === selectedEdgeId)
     : undefined;
   const selectedIsSection = selectedNode?.data.isGroup === true;
+  const selectedIconName = normalizeDiagramIconName(
+    typeof selectedNode?.data.icon === "string"
+      ? selectedNode.data.icon
+      : "none",
+  );
   const sections = editing
     ? nodes.filter((node) => node.data.isGroup === true)
     : [];
@@ -2003,23 +1989,24 @@ const DiagramFlow: React.FC<{
               </div>
               {!selectedIsSection && (
                 <>
-                  <div className="grid grid-cols-2 gap-2">
-                    <label className="block text-[11px] font-medium text-foreground">
+                  <div className="space-y-1.5">
+                    <span className="text-[11px] font-medium text-foreground">
                       Icon
-                      <select
-                        value={String(selectedNode.data.icon ?? "square")}
-                        onChange={(event) =>
-                          patchSelectedNode({ icon: event.target.value })
-                        }
-                        className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs text-foreground outline-none focus:border-primary"
-                      >
-                        {DIAGRAM_ICON_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+                    </span>
+                    <IconInputWithValidation
+                      value={
+                        selectedIconName === "none" ? "" : selectedIconName
+                      }
+                      onChange={(iconName) =>
+                        patchSelectedNode({
+                          icon: iconName.trim() || "none",
+                        })
+                      }
+                      placeholder="Search or enter an icon"
+                      className="h-8"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
                     <label className="block text-[11px] font-medium text-foreground">
                       Shape
                       <select
@@ -2039,8 +2026,6 @@ const DiagramFlow: React.FC<{
                         <option value="hexagon">Hexagon</option>
                       </select>
                     </label>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
                     <label className="block text-[11px] font-medium text-foreground">
                       Border
                       <select
@@ -2058,22 +2043,22 @@ const DiagramFlow: React.FC<{
                         <option value="dotted">Dotted</option>
                       </select>
                     </label>
-                    <label className="block text-[11px] font-medium text-foreground">
-                      Text
-                      <select
-                        value={String(selectedNode.data.textAlign ?? "left")}
-                        onChange={(event) =>
-                          patchSelectedNode({
-                            textAlign: event.target.value as "left" | "center",
-                          })
-                        }
-                        className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs text-foreground outline-none focus:border-primary"
-                      >
-                        <option value="left">Left</option>
-                        <option value="center">Centered</option>
-                      </select>
-                    </label>
                   </div>
+                  <label className="block text-[11px] font-medium text-foreground">
+                    Text
+                    <select
+                      value={String(selectedNode.data.textAlign ?? "left")}
+                      onChange={(event) =>
+                        patchSelectedNode({
+                          textAlign: event.target.value as "left" | "center",
+                        })
+                      }
+                      className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs text-foreground outline-none focus:border-primary"
+                    >
+                      <option value="left">Left</option>
+                      <option value="center">Centered</option>
+                    </select>
+                  </label>
                   <p className="text-[10px] text-muted-foreground">
                     Drag the selection handles to set an exact box size.
                   </p>

@@ -92,14 +92,14 @@ describe("visual map document", () => {
 
     expect(diagram.nodes[0]).toMatchObject({
       color: "indigo",
-      icon: "crown",
+      icon: "Crown",
       shape: "rounded",
       borderStyle: "solid",
       textAlign: "center",
     });
     expect(diagram.nodes[1]).toMatchObject({
       color: "#123456",
-      icon: "heart",
+      icon: "Heart",
       shape: "hexagon",
     });
     expect(diagram.edges[0]).toMatchObject({
@@ -136,8 +136,32 @@ describe("visual map document", () => {
 
     expect(diagram).toMatchObject({
       title: "Legacy agent map",
-      nodes: [{ id: "one", label: "One", color: "gray", icon: "square" }],
+      nodes: [{ id: "one", label: "One", color: "gray", icon: "Square" }],
     });
+  });
+
+  it("preserves arbitrary canonical icons while normalizing legacy ids", () => {
+    const diagram = parseDiagramJSON(
+      JSON.stringify({
+        title: "Icons",
+        type: "mindmap",
+        nodes: [
+          { id: "any-lucide", label: "Any Lucide", icon: "AlarmClock" },
+          { id: "custom", label: "Custom", icon: "FcGoogle" },
+          { id: "legacy", label: "Legacy", icon: "shopping-cart" },
+          { id: "empty", label: "No icon", icon: "none" },
+        ],
+        edges: [],
+      }),
+    );
+
+    expect(diagram.nodes.map((node) => node.icon)).toEqual([
+      "AlarmClock",
+      "FcGoogle",
+      "ShoppingCart",
+      "none",
+    ]);
+    expect(materializeDiagramDefaults(diagram)).toEqual(diagram);
   });
 
   it("uses measured box sizes in a grid and preserves section-relative boxes", () => {

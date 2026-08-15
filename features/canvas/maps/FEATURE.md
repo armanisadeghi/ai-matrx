@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2` — a surface on the existing artifacts/canvas + diagram stack, not a new system
-**Last updated:** `2026-08-14`
+**Last updated:** `2026-08-15`
 
 > **What this is:** `/maps` lets a user create and edit a visual map — boxes and
 > arrows — from the UI, with no code and no JSON. It is the authoring half of a
@@ -24,13 +24,13 @@ existing diagram renderer running in authoring mode.
 
 ### What already existed (the inventory that forced this answer)
 
-| Piece                                        | Where it already lives                                                                                                                                                                                                                                                                |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The data shape                               | `DiagramData` (`components/mardown-display/blocks/diagram/parseDiagramJSON.ts`)                                                                                                                                                                                                       |
-| The AI-emittable form of that shape          | `diagram_spec` content-IR kind (`features/content-ir/kinds/diagram-spec.ts`) — an agent already emits maps in chat                                                                                                                                                                    |
-| The renderer                                 | `InteractiveDiagramBlock` — XYFlow 12, resizable boxes and visual sections, six shapes, chosen colors/icons/borders, four directional layouts plus grid/radial/org/pedigree, configurable arrows, snapping/background/minimap controls, PNG + JSON export, print/PDF, canvas hand-off |
-| Persistence, versioning, favourites, sharing | `canvas.canvas_items` + `canvasItemsService` (+ `canvas_save_user_version`, `canvas_publish`, `canvas_get_version_history` RPCs)                                                                                                                                                      |
-| The list shell                               | `lib/entity-list` (`/agents/all`, `/transcripts`)                                                                                                                                                                                                                                     |
+| Piece                                        | Where it already lives                                                                                                                                                                                                                                                                                         |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The data shape                               | `DiagramData` (`components/mardown-display/blocks/diagram/parseDiagramJSON.ts`)                                                                                                                                                                                                                                |
+| The AI-emittable form of that shape          | `diagram_spec` content-IR kind (`features/content-ir/kinds/diagram-spec.ts`) — an agent already emits maps in chat                                                                                                                                                                                             |
+| The renderer                                 | `InteractiveDiagramBlock` — XYFlow 12, resizable boxes and visual sections, six shapes, canonical Lucide/custom icons, chosen colors/borders, four directional layouts plus grid/radial/org/pedigree, configurable arrows, snapping/background/minimap controls, PNG + JSON export, print/PDF, canvas hand-off |
+| Persistence, versioning, favourites, sharing | `canvas.canvas_items` + `canvasItemsService` (+ `canvas_save_user_version`, `canvas_publish`, `canvas_get_version_history` RPCs)                                                                                                                                                                               |
+| The list shell                               | `lib/entity-list` (`/agents/all`, `/transcripts`)                                                                                                                                                                                                                                                              |
 
 Four of the five pieces of "let users make maps" were already built. The only
 missing piece was **authoring**: nothing let a person rename a box, add one,
@@ -181,6 +181,15 @@ AI drafts, the person refines. Neither half needed a new system.
     shortcuts through `extraSections`, and passes `matrx-user/maps` plus the same
     `getApplicationScope` used by the shell header. Bound agents therefore read
     the complete current map and the exact acting item from either entry point.
+15. **Icons use the platform primitive end to end.** The inspector renders
+    `IconInputWithValidation.dynamic`, including the curated picker and Lucide
+    browser; boxes render `IconResolver`. Any valid Lucide, registered custom,
+    or `svg:…` id persists unchanged. Historical diagram-only ids normalize to
+    their canonical names during `materializeDiagramDefaults`; no second icon
+    catalogue or renderer is allowed here.
+16. **Prose has a useful default measure.** An ordinary box without a manually
+    chosen width caps at 280px and wraps long words. A width set with the XYFlow
+    resize handles remains authoritative and is never capped by the default.
 
 ---
 
@@ -209,7 +218,7 @@ and never claims a failed save succeeded.
 choose solid/dashed/dotted framing, and place boxes inside it. Arrows may be
 curved, rounded, stepped, or straight; solid, dashed, or dotted; animated or
 still; and point forward, backward, both ways, or nowhere. Boxes may use any of
-six shapes, a chosen semantic or custom color, an explicit icon, border style,
+six shapes, a chosen semantic or custom color, any canonical icon, border style,
 alignment, and size. The map may use dots, lines, or crosses; snapping and the
 minimap are optional. These are presentation choices only.
 The small Arrange menu keeps the toolbar compact while offering four flow
@@ -249,6 +258,11 @@ sees the standard in-place confirmation before the canonical save path runs.
 
 ## Change Log
 
+- **2026-08-15** — Replaced the map-only icon dropdown/renderer with the
+  canonical `IconInputWithValidation` picker and `IconResolver`, preserving any
+  Lucide, custom, or Matrx SVG id while normalizing historical diagram ids.
+  Added a 280px default-only box measure plus long-word wrapping; manually
+  resized widths still win. Re-verified the shared chat renderer.
 - **2026-08-14** — Added a compact six-choice Arrange menu (four directions,
   balanced grid, center-out), persisted layout algorithms/directions, and made
   dagre/org/grid organization use XYFlow's measured dimensions so long labels

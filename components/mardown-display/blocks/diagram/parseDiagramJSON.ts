@@ -5,6 +5,7 @@ import {
   DIAGRAM_EDGE_MARKERS,
   DIAGRAM_NODE_SHAPES,
   inferDiagramNodeVisuals,
+  normalizeDiagramIconName,
   type DiagramBackground,
   type DiagramBorderStyle,
   type DiagramEdgeMarker,
@@ -144,7 +145,7 @@ export function materializeDiagramDefaults(diagram: DiagramData): DiagramData {
           }
         : {}),
       color: node.color || inferred.color,
-      icon: node.icon || inferred.icon,
+      icon: normalizeDiagramIconName(node.icon || inferred.icon),
       shape: node.shape ?? inferred.shape,
       borderStyle: node.borderStyle ?? inferred.borderStyle,
       textAlign: node.textAlign ?? inferred.textAlign,
