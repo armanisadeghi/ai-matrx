@@ -1618,12 +1618,12 @@ export function ModelListDropdown({
       title={disabled ? disabledTitle : undefined}
       aria-disabled={disabled || undefined}
       className={cn(
-        "inline-flex h-7 items-center gap-1 rounded-md bg-transparent px-1 text-xs font-medium text-foreground/80 transition-colors hover:text-foreground",
+        "inline-flex h-7 min-w-0 max-w-full items-center gap-1 overflow-hidden rounded-md bg-transparent px-1 text-xs font-medium text-foreground/80 transition-colors hover:text-foreground",
         disabled && "cursor-not-allowed opacity-50 hover:text-foreground/80",
         className,
       )}
     >
-      <span className="flex min-w-0 items-center gap-1.5">
+      <span className="flex min-w-0 flex-1 items-center gap-1.5">
         {selected ? (
           <>
             <MakerBrandGlyph
@@ -1631,15 +1631,15 @@ export function ModelListDropdown({
               colored
               className="h-3.5 w-3.5 shrink-0"
             />
-            <span className="truncate">{selected.name}</span>
+            <span className="min-w-0 truncate">{selected.name}</span>
           </>
         ) : (
-          <span className="text-muted-foreground">
+          <span className="min-w-0 truncate text-muted-foreground">
             {isLoading ? "Loading models…" : "Select a model…"}
           </span>
         )}
       </span>
-      <ChevronDown className="h-3 w-3 text-muted-foreground/60" />
+      <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground/60" />
     </button>
   );
 

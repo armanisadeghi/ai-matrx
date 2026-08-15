@@ -103,6 +103,7 @@ export function QuickRunModelSelect({
         onValueChange={handleChange}
         inputModalities={[]}
         outputModalities={["text"]}
+        className="min-w-0 flex-1"
         disabled={isManualMode}
         disabledTitle={MANUAL_MODE_MODEL_HINT}
       />

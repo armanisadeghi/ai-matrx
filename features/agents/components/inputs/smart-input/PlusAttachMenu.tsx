@@ -5,7 +5,7 @@
  *
  * Layout (top → bottom):
  *   1. ResourcePickerMenu (attach sources) — flex-1 scroll
- *   2. ONE combined row: Model + Overrides (inline drill-in) + Advanced Settings
+ *   2. ONE combined row: model picker + Overrides (inline drill-in) + Advanced
  *      (full window @ settings tab — RunSettingsEditor)
  *   3. Working doc / Scratchpad switches
  *   4. ContextLensBar
@@ -73,7 +73,7 @@ interface PlusAttachMenuProps {
 }
 
 /** Fixed shell height — never use max-h alone; inner sections flex within this box. */
-const PLUS_ATTACH_MENU_HEIGHT_CLASS = "h-[min(68vh,480px)]";
+const PLUS_ATTACH_MENU_HEIGHT_CLASS = "h-[min(80dvh,640px)]";
 
 type PlusMenuView = "menu" | "overrides";
 
@@ -87,7 +87,7 @@ function DocumentSwitchesRow({ conversationId }: { conversationId: string }) {
   );
 
   return (
-    <div className="flex items-center gap-2 border-t border-border px-2 py-1.5">
+    <div className="flex items-center gap-2 border-t border-border px-2 py-1">
       <label className="flex min-w-0 flex-1 cursor-pointer items-center justify-between gap-1.5">
         <span className="truncate text-[11px] font-medium text-muted-foreground">
           Working doc
@@ -136,7 +136,7 @@ function ContextLensMenuRow({ conversationId }: { conversationId: string }) {
   );
 
   return (
-    <div className="flex w-full border-t border-border px-2 py-1.5">
+    <div className="flex w-full border-t border-border px-2 py-1">
       <ContextLensBar
         conversationId={conversationId}
         className="h-7 w-full max-w-full"
@@ -163,7 +163,7 @@ function ComputeLensMenuRow({
   if (sandboxBlocked) return null;
 
   return (
-    <div className="flex w-full border-t border-border px-2 py-1.5">
+    <div className="flex w-full border-t border-border px-2 py-1">
       <ComputeLensBar
         conversationId={conversationId}
         className="h-7 w-full max-w-full"
@@ -253,12 +253,9 @@ export function PlusAttachMenu({
         </div>
 
         <div className="flex shrink-0 flex-col">
-          {/* Model + Overrides (inline) + Advanced Settings (window).
-              Overrides ≠ Advanced Settings — terminology restored 2026-08-11. */}
-          <div className="flex items-center gap-1 border-t border-border px-2 py-1.5">
-            <span className="shrink-0 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
-              Model
-            </span>
+          {/* Model picker + Overrides (inline) + Advanced (settings window).
+              Overrides ≠ Advanced settings — terminology restored 2026-08-11. */}
+          <div className="flex items-center gap-1 border-t border-border px-2 py-1">
             <QuickRunModelSelect
               conversationId={conversationId}
               className="h-6 min-w-0 flex-1"
@@ -292,7 +289,7 @@ export function PlusAttachMenu({
               type="button"
               disabled={isManualMode}
               title={
-                isManualMode ? MANUAL_MODE_SETTINGS_HINT : "Advanced Settings"
+                isManualMode ? MANUAL_MODE_SETTINGS_HINT : "Advanced settings"
               }
               onClick={() => {
                 if (isManualMode) return;
@@ -309,7 +306,7 @@ export function PlusAttachMenu({
               )}
             >
               <AppWindow className="h-3.5 w-3.5 shrink-0" />
-              Advanced Settings
+              Advanced
             </button>
           </div>
 

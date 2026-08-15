@@ -336,7 +336,7 @@ export function ResourcePickerMenu({
   return (
     <div className="py-1">
       {visibleCategories.map((category) => (
-        <div key={category.category || "primary"}>
+        <div key={category.category || "primary"} className="flex flex-col">
           {category.category ? (
             <div className="mt-1 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
               {category.category}
