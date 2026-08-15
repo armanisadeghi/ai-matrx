@@ -11,7 +11,7 @@
  */
 
 import { useState } from "react";
-import { GitBranch, Loader2 } from "lucide-react";
+import { ExternalLink, GitBranch, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { SandboxGitAdapter } from "../../adapters/SandboxGitAdapter";
+import { useGitHubConnection } from "@/features/github-integration/useGitHubConnection";
 
 interface CloneRepoDialogProps {
   /** sandbox_instances.id to clone into. */
@@ -51,6 +52,10 @@ export function CloneRepoDialog({
   const [branch, setBranch] = useState("");
   const [dest, setDest] = useState("");
   const [cloning, setCloning] = useState(false);
+  const github = useGitHubConnection();
+  const selectedRepository = github.inventory.repositories.find(
+    (repository) => repository.cloneUrl === url,
+  );
 
   const effectiveDest = dest.trim() || (url.trim() ? repoNameFromUrl(url) : "");
 
@@ -104,9 +109,67 @@ export function CloneRepoDialog({
         </DialogHeader>
 
         <div className="space-y-3 py-2">
+          {github.inventory.connection?.status === "connected" ? (
+            <div className="space-y-1.5 rounded-md border bg-muted/20 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <label className="flex items-center gap-1.5 text-xs font-medium">
+                  <GitBranch className="h-3.5 w-3.5" /> Your GitHub repositories
+                </label>
+                <span className="text-[11px] text-muted-foreground">
+                  {github.inventory.repositories.length} available
+                </span>
+              </div>
+              <select
+                value={selectedRepository?.cloneUrl ?? ""}
+                onChange={(event) => {
+                  const repository = github.inventory.repositories.find(
+                    (candidate) => candidate.cloneUrl === event.target.value,
+                  );
+                  if (!repository) return;
+                  setUrl(repository.cloneUrl);
+                  setBranch(repository.defaultBranch);
+                  setDest(repository.fullName.split("/").pop() ?? "repo");
+                }}
+                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                disabled={cloning || github.loading}
+              >
+                <option value="">Choose a repository…</option>
+                {github.inventory.repositories.map((repository) => (
+                  <option key={repository.id} value={repository.cloneUrl} disabled={repository.archived}>
+                    {repository.fullName}{repository.private ? " · private" : ""}{repository.archived ? " · archived" : ""}
+                  </option>
+                ))}
+              </select>
+              {selectedRepository && (
+                <a
+                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                  href={selectedRepository.htmlUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Open {selectedRepository.fullName} on GitHub <ExternalLink className="h-3 w-3" />
+                </a>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center justify-between gap-3 rounded-md border bg-muted/20 p-3">
+              <div>
+                <p className="flex items-center gap-1.5 text-xs font-medium">
+                  <GitBranch className="h-3.5 w-3.5" /> Connect GitHub
+                </p>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                  Choose private or public repositories without copying URLs or tokens.
+                </p>
+              </div>
+              <Button size="sm" onClick={() => github.connect("/code")}>
+                Connect
+              </Button>
+            </div>
+          )}
+          {github.error && <p className="text-xs text-destructive">{github.error}</p>}
           <div className="space-y-1">
             <label className="text-xs font-medium text-muted-foreground">
-              Repository URL
+              Repository URL {github.inventory.connection ? "(or paste another)" : ""}
             </label>
             <Input
               autoFocus
