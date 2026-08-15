@@ -27,15 +27,8 @@ export function parsePatrolCommitTrailers(message: string): PatrolCommitTrailers
   return { patrolId, runId, delivery, candidateSha };
 }
 
-export function isPatrolCommit(message: string, paths: readonly string[]): boolean {
-  return (
-    /pattern[- ]patrol/i.test(message) ||
-    paths.some(
-      (path) =>
-        path.startsWith(".matrx/patrol-reports/") ||
-        path.startsWith(".matrx/patrol-runs/"),
-    )
-  );
+export function isPatrolCommit(message: string, _paths: readonly string[]): boolean {
+  return /^Patrol-(?:Id|Run|Delivery|Candidate):/im.test(message);
 }
 
 function recordPath(patrolId: string, runId: string): string {

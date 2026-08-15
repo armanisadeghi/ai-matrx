@@ -85,7 +85,7 @@ const TRANSITIONS: Record<PatrolRunState, readonly PatrolRunState[]> = {
   awaiting_approval: ["fixing"],
   fixing: ["certifying", "rejected", "infrastructure_blocked"],
   certifying: ["certified", "rejected", "infrastructure_blocked"],
-  certified: ["delivery_queued", "infrastructure_blocked", "reversed"],
+  certified: ["delivery_queued", "delivered", "infrastructure_blocked", "reversed"],
   rejected: ["fixing"],
   infrastructure_blocked: ["fixing", "certifying", "delivery_queued", "escaped_delivery"],
   escaped_delivery: ["certifying", "reversed"],
@@ -185,6 +185,19 @@ function validateEventRequirements(
     if (event.state === "delivered") {
       nonEmpty(event.delivery.integratedSha ?? "", "integrated SHA");
       nonEmpty(event.delivery.release ?? "", "release identifier");
+      const queuedNormally = priorEvents.some(
+        (prior) =>
+          prior.state === "delivery_queued" &&
+          prior.delivery?.candidateSha === event.delivery?.candidateSha,
+      );
+      const reconcilingEscape = priorEvents.some(
+        (prior) =>
+          prior.state === "escaped_delivery" &&
+          prior.escape?.candidateSha === event.delivery?.candidateSha,
+      );
+      if (!queuedNormally && !reconcilingEscape) {
+        throw new Error("delivered requires a prior delivery queue or escaped-delivery incident");
+      }
     }
   }
 

@@ -1,9 +1,10 @@
 import { isPatrolCommit, parsePatrolCommitTrailers } from "./delivery-policy";
 
 describe("Pattern Patrol delivery policy", () => {
-  it("recognizes patrol work from reports and commit language", () => {
-    expect(isPatrolCommit("fix: ordinary work", [".matrx/patrol-reports/mobile.md"])).toBe(true);
-    expect(isPatrolCommit("fix(pattern-patrol): repair", ["features/foo.tsx"])).toBe(true);
+  it("recognizes only explicit patrol provenance trailers", () => {
+    expect(isPatrolCommit("fix: ordinary work", [".matrx/patrol-reports/mobile.md"])).toBe(false);
+    expect(isPatrolCommit("fix(pattern-patrol): repair", ["features/foo.tsx"])).toBe(false);
+    expect(isPatrolCommit("fix: repair\n\nPatrol-Id: P9", ["features/foo.tsx"])).toBe(true);
     expect(isPatrolCommit("fix: ordinary work", ["features/foo.tsx"])).toBe(false);
   });
 
