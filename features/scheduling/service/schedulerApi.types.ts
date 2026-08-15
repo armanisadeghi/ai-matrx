@@ -51,6 +51,40 @@ export interface TaskDetailResponse {
   agent_task: AgentTaskFields | null;
   triggers: TriggerResponse[];
   recent_runs: RunResponse[];
+  /**
+   * True when a create returned an EXISTING identical schedule instead of
+   * inserting a new one (THE SCHEDULER DUPLICATE GUARD). The request SUCCEEDED
+   * and `task` is the schedule that was already there — never tell the user
+   * something new was created when this is true.
+   */
+  deduplicated?: boolean;
+}
+
+// ── Duplicates (THE SCHEDULER DUPLICATE GUARD) ─────────────────────────────
+
+export interface DuplicateScheduleMember {
+  id: string;
+  title: string | null;
+  enabled: boolean;
+  created_at: string | null;
+  /** True for the OLDEST schedule in the group — the one that is not redundant. */
+  is_original: boolean;
+}
+
+export interface DuplicateScheduleGroup {
+  fingerprint: string;
+  members: DuplicateScheduleMember[];
+  /** How many schedules in this group pay for work already being done. */
+  redundant_count: number;
+  /**
+   * How many are still enabled. A group whose extras are all paused is
+   * resolved — it costs nothing — and must not be shown as a live problem.
+   */
+  enabled_count: number;
+}
+
+export interface DuplicateScheduleResponse {
+  groups: DuplicateScheduleGroup[];
 }
 
 export interface TaskListResponse {
@@ -140,6 +174,14 @@ export interface TaskCreateRequest {
   tags?: string[];
   agent_task?: AgentTaskCreate | null;
   trigger?: TriggerCreate | null;
+  /**
+   * Create even when an identical live schedule already exists. Default false:
+   * an identical create returns the EXISTING schedule (`deduplicated: true`)
+   * rather than inserting a twin, so a double-click or a retried call cannot
+   * produce two always-on schedules doing one job. Set true only when a second
+   * schedule is genuinely wanted.
+   */
+  force?: boolean;
 }
 
 export interface TaskPatchRequest {

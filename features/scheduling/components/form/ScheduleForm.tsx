@@ -225,8 +225,22 @@ export function ScheduleForm({ task }: Props) {
           maxConcurrent: parsed.data.maxConcurrent,
           trigger,
         };
-        const newId = await dispatch(createScheduledTask(input));
-        toast.success("Schedule created");
+        const { id: newId, deduplicated } = await dispatch(
+          createScheduledTask(input),
+        );
+        // The server may have returned an EXISTING identical schedule rather
+        // than making a second one (THE SCHEDULER DUPLICATE GUARD). Saying
+        // "created" there would be a lie the user acts on — they would go
+        // looking for a new schedule that does not exist, or worse, believe
+        // two are now running.
+        if (deduplicated) {
+          toast.success("You already had this exact schedule", {
+            description:
+              "Opening it instead of making a second one that would run the same work twice.",
+          });
+        } else {
+          toast.success("Schedule created");
+        }
         startTransition(() => router.push(`/schedules/${newId}`));
       }
     } catch (err) {

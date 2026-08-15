@@ -103,8 +103,17 @@ export const fetchScheduledTask =
 
 // ── Writes ─────────────────────────────────────────────────────────────────
 
+/**
+ * Create a schedule.
+ *
+ * Returns `deduplicated: true` when the server found an identical live
+ * schedule and returned THAT one instead of inserting a twin (THE SCHEDULER
+ * DUPLICATE GUARD). The request succeeded either way and `id` is always a real
+ * schedule — but the caller must not tell the user it created something new
+ * when nothing new was created.
+ */
 export const createScheduledTask =
-  (input: CreateAgentTaskInput): AppThunk<string> =>
+  (input: CreateAgentTaskInput): AppThunk<{ id: string; deduplicated: boolean }> =>
   async (dispatch) => {
     const detail = await scheduler.createTask({
       kind: "agent",
@@ -120,7 +129,7 @@ export const createScheduledTask =
     });
     const task = taskDetailToAgendaTask(detail);
     dispatch(upsertTask(task));
-    return task.id;
+    return { id: task.id, deduplicated: detail.deduplicated === true };
   };
 
 export const updateScheduledTask =

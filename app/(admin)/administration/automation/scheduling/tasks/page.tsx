@@ -39,6 +39,8 @@ import {
   humanizeTrigger,
 } from "@/features/scheduling/utils/triggerHumanize";
 import { scheduleHref } from "@/features/scheduling/constants/routes";
+import { DuplicateScheduleBanner } from "@/features/scheduling/components/list/DuplicateScheduleBanner";
+import { useDuplicateSchedules } from "@/features/scheduling/hooks/useDuplicateSchedules";
 import { useAdminSchedulingScopeSlice } from "@/features/scheduling/lib/admin-scheduling-scope";
 
 function triggerText(r: AdminTaskRow): string {
@@ -54,6 +56,8 @@ export default function AdminTasksPage() {
   const [rows, setRows] = useState<AdminTaskRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetching, setFetching] = useState(false);
+  const { groups: duplicateGroups, refetch: refetchDuplicates } =
+    useDuplicateSchedules(rows.length);
 
   // The RAW fetched count. The toolbar's search box and the State column's
   // filter live inside MatrxDataTable and narrow the screen without telling
@@ -184,6 +188,18 @@ export default function AdminTasksPage() {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 p-4">
+      {/* Schedules that duplicate each other (THE SCHEDULER DUPLICATE GUARD).
+          Above the table because duplication is a property of the SET — no
+          single row can show that another row is doing its job too. Same
+          component and same RLS-scoped endpoint as /schedules, so the two
+          consoles can never disagree about what a duplicate is. */}
+      <DuplicateScheduleBanner
+        groups={duplicateGroups}
+        onResolved={() => {
+          void load();
+          void refetchDuplicates();
+        }}
+      />
       <div className="min-h-0 flex-1">
         <MatrxDataTable
           urlState={{ id: "scheduling-tasks" }}

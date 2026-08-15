@@ -11,6 +11,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createSchedulesScope } from "@/features/surfaces/manifests/schedules.manifest";
 import { useScheduledTasks } from "../../hooks/useScheduledTasks";
+import { useDuplicateSchedules } from "../../hooks/useDuplicateSchedules";
+import { DuplicateScheduleBanner } from "./DuplicateScheduleBanner";
 import { buildScheduleRosterValues } from "../../lib/schedules-scope";
 import { scheduleKpis } from "../../lib/copy";
 import { ScheduleRow } from "./ScheduleRow";
@@ -38,6 +40,10 @@ export function ScheduleList() {
 
 function ScheduleListBody() {
   const { tasks, status, error, refetch } = useScheduledTasks();
+  // Re-checked whenever the roster changes, so creating or pausing a schedule
+  // updates the duplicate banner without a manual refresh.
+  const { groups: duplicateGroups, refetch: refetchDuplicates } =
+    useDuplicateSchedules(tasks.length);
 
   if (status === "loading" || status === "idle") {
     return (
@@ -93,6 +99,16 @@ function ScheduleListBody() {
 
   return (
     <div className="flex flex-col gap-2">
+      {/* Two schedules doing one job cost twice and look like nothing is wrong.
+          Surfaced above the list because it is a property of the SET, not of
+          any one row — no row can show it. */}
+      <DuplicateScheduleBanner
+        groups={duplicateGroups}
+        onResolved={() => {
+          void refetch();
+          void refetchDuplicates();
+        }}
+      />
       {tasks.map((task) => (
         <ScheduleRow key={task.id} task={task} kpis={kpis} />
       ))}

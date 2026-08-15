@@ -15,6 +15,7 @@ import type {
   DeletedResponse,
   ListRunsQuery,
   ListTasksQuery,
+  DuplicateScheduleResponse,
   PreviewFiresRequest,
   PreviewFiresResponse,
   RunListResponse,
@@ -100,6 +101,18 @@ export function createTask(
   return request<TaskDetailResponse>("/scheduler/tasks", {
     method: "POST",
     body: JSON.stringify(body),
+  });
+}
+
+/**
+ * The caller's schedules that duplicate each other — same agent, prompt,
+ * variables, queue and enabled trigger, regardless of what they are named
+ * (THE SCHEDULER DUPLICATE GUARD). Paused and trigger-less schedules are
+ * excluded server-side: they cannot fire, so they cost nothing.
+ */
+export function listDuplicateSchedules(): Promise<DuplicateScheduleResponse> {
+  return request<DuplicateScheduleResponse>("/scheduler/tasks/duplicates", {
+    method: "GET",
   });
 }
 
