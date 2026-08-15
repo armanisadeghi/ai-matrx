@@ -10,11 +10,11 @@ import { useResearchStream } from "./useResearchStream";
 /**
  * Run the full pipeline from ANY research surface.
  *
- * The overview's `PipelineOrchestra` owns the rich live visualization (stage
+ * The overview's `PipelineGraph` owns the rich live visualization (stage
  * graph, per-item feed, cost strip) and keeps its own wiring. Every other
  * surface — the keywords list, a single keyword's page — needs the same
  * capability without any of that machinery: start the run, show that it is
- * running, refresh when it lands. Duplicating the orchestra's stream plumbing
+ * running, refresh when it lands. Duplicating the pipeline graph's stream plumbing
  * on each of those is exactly the "second implementation" the doctrine forbids,
  * so this is the shared thin path.
  *

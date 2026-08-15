@@ -66,17 +66,17 @@ import { LivePipelineActivity } from "../live-pipeline/LivePipelineActivity";
 import { TopicSettingsPanel } from "../TopicSettingsPanel";
 import { PipelineNextSteps } from "../PipelineNextSteps";
 
-import { OrchestraNode, type OrchestraStatus } from "./OrchestraNode";
+import { PipelineStageNode, type PipelineStageStatus } from "./PipelineStageNode";
 import {
-  OrchestraEdge,
-  OrchestraCurvedEdge,
+  PipelineEdge,
+  PipelineCurvedEdge,
   type EdgeState,
-} from "./OrchestraEdge";
+} from "./PipelineEdge";
 import { AutonomyControl } from "./AutonomyControl";
 import { ProviderControl } from "./ProviderControl";
 import { LastRunSummary } from "./LastRunSummary";
 
-import "./orchestra.css";
+import "./pipeline-graph.css";
 import type { ResearchProgress, ResearchTopic } from "../../../types";
 import { EMPTY_RESEARCH_PENDING } from "../../../types";
 import {
@@ -93,7 +93,7 @@ import { KeywordQuotaDialog } from "../../keywords/KeywordQuotaDialog";
 
 /**
  * Map `(persistent topic.progress, live pipeline state, autonomy)` → a single
- * orchestra status per node. The live state takes precedence; persistent
+ * pipeline graph status per node. The live state takes precedence; persistent
  * data fills in the "what's already true" picture for cold loads.
  */
 function statusFor(args: {
@@ -121,7 +121,7 @@ function statusFor(args: {
    * Gates the animated "queued"/waiting state so nothing pulses at rest.
    */
   isLive: boolean;
-}): OrchestraStatus {
+}): PipelineStageStatus {
   const {
     have,
     target,
@@ -168,8 +168,8 @@ function statusFor(args: {
 }
 
 function edgeStateFor(
-  fromStatus: OrchestraStatus,
-  toStatus: OrchestraStatus,
+  fromStatus: PipelineStageStatus,
+  toStatus: PipelineStageStatus,
 ): EdgeState {
   if (fromStatus === "active" || toStatus === "active") return "active";
   if (fromStatus === "complete" && toStatus !== "empty") return "complete";
@@ -178,7 +178,7 @@ function edgeStateFor(
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function PipelineOrchestra() {
+export function PipelineGraph() {
   const { topicId, topic, progress, refresh, refreshProgress, isLoading } =
     useTopicContext();
   const api = useResearchApi();
@@ -704,7 +704,7 @@ export function PipelineOrchestra() {
         isBusy={stream.isStreaming}
       />
 
-      {/* ── The orchestra ─────────────────────────────────────────────── */}
+      {/* ── The pipeline graph ─────────────────────────────────────────────── */}
       {/*
         Layout is driven by a CONTAINER query (`@container/orch`), not the
         viewport — so it reacts to the real space available (which changes when
@@ -723,7 +723,7 @@ export function PipelineOrchestra() {
             letters). Tags is an inline manual branch with dashed connectors. */}
         <div className="@7xl/orch:hidden">
           <div className="mx-auto flex w-full max-w-sm flex-col">
-            <OrchestraNode
+            <PipelineStageNode
               icon={Search}
               label="Keywords"
               count={p.total_keywords}
@@ -735,7 +735,7 @@ export function PipelineOrchestra() {
               actionLabel="Search keywords"
             />
             <VEdge state={edgeStateFor(keywordsStatus, sourcesStatus)} />
-            <OrchestraNode
+            <PipelineStageNode
               icon={Globe}
               label="Sources"
               count={p.total_sources}
@@ -750,7 +750,7 @@ export function PipelineOrchestra() {
               actionLabel="Read pending sources"
             />
             <VEdge state={edgeStateFor(sourcesStatus, contentStatus)} />
-            <OrchestraNode
+            <PipelineStageNode
               icon={FileText}
               label="Content"
               count={p.total_content}
@@ -762,7 +762,7 @@ export function PipelineOrchestra() {
               actionLabel="Analyze pages"
             />
             <VEdge state={edgeStateFor(contentStatus, analysisStatus)} />
-            <OrchestraNode
+            <PipelineStageNode
               icon={Brain}
               label="Analysis"
               count={`${p.total_analyses}${p.total_eligible_for_analysis ? ` / ${p.total_eligible_for_analysis}` : ""}`}
@@ -781,7 +781,7 @@ export function PipelineOrchestra() {
                 Two on-demand passes: Play = auto-tag sources, Combine =
                 consolidate existing tags. Neither runs as part of `/run`. */}
             <VEdge state="dashed" />
-            <OrchestraNode
+            <PipelineStageNode
               icon={Tags}
               label="Tags"
               count={p.total_tags}
@@ -802,7 +802,7 @@ export function PipelineOrchestra() {
               }
             />
             <VEdge state="dashed" />
-            <OrchestraNode
+            <PipelineStageNode
               icon={Layers}
               label="Synthesis"
               count={`${p.keyword_syntheses}${p.total_keywords ? ` / ${p.total_keywords}` : ""}`}
@@ -814,7 +814,7 @@ export function PipelineOrchestra() {
               actionLabel="Synthesize keywords"
             />
             <VEdge state={edgeStateFor(synthesisStatus, reportStatus)} />
-            <OrchestraNode
+            <PipelineStageNode
               icon={ScrollText}
               label="Report"
               count={p.topic_syntheses > 0 ? "Ready" : "—"}
@@ -830,7 +830,7 @@ export function PipelineOrchestra() {
               actionLabel="Generate report"
             />
             <VEdge state={edgeStateFor(reportStatus, documentStatus)} />
-            <OrchestraNode
+            <PipelineStageNode
               icon={FileSpreadsheet}
               label="Document"
               count={p.total_documents > 0 ? p.total_documents : "—"}
@@ -857,7 +857,7 @@ export function PipelineOrchestra() {
                 "minmax(0,1fr) 0.4fr minmax(0,1fr) 0.4fr minmax(0,1fr) 0.4fr minmax(0,1fr) 0.4fr minmax(0,1fr) 0.4fr minmax(0,1fr) 0.4fr minmax(0,1fr)",
             }}
           >
-            <OrchestraNode
+            <PipelineStageNode
               icon={Search}
               label="Keywords"
               count={p.total_keywords}
@@ -869,12 +869,12 @@ export function PipelineOrchestra() {
               actionLabel="Search keywords"
             />
             <div className="flex items-center px-1">
-              <OrchestraEdge
+              <PipelineEdge
                 state={edgeStateFor(keywordsStatus, sourcesStatus)}
               />
             </div>
 
-            <OrchestraNode
+            <PipelineStageNode
               icon={Globe}
               label="Sources"
               count={p.total_sources}
@@ -889,12 +889,12 @@ export function PipelineOrchestra() {
               actionLabel="Read pending sources"
             />
             <div className="flex items-center px-1">
-              <OrchestraEdge
+              <PipelineEdge
                 state={edgeStateFor(sourcesStatus, contentStatus)}
               />
             </div>
 
-            <OrchestraNode
+            <PipelineStageNode
               icon={FileText}
               label="Content"
               count={p.total_content}
@@ -909,12 +909,12 @@ export function PipelineOrchestra() {
               actionLabel="Analyze pages"
             />
             <div className="flex items-center px-1">
-              <OrchestraEdge
+              <PipelineEdge
                 state={edgeStateFor(contentStatus, analysisStatus)}
               />
             </div>
 
-            <OrchestraNode
+            <PipelineStageNode
               icon={Brain}
               label="Analysis"
               count={`${p.total_analyses}${p.total_eligible_for_analysis ? ` / ${p.total_eligible_for_analysis}` : ""}`}
@@ -930,12 +930,12 @@ export function PipelineOrchestra() {
               actionLabel="Synthesize keywords"
             />
             <div className="flex items-center px-1">
-              <OrchestraEdge
+              <PipelineEdge
                 state={edgeStateFor(analysisStatus, synthesisStatus)}
               />
             </div>
 
-            <OrchestraNode
+            <PipelineStageNode
               icon={Layers}
               label="Synthesis"
               count={`${p.keyword_syntheses}${p.total_keywords ? ` / ${p.total_keywords}` : ""}`}
@@ -951,12 +951,12 @@ export function PipelineOrchestra() {
               actionLabel="Synthesize keywords"
             />
             <div className="flex items-center px-1">
-              <OrchestraEdge
+              <PipelineEdge
                 state={edgeStateFor(synthesisStatus, reportStatus)}
               />
             </div>
 
-            <OrchestraNode
+            <PipelineStageNode
               icon={ScrollText}
               label="Report"
               count={p.topic_syntheses > 0 ? "Ready" : "—"}
@@ -971,12 +971,12 @@ export function PipelineOrchestra() {
               actionLabel="Generate report"
             />
             <div className="flex items-center px-1">
-              <OrchestraEdge
+              <PipelineEdge
                 state={edgeStateFor(reportStatus, documentStatus)}
               />
             </div>
 
-            <OrchestraNode
+            <PipelineStageNode
               icon={FileSpreadsheet}
               label="Document"
               count={p.total_documents > 0 ? p.total_documents : "—"}
@@ -1009,7 +1009,7 @@ export function PipelineOrchestra() {
                   Always dashed: tags are a manual branch, never fed by a live
                   run, so this stays a structural hint and never animates flow. */}
               <div className="flex justify-end pr-2">
-                <OrchestraCurvedEdge
+                <PipelineCurvedEdge
                   state="dashed"
                   width={80}
                   height={40}
@@ -1021,7 +1021,7 @@ export function PipelineOrchestra() {
               <div />
               {/* col 7 = Analysis → curve down to Tags. Always dashed (see above). */}
               <div className="flex justify-start pl-2">
-                <OrchestraCurvedEdge
+                <PipelineCurvedEdge
                   state="dashed"
                   width={80}
                   height={40}
@@ -1050,7 +1050,7 @@ export function PipelineOrchestra() {
               <div />
               <div className="col-span-3">
                 {/* Tags spans visually under Content–Analysis */}
-                <OrchestraNode
+                <PipelineStageNode
                   icon={Tags}
                   label="Tags"
                   count={p.total_tags}
@@ -1137,7 +1137,7 @@ export function PipelineOrchestra() {
               </h3>
               <p className="text-[11px] text-muted-foreground leading-snug mb-2">
                 Keywords drive everything downstream. Add a few search terms and
-                the orchestra will light up — or hit Run pipeline to let the
+                the pipeline graph will light up — or hit Run pipeline to let the
                 agent suggest them.
               </p>
               <Link
@@ -1230,7 +1230,7 @@ export function PipelineOrchestra() {
 function VEdge({ state }: { state: EdgeState }) {
   return (
     <div className="flex justify-center py-0.5">
-      <OrchestraEdge
+      <PipelineEdge
         orientation="vertical"
         state={state}
         particle={state !== "dashed"}

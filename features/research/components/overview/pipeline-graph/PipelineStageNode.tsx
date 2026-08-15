@@ -29,7 +29,7 @@ import {
 import { cn } from "@/lib/utils";
 
 /**
- * Visual + behavioral states for a stage node in the orchestra.
+ * Visual + behavioral states for a stage node in the pipeline graph.
  *
  *  - `empty`     no data ever produced; e.g. Document before any run
  *  - `idle`      has data, nothing pending, nothing running
@@ -44,7 +44,7 @@ import { cn } from "@/lib/utils";
  *  - `complete`  finished cleanly and caught up with everything upstream
  *  - `failed`    hard error
  */
-export type OrchestraStatus =
+export type PipelineStageStatus =
   | "empty"
   | "idle"
   | "gated"
@@ -55,7 +55,7 @@ export type OrchestraStatus =
   | "complete"
   | "failed";
 
-export interface OrchestraNodeProps {
+export interface PipelineStageNodeProps {
   icon: LucideIcon;
   label: string;
   /**
@@ -65,7 +65,7 @@ export interface OrchestraNodeProps {
   count: ReactNode;
   /** Subtle line under the count — e.g. "of 5 max", "0 failed", "from 2 sources". */
   hint?: ReactNode;
-  status: OrchestraStatus;
+  status: PipelineStageStatus;
   /** Where clicking the body navigates to (the corresponding detail page). */
   href: string;
   /**
@@ -98,7 +98,7 @@ export interface OrchestraNodeProps {
 }
 
 const STATUS_BADGE: Record<
-  OrchestraStatus,
+  PipelineStageStatus,
   { icon: LucideIcon | null; className: string; label: string } | null
 > = {
   empty: null,
@@ -141,10 +141,10 @@ const STATUS_BADGE: Record<
 };
 
 /**
- * A single node in the pipeline orchestra. Owns its own visuals; ordering,
+ * A single node in the pipeline pipeline graph. Owns its own visuals; ordering,
  * edges, and stage triggering are the parent's responsibility.
  */
-export function OrchestraNode({
+export function PipelineStageNode({
   icon: Icon,
   label,
   count,
@@ -162,7 +162,7 @@ export function OrchestraNode({
   ribbon,
   tooltip,
   dim,
-}: OrchestraNodeProps) {
+}: PipelineStageNodeProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [actionBusy, setActionBusy] = useState(false);
@@ -238,7 +238,7 @@ export function OrchestraNode({
           aria-label={`Open ${label}`}
           data-status={status}
           className={cn(
-            "orchestra-node group min-w-0 select-none",
+            "pipeline-node group min-w-0 select-none",
             dim && "opacity-50",
             isPending && "pointer-events-none",
           )}
@@ -291,7 +291,7 @@ export function OrchestraNode({
               <span
                 ref={countWrapRef}
                 className={cn(
-                  "orchestra-count block text-base font-bold leading-none truncate",
+                  "pipeline-count block text-base font-bold leading-none truncate",
                   status === "active" && "text-primary",
                   status === "empty" && "text-muted-foreground/60",
                 )}

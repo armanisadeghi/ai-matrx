@@ -19,7 +19,7 @@ interface Props {
   children: React.ReactNode;
   className?: string;
   contentClassName?: string;
-  /** When true, the trigger uses the compact pill style from orchestra.css. */
+  /** When true, the trigger uses the compact pill style from pipeline-graph.css. */
   pill?: boolean;
 }
 
@@ -43,7 +43,7 @@ export function FoldableSection({
         className={cn(
           "group/trigger flex w-full items-center gap-2 text-left transition-colors",
           pill
-            ? "orchestra-collapsed-pill justify-between"
+            ? "pipeline-collapsed-pill justify-between"
             : "rounded-lg border border-border/50 bg-muted/20 px-2.5 py-1.5 hover:bg-muted/40",
         )}
       >

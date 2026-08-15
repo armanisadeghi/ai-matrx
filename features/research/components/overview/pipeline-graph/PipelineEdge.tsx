@@ -1,14 +1,14 @@
 "use client";
 
 /**
- * Edges that connect orchestra nodes.
+ * Edges that connect pipeline graph nodes.
  *
- *  - <OrchestraEdge state="active|complete|idle|dashed" /> : a thin horizontal
+ *  - <PipelineEdge state="active|complete|idle|dashed" /> : a thin horizontal
  *    line, animated when state="active". Used between adjacent spine nodes.
- *  - <OrchestraCurvedEdge ...> : an SVG cubic curve used to fork the Tags
+ *  - <PipelineCurvedEdge ...> : an SVG cubic curve used to fork the Tags
  *    branch off the spine and to merge it back into the project report.
  *
- * Edge state is derived by the parent (PipelineOrchestra) from the source
+ * Edge state is derived by the parent (PipelineGraph) from the source
  * stage's status; the edge component itself is dumb.
  */
 
@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 
 export type EdgeState = "idle" | "active" | "complete" | "dashed";
 
-interface OrchestraEdgeProps {
+interface PipelineEdgeProps {
   state: EdgeState;
   className?: string;
   /** Show a traveling particle when state="active". */
@@ -24,24 +24,24 @@ interface OrchestraEdgeProps {
   /**
    * Orientation of the connector. "horizontal" (default) is the thin line used
    * between spine nodes; "vertical" is the stacked variant used by the vertical
-   * (medium / narrow) orchestra layout.
+   * (medium / narrow) pipeline graph layout.
    */
   orientation?: "horizontal" | "vertical";
 }
 
-export function OrchestraEdge({
+export function PipelineEdge({
   state,
   className,
   particle = true,
   orientation = "horizontal",
-}: OrchestraEdgeProps) {
+}: PipelineEdgeProps) {
   const vertical = orientation === "vertical";
   return (
     <div
       data-state={state}
       className={cn(
-        "orchestra-edge-flow",
-        vertical && "orchestra-edge-flow--v",
+        "pipeline-edge-flow",
+        vertical && "pipeline-edge-flow--v",
         className,
       )}
       aria-hidden
@@ -49,7 +49,7 @@ export function OrchestraEdge({
       {state === "active" && particle && (
         <span
           className={
-            vertical ? "orchestra-edge-particle-v" : "orchestra-edge-particle"
+            vertical ? "pipeline-edge-particle-v" : "pipeline-edge-particle"
           }
         />
       )}
@@ -57,7 +57,7 @@ export function OrchestraEdge({
   );
 }
 
-interface OrchestraCurvedEdgeProps {
+interface PipelineCurvedEdgeProps {
   state: EdgeState;
   /** Width of the SVG viewport (px). The curve uses 0 → width along x. */
   width: number;
@@ -71,13 +71,13 @@ interface OrchestraCurvedEdgeProps {
   className?: string;
 }
 
-export function OrchestraCurvedEdge({
+export function PipelineCurvedEdge({
   state,
   width,
   height,
   direction,
   className,
-}: OrchestraCurvedEdgeProps) {
+}: PipelineCurvedEdgeProps) {
   // Cubic curves with control points placed for a smooth arc.
   const path = (() => {
     switch (direction) {
@@ -98,7 +98,7 @@ export function OrchestraCurvedEdge({
       width={width}
       height={height}
       viewBox={`0 0 ${width} ${height}`}
-      className={cn("orchestra-edge-curve overflow-visible", className)}
+      className={cn("pipeline-edge-curve overflow-visible", className)}
       aria-hidden
     >
       <path d={path} />

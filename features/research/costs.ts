@@ -17,7 +17,7 @@
  * Python endpoint stays for consumers without Supabase access.
  *
  * The totals produced here are byte-for-byte the contract the backend emitted
- * (`TopicCostSummary`), so every existing consumer — PipelineOrchestra,
+ * (`TopicCostSummary`), so every existing consumer — PipelineGraph,
  * LastRunSummary, LivePipelineActivity — keeps working unchanged.
  */
 

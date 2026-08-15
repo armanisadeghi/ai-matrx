@@ -7,7 +7,7 @@ import { sourcesDiscoveredFromItems } from "../../../hooks/usePipelineProgress";
  * (the stat-square rail, headers, etc.). One source of truth for a stage's
  * icon, label, duration, and headline numbers.
  *
- * Labels match the orchestra nouns so the same page never says "Search 0"
+ * Labels match the pipeline graph nouns so the same page never says "Search 0"
  * next to a Sources node that shows 236:
  *   Search stage  → Sources (search results)
  *   Scrape stage  → Content (scrape results)

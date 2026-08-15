@@ -1,15 +1,15 @@
 /* ============================================================================
- * Pipeline Orchestra — animated CSS for the research topic page.
+ * Pipeline graph — animated CSS for the research topic page.
  *
  * Visual primitives:
- *   .orchestra-node            base node card (status-aware fill/border)
- *   .orchestra-node[data-status]
+ *   .pipeline-node            base node card (status-aware fill/border)
+ *   .pipeline-node[data-status]
  *                              variants: idle | gated | queued | active |
  *                              complete | partial | failed | empty
- *   .orchestra-edge-flow       horizontal animated gradient (source→target)
- *   .orchestra-edge-curve      SVG curved path with the same gradient
- *   .orchestra-pulse-ring      breathing ring around active nodes
- *   .orchestra-collapsed-pill  shrunken state for completed stage cards
+ *   .pipeline-edge-flow       horizontal animated gradient (source→target)
+ *   .pipeline-edge-curve      SVG curved path with the same gradient
+ *   .pipeline-pulse-ring      breathing ring around active nodes
+ *   .pipeline-collapsed-pill  shrunken state for completed stage cards
  *
  * All flow animations honor `prefers-reduced-motion`.
  * Color tokens come from app/globals.css — no hard-coded palette.
@@ -18,7 +18,7 @@
 @layer components {
   /* ---------- Node base ----------------------------------------------------- */
 
-  .orchestra-node {
+  .pipeline-node {
     position: relative;
     display: flex;
     flex-direction: column;
@@ -38,7 +38,7 @@
     min-height: 4.5rem;
   }
 
-  .orchestra-node:hover {
+  .pipeline-node:hover {
     border-color: hsl(var(--primary) / 0.4);
     background: hsl(var(--card) / 0.85);
     transform: translateY(-1px);
@@ -46,13 +46,13 @@
 
   /* Status variants — idle is the default. */
 
-  .orchestra-node[data-status="empty"] {
+  .pipeline-node[data-status="empty"] {
     background: hsl(var(--muted) / 0.25);
     border-color: hsl(var(--border) / 0.4);
     border-style: dashed;
   }
 
-  .orchestra-node[data-status="gated"] {
+  .pipeline-node[data-status="gated"] {
     border-style: dashed;
     border-color: hsl(43 96% 56% / 0.55);
     background:
@@ -60,12 +60,12 @@
       hsl(var(--card) / 0.6);
   }
 
-  .orchestra-node[data-status="queued"] {
+  .pipeline-node[data-status="queued"] {
     border-color: hsl(var(--primary) / 0.4);
-    animation: orchestra-soft-pulse 2.6s ease-in-out infinite;
+    animation: pipeline-soft-pulse 2.6s ease-in-out infinite;
   }
 
-  .orchestra-node[data-status="active"] {
+  .pipeline-node[data-status="active"] {
     border-color: hsl(var(--primary) / 0.9);
     background: linear-gradient(
       135deg,
@@ -78,14 +78,14 @@
     transform: translateY(-1px);
   }
 
-  .orchestra-node[data-status="active"]::before {
+  .pipeline-node[data-status="active"]::before {
     content: "";
     position: absolute;
     inset: -2px;
     border-radius: inherit;
     pointer-events: none;
     background: conic-gradient(
-      from var(--orchestra-spin, 0deg),
+      from var(--pipeline-spin, 0deg),
       hsl(var(--primary) / 0.65) 0deg,
       hsl(var(--primary) / 0.05) 110deg,
       hsl(var(--primary) / 0.05) 250deg,
@@ -97,23 +97,23 @@
     -webkit-mask-composite: xor;
     mask-composite: exclude;
     padding: 1px;
-    animation: orchestra-spin 3.4s linear infinite;
+    animation: pipeline-spin 3.4s linear infinite;
     opacity: 0.9;
   }
 
-  @property --orchestra-spin {
+  @property --pipeline-spin {
     syntax: "<angle>";
     inherits: false;
     initial-value: 0deg;
   }
 
-  @keyframes orchestra-spin {
+  @keyframes pipeline-spin {
     to {
-      --orchestra-spin: 360deg;
+      --pipeline-spin: 360deg;
     }
   }
 
-  .orchestra-node[data-status="complete"] {
+  .pipeline-node[data-status="complete"] {
     border-color: hsl(142 71% 45% / 0.45);
     background: linear-gradient(
       135deg,
@@ -122,7 +122,7 @@
     );
   }
 
-  .orchestra-node[data-status="partial"] {
+  .pipeline-node[data-status="partial"] {
     border-color: hsl(43 96% 56% / 0.55);
     background: linear-gradient(
       135deg,
@@ -135,7 +135,7 @@
      stronger on the border so "you still have work here" reads at a glance
      across a row of otherwise-green nodes. Never animated: staleness is a
      resting state, not a run in progress. */
-  .orchestra-node[data-status="stale"] {
+  .pipeline-node[data-status="stale"] {
     border-color: hsl(43 96% 56% / 0.7);
     background: linear-gradient(
       135deg,
@@ -144,7 +144,7 @@
     );
   }
 
-  .orchestra-node[data-status="failed"] {
+  .pipeline-node[data-status="failed"] {
     border-color: hsl(var(--destructive) / 0.5);
     background: linear-gradient(
       135deg,
@@ -155,7 +155,7 @@
 
   /* ---------- Soft pulse for queued nodes ---------------------------------- */
 
-  @keyframes orchestra-soft-pulse {
+  @keyframes pipeline-soft-pulse {
     0%,
     100% {
       box-shadow: 0 0 0 0 hsl(var(--primary) / 0);
@@ -167,7 +167,7 @@
 
   /* ---------- Edges -------------------------------------------------------- */
 
-  .orchestra-edge-flow {
+  .pipeline-edge-flow {
     position: relative;
     height: 2px;
     flex: 1 1 auto;
@@ -181,7 +181,7 @@
     overflow: hidden;
   }
 
-  .orchestra-edge-flow[data-state="active"] {
+  .pipeline-edge-flow[data-state="active"] {
     background: linear-gradient(
       90deg,
       hsl(var(--primary) / 0.05),
@@ -190,11 +190,11 @@
       hsl(var(--primary) / 0.05)
     );
     background-size: 220% 100%;
-    animation: orchestra-flow 1.6s linear infinite;
+    animation: pipeline-flow 1.6s linear infinite;
     box-shadow: 0 0 8px hsl(var(--primary) / 0.5);
   }
 
-  .orchestra-edge-flow[data-state="complete"] {
+  .pipeline-edge-flow[data-state="complete"] {
     background: linear-gradient(
       to right,
       hsl(142 71% 45% / 0.6),
@@ -202,13 +202,13 @@
     );
   }
 
-  .orchestra-edge-flow[data-state="dashed"] {
+  .pipeline-edge-flow[data-state="dashed"] {
     background: none;
     border-top: 2px dashed hsl(var(--border) / 0.6);
     height: 0;
   }
 
-  @keyframes orchestra-flow {
+  @keyframes pipeline-flow {
     from {
       background-position: 100% 50%;
     }
@@ -218,9 +218,9 @@
   }
 
   /* Vertical edge variant — same semantics, rotated for the stacked flow.
-     Used by the vertical (medium / narrow) orchestra layout. */
+     Used by the vertical (medium / narrow) pipeline graph layout. */
 
-  .orchestra-edge-flow--v {
+  .pipeline-edge-flow--v {
     height: 1.25rem;
     width: 2px;
     flex: 0 0 auto;
@@ -232,7 +232,7 @@
     );
   }
 
-  .orchestra-edge-flow--v[data-state="active"] {
+  .pipeline-edge-flow--v[data-state="active"] {
     background: linear-gradient(
       180deg,
       hsl(var(--primary) / 0.05),
@@ -241,11 +241,11 @@
       hsl(var(--primary) / 0.05)
     );
     background-size: 100% 220%;
-    animation: orchestra-flow-v 1.6s linear infinite;
+    animation: pipeline-flow-v 1.6s linear infinite;
     box-shadow: 0 0 8px hsl(var(--primary) / 0.5);
   }
 
-  .orchestra-edge-flow--v[data-state="complete"] {
+  .pipeline-edge-flow--v[data-state="complete"] {
     background: linear-gradient(
       to bottom,
       hsl(142 71% 45% / 0.6),
@@ -253,14 +253,14 @@
     );
   }
 
-  .orchestra-edge-flow--v[data-state="dashed"] {
+  .pipeline-edge-flow--v[data-state="dashed"] {
     background: none;
     border-top: 0;
     border-left: 2px dashed hsl(var(--border) / 0.6);
     width: 0;
   }
 
-  @keyframes orchestra-flow-v {
+  @keyframes pipeline-flow-v {
     from {
       background-position: 50% 100%;
     }
@@ -271,7 +271,7 @@
 
   /* Vertical traveling particle — top → bottom along an active vertical edge. */
 
-  .orchestra-edge-particle-v {
+  .pipeline-edge-particle-v {
     position: absolute;
     left: 50%;
     top: 0;
@@ -281,10 +281,10 @@
     background: hsl(var(--primary));
     box-shadow: 0 0 8px hsl(var(--primary));
     transform: translate(-50%, -50%);
-    animation: orchestra-particle-v 1.4s linear infinite;
+    animation: pipeline-particle-v 1.4s linear infinite;
   }
 
-  @keyframes orchestra-particle-v {
+  @keyframes pipeline-particle-v {
     from {
       top: 0%;
       opacity: 0;
@@ -303,7 +303,7 @@
 
   /* SVG curve variant — used for the Tags branch fork/merge. */
 
-  .orchestra-edge-curve path {
+  .pipeline-edge-curve path {
     fill: none;
     stroke: hsl(var(--border) / 0.55);
     stroke-width: 1.5;
@@ -312,20 +312,20 @@
     transition: stroke 200ms ease;
   }
 
-  .orchestra-edge-curve[data-state="active"] path {
+  .pipeline-edge-curve[data-state="active"] path {
     stroke: hsl(var(--primary));
     stroke-dasharray: 6 4;
     stroke-width: 2;
-    animation: orchestra-dash-flow 0.7s linear infinite;
+    animation: pipeline-dash-flow 0.7s linear infinite;
     filter: drop-shadow(0 0 3px hsl(var(--primary) / 0.5));
   }
 
-  .orchestra-edge-curve[data-state="complete"] path {
+  .pipeline-edge-curve[data-state="complete"] path {
     stroke: hsl(142 71% 45% / 0.65);
     stroke-dasharray: none;
   }
 
-  @keyframes orchestra-dash-flow {
+  @keyframes pipeline-dash-flow {
     to {
       stroke-dashoffset: -20;
     }
@@ -333,7 +333,7 @@
 
   /* ---------- Floating particle along an active edge ----------------------- */
 
-  .orchestra-edge-particle {
+  .pipeline-edge-particle {
     position: absolute;
     top: 50%;
     left: 0;
@@ -343,10 +343,10 @@
     background: hsl(var(--primary));
     box-shadow: 0 0 8px hsl(var(--primary));
     transform: translate(-50%, -50%);
-    animation: orchestra-particle 1.4s linear infinite;
+    animation: pipeline-particle 1.4s linear infinite;
   }
 
-  @keyframes orchestra-particle {
+  @keyframes pipeline-particle {
     from {
       left: 0%;
       opacity: 0;
@@ -365,7 +365,7 @@
 
   /* ---------- Collapsed completed pill (in the active drawer) -------------- */
 
-  .orchestra-collapsed-pill {
+  .pipeline-collapsed-pill {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
@@ -385,7 +385,7 @@
     transition: background 160ms ease;
   }
 
-  .orchestra-collapsed-pill:hover {
+  .pipeline-collapsed-pill:hover {
     background: linear-gradient(
       90deg,
       hsl(142 71% 45% / 0.18),
@@ -395,17 +395,17 @@
 
   /* ---------- Number ticker / count flash ---------------------------------- */
 
-  .orchestra-count {
+  .pipeline-count {
     font-variant-numeric: tabular-nums;
     transition: color 220ms ease;
   }
 
-  .orchestra-count[data-bumped="true"] {
-    animation: orchestra-count-bump 0.45s ease;
+  .pipeline-count[data-bumped="true"] {
+    animation: pipeline-count-bump 0.45s ease;
     color: hsl(var(--primary));
   }
 
-  @keyframes orchestra-count-bump {
+  @keyframes pipeline-count-bump {
     0% {
       transform: scale(1);
     }
@@ -420,17 +420,17 @@
   /* ---------- Reduced motion safety --------------------------------------- */
 
   @media (prefers-reduced-motion: reduce) {
-    .orchestra-node[data-status="active"]::before,
-    .orchestra-node[data-status="queued"],
-    .orchestra-edge-flow[data-state="active"],
-    .orchestra-edge-curve[data-state="active"] path,
-    .orchestra-edge-particle,
-    .orchestra-edge-particle-v,
-    .orchestra-count[data-bumped="true"] {
+    .pipeline-node[data-status="active"]::before,
+    .pipeline-node[data-status="queued"],
+    .pipeline-edge-flow[data-state="active"],
+    .pipeline-edge-curve[data-state="active"] path,
+    .pipeline-edge-particle,
+    .pipeline-edge-particle-v,
+    .pipeline-count[data-bumped="true"] {
       animation: none !important;
     }
-    .orchestra-edge-flow[data-state="active"],
-    .orchestra-edge-flow--v[data-state="active"] {
+    .pipeline-edge-flow[data-state="active"],
+    .pipeline-edge-flow--v[data-state="active"] {
       background: hsl(var(--primary));
     }
   }

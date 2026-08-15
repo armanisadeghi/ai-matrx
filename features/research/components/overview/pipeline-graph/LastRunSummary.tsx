@@ -159,7 +159,7 @@ function Line({ icon: Icon, label, value, href, warning, dim }: LineProps) {
 /**
  * Persistent "here's everything we found + how good it is" view for the topic.
  *
- * This is the cold-load / between-runs surface rendered by `PipelineOrchestra`
+ * This is the cold-load / between-runs surface rendered by `PipelineGraph`
  * (when no run is live). It used to be a tidy pipeline receipt only; it now
  * ALSO carries the results showcase — cleaned metric tiles, the highest-
  * authority Top Sources, and the rich-media band — so the Topic page is the

@@ -16,7 +16,7 @@ import type { TopicCostSummary } from "../types";
  * network tier, and per-call detail the aggregate endpoint could not return.
  *
  * ── Module-scoped in-flight dedup + short cache ──────────────────────────────
- * The research overview mounts three cost consumers at once (PipelineOrchestra,
+ * The research overview mounts three cost consumers at once (PipelineGraph,
  * LivePipelineActivity, CostMetricsCard). Without sharing, every overview load
  * fired the ledger read 3× in parallel. Concurrent callers for one topicId
  * share a single round-trip and a resolved result is reused for a short window.
@@ -128,7 +128,7 @@ export interface UseCostSummaryResult {
 
 /**
  * Totals-only view of the ledger, in the exact `TopicCostSummary` shape the
- * backend used to return. Kept so the overview surfaces (PipelineOrchestra,
+ * backend used to return. Kept so the overview surfaces (PipelineGraph,
  * LastRunSummary, LivePipelineActivity) consume costs through one hook without
  * knowing where the numbers come from.
  */

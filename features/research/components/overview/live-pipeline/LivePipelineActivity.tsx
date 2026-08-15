@@ -61,7 +61,7 @@ const STAGE_ORDER: StageKind[] = [
 ];
 
 /**
- * Live activity dashboard. Rendered BELOW the PipelineOrchestra (which owns
+ * Live activity dashboard. Rendered BELOW the PipelineGraph (which owns
  * the header + per-stage rail above). This component focuses on the
  * "what's happening right now" detail: metric strips, the active stage card,
  * collapsed pills for completed stages, warnings, and the raw activity feed.
