@@ -114,6 +114,8 @@ Done: 0 extract+tests · 1 registry/session/parser upgrades · 2 accumulator sha
 
 ## Change Log
 
+- 2026-08-14 — **Kind Request keeps the whole batch, not just the pick (FOUND_DEFECTS D151).** This primitive's shape is "generate N options, keep 1" — the other N−1 are paid model output, and every consumer was discarding them the moment the dialog closed. `useKindRequest` takes an optional `onBatch`, wired to the headless primitive's new `onResult` persistence seam so it fires with the COMPLETE generated value the instant it lands, from inside the run, independent of the user picking. `KindRequestDialog` forwards it. Surfaces with a durable home for the batch pass it (first consumer: podcast topic ideas → the show's idea bank); surfaces with nowhere to put it simply don't, and behave exactly as before.
+
 - 2026-08-14 — Diagram artifact materialization now enriches both
   `diagram_spec` values and legacy `{diagram:{…}}` agent JSON with canonical,
   explicit visual defaults before `canvas_items` persistence. The kind path

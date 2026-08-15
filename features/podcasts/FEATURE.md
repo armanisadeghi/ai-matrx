@@ -106,6 +106,8 @@ is easy to fill in.
 
 ## Change log
 
+- 2026-08-14 — **Topic ideas: the four the user didn't pick are no longer thrown away, and the one they DID pick arrives whole (FOUND_DEFECTS D151).** `TopicIdeaHelper` generated five ideas, kept one, and lost the batch when the dialog closed; `topicFromIdea` then flattened the chosen idea to title + hook and silently dropped every other field the generator wrote (angle, audience, why-now, segments). It now carries every field across as labeled lines, and — given a selected show — banks the WHOLE batch on `pc_shows.metadata.topic_ideas` through the new `onBatch` seam on the Kind Request primitive (`podcastService.bankTopicIdeas` / `readTopicIdeaBank`, newest batch first, capped at 20, CAS-merged so two studio tabs can't clobber each other). `GeneratorForm` passes `showId`. **Known limit:** with no show selected there is no durable parent row yet, so the batch stays transient — the generator form is explicitly not persisted.
+
 - 2026-08-09 — **Host count capped at 10, and that is final.** ElevenLabs
   `text_to_dialogue` accepts at most 10 DISTINCT voices per request and every
   speaker gets their own voice, so 10 is the largest renderable cast. Arman's
