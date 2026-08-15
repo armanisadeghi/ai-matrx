@@ -240,10 +240,10 @@ export class SandboxProcessAdapter implements ProcessAdapter {
     let isOpen = false;
     let closed = false;
 
-    const send = (frame: object) => {
+    const send = (frame: object | string) => {
       if (!isOpen || socket.readyState !== WebSocket.OPEN) return;
       try {
-        socket.send(JSON.stringify(frame));
+        socket.send(typeof frame === "string" ? frame : JSON.stringify(frame));
       } catch {
         /* socket may have flipped to CLOSING — ignore */
       }
@@ -254,13 +254,13 @@ export class SandboxProcessAdapter implements ProcessAdapter {
         return isOpen && !closed;
       },
       write(data: string) {
-        send({ type: "input", data });
+        send(data);
       },
       resize(cols: number, rows: number) {
         send({ type: "resize", cols, rows });
       },
       signal(name: string) {
-        send({ type: "signal", signal: name });
+        send({ type: "signal", name });
       },
       close() {
         if (closed) return;
