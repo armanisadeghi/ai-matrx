@@ -1074,13 +1074,13 @@ export const launchAgentExecution = createAsyncThunk<
     resolvedDisplayMode === "background" ||
     resolvedDisplayMode === "inline"
   ) {
-    const result = await dispatch(executeInstance({ conversationId })).unwrap();
-
-    // Hand the caller its requestId NOW — before the poll below, which does
-    // not resolve until the run is over. A streaming UI keys every live
-    // selector on this id, so publishing it late is what makes a surface show
-    // spinners for the whole run and then paint the finished answer at once.
-    if (result.requestId) onRequestId?.(result.requestId);
+    // `onRequestId` is handed to executeInstance, not called after it:
+    // executeInstance stays pending for the whole stream, so awaiting it and
+    // then announcing would publish the id only once the run had finished —
+    // exactly the "spinner for 60s, then the whole answer at once" bug.
+    const result = await dispatch(
+      executeInstance({ conversationId, onRequestId }),
+    ).unwrap();
 
     const responseText = await pollForCompletion(getState, result.requestId);
 
@@ -1095,9 +1095,9 @@ export const launchAgentExecution = createAsyncThunk<
   }
 
   if (isInteractive(resolvedDisplayMode) || resolvedDisplayMode === "toast") {
-    const result = await dispatch(executeInstance({ conversationId })).unwrap();
-
-    if (result.requestId) onRequestId?.(result.requestId);
+    const result = await dispatch(
+      executeInstance({ conversationId, onRequestId }),
+    ).unwrap();
 
     return {
       conversationId,

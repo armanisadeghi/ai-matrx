@@ -469,7 +469,9 @@ async function launchAndWait(
           parts: opts.messageParts ?? null,
         }),
       );
-      const exec = await dispatch(executeInstance({ conversationId })).unwrap();
+      const exec = await dispatch(
+        executeInstance({ conversationId, onRequestId: announceRequestId }),
+      ).unwrap();
       requestId = exec.requestId;
     }
 

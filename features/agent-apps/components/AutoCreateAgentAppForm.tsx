@@ -252,6 +252,24 @@ function AutoCreateAgentAppFormWithAgent({
     );
   });
 
+  useEffect(() => {
+    if (!isCreating) return;
+    console.log("[TEMP-D152-stream]", {
+      activeStage,
+      metadataTaskId,
+      codeTaskId,
+      metaLen: liveMetadataText.length,
+      codeLen: liveCodeText.length,
+    });
+  }, [
+    isCreating,
+    activeStage,
+    metadataTaskId,
+    codeTaskId,
+    liveMetadataText,
+    liveCodeText,
+  ]);
+
   // Honest progress for the thin bar. The two stages own half the bar each,
   // and within a stage the streamed text advances it toward that stage's
   // ceiling — so the bar only ever moves because real bytes arrived.
@@ -546,7 +564,7 @@ function AutoCreateAgentAppFormWithAgent({
         {(metadataTaskId || activeStage === "metadata") && (
           <StreamPanel
             label="App metadata"
-            taskLabel={isDebugMode ? metadataTaskId : undefined}
+            taskLabel={isDebugMode ? (metadataTaskId ?? undefined) : undefined}
             text={liveMetadataText}
             isActive={activeStage === "metadata"}
             isComplete={activeStage !== "metadata"}
@@ -557,7 +575,7 @@ function AutoCreateAgentAppFormWithAgent({
         {(codeTaskId || activeStage === "code") && (
           <StreamPanel
             label="Component code"
-            taskLabel={isDebugMode ? codeTaskId : undefined}
+            taskLabel={isDebugMode ? (codeTaskId ?? undefined) : undefined}
             text={liveCodeText}
             isActive={activeStage === "code"}
             isComplete={isCodeStreamEnded}

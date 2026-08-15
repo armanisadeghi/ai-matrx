@@ -404,6 +404,14 @@ interface ExecuteInstanceArgs {
    * launch default, then "user".
    */
   initiation?: RequestInitiation;
+
+  /**
+   * Fires the instant the request row is created, long before this thunk
+   * resolves (it stays pending for the whole stream). Streaming viewers key
+   * their selectors on `requestId`, so this is the only hook that lets them
+   * bind mid-run.
+   */
+  onRequestId?: (requestId: string) => void;
 }
 
 interface ExecuteInstanceResult {
@@ -418,7 +426,14 @@ export const executeInstance = createAsyncThunk<
 >(
   "instances/execute",
   async (
-    { conversationId, debug = false, retry = false, scopeIdsOverride, initiation },
+    {
+      conversationId,
+      debug = false,
+      retry = false,
+      scopeIdsOverride,
+      initiation,
+      onRequestId,
+    },
     { getState, dispatch, rejectWithValue },
   ) => {
     const requestId = generateRequestId();
@@ -653,6 +668,13 @@ export const executeInstance = createAsyncThunk<
       dispatch(createRequest({ requestId, conversationId }));
       dispatch(setInstanceStatus({ conversationId, status: "running" }));
       dispatch(setRequestStatus({ requestId, status: "connecting" }));
+
+      // Publish the id to the caller HERE — the row now exists, so a viewer
+      // can bind its live selectors. This thunk does not resolve until the
+      // stream ends, so anything awaiting our Promise learns the requestId
+      // only after the run is over; that is what made streaming surfaces show
+      // a spinner for the whole run and then paint the answer at once.
+      onRequestId?.(requestId);
 
       // Layer the unified tool-injection envelope (`tools`, `tools_replace`,
       // `client`) onto the assembled payload. Async because capability

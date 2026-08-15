@@ -16,6 +16,7 @@ import {
   isRecordUnavailableError,
   recordUnavailable,
 } from "@/lib/records/recordUnavailable";
+import { runWithSessionRetry } from "@/lib/supabase/authRetry";
 import type { Database } from "@/types/database.types";
 import type { ArtifactSourceRef } from "@/features/canvas/artifact-types/persistence/artifact-adapters";
 
@@ -144,28 +145,32 @@ export const canvasArtifactService = {
   async upsert(input: ArtifactUpsertInput): Promise<CanvasArtifactRow | null> {
     try {
       const userId = requireUserId();
-      const { data, error } = await supabase.rpc("cx_canvas_upsert", {
-        p_user_id: userId,
-        p_message_id: input.messageId,
-        p_artifact_index: input.artifactIndex,
-        p_type: input.type,
-        p_title: input.title,
-        p_content: {
-          // Structured (kind-IR) artifacts persist the value OBJECT —
-          // self-describing via __kind; readers keep the same
-          // {data, type, metadata} envelope either way.
-          data: input.structured ?? input.content,
-          type: input.type,
-          metadata: input.metadata ?? {},
-        },
-        // A persisted message is the authoritative conversation binding.
-        // This matters for Builder manual runs: Redux deliberately keeps one
-        // local conversation id while /ai/manual mints a new durable
-        // conversation per request. Omitting the optional argument makes the
-        // RPC resolve chat.message.conversation_id instead of trusting UI
-        // state that may intentionally refer to a different conversation.
-        p_source_type: input.sourceType ?? "model_direct",
-      });
+      // Idempotent on (source_system, source_id, artifact_index), so a retry
+      // after a momentary session gap lands the same row — never a duplicate.
+      const { data, error } = await runWithSessionRetry(() =>
+        supabase.rpc("cx_canvas_upsert", {
+          p_user_id: userId,
+          p_message_id: input.messageId,
+          p_artifact_index: input.artifactIndex,
+          p_type: input.type,
+          p_title: input.title,
+          p_content: {
+            // Structured (kind-IR) artifacts persist the value OBJECT —
+            // self-describing via __kind; readers keep the same
+            // {data, type, metadata} envelope either way.
+            data: input.structured ?? input.content,
+            type: input.type,
+            metadata: input.metadata ?? {},
+          },
+          // A persisted message is the authoritative conversation binding.
+          // This matters for Builder manual runs: Redux deliberately keeps one
+          // local conversation id while /ai/manual mints a new durable
+          // conversation per request. Omitting the optional argument makes the
+          // RPC resolve chat.message.conversation_id instead of trusting UI
+          // state that may intentionally refer to a different conversation.
+          p_source_type: input.sourceType ?? "model_direct",
+        }),
+      );
 
       if (error) {
         console.error("[canvasArtifactService.upsert] RPC error:", error);
@@ -202,21 +207,24 @@ export const canvasArtifactService = {
     }
     try {
       const userId = requireUserId();
-      const { data, error } = await supabase.rpc("cx_canvas_upsert_source", {
-        p_user_id: userId,
-        p_source_system: input.source.system,
-        p_source_id: input.source.id,
-        p_artifact_index: input.artifactIndex,
-        p_type: input.type,
-        p_title: input.title,
-        p_content: {
-          data: input.structured ?? input.content,
-          type: input.type,
-          metadata: input.metadata ?? {},
-        },
-        p_conversation_id: input.conversationId ?? undefined,
-        p_source_type: input.sourceType ?? "model_direct",
-      });
+      // Same idempotent natural key as `upsert` — safe to run twice.
+      const { data, error } = await runWithSessionRetry(() =>
+        supabase.rpc("cx_canvas_upsert_source", {
+          p_user_id: userId,
+          p_source_system: input.source.system,
+          p_source_id: input.source.id,
+          p_artifact_index: input.artifactIndex,
+          p_type: input.type,
+          p_title: input.title,
+          p_content: {
+            data: input.structured ?? input.content,
+            type: input.type,
+            metadata: input.metadata ?? {},
+          },
+          p_conversation_id: input.conversationId ?? undefined,
+          p_source_type: input.sourceType ?? "model_direct",
+        }),
+      );
 
       if (error) {
         console.error(
@@ -242,19 +250,23 @@ export const canvasArtifactService = {
   ): Promise<CanvasArtifactRow | null> {
     try {
       const userId = requireUserId();
-      const { data, error } = await supabase.rpc("cx_canvas_update_version", {
-        p_user_id: userId,
-        p_original_canvas_id: input.originalCanvasId,
-        p_new_message_id: input.newMessageId,
-        p_artifact_index: input.artifactIndex,
-        p_type: input.type,
-        p_title: input.title,
-        p_content: {
-          data: input.content,
-          type: input.type,
-          metadata: input.metadata ?? {},
-        },
-      });
+      // Safe to retry: the RPC resolves the actor before it inserts, so a
+      // `not authenticated` refusal wrote nothing and cannot duplicate a version.
+      const { data, error } = await runWithSessionRetry(() =>
+        supabase.rpc("cx_canvas_update_version", {
+          p_user_id: userId,
+          p_original_canvas_id: input.originalCanvasId,
+          p_new_message_id: input.newMessageId,
+          p_artifact_index: input.artifactIndex,
+          p_type: input.type,
+          p_title: input.title,
+          p_content: {
+            data: input.content,
+            type: input.type,
+            metadata: input.metadata ?? {},
+          },
+        }),
+      );
 
       if (error) {
         // P0002 is the RPC's honest "this canvas item is not available to you"
@@ -491,17 +503,21 @@ export const canvasArtifactService = {
   }): Promise<CanvasArtifactRow | null> {
     try {
       const userId = requireUserId();
-      const { data, error } = await supabase.rpc("cx_canvas_create_manual", {
-        p_user_id: userId,
-        p_type: input.type,
-        p_title: input.title,
-        p_content: {
-          data: input.content,
-          type: input.type,
-          metadata: input.metadata ?? {},
-        },
-        p_conversation_id: input.conversationId ?? undefined,
-      });
+      // Safe to retry: the RPC resolves the actor before it inserts, so a
+      // `not authenticated` refusal wrote nothing.
+      const { data, error } = await runWithSessionRetry(() =>
+        supabase.rpc("cx_canvas_create_manual", {
+          p_user_id: userId,
+          p_type: input.type,
+          p_title: input.title,
+          p_content: {
+            data: input.content,
+            type: input.type,
+            metadata: input.metadata ?? {},
+          },
+          p_conversation_id: input.conversationId ?? undefined,
+        }),
+      );
 
       if (error) {
         console.error("[canvasArtifactService.createManual] RPC error:", error);
