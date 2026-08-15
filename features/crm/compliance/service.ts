@@ -11,7 +11,9 @@
 //
 // System-of-record: /Users/armanisadeghi/code/common-docs/systems/outreach-compliance/
 
+import { isJsonObject } from "@/types/json";
 import { createClient } from "@/utils/supabase/client";
+import { parseEligibilityVerdict } from "./parse";
 import {
   OUTREACH_POLICY_VERSION,
   type EligibilityVerdict,
@@ -42,7 +44,9 @@ export async function checkSendEligibility(params: {
   if (!data) {
     throw new Error("Eligibility check returned no verdict");
   }
-  return data as unknown as EligibilityVerdict;
+  // Narrowed at runtime, not cast: a verdict whose shape we merely asserted
+  // would fail open the day the DB function changes.
+  return parseEligibilityVerdict(data);
 }
 
 /**
@@ -167,7 +171,7 @@ export async function issueUnsubscribeToken(params: {
 
   if (error) throw new Error(`Could not create unsubscribe link: ${error.message}`);
   if (!data) throw new Error("Unsubscribe link was not created");
-  return data as unknown as string;
+  return data;
 }
 
 /**
@@ -185,5 +189,12 @@ export async function resumeSendingIdentity(params: {
   });
 
   if (error) throw new Error(`Could not resume sending: ${error.message}`);
-  return (data ?? { ok: false }) as { ok: boolean; error?: string; status?: string };
+
+  // Narrowed, not cast — same reason as the verdict above.
+  if (!isJsonObject(data)) return { ok: false, error: "no_result" };
+  return {
+    ok: data.ok === true,
+    error: typeof data.error === "string" ? data.error : undefined,
+    status: typeof data.status === "string" ? data.status : undefined,
+  };
 }
