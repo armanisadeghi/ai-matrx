@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import Link from "next/link";
-import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 import {
   AlertTriangle,
   ArrowUpRight,
@@ -56,25 +56,12 @@ import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/sit
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingReputationScope } from "@/features/surfaces/manifests/marketing-reputation.manifest";
 import type { Json } from "@/types/database.types";
+import { useMarketingSubView } from "@/features/marketing/lib/useMarketingSubView";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { useReputationAnalysis } from "./useReputationAnalysis";
 
 const SURFACE = "matrx-user/marketing-reputation";
-
-type Tab = "brief" | "cases" | "publications" | "narratives" | "evidence";
-
-const TABS: Array<{ key: Tab; label: string }> = [
-  { key: "brief", label: "Decision brief" },
-  { key: "cases", label: "Cases" },
-  { key: "publications", label: "Publications" },
-  { key: "narratives", label: "Narratives" },
-  { key: "evidence", label: "Evidence" },
-];
-
-function isTab(value: string | null): value is Tab {
-  return TABS.some((tab) => tab.key === value);
-}
 
 function jsonStrings(value: Json): string[] {
   return Array.isArray(value)
@@ -409,8 +396,6 @@ export function ReputationWorkspace() {
   const { getBaseValues } = useMarketingSiteSurfaceBase();
   const params = useParams<{ brandId: string }>();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const router = useRouter();
   const workspace = useReputationWorkspace(site.id, params.brandId);
   const analysis = useReputationAnalysis({
     siteId: site.id,
@@ -418,8 +403,9 @@ export function ReputationWorkspace() {
     organizationId: site.organization_id,
   });
   const updateCase = useUpdateReputationCase(site.id, params.brandId);
-  const tabValue = searchParams.get("tab");
-  const tab: Tab = isTab(tabValue) ? tabValue : "brief";
+  // The five views are declared in `lib/site-subviews.ts` and rendered by the
+  // SITE HEADER, which owns switching. This file only reads which one is active.
+  const view = useMarketingSubView("reputation");
   const data = workspace.data;
   const brief = analysis.run.result?.brief ?? data?.latestBrief ?? null;
   const running = analysis.run.status === "running";
@@ -433,13 +419,6 @@ export function ReputationWorkspace() {
     requestId: analysis.run.requestId,
     label: analysis.run.stage || "Building the evidence bundle",
   });
-
-  const setTab = (next: Tab) => {
-    const query = new URLSearchParams(searchParams.toString());
-    if (next === "brief") query.delete("tab");
-    else query.set("tab", next);
-    router.replace(query.size ? `${pathname}?${query}` : pathname, { scroll: false });
-  };
 
   const setCaseStatus = (row: ReputationCaseRow, status: ReputationCaseStatus) => {
     updateCase.mutate(
@@ -607,19 +586,6 @@ export function ReputationWorkspace() {
             </div>
           </div>
           <AssistStrip surfaceName={SURFACE} className="mt-2" />
-          <div className="mt-3 flex gap-1 overflow-x-auto">
-            {TABS.map((item) => (
-              <Button
-                key={item.key}
-                variant={tab === item.key ? "secondary" : "ghost"}
-                size="sm"
-                className="h-7 shrink-0 px-2.5 text-xs"
-                onClick={() => setTab(item.key)}
-              >
-                {item.label}
-              </Button>
-            ))}
-          </div>
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-4">
@@ -632,7 +598,7 @@ export function ReputationWorkspace() {
             ) : null}
             <KpiBand data={data} />
 
-            {tab === "brief" ? (
+            {view === "brief" ? (
               brief ? (
                 <div className="grid gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(280px,0.7fr)]">
                   <div className="space-y-4">
@@ -647,7 +613,7 @@ export function ReputationWorkspace() {
                     <SectionCard
                       title="Top decisions"
                       anchor="top-decisions"
-                      action={{ label: "View all cases", href: `${pathname}?tab=cases` }}
+                      action={{ label: "View all cases", href: `${pathname}?view=cases` }}
                     >
                       <div className="space-y-3 p-3">
                         {data.cases.slice(0, 3).map((row) => (
@@ -709,7 +675,7 @@ export function ReputationWorkspace() {
               )
             ) : null}
 
-            {tab === "cases" ? (
+            {view === "cases" ? (
               <div className="space-y-3">
                 {data.cases.map((row) => (
                   <CaseCard
@@ -728,7 +694,7 @@ export function ReputationWorkspace() {
               </div>
             ) : null}
 
-            {tab === "publications" ? (
+            {view === "publications" ? (
               <div className="grid gap-3 lg:grid-cols-2">
                 {(brief?.publication_opportunities ?? []).map((opportunity) => (
                   <PublicationCard key={`${opportunity.domain}-${opportunity.suggested_angle}`} opportunity={opportunity} />
@@ -741,7 +707,7 @@ export function ReputationWorkspace() {
               </div>
             ) : null}
 
-            {tab === "narratives" ? (
+            {view === "narratives" ? (
               <div className="grid gap-3 lg:grid-cols-2">
                 {(brief?.narratives ?? []).map((narrative) => (
                   <NarrativeCard key={`${narrative.narrative}-${narrative.verification_status}`} narrative={narrative} />
@@ -754,7 +720,7 @@ export function ReputationWorkspace() {
               </div>
             ) : null}
 
-            {tab === "evidence" ? (
+            {view === "evidence" ? (
               <div className="grid gap-4 lg:grid-cols-2">
                 <SectionCard title="Platform evidence inventory" anchor="evidence-inventory">
                   <div className="grid grid-cols-2 gap-2 p-4 sm:grid-cols-3">

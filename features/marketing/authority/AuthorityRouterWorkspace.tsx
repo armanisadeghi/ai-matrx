@@ -46,16 +46,15 @@ import type {
   AuthorityRecommendation,
   AuthorityRouterResult,
 } from "./types";
+import { useMarketingSubView } from "@/features/marketing/lib/useMarketingSubView";
 import { useAuthorityRouter } from "./useAuthorityRouter";
-
-type View = "map" | "routes" | "evidence";
 
 export function AuthorityRouterWorkspace() {
   const { site, sitePath } = useMarketingSite();
   const { getBaseValues } = useMarketingSiteSurfaceBase();
   const authority = useAuthorityRouter(site.id);
   const [guidance, setGuidance] = useState("");
-  const [view, setView] = useState<View>("map");
+  const view = useMarketingSubView("authority");
   const [approved, setApproved] = useState<Set<string>>(new Set());
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const [working, setWorking] = useState<string | null>(null);
@@ -282,26 +281,6 @@ export function AuthorityRouterWorkspace() {
                 </div>
               ) : null}
             </section>
-
-            <div className="flex gap-1 rounded-lg border bg-muted/35 p-1">
-              {(["map", "routes", "evidence"] as const).map((item) => (
-                <button
-                  key={item}
-                  type="button"
-                  onClick={() => setView(item)}
-                  className={cn(
-                    "rounded-md px-3 py-1.5 text-xs font-medium capitalize transition-colors",
-                    view === item
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {item === "routes"
-                    ? `Routes (${visibleRecommendations?.length ?? 0})`
-                    : item}
-                </button>
-              ))}
-            </div>
 
             {view === "map" ? (
               <AuthorityFlowMap

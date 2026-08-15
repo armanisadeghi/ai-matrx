@@ -61,6 +61,7 @@ import {
   webLocation,
 } from "@/features/marketing/lib/copy-payloads";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { useMarketingSubView } from "@/features/marketing/lib/useMarketingSubView";
 import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -1688,7 +1689,9 @@ export function SeoChangeTrackingWorkspace() {
   const { site } = useMarketingSite();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
-  const [view, setView] = useState<"tracked" | "untracked">("tracked");
+  // The tracked/untracked split is this section's second level; the SITE HEADER
+  // renders it and owns navigation (`?view=untracked`). This file only reads.
+  const view = useMarketingSubView("changes");
   const [selectedId, setSelectedId] = useState<string | null>(
     searchParams.get("change"),
   );
@@ -1928,36 +1931,7 @@ export function SeoChangeTrackingWorkspace() {
         />
       </div>
 
-      <div className="flex shrink-0 flex-wrap items-center gap-2 border-b">
-        <button
-          type="button"
-          onClick={() => setView("tracked")}
-          className={cn(
-            "border-b-2 px-3 py-2 text-sm font-medium",
-            view === "tracked"
-              ? "border-primary text-foreground"
-              : "border-transparent text-muted-foreground",
-          )}
-        >
-          Change experiments
-        </button>
-        <button
-          type="button"
-          onClick={() => setView("untracked")}
-          className={cn(
-            "border-b-2 px-3 py-2 text-sm font-medium",
-            view === "untracked"
-              ? "border-primary text-foreground"
-              : "border-transparent text-muted-foreground",
-          )}
-        >
-          Untracked crawl changes{" "}
-          {untracked.data?.length ? (
-            <Badge variant="warning" className="ml-1">
-              {untracked.data.length}
-            </Badge>
-          ) : null}
-        </button>
+      <div className="flex shrink-0 flex-wrap items-center gap-2">
         <div className="ml-auto flex gap-2">
           <Button
             variant="outline"

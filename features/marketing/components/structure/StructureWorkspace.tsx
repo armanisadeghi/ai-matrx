@@ -5,16 +5,15 @@ import Link from "next/link";
 import {
   ChevronDown,
   ChevronRight,
-  Columns3,
   ExternalLink,
   FileText,
   FolderTree,
   Layers,
-  ListTree,
   Network,
   Search,
 } from "lucide-react";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { useMarketingSubView } from "@/features/marketing/lib/useMarketingSubView";
 import { useSiteStructure } from "@/features/marketing/data/hooks";
 import {
   flattenRouteTree,
@@ -41,11 +40,13 @@ import { cn } from "@/lib/utils";
  *   carrying direct/total counts plus the cumulative per-level page counts.
  * - Columns: Finder-style drill-down for walking one branch at a time.
  *
+ * The views are declared in `lib/site-subviews.ts` and rendered by the SITE
+ * HEADER, which owns switching. This file only reads which one is active — so
+ * Columns now has a URL (`?view=columns`) and is linkable for the first time.
+ *
  * Data model + sorting/count rules live in `lib/route-tree.ts` (pure,
  * unit-tested); the bounded fetch is `data/service.ts#fetchSiteStructureRows`.
  */
-
-type StructureView = "tree" | "columns";
 
 /** Collect the paths of every non-leaf node down to `depth` (inclusive). */
 function pathsToDepth(node: RouteTreeNode, depth: number, into: Set<string>) {
@@ -405,7 +406,7 @@ export function StructureWorkspace() {
   const { site, sitePath } = useMarketingSite();
   const structure = useSiteStructure(site.id);
 
-  const [view, setView] = useState<StructureView>("tree");
+  const view = useMarketingSubView("structure");
   /** null = every level; N = render nothing deeper than depth N. */
   const [depthFilter, setDepthFilter] = useState<number | null>(null);
   const [query, setQuery] = useState("");
@@ -623,34 +624,6 @@ export function StructureWorkspace() {
                 </button>
               </>
             ) : null}
-            <div className="flex overflow-hidden rounded-md border border-border">
-              <button
-                type="button"
-                onClick={() => setView("tree")}
-                className={cn(
-                  "inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium",
-                  view === "tree"
-                    ? "bg-primary/10 text-primary"
-                    : "bg-card text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <ListTree className="h-3 w-3" />
-                Tree
-              </button>
-              <button
-                type="button"
-                onClick={() => setView("columns")}
-                className={cn(
-                  "inline-flex items-center gap-1 border-l border-border px-2 py-1 text-[11px] font-medium",
-                  view === "columns"
-                    ? "bg-primary/10 text-primary"
-                    : "bg-card text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <Columns3 className="h-3 w-3" />
-                Columns
-              </button>
-            </div>
           </div>
         </section>
 

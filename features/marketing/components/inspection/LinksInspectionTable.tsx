@@ -197,6 +197,11 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
     (viewParam === "plan" && !crawlId)
       ? viewParam
       : "graph";
+  // This component serves TWO routes. As the site's Links section its views are
+  // in the site header (registry `links`), so it must not draw them again. On a
+  // crawl the header already carries that crawl's six modes, so the switcher
+  // stays local there.
+  const showLocalSwitcher = Boolean(crawlId);
   const setView = (next: LinksViewMode) => {
     const params = new URLSearchParams(searchParams.toString());
     next === "graph" ? params.delete("view") : params.set("view", next);
@@ -496,34 +501,36 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
             aiVariants={groomerPresetVariants(groomerConfig)}
           />
           <AgentCopyGroomerLauncher config={groomerConfig} />
-          <div className="flex items-center rounded-md border border-border p-0.5">
-            {(
-              [
-                { id: "graph", label: "Graph", icon: Network },
-                { id: "external", label: "External", icon: Globe },
-                { id: "plan", label: "Plan", icon: ClipboardList },
-                { id: "table", label: "Table", icon: Table2 },
-              ] as const
-            )
-              .filter((option) => option.id !== "plan" || !crawlId)
-              .map((option) => (
-                <button
-                  key={option.id}
-                  type="button"
-                  aria-pressed={view === option.id}
-                  onClick={() => setView(option.id)}
-                  className={cn(
-                    "inline-flex h-6 items-center gap-1 rounded px-2 text-xs font-medium transition-colors",
-                    view === option.id
-                      ? "bg-accent text-foreground"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  <option.icon className="h-3 w-3" />
-                  {option.label}
-                </button>
-              ))}
-          </div>
+          {showLocalSwitcher ? (
+            <div className="flex items-center rounded-md border border-border p-0.5">
+              {(
+                [
+                  { id: "graph", label: "Graph", icon: Network },
+                  { id: "external", label: "External", icon: Globe },
+                  { id: "plan", label: "Plan", icon: ClipboardList },
+                  { id: "table", label: "Table", icon: Table2 },
+                ] as const
+              )
+                .filter((option) => option.id !== "plan" || !crawlId)
+                .map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    aria-pressed={view === option.id}
+                    onClick={() => setView(option.id)}
+                    className={cn(
+                      "inline-flex h-6 items-center gap-1 rounded px-2 text-xs font-medium transition-colors",
+                      view === option.id
+                        ? "bg-accent text-foreground"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    <option.icon className="h-3 w-3" />
+                    {option.label}
+                  </button>
+                ))}
+            </div>
+          ) : null}
         </div>
       </section>
       {!crawlId ? (

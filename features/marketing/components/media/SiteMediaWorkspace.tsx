@@ -1,20 +1,12 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
-import {
-  Film,
-  FolderOpen,
-  Globe,
-  ImageDown,
-  ImageIcon,
-  Lightbulb,
-  Ruler,
-  Sparkles,
-} from "lucide-react";
+import { useParams, usePathname, useRouter } from "next/navigation";
+import { ArrowRight, ImageIcon } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { cn } from "@/lib/utils";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useMarketingSubView } from "@/features/marketing/lib/useMarketingSubView";
+import { marketingSubViewHref } from "@/features/marketing/lib/site-subviews";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { marketingKeys } from "@/features/marketing/data/hooks";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
@@ -41,8 +33,10 @@ import {
 import type { SnapshotMediaAsset } from "@/features/marketing/lib/snapshot-media";
 
 /**
- * SiteMediaWorkspace — the site's full media command center, six views on
- * one route (`?view=`):
+ * SiteMediaWorkspace — the site's full media command center, seven views on
+ * one route. The views are declared in `lib/site-subviews.ts` and rendered by
+ * the SITE HEADER, which owns switching (it writes `?view=`); this file only
+ * reads which one is active:
  *
  *  - `crawled`   — every image observed across canonical pages (evidence)
  *  - `videos`    — crawled video/embed evidence + owned video assets, with
@@ -59,22 +53,6 @@ import type { SnapshotMediaAsset } from "@/features/marketing/lib/snapshot-media
  * metadata written.
  */
 
-const VIEWS = [
-  { id: "crawled", label: "Crawled", icon: Globe },
-  { id: "videos", label: "Videos", icon: Film },
-  { id: "library", label: "Library", icon: FolderOpen },
-  { id: "research", label: "Research", icon: Lightbulb },
-  { id: "sources", label: "Sources", icon: ImageDown },
-  { id: "generate", label: "Generate", icon: Sparkles },
-  { id: "standards", label: "Standards", icon: Ruler },
-] as const;
-
-type ViewId = (typeof VIEWS)[number]["id"];
-
-function isViewId(value: string | null): value is ViewId {
-  return VIEWS.some((view) => view.id === value);
-}
-
 export function SiteMediaWorkspace() {
   const { site } = useMarketingSite();
   const params = useParams<{ brandId: string }>();
@@ -83,18 +61,19 @@ export function SiteMediaWorkspace() {
   const queryClient = useQueryClient();
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
 
-  const rawView = searchParams.get("view");
-  const view: ViewId = isViewId(rawView) ? rawView : "crawled";
+  const view = useMarketingSubView("media");
 
-  const setView = useCallback(
-    (next: ViewId) => {
-      const query = next === "crawled" ? "" : `?view=${next}`;
-      router.replace(`${pathname}${query}`, { scroll: false });
-    },
-    [router, pathname],
-  );
+  /**
+   * The cross-view flows below hand a drafted order to Generate. That is a
+   * navigation the CONTENT triggers, not a tab bar — the header still owns
+   * switching, so this goes through the same canonical href it renders.
+   */
+  const goToGenerate = useCallback(() => {
+    router.replace(marketingSubViewHref(pathname ?? "", "media", "generate"), {
+      scroll: false,
+    });
+  }, [router, pathname]);
 
   const standards = useMemo(
     () => parseSiteMediaStandards(site.settings),
@@ -129,9 +108,9 @@ export function SiteMediaWorkspace() {
           .filter(Boolean)
           .join(" "),
       );
-      setView("generate");
+      goToGenerate();
     },
-    [setView, setBrief],
+    [goToGenerate, setBrief],
   );
 
   const useResearchBrief = useCallback(
@@ -149,9 +128,9 @@ export function SiteMediaWorkspace() {
           .filter(Boolean)
           .join(" "),
       );
-      setView("generate");
+      goToGenerate();
     },
-    [setView, setBrief],
+    [goToGenerate, setBrief],
   );
 
   // Surface emitter — nested inside the site provider (deeper wins), built at
@@ -191,36 +170,14 @@ export function SiteMediaWorkspace() {
             <ImageIcon className="h-4 w-4 text-foreground/60" />
             <h1 className="text-sm font-semibold text-foreground">Media</h1>
           </div>
-          <nav className="flex flex-wrap items-center gap-0.5 rounded-lg border border-border bg-card p-0.5">
-            {VIEWS.map((item) => {
-              const Icon = item.icon;
-              const active = item.id === view;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setView(item.id)}
-                  className={cn(
-                    "flex items-center gap-1 rounded-md px-2 py-1 text-[11px] transition-colors",
-                    active
-                      ? "bg-primary/10 font-medium text-primary"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  <Icon className="h-3 w-3" />
-                  {item.label}
-                </button>
-              );
-            })}
-          </nav>
           {order.brief.trim() && view !== "generate" ? (
             <button
               type="button"
-              onClick={() => setView("generate")}
+              onClick={goToGenerate}
               title={order.brief}
               className="flex items-center gap-1 rounded-md border border-primary/40 bg-primary/5 px-2 py-1 text-[10px] text-primary transition-colors hover:bg-primary/10"
             >
-              <Sparkles className="h-3 w-3" />
+              <ArrowRight className="h-3 w-3" />
               Image order drafted — review
             </button>
           ) : null}

@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Building2, Circle, Globe, ShieldCheck, Users } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { ShieldCheck } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useIsOwner, useSharing } from "@/utils/permissions/hooks";
 import { PermissionsList } from "@/features/sharing/components/PermissionsList";
@@ -14,6 +13,7 @@ import {
   type AccessSummaryState,
 } from "@/features/sharing/components/AccessSummaryPanel";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { useMarketingSubView } from "@/features/marketing/lib/useMarketingSubView";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
@@ -31,9 +31,11 @@ import {
   type SharingCopyContext,
 } from "@/features/sharing/format";
 
-type ShareSubTab = "users" | "organizations" | "public";
-
-const SUB_TAB_LABEL: Record<ShareSubTab, string> = {
+/**
+ * The label for the active view, for the copy/agent payloads only — the SITE
+ * HEADER renders the nav itself from `lib/site-subviews.ts`.
+ */
+const SUB_TAB_LABEL: Record<string, string> = {
   users: "Users",
   organizations: "Organizations",
   public: "Public",
@@ -50,7 +52,11 @@ const NOT_OWNER_NOTICE = "Only the site owner can change sharing.";
  */
 export function SiteAccessWorkspace() {
   const { site } = useMarketingSite();
-  const [activeSubTab, setActiveSubTab] = useState<ShareSubTab>("users");
+  // The three views are declared in `lib/site-subviews.ts` and rendered by the
+  // SITE HEADER, which owns switching — so `?view=organizations` and
+  // `?view=public` are linkable. This file only reads which one is active.
+  const view = useMarketingSubView("access");
+  const activeTabLabel = SUB_TAB_LABEL[view] ?? view;
 
   const ownership = useIsOwner("web_site", site.id);
   const {
@@ -161,7 +167,7 @@ export function SiteAccessWorkspace() {
   const panelView = (): AccessPanelView => ({
     resource: { type: "web_site", id: site.id, name: site.name },
     kpis,
-    active_tab: SUB_TAB_LABEL[activeSubTab],
+    active_tab: activeTabLabel,
     notices: renderedNotices(),
     access_summary: accessState.summary
       ? accessSummaryView(accessState.summary, "web_site")
@@ -190,18 +196,18 @@ export function SiteAccessWorkspace() {
    */
   const blockersVariant = () => {
     const notices = renderedNotices();
-    const view = panelView();
+    const panel = panelView();
     return {
       kind: "site-access-blockers",
       location,
       description:
         "Only the errors, denials, and access-blocking notices rendered on the site access tab, plus the reachability answer needed to interpret them.",
       data: {
-        resource: view.resource,
+        resource: panel.resource,
         kpis,
         notices,
-        access_summary: view.access_summary,
-        access_summary_error: view.access_summary_error,
+        access_summary: panel.access_summary,
+        access_summary_error: panel.access_summary_error,
         viewer_can_manage: isOwner,
         scope_note: GRANT_LIST_SCOPE_NOTE,
       },
@@ -220,27 +226,6 @@ export function SiteAccessWorkspace() {
 
   /** All grants across every tab — copy and export never see a partial set. */
   const allGrants = () => permissions;
-
-  const subTabs: {
-    id: ShareSubTab;
-    label: string;
-    icon: React.ElementType;
-    count?: number;
-  }[] = [
-    {
-      id: "users",
-      label: "Users",
-      icon: Users,
-      count: userPermissions.length || undefined,
-    },
-    {
-      id: "organizations",
-      label: "Organizations",
-      icon: Building2,
-      count: orgPermissions.length || undefined,
-    },
-    { id: "public", label: "Public", icon: Globe },
-  ];
 
   return (
     <main className="flex h-full min-h-0 flex-col overflow-hidden bg-textured">
@@ -270,7 +255,7 @@ export function SiteAccessWorkspace() {
                   ...kpis,
                   site_id: site.id,
                   domain: site.domain,
-                  active_tab: SUB_TAB_LABEL[activeSubTab],
+                  active_tab: activeTabLabel,
                 },
               })}
               agentVariant={{
@@ -302,36 +287,6 @@ export function SiteAccessWorkspace() {
         </div>
 
         <div className="flex min-h-0 flex-1 flex-col rounded-lg border border-border bg-card">
-          <div className="flex items-end border-b border-border bg-muted/10 shrink-0">
-            {subTabs.map((tab) => {
-              const Icon = tab.icon as React.FC<React.SVGProps<SVGSVGElement>>;
-              const isActive = tab.id === activeSubTab;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveSubTab(tab.id)}
-                  className={cn(
-                    "flex items-center gap-1.5 px-3 py-2 text-xs font-medium whitespace-nowrap border-b-2 transition-all duration-150 shrink-0",
-                    isActive
-                      ? "border-primary text-foreground"
-                      : "border-transparent text-muted-foreground hover:text-foreground hover:bg-accent/40",
-                  )}
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                  {tab.label}
-                  {tab.count != null && tab.count > 0 && (
-                    <span className="px-1 py-0.5 text-[10px] bg-primary/10 rounded-full leading-none">
-                      {tab.count}
-                    </span>
-                  )}
-                  {tab.id === "public" && publicPermission && (
-                    <Circle className="h-1.5 w-1.5 fill-emerald-500 text-emerald-500" />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
           <ScrollArea className="flex-1">
             <div className="p-4 space-y-3">
               {/*
@@ -361,7 +316,7 @@ export function SiteAccessWorkspace() {
                 </p>
               )}
 
-              {activeSubTab === "users" && (
+              {view === "users" && (
                 <>
                   <div>
                     <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
@@ -389,7 +344,7 @@ export function SiteAccessWorkspace() {
                 </>
               )}
 
-              {activeSubTab === "organizations" && (
+              {view === "organizations" && (
                 <>
                   <div>
                     <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
@@ -419,7 +374,7 @@ export function SiteAccessWorkspace() {
                 </>
               )}
 
-              {activeSubTab === "public" && (
+              {view === "public" && (
                 <PublicAccessTab
                   isPublic={resourceIsPublic}
                   publicPermission={publicPermission}

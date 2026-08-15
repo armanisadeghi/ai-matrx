@@ -63,8 +63,6 @@ export const MARKETING_SITE_SUBVIEWS = [
       { id: "tree", label: "Tree" },
       { id: "columns", label: "Columns" },
     ],
-    legacyMechanism: "local-state",
-    legacyNotLinkable: true,
   },
   {
     section: "media",
@@ -77,7 +75,6 @@ export const MARKETING_SITE_SUBVIEWS = [
       { id: "generate", label: "Generate" },
       { id: "standards", label: "Standards" },
     ],
-    legacyMechanism: "view-param",
   },
   {
     section: "links",
@@ -87,7 +84,6 @@ export const MARKETING_SITE_SUBVIEWS = [
       { id: "plan", label: "Plan" },
       { id: "table", label: "Table" },
     ],
-    legacyMechanism: "view-param",
   },
   {
     section: "authority",
@@ -96,8 +92,6 @@ export const MARKETING_SITE_SUBVIEWS = [
       { id: "routes", label: "Routes" },
       { id: "evidence", label: "Evidence" },
     ],
-    legacyMechanism: "local-state",
-    legacyNotLinkable: true,
   },
   {
     section: "backlinks",
@@ -113,19 +107,17 @@ export const MARKETING_SITE_SUBVIEWS = [
     legacyMechanism: "tab-param",
   },
   {
-    // The tracked/untracked split is a real second level that has never had a
-    // URL. The six tabs BELOW it (Overview, Theories, Implementation, Live
+    // The six tabs BELOW these (Overview, Theories, Implementation, Live
     // results, Assessments, Timeline) belong to ONE selected change set — a
     // third level, and the only one in the site whose parent is a record rather
-    // than a section. `selectedId` seeds from `?change=` and then diverges into
-    // local state, so a specific change is not linkable either.
+    // than a section. They deliberately stay in the page. That record is still
+    // not linkable (`selectedId` seeds from `?change=` then diverges into local
+    // state) — tracked separately, not part of this level.
     section: "changes",
     views: [
       { id: "tracked", label: "Tracked" },
       { id: "untracked", label: "Untracked" },
     ],
-    legacyMechanism: "local-state",
-    legacyNotLinkable: true,
   },
   {
     section: "reputation",
@@ -136,7 +128,6 @@ export const MARKETING_SITE_SUBVIEWS = [
       { id: "narratives", label: "Narratives" },
       { id: "evidence", label: "Evidence" },
     ],
-    legacyMechanism: "tab-param",
   },
   {
     section: "keywords",
@@ -165,8 +156,6 @@ export const MARKETING_SITE_SUBVIEWS = [
       { id: "organizations", label: "Organizations" },
       { id: "public", label: "Public" },
     ],
-    legacyMechanism: "local-state",
-    legacyNotLinkable: true,
   },
 ] as const satisfies readonly MarketingSectionSubViews[];
 

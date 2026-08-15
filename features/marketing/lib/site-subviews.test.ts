@@ -114,13 +114,11 @@ describe("marketing site sub-view registry", () => {
    * drop `legacyMechanism` + `legacyNotLinkable` from its entry, and remove it
    * from this list. The list only ever shrinks.
    */
-  it("tracks the sections whose sub-view still has no URL", () => {
-    expect([...listUnlinkableMarketingSections()].sort()).toEqual([
-      "access",
-      "authority",
-      "changes",
-      "structure",
-    ]);
+  it("has closed every URL-less sub-view", () => {
+    // Every section now reads its view from the URL, so each one can be linked,
+    // shared, restored on reload, and opened by an agent. This list only ever
+    // shrinks — a new entry means a section regressed to component state.
+    expect(listUnlinkableMarketingSections()).toEqual([]);
   });
 
   /**
@@ -131,15 +129,6 @@ describe("marketing site sub-view registry", () => {
    * Each block is deleted when its section is migrated to consume the registry.
    */
   describe("legacy local copies still match the registry", () => {
-    it("media", () => {
-      const source = sourceOf(
-        "features/marketing/components/media/SiteMediaWorkspace.tsx",
-      );
-      for (const view of listMarketingSubViews("media")) {
-        expect(source).toContain(`id: "${view.id}", label: "${view.label}"`);
-      }
-    });
-
     it("backlinks", () => {
       const source = sourceOf(
         "features/marketing/components/backlinks/lib/vocab.ts",
@@ -147,15 +136,6 @@ describe("marketing site sub-view registry", () => {
       for (const view of listMarketingSubViews("backlinks")) {
         expect(source).toContain(`key: "${view.id}"`);
         expect(source).toContain(`label: "${view.label}"`);
-      }
-    });
-
-    it("reputation", () => {
-      const source = sourceOf(
-        "features/marketing/components/reputation/ReputationWorkspace.tsx",
-      );
-      for (const view of listMarketingSubViews("reputation")) {
-        expect(source).toContain(`key: "${view.id}", label: "${view.label}"`);
       }
     });
 
