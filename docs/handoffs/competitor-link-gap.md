@@ -53,9 +53,8 @@ seed rule. This file is only the work order.
 | `discover_and_classify_competitors` + `POST /seo/sites/{id}/competitors/discover` | **LIVE** | `services/seo/competitor_autopsy.py` |
 | The Review tab (brief card + ruling queue + ruling record) | **LIVE** | `features/marketing/competitors/` |
 
-⚠️ **The link-gap normalizer is still BUILT AND NOT WIRED** — nothing calls
-`normalize_link_gap_payload`. That is deliberate staging, not abandoned work; **T2 is its
-consumer.** The deterministic classifier and the page-level gap now both have theirs.
+| Link-gap collection, persistence, ranking, CRM fold (T2) | **DONE 2026-08-15** | `matrx_seo/domain_link_gap.py`, `orm_repository._persist_link_gaps`, `services/crm/seo_domains.py::fold_link_gap_domains` |
+| Matrx Authority Score on every gap domain | **DONE 2026-08-15** | `matrx_seo/authority_score.py` |
 
 ---
 
@@ -87,26 +86,42 @@ Do not re-derive these from the docs; the docs are ambiguous on the one that mat
 
 ## Remaining work
 
-**Everything below the line is SHIPPED and on `main`.** T1, T3, T5, T6 are done; T4 is
-superseded by T7. Three things are left: **T2** (the last code task with no dependencies),
-**T7** (design agreed, now with real evidence), and **T8** (waiting on Arman, not on code).
+**Everything below the line is SHIPPED and on `main`.** T1, T2, T3, T5, T6 are done; T4 is
+superseded by T7. Two things are left: **T7** (design agreed, now with real evidence) and
+**T8** (waiting on Arman, not on code).
 
-### T2 — Link-gap collection, persistence, ranking, CRM fold ⬅ **THE OPEN ONE**
-Not started. Re-verified against `origin/main` 2026-08-15: no `aidream/services/seo/link_gap*.py`,
-no `party_link_gap` payload kind, `raw_only=True` still set on `BACKLINKS_INTERSECTIONS`
-(`packages/matrx-seo/matrx_seo/providers/dataforseo/operations.py:378`).
-- Clear `raw_only`, wire `normalize_link_gap_payload` into the collector + repository.
-- Seed ONLY from `classification_status='confirmed'` AND link-gap-eligible competitors
-  (`default_use_for_link_gap`, or the explicit `use_for_link_gap` override).
-  🚨 **There are currently ZERO confirmed competitors** — 84 sit `proposed`. Until Arman
-  rules (T8), a correct T2 implementation seeds nothing. That is the system working, not a
-  bug: build it, prove it against a hand-confirmed row, and it lights up the moment he rules.
-- **Minimum 2 matches** (Arman agreed; Ahrefs/Majestic default the same).
-- **Do NOT ship the provider default ordering** — see the warning above.
-- Human gate: rows land `review_status='pending'`; AI writes `priority_score` +
-  `priority_reason` to ORDER the list, never to filter it.
-- CRM fold via `aidream/services/crm/seo_domains.py` with a new registered `party_link_gap`
-  payload kind pinned to `(party, seo_link_gap_domain)`. Fold only APPROVED rows.
+### T2 — Link-gap collection, persistence, ranking, CRM fold ✅ DONE 2026-08-15
+Shipped by the outreach WP2 package (`common-docs/projects/outreach-system/`).
+
+Two of this section's original premises turned out to be stale, and the correction is
+worth keeping: the normalizer **was** already wired (`providers/dataforseo/adapter.py`
+→ `normalize_link_gap_payload`), persistence **was** already built
+(`orm_repository._persist_link_gaps`, including the min-2-matches rule and
+`review_status='pending'`), and `raw_only=True` on `BACKLINKS_INTERSECTIONS` is
+**correct as-is** — it exempts the op from the "must have a canonical normalizer"
+precondition and does not suppress normalization. The real gap was the *domain-level
+collector*, the *ranking*, and the *fold*.
+
+- `packages/matrx-seo/matrx_seo/domain_link_gap.py` — seeds only from human-confirmed,
+  link-gap-eligible competitors; `NoEligibleCompetitors` carries the counts and a
+  sentence for the user; the route refuses with 409 before the stream opens.
+  `link_gap_request.py` now holds the request shaping both intersection endpoints share,
+  so page- and domain-level cannot drift, and both refuse the provider's default ordering.
+- `POST /seo/sites/{id}/link-gap` (run) and `POST /seo/sites/{id}/link-gap/seed`
+  (who would be compared, before anyone spends money).
+- Ranking: **the Matrx Authority Score** (`matrx_seo/authority_score.py`) writes
+  `priority_score`/`priority_reason` at persist time, with the full breakdown under
+  `metadata.matrx_authority`. Unmeasured is NULL, never 0. It orders, never filters.
+- CRM fold: `fold_link_gap_domains` + the `party_link_gap` payload kind (registered live
+  in `platform.edge_payload_kind` and `platform.association_types`; migration `0360`),
+  folding APPROVED rows only. Proven live: create → idempotent refold → a `pending` row
+  correctly skipped with its reason; all probe rows cleaned up.
+- Also live: **the one blocklist** (`crm.blocklist_entry`, migration `0361`) — every SEO
+  fold drops blocklisted domains before any party is created.
+
+**Still true, and still the gate:** with 0 confirmed competitors, every site correctly
+runs nothing. Verified live across all 8 sites that have competitors. It lights up the
+moment Arman rules (T8).
 
 ### T7 — Service lines (design agreed, not built — now with real evidence)
 Market overlap is a property of **(service line × geography)**, not of a company or a
