@@ -14,6 +14,14 @@ This doc carries the intent hunt already done on the largest items so the next b
   It is the strict superset successor of `PromptExecutionDebugPanel` (589 lines): same execution-system
   selectors, same `onClose` contract, ten sections vs six (adds streaming, model-settings,
   assembled-request, ui-state). `instanceId` is the same value `adminDebugSlice` stores as `runId`.
+- **`TransformableCard` + `EnhancedDraggableCardBody`** (430 + 337 lines) → mounted from the new
+  `/demos/draggable-cards` page. Their only consumer had been a `(legacy)` route that died with the group.
+
+## Dispatched — briefs 1, 3, 4, 5, 6, 7, 9 are live chips
+
+Briefs 3, 4, 5, 6, 7 and 9 below, plus the aidream `module-unreached` scope fix, were handed to focused
+sessions on 2026-08-14. Check with Arman before starting one of them from this page — you may be the second
+agent on it. Briefs 1 and 2 remain unclaimed and need a written ruling from Arman rather than code.
 
 ## Briefs — real remaining work
 
@@ -71,11 +79,11 @@ FEATURE.md claim that it renders there is stale. **What's missing:** confirm the
 item (the 2026-06-24 entry names RAG indexing, sidebar drag-edge auto-scroll, mobile New Folder, and the
 declarative single/split frame as salvage targets), land the survivors on `NotesView`, then rule.
 
-### 8. `TransformableCard` / `EnhancedDraggableCardBody` — demos deleted with `(legacy)`
-`components/ui/transformable-card.tsx` (430), `components/ui/enhanced-draggable-card.tsx` (337). Their only
-mounter was `/legacy/demo/component-demo/draggables/transformable-cards-demo`, which died with the
-`(legacy)` route group. **What's missing:** a `(dev)/demos/` replacement page. This one is cheap and
-restores two working primitives to the official-components surface.
+### 8. `TransformableCard` / `EnhancedDraggableCardBody` — DONE 2026-08-14
+Their only mounter was `/legacy/demo/component-demo/draggables/transformable-cards-demo`, which died with
+the `(legacy)` route group. `app/(dev)/demos/draggable-cards/page.dev.tsx` now mounts both under
+`DraggableCardProvider`, exercising free drag + pill collapse, snap points, drop-container assignment, and
+live position state.
 
 ### 9. `useVoiceChatWithAutoSleep` + `useVoiceChatCdn` — unclaimed TTS voice-chat hooks
 `hooks/tts/useVoiceChatWithAutoSleep.ts` (366), `hooks/tts/useVoiceChatCdn.ts` (314). Not yet hunted.
