@@ -18,24 +18,30 @@
 
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { makeSelectEntitlement } from "./state/selectors";
+import {
+  makeSelectEntitlement,
+  makeSelectOrgCapabilityStatus,
+} from "./state/selectors";
 import {
   checkEntitlement,
   consumeEntitlement,
   fetchEntitlementSnapshot,
+  fetchOrgCapabilityStatus,
   usageFromConsume,
 } from "./service";
 import {
   setCapabilityUsage,
   setEntitlementSnapshot,
+  setOrgCapabilityStatus,
 } from "./state/entitlementsSlice";
 import { getCapability, type Capability } from "./registry";
 import type {
   EntitlementCheckResult,
   EntitlementConsumeResult,
   EntitlementResult,
+  EntitlementTier,
 } from "./types";
 
 export interface UseEntitlementResult extends EntitlementResult {
@@ -72,6 +78,96 @@ export function useEntitlement(capability: Capability): UseEntitlementResult {
     () => ({ ...verdict, check, definition }),
     [verdict, check, definition],
   );
+}
+
+export interface UseOrgEntitlementResult extends UseEntitlementResult {
+  /** The org's own carried tier, ignoring the user's personal subscription. */
+  orgTier: EntitlementTier;
+  /** Re-read this org's verdicts (call after an upgrade returns). */
+  refresh: () => Promise<void>;
+}
+
+/**
+ * Resolve an ORG-scoped capability — "is THIS organization allowed to do X?"
+ *
+ * `organizationId` is the org that owns the record being acted on (the sending
+ * identity's org, the workspace the list lives in). It is deliberately NOT the
+ * user's active-org selection: access may never depend on which org happens to
+ * be selected in the sidebar (db-rules §6), and a capability that changed
+ * meaning when someone switched orgs would be a defect, not a feature.
+ *
+ * Pass `null` while the org is still loading — the hook holds `isLoading` and
+ * fetches nothing rather than resolving a wrong answer early.
+ *
+ * The verdict this returns is UX. The truth for anything that actually sends,
+ * spends, or reaches a stranger is the server gate in aidream, which asks the
+ * same `billing.resolve_capability` — so the two can explain the same refusal
+ * but only one of them can be talked out of it.
+ */
+export function useOrgEntitlement(
+  capability: Capability,
+  organizationId: string | null | undefined,
+): UseOrgEntitlementResult {
+  const dispatch = useAppDispatch();
+  const definition = useMemo(() => getCapability(capability), [capability]);
+
+  const selectStatus = useMemo(
+    () => makeSelectOrgCapabilityStatus(organizationId ?? ""),
+    [organizationId],
+  );
+  const status = useAppSelector(selectStatus);
+
+  const refresh = useCallback(async () => {
+    if (!organizationId) return;
+    const next = await fetchOrgCapabilityStatus(organizationId);
+    if (next) dispatch(setOrgCapabilityStatus(next));
+  }, [organizationId, dispatch]);
+
+  useEffect(() => {
+    if (!organizationId || status) return;
+    void refresh();
+  }, [organizationId, status, refresh]);
+
+  const check = useCallback(
+    () => checkEntitlement(capability, { organizationId }),
+    [capability, organizationId],
+  );
+
+  return useMemo(() => {
+    const cached = status?.capabilities[capability];
+    if (cached) {
+      return {
+        ...cached,
+        isLoading: false,
+        orgTier: status!.orgTier,
+        check,
+        definition,
+        refresh,
+      };
+    }
+    // Nothing resolved yet (or no org given). Report LOADING rather than a
+    // verdict — rendering "you need to upgrade" during a fetch would show a
+    // paying customer a paywall for a fraction of a second, which is exactly
+    // the mid-workflow ambush the TRUST mandate forbids.
+    return {
+      capability,
+      allowed: false,
+      remaining: null,
+      limit: null,
+      used: 0,
+      tier: "free" as EntitlementTier,
+      reason: "allowed" as const,
+      period: definition.period,
+      windows: [],
+      isLoading: true,
+      requiredTier: definition.minTier,
+      organizationId: organizationId ?? null,
+      orgTier: "free" as EntitlementTier,
+      check,
+      definition,
+      refresh,
+    };
+  }, [status, capability, definition, check, refresh, organizationId]);
 }
 
 /** Options for a consume/commit — quantity (default 1) + optional check_id. */

@@ -520,7 +520,44 @@ blocklist monitoring, volume-anomaly detection, list-quality scoring at import, 
 and a fast internal review queue with a one-click org-wide stop. **The ladder is the reward for a
 system that catches abuse quickly — not a substitute for one.**
 
-## 5.6 Tier gating — outreach is the platform's FIRST gated feature (Arman, 2026-08-14)
+## 5.6 Tier gating — outreach is the platform's FIRST gated feature ✅ **BUILT 2026-08-14**
+
+> **DONE and live.** The tier is now something an **org carries**, there is ONE
+> authority every surface asks (`billing.resolve_capability`), and `outreach.send`
+> is its first and only enforced capability. Server and client ask the same SQL
+> function; the client answer is UX, the server answer is truth.
+>
+> **System-of-record (read this before touching any tier/plan/quota code in ANY
+> repo):** `common-docs/systems/entitlements-and-tiers/FEATURE.md`.
+>
+> - **Where it is enforced:** one step at the TOP of the refusal order in
+>   `aidream/services/sending_identity/gate.py`, in **both** entry points
+>   (`assert_can_send` + `assert_identity_ready_for_campaign`). Gated at the
+>   capability — no outreach internals were edited. A plan checked on one door
+>   only is a plan a campaign runner walks straight past (pinned by a test).
+> - **`min_tier: trial`, not premium** — the abuse filter wants an *identified*
+>   account, and a trial is one. Erring toward permitting.
+> - **`period: null` — a gate, not a meter.** Volume is already governed by the
+>   identity's own caps and the warmup ramp; a second number would be a second
+>   source of truth.
+> - **NOT gated:** connecting a mailbox, proving domain ownership, checking
+>   SPF/DKIM/DMARC, warming up. The plan gates reaching a stranger, not learning
+>   how — gating the teaching is how a non-technical expert's outreach ends on
+>   day one (§5.3b).
+> - **No dead end:** the refusal carries `fix_action: "upgrade_plan"` +
+>   `required_tier`; `<CapabilityGate>` renders tier-held / tier-required / one
+>   click. Verified in-browser end to end.
+> - **NO-REGRESSION verified live:** the effective tier is the MOST PERMISSIVE of
+>   (user tier, org tier) and is monotonic by construction — **0 regressions
+>   across 6,660 users × 30 orgs**, and all 14 education capabilities remain
+>   `permissive`.
+> - **Existing orgs mapped:** AI Matrx + system org `internal`; live Stripe subs
+>   mirrored; any org owning a sending identity `grandfathered`.
+>
+> **Remaining, and it is Arman's:** the tier NUMBERS and what else is paid — see
+> §5.7. Nothing else in this section is outstanding.
+
+### The original ruling (kept — it is the reasoning, not just the task)
 
 > 🚨 **Read §5.5b immediately above before building this.** Tier and trust are two different
 > inputs to ONE gate: **tier is what they pay for, trust is what they have proven.** An
@@ -548,6 +585,31 @@ Two rules govern that build, and the second matters more than the first:
 
 **Guest accounts are REAL accounts** (Arman) — they are not a lesser class to be locked out by
 default; they carry a tier like everyone else.
+
+## 5.7 What else could be gated — ARMAN ONLY. Nothing here was changed.
+
+Building §5.6 surfaced every other place the platform already thinks about
+tiers. **None of them were touched**, because none met the bar the no-regression
+rule sets: *restricted only when the restriction is 100% confirmed and written
+down*. Each below is a real, live thing with real users, so gating any of them
+would take something away from someone already working — which is Arman's call,
+never an agent's. Listed with a recommendation so each can be answered with a yes.
+
+| # | Candidate | What exists today | Why it was NOT gated | Recommendation |
+|---|---|---|---|---|
+| 1 | **The 14 education AI capabilities** | Free-tier matrix already approved by Arman and encoded in `billing.capability_limit`; usage is metered honestly; every one ships `enforced: false` | Real users are generating flashcards, quizzes and audio *right now*. Flipping `enforced` takes capability away from people mid-workflow — the exact thing §5.6 forbids | Flip **one at a time**, only after the aidream spend re-check exists per capability, and only with Arman's explicit yes on the number. Never a bulk flip |
+| 2 | **`files.account_tiers`** (`guest`/`free`/`pro`/`enterprise`) | A SECOND, live tier ladder governing storage caps, `max_sandboxes`, presigned upload, resumable upload, audit log, legal hold | It is a *storage/compute quota* ladder, not the commercial tier — and it already governs live accounts. Cross-wiring it to `billing.tier` would silently change what existing accounts can store and run | **Arman decides whether these are one ladder or two.** Until he does, do NOT cross-wire them. If they unify, `billing` is the authority and `files.account_tiers` becomes a projection of it — never the reverse |
+| 3 | **Sandboxes / compute targets** | `max_sandboxes` per account tier, read by `app/api/compute-targets` | Genuinely costly and a natural paid axis — but it is governed by (2), so gating it means answering (2) first | Bundle with the (2) decision |
+| 4 | **`iam.org_member_controls.tier_override` / `storage_cap_bytes` / `monthly_budget_mcents`** | Per-member org-admin overrides, documented "advisory in v1" — nothing enforces them | Purpose-built and unfinished, not dead. Enforcing them today would start capping members who have never been capped | Finish deliberately as *org-admin governance* (an org limiting its own members), which is a different question from the commercial tier. Keep them separate |
+| 5 | **RAG library "entitlement"** (`rag.fn_list_library_catalog`) | An audience/access concept — organization / industry / global / admin | **Not a commercial tier at all.** The word collides; the concept does not | Leave alone. Never wire it to `billing` |
+| 6 | **Paid classes / creator payouts** | Already gated the strongest way available: webhook-only, service-role RPCs | Nothing to do — it is correct | No change |
+| 7 | **Outreach pricing shape** (§8.5) | Undecided: per mailbox, per seat, per send, per campaign | A pricing model, not a gate | Answer §8.5; the gate is already built and needs no code change to follow it |
+
+**The one thing that must not happen:** a third tier concept. There are two
+today (`billing.tier` commercial, `files.account_tiers` storage/compute) and that
+is already one more than ideal. Any new "plan"/"tier"/"quota" idea extends
+`billing` or it does not ship — see
+`common-docs/systems/entitlements-and-tiers/FEATURE.md`.
 
 ---
 

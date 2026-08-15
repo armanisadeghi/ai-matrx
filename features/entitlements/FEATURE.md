@@ -1,5 +1,10 @@
 # Entitlements & Billing Integrity (P8)
 
+> 🚨 **Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/entitlements-and-tiers/FEATURE.md`.**
+> Read it before writing ANY tier check, plan gate, quota, or "is this org allowed
+> to…" branch in ANY repo. It holds THE NO-REGRESSION RULE, the org-tier model,
+> and the aidream half. This file is the frontend contract only.
+
 > **Status:** Day-1 contract shipped 2026-07-07 · backend + Stripe landing incrementally.
 > **Spec:** [`docs/proposals/education-projects/P8-entitlements-billing.md`](../../docs/proposals/education-projects/P8-entitlements-billing.md).
 > **The contract is live and permissive — but limits are VISIBLE and now DECREMENT.** Every
@@ -98,6 +103,58 @@ full snapshot refresh.
 | [`components/EntitlementMeter.tsx`](./components/EntitlementMeter.tsx) | "X of Y left" meter — the ONLY meter primitive. Drop beside any metered action. |
 | [`components/useEntitlementGuard.tsx`](./components/useEntitlementGuard.tsx) | `guard(action)` — server-truth check before spend; opens the paywall on a cap-hit. `commit()` — records usage on the SUCCESS path (see the consume-on-success contract above). |
 | [`components/CapabilityPaywallDialog.tsx`](./components/CapabilityPaywallDialog.tsx) | Contextual cap-hit paywall (helpful, never hostage). Never a `toast.error`. |
+| [`components/CapabilityGate.tsx`](./components/CapabilityGate.tsx) | The TIER gate surface — tier held + tier required + one click there. Fails open while loading/on error. The ONLY tier-lock UI; never hand-roll a second. |
+
+## Org-scoped capabilities — "is this ORGANIZATION allowed to do X?" (2026-08-14)
+
+Every capability above meters a PERSON's own AI usage. Some capabilities belong
+to the **organization that owns the record being acted on** — a sending mailbox,
+a domain, a shared workspace. Those declare `scope: "org"` in the registry and
+resolve through a different hook.
+
+```ts
+const send = useOrgEntitlement("outreach.send", policy?.organization_id);
+send.allowed;        // may this ORG do it
+send.tier;           // the EFFECTIVE tier (more permissive of user + org)
+send.orgTier;        // the org's own carried tier
+send.requiredTier;   // what would unlock it — the refusal's own fix
+```
+
+🚨 **`organizationId` is the org that OWNS THE RECORD — never the user's active-org
+selection.** Access may not depend on which org happens to be selected (db-rules
+§6), and a capability whose meaning changed when someone switched orgs in the
+sidebar is a defect. Asking an `org` capability with no org screams in dev and
+falls back to the user's tier alone.
+
+**The gate surface is `<CapabilityGate capability organizationId>`** — renders
+`children` when allowed, otherwise the tier held + the tier required + one click
+to get there. It **fails open while loading and on resolver error**: a hiccup
+must never show a paying customer a paywall, and the enforced refusal lives on
+the server gate anyway. Pass `{null}` children to use it as a notice-only banner
+on a page that must stay usable (how `/crm/sending-identities` uses it — setup is
+free, only sending is gated).
+
+**Never gate the teaching.** Wrap the ACTION a plan gates, never the pages where
+a user is learning, connecting, or verifying. Our user is a brilliant
+non-technical expert; gating setup ends their work on day one.
+
+### THE NO-REGRESSION RULE
+
+`billing.resolve_effective_tier(user, org)` is the MOST PERMISSIVE of the user's
+tier and the org's tier — **monotonic**, so it can never return less than the
+user's own tier. Introducing tiers therefore takes nothing away from anyone, by
+construction rather than by review. Verified live at introduction: **0
+regressions across 6,660 users × 30 orgs.** A capability is restricted ONLY when
+the restriction is 100% confirmed and written down; anything ambiguous stays
+open. Guest accounts are REAL accounts and carry a tier like everyone else.
+
+### `outreach.send` — the first and only ENFORCED capability
+
+Every education capability ships `enforced: false`. `outreach.send` ships `true`
+because it takes nothing away: there is no send path in production yet and there
+were zero sending identities. `minTier: "trial"` (not premium) — the abuse filter
+wants an *identified* account. Rationale:
+[`docs/handoffs/outreach-system.md`](../../docs/handoffs/outreach-system.md) §5.6.
 
 ## Metering model (Arman decisions, 2026-07-07)
 
@@ -311,6 +368,23 @@ real (F6, 2026-07-13).
 
 ## Change Log
 
+- **2026-08-14** — **The tier became a thing an ORG carries, and outreach became
+  the platform's first gated capability.** Extended `billing` (never forked it):
+  `billing.org_plan` (an org's tier + WHY: subscription / grant / internal /
+  grandfathered), `tier_rank`/`tier_max`, `resolve_org_tier`,
+  `resolve_effective_tier` (**monotonic** — THE NO-REGRESSION RULE as code),
+  org-aware `resolve_capability` / `entitlement_check` (the old 2-arg forms
+  delegate, behaviour byte-identical), `org_capability_status`, and super-admin
+  `org_plan_set`/`org_plan_list`. Registry gained `scope`; added
+  `useOrgEntitlement`, `CapabilityGate`, the per-org verdict cache
+  (`setOrgCapabilityStatus`), and `requiredTier`/`organizationId` on the verdict.
+  `outreach.send` registered (`minTier: trial`, `enforced: true`) and enforced in
+  aidream's send gate at the capability — no outreach internals touched — with an
+  `upgrade_plan` refusal that names the tier. Existing orgs mapped (AI Matrx +
+  system org internal; live subs mirrored; sending-identity owners
+  grandfathered). Verified live: 0 regressions across 6,660 users × 30 orgs,
+  education still `permissive_stub`, free org refused with `required_tier=trial`,
+  AI Matrx org allowed. Migration `billing_org_tier_authority.sql`.
 - **2026-07-15** — **Creator payouts (Stripe Connect Express) — real money movement.** Added the
   full marketplace path: `billing.connect_account` + `billing.class_purchase`, the webhook-only paid
   gate (`edu_class_confer_purchase`/`_revoke_purchase`, service_role-only — verified anon/authenticated

@@ -12,7 +12,7 @@
 // so client and server agree.
 
 import { createClient } from "@/utils/supabase/client";
-import { getCapability, type Capability } from "./registry";
+import { getCapability, isCapability, type Capability } from "./registry";
 import type {
   EntitlementCheckResult,
   EntitlementConsumeResult,
@@ -22,6 +22,7 @@ import type {
   EntitlementTier,
   EntitlementUsage,
   EntitlementWindow,
+  OrgCapabilityStatus,
 } from "./types";
 
 // Dev-only, once-per-capability-per-session warning so a permissive stub is
@@ -59,6 +60,21 @@ function warnUnknownCapability(capability: Capability): void {
   );
 }
 
+// An org-scoped capability asked without an org. Loud, because the fallback
+// answer (user tier only) looks perfectly normal and is quietly wrong.
+const warnedMissingOrg = new Set<Capability>();
+function warnMissingOrg(capability: Capability): void {
+  if (process.env.NODE_ENV === "production") return;
+  if (warnedMissingOrg.has(capability)) return;
+  warnedMissingOrg.add(capability);
+  // eslint-disable-next-line no-console -- intentional loud-recovery dev signal
+  console.error(
+    `[entitlements] "${capability}" is scope:"org" but was checked with no ` +
+      `organizationId — the verdict fell back to the USER's tier alone. Pass the ` +
+      `org that owns the record being acted on (never the active-org selection).`,
+  );
+}
+
 function permissiveVerdict(capability: Capability): EntitlementCheckResult {
   warnPermissiveOnce(capability);
   const dfn = getCapability(capability);
@@ -86,15 +102,29 @@ function permissiveVerdict(capability: Capability): EntitlementCheckResult {
  */
 export async function checkEntitlement(
   capability: Capability,
+  opts?: { organizationId?: string | null },
 ): Promise<EntitlementCheckResult> {
   const dfn = getCapability(capability);
   if (!dfn.enforced) return permissiveVerdict(capability);
+
+  const organizationId = opts?.organizationId ?? null;
+  // An org-scoped capability resolved WITHOUT an org would silently answer on
+  // the user's tier alone — a quieter, wronger answer than an error. Scream in
+  // dev; still resolve (fail-open on the read), because a missing org must
+  // never be the reason a working surface goes dark.
+  if (dfn.scope === "org" && !organizationId) warnMissingOrg(capability);
 
   try {
     const supabase = createClient();
     const { data, error } = await supabase
       .schema("billing")
-      .rpc("entitlement_check", { p_capability: capability });
+      .rpc("entitlement_check", {
+        p_capability: capability,
+        // The 2-arg RPC (user-only) and the 3-arg (org-aware) are distinct
+        // overloads; pass the org only when we have one so a user-scoped
+        // capability keeps hitting the exact signature it always did.
+        ...(organizationId ? { p_org: organizationId } : {}),
+      });
 
     if (error || !data) {
       return {
@@ -215,7 +245,52 @@ export async function fetchEntitlementSnapshot(): Promise<EntitlementSnapshot> {
   }
 }
 
+/**
+ * Every capability verdict for one (current user, organization), in one round
+ * trip, plus the tier the org holds and the tier it would need.
+ *
+ * This is what a gated surface reads so it can explain itself. Fails soft to a
+ * free/empty status — a resolver hiccup must never turn a working surface into
+ * an error page; the ENFORCED verdict that actually stops an action is the
+ * server-side one in aidream's send gate, not this.
+ */
+export async function fetchOrgCapabilityStatus(
+  organizationId: string,
+): Promise<OrgCapabilityStatus | null> {
+  try {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .schema("billing")
+      .rpc("org_capability_status", { p_org: organizationId });
+    if (error || !data) return null;
+    const row = data as OrgCapabilityStatusRow;
+    const capabilities: OrgCapabilityStatus["capabilities"] = {};
+    for (const [id, raw] of Object.entries(row.capabilities ?? {})) {
+      if (!isCapability(id)) continue; // DB knows a capability this build doesn't
+      capabilities[id] = mapCheckRow(id, raw as EntitlementCheckRow);
+    }
+    return {
+      organizationId,
+      tier: row.tier,
+      userTier: row.user_tier,
+      orgTier: row.org_tier,
+      capabilities,
+      fetchedAt: Date.now(),
+    };
+  } catch {
+    return null;
+  }
+}
+
 // --- RPC row shapes (kept local until the RPC + generated types land) --------
+
+interface OrgCapabilityStatusRow {
+  organization_id: string;
+  tier: EntitlementTier;
+  user_tier: EntitlementTier;
+  org_tier: EntitlementTier;
+  capabilities: Record<string, unknown>;
+}
 
 interface EntitlementCheckRow {
   allowed: boolean;
@@ -229,6 +304,10 @@ interface EntitlementCheckRow {
   check_id: string | null;
   /** True when the resolver failed open on an unknown capability id (F3). */
   unknown?: boolean;
+  /** The tier that would unlock this capability — the refusal's own fix. */
+  required_tier?: EntitlementTier | null;
+  /** The org this verdict was resolved for; null for a user-scoped check. */
+  organization_id?: string | null;
 }
 
 interface EntitlementSnapshotRow {
@@ -292,6 +371,8 @@ function mapCheckRow(
     windows: row.windows ?? [],
     isLoading: false,
     checkId: row.check_id,
+    requiredTier: row.required_tier ?? null,
+    organizationId: row.organization_id ?? null,
   };
 }
 

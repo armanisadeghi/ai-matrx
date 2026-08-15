@@ -87,6 +87,10 @@ export const FIX_COPY: Record<
   FixAction,
   { label: string; kind: FixKind; href?: string }
 > = {
+  // Outreach sending is not in the free plan (outreach handoff §5.6). The fix is
+  // a real destination, not a shrug — a gate a user cannot act on is the dead end
+  // this whole map exists to prevent.
+  upgrade_plan: { label: "See what unlocks sending", kind: "link", href: "/pricing" },
   connect_mailbox: { label: "Connect a mailbox", kind: "link", href: "/settings/integrations" },
   reconnect_mailbox: { label: "Reconnect Google", kind: "link", href: "/settings/integrations" },
   publish_dns_record: { label: "Show me the record to publish", kind: "guide" },

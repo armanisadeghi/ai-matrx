@@ -109,6 +109,35 @@ export interface EntitlementResult {
   windows: EntitlementWindow[];
   /** True while entitlement state is still hydrating at session boot. */
   isLoading: boolean;
+  /**
+   * The tier that WOULD unlock this capability. Present so a refusal can name
+   * its own fix — "needs the Premium plan" plus a one-click way there — instead
+   * of dead-ending on "not allowed" (no-dead-ends doctrine: every problem the
+   * system can detect ships with its fix). `null` when nothing is locked.
+   */
+  requiredTier?: EntitlementTier | null;
+  /**
+   * The organization this verdict was resolved for, echoed back. `null` for a
+   * user-scoped capability. Never inferred from the active-org selection.
+   */
+  organizationId?: string | null;
+}
+
+/**
+ * Every capability verdict for one (user, organization) pair, plus the tiers
+ * that produced them. One round trip, so a gated surface can render the whole
+ * truth — what the org has, what it would need — without N checks.
+ */
+export interface OrgCapabilityStatus {
+  organizationId: string;
+  /** The EFFECTIVE tier: the more permissive of the user's and the org's. */
+  tier: EntitlementTier;
+  /** The user's own tier, ignoring the org. */
+  userTier: EntitlementTier;
+  /** The org's carried tier, ignoring the user. */
+  orgTier: EntitlementTier;
+  capabilities: Partial<Record<Capability, EntitlementResult>>;
+  fetchedAt: number;
 }
 
 /**

@@ -43242,7 +43242,7 @@ export interface components {
              * Fix Action
              * @enum {string}
              */
-            fix_action: "connect_mailbox" | "publish_dns_record" | "check_domain" | "check_authentication" | "start_warmup" | "wait_for_warmup" | "wait_for_pacing" | "wait_for_quiet_hours" | "review_and_resume" | "enable_org_outreach" | "verify_recipient_address" | "choose_another_identity" | "reconnect_mailbox" | "none";
+            fix_action: "upgrade_plan" | "connect_mailbox" | "publish_dns_record" | "check_domain" | "check_authentication" | "start_warmup" | "wait_for_warmup" | "wait_for_pacing" | "wait_for_quiet_hours" | "review_and_resume" | "enable_org_outreach" | "verify_recipient_address" | "choose_another_identity" | "reconnect_mailbox" | "none";
             /** Fix Detail */
             fix_detail?: {
                 [key: string]: components["schemas"]["JsonValue"];

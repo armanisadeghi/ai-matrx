@@ -113947,6 +113947,7 @@
           "fix_action": {
             "type": "string",
             "enum": [
+              "upgrade_plan",
               "connect_mailbox",
               "publish_dns_record",
               "check_domain",

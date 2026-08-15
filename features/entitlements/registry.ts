@@ -38,6 +38,7 @@ import type { EntitlementPeriod, EntitlementTier } from "./types";
 
 /** All metered/gated capabilities. Extend this union by adding a registry entry. */
 export type Capability =
+  | "outreach.send"
   | "education.generate_cards"
   | "education.card_enrichment"
   | "education.tutor_message"
@@ -71,6 +72,17 @@ export interface CapabilityDefinition {
   /** Minimum tier for ANY access (a gate). Most capabilities are `free`. */
   minTier: EntitlementTier;
   /**
+   * WHOSE entitlement decides this — the user's, or the organization's?
+   *
+   * `user` (the default, and every education capability) meters a person's own
+   * AI usage. `org` means the capability belongs to the organization that owns
+   * the record being acted on: a sending mailbox, a domain, a shared workspace.
+   * An `org` capability MUST be resolved with an explicit organization id
+   * (`useOrgEntitlement`) — never the user's active-org selection, because
+   * access may not depend on which org happens to be selected (db-rules §6).
+   */
+  scope?: "user" | "org";
+  /**
    * Enforcement switch. `false` (default for every capability at launch) =>
    * resolver returns the permissive verdict. Flip per-capability as the backend
    * limit + server re-check land. NEVER flip without both in place.
@@ -83,6 +95,34 @@ export interface CapabilityDefinition {
 const def = (d: CapabilityDefinition): CapabilityDefinition => d;
 
 export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
+  // THE FIRST GATED CAPABILITY IN THE PLATFORM (Arman, 2026-08-14 —
+  // docs/handoffs/outreach-system.md §5.6). Everything above ships
+  // `enforced: false`; this one ships `true`, and it is the only one.
+  //
+  // It is safe to enforce on day one precisely because it takes nothing away:
+  // there is no send path in production yet (outreach Phase 4 is unbuilt) and
+  // zero sending identities exist. Gating a capability nobody has is the only
+  // kind of gate the no-regression rule permits.
+  //
+  // `minTier: "trial"` — not premium. The abuse filter this exists for wants an
+  // IDENTIFIED account, and a trial is one. Erring toward permitting.
+  //
+  // What is NOT gated: connecting a mailbox, proving a domain, checking
+  // SPF/DKIM/DMARC, warming up. All the setup work stays free — the plan gates
+  // reaching a stranger's inbox, not learning how to.
+  "outreach.send": def({
+    id: "outreach.send",
+    label: "Outreach sending",
+    description:
+      "Send outreach email from a verified, warmed mailbox on the organization's own domain. Gated because free accounts are what get sending infrastructure blocklisted.",
+    period: null,
+    defaultFreeLimit: null,
+    minTier: "trial",
+    scope: "org",
+    enforced: true,
+    upgradeMessage:
+      "Outreach sending isn't part of the free plan — it's how we keep sending reputation clean for everyone. Upgrade to send from the mailboxes you've already connected.",
+  }),
   "education.generate_cards": def({
     id: "education.generate_cards",
     label: "Generate flashcards",

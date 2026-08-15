@@ -13,6 +13,7 @@ import type {
   EntitlementResult,
   EntitlementTier,
   EntitlementWindow,
+  OrgCapabilityStatus,
 } from "../types";
 
 const selectEntitlementsState = (state: RootState) => state.entitlements;
@@ -41,6 +42,31 @@ export const selectEntitlementsError = createSelector(
   selectEntitlementsState,
   (e) => e.error,
 );
+
+/**
+ * One org's cached capability status, or `null` before it has been fetched.
+ *
+ * Cache one selector per org id so a surface re-rendering does not churn its
+ * memo. Orgs are few per session (a user works in one or two), so this map
+ * cannot grow unbounded in practice.
+ */
+const orgStatusSelectorCache = new Map<
+  string,
+  (state: RootState) => OrgCapabilityStatus | null
+>();
+
+export function makeSelectOrgCapabilityStatus(
+  organizationId: string,
+): (state: RootState) => OrgCapabilityStatus | null {
+  const cached = orgStatusSelectorCache.get(organizationId);
+  if (cached) return cached;
+  const selector = createSelector(
+    selectEntitlementsState,
+    (e) => e.orgs[organizationId] ?? null,
+  );
+  orgStatusSelectorCache.set(organizationId, selector);
+  return selector;
+}
 
 /**
  * The most-restrictive (binding) window. Compares raw `limit - used` (which can

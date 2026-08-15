@@ -65,6 +65,13 @@ contract via `@/lib/api/typed-client` so a backend rename is a compile error.
 - **Verdicts, not timestamps.** Health tiles say "too high — this is what burns a
   domain", not a bare percentage the reader must know the industry limit to judge.
 - Every identity is reachable by its registry door (`crm_sending_identity`).
+- **The plan gate explains itself and never hides the page.** Outreach *sending*
+  needs a paid plan (handoff §5.6); connecting a mailbox, proving the domain and
+  warming up stay free. `<CapabilityGate capability="outreach.send">` renders at
+  the top as a notice-only banner (`{null}` children) naming the tier held, the
+  tier required, and one click there — so a user learns the cost BEFORE spending
+  an afternoon on DNS records, and the setup work stays fully usable. Gating the
+  teaching is how a non-technical expert's outreach ends on day one.
 
 ## Traps
 

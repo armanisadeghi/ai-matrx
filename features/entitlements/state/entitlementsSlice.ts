@@ -10,6 +10,7 @@ import type {
   EntitlementSnapshot,
   EntitlementTier,
   EntitlementUsage,
+  OrgCapabilityStatus,
 } from "../types";
 import type { Capability } from "../registry";
 
@@ -18,6 +19,16 @@ export interface EntitlementsState extends EntitlementSnapshot {
   isLoading: boolean;
   /** Set when the snapshot fetch errored; reads fail open, spend fails closed. */
   error: string | null;
+  /**
+   * Per-organization capability verdicts, keyed by organization id.
+   *
+   * NOT hydrated at boot — an org tier is a property of the record being acted
+   * on, so it is fetched by the surface that names an org and cached here for
+   * every other surface naming the same one. Volatile like the rest of this
+   * slice; a tier change lands on the next fetch, and the server gate is truth
+   * regardless of what is cached here.
+   */
+  orgs: Record<string, OrgCapabilityStatus>;
 }
 
 const initialState: EntitlementsState = {
@@ -28,6 +39,7 @@ const initialState: EntitlementsState = {
   fetchedAt: null,
   isLoading: true,
   error: null,
+  orgs: {},
 };
 
 const entitlementsSlice = createSlice({
@@ -54,6 +66,13 @@ const entitlementsSlice = createSlice({
     ) => {
       state.usage[action.payload.capability] = action.payload.usage;
     },
+    /** Cache one org's capability verdicts (see `orgs` above). */
+    setOrgCapabilityStatus: (
+      state,
+      action: PayloadAction<OrgCapabilityStatus>,
+    ) => {
+      state.orgs[action.payload.organizationId] = action.payload;
+    },
     setEntitlementTier: (state, action: PayloadAction<EntitlementTier>) => {
       state.tier = action.payload;
     },
@@ -71,6 +90,7 @@ const entitlementsSlice = createSlice({
 export const {
   setEntitlementSnapshot,
   setCapabilityUsage,
+  setOrgCapabilityStatus,
   setEntitlementTier,
   setEntitlementsLoading,
   setEntitlementsError,

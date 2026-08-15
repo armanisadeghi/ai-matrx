@@ -28,6 +28,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CapabilityGate } from "@/features/entitlements/components/CapabilityGate";
 import { cn } from "@/lib/utils";
 import { useSendingIdentities } from "@/features/crm/sending-identities/hooks";
 import { setSendingPolicy } from "@/features/crm/sending-identities/service";
@@ -157,6 +158,21 @@ export function SendingIdentitiesPage() {
             Connect a mailbox
           </Button>
         </div>
+
+        {/*
+          The plan gate, shown in the same order the server refuses in: the plan
+          comes before the kill switch. Rendered as a NOTICE with no children —
+          setting a mailbox up stays free on purpose, so this page never
+          disappears behind a paywall. It tells the user, before they invest an
+          afternoon in DNS records, that sending itself needs a plan, and hands
+          them the one click that gets there.
+        */}
+        <CapabilityGate
+          capability="outreach.send"
+          organizationId={policy?.organization_id}
+        >
+          {null}
+        </CapabilityGate>
 
         {policy && !policy.outreach_enabled ? (
           <Card className="border-destructive/40 bg-destructive/5">
