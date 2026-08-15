@@ -80,48 +80,79 @@ Do not re-derive these from the docs; the docs are ambiguous on the one that mat
 
 ## Remaining work
 
-### T1 — Competitor identification + classification surface  ⭐ Arman called this critical
-**Complete 2026-08-15.** Typed-name web lookup, one-click add, deterministic-first
-classification, pinned platform-agent fallback, assist-backed confirmation, axis/link-gap
-editors, derived labels, custom labels, and real competitor doors ship at
-`/marketing/competitors`. Every machine result remains proposed until the user confirms it.
+### T1 — Competitor identification + classification surface ✅ DONE 2026-08-15
+Typed-name web lookup, one-click add, deterministic-first classification, pinned
+platform-agent fallback (`seo.competitor_classifier`), assist-backed confirmation, axis and
+link-gap editors, derived labels, custom labels, and real competitor doors ship at
+`/marketing/competitors`. Every machine result stays `proposed` until a human confirms.
+**Follow-up now needed:** surface the two NEW axes added 2026-08-15 (`peer_scale`, the
+widened `entity_role` list) — the columns are live but the UI predates them.
 
-### T2 — Link-gap collection, persistence, ranking, CRM fold
-Owner: spawned as a background task chip, 2026-08-14.
+### T2 — Link-gap collection, persistence, ranking, CRM fold ⬅ **THE OPEN ONE**
+Not started. Verified 2026-08-15: no `aidream/services/seo/link_gap*.py`, no `party_link_gap`
+payload kind, `raw_only=True` still set on `BACKLINKS_INTERSECTIONS`.
 - Clear `raw_only`, wire `normalize_link_gap_payload` into the collector + repository.
 - Seed ONLY from `classification_status='confirmed'` AND link-gap-eligible competitors
   (`default_use_for_link_gap`, or the explicit `use_for_link_gap` override).
 - **Minimum 2 matches** (Arman agreed; Ahrefs/Majestic default the same).
+- **Do NOT ship the provider default ordering** — see the warning above.
 - Human gate: rows land `review_status='pending'`; AI writes `priority_score` +
   `priority_reason` to ORDER the list, never to filter it.
-- CRM fold via the existing bridge (`aidream/services/crm/seo_domains.py`) with a new
-  registered `party_link_gap` payload kind pinned to
-  `(party, seo_link_gap_domain)` — the other two kinds are the pattern to copy.
-  **Fold only APPROVED gap domains**, or the CRM drowns.
+- CRM fold via `aidream/services/crm/seo_domains.py` with a new registered `party_link_gap`
+  payload kind pinned to `(party, seo_link_gap_domain)`. Fold only APPROVED rows.
 
-### T3 — Page-level gap (`page_intersection`)
-Owner: spawned as a background task chip, 2026-08-14. Page identity already exists
-(`seo.backlink.page_id`, `resolve_backlink_target_page_ids`).
+### T3 — Page-level gap (`page_intersection`) ✅ DONE 2026-08-15
+`packages/matrx-seo/matrx_seo/page_link_gap.py` + `aidream/services/seo/test_page_link_gap.py`;
+the shared normalizer now handles both endpoints.
+
+### T4 — Multi-location competitor overlap (NEW, proposed, not started)
+Design is in the SoR §8a. Short version: **do not invent a location entity.** `crm.address`
+already carries lat/long on a `crm.party`, and a competitor IS a party (§7), so both sides
+are modelled. Add one join table `seo.competitor_location_overlap` (`competitor_id` × our
+`address_id`) with distance + in-radius + per-pair `market_overlap`; keep
+`seo.competitor.market_overlap` as the truthful roll-up so nothing built on it breaks.
+Blocked on one Arman answer: where per-location **service radius** comes from.
+
+### T5 — Platform-wide setting doors + admin-gated access requests (NEW)
+Owner: background task chip, 2026-08-15. **Not a competitor feature** — it came out of this
+conversation and is platform-wide: (a) any UI governed by a setting elsewhere gets a door to
+that exact setting, org-level and user-level alike; (b) the existing
+`matrx-frontend/features/access-gate/` primitive extends from gating PAGES to gating
+org-admin-only SETTINGS; (c) the request routes through the internal DM system carrying an
+inline action so the admin resolves it without navigating. Org-level competitor
+`custom_labels` is its first consumer.
 
 ---
 
-## Open questions for Arman (asked, not yet answered)
+## Evidence base — real SERPs, 5 industries (2026-08-15)
 
-1. **Custom user-defined types.** Free-text labels on top of the four fixed axes — is that
-   enough for an agency, or does an agency need to define its own *axis values*?
-2. **Are `supplier` / `partner` competitors at all?** They are modelled because they appear
-   in your SERP and often link to you, but they may belong in the CRM as relationships.
-3. **Multi-location businesses.** A franchise with 40 locations has a different competitor
-   set per location. `market_overlap` handles one site; it does not model a hierarchy.
-4. **Threshold validation cannot be done today.** Arman's standing rule is that an inclusion
-   threshold must be validated across every site in the system, never tuned on one account.
-   Live: only 4 of 31 sites have referring-domain data, only 2 have competitors (one is
-   `rival.example` test data), and **zero** referring domains have ever been human-reviewed —
-   so there is no ground truth to validate against. The band thresholds in
-   `competitor_classification.py` are marked PROVISIONAL. Options put to Arman: (a) collect
-   gap data for all 31 sites (~$2) and validate on distribution, (b) make the threshold a
-   visible user control so none needs defending, (c) generate ground truth by having the
-   classifier propose across all existing competitors and having a human rule on a sample.
+Committed at `common-docs/systems/competitor-classification/serp-evidence-2026-08-15.json`
+with the script beside it. 176 results, $0.0035. **Re-run it before changing any threshold.**
+Headlines: the deterministic layer settles only **15%**; a national SERP for a local query is
+almost entirely out-of-market peers (19 medspas in 19 cities); money vs informational queries
+return different KINDS of entity, so a set built from one query type is biased.
+
+---
+
+## Schema state (all LIVE in Supabase, verified canonical)
+
+`seo.competitor` — `business_overlap`, `market_overlap`, `search_overlap_band`, `entity_role`
+(15 values), `peer_scale`, `posture`, `classification_status`, `use_for_link_gap`,
+`custom_labels`, `classification_confirmed_at/_by`.
+`seo.link_gap_domain` + `seo.link_gap_match` — components under `web.site` / `seo.competitor`,
+`iam.verify_canonical` all PASS.
+
+---
+
+## Open questions for Arman
+
+1. **Service radius per location** — user-set per location, or inferred and confirmed? T4
+   works either way but the in-range flag needs it.
+2. **Franchise siblings** — a franchisee competing with a sibling franchisee in the next town.
+   `own_brand` says "this is us" and does not cover it.
+3. **Threshold validation / ground truth** — thresholds remain PROVISIONAL. §3a is the first
+   real evidence base; next step is running the classifier across every site and having a
+   human rule on a sample.
 
 ## Related
 
