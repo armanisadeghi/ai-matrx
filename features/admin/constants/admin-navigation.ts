@@ -529,6 +529,7 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
         destinations: [
           destination("/administration/utilities/all-routes"),
           destination("/administration/utilities/capture-inspector"),
+          destination("/administration/utilities/system-errors"),
           destination("/administration/utilities/server-cache"),
           destination("/administration/utilities/utils"),
           destination("/administration/utilities/utils/text-cleaner"),

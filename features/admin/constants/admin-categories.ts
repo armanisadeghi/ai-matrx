@@ -1236,6 +1236,14 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
+        title: "System Errors",
+        description:
+          "The durable public.system_error ledger — every request crash and every captured degradation, with its full traceback. Deep-linkable by ?kind= so a server-side alarm can point at its own evidence.",
+        iconName: "AlertTriangle",
+        link: "/administration/utilities/system-errors",
+        isNew: true,
+      },
+      {
         title: "Capture Inspector",
         description:
           "Every HTTP exchange the browser made — request and response, streams and plain bodies alike, sourced from the fetch tap so coverage does not depend on which client made the call.",
