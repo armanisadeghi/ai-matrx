@@ -24,6 +24,7 @@ import { selectIsExecuting } from "../selectors/aggregate.selectors";
 import { enqueueInboxMessage } from "../inbox/inbox.thunks";
 import { callCancelRequest } from "@/lib/api/call-api";
 import { toast } from "@/lib/toast";
+import { refreshSurfaceScope } from "./refresh-surface-scope.thunk";
 
 interface SmartExecuteArgs {
   conversationId: string;
@@ -65,7 +66,7 @@ export const smartExecute = createAsyncThunk<
     { conversationId, surfaceKey, whileRunning = "queue" },
     { getState, dispatch },
   ) => {
-    const state = getState();
+    let state = getState();
 
     // A pending resource has only a local preview; it has no durable file_id
     // and is intentionally excluded from selectResourcePayloads. Sending now
@@ -78,7 +79,8 @@ export const smartExecute = createAsyncThunk<
           `sending now would silently omit them.`,
       );
       toast.info("Attachment is still uploading", {
-        description: "Your message will be ready to send when the upload finishes.",
+        description:
+          "Your message will be ready to send when the upload finishes.",
       });
       return;
     }
@@ -152,6 +154,14 @@ export const smartExecute = createAsyncThunk<
       return;
     }
 
+    // A managed surface may have created this conversation at MOUNT, before
+    // the person filled its form. Refresh its stamped provider NOW, on submit,
+    // and re-apply the canonical value_mappings before any execution gate or
+    // request snapshot reads the instance. Conversation/focus/gate lifecycle
+    // stays exactly where the launcher established it.
+    await dispatch(refreshSurfaceScope({ conversationId })).unwrap();
+    state = getState();
+
     // Sandbox hard-gate. A conversation BOUND to a sandbox must never silently
     // run this turn on the global backend — that burns tokens on tool calls that
     // fail against the wrong filesystem and poisons the agent's context. If the
@@ -214,7 +224,9 @@ export const smartExecute = createAsyncThunk<
     // auto-launched conversation is still a user-initiated request.
     const executePromise =
       apiEndpointMode === "manual"
-        ? dispatch(executeManualInstance({ conversationId, initiation: "user" }))
+        ? dispatch(
+            executeManualInstance({ conversationId, initiation: "user" }),
+          )
         : dispatch(
             executeInstance({
               conversationId,
@@ -308,11 +320,14 @@ export const cancelExecution = createAsyncThunk<
     if (serverRequestId) {
       void dispatch(callCancelRequest(serverRequestId)).then((result) => {
         if (result.error) {
-          console.warn("[cancel-execution] server cancel failed (best-effort)", {
-            conversationId,
-            serverRequestId,
-            error: result.error,
-          });
+          console.warn(
+            "[cancel-execution] server cancel failed (best-effort)",
+            {
+              conversationId,
+              serverRequestId,
+              error: result.error,
+            },
+          );
         }
       });
     }

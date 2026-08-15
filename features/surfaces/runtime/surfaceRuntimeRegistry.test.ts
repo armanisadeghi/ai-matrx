@@ -9,6 +9,7 @@
  */
 import {
   getSurfaceRuntime,
+  getSurfaceRuntimeForName,
   registerSurfaceRuntime,
 } from "./SurfaceRuntimeContext";
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
@@ -60,5 +61,22 @@ describe("surface runtime registry — depth beats registration order", () => {
     expect(getSurfaceRuntime()?.surfaceName).toBe("deep/one");
     offDeep();
     expect(getSurfaceRuntime()).toBeNull();
+  });
+
+  it("resolves the conversation's named surface even when another overlay is deeper", () => {
+    const offPage = registerSurfaceRuntime(entry("matrx-public/p"), 1);
+    const offOverlay = registerSurfaceRuntime(
+      entry("matrx-user/quick-tasks"),
+      3,
+    );
+
+    expect(getSurfaceRuntime()?.surfaceName).toBe("matrx-user/quick-tasks");
+    expect(getSurfaceRuntimeForName("matrx-public/p")?.surfaceName).toBe(
+      "matrx-public/p",
+    );
+    expect(getSurfaceRuntimeForName("matrx-user/missing")).toBeNull();
+
+    offOverlay();
+    offPage();
   });
 });

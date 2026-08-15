@@ -21,10 +21,13 @@ import { createInstanceFull } from "../create-instance-full";
 
 export interface InstanceContextState {
   byConversationId: Record<string, Record<string, InstanceContextEntry>>;
+  /** Context keys owned by the last live surface mapping pass. */
+  surfaceKeysByConversationId: Record<string, string[]>;
 }
 
 const initialState: InstanceContextState = {
   byConversationId: {},
+  surfaceKeysByConversationId: {},
 };
 
 // =============================================================================
@@ -49,8 +52,12 @@ const instanceContextSlice = createSlice({
   name: "instanceContext",
   initialState,
   reducers: {
-    initInstanceContext(state, action: PayloadAction<{ conversationId: string }>) {
+    initInstanceContext(
+      state,
+      action: PayloadAction<{ conversationId: string }>,
+    ) {
       state.byConversationId[action.payload.conversationId] = {};
+      state.surfaceKeysByConversationId[action.payload.conversationId] = [];
     },
 
     /**
@@ -131,6 +138,36 @@ const instanceContextSlice = createSlice({
     },
 
     /**
+     * Replace only the context entries contributed by surface scope mapping.
+     * Other context writers keep their keys; refreshed surface keys overwrite
+     * same-named entries because explicit value_mappings are the stronger
+     * context layer in the canonical resolver.
+     */
+    replaceSurfaceContextEntries(
+      state,
+      action: PayloadAction<{
+        conversationId: string;
+        entries: InstanceContextEntry[];
+      }>,
+    ) {
+      const { conversationId, entries } = action.payload;
+      if (!state.byConversationId[conversationId]) {
+        state.byConversationId[conversationId] = {};
+      }
+      const context = state.byConversationId[conversationId];
+      for (const key of state.surfaceKeysByConversationId[conversationId] ??
+        []) {
+        delete context[key];
+      }
+      for (const entry of entries) {
+        context[entry.key] = entry;
+      }
+      state.surfaceKeysByConversationId[conversationId] = entries.map(
+        (entry) => entry.key,
+      );
+    },
+
+    /**
      * Remove a context entry.
      */
     removeContextEntry(
@@ -149,20 +186,24 @@ const instanceContextSlice = createSlice({
      */
     clearInstanceContext(state, action: PayloadAction<string>) {
       state.byConversationId[action.payload] = {};
+      state.surfaceKeysByConversationId[action.payload] = [];
     },
 
     removeInstanceContext(state, action: PayloadAction<string>) {
       delete state.byConversationId[action.payload];
+      delete state.surfaceKeysByConversationId[action.payload];
     },
   },
 
   extraReducers: (builder) => {
     builder.addCase(createInstanceFull, (state, action) => {
       state.byConversationId[action.payload.conversationId] = {};
+      state.surfaceKeysByConversationId[action.payload.conversationId] = [];
     });
 
     builder.addCase(destroyInstance, (state, action) => {
       delete state.byConversationId[action.payload];
+      delete state.surfaceKeysByConversationId[action.payload];
     });
   },
 });
@@ -171,6 +212,7 @@ export const {
   initInstanceContext,
   setContextEntry,
   setContextEntries,
+  replaceSurfaceContextEntries,
   removeContextEntry,
   clearInstanceContext,
   removeInstanceContext,
