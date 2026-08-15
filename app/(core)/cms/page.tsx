@@ -35,6 +35,7 @@ import {
   AlertCircle,
   FileCode,
   ArrowRight,
+  Users,
 } from "lucide-react";
 import { CmsHubHeader } from "@/features/cms/components/CmsHubHeader";
 import { PlusTapButton } from "@/components/icons/tap-buttons";
@@ -475,6 +476,22 @@ export default function SitesListPage() {
                         >
                           {site.is_active ? "Active" : "Inactive"}
                         </Badge>
+                        {/*
+                          A site reached through the organization rather than
+                          owned outright. Saying so is the point: a teammate's
+                          site that looks identical to your own is how someone
+                          renames or unpublishes work that is not theirs.
+                        */}
+                        {site.access === "organization" && (
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] gap-1"
+                            title="Shared with you through your organization"
+                          >
+                            <Users className="h-3 w-3" />
+                            Team
+                          </Badge>
+                        )}
                       </div>
                     </Link>
                   </NonEditableContextMenu>

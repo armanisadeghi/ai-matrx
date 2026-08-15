@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-08-14`
+**Last updated:** `2026-08-15`
 
 ---
 
@@ -164,7 +164,7 @@ Supabase MCP at the wrong project for this feature.
 
 **Tables**
 
-- `client_sites` — one row per site. `settings` jsonb holds `agent_write_policy` (`blocked | draft_only | full`, F4) and `policy_overrides` — no dedicated columns. `web_site_id` is the durable MAIN-project anchor; `research_topic_ids[]` / `research_tag_ids[]` are a typed scratch bridge used only while that anchor is absent.
+- `client_sites` — one row per site. **Org-scoped and shareable since 2026-08-15** — `organization_id` / `visibility` / `created_by` (CMS migration `0039`); see § Ownership below. `settings` jsonb holds `agent_write_policy` (`blocked | draft_only | full`, F4) and `policy_overrides` — no dedicated columns. `web_site_id` is the durable MAIN-project anchor; `research_topic_ids[]` / `research_tag_ids[]` are a typed scratch bridge used only while that anchor is absent.
 - `client_pages` — draft/publish twin columns (`*_draft`), `has_draft`, `is_published`, category/slug routing fields. `plan_node_id` and `web_page_id` are the durable MAIN-project anchors; `research_topic_ids[]` / `research_tag_ids[]` preserve page-specific lineage before either anchor exists.
 - `client_components` — header/footer/etc., same draft-twin pattern.
 - `history.row_versions` — the canonical append-only version log (aidream CMS migrations `0002` +
@@ -187,6 +187,55 @@ Supabase MCP at the wrong project for this feature.
   the settings jsonb) is the public write key — ships in page HTML, not a secret; rotation is the
   kill-switch. Turnstile/CAPTCHA was CUT from v1 — no UI, no settings seam.
 - `client_content_exceptions` — the F3 exception store (aidream CMS migration `0011`; shape: `matrx_content_guard.models.ContentException` + `Violation`, `packages/matrx-content-guard/matrx_content_guard/models.py`). `/api/cms/approvals` + `ApprovalsQueuePanel` read/write it; the route still degrades gracefully (`available: false`) if the table is ever missing.
+
+### Ownership — a CMS site belongs to the ORG, not just to whoever made it
+
+**Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/cms-system/FEATURE.md` § Ownership and access — read it before touching this in ANY repo.**
+
+Arman, 2026-08-15: *"of course they should be ORG scoped and shareable."* Before
+that, `client_sites` had `owner_user_id` and nothing else — which is exactly why a
+MAIN `web.site` could carry a valid `settings.cms.site_id` and `resolveCmsLink`
+would still refuse it for a teammate. The pointer was never dangling; the reader
+could not see the row.
+
+**`app/api/cms/_lib/cmsAccess.ts` is THE predicate.** Never re-derive one:
+
+- `resolveCmsCaller(mainSupabase, userId)` reads org memberships through the
+  canonical MAIN `mbr_for_user` RPC, once per request. Not cached across
+  requests — a revoked membership must stop working on the next call.
+- `canAccessCmsSite(caller, site, level)` is pure, and is a faithful twin of the
+  org branch of MAIN's `iam.has_access_for_base`: **owner** → every level;
+  **org admin** (`owner`/`admin` role) on `visibility >= internal` → every level;
+  **org member** → up to `editor`; **public** → `viewer`. An unrecognised
+  visibility label fails CLOSED.
+- `cmsVisibleSitesFilter(caller)` is the query form of that predicate for list
+  reads. It returns `null` when the caller has no orgs, because an empty
+  PostgREST `in.()` is a syntax error, not an empty set.
+
+**Every `verify*Ownership` helper takes a resolved `CmsCaller`, not a user id** —
+so an org-blind check no longer type-checks. That is deliberate: the old
+signature made the bug expressible. `verifyHtmlPageOwnership` is the one
+exception and still takes a bare id, because `html_pages` has no site and no org.
+
+**Ask for `admin`, not `editor`, to destroy the shared thing.** Site `delete`
+does; edit has never meant delete. `version_restore` can never rewrite
+`organization_id` / `visibility` / `created_by` — 0039 added them to
+`platform.entity_types.restore_exclude_columns`.
+
+**Creating a site passes the org explicitly.** `/cms` sends the active org
+(`selectEffectiveOrganizationId`) and the plan↔CMS bridge passes the paired
+`web.site`'s org, so the CMS counterpart inherits the org of the site it
+realizes. The route REFUSES an org the caller is not a member of. Omitting it
+yields an owner-only site — fail closed, never a silent widening.
+
+**Org-less sites are repairable, not stuck:** `aidream/db/backfill_cms_site_orgs.py`
+is idempotent and derives the org from `web_site_id`, then the MAIN
+`settings.cms.site_id` pointer, then the owner's personal workspace — and leaves
+a row null-and-REPORTED rather than guessing when an owner belongs to several orgs.
+
+**Still owner-only on the agent side:** aidream's `services/cms/access.py::can_access`
+has not been swapped yet, so an agent cannot reach a teammate's site this repo
+now opens. Narrower, never wider — but do not assume parity.
 
 **Version RPCs (aidream CMS migrations `0003` + `0006`).** `history` and `platform` are not exposed
 to PostgREST, so the routes reach the version system through a `public` façade that mirrors the main
@@ -345,6 +394,17 @@ logged. **This route only edits the setting — enforcement is P1's service-laye
   stamps `visitor_write_at`, which is exactly what the hourly rate limiter counts. Routing admin
   authoring through it would let an admin adding 30 events 429 the site's own public forms. Admin
   rows are plain inserts with no visitor provenance and `is_spam=false`.
+- **A CMS site is org-scoped — never re-derive the access rule.** Use
+  `canAccessCmsSite` / the `verify*Ownership` helpers, which take a resolved
+  `CmsCaller`. A `.eq("owner_user_id", user.id)` filter on `client_sites` is a
+  DEFECT now: it is what made an org's own marketing site point at a CMS site no
+  teammate could open. See § Ownership.
+- **A cross-database "dangling pointer" is usually an ACCESS gap, not a data
+  gap.** `resolveCmsLink` says a site "is not a CMS site you can see" for two
+  very different reasons — the row is gone, or the caller cannot read it — and
+  reporting the first when it is the second cost two mis-filed defects
+  (D185/D186). Before calling a cross-project id broken, check whether the
+  reader is simply not permitted.
 - **Never call the Python backend for CMS data.** This whole feature is the documented exception to
   the repo's "client → Supabase direct" doctrine: the CMS project has a separate Auth domain and the
   secret key must never reach the browser, so the `/api/cms/*` routes ARE the canonical path — do
@@ -406,6 +466,32 @@ UI-complete here but only take effect once P1's service layer reads them.
 ---
 
 ## Change log
+
+- `2026-08-15` — **CMS sites became ORG-SCOPED and SHAREABLE** (Arman: "of course
+  they should be"). `client_sites` was the last entity on private-ownership-only,
+  and because MAIN `web.site` rows carry `settings.cms.site_id` into this project,
+  an org's marketing site could name a CMS site **no teammate could open** — the
+  CMS half of the growth loop stopped at the page for them, with valid pointers
+  the whole time. CMS migration `0039` adds `organization_id` / `visibility` /
+  `created_by`; the org id is a MAIN uuid carried bare (no FK is possible across
+  projects — the precedent already set by `web_site_id`, `web_page_id`,
+  `plan_node_id`, `client_assets.file_id`). New
+  [`app/api/cms/_lib/cmsAccess.ts`](../../app/api/cms/_lib/cmsAccess.ts) is THE
+  predicate, a faithful twin of the org branch of MAIN's
+  `iam.has_access_for_base`, with memberships from the canonical `mbr_for_user`
+  RPC; every `verify*Ownership` helper now takes a resolved `CmsCaller` so an
+  org-blind check no longer type-checks, and site `delete` asks for `admin`
+  because edit has never meant delete. `list`/`get` return an `access` marker
+  (`owner` | `organization` | `public`) so a teammate's site is never silently
+  indistinguishable from one's own. All 10 live sites backfilled by the new
+  idempotent `aidream/db/backfill_cms_site_orgs.py`, each from a real source —
+  the backfill must hold BOTH connections, because the CMS database cannot see
+  `iam.organizations`. Live-proved as a second user: `admin@admin.com`, a plain
+  *member* of Titanium, now lists and opens Arman's `titaniummarketing-com` and
+  `pbwlaw-com` (`access=organization`), is 403'd on a site in an org they do not
+  belong to, and is 403'd on `delete`. See § Ownership; cross-repo SoR:
+  `common-docs/systems/cms-system/FEATURE.md`. **Open:** aidream's
+  `services/cms/access.py` is still owner-only.
 
 - `2026-08-14` — **`features/content-manager/` reconciled against this feature — nothing to port.** That
   directory is the CMS feature under its original name: `31285ffe5` (2026-03-27) created it with
