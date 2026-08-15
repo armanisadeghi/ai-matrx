@@ -39404,6 +39404,78 @@ export type Database = {
         }
         Returns: undefined
       }
+      mkt_initiative_list_facets: {
+        Args: {
+          p_deep?: boolean
+          p_filters?: Json
+          p_org_id?: string
+          p_scope?: string
+          p_search?: string
+        }
+        Returns: {
+          facet: string
+          total: number
+          value: string
+        }[]
+      }
+      mkt_initiative_list_scope_counts: {
+        Args: { p_deep?: boolean; p_filters?: Json; p_search?: string }
+        Returns: {
+          label: string
+          narrow_id: string
+          scope: string
+          total: number
+        }[]
+      }
+      mkt_initiative_list_scoped: {
+        Args: {
+          p_deep?: boolean
+          p_dir?: string
+          p_filters?: Json
+          p_limit?: number
+          p_offset?: number
+          p_org_id?: string
+          p_scope?: string
+          p_search?: string
+          p_sort?: string
+        }
+        Returns: {
+          brand_id: string
+          brand_name: string
+          budget_amount: number
+          budget_currency: string
+          created_at: string
+          created_by: string
+          description: string
+          ends_on: string
+          goal: string
+          id: string
+          name: string
+          objective: string
+          organization_id: string
+          starts_on: string
+          status: string
+          total_count: number
+          updated_at: string
+          version: number
+          visibility: string
+        }[]
+      }
+      mkt_initiative_search_score: {
+        Args: {
+          p_brand: string
+          p_description: string
+          p_goal: string
+          p_id: string
+          p_name: string
+          p_query: string
+        }
+        Returns: number
+      }
+      mkt_initiative_since_bucket: {
+        Args: { p_bucket: string }
+        Returns: string
+      }
       move_site_to_organization: {
         Args: {
           p_brand_action?: string
@@ -48522,6 +48594,7 @@ export type Database = {
           backlinks: number | null
           competitor_domain: string
           competitor_id: string
+          competitor_opportunity_id: string | null
           created_at: string
           created_by: string | null
           domain_rank: number | null
@@ -48532,6 +48605,7 @@ export type Database = {
           link_gap_domain_id: string
           metadata: Json
           organization_id: string
+          page_id: string | null
           provider_metrics: Json
           source_url: string | null
           spam_score: number | null
@@ -48544,6 +48618,7 @@ export type Database = {
           backlinks?: number | null
           competitor_domain: string
           competitor_id: string
+          competitor_opportunity_id?: string | null
           created_at?: string
           created_by?: string | null
           domain_rank?: number | null
@@ -48554,6 +48629,7 @@ export type Database = {
           link_gap_domain_id: string
           metadata?: Json
           organization_id: string
+          page_id?: string | null
           provider_metrics?: Json
           source_url?: string | null
           spam_score?: number | null
@@ -48566,6 +48642,7 @@ export type Database = {
           backlinks?: number | null
           competitor_domain?: string
           competitor_id?: string
+          competitor_opportunity_id?: string | null
           created_at?: string
           created_by?: string | null
           domain_rank?: number | null
@@ -48576,6 +48653,7 @@ export type Database = {
           link_gap_domain_id?: string
           metadata?: Json
           organization_id?: string
+          page_id?: string | null
           provider_metrics?: Json
           source_url?: string | null
           spam_score?: number | null
@@ -48590,6 +48668,13 @@ export type Database = {
             columns: ["competitor_id"]
             isOneToOne: false
             referencedRelation: "competitor"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "link_gap_match_competitor_opportunity_id_fkey"
+            columns: ["competitor_opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "competitor_opportunity"
             referencedColumns: ["id"]
           },
           {
@@ -50322,6 +50407,15 @@ export type Database = {
           severity: string
         }[]
       }
+      gsc_keyword_class_by_text: {
+        Args: { p_queries: string[]; p_site_id: string }
+        Returns: {
+          class_source: string
+          keyword_id: string
+          query: string
+          traffic_class: string
+        }[]
+      }
       gsc_keyword_class_map: {
         Args: { p_site_id: string }
         Returns: {
@@ -50583,6 +50677,25 @@ export type Database = {
         }[]
       }
       gsc_perf_like_escape: { Args: { p_value: string }; Returns: string }
+      gsc_perf_page_class_summary: {
+        Args: {
+          p_compare_end?: string
+          p_compare_start?: string
+          p_end: string
+          p_page_id: string
+          p_site_id: string
+          p_start: string
+        }
+        Returns: {
+          clicks: number
+          cmp_clicks: number
+          cmp_impressions: number
+          cmp_queries: number
+          impressions: number
+          queries: number
+          traffic_class: string
+        }[]
+      }
       gsc_perf_page_first_dates: {
         Args: { p_page_ids: string[]; p_site_id: string }
         Returns: {

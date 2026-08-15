@@ -69,6 +69,7 @@ import {
   trendPercent,
 } from "@/features/marketing/components/sites/SiteKpiPeeks";
 import { MarketingWorkspaceNav } from "@/features/marketing/components/shared/MarketingWorkspaceNav";
+import { GscPortfolioClassBar } from "@/features/marketing/search-console/components/ambassador/GscPortfolioClassBar";
 
 // Quick view opens one-at-a-time on user action, so the WindowPanel machinery
 // stays behind this lazy edge (lazyOverlay pattern — code-splitting skill).
@@ -578,6 +579,11 @@ export function SitesPortfolio() {
         }
       />
       <main className="flex h-full flex-col gap-2 overflow-hidden bg-textured px-3 pb-3 pt-[calc(var(--shell-header-h)+0.5rem)] sm:px-4">
+        <GscPortfolioClassBar
+          siteIds={listRows.map((site) => site.id)}
+          totalSites={sites.data?.total}
+          className="shrink-0"
+        />
         <section className="flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-md border border-primary/25 bg-card px-3 py-2">
           <div className="flex min-w-0 items-center gap-2.5">
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">

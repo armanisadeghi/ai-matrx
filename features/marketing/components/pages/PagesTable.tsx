@@ -56,6 +56,7 @@ import {
   StatusBadge,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { cn } from "@/lib/utils";
+import { GscClassBar } from "@/features/marketing/search-console/components/ambassador/GscClassBar";
 
 const STATUS_OPTIONS = [
   { value: "active", label: "Active" },
@@ -483,6 +484,7 @@ export function PagesTable() {
     >
     <main className="flex h-full flex-col gap-2 overflow-hidden bg-textured p-3 sm:p-4">
       <CoverageChips />
+      <GscClassBar siteId={site.id} siteName={site.name} className="shrink-0" />
       <div className="min-h-0 flex-1 overflow-hidden">
         {dismissedScope ? (
           <DismissedPagesTable />

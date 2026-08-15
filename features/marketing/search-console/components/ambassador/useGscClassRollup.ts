@@ -132,6 +132,7 @@ export function shapeGscClassRollup(
 export function useGscClassRollup(
   siteId: string | null,
   range: GscRangeKey = "28d",
+  pageId: string | null = null,
 ) {
   // Clamp to the site's freshest day so the label never promises data that
   // GSC has not delivered yet (their pipeline runs ~2 days behind).
@@ -153,7 +154,7 @@ export function useGscClassRollup(
     [range, dataEnd],
   );
 
-  const summary = useGscClassSummary(siteId, periods, {
+  const summary = useGscClassSummary(siteId, periods, pageId, {
     // Wait for freshness so we resolve the window once, not twice.
     enabled: !!siteId && !freshness.isLoading,
   });

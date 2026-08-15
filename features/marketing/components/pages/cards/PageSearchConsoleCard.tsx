@@ -7,12 +7,11 @@
  * every stored query reaching this canonical page, strongest first, the
  * page's target keyword pinned + highlighted when it appears.
  *
- * Data comes from two stored sources:
- * - Page totals → `web.gsc_page_stat` (what the scraper GSC sync writes;
- *   same table as the KPI strip and v_page_list).
- * - Per-query breakdown → `seo.search_performance_daily` query_page rows
- *   when that pipeline has run for the site; otherwise the query table is
- *   honestly empty.
+ * The ambassador and per-query evidence use the surviving
+ * `seo.search_performance_daily` path: page split through
+ * `gsc_perf_page_class_summary`, query chips through
+ * `gsc_keyword_class_by_text`. The compact total remains on the retiring
+ * `web.gsc_page_stat` adapter until the separately tracked reader cutover.
  */
 
 import { useState } from "react";
@@ -41,6 +40,9 @@ import {
 } from "@/features/marketing/seo/keyword/data";
 import type { PageQueryStat } from "@/features/marketing/seo/keyword/types";
 import type { MarketingPage } from "@/features/marketing/types";
+import { GscClassBar } from "@/features/marketing/search-console/components/ambassador/GscClassBar";
+import { ClassChip } from "@/features/marketing/search-console/components/insights/ClassInsights";
+import { useGscKeywordClasses } from "@/features/marketing/search-console/hooks/useGscQuery";
 
 function formatCtr(ctr: number | null): string {
   return ctr === null ? "—" : `${(ctr * 100).toFixed(2)}%`;
@@ -74,6 +76,16 @@ export function PageSearchConsoleCard({ page }: { page: MarketingPage }) {
     GSC_RANGES.find((entry) => entry.key === range)?.label ?? range;
   const targetNormalized = normalizeKeywordPhrase(page.target_keyword ?? "");
   const rows = orderWithTarget(queries.data?.stats ?? [], targetNormalized);
+  const queryClasses = useGscKeywordClasses(
+    site.id,
+    rows.map((row) => row.query),
+  );
+  const classByQuery = new Map(
+    (queryClasses.data ?? []).map((row) => [
+      normalizeKeywordPhrase(row.query),
+      row.traffic_class,
+    ]),
+  );
   const truncated = Boolean(totals.data?.truncated || queries.data?.truncated);
   const isLoading = totals.isLoading || queries.isLoading;
   const isError = totals.isError || queries.isError;
@@ -106,6 +118,22 @@ export function PageSearchConsoleCard({ page }: { page: MarketingPage }) {
           </span>
         );
       },
+    },
+    {
+      id: "traffic_class",
+      accessorFn: (row) =>
+        classByQuery.get(normalizeKeywordPhrase(row.query)) ?? "unclassified",
+      header: "Class",
+      filter: false,
+      sortable: false,
+      cell: (row) => (
+        <ClassChip
+          trafficClass={
+            classByQuery.get(normalizeKeywordPhrase(row.query)) ??
+            "unclassified"
+          }
+        />
+      ),
     },
     {
       id: "clicks",
@@ -228,6 +256,14 @@ export function PageSearchConsoleCard({ page }: { page: MarketingPage }) {
   } else {
     body = (
       <div className="flex flex-col">
+        <GscClassBar
+          siteId={site.id}
+          siteName={site.name}
+          pageId={page.id}
+          range={range === "all" ? "12m" : range}
+          heading={false}
+          className="m-2"
+        />
         <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b border-border px-3 py-2">
           <span className="flex items-baseline gap-1.5">
             <span className="text-[11px] text-muted-foreground">Clicks</span>

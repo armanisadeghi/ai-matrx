@@ -27,6 +27,9 @@ import { useUpdatePageIntent } from "@/features/marketing/data/hooks";
 import { usePageTopQueries } from "@/features/marketing/seo/keyword/hooks";
 import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
 import type { MarketingPage } from "@/features/marketing/types";
+import { ClassChip } from "@/features/marketing/search-console/components/insights/ClassInsights";
+import { useGscKeywordClasses } from "@/features/marketing/search-console/hooks/useGscQuery";
+import { normalizeKeywordPhrase } from "@/features/marketing/seo/keyword/data";
 
 export function PageQueriesCard({ page }: { page: MarketingPage }) {
   const { site } = useMarketingSite();
@@ -37,6 +40,16 @@ export function PageQueriesCard({ page }: { page: MarketingPage }) {
   const [adopting, setAdopting] = useState<string | null>(null);
 
   const rows = queries.data ?? [];
+  const queryClasses = useGscKeywordClasses(
+    site.id,
+    rows.map((row) => row.query),
+  );
+  const classByQuery = new Map(
+    (queryClasses.data ?? []).map((row) => [
+      normalizeKeywordPhrase(row.query),
+      row.traffic_class,
+    ]),
+  );
 
   const adopt = async (query: string) => {
     setAdopting(query);
@@ -110,6 +123,12 @@ export function PageQueriesCard({ page }: { page: MarketingPage }) {
             <span className="min-w-0 flex-1 basis-52 truncate text-xs text-foreground">
               {row.query}
             </span>
+            <ClassChip
+              trafficClass={
+                classByQuery.get(normalizeKeywordPhrase(row.query)) ??
+                "unclassified"
+              }
+            />
             <span className="shrink-0 tabular-nums text-[11px] text-muted-foreground">
               {row.clicks} clicks · {row.impressions.toLocaleString()} impr
               {row.position === null ? "" : ` · pos ${row.position.toFixed(1)}`}

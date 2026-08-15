@@ -109,6 +109,40 @@ export async function getGscClassSummary(
   return assertData(response.data, response.error);
 }
 
+export async function getGscPageClassSummary(
+  siteId: string,
+  pageId: string,
+  periods: GscResolvedPeriods,
+  signal?: AbortSignal,
+): Promise<GscClassSummaryRow[]> {
+  const compare = requireCompare(periods);
+  const response = await (await seoDb())
+    .rpc("gsc_perf_page_class_summary", {
+      p_site_id: siteId,
+      p_page_id: pageId,
+      p_start: periods.current.start,
+      p_end: periods.current.end,
+      p_compare_start: compare.start,
+      p_compare_end: compare.end,
+    })
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertData(response.data, response.error);
+}
+
+export async function getGscKeywordClassesByText(
+  siteId: string,
+  queries: readonly string[],
+  signal?: AbortSignal,
+) {
+  const response = await (await seoDb())
+    .rpc("gsc_keyword_class_by_text", {
+      p_site_id: siteId,
+      p_queries: [...queries],
+    })
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertData(response.data, response.error);
+}
+
 export async function getGscClassMovers(
   siteId: string,
   periods: GscResolvedPeriods,

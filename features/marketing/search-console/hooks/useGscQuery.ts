@@ -16,6 +16,8 @@ import {
   getGscCannibalization,
   getGscClassMovers,
   getGscClassSummary,
+  getGscKeywordClassesByText,
+  getGscPageClassSummary,
   getGscCtrGap,
   getGscJuice,
   getGscShifts,
@@ -220,6 +222,7 @@ export function useGscTrend(
 export function useGscClassSummary(
   siteId: string | null,
   periods: GscResolvedPeriods,
+  pageId: string | null = null,
   options: { enabled?: boolean } = {},
 ) {
   return useQuery({
@@ -228,15 +231,34 @@ export function useGscClassSummary(
       "gsc",
       "insight-class-summary",
       siteId,
+      pageId,
       periodsKey(periods),
     ],
     queryFn: ({ signal }) => {
       if (!siteId) throw new Error("No site selected");
-      return getGscClassSummary(siteId, periods, signal);
+      return pageId
+        ? getGscPageClassSummary(siteId, pageId, periods, signal)
+        : getGscClassSummary(siteId, periods, signal);
     },
     enabled: !!siteId && (options.enabled ?? true),
     staleTime: STALE_MS,
     placeholderData: keepPreviousData,
+  });
+}
+
+export function useGscKeywordClasses(
+  siteId: string | null,
+  queries: readonly string[],
+) {
+  const queryKey = [...queries].sort().join("\u0000");
+  return useQuery({
+    queryKey: ["marketing", "gsc", "keyword-classes-by-text", siteId, queryKey],
+    queryFn: ({ signal }) => {
+      if (!siteId) throw new Error("No site selected");
+      return getGscKeywordClassesByText(siteId, queries, signal);
+    },
+    enabled: !!siteId && queries.length > 0,
+    staleTime: STALE_MS,
   });
 }
 

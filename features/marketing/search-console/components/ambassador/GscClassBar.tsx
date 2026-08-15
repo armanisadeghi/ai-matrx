@@ -41,6 +41,8 @@ import {
 
 interface GscClassBarProps {
   siteId: string | null;
+  /** Optional canonical page scope; the same bar then uses query_page facts. */
+  pageId?: string | null;
   siteName?: string | null;
   range?: GscRangeKey;
   /** `bar` = stacked share bar + legend (default). `tiles` = one card per class. */
@@ -82,13 +84,14 @@ function DeltaText({ entry }: { entry: GscClassRollupEntry }) {
 
 export function GscClassBar({
   siteId,
+  pageId = null,
   siteName,
   range = "28d",
   variant = "bar",
   heading = true,
   className,
 }: GscClassBarProps) {
-  const { rollup, isLoading, error } = useGscClassRollup(siteId, range);
+  const { rollup, isLoading, error } = useGscClassRollup(siteId, range, pageId);
   const router = useRouter();
 
   if (!siteId) return null;
@@ -139,7 +142,7 @@ export function GscClassBar({
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Search className="h-3.5 w-3.5 shrink-0" />
           <span>
-            No Search Console clicks or impressions for this site
+            No Search Console clicks or impressions for this {pageId ? "page" : "site"}
             {windowLabel ? ` between ${windowLabel}` : ""}.
           </span>
         </div>

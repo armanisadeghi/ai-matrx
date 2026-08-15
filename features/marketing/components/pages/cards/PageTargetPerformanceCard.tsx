@@ -46,6 +46,7 @@ import type { PageQueryStat, ResolvedKeyword } from "@/features/marketing/seo/ke
 import type { SiteKeywordPerformanceRow } from "@/features/marketing/seo/keyword-research/types";
 import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
 import type { MarketingPage } from "@/features/marketing/types";
+import { GscClassBar } from "@/features/marketing/search-console/components/ambassador/GscClassBar";
 
 /** hostname+path, lowercased, www/trailing-slash stripped — URL identity. */
 function normalizeUrlForMatch(value: string | null | undefined): string | null {
@@ -297,6 +298,11 @@ export function PageTargetPerformanceCard({ page }: { page: MarketingPage }) {
       headerExtra={headerExtra}
     >
       <div className="grid gap-3 p-3">
+        <GscClassBar
+          siteId={page.site_id}
+          pageId={page.id}
+          heading={false}
+        />
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <span className="text-sm font-medium text-foreground">{phrase}</span>
           {data?.resolved.market ? (
