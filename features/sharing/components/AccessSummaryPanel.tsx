@@ -16,7 +16,7 @@
 
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Globe, Lock, Loader2, Users, Boxes, AlertTriangle } from "lucide-react";
 import { useAccessSummary } from "@/features/sharing/hooks/useAccessSummary";
 import { type AccessSummary } from "@/features/sharing/service/accessSummary";
@@ -89,11 +89,22 @@ export function AccessSummaryPanel({
     refreshToken,
   });
 
-  // Publish upward so a composing page's payload can carry these same numbers
-  // instead of recomputing (or double-fetching) what is already on screen.
+  /*
+   * Publish upward so a composing page's payload can carry these same numbers
+   * instead of recomputing (or double-fetching) what is already on screen.
+   *
+   * The callback is held in a ref and deliberately kept OUT of the deps: this
+   * is a shared component, and a caller passing an inline arrow would
+   * otherwise re-fire on every render and cascade forever. It fires when the
+   * access answer actually changes, and only then.
+   */
+  const notifyRef = useRef(onSummaryChange);
   useEffect(() => {
-    onSummaryChange?.({ summary, error, loading });
-  }, [summary, error, loading, onSummaryChange]);
+    notifyRef.current = onSummaryChange;
+  }, [onSummaryChange]);
+  useEffect(() => {
+    notifyRef.current?.({ summary, error, loading });
+  }, [summary, error, loading]);
 
   const context: SharingCopyContext = copy ?? {
     resourceType: entityType,
