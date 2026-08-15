@@ -137,7 +137,9 @@ collapses; only the active one is visible (`display:none` toggling in
 dials the returned orchestrator `ws_base` directly. It resolves only after
 `WebSocket.onopen` and rejects after 15 seconds. The daemon sends raw PTY bytes,
 which the adapter decodes from binary WebSocket frames; JSON is only used for
-client resize/signal controls. `TerminalTab` then keeps the buffered listener
+client resize/signal controls. Plain Ctrl-C is captured and written as ETX so
+browser/app shortcuts cannot swallow process interruption; Ctrl-Shift-C stays
+available for copy. `TerminalTab` then keeps the buffered listener
 active and prints a visible fallback notice. An HTTPS page rejects a `ws://`
 endpoint immediately with an actionable TLS notice. Streaming exec
 also treats HTTP 200 + zero SSE events as failure and runs the buffered `/exec`

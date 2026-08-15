@@ -495,6 +495,28 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
       };
       sessionRef.current = session;
 
+      // Browsers and surrounding app shortcuts may consume Ctrl-C before
+      // xterm turns it into ETX. Make interruption an explicit terminal
+      // contract; keep Ctrl-Shift-C available for the platform copy gesture.
+      term.attachCustomKeyEventHandler((event) => {
+        if (
+          event.type === "keydown" &&
+          event.ctrlKey &&
+          !event.shiftKey &&
+          !event.altKey &&
+          !event.metaKey &&
+          event.key.toLowerCase() === "c"
+        ) {
+          if (session.pty?.isOpen) {
+            session.pty.write("\x03");
+          } else {
+            handleData(session, "\x03");
+          }
+          return false;
+        }
+        return true;
+      });
+
       // Default wiring: read-line emulation on top of `process.exec()`.
       // If the active adapter supports a real PTY, we'll swap this out
       // below.
