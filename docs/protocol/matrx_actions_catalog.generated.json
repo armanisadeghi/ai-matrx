@@ -5740,6 +5740,20 @@
    "delete": "no",
    "family": "marketing",
    "identity_fields": [],
+   "label": "Competitive Landscape Brief",
+   "noun": "seo_landscape_brief",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.landscape_brief",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "marketing",
+   "identity_fields": [],
    "label": "Link Gap Domain",
    "noun": "seo_link_gap_domain",
    "reference": "no",
@@ -15731,6 +15745,20 @@
    "table": "communication.dm_conversation_participants",
    "title_column": null,
    "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Domain Classification",
+   "noun": "domain_classification",
+   "reference": "no",
+   "schemas": null,
+   "table": "platform.domain_classification",
+   "title_column": null,
+   "update": "planned",
    "view": "no"
   },
   {
