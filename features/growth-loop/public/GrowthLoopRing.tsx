@@ -56,14 +56,32 @@ const FLOW_ARROWS = [0, 1, 2, 3].map((quarter) => {
     };
 });
 
-export function GrowthLoopRing() {
+/**
+ * `story` — ring beside a reading panel, for the long page.
+ * `glance` — ring stacked over a tight caption, for the above-the-fold page,
+ *   where the ring IS the content and the words around it are minimal.
+ */
+export type GrowthLoopRingVariant = "story" | "glance";
+
+export function GrowthLoopRing({ variant = "story" }: { variant?: GrowthLoopRingVariant }) {
     const [activeStep, setActiveStep] = useState(1);
     const active = STAGE_CARDS[activeStep - 1];
+    const isGlance = variant === "glance";
 
     return (
-        <div className="hidden gap-8 md:grid md:grid-cols-[minmax(0,340px)_1fr] md:items-center lg:gap-12">
+        <div
+            className={
+                isGlance
+                    ? "hidden md:flex md:flex-col md:items-center md:gap-4"
+                    : "hidden gap-8 md:grid md:grid-cols-[minmax(0,340px)_1fr] md:items-center lg:gap-12"
+            }
+        >
             {/* ── The ring ──────────────────────────────────────────────── */}
-            <div className="relative mx-auto aspect-square w-full max-w-[340px]">
+            <div
+                className={`relative mx-auto aspect-square w-full ${
+                    isGlance ? "max-w-[min(380px,42vh)]" : "max-w-[340px]"
+                }`}
+            >
                 <svg
                     viewBox="0 0 100 100"
                     className="absolute inset-0 h-full w-full"
@@ -126,15 +144,33 @@ export function GrowthLoopRing() {
             </div>
 
             {/* ── The selected step ─────────────────────────────────────── */}
-            <div className="flex min-h-[210px] flex-col justify-center gap-3">
-                <h3 className="text-balance text-2xl font-semibold tracking-tight">
+            <div
+                className={
+                    isGlance
+                        ? "flex min-h-[124px] max-w-md flex-col items-center gap-2 text-center"
+                        : "flex min-h-[210px] flex-col justify-center gap-3"
+                }
+            >
+                <h3
+                    className={`text-balance font-semibold tracking-tight ${
+                        isGlance ? "text-xl" : "text-2xl"
+                    }`}
+                >
                     {active.stage.publicInfo.title}
                 </h3>
-                <p className="text-pretty text-base leading-relaxed text-muted-foreground">
+                <p
+                    className={`text-pretty leading-relaxed text-muted-foreground ${
+                        isGlance ? "text-sm" : "text-base"
+                    }`}
+                >
                     {active.stage.publicInfo.plain}
                 </p>
                 {active.capabilities.length > 0 && (
-                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <div
+                        className={`flex flex-wrap items-center gap-2 pt-1 ${
+                            isGlance ? "justify-center" : ""
+                        }`}
+                    >
                         {active.capabilities.map((capability) => {
                             const Icon = CAPABILITY_ICON[capability];
                             return (
@@ -150,8 +186,9 @@ export function GrowthLoopRing() {
                     </div>
                 )}
                 <p className="pt-1 text-xs text-muted-foreground">
-                    Hover or select any step to read it. Step {STAGE_CARDS.length} feeds step 1 — that is why it is
-                    drawn as a circle.
+                    {isGlance
+                        ? `Select any step. Step ${STAGE_CARDS.length} feeds step 1 — so it never stops.`
+                        : `Hover or select any step to read it. Step ${STAGE_CARDS.length} feeds step 1 — that is why it is drawn as a circle.`}
                 </p>
             </div>
         </div>

@@ -8,13 +8,14 @@ import { PublicHeaderAuth } from "./PublicHeaderAuth";
 import { PublicHeaderFeedback } from "./PublicHeaderFeedback";
 import { PublicHeaderThemeToggle } from "./PublicHeaderThemeToggle";
 import { CanvasShellHeaderToggle } from "@/features/canvas/core/CanvasHeaderToggle";
+import { PUBLIC_HEADER_ICON_BUTTON, PUBLIC_HEADER_ROW } from "./publicHeaderChrome";
 
 function AuthFallback() {
   return (
     <Button
       variant="ghost"
       size="sm"
-      className="h-11 gap-1.5 px-3 text-xs opacity-50 cursor-default"
+      className={cn(PUBLIC_HEADER_ICON_BUTTON, "w-auto gap-1.5 px-3 text-xs opacity-50 cursor-default")}
       disabled
     >
       <LogIn className="h-3.5 w-3.5" />
@@ -24,7 +25,7 @@ function AuthFallback() {
 }
 
 function ThemeToggleFallback() {
-  return <div className="h-11 w-11" aria-hidden="true" />;
+  return <div className={PUBLIC_HEADER_ICON_BUTTON} aria-hidden="true" />;
 }
 
 export function PublicHeader() {
@@ -33,11 +34,11 @@ export function PublicHeader() {
       data-public-header
       className="sticky top-0 z-50 w-full matrx-glass-thin-border"
     >
-      <div className="flex h-12 w-full items-center justify-between px-4">
+      <div className={cn(PUBLIC_HEADER_ROW, "flex w-full items-center justify-between px-4")}>
         <Link
           href="/"
           aria-label="AI Matrx home"
-          className="group -ml-3 flex h-11 w-11 items-center justify-center rounded-full transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className={cn(PUBLIC_HEADER_ICON_BUTTON, "group -ml-3 flex items-center justify-center rounded-full transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring")}
         >
           <Image
             src="/matrx/matrx-icon.svg"
