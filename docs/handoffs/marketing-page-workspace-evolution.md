@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-08-12
+updated: 2026-08-15
 repos: [matrx-frontend, aidream]
 vision: []
 ---
@@ -46,7 +46,6 @@ Bug-fix policy: "For any issues like these, especially clear-cut fixes, proceed 
 
 1. **Derive plan-node status from live CMS reality** (replaces the push-time stamp). Today a successful Push to CMS writes the node's status once (`bumpPlanNodeStatusAfterPush` in `lib/push-to-cms.ts`) — a stopgap that violates the TRUE CURRENT status law above. Build the derivation instead: the plan⇄CMS pairing already exists (`useCmsPageMap`, WF-11), so map the paired CMS page's real state (has draft / published / live-verified) onto the node's displayed status, and delete the stamp once derivation lands. If the `plan_status` vocabulary needs a "cms-draft"-like value, that's expected — statuses must say exactly what is true.
 2. **Attachment sharing batch modes** — per the ruling above: per-item edit grants + batch UI (per-page all-resources; per-type across a site). Platform-scoped (access-architecture); coordinate before building marketing-only.
-3. **Re-crawl to fill media inventories** — existing snapshots only carry image counts; the page/site media galleries (and the `media_inventory` surface value) fill on the next crawl of each site. Operational, not code.
 
 ### B. Studio field parity — every Plan lane gets a real structured editor
 
@@ -66,6 +65,7 @@ All editors save through `useDesiredValueSlice` — never a second persistence p
 
 ## Done
 
+- Close-out verification pass (2026-08-15): crawl-artifact file chain healthy end-to-end (matrx-files 0.2.49 live on PyPI, contextual artifacts resolve via the platform judge — the 0.2.11 fix and everything since); media inventories filling organically (3,159 of 7,007 snapshots carry per-image items, latest capture 2026-08-15) so the former "re-crawl to fill" item is closed; the 2026-08-08 media chips all landed in code (`StockSourcesView`, `SiteVideosView`, `AssetImageEditorDialog`, site-media surface declared + emitted). Remaining work A1 (live plan-node status derivation), B6 (social card plan editor), and B11 (findings → tasks) dispatched as focused chips 2026-08-15.
 - Studio unified disclosure + equal-height lanes (2026-08-10): one compact disclosure per row, nested Current/Plan toggles suppressed in Studio, comparison cards stretch to the taller lane, Draft content editor matches Page content height — see `PageWorkspace.tsx`, `MarketingUi.tsx`, `PageDraftContentCard.tsx`.
 - Site Media workspace rebuilt as a five-view canvas (2026-08-08): crawled / library / research / generate / standards, asset drill-down, standards-driven AI ordering — see `features/marketing/FEATURE.md` change log. Open: headless image-gen client hang D130 (chip dispatched); media surface declaration, edit suite, video, stock sources = chips.
 - Task-widget invisible-open bug root-caused and fixed (2026-08-08): a degenerate 0×0 viewport measurement made "90vw" register a 0×0 rect; geometry now derives from `safeViewportDims` + `registerWindow` clamps the initial rect (see `features/window-panels/FEATURE.md` § Silent-render guard).
