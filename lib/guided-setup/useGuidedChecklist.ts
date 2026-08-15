@@ -97,6 +97,17 @@ export function useGuidedChecklist<Ctx>(args: {
   contextRef.current = context;
   const autoRanRef = useRef<Set<string>>(new Set());
   const lastCheckAt = useRef(0);
+  /**
+   * Mutations raised before the run row finished loading, plus a serializing
+   * tail so two saves never race each other into a version conflict.
+   *
+   * The queue is not a nicety — the first round of checks reliably resolves
+   * BEFORE the row loads, so without it the last-known cache is never written
+   * and "paints instantly on return" silently never happens. (Caught live on
+   * first run: the row existed at version 1 with an empty `steps` map.)
+   */
+  const pendingRef = useRef<((s: ChecklistRunState) => ChecklistRunState)[]>([]);
+  const writeChain = useRef<Promise<void>>(Promise.resolve());
 
   const scopeKey = args.scope
     ? `${args.scope.organizationId}::${args.scope.targetKey ?? ""}`
@@ -112,8 +123,14 @@ export function useGuidedChecklist<Ctx>(args: {
         if (cancelled) return;
         runRef.current = loaded;
         setRun(loaded);
-        setState(loaded.state);
         setError(null);
+        // Anything that happened while we were loading is applied ON TOP of
+        // the stored state, in the order it happened — never discarded, and
+        // never used to overwrite a teammate's row wholesale.
+        const held = pendingRef.current;
+        pendingRef.current = [];
+        setState(held.reduce((acc, mutate) => mutate(acc), loaded.state));
+        for (const mutate of held) enqueueSave(mutate);
       })
       .catch((cause: unknown) => {
         if (cancelled) return;
@@ -133,14 +150,14 @@ export function useGuidedChecklist<Ctx>(args: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [definition.key, scopeKey, ready]);
 
-  /** Persist a state mutation, applying it locally either way. */
-  const persist = useCallback(
+  /** Save one mutation, queued behind whatever is already in flight. */
+  const enqueueSave = useCallback(
     (mutate: (prev: ChecklistRunState) => ChecklistRunState) => {
-      setState((prev) => mutate(prev));
-      const current = runRef.current;
-      if (!current) return;
-      void saveRunState(current, mutate)
-        .then((saved) => {
+      writeChain.current = writeChain.current
+        .then(async () => {
+          const current = runRef.current;
+          if (!current) return;
+          const saved = await saveRunState(current, mutate);
           runRef.current = saved;
           setRun(saved);
           setState(saved.state);
@@ -153,6 +170,23 @@ export function useGuidedChecklist<Ctx>(args: {
         });
     },
     [],
+  );
+
+  /**
+   * Apply a state mutation locally and persist it. Before the run row has
+   * loaded the mutation is HELD, not dropped — the load effect flushes the
+   * queue the moment the row is in hand.
+   */
+  const persist = useCallback(
+    (mutate: (prev: ChecklistRunState) => ChecklistRunState) => {
+      setState((prev) => mutate(prev));
+      if (!runRef.current) {
+        pendingRef.current.push(mutate);
+        return;
+      }
+      enqueueSave(mutate);
+    },
+    [enqueueSave],
   );
 
   // ── Run every check ─────────────────────────────────────────────────────
@@ -186,11 +220,21 @@ export function useGuidedChecklist<Ctx>(args: {
         .then((result) => {
           if (gen !== generation.current) return;
           setLive((prev) => ({ ...prev, [step.id]: result }));
-          // Cache it so the next visit paints before the check lands.
+          // Cache it so the next visit paints before the check lands — but
+          // only when the verdict actually CHANGED. Re-stamping an identical
+          // result on every visit is a write per step per page view, and it
+          // would also destroy the one thing the timestamp is for: saying how
+          // long this step has been in the state it is in.
           if (result.status === "pass" || result.status === "fail") {
-            persist((prev) =>
-              withLastResult(prev, step.id, result, new Date().toISOString()),
-            );
+            const stored = runRef.current?.state.steps[step.id]?.lastResult;
+            if (
+              stored?.status !== result.status ||
+              stored?.reason !== result.reason
+            ) {
+              persist((prev) =>
+                withLastResult(prev, step.id, result, new Date().toISOString()),
+              );
+            }
           }
         });
     }

@@ -74,6 +74,8 @@ import {
   type GoogleResourceBindingDiagnosis,
 } from "@/features/marketing/google/health";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { GuidedChecklist } from "@/lib/guided-setup/components/GuidedChecklist";
+import { siteSetupChecklist } from "@/features/marketing/search-console/setup/siteSetupChecklist";
 import { cn } from "@/lib/utils";
 import {
   useConnectGoogle,
@@ -154,6 +156,8 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
     () => parseSiteIntegrations(site.integrations),
     [site],
   );
+  /** Context for the shared `marketing.site_setup` guided checklist. */
+  const setupContext = useMemo(() => ({ site, dispatch }), [site, dispatch]);
   const [draft, setDraft] = useState<SiteIntegrationsDraft>(initial);
   const ga4BindingDiagnosis = useMemo(() => {
     const binding = draft.googleAnalytics4;
@@ -614,6 +618,24 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
               </Badge>
             </div>
           </div>
+
+          {/*
+            The SAME `marketing.site_setup` run the Intake page gates on — one
+            declaration, one persisted row, two surfaces. It lives here
+            permanently (not only while it is failing) so a user can always come
+            back to see what is set up, re-check it, and change their answer to
+            the one question only they can answer. A checklist that vanishes the
+            moment it passes is its own dead end.
+          */}
+          <GuidedChecklist
+            definition={siteSetupChecklist}
+            context={setupContext}
+            scope={
+              site.organization_id
+                ? { organizationId: site.organization_id, targetKey: site.id }
+                : null
+            }
+          />
 
           <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3">
             <div className="flex min-w-0 items-start gap-2.5">
