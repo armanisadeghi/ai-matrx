@@ -144,10 +144,73 @@ On the newer findings (2026-08-14), verbatim:
 7. **`rag.kg_sweep_state` fails the base contract** (entity variant, no `created_by`) — the 1
    table of 290 the v3 backfill could not regenerate.
 
-8. **Open audit findings not yet investigated** (raised 2026-08-14, investigations in flight):
-   2 components carrying their own `visibility` column; ~32 active tables with nullable
-   `organization_id` including brand-new ones; ~122 unregistered base tables in canonical
-   schemas. Findings and sizing land here when the investigations report.
+8. **Drop `visibility` from the 2 components that carry it** — `plan.node_artifact`,
+   `plan.node_step` (both genuine components; the column is copy-paste from the base-entity
+   block, 100% default value, zero consumers, no policy references it). Two `DROP COLUMN`s,
+   clear `default_visibility` on the 2 registry rows, regenerate types in both repos, fix the
+   fixture at `features/marketing/content-plan/lib/pipeline-progress.test.ts:31`, and drop
+   `'visibility'` from `filter_fields` in `aidream/db/helpers/auto_config_plan.py:17,20`.
+   Also correct `aidream/db/migrations/0344_plan_node_artifact_step.sql` (its header still says
+   "entity variant"; it is `create table if not exists`, so a FRESH install would re-add the
+   column). **Adjacent:** ~40 component registry rows carry a non-NULL `default_visibility`
+   for a `visibility` column that does not exist — harmless now, a trap for any future
+   generator that trusts that field.
+
+9. **`organization_id` nullable on 31 tables + 1 view; 27 more lack the column.** 5,595 NULL
+   rows, concentrated in `public.system_error` (4,820), `users.profiles` (145),
+   `docproc.processed_documents` (124). **The bleed has STOPPED** — all 4 tables created after
+   `ddl_guard` shipped (2026-08-12) have `organization_id NOT NULL`. This is a bounded
+   historical backlog. Making columns NOT NULL requires deciding what org the orphan rows
+   belong to **per table** — that is product input, not a migration (`users.profiles` with 145
+   of 221 NULL is a question about whether a profile belongs to an org at all). Ship the guard
+   with a baseline first, then work tables down in small batches. Never one sweep.
+
+10. **Fix the two guard INVERSIONS — this is the root cause of #9 and it is cheap.** Both
+    guards that name `organization_id` use NOT NULL as their **precondition** instead of their
+    **assertion**, so they are structurally blind to the failure mode:
+    - `ddl_guard` requires `a.attnotnull` before evaluating → nullable columns invisible. It
+      has fired 321 times, exclusively on tables that got it RIGHT.
+    - `aidream/packages/matrx-orm/matrx_orm/catalog.py:431` filters `is_nullable='NO'` → the
+      data source for `scripts/validate_org_backstop_coverage.py`, the cited release gate,
+      which therefore **prints a clean bill of health it has not earned** (and `return 0 # NEVER block`).
+    The same `is_nullable='NO'` filter is in `db/migrations/0135`, so the org-coverage backfill
+    skipped these tables too.
+
+11. **Registry completeness: 191 unregistered real tables** (219 relations minus 28
+    `history.row_versions` partition children, which must never be counted —
+    `audit.unregistered_candidates` inflates by exactly those 28). Buckets: ~72 infrastructure,
+    ~34 entity-shaped registration work, ~85 unclear. **None are trash — decisively live**
+    (`platform.entity_types` itself 6.2M index scans, `iam.system_orgs` 6.6M,
+    `iam.permissions` 4.4M).
+    - **Highest priority — access machinery that is invisible to the access system:**
+      `iam.permissions` (the direct-grant ledger `has_access` reads) is unregistered while
+      `iam.memberships` IS registered as `audit_class='machinery'`. Same for `iam.system_orgs`,
+      `iam.org_industries`, `platform.shareable_resource_registry`, `platform.share_links`.
+      The registry has a machinery lane; these belong in it.
+    - **Functional ceiling, not cosmetics:** unregistered ⇒ `iam.has_access`/`is_discoverable`
+      return **false**, so the row cannot be shared, cannot be a permission target, and cannot
+      be an endpoint of a `platform.associations` edge. The **entire Credential Vault**
+      (`users.user_secrets`, `credential_items`, `credential_attachments`,
+      `user_secret_grants`, `integration_connections`, `integration_connection_resources`),
+      the **RAG knowledge graph** (`rag.kg_chunks`, `kg_entities`, `kg_clusters`,
+      `library_docs`), and **`platform.share_links`** are all in this state.
+    - **UNFINISHED WORK — never recommend deletion** (`unfinished-work-alarm.md`):
+      `extend.wbx_demo` carries the complete base contract, 0 rows, 0 scans, no consumer —
+      ⚠️ **`matrx-extend` was NOT searched**, so that hunt is incomplete. Also
+      `extend.wbx_recipe`, `workbench.udt_dataset_templates(+_fields)`,
+      `education.study_structured_section`, `education.math_course_structure`,
+      `context.scope_dataset_instances`, `seo.location`, `files.structure`.
+
+12. **Add the missing DB→registry detector.** Every existing check runs registry→DB only
+    (`scripts/schema-check/checks/entity-registry-drift.ts`,
+    `scripts/generate-entity-types.ts`, `aidream/scripts/check_entity_drift.py` — the last
+    invoked with `|| true`). The DB→registry direction exists in exactly one place,
+    `audit.unregistered_candidates` via `audit.refresh_static()`, which is **pull-only**: no
+    cron, no gate, runs only when a human clicks the admin page. Last run 2026-08-12.
+
+13. **Nobody clears `platform.ddl_guard_log.acknowledged_at`** — NULL on all 341 rows, so the
+    log reads as unattended even where the work was done, and the 321 `org_not_null_no_backstop`
+    warnings are genuinely unreviewed. Either wire acknowledgement or drop the column.
 
 ## Done
 
@@ -179,6 +242,23 @@ is currently unfiltered rather than deliberately open, and it is registered as a
 while also carrying 2 direct permission grants.
 **Decide:** is "every authenticated user can read every agent card" the intended product
 behavior? If not, what should gate it — the card's own visibility, or its agent's access?
+
+**4. Should the access machinery be in the registry?**
+`iam.memberships` is registered as `audit_class='machinery'` (gate-exempt, with a written
+reason). `iam.permissions` — the direct-grant ledger that `has_access` reads on every check,
+4.4M index scans — is not registered at all. Nor are `iam.system_orgs`,
+`platform.shareable_resource_registry`, or `platform.share_links`. They are the same *kind* of
+thing and are treated oppositely.
+**Decide:** register the access machinery as `machinery` for consistency (so the registry is
+complete and the completeness check can be trusted), or declare that these tables are
+deliberately outside the registry and remove `iam.memberships` from it instead.
+
+**5. Can the Credential Vault and RAG knowledge-graph tables be shared or permissioned?**
+Because they are unregistered, `iam.has_access` returns false for them, so today they can never
+be a share target or an association endpoint. That may be exactly right for secrets.
+**Decide:** is "a credential/secret can never be shared through the normal permission system"
+the intended product rule (leave unregistered, document why), or is the vault meant to support
+sharing/grants (register them)? Same question separately for the RAG knowledge graph.
 
 **3. Four tables have RLS on with zero policies** (`batch.cost_event`, `public.system_error`,
 `public.system_write_failure`, `runtime.global_origin`). They are closed today, but they carry
