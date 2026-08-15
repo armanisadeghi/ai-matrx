@@ -378,6 +378,14 @@ for once:
   (5000) rather than truncating.
 - **Outreach-list scope is blended mine + my orgs** (declared, THE VIEW LAW) — a
   sales-floor work console, not a browse surface.
+- **The one-email door is data-gated to Lane B.** The member action renders only
+  when the persisted `outreach_list.lane` is `cold_outreach`; there is no lane
+  boolean in the request. The workspace attaches a real org sending identity to
+  `outreach_list.sending_identity_id`, names its readiness, and links straight to
+  the mailbox checklist when it cannot send. New lists explicitly persist Lane B
+  instead of depending on a database default. The server still derives both lane
+  and identity from this campaign row and `crm.check_send_eligibility()` remains
+  the only send authority.
 - **Enrollment sources are the list selection, an ad-hoc filter, or a SMART
   VIEW** (`AddMembersDialog` source picker). Whichever it was, the enrolled
   list stamps its provenance into `crm.outreach_list.definition`
@@ -531,6 +539,12 @@ current authors/editors/contributors without writing.
 
 ## Change log
 
+- 2026-08-15 — **Outreach Phase 4 / mailbox door:** every newly created
+  outreach list now persists Lane B explicitly, and its workspace can attach an
+  organization sending identity to the campaign row. The selected mailbox is
+  linked to its real checklist and cannot masquerade as ready; the member-level
+  one-email action remains available only when the persisted lane is
+  `cold_outreach`.
 - 2026-08-15 — **Outreach Phase 2 / G2:** organization record pages now expose
   crawl-backed people with visible why/source evidence and governed one-click
   confirmation. Reused `SectionCard`, `EntityRef`, typed Python client, canonical

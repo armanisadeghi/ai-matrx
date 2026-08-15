@@ -34,7 +34,7 @@ const KIND_LABELS: Record<OutreachListKind, string> = {
 
 const KIND_HINTS: Record<OutreachListKind, string> = {
   call: "Power-dial members through the call queue.",
-  email: "Cold email (sending ships in a later wave).",
+  email: "Personalized Lane B email, reviewed before it sends.",
   list: "A named audience with no channel yet.",
   mixed: "Calls and email combined.",
 };

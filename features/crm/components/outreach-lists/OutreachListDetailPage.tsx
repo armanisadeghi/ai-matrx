@@ -23,6 +23,13 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type {
   MatrxColumnDef,
@@ -42,6 +49,7 @@ import {
   removeMember,
   requeueMember,
   setOutreachListStatus,
+  updateOutreachList,
 } from "../../outreach-lists/service";
 import type {
   OutreachListMemberWithParty,
@@ -53,6 +61,8 @@ import { MEMBER_STATUSES } from "../../outreach-lists/types";
 import { ListKindBadge, ListStatusBadge, MemberStatusBadge } from "./badges";
 import { AddMembersDialog } from "./AddMembersDialog";
 import { SingleSendDialog } from "./SingleSendDialog";
+import { listSendingIdentities } from "../../sending-identities/service";
+import type { SendingIdentityView } from "../../sending-identities/types";
 
 const PAGE_SIZE = 50;
 
@@ -72,6 +82,11 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
   const [addOpen, setAddOpen] = useState(false);
   const [singleSendMember, setSingleSendMember] =
     useState<OutreachListMemberWithParty | null>(null);
+  const [sendingIdentities, setSendingIdentities] = useState<
+    SendingIdentityView[]
+  >([]);
+  const [mailboxesLoading, setMailboxesLoading] = useState(false);
+  const [mailboxSaving, setMailboxSaving] = useState(false);
   // What last filled this queue (a smart view, or an ad-hoc filter).
   const enrollmentSource = list ? readEnrollmentSource(list) : null;
 
@@ -118,10 +133,52 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
     return () => window.clearTimeout(timer);
   }, [loadMembers]);
 
+  useEffect(() => {
+    if (!list || list.lane !== "cold_outreach") return;
+    let current = true;
+    const timer = window.setTimeout(() => {
+      setMailboxesLoading(true);
+      void listSendingIdentities(list.organization_id)
+        .then((rows) => {
+          if (current) setSendingIdentities(rows);
+        })
+        .catch((e: unknown) => {
+          if (current) {
+            toast.error(e instanceof Error ? e.message : "Could not load sending mailboxes");
+          }
+        })
+        .finally(() => {
+          if (current) setMailboxesLoading(false);
+        });
+    }, 0);
+    return () => {
+      current = false;
+      window.clearTimeout(timer);
+    };
+  }, [list?.organization_id, list?.lane]);
+
   const refreshAll = useCallback(() => {
     void loadHeader();
     void loadMembers();
   }, [loadHeader, loadMembers]);
+
+  const selectedIdentity = sendingIdentities.find(
+    (identity) => identity.id === list?.sending_identity_id,
+  );
+
+  const chooseSendingIdentity = async (identityId: string) => {
+    if (!list) return;
+    setMailboxSaving(true);
+    try {
+      await updateOutreachList(list.id, { sending_identity_id: identityId });
+      await loadHeader();
+      toast.success("Sending mailbox attached to this Lane B campaign");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not attach mailbox");
+    } finally {
+      setMailboxSaving(false);
+    }
+  };
 
   const lifecycleButton = useMemo(() => {
     if (!list) return null;
@@ -498,6 +555,55 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
           <div className="h-7" />
         )}
         {rollupChips && <div className="mt-1.5">{rollupChips}</div>}
+        {list?.lane === "cold_outreach" && (
+          <div className="mt-1.5 flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/30 px-2 py-1.5">
+            <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-xs font-medium text-foreground">Sending mailbox</span>
+            {sendingIdentities.length > 0 ? (
+              <Select
+                value={list.sending_identity_id ?? undefined}
+                onValueChange={(value) => void chooseSendingIdentity(value)}
+                disabled={mailboxesLoading || mailboxSaving}
+              >
+                <SelectTrigger className="h-7 min-w-64 text-xs">
+                  <SelectValue
+                    placeholder={mailboxesLoading ? "Loading mailboxes…" : "Choose a mailbox"}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {sendingIdentities.map((identity) => (
+                    <SelectItem key={identity.id} value={identity.id} className="text-xs">
+                      {identity.from_address} · {identity.status}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : mailboxesLoading ? (
+              <span className="text-xs text-muted-foreground">Loading mailboxes…</span>
+            ) : (
+              <span className="text-xs text-muted-foreground">No mailbox is connected.</span>
+            )}
+            <Link
+              href={
+                selectedIdentity
+                  ? `/crm/sending-identities/${selectedIdentity.id}`
+                  : "/crm/sending-identities"
+              }
+              className="text-xs font-medium text-primary underline underline-offset-2"
+            >
+              {selectedIdentity
+                ? selectedIdentity.can_run_campaign
+                  ? "Open mailbox"
+                  : "Finish mailbox setup"
+                : "Connect a named mailbox"}
+            </Link>
+            {selectedIdentity && !selectedIdentity.can_run_campaign && (
+              <span className="text-xs text-amber-700 dark:text-amber-300">
+                This mailbox cannot send yet; its checklist names every fix.
+              </span>
+            )}
+          </div>
+        )}
         {error && (
           <div className="mt-2 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
             {error}

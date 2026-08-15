@@ -122,6 +122,9 @@ export async function createOutreachList(input: {
       list_kind: input.kind,
       description: input.description?.trim() || null,
       organization_id: input.orgId,
+      // This builder creates Lane B work. Lane A is a separate consent-backed
+      // campaign surface and never reaches the single-send path.
+      lane: "cold_outreach",
     })
     .select("*")
     .single();
@@ -131,7 +134,10 @@ export async function createOutreachList(input: {
 
 export async function updateOutreachList(
   id: string,
-  patch: { name?: string; description?: string | null },
+  patch: Pick<
+    OutreachListUpdate,
+    "name" | "description" | "sending_identity_id"
+  >,
 ): Promise<void> {
   const { error } = await crm().from("outreach_list").update(patch).eq("id", id);
   if (error) throw pgError(error);
