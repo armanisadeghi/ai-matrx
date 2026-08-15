@@ -104,9 +104,33 @@ whole page · **SKIP** non-record tool.
 
 ## Batches
 
-1. Shared media-safe payload helper + **D-A fix** (`FileInfoTab`).
-2. `features/files` lists (FileList, versions, share links, permissions).
-3. `features/image-manager` (grids + metadata record).
-4. `features/podcasts` (tables, runs, episode record, dashboard groomer).
-5. `features/audio` (voices, devices, diagnostics).
-6. `features/pdf-extractor` (`aiCustom` extraction levers) + scanner review list.
+| # | Batch | Status |
+|---|---|---|
+| 1 | Shared media-safe payload helper + **D-A fix** (`FileInfoTab`) | **done** — `930c469` |
+| 2 | `features/image-manager` metadata record + shared `copy-format.ts` | **done** — `485b00c` |
+| 3 | `features/audio` diagnostics record (+ repair-prompt variant) | **done** — `b2cf198` |
+| 4 | `features/files` lists (FileList rows, versions, share links, permissions) | not started |
+| 5 | `features/podcasts` (PodcastsTable, runs, episode record, dashboard groomer) | not started |
+| 6 | `features/pdf-extractor` `aiCustom` extraction levers + scanner review list | not started |
+| 7 | `components/image/cloud/CloudFilesTab.tsx` grid copy (serves every cloud-file grid) | not started |
+| 8 | `features/audio` `VoicesList` + `MediaDevicesPanel` lists | not started |
+
+Batches 4–8 are wired the same way: the shared `mediaSafe` / `agentFileRef`
+pair from batch 1 is the only correct way to put a file row in a payload in
+this cluster, and every list additionally needs `ExportMenu` (JSON + CSV) plus
+a show-all for any truncated slice.
+
+### Routes for the wired surfaces
+
+| Surface | Route |
+|---|---|
+| `FileInfoTab` (D-A fix) | `/files` → select a file → Info tab |
+| `CloudFileMetadataSheet` | `/images/my-cloud` → open a file's details sheet |
+| `VoiceDiagnosticsDisplay` | `/settings/voice` |
+
+### Not verified
+
+The wired routes were **not** loaded in a browser as `admin@admin.com` (see
+FOUND_DEFECTS D133) — this session has no running app and no credentials.
+Route existence and component wiring were verified statically; `pnpm
+type-check` is clean and the affected Jest suites pass.
