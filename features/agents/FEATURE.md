@@ -1,5 +1,7 @@
 # FEATURE.md — `agents`
 
+> Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/agent-execution-runtime/FEATURE.md` — read it before touching this feature in ANY repo.
+
 **Status:** `migrating` (active rebuild — see `features/agents/migration/`)
 **Tier:** `1` — core of the product
 **Last updated:** `2026-08-09`

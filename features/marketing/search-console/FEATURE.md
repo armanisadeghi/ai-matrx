@@ -1,5 +1,7 @@
 # Search Console Dashboard — `/marketing/search-console`
 
+> Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/seo-keywords/keyword-system-decisions.md` — read it before touching this feature in ANY repo.
+
 The GSC data dashboard: the full Search Console search-performance dataset
 (queries, pages, countries, devices, search appearance) with GSC-parity
 drill-downs, period comparison, floating drill-down panels, and Copy /

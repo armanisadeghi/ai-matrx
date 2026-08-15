@@ -1,5 +1,7 @@
 # matrx-extend Connection — Frontend
 
+> Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/matrx-extend-integration/FEATURE.md` — read it before touching this feature in ANY repo.
+
 **Status:** Phase 2 has shipped. The bridge runs over two substrates
 (extension-side `externally_connectable` and Supabase Broadcast on
 `matrx-extension-bridge:<userId>`) carrying a shared `FRONTEND_RPC`

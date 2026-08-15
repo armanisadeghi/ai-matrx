@@ -1,5 +1,7 @@
 # Bookmark Export Coverage — what gets a "copy reference," and at what granularity
 
+> Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/matrx-envelope/FEATURE.md` — read it before touching this feature in ANY repo.
+
 **Status:** in progress — FE surfaces built; aidream backend pending — see **[AIDREAM_REFERENCE_IMPLEMENTATION.md](./AIDREAM_REFERENCE_IMPLEMENTATION.md)** (single handoff doc) and [Implementation progress](#implementation-progress) below.
 
 ## What an "export bookmark" is

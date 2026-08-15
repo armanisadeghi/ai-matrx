@@ -1,5 +1,7 @@
 # FEATURE.md — `ui-first-tools`
 
+> Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/client-tool-delegation/FEATURE.md` — read it before touching this feature in ANY repo.
+
 **Status:** `active`
 **Tier:** `1`
 **Last updated:** `2026-08-12` (scratchpad + storage deleted; chat legacy owner cut)

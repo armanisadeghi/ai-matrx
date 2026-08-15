@@ -1,5 +1,7 @@
 # FEATURE.md — `ai-models`
 
+> Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/model-config/README.md` — read it before touching this feature in ANY repo.
+
 **Status:** `stable`
 **Tier:** `2`
 **Last updated:** `2026-08-12`

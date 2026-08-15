@@ -1,5 +1,7 @@
 # System Context — Roadmap & Pending Work
 
+> Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/scope-context-system/FEATURE.md` — read it before touching this feature in ANY repo.
+
 The living backlog for the **System Context** admin (`/administration/scopes-context/system-context`) and the
 feed model behind it. Cross-repo companion (backend + arc): `aidream/docs/ctx_context/CONTEXT_SYSTEM_HANDOFF.md`.
 

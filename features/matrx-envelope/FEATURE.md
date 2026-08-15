@@ -1,5 +1,7 @@
 # Matrx Envelope — frontend
 
+> Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/matrx-envelope/FEATURE.md` — read it before touching this feature in ANY repo.
+
 The client mirror of the [Matrx Envelope](../../docs/protocol/MATRX_ENVELOPE.md) standard:
 `{ matrx_version, kind, type, items: [...] }`. Recognize the outer canonical shell once,
 route internal parts through a registry, render them, fall back gracefully.

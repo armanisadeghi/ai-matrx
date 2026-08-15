@@ -1,5 +1,7 @@
 # Media durability check — the DURABILITY MISMATCH guard
 
+> Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/media-durability/FEATURE.md` — read it before touching this feature in ANY repo.
+
 **Status:** live (2026-08-11) · `pnpm check:media-durability` · loud, advisory, never blocking
 
 ## What this exists to catch

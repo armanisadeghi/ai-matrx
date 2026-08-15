@@ -1,5 +1,7 @@
 # Conversation Handoff — running the agent inside a sandbox
 
+> Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/compute-targets/FEATURE.md` — read it before touching this feature in ANY repo.
+
 Status: **backend live & verified** (hosted orchestrator) · Date: 2026-05-23
 
 The goal: start a conversation, spin up a sandbox, and have the agent do its
