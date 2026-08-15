@@ -4,6 +4,8 @@ export interface DataTableCopyField {
   id: string;
   field_name: string;
   display_name: string;
+  /** Present on UDT fields; optional so generic callers can stay lightweight. */
+  data_type?: string;
 }
 
 export interface DataTableCopyRow {
@@ -13,14 +15,16 @@ export interface DataTableCopyRow {
 
 export type DataTableCopyScope = "view" | "selected" | "custom";
 
-function printableValue(value: unknown): string {
+export function dataTableCopyValueText(value: unknown): string {
   if (value === null || value === undefined) return "";
   if (typeof value === "object") return JSON.stringify(value);
   return String(value);
 }
 
 function markdownValue(value: unknown): string {
-  return printableValue(value).replace(/\r?\n/g, "<br>").replace(/\|/g, "\\|");
+  return dataTableCopyValueText(value)
+    .replace(/\r?\n/g, "<br>")
+    .replace(/\|/g, "\\|");
 }
 
 /** Project raw UDT rows into the friendly column labels users see. */
@@ -72,7 +76,7 @@ export function dataTableRowLabel(
   fields: DataTableCopyField[],
 ): string {
   const values = fields
-    .map((field) => printableValue(row.data[field.field_name]).trim())
+    .map((field) => dataTableCopyValueText(row.data[field.field_name]).trim())
     .filter(Boolean)
     .slice(0, 2);
   return values.length > 0 ? values.join(" · ") : `Row ${row.id.slice(0, 8)}`;

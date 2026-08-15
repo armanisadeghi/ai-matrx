@@ -35,7 +35,7 @@
 - ✅ **Realtime sync** — `UserTableViewer` subscribes to `udt_dataset_rows` changes for its tableId; debounced 400ms refetch
 - ✅ **Column-type badges** — every header now shows the `data_type` under the display name
 - ✅ **`op:'merge'` in `udt_bulk_write`** — applied live + verified; partial-row patch via `jsonb_concat`
-- ✅ **Table-native selection + scoped copy** — every `UserTableViewer` surface has persistent page-spanning row checkboxes, direct Copy / Copy for AI, selected-row copy, and a custom row/column picker. Tables with ≤20 rows expose every row in the picker; larger tables use the grid selection so the dialog never becomes a second giant table.
+- ✅ **Table-native selection + scoped copy** — every `UserTableViewer` surface has persistent page-spanning row checkboxes, icon-only direct Copy / Copy for AI, selected-row copy, and a large non-blocking WindowPanel workspace for exact row/column projection. The workspace reuses the canonical `MatrxDataTable` search, whole-word matching, per-column filters, layered advanced filters, sorting, pagination, and selection at every table size.
 
 **P4 workbook surface (lossless spreadsheet, v1):**
 - ✅ `udt_workbook_snapshots` table — append-only content store keyed by `workbook_id`; RLS mirrors `udt_workbooks`; viewers see all snapshots they can view the parent of; editors can append; in `supabase_realtime` publication.
@@ -157,7 +157,7 @@ become 5 linked datasets under one workbook.
   hover), field display-name labels via `fieldLabels`, copy-snapshot-as-JSON, Load more
   past the first 50, `onRowChanged` refetch callback. Honours `changed_by = NULL` as
   "System".
-- `features/data-tables/components/TableCopyControls.tsx` + `table-copy.ts` — the shared user-table copy surface and pure projection/Markdown/AI-envelope builders. `UserTableViewer` mounts it once, so route, quick-data sheet, resource picker, canvas, modal, dataset overlay, and WindowPanel consumers stay identical.
+- `features/data-tables/components/TableCopyControls.tsx` + `TableCustomCopyWindow.tsx` + `table-copy.ts` — the shared user-table copy surface, lazily loaded WindowPanel workspace, and pure projection/Markdown/AI-envelope builders. `UserTableViewer` mounts the controls once, so route, quick-data sheet, resource picker, canvas, modal, dataset overlay, and WindowPanel consumers stay identical.
 
 **Services / business logic**
 - `utils/user-tables-rpc.ts` — RPC response unwrapping (`unwrapGetUserTableComplete`,
@@ -318,8 +318,8 @@ the `shareable_resource_registry` (both `udt_datasets` and `udt_workbooks` are r
   leave it off and keep the content-sized `70dvh` cap. There is no in-body table selector any
   more: `onTablesChange` hands the list to whatever surface owns the switcher, so the RPC is
   fetched once and the header owns the choice.
-- **Selection belongs to `UserTableViewer`, not an export modal.** Checkbox state survives page changes, header selection applies to the current page, Shift selects a range, and Clear removes every selected id. Copy consumes those ids; it never invents a separate row-selection model.
-- **Quick copy means the complete current view, never the loaded page.** Copy and Copy for AI read the full table through `getCompleteTable()` and then apply the active search, column filters, and sort. Copy emits Markdown. Copy for AI uses the canonical XML envelope with table identity, row/column counts, and friendly display-name keys. Custom copy defaults to every column and row, provides Select all / Clear all, and can narrow to checked table rows.
+- **Selection belongs to the table system, not an export modal.** `UserTableViewer` owns the persistent source-table selection. The custom-copy WindowPanel consumes that selection as one quick scope and uses `MatrxDataTable`'s controlled selection for its live output projection: page select, Shift-range, select all, clear all, or only the rows matching the current search/filter stack.
+- **Quick copy means the complete current view, never the loaded page.** Copy and Copy for AI read the full table through `getCompleteTable()` and then apply the active search, column filters, and sort. Copy emits Markdown. Copy for AI uses the canonical XML envelope with table identity, row/column counts, and friendly display-name keys. The direct actions are icon-only with accessible names. Custom copy defaults to every column and row and opens a large, resizable, non-blocking WindowPanel: searchable full-height column sidebar on the left; the canonical table's global/whole-word search, sortable/filterable columns, layered advanced filters, pagination, and row selection on the right; exact output counts and copy action in the footer. Large and small tables use the same capable workspace.
 - **`validation_mode='permissive'` enforces NOTHING.** It is a pure passthrough so the 118
   pre-existing datasets keep their exact prior write behavior. Enforcement is opt-in via
   `'strict'`. Do not "helpfully" make permissive enforce things — that silently breaks live data.
@@ -539,6 +539,8 @@ into:
 Decide before agent-heavy workloads land.
 
 ## Change log
+
+- 2026-08-15 — codex: **Custom copy rebuilt as a real table workspace.** Removed the blocking two-column dialog and its large-table row-selection restriction. Custom Copy and Copy for AI now open a viewport-sized, resizable WindowPanel with a searchable, non-clipping column sidebar and the canonical `MatrxDataTable` interaction stack: contains/whole-word search, per-column filters, layered advanced filters, sorting, pagination, page/Shift selection, only-filtered selection, source-table selection, Select all, and Clear all. Every row and column starts included. Direct toolbar actions are icon-only with accessible names; the shared AI-copy mark is now copy sheets plus a connected intelligence node, with no bot/star/sparkle.
 
 - 2026-08-15 — codex: **Table-native selection and direct, scoped copy shipped across every `UserTableViewer` consumer.** Added persistent checkbox selection (page select-all, Shift-range, clear-all), visible selection count, direct Markdown Copy and XML-wrapped Copy for AI, selected-row variants, and a custom picker for columns plus rows. Small tables (≤20) show individual rows in the picker; large tables reuse the grid selection. The complete sorted/filtered view comes from the typed `getCompleteTable()` service read, so copy never silently truncates to the loaded page. Pure shaping lives in `table-copy.ts` with focused tests. The shared `MatrxDataTable` bulk bar also gains Copy / JSON / Copy for AI automatically whenever a selected table has a `copy` config.
 

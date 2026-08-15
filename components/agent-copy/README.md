@@ -12,6 +12,9 @@ no page reimplements them.
   headers). Stops click propagation by default (`stopPropagation={false}` to opt out).
   **Pass `json`** (raw record/rows) wherever the data is structured — it adds a
   third "Copy JSON" button. A scalar (one metric) doesn't need it.
+- `CopyForAiIcon` — the canonical text-free AI-copy mark: overlapping copy
+  sheets containing a connected intelligence node. Keep this semantic shape
+  across surfaces; do not substitute a bot, face, star, or sparkle.
 - `buildAgentPayload` — the xml-ish envelope (live URL/route/timestamp + full
   JSON dump).
 - `ExportMenu` + `export.ts` (`jsonExportItem` / `csvExportItem` /
@@ -108,7 +111,7 @@ must scale to its data. There is no one-size-fits-all; for every surface ask
 |---|---|---|
 | **Small / bounded** (one record, a short list) | Single icon, no chevron | Just "Everything" |
 | **Medium** (a focused list, a digestible page) | Dropdown (chevron) | A focused/short view **and** Everything |
-| **Massive / unbounded** (giant payloads, full histories) | Dropdown + custom-preview dialog | Short, Everything, **and** a tunable custom view |
+| **Massive / unbounded** (giant payloads, full histories) | Dropdown + non-blocking custom workspace | Short, Everything, **and** a tunable custom view |
 
 - **`AiCopyMenu`** (`AiCopyMenu.tsx`) is the chrome: pass `variants`
   (pure `build()` → envelope-or-string, may be async) and optionally `custom`
