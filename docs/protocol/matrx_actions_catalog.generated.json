@@ -1617,6 +1617,14 @@
     "create": {
      "additionalProperties": true,
      "properties": {
+      "deleted_via_id": {
+       "default": null,
+       "title": "Deleted Via Id"
+      },
+      "deleted_via_type": {
+       "default": null,
+       "title": "Deleted Via Type"
+      },
       "label": {
        "default": null,
        "title": "Label"
@@ -1680,6 +1688,14 @@
     "update": {
      "additionalProperties": true,
      "properties": {
+      "deleted_via_id": {
+       "default": null,
+       "title": "Deleted Via Id"
+      },
+      "deleted_via_type": {
+       "default": null,
+       "title": "Deleted Via Type"
+      },
       "id": {
        "title": "Id",
        "type": "string"
@@ -14062,6 +14078,26 @@
       "name": {
        "title": "Name"
       },
+      "pause_reason": {
+       "default": null,
+       "title": "Pause Reason"
+      },
+      "paused_at": {
+       "default": null,
+       "title": "Paused At"
+      },
+      "paused_by": {
+       "default": null,
+       "title": "Paused By"
+      },
+      "paused_by_kind": {
+       "default": null,
+       "title": "Paused By Kind"
+      },
+      "sending_identity_id": {
+       "default": null,
+       "title": "Sending Identity Id"
+      },
       "started_at": {
        "default": null,
        "title": "Started At"
@@ -14122,6 +14158,26 @@
        "default": null,
        "title": "Name"
       },
+      "pause_reason": {
+       "default": null,
+       "title": "Pause Reason"
+      },
+      "paused_at": {
+       "default": null,
+       "title": "Paused At"
+      },
+      "paused_by": {
+       "default": null,
+       "title": "Paused By"
+      },
+      "paused_by_kind": {
+       "default": null,
+       "title": "Paused By Kind"
+      },
+      "sending_identity_id": {
+       "default": null,
+       "title": "Sending Identity Id"
+      },
       "started_at": {
        "default": null,
        "title": "Started At"
@@ -14169,6 +14225,652 @@
    "table": "crm.party_merge",
    "title_column": null,
    "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Smart View",
+   "noun": "crm_saved_view",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "definition": {
+       "default": {},
+       "title": "Definition"
+      },
+      "description": {
+       "default": null,
+       "title": "Description"
+      },
+      "last_used_at": {
+       "default": null,
+       "title": "Last Used At"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "name": {
+       "title": "Name"
+      }
+     },
+     "required": [
+      "name"
+     ],
+     "title": "CreateCrmSavedViewItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteCrmSavedViewItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "definition": {
+       "default": null,
+       "title": "Definition"
+      },
+      "description": {
+       "default": null,
+       "title": "Description"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "last_used_at": {
+       "default": null,
+       "title": "Last Used At"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "name": {
+       "default": null,
+       "title": "Name"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateCrmSavedViewItem",
+     "type": "object"
+    }
+   },
+   "table": "crm.saved_view",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Sending Event",
+   "noun": "crm_sending_event",
+   "reference": "no",
+   "schemas": null,
+   "table": "crm.sending_event",
+   "title_column": "subject",
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Sending Identity",
+   "noun": "crm_sending_identity",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "attributes": {
+       "default": {},
+       "title": "Attributes"
+      },
+      "auth_checked_at": {
+       "default": null,
+       "title": "Auth Checked At"
+      },
+      "auth_detail": {
+       "default": {},
+       "title": "Auth Detail"
+      },
+      "connection_id": {
+       "default": null,
+       "title": "Connection Id"
+      },
+      "daily_cap": {
+       "default": 40,
+       "title": "Daily Cap"
+      },
+      "default_recipient_timezone": {
+       "default": "UTC",
+       "title": "Default Recipient Timezone"
+      },
+      "display_name": {
+       "title": "Display Name"
+      },
+      "dkim_pass": {
+       "default": null,
+       "title": "Dkim Pass"
+      },
+      "dmarc_pass": {
+       "default": null,
+       "title": "Dmarc Pass"
+      },
+      "domain_check_error": {
+       "default": null,
+       "title": "Domain Check Error"
+      },
+      "domain_checked_at": {
+       "default": null,
+       "title": "Domain Checked At"
+      },
+      "domain_verification_token": {
+       "title": "Domain Verification Token"
+      },
+      "domain_verified_at": {
+       "default": null,
+       "title": "Domain Verified At"
+      },
+      "from_address": {
+       "title": "From Address"
+      },
+      "from_address_key": {
+       "title": "From Address Key"
+      },
+      "from_name": {
+       "default": null,
+       "title": "From Name"
+      },
+      "health": {
+       "default": {},
+       "title": "Health"
+      },
+      "health_computed_at": {
+       "default": null,
+       "title": "Health Computed At"
+      },
+      "hourly_cap": {
+       "default": 8,
+       "title": "Hourly Cap"
+      },
+      "last_send_at": {
+       "default": null,
+       "title": "Last Send At"
+      },
+      "max_interval_seconds": {
+       "default": 600,
+       "title": "Max Interval Seconds"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "min_interval_seconds": {
+       "default": 90,
+       "title": "Min Interval Seconds"
+      },
+      "pause_code": {
+       "default": null,
+       "title": "Pause Code"
+      },
+      "pause_reason": {
+       "default": null,
+       "title": "Pause Reason"
+      },
+      "paused_at": {
+       "default": null,
+       "title": "Paused At"
+      },
+      "paused_by": {
+       "default": null,
+       "title": "Paused By"
+      },
+      "paused_by_kind": {
+       "default": null,
+       "title": "Paused By Kind"
+      },
+      "provider": {
+       "title": "Provider"
+      },
+      "provider_account": {
+       "default": null,
+       "title": "Provider Account"
+      },
+      "quiet_hours_end": {
+       "default": 8,
+       "title": "Quiet Hours End"
+      },
+      "quiet_hours_start": {
+       "default": 20,
+       "title": "Quiet Hours Start"
+      },
+      "reply_to": {
+       "default": null,
+       "title": "Reply To"
+      },
+      "resumed_at": {
+       "default": null,
+       "title": "Resumed At"
+      },
+      "resumed_by": {
+       "default": null,
+       "title": "Resumed By"
+      },
+      "send_weekends": {
+       "default": false,
+       "title": "Send Weekends"
+      },
+      "sending_domain": {
+       "title": "Sending Domain"
+      },
+      "spf_pass": {
+       "default": null,
+       "title": "Spf Pass"
+      },
+      "status": {
+       "default": "draft",
+       "title": "Status"
+      },
+      "status_changed_at": {
+       "default": null,
+       "title": "Status Changed At"
+      },
+      "warmup_completed_at": {
+       "default": null,
+       "title": "Warmup Completed At"
+      },
+      "warmup_day": {
+       "default": null,
+       "title": "Warmup Day"
+      },
+      "warmup_started_at": {
+       "default": null,
+       "title": "Warmup Started At"
+      }
+     },
+     "required": [
+      "display_name",
+      "provider",
+      "from_address",
+      "from_address_key",
+      "sending_domain",
+      "domain_verification_token"
+     ],
+     "title": "CreateCrmSendingIdentityItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteCrmSendingIdentityItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "attributes": {
+       "default": null,
+       "title": "Attributes"
+      },
+      "auth_checked_at": {
+       "default": null,
+       "title": "Auth Checked At"
+      },
+      "auth_detail": {
+       "default": null,
+       "title": "Auth Detail"
+      },
+      "connection_id": {
+       "default": null,
+       "title": "Connection Id"
+      },
+      "daily_cap": {
+       "default": null,
+       "title": "Daily Cap"
+      },
+      "default_recipient_timezone": {
+       "default": null,
+       "title": "Default Recipient Timezone"
+      },
+      "display_name": {
+       "default": null,
+       "title": "Display Name"
+      },
+      "dkim_pass": {
+       "default": null,
+       "title": "Dkim Pass"
+      },
+      "dmarc_pass": {
+       "default": null,
+       "title": "Dmarc Pass"
+      },
+      "domain_check_error": {
+       "default": null,
+       "title": "Domain Check Error"
+      },
+      "domain_checked_at": {
+       "default": null,
+       "title": "Domain Checked At"
+      },
+      "domain_verification_token": {
+       "default": null,
+       "title": "Domain Verification Token"
+      },
+      "domain_verified_at": {
+       "default": null,
+       "title": "Domain Verified At"
+      },
+      "from_address": {
+       "default": null,
+       "title": "From Address"
+      },
+      "from_address_key": {
+       "default": null,
+       "title": "From Address Key"
+      },
+      "from_name": {
+       "default": null,
+       "title": "From Name"
+      },
+      "health": {
+       "default": null,
+       "title": "Health"
+      },
+      "health_computed_at": {
+       "default": null,
+       "title": "Health Computed At"
+      },
+      "hourly_cap": {
+       "default": null,
+       "title": "Hourly Cap"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "last_send_at": {
+       "default": null,
+       "title": "Last Send At"
+      },
+      "max_interval_seconds": {
+       "default": null,
+       "title": "Max Interval Seconds"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "min_interval_seconds": {
+       "default": null,
+       "title": "Min Interval Seconds"
+      },
+      "pause_code": {
+       "default": null,
+       "title": "Pause Code"
+      },
+      "pause_reason": {
+       "default": null,
+       "title": "Pause Reason"
+      },
+      "paused_at": {
+       "default": null,
+       "title": "Paused At"
+      },
+      "paused_by": {
+       "default": null,
+       "title": "Paused By"
+      },
+      "paused_by_kind": {
+       "default": null,
+       "title": "Paused By Kind"
+      },
+      "provider": {
+       "default": null,
+       "title": "Provider"
+      },
+      "provider_account": {
+       "default": null,
+       "title": "Provider Account"
+      },
+      "quiet_hours_end": {
+       "default": null,
+       "title": "Quiet Hours End"
+      },
+      "quiet_hours_start": {
+       "default": null,
+       "title": "Quiet Hours Start"
+      },
+      "reply_to": {
+       "default": null,
+       "title": "Reply To"
+      },
+      "resumed_at": {
+       "default": null,
+       "title": "Resumed At"
+      },
+      "resumed_by": {
+       "default": null,
+       "title": "Resumed By"
+      },
+      "send_weekends": {
+       "default": null,
+       "title": "Send Weekends"
+      },
+      "sending_domain": {
+       "default": null,
+       "title": "Sending Domain"
+      },
+      "spf_pass": {
+       "default": null,
+       "title": "Spf Pass"
+      },
+      "status": {
+       "default": null,
+       "title": "Status"
+      },
+      "status_changed_at": {
+       "default": null,
+       "title": "Status Changed At"
+      },
+      "warmup_completed_at": {
+       "default": null,
+       "title": "Warmup Completed At"
+      },
+      "warmup_day": {
+       "default": null,
+       "title": "Warmup Day"
+      },
+      "warmup_started_at": {
+       "default": null,
+       "title": "Warmup Started At"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateCrmSendingIdentityItem",
+     "type": "object"
+    }
+   },
+   "table": "crm.sending_identity",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Sending Check",
+   "noun": "crm_sending_identity_check",
+   "reference": "no",
+   "schemas": null,
+   "table": "crm.sending_identity_check",
+   "title_column": "check_kind",
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Sending Policy",
+   "noun": "crm_sending_policy",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "attributes": {
+       "default": {},
+       "title": "Attributes"
+      },
+      "disabled_at": {
+       "default": null,
+       "title": "Disabled At"
+      },
+      "disabled_by": {
+       "default": null,
+       "title": "Disabled By"
+      },
+      "disabled_by_kind": {
+       "default": null,
+       "title": "Disabled By Kind"
+      },
+      "disabled_reason": {
+       "default": null,
+       "title": "Disabled Reason"
+      },
+      "enabled_at": {
+       "default": null,
+       "title": "Enabled At"
+      },
+      "enabled_by": {
+       "default": null,
+       "title": "Enabled By"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "notes": {
+       "default": null,
+       "title": "Notes"
+      },
+      "outreach_enabled": {
+       "default": true,
+       "title": "Outreach Enabled"
+      }
+     },
+     "title": "CreateCrmSendingPolicyItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteCrmSendingPolicyItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "attributes": {
+       "default": null,
+       "title": "Attributes"
+      },
+      "disabled_at": {
+       "default": null,
+       "title": "Disabled At"
+      },
+      "disabled_by": {
+       "default": null,
+       "title": "Disabled By"
+      },
+      "disabled_by_kind": {
+       "default": null,
+       "title": "Disabled By Kind"
+      },
+      "disabled_reason": {
+       "default": null,
+       "title": "Disabled Reason"
+      },
+      "enabled_at": {
+       "default": null,
+       "title": "Enabled At"
+      },
+      "enabled_by": {
+       "default": null,
+       "title": "Enabled By"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "notes": {
+       "default": null,
+       "title": "Notes"
+      },
+      "outreach_enabled": {
+       "default": null,
+       "title": "Outreach Enabled"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateCrmSendingPolicyItem",
+     "type": "object"
+    }
+   },
+   "table": "crm.sending_policy",
+   "title_column": null,
+   "update": "planned",
    "view": "no"
   },
   {
@@ -16040,6 +16742,106 @@
    },
    "table": "growth.loop_run",
    "title_column": "label",
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Guided Checklist Run",
+   "noun": "guided_checklist_run",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "checklist_key": {
+       "title": "Checklist Key"
+      },
+      "completed_at": {
+       "default": null,
+       "title": "Completed At"
+      },
+      "dismissed_at": {
+       "default": null,
+       "title": "Dismissed At"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "state": {
+       "default": {},
+       "title": "State"
+      },
+      "target_key": {
+       "title": "Target Key"
+      }
+     },
+     "required": [
+      "checklist_key",
+      "target_key"
+     ],
+     "title": "CreateGuidedChecklistRunItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteGuidedChecklistRunItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "checklist_key": {
+       "default": null,
+       "title": "Checklist Key"
+      },
+      "completed_at": {
+       "default": null,
+       "title": "Completed At"
+      },
+      "dismissed_at": {
+       "default": null,
+       "title": "Dismissed At"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "state": {
+       "default": null,
+       "title": "State"
+      },
+      "target_key": {
+       "default": null,
+       "title": "Target Key"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateGuidedChecklistRunItem",
+     "type": "object"
+    }
+   },
+   "table": "platform.guided_checklist_run",
+   "title_column": null,
    "update": "planned",
    "view": "no"
   },
@@ -30951,6 +31753,50 @@
    "reference": "no",
    "schemas": null,
    "table": "workflow.node_outcome",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Workflow Plan",
+   "noun": "workflow_plan",
+   "reference": "yes",
+   "schemas": null,
+   "table": "workflow.plan",
+   "title_column": "name",
+   "update": "no",
+   "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Workflow Plan Event",
+   "noun": "workflow_plan_event",
+   "reference": "no",
+   "schemas": null,
+   "table": "workflow.plan_event",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Workflow Plan Sample",
+   "noun": "workflow_plan_sample",
+   "reference": "no",
+   "schemas": null,
+   "table": "workflow.plan_sample",
    "title_column": null,
    "update": "no",
    "view": "no"
