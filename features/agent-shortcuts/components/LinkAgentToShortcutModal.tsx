@@ -43,6 +43,7 @@ import { useAgentShortcuts } from "../hooks/useAgentShortcuts";
 import { useAgentShortcutCrud } from "../hooks/useAgentShortcutCrud";
 import { ScopeMappingEditor } from "./ScopeMappingEditor";
 import { CategorySelect } from "./CategorySelect";
+import { CategoryForm } from "./CategoryForm";
 import type { AgentVariableDefinition } from "./ScopeMappingEditor";
 import type { ScopeProps } from "../types";
 import { parseShortcutContextsInput } from "../utils/enabled-contexts";
@@ -93,7 +94,13 @@ export function LinkAgentToShortcutModal({
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [enabledFeaturesInput, setEnabledFeaturesInput] = useState("");
+  // Category is REQUIRED to create, and a scope with none would otherwise be a
+  // wall: a problem we can detect ships with its one-click fix, in place.
+  const [categoryFormOpen, setCategoryFormOpen] = useState(false);
 
+  // Reset on OPEN only. `categories` is deliberately not a dependency: it
+  // changes the moment the inline "New category" form saves, and re-running
+  // this would wipe the label, mappings, and the brand-new selection.
   useEffect(() => {
     if (!isOpen) return;
     setActiveTab("create");
@@ -101,12 +108,21 @@ export function LinkAgentToShortcutModal({
     setSelectedShortcutId(null);
     setShowOnlyUnlinked(true);
     setUseLatest(agent.useLatest ?? false);
-    setSelectedCategoryId(categories[0]?.id ?? "");
+    setSelectedCategoryId("");
     setLabel(agent.name);
     setScopeMappings({});
     setEnabledFeaturesInput("");
     setError(null);
-  }, [isOpen, agent, categories]);
+  }, [isOpen, agent]);
+
+  // Categories arrive asynchronously. Seed the first one ONLY while nothing is
+  // chosen, so this never overrides the user (or a just-created category).
+  useEffect(() => {
+    if (!isOpen) return;
+    if (selectedCategoryId) return;
+    const first = categories[0]?.id;
+    if (first) setSelectedCategoryId(first);
+  }, [isOpen, categories, selectedCategoryId]);
 
   const filteredShortcuts = useMemo(() => {
     let out = showOnlyUnlinked
@@ -289,9 +305,21 @@ export function LinkAgentToShortcutModal({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="link-category" className="text-sm">
-              Category <span className="text-destructive">*</span>
-            </Label>
+            <div className="flex items-center justify-between gap-2">
+              <Label htmlFor="link-category" className="text-sm">
+                Category <span className="text-destructive">*</span>
+              </Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setCategoryFormOpen(true)}
+                disabled={isProcessing}
+              >
+                <Plus className="h-3.5 w-3.5 mr-1" />
+                New category
+              </Button>
+            </div>
             <CategorySelect
               id="link-category"
               categories={categories}
@@ -301,6 +329,12 @@ export function LinkAgentToShortcutModal({
               className="h-9"
               disabled={isProcessing}
             />
+            {categories.length === 0 && !isLoading && (
+              <p className="text-xs text-muted-foreground">
+                This scope has no categories yet. Create one to place the
+                shortcut.
+              </p>
+            )}
           </div>
 
           <div className="space-y-1.5">
@@ -508,8 +542,27 @@ export function LinkAgentToShortcutModal({
     </>
   );
 
+  // The one-click fix for "no categories in this scope". Rendered beside the
+  // modal (not inside its body) so the two overlays don't nest, and it keeps
+  // the same `scope`/`scopeId` contract the caller handed us.
+  const categoryForm = (
+    <CategoryForm
+      scope={scope}
+      scopeId={scopeId}
+      isOpen={categoryFormOpen}
+      onClose={() => setCategoryFormOpen(false)}
+      onSuccess={(created) => {
+        setCategoryFormOpen(false);
+        if (created) setSelectedCategoryId(created.id);
+      }}
+      allCategories={categories}
+    />
+  );
+
   if (isMobile) {
     return (
+      <>
+      {categoryForm}
       <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()}>
         <DrawerContent className="max-h-[92dvh] pb-safe">
           <DrawerHeader>
@@ -524,10 +577,13 @@ export function LinkAgentToShortcutModal({
           </DrawerFooter>
         </DrawerContent>
       </Drawer>
+      </>
     );
   }
 
   return (
+    <>
+    {categoryForm}
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-3xl max-h-[90dvh] flex flex-col p-0">
         <DialogHeader className="px-4 pt-4 pb-2 border-b border-border">
@@ -542,5 +598,6 @@ export function LinkAgentToShortcutModal({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    </>
   );
 }

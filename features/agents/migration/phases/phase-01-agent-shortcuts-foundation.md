@@ -174,6 +174,12 @@ Use `createClient` from `@/utils/supabase/server` with RLS — do **not** use ad
 
 ### 1.7 — Shared CRUD feature directory
 
+> **2026-08-14 — the "No routes mounted; Phases 11/12/13 will consume" note below is RESOLVED.**
+> Phases 11/12/13 never landed, which left `LinkAgentToShortcutModal` with no mounter for
+> ~4 months (`pnpm check:unwired` reported it). It is now mounted in `AgentShortcutsPanel`,
+> serving both `/agents/[id]/shortcuts` and the system-agents admin twin. Every other component
+> in this task IS wired. See `features/agent-shortcuts/FEATURE.md` change log.
+
 Create `features/agent-shortcuts/`:
 
 ```
