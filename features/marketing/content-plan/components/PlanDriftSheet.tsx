@@ -13,6 +13,10 @@ import { ArrowUpRight, CircleAlert, GitBranch, Loader2, Unlink } from "lucide-re
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
+import { webLocation } from "@/features/marketing/lib/copy-payloads";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Sheet,
@@ -24,6 +28,7 @@ import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
 import type { DriftItem } from "../lib/drift";
+import { driftItemCsvRow, driftItemSummary } from "../format";
 import type { DriftRepair, RepairOutcome, usePlanDrift } from "../hooks/usePlanDrift";
 
 /** Big crawls can surface thousands of orphans — cap the synchronous DOM and
@@ -104,7 +109,7 @@ export function PlanDriftSheet({
             <SheetTitle>Plan vs. the live site</SheetTitle>
           </SheetHeader>
 
-          <div className="flex flex-wrap gap-1 px-4">
+          <div className="flex flex-wrap items-center gap-1 px-4">
             {(Object.keys(FILTER_LABEL) as DriftFilter[]).map((value) => {
               const count =
                 value === "all"
@@ -129,6 +134,72 @@ export function PlanDriftSheet({
                 </Button>
               );
             })}
+            <span className="flex-1" />
+            {/* Copy/export cover every item under the current filter — the
+              RENDER_CAP is a DOM budget, never a payload budget. */}
+            <CopyButtons
+              size="icon"
+              label={`Drift — ${FILTER_LABEL[filter]}`}
+              human={() => items.map(driftItemSummary).join("\n")}
+              json={() => items}
+              agent={() => ({
+                kind: "plan_drift_worklist",
+                location: webLocation("Content Plan — plan vs. the live site"),
+                description:
+                  "The drift worklist as filtered on screen — every planned page that is not live, every route conflict, and every live page the plan does not describe.",
+                data: { filter, items },
+                attributes: {
+                  filter,
+                  rows: items.length,
+                  drift_total: model.counts.total,
+                  drift_ghosts: model.counts.ghosts,
+                  drift_conflicts: model.counts.conflicts,
+                  drift_orphans: model.counts.orphans,
+                  rendered: Math.min(items.length, RENDER_CAP),
+                },
+                context: {
+                  is_paired: model.isPaired,
+                  has_crawl_data: model.hasCrawlData,
+                },
+              })}
+              aiVariants={[
+                {
+                  id: "everything",
+                  label: "Everything",
+                  hint: "Every drift item, ignoring the filter above",
+                  build: () => ({
+                    kind: "plan_drift_worklist",
+                    location: webLocation(
+                      "Content Plan — plan vs. the live site",
+                    ),
+                    description:
+                      "Every difference between the plan and the live site, across all filters.",
+                    data: {
+                      counts: model.counts,
+                      items: model.items,
+                      unreadable: model.unreadable,
+                    },
+                    attributes: {
+                      detail: "everything",
+                      drift_total: model.counts.total,
+                      drift_ghosts: model.counts.ghosts,
+                      drift_conflicts: model.counts.conflicts,
+                      drift_orphans: model.counts.orphans,
+                    },
+                  }),
+                },
+              ]}
+            />
+            <ExportMenu
+              label={`Content plan drift — ${FILTER_LABEL[filter]}`}
+              items={[
+                jsonExportItem(() => items, "JSON (all items in this filter)"),
+                csvExportItem(
+                  () => items.map(driftItemCsvRow),
+                  "CSV (all items in this filter)",
+                ),
+              ]}
+            />
           </div>
 
           {publishPending && (filter === "all" || filter === "ghost") ? (

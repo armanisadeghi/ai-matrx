@@ -11,6 +11,8 @@ import { useMemo, useState } from "react";
 import { BookOpenCheck, Loader2, PenLine, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { webLocation } from "@/features/marketing/lib/copy-payloads";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -33,6 +35,12 @@ import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 
 import { NODE_TYPE_LABELS } from "../constants";
+import {
+  contentPlanKpiLine,
+  planNodeSummary,
+  realityVerdictSummary,
+  type ContentPlanKpis,
+} from "../format";
 import {
   useDeletePlanNode,
   useKeywordLabels,
@@ -95,6 +103,7 @@ export function NodePanel({
   cmsSiteId,
   cmsPagesByNodeId,
   pipelineProgress,
+  pageKpis,
   hosted = false,
 }: {
   node: PlanNodeRow;
@@ -115,6 +124,12 @@ export function NodePanel({
   cmsPagesByNodeId?: ReadonlyMap<string, CmsPageMapEntry>;
   /** Site-wide node_step query projected once by the workbench. */
   pipelineProgress?: NodePipelineProgress | null;
+  /**
+   * The workspace's leading KPI strip (website bar + drift bar), passed down
+   * so THIS panel's payload carries the same numbers the user sees above it.
+   * A section payload is only interpretable with what its page leads with.
+   */
+  pageKpis?: ContentPlanKpis | null;
   /**
    * The canonical side panel / WindowPanel already owns title and close chrome.
    * Keep only this editor's action toolbar when hosted so controls never stack
@@ -345,6 +360,125 @@ export function NodePanel({
   const briefWriter = useBriefWriter({ node, siteId });
   const briefDraft = readBriefDraft(node);
   const draftPending = isDraftPending(node, briefDraft);
+
+  /**
+   * 🚨 THE WHAT-I-SEE PAYLOAD for this panel. Built inside the click handler
+   * (CopyButtons resolves `human`/`agent` at click time), from `current` —
+   * the DRAFT-OVERLAID live values the user is looking at — never the fetched
+   * row. `unsaved_changes` states, field by field, where the screen and the
+   * saved record disagree, so an agent is never handed a stale row as if it
+   * were the truth.
+   *
+   * Errors come first and verbatim: the keyword-gap notice under Targeting
+   * and the reality card's own refusal text are the sentences the user is
+   * staring at when they reach for this button.
+   */
+  const buildNodeView = () => {
+    const unsavedChanges = (Object.keys(draft) as Array<keyof PlanNodeUpdate>)
+      .map((field) => ({
+        field,
+        saved: (node as Record<string, unknown>)[field as string] ?? null,
+        current: draft[field] ?? null,
+      }));
+
+    // The exact amber sentence rendered under the keyword picker.
+    const keywordNotice = keywordGap
+      ? keywordStaged
+        ? "Press Save to apply this keyword — then this page can be briefed and written."
+        : "This page has no target search term yet, so nothing tells it apart from its sibling pages — and briefs and drafts can't be written without one. Pick one above, or use Deepen to research this page and choose its term together."
+      : null;
+    const blockers = [
+      keywordNotice,
+      reality.failure,
+      reality.pageError ? `Could not read the live page: ${reality.pageError.message}` : null,
+      nodeEdges.error ? `Research lineage unavailable: ${nodeEdges.error.message}` : null,
+    ].filter((line): line is string => Boolean(line));
+
+    return {
+      blockers,
+      unsaved_changes: unsavedChanges,
+      has_unsaved_edits: dirty,
+      identity: {
+        id: node.id,
+        route: node.route,
+        depth: node.depth,
+        pillar_label: node.pillar_label,
+        cluster_label: node.cluster_label,
+        parent_id: node.parent_id,
+        site_id: siteId,
+        updated_at: node.updated_at,
+      },
+      // Live, draft-overlaid — what the fields on screen currently hold.
+      page: {
+        label: current.label,
+        slug: current.slug,
+        node_type: current.node_type,
+        page_type_id: current.page_type_id,
+        status_id: current.status_id,
+        priority: current.priority,
+        technical_depth: current.technical_depth,
+        needs_reviewer: current.needs_reviewer,
+      },
+      the_real_page: {
+        state: reality.verdict.state,
+        headline: reality.verdict.headline,
+        next_action: reality.verdict.action ?? "none",
+        action_label: reality.verdict.actionLabel || null,
+        cms_page_id: cmsPage?.pageId ?? null,
+        cms_route: cmsPage?.route ?? null,
+        live_url: cmsPage?.liveUrl ?? null,
+        is_published: cmsPage?.isPublished ?? null,
+      },
+      pipeline: pipelineProgress ?? null,
+      targeting: {
+        primary_keyword: primaryKeyword,
+        primary_keyword_id: current.primary_keyword_id,
+        primary_keyword_data: primaryKeywordBrief?.data ?? null,
+        supporting_keywords: supportingKeywords,
+        meta_title: current.meta_title,
+        meta_description: current.meta_description,
+      },
+      brief: {
+        lines: current.brief ?? [],
+        point_count: (current.brief ?? []).length,
+        // A run the user paid for that is still awaiting their decision.
+        pending_ai_draft: draftPending ? briefDraft : null,
+      },
+      attributes: current.attributes ?? null,
+      research_lineage: researchEdges.map((edge) => ({
+        token: edge.otherType,
+        id: edge.otherId,
+        title: researchTitles.titleFor({
+          token: edge.otherType,
+          id: edge.otherId,
+          label: edge.label,
+        }),
+      })),
+    };
+  };
+
+  const nodeCopyLabel = `Page ${node.route ?? node.label}`;
+  /** Human flavor: the summary line, the blockers, then the current values. */
+  const buildNodeHuman = () => {
+    const view = buildNodeView();
+    return [
+      planNodeSummary({ ...node, ...draft } as PlanNodeRow),
+      pageKpis ? `Plan: ${contentPlanKpiLine(pageKpis)}` : null,
+      realityVerdictSummary(reality.verdict),
+      view.blockers.length ? `\nBlockers:\n- ${view.blockers.join("\n- ")}` : null,
+      dirty
+        ? `\nUnsaved edits (${view.unsaved_changes.length}): ${view.unsaved_changes
+            .map((change) => String(change.field))
+            .join(", ")}`
+        : "\nNo unsaved edits.",
+      view.brief.lines.length
+        ? `\nBrief:\n- ${view.brief.lines.join("\n- ")}`
+        : "\nNo brief yet.",
+    ]
+      .filter(Boolean)
+      .join("\n");
+  };
+
   const getWriteHandlers = (): SurfaceWriteHandlers => ({
     // The build actions. `entity` mode — these do real work on the real
     // website, so they are offered (`ask`) and never applied unattended.
@@ -562,6 +696,115 @@ export function NodePanel({
               ) : null}
             </div>
           ) : null}
+          {/* The record pair. Default click = the what-I-see payload (live
+            draft values, blockers, verdict); the raw row is demoted to a
+            menu variant, never the default. */}
+          <CopyButtons
+            size="icon"
+            label={nodeCopyLabel}
+            human={buildNodeHuman}
+            json={() => buildNodeView()}
+            agentVariant={{
+              id: "this-page",
+              label: "This page",
+              hint: "What is on screen — live edits, blockers, verdict",
+              position: "first",
+            }}
+            agent={() => ({
+              kind: "content-plan-node",
+              location: webLocation("Content Plan — page detail"),
+              description:
+                "The plan page open in the node panel, as rendered: live (unsaved) field values, blockers, its real-page verdict and its brief.",
+              data: buildNodeView(),
+              summary: buildNodeHuman(),
+              attributes: {
+                node_id: node.id,
+                route: node.route,
+                node_type: current.node_type,
+                has_unsaved_edits: dirty,
+                page_state: reality.verdict.state,
+                blockers: [
+                  keywordGap,
+                  Boolean(reality.failure),
+                  Boolean(reality.pageError),
+                ].filter(Boolean).length,
+                brief_points: (current.brief ?? []).length,
+                ...(pageKpis ?? {}),
+              },
+              context: {
+                site_id: siteId,
+                view,
+                plan_kpis: pageKpis ? contentPlanKpiLine(pageKpis) : undefined,
+              },
+            })}
+            aiVariants={[
+              {
+                id: "brief-and-targeting",
+                label: "Brief + targeting",
+                hint: "What this page must cover and what it aims at",
+                build: () => {
+                  const viewData = buildNodeView();
+                  return {
+                    kind: "content-plan-node-brief",
+                    location: webLocation("Content Plan — page detail"),
+                    description:
+                      "The open plan page's brief and targeting only — live values, blockers kept.",
+                    data: {
+                      identity: viewData.identity,
+                      blockers: viewData.blockers,
+                      has_unsaved_edits: viewData.has_unsaved_edits,
+                      targeting: viewData.targeting,
+                      brief: viewData.brief,
+                    },
+                    attributes: {
+                      node_id: node.id,
+                      route: node.route,
+                      detail: "brief-and-targeting",
+                      ...(pageKpis ?? {}),
+                    },
+                    context: {
+                      site_id: siteId,
+                      view,
+                      plan_kpis: pageKpis
+                        ? contentPlanKpiLine(pageKpis)
+                        : undefined,
+                    },
+                  };
+                },
+              },
+              {
+                id: "everything",
+                label: "Everything",
+                hint: "The rendered view plus the raw saved row and edges",
+                build: () => ({
+                  kind: "content-plan-node-everything",
+                  location: webLocation("Content Plan — page detail"),
+                  description:
+                    "The open plan page: the rendered view, the raw saved plan.node row, and its association edges.",
+                  data: {
+                    rendered_view: buildNodeView(),
+                    saved_row: node,
+                    staged_draft: draft,
+                    edges: nodeEdges.data ?? [],
+                  },
+                  attributes: {
+                    node_id: node.id,
+                    route: node.route,
+                    detail: "everything",
+                    has_unsaved_edits: dirty,
+                    ...(pageKpis ?? {}),
+                  },
+                  context: {
+                    site_id: siteId,
+                    view,
+                    plan_kpis: pageKpis
+                      ? contentPlanKpiLine(pageKpis)
+                      : undefined,
+                  },
+                }),
+              },
+            ]}
+          />
           <Button
             variant="outline"
             size="sm"
@@ -921,6 +1164,13 @@ export function NodePanel({
             <PanelSection title="Brief">
               <BriefEditor
                 lines={current.brief ?? []}
+                savedLines={node.brief ?? []}
+                node={{
+                  id: node.id,
+                  label: node.label,
+                  route: node.route,
+                }}
+                planKpiLine={pageKpis ? contentPlanKpiLine(pageKpis) : null}
                 onChange={(next) => stage({ brief: next })}
                 draft={briefDraft}
                 draftPending={draftPending}

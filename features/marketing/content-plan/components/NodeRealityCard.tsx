@@ -29,6 +29,8 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { webLocation } from "@/features/marketing/lib/copy-payloads";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 
 import { type NodeReality } from "../hooks/useNodeReality";
@@ -41,6 +43,7 @@ import {
 } from "../lib/page-reality";
 import { cmsPageEditorHref } from "@/features/cms/utils/cmsRoutes";
 
+import { realityVerdictSummary } from "../format";
 import type { CmsPageMapEntry } from "../setup/bridge";
 import type { PlanNodeRow } from "../types";
 
@@ -156,11 +159,79 @@ export function NodeRealityCard({
                 : null;
 
     return (
-        <div className="space-y-2 rounded-md border border-border bg-muted/20 p-2.5">
+        <div className="group/reality space-y-2 rounded-md border border-border bg-muted/20 p-2.5">
             <div className="flex items-start justify-between gap-2">
                 <p className="min-w-0 text-xs leading-snug text-foreground">
                     {verdict.headline}
                 </p>
+                {/* The server's refusal and the live-page read error are the
+                  highest-value things this card says — they go in verbatim. */}
+                <CopyButtons
+                    size="xs"
+                    className="shrink-0 opacity-0 transition-opacity focus-within:opacity-100 group-hover/reality:opacity-100"
+                    label="The real page"
+                    human={() =>
+                        [
+                            realityVerdictSummary(verdict),
+                            cmsPage ? (cmsPage.route ?? cmsPage.title) : null,
+                            missingKeyword
+                                ? "No keyword is targeted yet — the writer will pick its own angle."
+                                : null,
+                            reality.pageError
+                                ? `Could not read the live page: ${reality.pageError.message}`
+                                : null,
+                            reality.failure,
+                        ]
+                            .filter(Boolean)
+                            .join("\n")
+                    }
+                    agent={() => ({
+                        kind: "plan_node_reality",
+                        location: webLocation("Content Plan — the real page"),
+                        description:
+                            "The 'real page' card on the open plan page: what became of this page on the live website, the next action offered, and any refusal the server gave — verbatim.",
+                        data: {
+                            state: verdict.state,
+                            badge: REALITY_BADGE[verdict.state],
+                            headline: verdict.headline,
+                            next_action: verdict.action ?? "none",
+                            action_label: verdict.actionLabel || null,
+                            blockers: [
+                                missingKeyword
+                                    ? "No keyword is targeted yet — the writer will pick its own angle."
+                                    : null,
+                                reality.pageError
+                                    ? `Could not read the live page: ${reality.pageError.message}`
+                                    : null,
+                                reality.failure,
+                            ].filter(Boolean),
+                            write_policy_blocked: reality.failure
+                                ? isWritePolicyBlocked(reality.failure)
+                                : false,
+                            node: {
+                                id: node.id,
+                                label: node.label,
+                                route: node.route,
+                            },
+                            cms_page: cmsPage
+                                ? {
+                                      page_id: cmsPage.pageId,
+                                      route: cmsPage.route,
+                                      is_published: cmsPage.isPublished,
+                                      live_url: cmsPage.liveUrl,
+                                  }
+                                : null,
+                            cms_site_id: cmsSiteId,
+                        },
+                        attributes: {
+                            node_id: node.id,
+                            route: node.route,
+                            page_state: verdict.state,
+                            next_action: verdict.action ?? "none",
+                            blocked: Boolean(reality.failure),
+                        },
+                    })}
+                />
                 <span
                     className={`shrink-0 rounded px-1.5 py-px text-[10px] font-medium ${STATE_TONE[verdict.state]}`}
                 >

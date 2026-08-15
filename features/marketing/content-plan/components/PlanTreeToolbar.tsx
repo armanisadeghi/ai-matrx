@@ -12,7 +12,7 @@
  * useful in a narrow tree pane. All state lives in PlanTree — this is chrome
  * only. Pure logic: ../lib/tree-view.ts.
  */
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import {
   ArrowUpDown,
   Check,
@@ -76,6 +76,8 @@ export interface PlanTreeToolbarProps {
   onCollapseAll: () => void;
   onLevel: (level: TreeLevel) => void;
   onAddRoot: () => void;
+  /** Trailing slot — the tree's copy/export pair sits here. */
+  trailing?: ReactNode;
 }
 
 const KEYWORD_OPTIONS: { value: KeywordCoverageFilter; label: string }[] = [
@@ -106,6 +108,7 @@ export function PlanTreeToolbar({
   onCollapseAll,
   onLevel,
   onAddRoot,
+  trailing,
 }: PlanTreeToolbarProps) {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const activeFilterCount = countActiveTreeFilters(filters);
@@ -347,6 +350,8 @@ export function PlanTreeToolbar({
         </Button>
 
         <span className="flex-1" />
+
+        {trailing}
 
         <Button
           variant="ghost"

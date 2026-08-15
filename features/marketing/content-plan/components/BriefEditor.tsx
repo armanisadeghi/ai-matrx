@@ -21,6 +21,8 @@ import { useState } from "react";
 import { History, RotateCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { webLocation } from "@/features/marketing/lib/copy-payloads";
 import { Label } from "@/components/ui/label";
 import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 import PageBriefBlock, {
@@ -44,6 +46,9 @@ function draftAsPageBrief(draft: BriefDraft): PageBriefData {
 
 export function BriefEditor({
   lines,
+  savedLines,
+  node,
+  planKpiLine,
   onChange,
   draft,
   draftPending,
@@ -57,6 +62,17 @@ export function BriefEditor({
 }: {
   /** The brief as it will be saved — draft-overlaid live value. */
   lines: string[];
+  /**
+   * The brief as the SAVED record holds it. Copy is built from `lines` (what
+   * is on screen); this is only here so the payload can state, explicitly,
+   * where the screen and the saved row disagree. Copying the fetched row
+   * after the user edited a point is lying to the agent.
+   */
+  savedLines: string[];
+  /** Identity for the envelope — a section payload names what it belongs to. */
+  node: { id: string; label: string; route: string | null };
+  /** The workspace's leading KPI sentence, mirrored into every payload. */
+  planKpiLine?: string | null;
   onChange: (next: string[]) => void;
   /** The node's persisted AI proposal, or null when none was ever run. */
   draft: BriefDraft | null;
@@ -74,7 +90,7 @@ export function BriefEditor({
   const [showHistory, setShowHistory] = useState(false);
 
   return (
-    <div className="space-y-3">
+    <div className="group/brief space-y-3">
       {/* The AI's own proposal, rendered by the SAME component the live-run
           window uses. Shown whenever a run exists — not only while a decision
           is pending: hiding it after accept is how the angle and the
@@ -94,9 +110,70 @@ export function BriefEditor({
           Same component, `editable`, so a point is a field that grows with its
           content instead of a one-line box. */}
       <div>
-        <Label className="mb-1.5 block text-xs font-medium">
-          What this page must cover — one point per row
-        </Label>
+        <div className="mb-1.5 flex items-center justify-between gap-2">
+          <Label className="block text-xs font-medium">
+            What this page must cover — one point per row
+          </Label>
+          {/* 🚨 Built from `lines` — the LIVE field value, resolved at click
+            time — never from the saved row. `unsaved_changes` states the
+            difference explicitly so an agent is never handed a stale brief. */}
+          <CopyButtons
+            size="xs"
+            className="opacity-0 transition-opacity focus-within:opacity-100 group-hover/brief:opacity-100"
+            label="Page brief"
+            human={() =>
+              [
+                `Brief — ${node.route ?? node.label}`,
+                planKpiLine ? `Plan: ${planKpiLine}` : null,
+                lines.length
+                  ? lines.map((line) => `- ${line}`).join("\n")
+                  : "No brief yet.",
+                draftPending
+                  ? "\nAn AI proposal for this brief is awaiting your decision."
+                  : null,
+              ]
+                .filter(Boolean)
+                .join("\n")
+            }
+            json={() => lines}
+            agent={() => {
+              const dirty =
+                lines.length !== savedLines.length ||
+                lines.some((line, index) => line !== savedLines[index]);
+              return {
+                kind: "plan_node_brief",
+                location: webLocation("Content Plan — page brief"),
+                description:
+                  "The brief section of the open plan page, as it stands in the editor right now (live, possibly unsaved).",
+                data: {
+                  page: node,
+                  brief_on_screen: lines,
+                  has_unsaved_edits: dirty,
+                  unsaved_changes: dirty
+                    ? { saved: savedLines, on_screen: lines }
+                    : null,
+                  // A paid run still awaiting the user's accept/reject.
+                  pending_ai_proposal: draftPending ? draft : null,
+                  ai_proposal_on_record: draft,
+                  run_history: runsError
+                    ? { error: runsError }
+                    : runsLoading
+                      ? { loading: true }
+                      : runs,
+                },
+                attributes: {
+                  node_id: node.id,
+                  route: node.route,
+                  brief_points: lines.length,
+                  has_unsaved_edits: dirty,
+                  proposal_pending: draftPending,
+                  runs: runs.length,
+                },
+                context: { plan_kpis: planKpiLine ?? undefined },
+              };
+            }}
+          />
+        </div>
         <PageBriefPoints
           lines={lines}
           editable

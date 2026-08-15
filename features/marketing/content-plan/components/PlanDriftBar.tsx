@@ -16,9 +16,12 @@
 import { CheckCircle2, Loader2, Radar, RefreshCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { webLocation } from "@/features/marketing/lib/copy-payloads";
 import { cn } from "@/lib/utils";
 
 import type { PlanDriftModel } from "../lib/drift";
+import { driftItemSummary } from "../format";
 import type { DriftFilter } from "./PlanDriftSheet";
 
 export function PlanDriftBar({
@@ -62,7 +65,7 @@ export function PlanDriftBar({
   return (
     <div
       className={cn(
-        "flex items-center gap-2 border-b px-3 py-1.5 text-xs",
+        "group/drift flex items-center gap-2 border-b px-3 py-1.5 text-xs",
         inSync
           ? "border-border bg-muted/30"
           : "border-amber-500/30 bg-amber-500/5",
@@ -122,6 +125,53 @@ export function PlanDriftBar({
           aria-label="Re-checking"
         />
       ) : null}
+      {/* The metric strip is data too — hover-revealed so the density of the
+        bar survives. Carries the verdict SENTENCE, not just the counts. */}
+      <CopyButtons
+        size="xs"
+        className="shrink-0 opacity-0 transition-opacity focus-within:opacity-100 group-hover/drift:opacity-100"
+        label="Plan vs. the live site"
+        human={() =>
+          [
+            inSync
+              ? "The plan matches the live site."
+              : `The plan and the live site differ: ${counts.ghosts} pages aren't live · ${counts.conflicts} route conflicts · ${counts.orphans} live pages aren't in the plan`,
+            hasCrawlData
+              ? null
+              : "(No crawl of the real site yet — this compares the plan to the connected site's pages.)",
+            "",
+            ...model.items.map(driftItemSummary),
+          ]
+            .filter((line) => line !== null)
+            .join("\n")
+        }
+        json={() => model.items}
+        agent={() => ({
+          kind: "plan_drift",
+          location: webLocation("Content Plan — plan vs. the live site"),
+          description:
+            "The always-on drift verdict above the plan: how the plan and the real website differ, and every item behind those counts.",
+          data: {
+            verdict: inSync
+              ? "The plan matches the live site."
+              : "The plan and the live site differ.",
+            is_paired: isPaired,
+            has_crawl_data: hasCrawlData,
+            counts,
+            items: model.items,
+            // Rows we could not read are surfaced, never silently dropped.
+            unreadable: model.unreadable,
+          },
+          attributes: {
+            drift_total: counts.total,
+            drift_ghosts: counts.ghosts,
+            drift_conflicts: counts.conflicts,
+            drift_orphans: counts.orphans,
+            in_sync: inSync,
+            has_crawl_data: hasCrawlData,
+          },
+        })}
+      />
       <Button
         variant="ghost"
         size="sm"
