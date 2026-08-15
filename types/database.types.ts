@@ -27581,6 +27581,9 @@ export type Database = {
           message: string | null
           metadata: Json
           organization_id: string
+          request_key: string
+          request_kind: string
+          request_payload: Json
           requested_level: string
           resource_id: string
           resource_type: string
@@ -27601,6 +27604,9 @@ export type Database = {
           message?: string | null
           metadata?: Json
           organization_id: string
+          request_key?: string
+          request_kind?: string
+          request_payload?: Json
           requested_level?: string
           resource_id: string
           resource_type: string
@@ -27621,6 +27627,9 @@ export type Database = {
           message?: string | null
           metadata?: Json
           organization_id?: string
+          request_key?: string
+          request_kind?: string
+          request_payload?: Json
           requested_level?: string
           resource_id?: string
           resource_type?: string
@@ -31688,12 +31697,14 @@ export type Database = {
         Row: {
           auto_ingest: boolean | null
           created_at: string
+          custom_values: Json
           default_permission:
             | Database["public"]["Enums"]["permission_level"]
             | null
           default_visibility: Database["platform"]["Enums"]["visibility"] | null
           is_enabled: boolean
           members_can_add: boolean | null
+          members_can_add_custom_values: boolean
           module_token: string
           needs_approval: boolean | null
           organization_id: string
@@ -31704,6 +31715,7 @@ export type Database = {
         Insert: {
           auto_ingest?: boolean | null
           created_at?: string
+          custom_values?: Json
           default_permission?:
             | Database["public"]["Enums"]["permission_level"]
             | null
@@ -31712,6 +31724,7 @@ export type Database = {
             | null
           is_enabled?: boolean
           members_can_add?: boolean | null
+          members_can_add_custom_values?: boolean
           module_token: string
           needs_approval?: boolean | null
           organization_id: string
@@ -31722,6 +31735,7 @@ export type Database = {
         Update: {
           auto_ingest?: boolean | null
           created_at?: string
+          custom_values?: Json
           default_permission?:
             | Database["public"]["Enums"]["permission_level"]
             | null
@@ -31730,6 +31744,7 @@ export type Database = {
             | null
           is_enabled?: boolean
           members_can_add?: boolean | null
+          members_can_add_custom_values?: boolean
           module_token?: string
           needs_approval?: boolean | null
           organization_id?: string
@@ -38476,9 +38491,11 @@ export type Database = {
         Args: { p_org_id: string }
         Returns: {
           auto_ingest: boolean
+          custom_values: Json
           default_permission: Database["public"]["Enums"]["permission_level"]
           is_scopeable: boolean
           members_can_add: boolean
+          members_can_add_custom_values: boolean
           module_key: string
           requires_approval: boolean
         }[]
@@ -39671,6 +39688,36 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      org_module_custom_value_add: {
+        Args: {
+          p_module_key: string
+          p_namespace: string
+          p_org_id: string
+          p_value: string
+        }
+        Returns: Json
+      }
+      org_module_custom_value_policy_set: {
+        Args: {
+          p_members_can_add: boolean
+          p_module_key: string
+          p_org_id: string
+        }
+        Returns: Json
+      }
+      org_module_custom_value_remove: {
+        Args: {
+          p_module_key: string
+          p_namespace: string
+          p_org_id: string
+          p_value: string
+        }
+        Returns: Json
+      }
+      org_module_custom_values: {
+        Args: { p_module_key: string; p_namespace: string; p_org_id: string }
+        Returns: Json
+      }
       outreach_unsubscribe: {
         Args: { p_reason?: string; p_token: string; p_user_agent?: string }
         Returns: Json
@@ -40378,6 +40425,22 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      setting_access_request_create: {
+        Args: {
+          p_action_key: string
+          p_action_payload?: Json
+          p_message?: string
+          p_org_id: string
+          p_setting_href: string
+          p_setting_key: string
+          p_setting_label: string
+        }
+        Returns: Json
+      }
+      setting_access_request_decide: {
+        Args: { p_decision: string; p_note?: string; p_request_id: string }
+        Returns: Json
       }
       shape_doctor_gather: { Args: { p_dataset: string }; Returns: Json }
       share_link_authorizes: {
