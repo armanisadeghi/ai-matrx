@@ -26,6 +26,7 @@
 import type { Policy, PrePaintDescriptor } from "../types";
 import { getPreset } from "../policies/presets";
 import { syncPolicies } from "../registry";
+import Script from "next/script";
 
 /**
  * Build the inline script body from a set of policies. Pure string assembly,
@@ -61,7 +62,13 @@ interface SyncBootScriptProps {
 export function SyncBootScript({ policies = syncPolicies }: SyncBootScriptProps = {}) {
     const script = buildPrePaintScript(policies);
     if (!script) return null;
-    return <script dangerouslySetInnerHTML={{ __html: script }} />;
+    return (
+        <Script
+            id="matrx-sync-prepaint"
+            strategy="beforeInteractive"
+            dangerouslySetInnerHTML={{ __html: script }}
+        />
+    );
 }
 
 /** Exported for tests. */

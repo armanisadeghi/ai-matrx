@@ -19,6 +19,8 @@
 // itself depend on a chunk. Keep the flag/event names in sync with
 // chunk-load-recovery.ts (APP_BOOTED_FLAG / STALE_CHUNK_EVENT).
 
+import Script from "next/script";
+
 const SCRIPT = `(function(){
   try {
     var KEY = "chunk-load-recovery:last-reload";
@@ -70,7 +72,9 @@ const SCRIPT = `(function(){
 
 export function ChunkRecoveryBootScript() {
   return (
-    <script
+    <Script
+      id="matrx-chunk-recovery"
+      strategy="beforeInteractive"
       // Runs synchronously before any chunked JS so we catch errors from the
       // very first chunk fetch. dangerouslySetInnerHTML is intentional: this
       // is a static, vetted string with no user-controlled interpolation.
