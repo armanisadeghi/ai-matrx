@@ -2,7 +2,7 @@
 status: active
 updated: 2026-08-15
 repos: [aidream, matrx-frontend, common-docs]
-owner: unassigned — TWO code tasks left (T2, T7) plus one human step only Arman can do (T8)
+owner: unassigned — ONE code task left (T7) plus one human step only Arman can do (T8)
 ---
 
 # Competitor link gap + competitor classification
@@ -75,8 +75,10 @@ Do not re-derive these from the docs; the docs are ambiguous on the one that mat
 - **Cost: `$0.024 + $0.000036/row`** — a 1,000-row gap pull is **$0.06 per site**. Cost is
   not a reason to be stingy here.
 - The op is `BACKLINKS_INTERSECTIONS` in `providers/dataforseo/operations.py`, declared
-  `raw_only=True`. **That flag is why no parser branch existed** — it tells the adapter not
-  to normalize. Clearing it is part of wiring the collector.
+  `raw_only=True`. ⚠️ **Corrected 2026-08-15: do NOT clear that flag.** It exempts the op
+  from the "must have a canonical normalizer" precondition; it does not suppress
+  normalization. A request with `capability=BACKLINKS` and an intersection endpoint still
+  routes to `normalize_link_gap_payload`, which is how both live gap paths work.
 - ⚠️ **Default ordering returns junk.** The live probe's top 5 gap domains were
   `livelycity.com`, `usindex.app`, `intently.co`, `z1biz.com`, `getpracticehelp.com` —
   spam/link-farm shaped. A production run needs `order_by` on rank and `backlinks_filters`
