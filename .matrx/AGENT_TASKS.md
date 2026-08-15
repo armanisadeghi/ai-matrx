@@ -20,6 +20,78 @@ _(none)_
 
 ## Active
 
+### TASK-005: Build the real AI Work composer and Saved Requests foundation
+- **Status:** ready
+- **Created:** 2026-08-15
+- **Source:** Arman wants one place to create work, choose skills/context/home, run it now, and reuse it later.
+
+**Goal**
+Ship `/work/new` with AI Matrx execution first, then persist the smallest reusable Saved Request that composes existing agents, skills, context, associations, schedules, and workflows instead of reviving a prompt library.
+
+**Subtasks**
+- [ ] Inventory agent shortcuts/apps, schedule payloads, workflow inputs, skill selection, resource pickers, Active Context, and Project/Task/War Room association primitives before choosing storage.
+- [ ] Build one plain-language progressive composer: request, expert system, skills, context, home, timing, review.
+- [ ] Run through the existing AI Matrx agent execution path and retain canonical conversation/run doors.
+- [ ] Save, reopen, version, and run the same request manually; add schedule/workflow handoff only through existing engines.
+- [ ] Production-certify `/work/new` as a non-technical user; update `features/ai-work/FEATURE.md` and the cross-repo handoff.
+
+**Notes**
+Product contract: `/Users/armanisadeghi/code/common-docs/projects/ai-work-hub/PLAN.md`. Retired prompt tables are not candidates. This is the foundation consumed by TASK-006.
+
+### TASK-006: Expose the certified managed Claude runtime in AI Work
+- **Status:** ready
+- **Created:** 2026-08-15
+- **Source:** The managed Claude backend passed paid START/STREAM/RESUME/CANCEL/FORK certification, but the live UI still renders a disabled “certification pending” button.
+
+**Goal**
+A normal user starts Claude Code work from `/work/new`, watches streamed updates, cancels it, and continues or forks a native conversation only when the live capability contract allows that exact action.
+
+**Subtasks**
+- [ ] Reuse `lib/sandbox/orchestrator-routing.ts`, the sandbox access-token route, and `GET /coding-sessions/claude/capabilities`; do not add a proxy or execution service.
+- [ ] POST the existing NDJSON stream contract, render registered progress/result events, wire owner-scoped cancel, and retain canonical conversation/runtime/cost doors.
+- [ ] Add conversation-detail Continue/Fork actions with native capability gates; otherwise offer an explicitly labeled seeded handoff.
+- [ ] Remove the stale certification-pending copy only after a real production start/stream/cancel/resume/fork UI pass.
+- [ ] Update `features/ai-work/FEATURE.md` and groom `docs/handoffs/coding-agent-bridge-claude-first.md`.
+
+**Notes**
+Backend and production evidence are in the handoff and `common-docs/projects/ai-work-hub/PLAN.md` Lane 5. Never show a generic Resume button.
+
+### TASK-007: Put installed Claude History reconciliation behind one AI Work action
+- **Status:** ready
+- **Created:** 2026-08-15
+- **Source:** Matrx Local 1.4.26 is installed and exposes bounded Claude preview/import/status/retry/discard, while AI Work still offers only a download door.
+
+**Goal**
+“Sync Claude Code now” reaches the installed Matrx Local reconciliation flow, reports inspected/imported/updated/duplicate/conflict/unsupported results, and makes repair actions reachable without pretending the browser can read Claude files.
+
+**Subtasks**
+- [ ] Run and record an installed 1.4.26 preview → selected import → exact replay/update → cleanup certification through the real desktop UI.
+- [ ] Inventory the existing desktop discovery and `aimatrx://` handling; extend the existing seam rather than creating a browser filesystem path or second local service.
+- [ ] Add one AI Work action with unavailable/not-running/sign-in/queue-conflict states and direct Retry/Discard repair doors.
+- [ ] Keep Codex/Cursor bulk import unavailable until their own stable formats exist.
+- [ ] Production-certify the web-to-desktop handoff and update the Local/AI Work FEATURE docs plus the cross-repo handoff.
+
+**Notes**
+Matrx Local implementation: `/Users/armanisadeghi/code/matrx-local/app/services/coding_sessions/claude_history.py` and `desktop/src/pages/ClaudeHistorySync.tsx`.
+
+### TASK-008: Make provider account authorization and reconnect understandable
+- **Status:** ready
+- **Created:** 2026-08-15
+- **Source:** A real Claude mirror was previously invisible because the plugin and website used different AI Matrx accounts; repairing it required CLI logout/login.
+
+**Goal**
+`/work/connections` names the authorized AI Matrx account separately from delivered-session account provenance and offers one supported reconnect/test action for Claude first.
+
+**Subtasks**
+- [ ] Inventory MCP OAuth grants, existing connection records, current-user profile data, and provider binding metadata before adding any schema.
+- [ ] Show authorization, client detection, last delivery, local sync, and managed-runtime availability as separate facts.
+- [ ] Implement supported disconnect/re-authorize/test delivery with exact success/failure evidence and no ownership reassignment.
+- [ ] Prove the wrong-account recovery flow in production, then reuse the same contract for Codex/Cursor/VS Code where supported.
+- [ ] Update `features/ai-work/FEATURE.md` and the cross-repo handoff.
+
+**Notes**
+The historical rows owned by another AI Matrx account remain with that owner unless Arman separately authorizes a one-time transfer.
+
 > **Entity-list chips (TASK-EL-*)** — filed 2026-08-15 when the canonical
 > entity-list extraction CLOSED (PR #58 merged; handoff doc deleted). The
 > shell is `lib/entity-list/` — **read its `FEATURE.md` first**; it now carries
