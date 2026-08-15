@@ -36,6 +36,11 @@ import {
   useUserConnections,
   type ConnectionUser,
 } from "@/features/messaging/hooks/useUserConnections";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import {
+  sharingLocation,
+  type SharingCopyContext,
+} from "@/features/sharing/format";
 
 interface ShareWithUserTabProps {
   onShare: (
@@ -45,6 +50,8 @@ interface ShareWithUserTabProps {
   onSuccess: () => void;
   resourceType: ResourceType;
   resourceId: string;
+  /** Identity + the page's leading KPIs, mirrored into the failure payload. */
+  copy?: SharingCopyContext;
 }
 
 type StatusType = "idle" | "loading" | "success" | "error";
@@ -91,6 +98,7 @@ export function ShareWithUserTab({
   onSuccess,
   resourceType,
   resourceId,
+  copy,
 }: ShareWithUserTabProps) {
   const [email, setEmail] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -246,12 +254,79 @@ export function ShareWithUserTab({
           )}
           <span className="flex-1">{status.message}</span>
           {status.type === "error" && (
-            <button
-              onClick={resetStatus}
-              className="text-xs underline hover:no-underline flex-shrink-0"
-            >
-              Dismiss
-            </button>
+            <>
+              {/*
+               * THE FAILURE IS THE PAYLOAD. "No user found with email X — they
+               * may need to create an account first" is exactly the sentence a
+               * user hands an agent, and it is only actionable together with
+               * the LIVE form state that produced it: the address they typed,
+               * the contact they picked, the level they chose. Built inside the
+               * click handler so it reads the current inputs, never a stale
+               * render.
+               */}
+              <CopyButtons
+                size="xs"
+                label="Share failure"
+                human={() =>
+                  [
+                    "Sharing with a user failed.",
+                    `Error shown: ${status.message}`,
+                    `Email entered: ${email.trim() || "(empty)"}`,
+                    `Contact selected: ${
+                      selectedContact
+                        ? `${selectedContact.display_name ?? selectedContact.email} (${selectedContact.source})`
+                        : "none"
+                    }`,
+                    `Permission level chosen: ${permissionLevel}`,
+                    `Resource: ${resourceType}:${resourceId}`,
+                  ].join("\n")
+                }
+                json={() => ({
+                  error: status.message,
+                  email: email.trim(),
+                  selected_contact: selectedContact,
+                  permission_level: permissionLevel,
+                  resource_type: resourceType,
+                  resource_id: resourceId,
+                })}
+                agent={() => ({
+                  kind: "share-with-user-failure",
+                  location: sharingLocation(
+                    copy?.surface ?? "Share with user",
+                  ),
+                  description:
+                    "A share-with-user attempt that failed, with the error sentence on screen and the live form state that produced it.",
+                  data: {
+                    rendered_error: status.message,
+                    form_state: {
+                      email_entered: email.trim(),
+                      selected_contact: selectedContact,
+                      permission_level: permissionLevel,
+                      contacts_available: connections.length,
+                    },
+                    resource: {
+                      type: resourceType,
+                      id: resourceId,
+                      name: copy?.resourceName ?? null,
+                    },
+                    kpis: copy?.kpis ?? null,
+                  },
+                  attributes: {
+                    ...(copy?.kpis ?? {}),
+                    resource_type: resourceType,
+                    resource_id: resourceId,
+                    state: "error",
+                    permission_level: permissionLevel,
+                  },
+                })}
+              />
+              <button
+                onClick={resetStatus}
+                className="text-xs underline hover:no-underline flex-shrink-0"
+              >
+                Dismiss
+              </button>
+            </>
           )}
         </div>
       )}

@@ -296,7 +296,24 @@ first and emit the gap list; only then wire, batch by batch:
 - Built-in integrations: `MatrxDataTable` `copy` config → row/view/window/field
   pairs; `DataRowInspector` per-field hover copy; `JsonInspector` `agentCopy`.
 - Shared formatters: `lib/sandbox/format.ts`, `features/ai-models/format.ts`,
-  `features/marketing/components/backlinks/format.ts`.
+  `features/marketing/components/backlinks/format.ts`,
+  `features/sharing/format.ts`.
+- **Sharing / access (2026-08-15)** — wired in `features/sharing/*`, so every
+  surface that renders sharing UI gained copy at once (ShareModal and its
+  window, file info, notes, RAG data stores, agent share panel, marketing site
+  access). `PermissionsList`: per-grant hover pair, list pair, ExportMenu
+  (JSON + CSV) over ALL grants, `ShowAllToggle` above a 12-row preview, and a
+  copyable empty state. `AccessSummaryPanel`: panel + per-reason pairs,
+  reason CSV export, and a payload for its ERROR branch (a failed reachability
+  read means UNKNOWN, never "private"); its reason rows now come from the
+  shared `accessReasonRows` extractor that the view itself renders, so copy
+  cannot drift from screen. `PublicAccessTab` declares its rendered sentences
+  once and both renders and copies them. The share tabs stay composers — no
+  forced record buttons — but their rendered failures are copyable with LIVE
+  form state. `SiteAccessWorkspace` adds the page pair + ExportMenu, threads
+  one `SharingCopyContext` (identity + KPIs) into every child, and offers an
+  "Errors & access blockers" variant beside the what-I-see default.
+  `accessKpis` is the what-I-see KPI mirror here, the `auditPageKpis` analogue.
 - Pages: sandbox admin / user-list / detail; `administration/admins` (admins +
   audit); `administration/ai-tasks`; `administration/invitation-requests`;
   `/marketing/brands/[id]/sites/[id]/backlinks` (the full-granularity + groomer

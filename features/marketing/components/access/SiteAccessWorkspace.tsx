@@ -9,10 +9,38 @@ import { PermissionsList } from "@/features/sharing/components/PermissionsList";
 import { ShareWithUserTab } from "@/features/sharing/components/tabs/ShareWithUserTab";
 import { ShareWithOrgTab } from "@/features/sharing/components/tabs/ShareWithOrgTab";
 import { PublicAccessTab } from "@/features/sharing/components/tabs/PublicAccessTab";
-import { AccessSummaryPanel } from "@/features/sharing/components/AccessSummaryPanel";
+import {
+  AccessSummaryPanel,
+  type AccessSummaryState,
+} from "@/features/sharing/components/AccessSummaryPanel";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
+import {
+  accessKpis,
+  accessSummaryView,
+  grantCsvRows,
+  humanAccessPanel,
+  humanNotices,
+  sharingLocation,
+  ACCESS_SUMMARY_ERROR_HEADLINE,
+  GRANT_LIST_SCOPE_NOTE,
+  type AccessNotice,
+  type AccessPanelView,
+  type SharingCopyContext,
+} from "@/features/sharing/format";
 
 type ShareSubTab = "users" | "organizations" | "public";
+
+const SUB_TAB_LABEL: Record<ShareSubTab, string> = {
+  users: "Users",
+  organizations: "Organizations",
+  public: "Public",
+};
+
+/** The notice this page renders when ownership resolves to "not you". */
+const NOT_OWNER_NOTICE = "Only the site owner can change sharing.";
 
 /**
  * Site-root sharing on the canonical permissions system — the same
@@ -53,6 +81,146 @@ export function SiteAccessWorkspace() {
     .concat(resourceIsPublic ? "public" : "not-public")
     .join("|");
 
+  /*
+   * The reachability answer the panel below is rendering, mirrored up here so
+   * every payload from this page carries the same numbers the user is reading
+   * — without paying for a second `entity_access_summary` round trip.
+   */
+  const [accessState, setAccessState] = useState<AccessSummaryState>({
+    summary: null,
+    error: null,
+    loading: false,
+  });
+
+  /*
+   * THE WHAT-I-SEE LAW. These are the numbers this page LEADS with: the tab
+   * counts, the public dot, whether the viewer owns the site, and the
+   * reachability answer. Every payload from this page — page, panel, list, and
+   * row alike — carries them verbatim, in the body AND the envelope
+   * attributes, because nothing here is interpretable without them.
+   *
+   * `viewer_is_owner` stays null while ownership is loading or errored:
+   * "we don't know who owns this" is a different answer from "not you", and
+   * collapsing them is the failure this page's own error notice exists to
+   * prevent.
+   */
+  const kpis = accessKpis({
+    permissions,
+    isPublic: resourceIsPublic,
+    viewerIsOwner:
+      ownership.loading || ownership.error ? null : ownership.isOwner,
+    summary: accessState.summary,
+    entityType: "web_site",
+  });
+
+  const copyContext: SharingCopyContext = {
+    resourceType: "web_site",
+    resourceId: site.id,
+    resourceName: site.name,
+    surface: `Site access — ${site.domain}`,
+    kpis,
+  };
+  const location = sharingLocation(copyContext.surface);
+
+  /**
+   * Every error / blocker / notice this page is rendering RIGHT NOW, captured
+   * verbatim. Errors and denials are the highest-value content on an access
+   * page: a user copying this is asking an agent "why can't this person see
+   * this, and what do I change?" — a payload that dropped the red text while
+   * dumping the grant rows would be answering a question nobody asked.
+   */
+  const renderedNotices = (): AccessNotice[] => {
+    const notices: AccessNotice[] = [];
+    if (ownership.error) {
+      notices.push({
+        tone: "error",
+        where: "Ownership check",
+        text: `Could not determine whether you own this site: ${ownership.error}`,
+      });
+    }
+    if (!ownership.loading && !ownership.error && !isOwner) {
+      notices.push({
+        tone: "info",
+        where: "Ownership notice",
+        text: NOT_OWNER_NOTICE,
+      });
+    }
+    if (accessState.error) {
+      notices.push({
+        tone: "error",
+        where: "Access summary",
+        text: `${ACCESS_SUMMARY_ERROR_HEADLINE}: ${accessState.error}`,
+      });
+    }
+    if (error) {
+      notices.push({ tone: "error", where: "Sharing", text: error });
+    }
+    return notices;
+  };
+
+  const panelView = (): AccessPanelView => ({
+    resource: { type: "web_site", id: site.id, name: site.name },
+    kpis,
+    active_tab: SUB_TAB_LABEL[activeSubTab],
+    notices: renderedNotices(),
+    access_summary: accessState.summary
+      ? accessSummaryView(accessState.summary, "web_site")
+      : null,
+    access_summary_error: accessState.error,
+    user_grants: userPermissions,
+    org_grants: orgPermissions,
+    public_grant: publicPermission ?? null,
+    is_public: resourceIsPublic,
+    scope_note: GRANT_LIST_SCOPE_NOTE,
+  });
+
+  const pageHuman = () =>
+    [
+      `Site access — ${site.name} (${site.domain})`,
+      `One grant shares this site and every page, crawl, snapshot, finding, and artifact beneath it.`,
+      "",
+      humanAccessPanel(panelView()),
+    ].join("\n");
+
+  /**
+   * The focused variant: only what is blocking or explaining. This is the
+   * half of the page a user shares when the question is "why is access wrong?"
+   * — still carrying the page KPIs, because a shortened variant is lossy in
+   * DATA, never in ambient context.
+   */
+  const blockersVariant = () => {
+    const notices = renderedNotices();
+    const view = panelView();
+    return {
+      kind: "site-access-blockers",
+      location,
+      description:
+        "Only the errors, denials, and access-blocking notices rendered on the site access tab, plus the reachability answer needed to interpret them.",
+      data: {
+        resource: view.resource,
+        kpis,
+        notices,
+        access_summary: view.access_summary,
+        access_summary_error: view.access_summary_error,
+        viewer_can_manage: isOwner,
+        scope_note: GRANT_LIST_SCOPE_NOTE,
+      },
+      summary: [
+        `Site access — ${site.name} (${site.domain})`,
+        humanNotices(notices),
+      ].join("\n"),
+      attributes: {
+        ...kpis,
+        site_id: site.id,
+        domain: site.domain,
+        blockers: notices.filter((n) => n.tone === "error").length,
+      },
+    };
+  };
+
+  /** All grants across every tab — copy and export never see a partial set. */
+  const allGrants = () => permissions;
+
   const subTabs: {
     id: ShareSubTab;
     label: string;
@@ -79,12 +247,57 @@ export function SiteAccessWorkspace() {
       <div className="mx-auto flex h-full w-full max-w-3xl min-h-0 flex-col p-3 sm:p-4">
         <div className="mb-3 flex items-start gap-2 shrink-0">
           <ShieldCheck className="mt-0.5 h-4 w-4 text-primary" />
-          <div>
+          <div className="min-w-0 flex-1">
             <h1 className="text-sm font-semibold">Site access</h1>
             <p className="text-xs text-muted-foreground">
               One grant shares {site.name} and every page, crawl, snapshot,
               finding, and artifact beneath it.
             </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-1">
+            <CopyButtons
+              size="icon"
+              label={`Site access (${site.domain})`}
+              human={pageHuman}
+              json={panelView}
+              agent={() => ({
+                kind: "site-access-page",
+                location,
+                description: `The site access tab for ${site.domain} exactly as rendered: who can reach this site and why, every direct grant, the public state, the tab on screen, and every error or blocking notice currently displayed.`,
+                data: panelView(),
+                summary: pageHuman(),
+                attributes: {
+                  ...kpis,
+                  site_id: site.id,
+                  domain: site.domain,
+                  active_tab: SUB_TAB_LABEL[activeSubTab],
+                },
+              })}
+              agentVariant={{
+                id: "what-i-see",
+                label: "This page (what I see)",
+                hint: "Everything rendered: reachability, grants, public state, errors",
+                position: "first",
+              }}
+              aiVariants={[
+                {
+                  id: "blockers",
+                  label: "Errors & access blockers",
+                  hint: "Only the red text and the reachability answer",
+                  build: blockersVariant,
+                },
+              ]}
+            />
+            <ExportMenu
+              label={`site-access-${site.domain}`}
+              items={[
+                jsonExportItem(panelView, "Page data (.json)"),
+                csvExportItem(
+                  () => grantCsvRows(allGrants()),
+                  "CSV (all grants)",
+                ),
+              ]}
+            />
           </div>
         </div>
 
@@ -130,6 +343,8 @@ export function SiteAccessWorkspace() {
                 entityId={site.id}
                 refreshToken={grantSignature}
                 className="px-0 pt-0 border-b border-border/40 pb-3"
+                copy={copyContext}
+                onSummaryChange={setAccessState}
               />
 
               {ownership.error && (
@@ -142,7 +357,7 @@ export function SiteAccessWorkspace() {
               )}
               {!ownership.loading && !ownership.error && !isOwner && (
                 <p className="text-xs text-muted-foreground">
-                  Only the site owner can change sharing.
+                  {NOT_OWNER_NOTICE}
                 </p>
               )}
 
@@ -158,6 +373,8 @@ export function SiteAccessWorkspace() {
                       onUpdateLevel={updateLevel}
                       onRevoke={revokeAccess}
                       loading={loading}
+                      copy={copyContext}
+                      listLabel="Users"
                     />
                   </div>
                   {isOwner && (
@@ -166,6 +383,7 @@ export function SiteAccessWorkspace() {
                       onSuccess={refresh}
                       resourceType="web_site"
                       resourceId={site.id}
+                      copy={copyContext}
                     />
                   )}
                 </>
@@ -183,6 +401,8 @@ export function SiteAccessWorkspace() {
                       onUpdateLevel={updateLevel}
                       onRevoke={revokeAccess}
                       loading={loading}
+                      copy={copyContext}
+                      listLabel="Organizations"
                     />
                   </div>
                   {isOwner && (
@@ -193,6 +413,7 @@ export function SiteAccessWorkspace() {
                       sharedOrgIds={orgPermissions
                         .map((p) => p.grantedToOrganizationId)
                         .filter((id): id is string => !!id)}
+                      copy={copyContext}
                     />
                   )}
                 </>
@@ -208,12 +429,32 @@ export function SiteAccessWorkspace() {
                   resourceType="web_site"
                   resourceId={site.id}
                   resourceName={site.name}
+                  copy={copyContext}
                 />
               )}
 
               {error && (
-                <div className="p-2.5 bg-destructive/10 border border-destructive/20 rounded-md">
-                  <p className="text-xs text-destructive">{error}</p>
+                <div className="group p-2.5 bg-destructive/10 border border-destructive/20 rounded-md flex items-start gap-2">
+                  <p className="flex-1 text-xs text-destructive">{error}</p>
+                  {/* The page's own sharing error — copied verbatim, with the
+                      full access picture around it so an agent can say what to
+                      change, not just what broke. */}
+                  <span className="shrink-0 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+                    <CopyButtons
+                      size="xs"
+                      label="Site access error"
+                      human={() =>
+                        [
+                          `Site access error on ${site.name} (${site.domain}):`,
+                          error,
+                          "",
+                          humanAccessPanel(panelView()),
+                        ].join("\n")
+                      }
+                      json={() => ({ error, ...panelView() })}
+                      agent={blockersVariant}
+                    />
+                  </span>
                 </div>
               )}
             </div>
