@@ -63,7 +63,7 @@ export const PATROLS = [
     rrule: "FREQ=WEEKLY;BYDAY=MO;BYHOUR=1;BYMINUTE=10",
     cadence: "Mondays 1:10 AM",
     runInstruction:
-      "Fix only skill-approved mechanical EntityRef/token cases. Missing routes, peeks, or judgment-heavy repairs are report-only proposals.",
+      "Fix verified door-law defects automatically when the canonical entity door is unambiguous and behavior-preserving. Escalate only competing navigation or product-behavior choices.",
   },
   {
     patrolId: "P2",
@@ -77,7 +77,7 @@ export const PATROLS = [
     rrule: "FREQ=WEEKLY;BYDAY=TU;BYHOUR=0;BYMINUTE=10",
     cadence: "Tuesdays 12:10 AM",
     runInstruction:
-      "Catalogue and rank poorer hand-built duplicates and write precise conversion prompts. Fix nothing without item-scoped approval.",
+      "Catalogue poorer duplicates and automatically replace them when one canonical primitive clearly subsumes the copy with bounded behavior risk. Create focused tasks for missing machinery; escalate only competing product behavior.",
   },
   {
     patrolId: "P3",
@@ -91,7 +91,7 @@ export const PATROLS = [
     rrule: "FREQ=WEEKLY;BYDAY=MO,TH;BYHOUR=6;BYMINUTE=10",
     cadence: "Mondays and Thursdays 6:10 AM",
     runInstruction:
-      "Apply only the registry's literal mechanical viewport/safe-area recipes. Layout judgment remains a manual proposal.",
+      "Apply verified canonical mobile repairs automatically when desktop behavior and product intent remain unchanged. Escalate only layout choices with multiple legitimate user experiences.",
   },
   {
     patrolId: "P4",
@@ -105,7 +105,7 @@ export const PATROLS = [
     rrule: "FREQ=WEEKLY;BYDAY=TU,FR;BYHOUR=6;BYMINUTE=10",
     cadence: "Tuesdays and Fridays 6:10 AM",
     runInstruction:
-      "Apply only mappings authorized by the light/dark skill. Surface intent and every exception remain Arman's decision.",
+      "Apply unambiguous semantic-token and paired-theme repairs automatically. Surface intent with competing legitimate outcomes and every exception remain Arman's decision.",
   },
   {
     patrolId: "P5",
@@ -119,7 +119,7 @@ export const PATROLS = [
     rrule: "FREQ=WEEKLY;BYDAY=WE;BYHOUR=0;BYMINUTE=10",
     cadence: "Wednesdays 12:10 AM",
     runInstruction:
-      "Fix only detector rows classified auto-approved. Review rows become proposals; new primitive or layout work becomes a precise task.",
+      "Apply the canonical Copy and Copy for AI affordances automatically when the data surface and placement are established. Missing primitives become focused tasks; escalate only competing interaction/layout choices.",
   },
   {
     patrolId: "P6",
@@ -133,7 +133,7 @@ export const PATROLS = [
     rrule: "FREQ=WEEKLY;BYDAY=WE,SA;BYHOUR=6;BYMINUTE=10",
     cadence: "Wednesdays and Saturdays 6:10 AM",
     runInstruction:
-      "Replace verified user-visible emoji only through the skill's Lucide/delete recipes. Ambiguous meaning or state becomes a proposal.",
+      "Replace verified user-visible emoji automatically through the skill's Lucide/delete recipes. Investigate ambiguous meaning first and escalate only if a real product-state choice remains.",
   },
   {
     patrolId: "P7",
@@ -147,7 +147,7 @@ export const PATROLS = [
     rrule: "FREQ=WEEKLY;BYDAY=TH,SU;BYHOUR=6;BYMINUTE=10",
     cadence: "Thursdays and Sundays 6:10 AM",
     runInstruction:
-      "Auto-fix only registry-approved standalone alerts. Confirmations, prompts, and control-flow-sensitive alerts require approval.",
+      "Replace browser dialogs automatically when the canonical dialog/toast preserves control flow and acknowledgement semantics. Create focused repair tasks for implementation risk; escalate only materially different interaction choices.",
   },
   {
     patrolId: "P8",
@@ -161,7 +161,7 @@ export const PATROLS = [
     rrule: "FREQ=WEEKLY;BYDAY=MO,FR;BYHOUR=12;BYMINUTE=10",
     cadence: "Mondays and Fridays 12:10 PM",
     runInstruction:
-      "Auto-fix only the exact Suspense fallback recipe. Skeleton choice, layout, and compact non-Suspense states require approval.",
+      "Replace every verified generic loader automatically with a contextual canonical loader or an established surface-shaped skeleton when behavior and geometry are bounded. Ask only when competing UX outcomes remain.",
   },
   {
     patrolId: "P9",
@@ -175,7 +175,7 @@ export const PATROLS = [
     rrule: "FREQ=WEEKLY;BYDAY=TH;BYHOUR=0;BYMINUTE=10",
     cadence: "Thursdays 12:10 AM",
     runInstruction:
-      "Report and propose only until a standalone detector and bounded interaction proof are operational. Do not mutate product code.",
+      "Remain report-only until the standalone detector and bounded interaction proof are operational. Treat missing machinery as a focused system task, not a human approval request; do not mutate product code yet.",
   },
   {
     patrolId: "P10",
@@ -189,7 +189,7 @@ export const PATROLS = [
     rrule: "FREQ=WEEKLY;BYDAY=TU,SA;BYHOUR=12;BYMINUTE=10",
     cadence: "Tuesdays and Saturdays 12:10 PM",
     runInstruction:
-      "Measure and rank debt. Fix only item-scoped approvals using an already-proven registry recipe; never mass-edit or add a suppression.",
+      "Measure and rank debt, then apply already-proven behavior-preserving recipes automatically in bounded batches. New runtime-contract uncertainty becomes a focused proof task; never mass-edit or add a suppression.",
   },
 ] as const satisfies readonly PatrolDefinition[];
 
@@ -219,16 +219,18 @@ READ FIRST:
 
 RUN CONTRACT:
 - TIER ${patrol.tier}: ${patrol.runInstruction}
-- Scope from the registry's structural-novelty recipe plus open sightings and its periodic full pass. Never scope by raw git churn. Route every verified finding to auto-fixed, manual approval requested, or unresolved with the missing evidence.
+- Scope from the registry's structural-novelty recipe plus open sightings and its periodic full pass. Never scope by raw git churn. Route every verified finding to a standing-authority fix, genuine human decision, or unresolved missing-evidence/machinery task.
 - WORKTREE ISOLATION: run only in the automation worktree. Capture git status, type-check, and relevant detector diagnostics before editing. Never treat unrelated baseline debt as patrol evidence. Use a real worktree-local offline install when dependencies are absent; never symlink node_modules or expose env contents.
 - BASELINE-DELTA CERTIFICATION CONTRACT: every Tier-M batch is at most 15 files and gets a second adversarial agent for the exact candidate. REJECTED requires a concrete new batch-caused defect. Unchanged baseline failures cannot reject. INFRASTRUCTURE BLOCKED preserves and pushes the candidate for retry; never revert valid work because preview, browser, or an unrelated gate failed.
 - ENFORCED PREVIEW LEASE: use only pnpm preview:start/status/stop from this exact worktree. Never reuse another worktree's URL. Read the active memory cap from launcher status; a cap termination is infrastructure evidence, not product rejection.
 - FAST INTEGRATION CONTRACT: commit every coherent batch immediately and push the candidate to a remote ref within ${PATROL_DELIVERY_POLICY.candidateRemoteDeadlineMinutes} minutes so no work is stranded locally. After independent certification records the exact candidate SHA, integrate and push it to origin/main through the normal fast integration workflow within ${PATROL_DELIVERY_POLICY.certifiedMainDeadlineMinutes} minutes. Direct integration is normal in pre-production; do not wait for a special controller or any repository restriction. Preserve the certified candidate as an ancestor when integrating so its evidence still names real code.
 - SERIALIZED RELEASE LANE: deployment and versioned release remain serialized through ./scripts/release.sh. Integration to main is not the release lane. If a newer release already contains the candidate, record that version instead of bumping again.
 - PERMANENT RUN RECORD: append lifecycle events through pnpm patrol:run. The hash-chained run record is history; report, memory, inbox, Git ancestry, and release are projections that must agree. A product change must have independent CERTIFIED evidence before integration. Commit and push the run record with the work so other machines receive it.
+- RESUME UNFINISHED WORK: before starting a new scan, inspect the latest permanent record. If it is awaiting approval, fixing, certifying, infrastructure blocked, delivery queued, or otherwise unfinished, resume and reconcile that exact run and candidate first. Never strand a valid remote candidate, overwrite its report with a new run, or ask Arman to repeat an approval already granted.
 - LOUD FAILURE CONTRACT: if this patrol cannot perform a required read, scan, approved fix, certification, gate, commit, push, report, or memory update, start the final response with "AUTOMATION DEGRADED — ACTION REQUIRED". State the exact missing step and cause. If Arman must act, end with "ARMAN, WE NEED YOU: <one specific next action>." Never make an incomplete run look clean.
 - HUMAN EXCEPTION CONTRACT: an agent may propose an exception but may never clear, suppress, allowlist, or approve one. Keep it open with exact location, reason, stable review artifact, and normal repair. End proposal runs under "EXCEPTION APPROVAL REQUIRED" and ask Arman to approve or reject every item. Only explicit approval creates a typed exception entry and matching source annotation; detectors continue reporting approved exceptions separately.
-- RECURSIVE LEARNING: append one concise learning to memory: what this run proved and the smallest detector, skill, test, manifest, or process change that would improve the next run. Deterministic process improvements may be proposed precisely; product taste and expanded fix authority remain Arman's decisions.
+- PROFESSIONAL IMPROVEMENT AUTHORITY: automatically fix a verified defect or weakness when one remedy is clearly superior, follows a canonical project primitive or demonstrated industry standard, preserves product behavior/contracts, and fits a bounded certified batch. Known bugs, generic states, missing established affordances, and exact doctrine violations do not wait for Arman because an exact callsite recipe is absent. Ask only when legitimate alternatives materially change behavior, policy, workflow, permissions, data meaning, destructive impact, or visual intent. Missing evidence/machinery creates investigation, a focused task, or INFRASTRUCTURE BLOCKED. If a debatable enhancement surrounds a clear core repair, ship the core and ask only about the enhancement.
+- RECURSIVE LEARNING: append one concise learning to memory: what this run proved and the smallest detector, skill, test, manifest, or process change that would improve the next run. Promote proven professional repairs into reusable automatic recipes; genuine product taste and competing outcomes remain Arman's decisions.
 
 FINISH: update sighting outcomes, the permanent record, ${repoRoot}/.matrx/patrol-reports/${patrol.reportSlug}.md, and this automation's memory. Commit promptly and push all owned artifacts. Report findings count, fixed count, certifier verdict, approvals needed, and any degradation. A fully completed zero-finding run is one line.`;
 }
@@ -247,6 +249,7 @@ CHECK:
 - Deployment/version releases remain serialized through release.sh. Run pnpm patrol:delivery:check for release-record consistency, but never recommend slowing or restricting main integration before production readiness.
 - Verify exact-worktree preview ownership and the launcher-reported cap. A preview cap event is INFRASTRUCTURE BLOCKED, never REJECTED. Flag cross-worktree reuse, cap enforcement failure, or valid work reverted because proof infrastructure failed.
 - Findings in a successful report are not fleet failure. Unchanged baseline debt cannot reject. REJECTED names a concrete batch-caused defect. Human approval and missing machinery are distinct states.
+- Flag a patrol that withholds a verified clearly superior bounded repair or asks Arman to approve an obvious professional improvement. Missing evidence should create a focused task; only genuine product choices and exceptions belong in Arman's queue.
 - Never edit product code, another patrol's report, or another patrol's memory. Update only Fleet Health memory with audited ids, evidence, time, and one learning.
 - Speak in plain English: name the patrol's job, what happened, the recommendation, and the exact ask.
 

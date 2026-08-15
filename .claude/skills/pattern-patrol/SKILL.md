@@ -31,19 +31,31 @@ system doc). The repo-specific facts it needs:
   `pnpm patrol:run`; `latest.json` is only a projection). **Reports:** `.matrx/patrol-reports/<id>.md`
   (create the directory on first use; one file per patrol, overwritten each run
   — it carries your scan baseline).
+- **Resume before discovering:** inspect `latest.json` and its permanent record
+  before a new scan. An unfinished approval, fix, certification,
+  infrastructure retry, or delivery resumes with its exact candidate first.
+  Never strand it, overwrite its report, or ask Arman to repeat a decision.
 - **Tiers (from the registry row — when unsure, downgrade):** R = report/rank
   only · M = mechanical fixes per the named skill, batches ≤15 files · C =
   write a precise chip, fix nothing.
-- **Approval routing:** every verified finding is auto-approved by its skill,
-  proposed to Arman for manual approval, or kept open as unresolved with the
-  missing evidence. Tier R forbids unapproved mutation; it still proposes
-  every certain, safe, worthwhile repair. An empty auto-approved set never
-  makes `N findings, 0 fixed` a completed run.
-- **Approval is item-scoped:** fix only the repairs Arman names. An approved
-  Tier-R proposal becomes a bounded Tier-M batch with the normal gates and
-  mandatory adversarial certification. Reports separate auto-approved/fixed,
-  manual approval requested, uncertain exclusions, and the approved batch's
-  verification/certifier verdict.
+- **Professional improvement standing authority:** automatically fix a
+  verified defect or weakness when one remedy is clearly superior, reuses a
+  canonical primitive or demonstrated industry standard, preserves product
+  behavior/contracts, and fits a bounded certified batch. The skill need not
+  enumerate the exact callsite. Known bugs and established quality upgrades do
+  not wait for permission.
+- **Decision routing:** ask Arman only when legitimate alternatives materially
+  change product behavior, policy, workflow, permissions, data meaning,
+  destructive impact, or visual intent. Missing evidence/machinery creates a
+  focused task or infrastructure state. If the core repair is clear and an
+  optional enhancement is debatable, ship the core and ask only about the
+  enhancement. Tier R never turns implementation uncertainty into a pointless
+  approval request.
+- **Human decisions are item-scoped:** when Arman chooses among legitimate
+  alternatives, apply only that decision. The resulting repair still uses a
+  bounded Tier-M batch with normal gates and adversarial certification. Reports
+  separate standing-authority fixes, genuine human decisions, unresolved
+  evidence/machinery, and the batch verification/certifier verdict.
 - **Hard rules, non-negotiable:** never disable a check, add a suppression,
   touch generated files, or change how a component enters a chunk (THE
   FRAGMENTATION LAW — `code-splitting` skill before ANY such change); fixing
@@ -139,8 +151,8 @@ patterns.
   unpushed, or delaying certified work behind a fictitious integration gate.
 - Treating a Markdown report or automation memory as more authoritative than
   the permanent run record, or rewriting an earlier lifecycle event.
-- Stopping after detection because no finding was auto-approved instead of
-  routing the safe repairs to Arman.
+- Stopping after detection when a clearly superior bounded repair is known, or
+  asking Arman to approve an obvious professional improvement.
 - Treating “looks intentional” or “false positive” as approval to suppress it.
 - Growing this skill with per-patrol content — that belongs in the registry row
   or the pattern's own skill.
