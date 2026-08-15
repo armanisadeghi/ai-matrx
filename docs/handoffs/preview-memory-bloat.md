@@ -33,6 +33,20 @@ fix.
   102.8 GB. Later measurements recorded 90.7 GB after `/marketing` and 138.3 GB
   after adding Chat plus Administration. The harness still contains a stale
   16 GB message while the launcher currently defaults to a 192 GB cap.
+- **Independent confirmation, 2026-08-14/15** (marketing navigation session):
+  servers reached **73.5 GB, 106.6 GB, and 128.8 GB**, each within 1–3 minutes of
+  compiling a `/marketing/brands/[brandId]/sites/[siteId]/*` route. `/marketing`
+  alone peaked ~9.7 GB. `.next-preview` reached **117 GB on disk**. At the worst
+  point: `PhysMem 240G used, 15G unused`, with **19 `next` processes** alive from
+  parallel agent sessions — the per-server figure is not the whole cost.
+  Two failure modes were seen and they look identical from the outside: the
+  watchdog reaping (writes only to
+  `<tmp>/matrx-frontend-preview-501/shared-next-dev.failed`, which nobody reads)
+  and the process simply vanishing mid-`○ Compiling …` with no message at all.
+  While the cap was 8 GB this reaped the server on **every** marketing route and
+  read as a mysterious crash; it cost most of a session to identify. A site route
+  is far heavier than `/marketing` itself, so **the site layout's module graph is
+  the sharpest available probe** — worth measuring before the broader sweep.
 
 ## Remaining work
 
