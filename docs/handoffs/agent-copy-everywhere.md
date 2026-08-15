@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-08-08
+updated: 2026-08-15
 repos: [matrx-frontend]
 vision: [.claude/skills/agent-copy/SKILL.md, components/agent-copy/README.md]
 ---
@@ -18,47 +18,72 @@ Per-page expectation (stated for the backlinks reference page, generalizes to an
 
 Refinements he added along the way — each is now doctrine, with the why:
 
+- **THE WHAT-I-SEE LAW** (2026-08-12, in anger — the most important one): the payload is **the rendered surface converted to data**, never a raw record dump. Errors and warnings verbatim, the page's leading KPIs mirrored into every payload on that page, LIVE form state rather than the saved row. A payload that dumps 50k chars of adjacent data while missing the red error the user is staring at is a defect.
 - **Truncated lists must offer the rest.** "We're only showing the top 8. But what if the user wants to see the rest of it? … it wouldn't be hard for us to just make that data available, but someone has to say it." → agents doing big work are expected to *notice* this class themselves.
 - **Export is mandatory.** "There's no export feature. And if there's no export feature, then it's just text that's sitting here."
 - **Copy as JSON** joins the flavors: "When you have data, you wanna also have copy as JSON in addition to the normal copies."
-- **UI integrity is part of the job.** On the table regression: titles in user words ("these are just backlinks", never "stored backlink rows"), counts never in prime real estate pushing the search, header/footer must read as one card with the table, copy icons share existing rows instead of spawning their own. "Be on the lookout for things like that always."
+- **UI integrity is part of the job.** Titles in user words ("these are just backlinks", never "stored backlink rows"), counts never in prime real estate pushing the search, header/footer must read as one card with the table, copy icons share existing rows instead of spawning their own. "Be on the lookout for things like that always."
 - **The Groomer window is a reusable primitive**: "I love the window panel component you made… that can easily be a reusable component across a lot of different pages."
-- **The skill must be Sonnet-executable** — rollout fleets run on Sonnet, never Fable/Opus, to prove the skill carries the quality. (Proven: 3 Sonnet agents shipped 11 pages; one found a truncation gap unprompted.)
-- **Do not merge this skill with `surface-authoring`** — deliberate decision; they cross-point instead. Data-heavy pages still deserve solid surface manifests alongside copy (backlinks manifest was enriched as the example).
-- **The skill is co-designed**: built on a real page with his feedback, "write it and then rewrite it as you learn things… especially learning my preferences." His verdicts arrive via `agent.review_queue`.
+- **Sized to data.** Graded `aiVariants` + `aiCustom` belong on medium/massive surfaces; a small bounded page correctly keeps the plain pair. Choosing the size is part of the job, not a default.
+- **The skill must be Sonnet-executable** — rollout fleets run on Sonnet to prove the skill carries the quality.
+- **Do not merge this skill with `surface-authoring`** — deliberate; they cross-point instead.
 
 ## Resources
 
-- **Doctrine + how-to (read first):** `.claude/skills/agent-copy/SKILL.md`, `components/agent-copy/README.md`.
-- **Primitives:** `components/agent-copy/` — `CopyButtons.tsx` (sizes xs/icon/sm, `json` prop, propagation-stop), `buildAgentPayload.ts` (XML-ish envelope), `ExportMenu.tsx` + `export.ts` (JSON/CSV/text download builders), `AgentCopyGroomerWindow.tsx` + `AgentCopyGroomerLauncher.tsx` + `groomer-types.ts` (page-level groomer: Everything/Balanced/Minimal presets, full/compact/brief/off per-section dials, live char/~token sizes, preview, export; window stays behind the launcher's `dynamic ssr:false`).
-- **Built-in integrations:** `MatrxDataTable` `copy` config → row/view/window/field copy + toolbar ExportMenu (`components/official/matrx-data-table/` — `tableCopy.ts#rowsToCsvFromColumns`, `DataRowInspector` per-field hover copy, `DataRowWindow.headerActions`); `JsonInspector` `agentCopy` prop; marketing `MetricCell` `copy` prop (`features/marketing/components/shared/MarketingUi.tsx`); marketing shared payload helpers `features/marketing/lib/copy-payloads.ts` (`webCopy` et al — extend, don't fork).
-- **Reference page (the exemplar):** `features/marketing/components/backlinks/BacklinksWorkspace.tsx` + `format.ts` — every pattern in one file, including groomer sections and the `copy.showToolbar:false` rule.
-- **Testing:** dev server → `/api/dev-login?token=$DEV_LOGIN_TOKEN&next=/…`. Real data route: `/marketing/brands/1c71e366-143c-4692-8e9a-1b59bdfe114a/sites/7853b973-be56-47cd-bdf3-a55fad9dd0e4/backlinks` (aimatrx.com, owned by the admin@admin.com test user).
-- **Feedback loop:** `agent.review_queue` rows `2ecba5c0-…` (backlinks reference) and `b60b6c75-…` (fleet rollout) await Arman's verdicts — read them before the skill rewrite.
+- **Doctrine + how-to (read first):** `.claude/skills/agent-copy/SKILL.md` (MISSION section, then the module-audit protocol), `components/agent-copy/README.md`.
+- **Primitives:** `components/agent-copy/` — `CopyButtons.tsx` (sizes xs/icon/sm, `json`, `aiVariants`, `aiCustom`), `AiCopyMenu.tsx` (graded variants dropdown + custom-preview dialog; kept in step with aidream `apps/dashboard/src/components/agent-copy/AiCopyMenu.tsx`), `buildAgentPayload.ts`, `ExportMenu.tsx` + `export.ts`, `AgentCopyGroomerWindow/Launcher` + `groomer-types.ts` (incl. `groomerPresetVariants` / `buildGroomerPresetPayload`), shared `clipboard.ts`.
+- **Built-in integrations:** `MatrxDataTable` `copy` config → row/view/window/field copy + toolbar ExportMenu + `copy.aiVariants/aiCustom`; `JsonInspector` `agentCopy`; marketing `MetricCell` `copy`; marketing payload helpers `features/marketing/lib/copy-payloads.ts` (`webCopy`, `keyFieldsAiVariant` — extend, don't fork).
+- **Reference pages:** `features/marketing/components/backlinks/BacklinksWorkspace.tsx` + `format.ts` — every pattern in one file (granularities, groomer sections, graded variants, the `copy.showToolbar:false` rule). `features/marketing/components/audit/AuditWorkspace.tsx` — the **show-all + full-data export + page-KPI** reference (`ShowAllToggle`, render-only preview constants, `auditPageKpis` threaded into every payload).
+- **Testing:** dev server → `/api/dev-login?token=$DEV_LOGIN_TOKEN&next=/…`. Real data route: `/marketing/brands/1c71e366-143c-4692-8e9a-1b59bdfe114a/sites/7853b973-be56-47cd-bdf3-a55fad9dd0e4/backlinks` (aimatrx.com, `admin@admin.com`).
 
 **Known traps:**
-- Multiple agent sessions work `main` concurrently; commits and `release.sh` runs swept sibling sessions' staged/working files three times during this build. Never `git add -A`; check `git diff --cached --stat` before every commit; skip files already dirty from another session. Prefer worktree isolation for fleets. A stale `stash@{0}` from one recovery may still exist — safe to drop.
-- `pnpm type-check` covers the whole repo and often carries OTHER sessions' in-flight errors — gate on zero errors *in files you touched*.
+- `pnpm type-check` covers the whole repo and often carries OTHER sessions' in-flight errors — gate on zero errors *in files you touched*. (It was fully green repo-wide on 2026-08-15.)
 - Adding a `copy` config to `MatrxDataTable` makes its toolbar render; on pages with their own header row set `copy.showToolbar:false` and host view-copy + ExportMenu in that row, or you recreate the orphan-toolbar-row mess Arman flagged.
+- **Shared checkout is the designed workflow** (CLAUDE.md § Shared checkout): stage your own files, commit early and often, never tree-wide destructive git, never ask for your own branch/worktree. The old "prefer worktree isolation for fleets" advice here is superseded — it is now ruled against.
+- A payload name must match the surface manifest's vocabulary. The audit page shipped `gone_pages` for a COUNT while the manifest uses `gone_pages` for the LIST and `pages_gone` for the count; an agent reading both then disagrees with itself. Fixed 2026-08-15 — check your names against the manifest.
 - Vercel builds only `release:`-prefixed commits — plain pushes never deploy.
 
 ## Remaining work
 
-1. **Roll `AiCopyMenu` variants onto existing heavy surfaces.** The multi-variant Copy-for-AI (menu + custom-preview dialog, `components/agent-copy/AiCopyMenu.tsx`) shipped 2026-08-08 (PR #59); the Backlinks header is the only consumer of graded variants so far. Sweep the 11 fleet-wired marketing tabs and upgrade the medium/massive ones per the sized-to-data table in the skill (small/bounded pages correctly keep the plain pair).
-2. **Finish marketing:** site tabs overview / integrations / access / settings; brand-level pages (brands list, brand cockpit); `/marketing` root; content-plan. The Pages tab and `CrawlSubnav` sub-routes (URLs/Reports/Snapshots/Links/Logs — no copy layer yet) were owned by parallel sessions — verify current state before touching.
-3. **App-wide rollout** beyond marketing, Sonnet fleets reading the skill: SKILL.md's remaining list (`tool-registry/mcp-admin`, `feedback`, `system-agents/*`, `agent-apps/*`) and onward. The skill now carries the module-audit protocol — fleets emit the coverage table before wiring.
-4. **Roadmap (design-gated, don't start without Arman):** `buildAgentPayload` auto-folding the active surface manifest's values into `<context>`; screenshot attach (`hooks/useScreenCapture.ts`); Copy-for-AI flipping from clipboard to live agent handoff (keep `kind` slugs stable — they become the tool vocabulary).
-5. **Release:** batch this completed audit work into the next scheduled frontend release.
+### In flight — 7 chips fired 2026-08-15 (each carries its own file list and doctrine brief)
+
+| Chip | Scope | Session |
+|---|---|---|
+| system-agents detail panels | `AgentWidgetsPage` (463 L), `AgentShortcutsPanel` (424 L), `AgentVersionDiffPage` (426 L) — all zero-copy | `session_013zeU9ocv31tyhiUiaZafzf` |
+| ContentBlocksManager | `components/admin/ContentBlocksManager.tsx` (2,578 L, zero copy, mounted at TWO routes) | `session_01Qrb2QoRGxccu8afJdcGg3M` |
+| Form-heavy + what-I-see audit | `AgentAppSettingsContent` (641 L), `agent-apps/edit/[id]` (589 L); audit `FeedbackDetailDialog` (2,771 L) + mcp tool editors for live-state violations | `session_01HexSXPJ4EyPxpY4cxwpWAM` |
+| Access + sharing | `SiteAccessWorkspace` (225 L) + `features/sharing/*` — **the largest zero-coverage hole left**; shared components, so every consumer benefits | `session_01QhBtmWNmuaW9MHoCJnNQ5D` |
+| content-plan module | Zero agent-copy imports module-wide; `NodePanel` (record detail) first, `BriefEditor` under the live-state rule | `session_017DNU1tqsZCKfYJbq53Yapw` |
+| Small verified gaps | `SiteCommandFeed.tsx:279` warnings `.slice(0,10)` with no show-all/export (**hard violation, errors-first class**); `SitesPortfolio.tsx:614` `MatrxDataTable` with no `copy` config | `session_01WZXQcgqYiiXKCLcHrt174Y` |
+| Graded variants + groomers | Crawl URLs/Logs/Snapshots/Reports tables, `PageWorkspace` (5-section record page), `BrandWorkspace` (1,322 L, 4 sections) | `session_01Yc11TPkXCxYWvdV53kuvNJ` |
+
+**Read their reports before re-chipping any of it.** Each was told to update the skill's Rollout status and to name what it deliberately skipped.
+
+### Not yet chipped
+
+1. **Marketing tab partials** — real gaps, but each is small enough to be boy-scout work for whoever next touches the file:
+   - `components/site/SiteOverview.tsx` — has 4 card pairs; **no ExportMenu, no groomer, no variants**; no per-item copy on the attention list (`:1023`), workspace entries (`:1232`), connection chips (`:1299`). Multi-section page → doctrine wants a groomer.
+   - `components/integrations/SiteIntegrationsWorkspace.tsx` — header + per-provider pairs only; no export/groomer/variants; Google connections & resources rows have no per-row copy.
+   - `components/settings/SiteStrategyCard.tsx` — **zero copy** despite rendering interview results + open questions (`:130`). (The rest of the settings tab is wired, and its identity card correctly builds from live form state.)
+2. **The what-I-see payload debt** — everything wired before 2026-08-12 carries raw-dump payloads (the skill's own "Known debt"). The form-heavy slice is chipped above; the remainder is step 4 of the module-audit protocol and is best paid down opportunistically: upgrade the payload of any surface you touch.
+3. **Roadmap (design-gated, don't start without Arman):** `buildAgentPayload` auto-folding the active surface manifest's values into `<context>`; screenshot attach (`hooks/useScreenCapture.ts`); Copy-for-AI flipping from clipboard to live agent handoff (keep `kind` slugs stable — they become the tool vocabulary).
+4. **Release:** this work sits on `main` unreleased — ships via `./scripts/release.sh` on the next scheduled frontend release.
+
+Correctly left alone: `MarketingHub.tsx` (a nav map — non-record, plain pair is the right size), builders/composers (`LiveBuilder`, `AutoCreateAgentAppForm`, `[id]/code`), and `PageLinksCard` (truncates, but already states "+N more … in the copied and exported data" and ships a real ExportMenu).
 
 ## Done
 
-- **Audit rollup rearchitected** (2026-08-08): `buildSiteAuditRollup` now aggregates completely — `topIssues`/`worstPages` carry EVERY ranked entry; truncation happens only at render in `AuditWorkspace` (top 14 / top 10 previews with show-all toggles). Score-trend computation untouched (it reads only counts/passes). Audit tab gained card-level JSON+CSV exports over ALL rows plus a page-level ExportMenu; card copies now cover the full lists; manifest descriptions updated.
-- Primitives + integrations built and browser-verified — see `components/agent-copy/` and the reference page above.
-- **`AiCopyMenu` (2026-08-08, PR #59):** sized-to-data Copy-for-AI — graded variants dropdown (chevron iff multi) + custom-preview dialog with live char/byte/~token counts; `CopyButtons.aiVariants/aiCustom` upgrade-in-place (agent payload = auto "Everything"); `MatrxDataTable copy.aiVariants/aiCustom`; shared `clipboard.ts`. Ported from + kept in step with aidream `apps/dashboard/src/components/agent-copy/AiCopyMenu.tsx`. Backlinks header derives Balanced/Minimal from the one groomer section list.
-- **Skill rewrite done** (module-audit protocol + sized-to-data doctrine folded in) — Arman's 2026-08-08 review feedback was fixture-access-only, no convention changes requested.
-- Backlinks page fully wired (all granularities, groomer, export, show-all); 11 fleet-shipped marketing site tabs; surface manifests verified (`keyword-research`, `marketing-site-keywords`, `marketing-ranks`).
+- **Audit rollup — closed 2026-08-15.** `buildSiteAuditRollup` aggregates completely; `topIssues`/`worstPages` carry every ranked entry and truncation happens only at render (`AuditWorkspace`, preview constants + show-all toggles + JSON/CSV exports over ALL rows). The doctrine survived two later rearchitectures by other sessions: aggregation moved into Postgres (`web.site_audit_rollup` / `web.site_audit_trend`, `migrations/web_site_audit_rollup_server_side.sql`) with **no LIMIT anywhere in the SQL**, and gone-pages reporting was added following the same complete-then-truncate shape (`GONE_PAGE_PREVIEW`). The TS twin is now the executable spec — CHANGE ONE, CHANGE BOTH. 11 unit tests green, incl. a 6,200-page case.
+- **Audit page payloads brought under the what-I-see law** (2026-08-15): one `auditPageKpis(rollup)` feeds metric cells, all three section copies, all three row kinds, and both page-level payloads, so a copied issue row always arrives with the totals the user is looking at.
+- **Catalogue analysis stopped discarding data** (2026-08-15): `CatalogueAnalysisPanel` rendered `openByItem.slice(0, 8)` with no show-all and no export — now previews 8 with an "all N" toggle plus JSON + CSV over every open item. The upstream 5,000-finding sampling stays disclosed, and the JSON export carries `rollupTruncated`/`openFindingsTotal`.
+- **`AiCopyMenu` / graded variants** (PR #59): `aiVariants`/`aiCustom` on `CopyButtons` and `MatrxDataTable`, `groomerPresetVariants`, `keyFieldsAiVariant`. Live on 10 marketing surfaces + 12 non-marketing.
+- **Skill rewrite done** — module-audit protocol, sized-to-data doctrine, and the MISSION/what-I-see section folded in.
+- **App-wide rollout landed**: `tool-registry/mcp-admin` + `mcp-tools`, `feedback` (4 tabs + detail), `system-agents/*` (partial — gaps chipped above), `agent-apps/*` (partial — forms chipped above). None of these modules uses `MatrxDataTable`, so every addition is hand-wiring against each module's existing `format.ts`.
+- **Marketing**: backlinks reference page; 11 fleet-shipped site tabs; Pages tab + all five CrawlSubnav sub-routes (the earlier "no copy layer yet" note was wrong); brands portfolio; surface manifests verified.
 
 ## Decisions needed
 
-- **Org membership for your real accounts (FOUND_DEFECTS D133).** The review items failed with "site was deleted" but nothing was deleted — `arman@allgreenrecycling.com` has viewer access to ZERO marketing sites (member of none of the brand orgs), and RLS-invisible masquerades as deleted. Items repointed at datadestruction.com + resubmitted (visible to `admin@admin.com`). **Decide:** which of your accounts join which orgs (one INSERT each once ruled). *(The second half of this — whether the wording should split deleted vs no-access — is ANSWERED and shipped 2026-08-11: it now splits four ways (denied / deleted / missing / signed-out), names the owner, and offers Request access. See `features/access-gate/FEATURE.md`.)*
-- **Worktree isolation for fleets** (carried): parallel sessions on `main` clobbered each other three times during the original build. **Decide:** should rollout fleets run in isolated git worktrees from now on?
+**None open.** Both prior items were ruled and are recorded here so they are not re-asked:
+
+- *Org membership for the real accounts* — RULED (FOUND_DEFECTS D133, 2026-08-11): AccessGate now splits denied / deleted / missing / signed-out and names the owner; aimatrx.com moved to the shared org; the outsider test account stays memberless by design. The only remainder is a product path to move a site between orgs, tracked as open D133 — not an agent-copy concern.
+- *Worktree isolation for fleets* — RULED against by CLAUDE.md § Shared checkout: one checkout, many agents, commit early and often. Do not re-propose it.
