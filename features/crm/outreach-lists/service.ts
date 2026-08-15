@@ -19,6 +19,7 @@
 //      and a member with no dialable number is marked `suppressed`, never
 //      silently dialed.
 
+import type { Json } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";
 import {
   applyPartyListPredicates,
@@ -293,6 +294,15 @@ export async function fetchExistingMemberPartyIds(
 export async function addMembersByPartyIds(args: {
   list: OutreachListRow;
   partyIds: string[];
+  /**
+   * The motivating record, stamped onto every member this call enrolls
+   * (`reputation_case_id` / `backlink_id`). `SingleSendDialog` reads exactly
+   * these keys to preselect the case behind the message and to carry
+   * attribution (G8) into the draft — so an outreach started from a
+   * reputation case arrives already bound to it instead of asking the user to
+   * find it again. Omitted for ordinary list/filter enrollment.
+   */
+  metadata?: Record<string, string>;
 }): Promise<{ added: number; skippedExisting: number }> {
   const existing = await fetchExistingMemberPartyIds(args.list.id);
   const fresh = Array.from(new Set(args.partyIds)).filter(
@@ -305,6 +315,9 @@ export async function addMembersByPartyIds(args: {
       outreach_list_id: args.list.id,
       party_id: partyId,
       organization_id: args.list.organization_id,
+      ...(args.metadata && Object.keys(args.metadata).length
+        ? { metadata: args.metadata as unknown as Json }
+        : {}),
     }));
     const { error } = await crm().from("outreach_list_member").insert(batch);
     if (error) throw pgError(error);

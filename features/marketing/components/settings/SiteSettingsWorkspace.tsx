@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { CrmFoldControl } from "@/features/crm/components/outreach-start/CrmFoldControl";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { updateSiteSettings } from "@/features/marketing/data/settings-service";
 import { useDeleteSite } from "@/features/marketing/data/hooks";
@@ -262,6 +263,11 @@ export function SiteSettingsWorkspace() {
             </div>
           </div>
         </section>
+
+        {/* 🚨 ONE RECORD, TWO RENDERS — the same `web.site.settings->'crm_fold'`
+            control also renders beside the referring-domain and reputation-case
+            lists, where its consequence is visible. Never two settings. */}
+        <CrmFoldControl siteId={site.id} source="backlink" variant="full" />
 
         <section className="rounded-lg border border-border bg-card">
           <div className="flex h-10 items-center justify-between border-b border-border px-3">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import {
@@ -16,10 +16,12 @@ import {
   Loader2,
   MessageSquareText,
   Newspaper,
+  PencilLine,
   Play,
   Radar,
   RefreshCw,
   SearchCheck,
+  Send,
   ShieldCheck,
   Target,
   X,
@@ -36,6 +38,9 @@ import {
   formatDate,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { CrmFoldControl } from "@/features/crm/components/outreach-start/CrmFoldControl";
+import { StartOutreachDialog } from "@/features/crm/components/outreach-start/StartOutreachDialog";
+import { isReputationOutreachVerdict } from "@/features/crm/outreach-start/service";
 import {
   useReputationWorkspace,
   useUpdateReputationCase,
@@ -156,15 +161,154 @@ function EvidenceReferenceCard({ reference }: { reference: ReputationEvidenceRef
   );
 }
 
+/**
+ * WHAT THE VERDICT ACTUALLY IMPLIES — the end of the dead end.
+ *
+ * Until 2026-08-15 every verdict terminated in "Start action", which only set
+ * `status='in_progress'`: a `pitch` case carrying a live `pitch_angle` had no
+ * way to reach a human being (outreach handoff §3 G9 / §7). Each verdict now
+ * resolves to exactly ONE real next step — and the verdicts that are NOT
+ * outreach are honestly inert rather than sprouting a button that pretends.
+ * A misleading button is worse than none.
+ */
+function CaseVerdictAction({
+  row,
+  sitePath,
+  siteId,
+  organizationId,
+  onRecheck,
+}: {
+  row: ReputationCaseRow;
+  sitePath: string;
+  siteId: string;
+  organizationId: string;
+  onRecheck: () => void;
+}) {
+  const [startOpen, setStartOpen] = useState(false);
+
+  if (isReputationOutreachVerdict(row.verdict)) {
+    // The only refusal here is a case with no outlet to write to — said
+    // plainly, with the one thing that fixes it.
+    if (!row.source_domain) {
+      return (
+        <p className="mt-2 text-[11px] text-muted-foreground">
+          No publication is recorded on this case, so there is nobody to write
+          to yet. Recheck the evidence to attach the source.
+        </p>
+      );
+    }
+    return (
+      <>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <Button size="sm" className="h-7 gap-1.5" onClick={() => setStartOpen(true)}>
+            <Send className="h-3.5 w-3.5" /> Start outreach
+          </Button>
+          <span className="text-[11px] text-muted-foreground">
+            Finds {row.source_domain} in your CRM and adds it to an outreach
+            list. Nothing is sent here.
+          </span>
+        </div>
+        {startOpen && (
+          <StartOutreachDialog
+            open={startOpen}
+            onOpenChange={setStartOpen}
+            target={{
+              siteId,
+              organizationId,
+              domain: row.source_domain,
+              label: row.source_title || row.headline,
+              sourceUrl: row.source_url,
+              motivation: {
+                kind: "reputation_case",
+                caseId: row.id,
+                verdict: row.verdict,
+                pitchAngle: row.pitch_angle,
+              },
+            }}
+          />
+        )}
+      </>
+    );
+  }
+
+  if (row.verdict === "strengthen") {
+    // "Strengthen" is a verdict about OUR OWN asset, not about an outlet —
+    // the action is the page workspace, never an email.
+    const href = row.page_id ? `${sitePath}/pages/${row.page_id}` : `${sitePath}/pages`;
+    return (
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <Button asChild size="sm" variant="outline" className="h-7 gap-1.5">
+          <Link href={href}>
+            <PencilLine className="h-3.5 w-3.5" /> Improve this page
+          </Link>
+        </Button>
+        <span className="text-[11px] text-muted-foreground">
+          This one is about your own content, not about writing to anyone.
+        </span>
+      </div>
+    );
+  }
+
+  if (row.verdict === "protect") {
+    return (
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <Button asChild size="sm" variant="outline" className="h-7 gap-1.5">
+          <Link href={`${sitePath}/reputation?view=narratives`}>
+            <ShieldCheck className="h-3.5 w-3.5" /> See the narratives this supports
+          </Link>
+        </Button>
+        <span className="text-[11px] text-muted-foreground">
+          Good coverage — keep it working for you rather than writing to anyone.
+        </span>
+      </div>
+    );
+  }
+
+  if (row.verdict === "investigate") {
+    return (
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 gap-1.5"
+          onClick={onRecheck}
+        >
+          <SearchCheck className="h-3.5 w-3.5" /> Recheck the evidence
+        </Button>
+        <span className="text-[11px] text-muted-foreground">
+          There is not enough here to act on yet — collect more before deciding.
+        </span>
+      </div>
+    );
+  }
+
+  // `monitor` and `leave_alone`: deliberately no extra action. The lifecycle
+  // row below already carries Monitor and Dismiss, and inventing a third
+  // control would be the pretending this block exists to stop.
+  return (
+    <p className="mt-2 text-[11px] text-muted-foreground">
+      {row.verdict === "monitor"
+        ? "Nothing to do right now — keep it on the watch list with Monitor below."
+        : "No action is the right action here. Dismiss it below when you agree."}
+    </p>
+  );
+}
+
 function CaseCard({
   row,
   sitePath,
+  siteId,
+  organizationId,
   onStatus,
+  onRecheck,
   updating,
 }: {
   row: ReputationCaseRow;
   sitePath: string;
+  siteId: string;
+  organizationId: string;
   onStatus: (status: ReputationCaseStatus) => void;
+  onRecheck: () => void;
   updating: boolean;
 }) {
   const facts = jsonStrings(row.facts);
@@ -205,6 +349,13 @@ function CaseCard({
               <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
                 {row.action_reason}
               </p>
+              <CaseVerdictAction
+                row={row}
+                sitePath={sitePath}
+                siteId={siteId}
+                organizationId={organizationId}
+                onRecheck={onRecheck}
+              />
             </div>
           </div>
         </div>
@@ -293,7 +444,7 @@ function CaseCard({
           </Button>
         ) : null}
         <Button size="sm" variant="outline" className="h-7" disabled={updating} onClick={() => onStatus("in_progress")}>
-          <Flag className="mr-1 h-3.5 w-3.5" /> Start action
+          <Flag className="mr-1 h-3.5 w-3.5" /> Mark in progress
         </Button>
         <Button size="sm" className="h-7" disabled={updating} onClick={() => onStatus("completed")}>
           <Check className="mr-1 h-3.5 w-3.5" /> Complete
@@ -621,8 +772,11 @@ export function ReputationWorkspace() {
                             key={row.id}
                             row={row}
                             sitePath={sitePath}
+                            siteId={site.id}
+                            organizationId={site.organization_id}
                             updating={updateCase.isPending && updateCase.variables?.caseId === row.id}
                             onStatus={(status) => setCaseStatus(row, status)}
+                            onRecheck={() => void analysis.analyze(true)}
                           />
                         ))}
                         {data.cases.length === 0 ? (
@@ -677,13 +831,20 @@ export function ReputationWorkspace() {
 
             {view === "cases" ? (
               <div className="space-y-3">
+                {/* ONE RECORD, TWO RENDERS — the same `crm_fold` setting is
+                    also on the site-settings surface. Beside the cases is where
+                    the consequence is visible. */}
+                <CrmFoldControl siteId={site.id} source="reputation" />
                 {data.cases.map((row) => (
                   <CaseCard
                     key={row.id}
                     row={row}
                     sitePath={sitePath}
+                    siteId={site.id}
+                    organizationId={site.organization_id}
                     updating={updateCase.isPending && updateCase.variables?.caseId === row.id}
                     onStatus={(status) => setCaseStatus(row, status)}
+                    onRecheck={() => void analysis.analyze(true)}
                   />
                 ))}
                 {data.cases.length === 0 ? (

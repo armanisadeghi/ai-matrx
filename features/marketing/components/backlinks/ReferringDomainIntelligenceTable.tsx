@@ -2,7 +2,18 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ExternalLink, Globe2, Loader2, Newspaper, Save } from "lucide-react";
+import {
+  ExternalLink,
+  Globe2,
+  Loader2,
+  Newspaper,
+  Save,
+  Send,
+  ShieldAlert,
+} from "lucide-react";
+import { CrmFoldControl } from "@/features/crm/components/outreach-start/CrmFoldControl";
+import { StartOutreachDialog } from "@/features/crm/components/outreach-start/StartOutreachDialog";
+import { isNonProspectDomainVerdict } from "@/features/crm/outreach-start/service";
 import { toast } from "@/lib/toast";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
@@ -45,6 +56,86 @@ function providerNumber(
   const metrics = jsonRecord(row.provider_metrics);
   const value = metrics[key];
   return typeof value === "number" ? value : null;
+}
+
+/**
+ * The outreach door for a link prospect (outreach handoff §3 G9).
+ *
+ * A `toxic` domain REFUSES with the reason instead of offering a button the
+ * server would reject: the G1 fold skips link farms by design, and a button
+ * that leads to a refusal three clicks later is the dead end this slice exists
+ * to remove. The human's own ruling (`human_ruling.verdict`, saved right below
+ * this on the detail panel) is what changes the answer — so the refusal names
+ * it as the fix.
+ */
+function StartOutreachOnDomain({
+  row,
+  compact,
+}: {
+  row: ReferringDomainProfileRow;
+  compact?: boolean;
+}) {
+  const { site } = useMarketingSite();
+  const [open, setOpen] = useState(false);
+  const existing = jsonRecord(row.human_ruling);
+  const verdict =
+    typeof existing.verdict === "string"
+      ? existing.verdict
+      : (row.opinion_verdict ?? null);
+
+  if (isNonProspectDomainVerdict(verdict)) {
+    const reason = (
+      <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+        <ShieldAlert className="h-3.5 w-3.5 shrink-0" />
+        No outreach: we resolved this as a link farm.
+      </span>
+    );
+    return compact ? (
+      reason
+    ) : (
+      <div className="space-y-1">
+        {reason}
+        <p className="text-[11px] text-muted-foreground">
+          Fix: if you know better, record your own verdict below — outreach
+          follows your ruling, not ours.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <Button
+        size="sm"
+        variant={compact ? "ghost" : "default"}
+        className={compact ? "h-7 gap-1 px-2 text-xs" : "gap-1.5"}
+        onClick={(event) => {
+          event.stopPropagation();
+          setOpen(true);
+        }}
+      >
+        <Send className="h-3.5 w-3.5" /> Start outreach
+      </Button>
+      {open && (
+        <StartOutreachDialog
+          open={open}
+          onOpenChange={setOpen}
+          target={{
+            siteId: row.site_id,
+            organizationId: site.organization_id,
+            domain: row.normalized_domain || row.display_domain,
+            label: row.display_domain,
+            sourceUrl: `https://${row.normalized_domain || row.display_domain}`,
+            motivation: {
+              kind: "backlink",
+              profileId: row.id,
+              verdict,
+            },
+          }}
+        />
+      )}
+    </>
+  );
 }
 
 function DomainDetail({
@@ -100,6 +191,9 @@ function DomainDetail({
         >
           See press opportunities <Newspaper className="h-3.5 w-3.5" />
         </Link>
+      </div>
+      <div className="mt-3">
+        <StartOutreachOnDomain row={row} />
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
         <div className="rounded border border-border p-2">
@@ -266,6 +360,15 @@ export function ReferringDomainIntelligenceTable({
       ),
     },
     {
+      id: "start_outreach",
+      header: "Outreach",
+      sortable: false,
+      filter: false,
+      // THE DOOR to a real conversation, on the row where the opportunity
+      // lives — never a separate outreach console (outreach handoff §7).
+      cell: (row) => <StartOutreachOnDomain row={row} compact />,
+    },
+    {
       id: "provider_rank",
       header: headerWithTooltip("Site authority", DOMAIN_RANK_EXPLAINER),
       sortable: false,
@@ -286,7 +389,11 @@ export function ReferringDomainIntelligenceTable({
     );
   }
   return (
-    <MatrxDataTable
+    <div className="flex min-h-0 flex-1 flex-col gap-2">
+      {/* ONE RECORD, TWO RENDERS — the same `crm_fold` setting is rendered on
+          the site-settings surface too. Here is where its consequence shows. */}
+      <CrmFoldControl siteId={siteId} source="backlink" />
+      <MatrxDataTable
       data={rows}
       columns={columns}
       getRowId={(row) => row.id}
@@ -333,6 +440,7 @@ export function ReferringDomainIntelligenceTable({
         description: backlinkEmptyHint("the websites that link to you"),
       }}
       className="min-h-0 flex-1"
-    />
+      />
+    </div>
   );
 }

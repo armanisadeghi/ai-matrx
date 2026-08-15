@@ -38,6 +38,7 @@ import { EmploymentCard } from "./EmploymentCard";
 import { InteractionTimeline } from "./InteractionTimeline";
 import { PartyNotes } from "./PartyNotes";
 import { OutreachContactCandidatesCard } from "./OutreachContactCandidatesCard";
+import { PartyProvenanceCard } from "./PartyProvenanceCard";
 
 interface Props {
   partyId: string;
@@ -218,6 +219,10 @@ export function PartyRecordPage({ partyId }: Props) {
 
               {/* Activity main */}
               <div className="min-w-0 space-y-3">
+                {/* "Why is this org in my CRM?" — the G1 provenance edge,
+                    rendered as real doors. Renders nothing for a record the
+                    user typed in themselves. */}
+                <PartyProvenanceCard party={party} onChanged={refresh} />
                 {!isPerson && party.primary_domain && (
                   <OutreachContactCandidatesCard outletPartyId={party.id} />
                 )}
