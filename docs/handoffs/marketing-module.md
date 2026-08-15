@@ -7,7 +7,7 @@ vision: [features/marketing/FEATURE.md, .claude/skills/module-landing-pages/SKIL
 
 # Marketing module — consolidation and build-out
 
-The module was **structurally repaired and then given its full intended shape**. The repair is shipped and verified in production; the shape is declared, and the pillars are filling in one by one (ranks, AI Visibility, Competitors so far).
+The module was **structurally repaired and then given its full intended shape**. The repair is shipped and verified in production; the shape is declared, and the pillars are filling in one by one (ranks, AI Visibility, Competitor Autopsy, Initiatives so far — 12 of 16 reserved routes left).
 
 **This doc owns the module SHAPE (pillars, reserved routes, nav, landing). Sibling handoffs own the deep verticals — read the one for the area you touch** (doc-family audit 2026-08-12: siblings verified current; `matrx-marketing-platform-handoff-2026-07-19.md` and `content-plan-client.md` deleted as superseded; the Studio-alignment doc merged into page-workspace-evolution):
 
@@ -88,9 +88,10 @@ Everything else is genuine greenfield; order is Arman's call. **`pnpm check:dead
 
 1. **`git push` deploys NOTHING — only `./scripts/release.sh` builds.** Vercel skips non-release-prefixed commits; the deployment reads `CANCELED` and production stays on the last release. Verify a release with a `READY` deployment whose commit is yours or a descendant (Vercel MCP `list_deployments`, project `prj_ZIeMm2FW8RgOAO9BJgQ2YQcXpwrH`, team `team_zWxJHqDHuRr1kpl9Hu9oON3g`), then assert on a string that exists **only** in the new build.
 2. **Never move a reserved URL once it has shipped.** Permanence is the promise; after ship, a wrong name changes the label, not the href — no exceptions, because someone has the URL. **Before ship there is one narrow carve-out, used exactly once (2026-08-13, `/marketing/campaigns` → `/marketing/initiatives`) and amended into this law in the same change rather than asserted around it:** a reserved stub may be renamed if the promise text the user was shown is unchanged, a permanent 308 leaves the old path working forever, and every generated surface moves in lockstep (`MARKETING_PILLARS`, the coming-soon registry, `routes.ts`, `route-metadata.ts`, the admin map, the hub manifest). The law protects a *destination a user was given*, not a string — the redirect is what keeps that true, so it is not optional. If you cannot add the redirect, you cannot rename.
-3. **Never render a bare "coming soon" string** — register it; unregistered ids throw in dev on purpose.
-4. **`/marketing` must never redirect.** That single line caused the websites over-emphasis this work undid.
-5. **Never add a marketing route to `requiresAuth` in `utils/supabase/middleware.ts`** — guests always get a rendered page; protect at the resource level.
-6. **The scraper is out of scope** (Arman's ruling, §1.4).
-7. **`pnpm check:page-headers` has pre-existing `(dev)`/`(public)` failures** — only act on `(core)` findings.
-8. **Marketing FEATURE.md is large and actively edited by other sessions** — append to the change log; no drive-by restructures.
+3. **A new SCHEMA has four registration surfaces and none of them announce themselves** (learned building `marketing`, 2026-08-15 — each was found by a guard, not by reading): the `db-types` script in `package.json` carries a **hardcoded** schema list, so a new schema is silently missing from `database.types.ts` until it is added there; aidream's `db/matrx_orm.yaml` is a second, separate list; PostgREST exposure is `ALTER ROLE authenticator SET pgrst.db_schemas`, which **replaces the whole value** — read the live setting and append to THAT, because a dropped name is an instant platform-wide PGRST002 outage, not a degraded feature; and a `shareable_resource_registry` row whose `url_path_template` has no matching route FAILS `registry.routes.test.ts`, so it ships with the detail route, never before. Related standing trap: that registry's TS mirror and its committed snapshot can go stale **together**, so the parity test stays green while the FE is missing rows — nine had drifted by 2026-08-15. Run `pnpm check:shareable-registry` (it compares against the LIVE DB) whenever you touch sharing.
+4. **Never render a bare "coming soon" string** — register it; unregistered ids throw in dev on purpose.
+5. **`/marketing` must never redirect.** That single line caused the websites over-emphasis this work undid.
+6. **Never add a marketing route to `requiresAuth` in `utils/supabase/middleware.ts`** — guests always get a rendered page; protect at the resource level.
+7. **The scraper is out of scope** (Arman's ruling, §1.4).
+8. **`pnpm check:page-headers` has pre-existing `(dev)`/`(public)` failures** — only act on `(core)` findings.
+9. **Marketing FEATURE.md is large and actively edited by other sessions** — append to the change log; no drive-by restructures.
