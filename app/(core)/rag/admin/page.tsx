@@ -21,14 +21,6 @@ const RAG_ADMIN_MAP: FeatureAdminMap = {
       label: "Industries FEATURE.md",
       href: "/features/industries/FEATURE.md",
     },
-    {
-      label: "Shared Knowledge handoff",
-      href: "/docs/handoffs/shared-knowledge-access.md",
-    },
-    {
-      label: "Shared Knowledge master plan (P1-P4)",
-      href: "/docs/proposals/shared-knowledge-projects/README.md",
-    },
   ],
   routeScanPath: "app/(core)/rag",
 
