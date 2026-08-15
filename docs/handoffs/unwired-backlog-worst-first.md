@@ -15,7 +15,11 @@ This doc carries the intent hunt already done on the largest items so the next b
   selectors, same `onClose` contract, ten sections vs six (adds streaming, model-settings,
   assembled-request, ui-state). `instanceId` is the same value `adminDebugSlice` stores as `runId`.
 - **`TransformableCard` + `EnhancedDraggableCardBody`** (430 + 337 lines) → mounted from the new
-  `/demos/draggable-cards` page. Their only consumer had been a `(legacy)` route that died with the group.
+  `/demos/draggable-cards` page, verified live on demos.aimatrx.com (drag moves the card and
+  `onPositionChange` fires). Their only consumer had been a `(legacy)` route that died with the group.
+  Mounting them immediately exposed a defect neither had ever been exercised enough to reveal —
+  `TransformableCard` ignores `initialPosition` with more than one card mounted (**D195**, chipped). The
+  demo shows one card and names the limitation in place rather than misrepresenting the primitive.
 
 ## Dispatched — briefs 1, 3, 4, 5, 6, 7, 9 are live chips
 

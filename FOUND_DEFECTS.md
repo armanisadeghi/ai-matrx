@@ -14,6 +14,30 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D195 — `TransformableCard` silently ignores `initialPosition` when more than one is mounted (2026-08-14)
+
+**Surface:** `/demos/draggable-cards` (demos.aimatrx.com). **Action:** mount two `<TransformableCard>` with
+distinct `initialPosition` values in one `<TransformableCardContainer>`. **Wrong outcome:** both render on the
+same origin, the later one hiding the earlier, and `initialPosition` has no visible effect — verified live
+across v0.4.640–v0.4.643.
+
+`components/ui/transformable-card.tsx` wraps its motion layer in
+`<div className="[perspective:3000px] z-20 relative">`. That `relative` makes each card its own containing
+block, and because the wrapper holds only an absolutely-positioned child it has **zero height** — so every
+card anchors to its own collapsed wrapper at the same flow position. Its near-twin
+`components/ui/enhanced-draggable-card.tsx` leaves the wrapper unpositioned, so its absolute layer resolves
+against the consumer's container and `initialPosition` behaves as true container coordinates; that half lays
+out two cards correctly today. The `relative` is probably load-bearing for the `[perspective:3000px]` tilt, so
+this is not a one-line removal. The pill/collapsed branch has the same wrapper shape.
+
+Never hit before because **both components had zero runtime consumers** — their only mounter was
+`/legacy/demo/component-demo/draggables/transformable-cards-demo`, deleted with the `(legacy)` route group.
+`pnpm check:unwired` surfaced them; `/demos/draggable-cards` is the new mounter and currently shows ONE
+`TransformableCard` with an in-place amber note, rather than a section that misrepresents the primitive.
+Remove that note in the change that restores the second card. Chipped to a focused session. Open question for
+Arman in that brief: these are two near-duplicate ~400-line components with the same drag/snap/container
+model — should they converge? Neither may be deleted (unfinished-work alarm).
+
 ### D193 — Four user-content entities can't be shared with an organization at all (2026-08-15)
 
 **Found by the platform-wide scope audit Arman asked for** after the CMS finding ("everything in our database should essentially be the same unless it's truly a private personal thing"). Good news first: of **193 active entity tables**, only 5 lack `organization_id` and 4 of those are correct (`iam.organizations` IS the org; `public.app_log` is a system log; `runtime.global_origin` is D100; `ui.ui_surface` is a registry, chipped). The platform is broadly consistent.
