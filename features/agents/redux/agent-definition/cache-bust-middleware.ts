@@ -16,6 +16,16 @@
  *   - `agentDefinition/promoteVersion/fulfilled`    (past version → live)
  *   - `agentDefinition/updateFromSource/fulfilled`  (derived reset)
  *   - `agentDefinition/purgeVersions/fulfilled`     (version history trim)
+ *   - `agentSettings/saveAgentSettings/fulfilled`   (settings/variables writer)
+ *
+ * NOT the only layer, and deliberately not the load-bearing one. This call can
+ * only evict the ONE python process that answers it, and we run several
+ * (MATRX_ROLE = app_server | worker | sandbox). The load-bearing invalidation
+ * is a Postgres NOTIFY published by a trigger on `agent.definition` itself
+ * (aidream migration 0351 + `aidream/workers/agent_cache_listener.py`), which
+ * reaches every process and covers writers no client hook can see — migrations,
+ * psql, the SQL editor, `agx_*` RPCs, and every direct supabase-js write.
+ * FOUND_DEFECTS D159/D160.
  *
  * Skipped intentionally:
  *   - `create` / `duplicate`  → new row, nothing cached server-side yet
@@ -49,6 +59,18 @@ const WATCHED_ACTION_TYPES = new Set<string>([
   "agentDefinition/promoteVersion/fulfilled",
   "agentDefinition/updateFromSource/fulfilled",
   "agentDefinition/purgeVersions/fulfilled",
+  // Second agent-save path, living in a DIFFERENT slice: `saveAgentSettings`
+  // (`lib/redux/slices/agent-settings/agentSettingsSlice.ts`) writes `settings`
+  // + `variable_definitions` straight to `agent.definition` and never dispatches
+  // an `agentDefinition/*` action. `settings` is where model choice, reasoning
+  // effort and GROUNDING live — so this was the client write that made D159's
+  // "grounding stayed on in production" reproducible while the Builder's own
+  // saves busted correctly. `meta.arg` is `{ agentId }`, already handled below.
+  //
+  // ⚠️ This entry makes the miss harmless; it does not make the path right. Two
+  // parallel writers of one row is the real defect — see FOUND_DEFECTS D159/D160
+  // for the recommendation to fold this onto `agentDefinition/saveField`.
+  "agentSettings/saveAgentSettings/fulfilled",
 ]);
 
 /**
