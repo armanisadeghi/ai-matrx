@@ -522,6 +522,11 @@ system that catches abuse quickly — not a substitute for one.**
 
 ## 5.6 Tier gating — outreach is the platform's FIRST gated feature (Arman, 2026-08-14)
 
+> 🚨 **Read §5.5b immediately above before building this.** Tier and trust are two different
+> inputs to ONE gate: **tier is what they pay for, trust is what they have proven.** An
+> entitlement system that models only tier will have to be torn open later to admit the ladder —
+> so leave room for a second input now, even if only tier is enforced at launch.
+
 **Outreach volume sits behind a paid tier. The free tier does not include it.** Not as monetization
 — as the cheapest abuse filter that exists. Free accounts are what attract the exact behavior that
 gets sending infrastructure blocklisted, which is why every serious platform in this category
