@@ -1,4 +1,80 @@
-import type { PageCoverageFilter } from "@/features/marketing/data/service";
+import type {
+  PageCoverageFilter,
+  SiteCoverageMatrix,
+} from "@/features/marketing/data/service";
+
+const COVERAGE_COUNT_FIELDS = [
+  "totalPages",
+  "knownPageUrls",
+  "unconfirmedCandidates",
+  "resourceUrls",
+  "inSitemaps",
+  "crawled",
+  "neverCrawled",
+  "sitemapNotCrawled",
+  "crawledNoSitemap",
+  "inGsc",
+  "gscNoSitemap",
+  "sitemapNoGsc",
+] as const;
+
+function coverageShapeError(field: string): never {
+  throw new Error(
+    `Site coverage aggregate returned an unexpected shape (${field}). ` +
+      "Check web.site_page_coverage against features/marketing/lib/coverage.ts.",
+  );
+}
+
+function coverageRecord(
+  value: unknown,
+  field: string,
+): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    coverageShapeError(field);
+  }
+  return value as Record<string, unknown>;
+}
+
+function coverageCount(value: unknown, field: string): number {
+  if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0) {
+    coverageShapeError(field);
+  }
+  return value;
+}
+
+/**
+ * Narrow the database aggregate at the read boundary. A missing, fractional,
+ * negative, or otherwise drifted count is a contract defect, never zero.
+ */
+export function parseSiteCoverageMatrix(value: unknown): SiteCoverageMatrix {
+  const root = coverageRecord(value, "coverage");
+  const byProvenance = coverageRecord(
+    root.byProvenance,
+    "coverage.byProvenance",
+  );
+  const counts = Object.fromEntries(
+    COVERAGE_COUNT_FIELDS.map((field) => [
+      field,
+      coverageCount(root[field], `coverage.${field}`),
+    ]),
+  ) as Pick<SiteCoverageMatrix, (typeof COVERAGE_COUNT_FIELDS)[number]>;
+
+  return {
+    ...counts,
+    byProvenance: {
+      gsc: coverageCount(byProvenance.gsc, "coverage.byProvenance.gsc"),
+      sitemap: coverageCount(
+        byProvenance.sitemap,
+        "coverage.byProvenance.sitemap",
+      ),
+      crawl: coverageCount(byProvenance.crawl, "coverage.byProvenance.crawl"),
+      manual: coverageCount(
+        byProvenance.manual,
+        "coverage.byProvenance.manual",
+      ),
+    },
+  };
+}
 
 /**
  * Display copy for the canonical-page coverage filters. ONE place so the
