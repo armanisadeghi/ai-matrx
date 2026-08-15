@@ -67,7 +67,9 @@ tables (AI Models, relationships, …) can cut over to one contract.
 - **Panel icon → `WindowPanel`** with View / Edit sidebar tabs when an edit body exists (`renderEdit` or `detail.render`). `window.onOpen` hydrates edit state without opening the side panel. `detail.render`, every window renderer, and `rowActions` receive record controls (`openDetail`, `closeDetail`, `openWindow`, `closeWindow`) so one record body can close or switch its canonical presentation without reaching into table state. The table retains the opened row snapshot even when a controlled refetch or sort moves it off the current page.
 - **The TABLE owns the detail scroll — a custom body must never re-own it.** `SidePanelSurface` and `DataRowWindow` hand children a bounded cell, and every custom `detail.render` / `viewContent` / `editContent` is now wrapped in a scrolling container by the primitive. Write detail bodies as plain content (`space-y-3 p-3`); do **not** add an `h-full … overflow-y-auto` root. Custom bodies used to have to know this and mostly didn't, so their content silently cut off at the fold with no scrollbar across ~16 surfaces (fixed at this layer 2026-08-12).
 - **UUID cells** always: short prefix (8), full on hover, always-visible copy. FK columns use `cellKind: "fk"` + `fk.onOpen` → WindowPanel of the target (or `"forbidden"`).
-- **Copy** uses `CopyButtons` + `buildAgentPayload` (row + this view).
+- **Copy** uses `CopyButtons` + `buildAgentPayload` (row + this view). When both `selection` and
+  `copy` are configured, the bulk bar automatically exposes Copy / JSON / Copy for AI for the
+  loaded selected rows; consumers add only their domain-specific bulk actions.
 - **Inline edits are deferred** — draft locally, persist only on floating Save pill.
 - **Never static-import `WindowPanel`** from a route — go through `DataRowWindow.dynamic.tsx`.
 - **No barrel `index.ts`.** Import from source files.
@@ -180,6 +182,10 @@ Do not drop these when replacing `AiModelTable`:
 | GenericDataTable              | pagination, empty/loading                        | no sticky / filters / panels            |
 
 ## Change log
+
+- 2026-08-15 — Selected rows inherit the canonical copy contract. Any table configured with
+  both `selection` and `copy` now gets bulk-bar Copy, JSON, and XML-wrapped Copy for AI without
+  consumer wiring; the agent envelope marks `scope="selected"`.
 
 - 2026-08-12 — Absorbed URL ownership into `MatrxDataTable` as the opt-in
   `urlState={{ id }}` contract. Stable `table.<id>.*` namespaces support sibling

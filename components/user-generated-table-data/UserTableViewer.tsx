@@ -18,6 +18,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -48,6 +49,7 @@ import { useTableRealtime } from "@/features/data-tables/hooks/useTableRealtime"
 import {
   bulkWrite,
   deleteField,
+  getCompleteTable,
   getTableMetadata,
   listUserTables,
   upsertCell,
@@ -88,6 +90,7 @@ import {
   useDataTableWriteHandlers,
   type DataTableWriteLiveState,
 } from "@/features/data-tables/hooks/useDataTableWriteHandlers";
+import { TableCopyControls } from "@/features/data-tables/components/TableCopyControls";
 
 interface TableDataRow {
   id: string;
@@ -307,6 +310,9 @@ const UserTableViewer = ({
     string,
     unknown
   > | null>(null);
+  const [selectedRowIds, setSelectedRowIds] = useState<string[]>([]);
+  const lastSelectedRowIndex = React.useRef<number | null>(null);
+  const shiftSelectionRequested = React.useRef(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
@@ -617,6 +623,14 @@ const UserTableViewer = ({
       void loadTables();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tableId]);
+
+  useEffect(() => {
+    // A selection belongs to exactly one dataset; never carry ids into the
+    // next table when an embedded viewer switches in place.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSelectedRowIds([]);
+    lastSelectedRowIndex.current = null;
   }, [tableId]);
 
   // --- Column filtering -------------------------------------------------
@@ -960,6 +974,47 @@ const UserTableViewer = ({
     if (!hasColumnFilters) {
       loadTableData(currentPage, limit, null, "asc", searchTerm);
     }
+  };
+
+  /**
+   * One complete, sorted/filtered row source for Copy, Copy for AI, and the
+   * custom picker. This deliberately reuses the same RPC as full export, so a
+   * direct copy never means "only the currently-loaded page".
+   */
+  const loadRowsForCopy = async (): Promise<TableDataRow[]> => {
+    const complete = await getCompleteTable({
+      tableId,
+      sortField,
+      sortDirection,
+    });
+    if (isServiceFailure(complete)) throw new Error(complete.error);
+
+    let rows: TableDataRow[] = complete.data.rows.map((row) => ({
+      id: row.id,
+      data: row.data,
+    }));
+    const query = searchTerm.trim().toLowerCase();
+    if (query) {
+      rows = rows.filter((row) =>
+        Object.values(row.data).some((value) => {
+          const text =
+            typeof value === "object" && value !== null
+              ? JSON.stringify(value)
+              : String(value ?? "");
+          return text.toLowerCase().includes(query);
+        }),
+      );
+    }
+    rows = applyColumnFilters(rows);
+    if (sortField) {
+      rows = smartSort(
+        rows,
+        sortField,
+        sortDirection,
+        getFieldDataType(sortField),
+      );
+    }
+    return rows;
   };
 
   // Handle search
@@ -1585,6 +1640,42 @@ const UserTableViewer = ({
     hasColumnFilters && loadingFullDataset && !fullDatasetCache;
   const showLoadingRow = loading || filteringInProgress;
 
+  const selectedRowIdSet = new Set(selectedRowIds);
+  const selectedOnPageCount = displayRows.filter((row) =>
+    selectedRowIdSet.has(row.id),
+  ).length;
+  const allRowsOnPageSelected =
+    displayRows.length > 0 && selectedOnPageCount === displayRows.length;
+  const someRowsOnPageSelected =
+    selectedOnPageCount > 0 && !allRowsOnPageSelected;
+
+  const togglePageSelection = () => {
+    const next = new Set(selectedRowIds);
+    for (const row of displayRows) {
+      if (allRowsOnPageSelected) next.delete(row.id);
+      else next.add(row.id);
+    }
+    setSelectedRowIds([...next]);
+    lastSelectedRowIndex.current = null;
+  };
+
+  const toggleRowSelection = (index: number, checked: boolean) => {
+    const next = new Set(selectedRowIds);
+    const anchor = lastSelectedRowIndex.current;
+    const shift = shiftSelectionRequested.current && anchor !== null;
+    const from = shift ? Math.min(anchor, index) : index;
+    const to = shift ? Math.max(anchor, index) : index;
+    for (let cursor = from; cursor <= to; cursor += 1) {
+      const row = displayRows[cursor];
+      if (!row) continue;
+      if (checked) next.add(row.id);
+      else next.delete(row.id);
+    }
+    setSelectedRowIds([...next]);
+    lastSelectedRowIndex.current = index;
+    shiftSelectionRequested.current = false;
+  };
+
   // ─── Publish live surface state (synchronous, every render) ───────────────
   //
   // `displayRows` — not `data` — is what the user can actually see once column
@@ -1805,8 +1896,49 @@ const UserTableViewer = ({
           setAllSortedData(null);
           loadTableData(currentPage, limit, null, "asc", searchTerm, true);
         }}
+        copyControls={
+          <TableCopyControls
+            tableId={tableId}
+            tableName={tableInfo.table_name}
+            fields={fields}
+            selectedRowIds={selectedRowIds}
+            loadRows={loadRowsForCopy}
+          />
+        }
         toolbarTrailing={toolbarTrailing}
       />
+
+      {selectedRowIds.length > 0 && (
+        <div className="flex shrink-0 flex-wrap items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-2 py-1.5">
+          <span className="text-xs font-medium">
+            {selectedRowIds.length.toLocaleString()}{" "}
+            {selectedRowIds.length === 1 ? "row" : "rows"} selected
+          </span>
+          {!allRowsOnPageSelected && displayRows.length > 0 && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs"
+              onClick={togglePageSelection}
+            >
+              Select this page
+            </Button>
+          )}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs"
+            onClick={() => {
+              setSelectedRowIds([]);
+              lastSelectedRowIndex.current = null;
+            }}
+          >
+            Clear selection
+          </Button>
+        </div>
+      )}
 
       {/* Table. In fillHeight mode the grid is the ONLY flexible band and owns
           the scroll (`min-h-0` so flex lets it actually shrink); otherwise it
@@ -1821,6 +1953,24 @@ const UserTableViewer = ({
         <Table className="table-fixed w-full">
           <TableHeader>
             <TableRow className="hover:bg-transparent">
+              <TableHead className="sticky left-0 top-0 z-30 w-10 bg-gray-100 px-3 dark:bg-gray-800">
+                <Checkbox
+                  checked={
+                    allRowsOnPageSelected
+                      ? true
+                      : someRowsOnPageSelected
+                        ? "indeterminate"
+                        : false
+                  }
+                  onCheckedChange={togglePageSelection}
+                  disabled={displayRows.length === 0}
+                  aria-label={
+                    allRowsOnPageSelected
+                      ? "Clear selection on this page"
+                      : "Select all rows on this page"
+                  }
+                />
+              </TableHead>
               {fields.map((field) => {
                 const isSorted = sortField === field.field_name;
                 const filterValue = columnFilters[field.field_name] ?? "";
@@ -1885,6 +2035,7 @@ const UserTableViewer = ({
                   key={`skeleton-${r}`}
                   className={r % 2 === 1 ? "bg-muted/10" : ""}
                 >
+                  <TableCell className="py-3" />
                   {fields.map((field, c) => (
                     <TableCell
                       key={`skeleton-${r}-${field.id}`}
@@ -1910,7 +2061,7 @@ const UserTableViewer = ({
             ) : displayRows.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={fields.length + 1}
+                  colSpan={fields.length + 2}
                   className="text-center py-8"
                 >
                   {hasColumnFilters
@@ -1924,6 +2075,7 @@ const UserTableViewer = ({
                   key={row.id}
                   className={`
                     ${index % 2 === 0 ? "bg-white dark:bg-gray-950" : "bg-gray-50 dark:bg-gray-900"}
+                    ${selectedRowIdSet.has(row.id) ? "bg-primary/5" : ""}
                     hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${isReadOnly ? "cursor-default" : "cursor-pointer"}
                   `}
                   onClick={() => {
@@ -1934,6 +2086,22 @@ const UserTableViewer = ({
                     handleEditRow(row.id, row.data);
                   }}
                 >
+                  <TableCell
+                    className="sticky left-0 z-10 w-10 bg-inherit px-3"
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <Checkbox
+                      checked={selectedRowIdSet.has(row.id)}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        shiftSelectionRequested.current = event.shiftKey;
+                      }}
+                      onCheckedChange={(checked) =>
+                        toggleRowSelection(index, checked === true)
+                      }
+                      aria-label={`Select row ${index + 1}`}
+                    />
+                  </TableCell>
                   {fields.map((field) => {
                     const rawValue = row.data[field.field_name];
                     const cellData =
