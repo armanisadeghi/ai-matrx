@@ -273,6 +273,20 @@ Same wire consumer in `ImageAssetUploader`'s Generate tab.
 
 ## Change Log
 
+- **2026-08-14** — `describeFile` adopted the canonical headless-JSON primitive:
+  the local `waitForExtraction`/`pollForExtraction` copy in `useImageStudio.ts`
+  (the LAST hand-rolled instance of the D126 wait-loop class, kept alive because
+  the shortcut-trigger + attached-resource launch shape wasn't supported) is
+  deleted. The launch path is unchanged (trigger `autoRun:false` → `addResource`
+  → `executeInstance` — the autoRun anti-pattern TODO still stands until the
+  launcher carries resources), but the wait/settle/result-resolution/retention
+  now runs through `adoptHeadlessAgentJson`
+  (`features/agents/redux/execution-system/thunks/run-headless-agent-json.ts`),
+  called with `keepInstance: true` because this hook's own `finally` owns
+  conversation teardown for every path including pre-execute failures. Result
+  unwrapping (`image_metadata` wrapper or bare object → `coerceImageMetadata`)
+  stays local. Live-verified at `/images/convert` (describe applied filename +
+  alt text + caption from a real run).
 - **2026-08-12** — Added the third Convert write target, `image_description`,
   and the read twin that was blocking it. The manifest previously listed
   per-file names and AI metadata under "not writable" for two reasons; only

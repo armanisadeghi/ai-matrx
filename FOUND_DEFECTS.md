@@ -120,20 +120,6 @@ Until both clear, `Convert → Save as contact` opens, parses, and reviews corre
 is written.
 
 
-### D189 — dataset Strict Validation + Authenticated Access have NO live UI (2026-08-14)
-
-Found while converting dataset reads off `get_user_table_complete`; unrelated to that change.
-`components/user-generated-table-data/TableSettingsModal.tsx` is the only surface carrying the
-**Strict Validation** toggle (`udt_datasets.validation_mode`) and the Authenticated Access
-switch — and nothing mounts it. `TableToolbar.tsx:495` renders `TableConfigModal` for the gear
-instead, and that modal's own "Table Settings" tab has no `validation_mode` control at all
-(`grep validation_mode TableConfigModal.tsx` → nothing). So P1's strict-mode enforcement can be
-reached only by an agent write or raw SQL; a user cannot turn it on. `pnpm check:unwired`
-already flags the file (`scripts/unwired/report.json`). Decide which modal owns table settings,
-then port the two controls into it and delete the loser — do not leave two settings modals.
-`TableSettingsModal`'s own read path is current (it was moved onto `getTableMetadata` in the
-same change, which also fixed its switch reading "permissive" for every dataset).
-
 ### D158 remainder — persisted DataRef and legacy dynamic-table contracts still use bare names (2026-08-13)
 
 Two contracts cannot be re-keyed safely without data/API migration. (1) `features/scopes/registry/entityRegistry.ts#UNIQUE_TABLE_NAME_TO_TOKEN` and `DataRefHoverPreview.tsx` consume `DataRef.table`; aidream's `packages/matrx-ai/matrx_ai/db/content_types/data_ref.py` persists the values `notes/tasks/projects/organizations`. Switching one side would break historical message blocks and generated API types; migrate the wire values to entity tokens or `schema.table` across DB rows, Python, generated types, and frontend together. (2) `workbench.udt_datasets.table_name` is a user-facing dataset label keyed by `(user_id, table_name)`, not a physical relation, but its column/API name makes it indistinguishable from one; rename it to `dataset_key`/`label` only with the workbench RPC, data, and generated-type migration. The contained 33-function legacy `p_table_name` family remains D123 and must be removed as already decided, not re-signatured piecemeal.
@@ -480,9 +466,9 @@ All 4 `tool.mcp_user_conn` rows `expired` with null `credential_item_id`; zero `
 
 Docs fixed 2026-08-12 (FEATURE.md rewritten as an index card; CLAUDE.md row corrected). Open: `(popup)`/`popup-window` is an unused BroadcastChannel demo — **decide (Arman):** make it the branded OAuth-return page (`docs/handoffs/google-oauth-product-build.md`) or delete it.
 
-### D126 — 22 hand-rolled copies of the headless "launch agent → poll → extract JSON" loop (2026-08-04)
+### D126 — RESOLVED 2026-08-14: hand-rolled copies of the headless "launch agent → poll → extract JSON" loop (2026-08-04)
 
-The canonical thunk (`execute-builtin-with-extraction.thunks.ts`) has ONE consumer; 22 files re-implement it inline (`features/education/**` ×13, `features/flashcards/**` ×5, `useKindRequest.ts`, `content-plan/setup/ai.ts`), each with its own timeout/poll/error/cleanup. Fix: one `useHeadlessAgentJson(agentId, variables)` hook over the thunk, then convert in per-feature batches with that feature's manual path exercised — never blind.
+The original 22 (`features/education/**` ×13, `features/flashcards/**` ×5, `useKindRequest.ts`, `content-plan/setup/ai.ts`) all converted to `runHeadlessAgentJson` / `useHeadlessAgentJson`. A 23rd copy outside the original list — `useImageStudio.ts`'s `waitForExtraction`, kept alive because its shortcut-trigger + attached-resource launch shape wasn't supported by the primitive — converted 2026-08-14 via the new `adoptHeadlessAgentJson` entry point (adopt an already-executed `requestId`+`conversationId` into the canonical wait/settle/result-resolution/retention machinery). Any future launch shape the primitive can't express gets adopted the same way, never re-polled by hand.
 
 ### D125 (remainder) — stale `platform.entity_types` rows silently denying access (2026-08-04)
 
@@ -686,6 +672,7 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 
 One line per fix — title, date, pointer. History lives in git. Entries older than ~2 weeks get deleted.
 
+- **D189** — Strict Validation is reachable at last: the toggle moved into `TableConfigModal`'s Table Settings tab (the modal the gear actually opens), saving through `setValidationMode()`; the never-mounted `TableSettingsModal` is DELETED. Authenticated Access was deliberately not ported — `udt_datasets` has no `authenticated_read` column and `update_user_table_metadata` ignores `p_authenticated_read`, so that switch could never save anything. Browser-verified on `/data/…`: toggle on → toast → survives a hard reload as ON, and with strict armed the DB refuses both a missing required field and a non-numeric value (`udt_validate_row` P0001) (`aa49f1190`). 2026-08-15.
 - **D191** — the orphan-trigger retirement's kept-set assertion now names BOTH deliberate keeps (`platform.dead_relation_write()` + `workflow.plan_touch_row()`); `retire_orphan_updated_at_trigger_helpers.sql` applied live and the shared applier is unblocked. The assertion did its job — it refused to retire 19 functions while an un-triaged 20th orphan existed, and `workflow.plan_touch_row()` turned out to be matrx-graph's standalone-deployment fallback that must NOT be retired. 2026-08-14.
 - **D164 (the duplicate)** — `keyword_set` deactivated via the canonical `content_ir.set_kind_activation` gate (reversible, not deleted) after the investigation proved both kinds identical from birth; `keyword_variant_set` survives — it holds the only real component and the only bound agent, `keyword_set` had zero consumers. Verified live: **0** fingerprint collisions remain between active `user_authored` kinds. Arman's call, 2026-08-15. Mint-time guard → D164 remainder.
 - **D187** — platform-wide public-ancestor → internal-descendant cross-tenant read closed in all four IAM kernels (`iam_public_visibility_boundary`); stranger growth loop/stage/view = `0/0/0`, creators and explicit descendant shares preserved. 2026-08-13.
