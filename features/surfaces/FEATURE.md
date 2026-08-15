@@ -847,11 +847,13 @@ internal platform use — never a washed-down user variant beside a private one:
   `status`, `priority`, `work_priority`, `admin_decision`, `assigned_to`,
   `category_id` — which is governance, not authoring. The
   `FeedbackDetailDialog` fields that look most agent-shaped (`admin_direction`,
-  `admin_notes`, the user-reply compose box) are omitted on REACHABILITY, not
-  taste: that dialog is modal too, and the only way to make them live would be
-  the handler opening a feedback record itself, i.e. the agent choosing WHICH
-  user's report to act on. If that triage view ever grows a non-modal path,
-  those three are the first fields to add).
+  `admin_notes`, the user-reply compose box) remain undeclared because the
+  selected record and live form are not bridged into the page-scoped store.
+  The dialog itself is now non-modal and browser-verified beside both the
+  Agents header and floating agent window; `onInteractOutside` preserves
+  unsaved drafts, while Cancel and Escape still close it. Physical reachability
+  is fixed; the next surface pass must publish the already-open detail view and
+  add read twins + draft handlers without choosing a record for the admin).
   `matrx-admin/agent-slots` (2 ask-policy targets on the slots console —
   `slot_exemplar_draft`, a partial `{label?, variables?, user_input?}` object
   staged into the test bench's "+ Exemplar" composer by `SlotTestBench` via
@@ -1890,6 +1892,7 @@ on the first.
 
 ## Change Log
 
+- **2026-08-15 — Feedback detail is agent-reachable, but its surface remains honestly partial.** `FeedbackDetailDialog` uses the shared Dialog's `modal={false}` path and blocks outside dismissal, so the Agents header and floating agent input stay interactive without sacrificing unsaved drafts; Cancel and Escape remain intact. Browser proof covered all four behaviors. `matrx-admin/feedback` is not promoted because its runtime still omits the selected feedback item and live detail form; the manifest now names that emitter/writeback gap without the obsolete modality blocker.
 - **2026-08-15 — Every `/p` render path emits its surface; agent apps declared as TWO surfaces.** `useAgentApp` passed `runtime: undefined` to the launcher, so every shell-based agent app (chat / form_to_result / widget / fully_custom) launched with no `runtime.surfaceName` — only no-shell apps (`CustomComponentRenderer`) were wired. The hook now takes an optional `surface` binding, launches with `surfaceName` + scope, and registers the live runtime from the hook (new `useSurfaceRuntimeRegistration` in `SurfaceRuntimeContext.tsx` — the provider twin for hosts with early returns; wrapping shell JSX would re-register on every gate/branch flip). DECISION, written into `public-agent-app.manifest.ts`: `/p/[slug]` emits `matrx-public/p` (guest fingerprint + run-limit vocabulary), and the authed workspace runs (`/agent-apps/[id]/run`, editor preview, code preview) stay on `matrx-user/agent-apps`, already emitted by the `[id]` layout — they pass NO binding and the launch auto-adopts it, so no third surface and no nested `matrx-public/p` shadowing an owner's authoring run (a bug the old hardcoded `CustomComponentRenderer` provider had). Remaining `/p` gap, recorded in `readinessNote`: on shell paths the instance is created at mount, so `user_input` / `form_variable_values` are empty in the mapped launch scope — `smartExecute` does not re-run value_mappings at submit. DB synced via `migrations/surface_sync_public_agent_app_20260815.sql` (applied + ledgered).
 
 - **2026-08-15 — Last four admin stubs now emit.** `matrx-admin/{knowledge,skills,reporting,utilities}` are `partial` with browser verification pending. Emitters live at each state owner; multi-tool/tab families use active nested providers so equal-depth siblings cannot race. Skills now passes `ADMIN_SKILLS_SURFACE_NAME` into `SkillDetailEditor`, activating its existing write-handler seam. Knowledge excludes Growth Loop and Utilities excludes Kind Registry exactly as their manifests require. `check:surface-drift` is green; `type-check` has no errors from this change (the gate remains red on unrelated marketing work already in the dirty tree).

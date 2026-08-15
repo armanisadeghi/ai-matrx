@@ -24,7 +24,8 @@
  * registry the announcement dialogs and the categories tab publish their live
  * state and setters into. The triage table's and work queue's own row state is
  * still not bridged, so nothing about a specific feedback item is emitted —
- * see readinessNote.
+ * even though its detail dialog is now physically reachable beside agent chat.
+ * See readinessNote.
  *
  * What an agent bound here may safely do: read which tab the admin is on, read
  * whichever announcement or category editor is open, and draft the COPY in it.
@@ -155,19 +156,15 @@ const surfaceSpecific: SurfaceValue[] = [
  * agent-shaped copy on the page. `FeedbackDetailDialog` holds three genuinely
  * authored fields — `admin_direction` (instructions for the agent that will do
  * the work), `admin_notes` (internal triage notes), and a compose box for a
- * reply to the user — and a first pass at this surface would declare all three.
- * They are omitted on REACHABILITY, which is a correctness argument, not a
- * squeamish one: that dialog is a Radix modal, and a Radix modal sets
- * `pointer-events: none` on the body, so the floating agent chat cannot be
- * typed into while it is open. An admin therefore cannot open a feedback record
- * and then ask for help with it. The only way to make those targets live would
- * be for the handler to OPEN a feedback record itself — which means the agent
- * choosing WHICH user's report to act on, and that is record selection on the
- * admin's behalf, exactly what the mode gate below exists to prevent. A target
- * that can only ever fire into an already-open modal is correct-looking dead
- * code; better to say so here than to ship two of them. If the triage dialog
- * ever grows a non-modal path (a detail pane, a route), those three fields are
- * the first thing that should be added to this surface.
+ * reply to the user. The dialog is now deliberately non-modal, so the floating
+ * agent window and Agents header remain interactive while it is open; an
+ * outside-interaction guard preserves unsaved edits, while Escape and its own
+ * controls still close it. That fixes physical reachability only. The detail
+ * form still publishes no handle into `FeedbackConsoleEditorStore`, so this
+ * provider cannot read the selected feedback record or stage those drafts
+ * without choosing a record on the admin's behalf. The next surface pass must
+ * bridge the already-open detail view, declare read twins, and register draft
+ * handlers before these targets can be truthful.
  *
  * WHY THE ANNOUNCEMENT FIELDS ARE ONE PARTIAL-PATCH OBJECT — the deliberate
  * call between the two precedents:
@@ -250,7 +247,7 @@ export const adminFeedbackManifest: SurfaceManifest = {
   surfaceName: ADMIN_FEEDBACK_SURFACE_NAME,
   readiness: "partial",
   readinessNote:
-    "Manifest + FeedbackManagementContainer emitter wired (the container mounts the surface's only SurfaceRuntimeProvider and services both write targets through the page-scoped FeedbackConsoleEditorStore registry). Remaining: the feedback triage table and work queue still emit nothing about a specific feedback item — FeedbackTable/WorkQueueTab hold their row and detail-dialog state privately and are not bridged into the registry, so the authored fields inside FeedbackDetailDialog (admin_direction, admin_notes, the user-reply compose box) are neither readable nor writable; that dialog is also a modal, which makes those targets unreachable from the agent chat today (see the writeTargets docblock). Also: no `data-surface-value` anchors, and no DB mirror of writeTargets.",
+    "FeedbackManagementContainer emitter + announcement/category write targets are wired. FeedbackDetailDialog is now non-modal and browser-verified beside the Agents header/floating agent window; outside interaction preserves unsaved edits, and Cancel/Escape still close it. Remaining: FeedbackTable/WorkQueueTab do not bridge the selected feedback record or live detail-form state into FeedbackConsoleEditorStore, so admin_direction, admin_notes, and the user-reply draft are still neither surface values nor write targets. Also: no `data-surface-value` anchors, and no DB mirror of writeTargets.",
   label: "Feedback & Announcements",
   urlPattern: "/administration/users/feedback",
   intro: `<surface_intro>
