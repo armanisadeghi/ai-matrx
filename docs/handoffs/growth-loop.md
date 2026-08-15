@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-08-14
+updated: 2026-08-15
 repos: [matrx-frontend, aidream]
 vision:
   [
@@ -11,8 +11,13 @@ vision:
 
 # Growth Loop — finish the run, then make it healthy
 
-The twelve-stage loop RUNS. 18 of 21 gaps are closed, five real brands have loops, and the
-supervisor advances stages with no human. What remains is health, not capability.
+The twelve-stage loop RUNS and the machine is healthy — the supervisor does **334 runs / 0
+failures** per 3h, having produced 396 stage runs, 1,196 events, 337 scored stages and 377
+recorded decisions across 6 loops.
+
+🚨 **But every loop is STALLED — 4 blocked, 1 paused, 1 cancelled, zero active, and no loop has
+ever completed cycle 1.** The supervisor is fine; the loops are stuck on four causes, three of
+which are chipped and one of which only Arman can clear. **Write-back has never been reached.**
 
 ## Vision — Arman's words
 
@@ -59,11 +64,25 @@ Settled by Arman, 2026-08-13 — **never re-ask these** (full list in the system
 
 ## Remaining work
 
-1. **Supervisor is sick — 1,916 of 2,150 runs failing.** 1,913 are ONE loop
-   (`26560438-08ff-40dc-ae58-b37de3d8d7d7`) throwing `InterfaceError: cannot perform operation:
-   another operation is in progress` every 30s since 02:51 — an asyncpg connection reused
-   concurrently, not a logic fault. Fix the concurrency AND the fact that one row can fail 1,913
-   times silently. `aidream/services/growth_loop/supervisor.py`.
+0. 🚨 **ARMAN — ONE CLICK, NOT A CODE TASK. Enable the Google Analytics Data API on Google Cloud
+   project `34576215171`** (https://console.developers.google.com/apis/api/analyticsdata.googleapis.com/overview?project=34576215171).
+   Live error blocking the "Data Destruction, Inc." loop at *measure*:
+   `GA4 Data API PERMISSION_DENIED: Google Analytics Data API has not been used in project
+   34576215171 before or it is disabled.` Nothing in either repo can fix this. It also keeps
+   `G-MEASURE-SCHEDULE` open.
+1. **Every loop is stalled — the four causes, verified 2026-08-15.** The supervisor is healthy;
+   these are what it is blocked ON:
+   - **`measure` spins then blocks** — "All Green Recycling" has 289 completed measure attempts
+     (max attempt 304) across only 3 distinct stages, and is blocked on `PSI HTTP 400: NO_FCP`.
+     "PBW Law" blocked on `FAILED_DOCUMENT_REQUEST`. `aidream/services/seo/pagespeed_health.py`
+     ALREADY classifies both as terminal and quarantines them — the loop's measure stage simply
+     does not consult it. **Chipped.**
+   - **A dispatch vanished** — "Cosmetic Injectables" sat open on `research` for 2,094 minutes;
+     the supervisor raised `StagePointerDeadline`: *"nothing was ever doing this stage's work.
+     Whatever was dispatched to carry it never recorded itself."* **Chipped.**
+   - **GA4** — item 0 above, Arman's click.
+   - The supervisor's own concurrency fault (1,913 failures on one loop) is **FIXED** — 0 failures
+     in the last 3h.
 2. **Scheduled tasks — mostly closed 2026-08-14; ONE external blocker left.** The cumulative
    `failed` totals that made these look broken never decrease, which is what made three repaired
    tasks read as still failing. Verified against `scheduler.sch_run`, not against totals:
@@ -105,7 +124,11 @@ Settled by Arman, 2026-08-13 — **never re-ask these** (full list in the system
 
 - The run object, its router, and the human + code pipes — `aidream/services/growth_loop/`,
   `features/growth-loop/run/`.
-- Supervisor advances stages unattended; 89 stage runs across 11 stages, 45 scored.
+- Supervisor advances stages unattended and is HEALTHY — 334 runs / 0 failures per 3h; 396 stage
+  runs across 11 stages, 337 scored, 377 supervisor decisions. Its asyncpg concurrency fault
+  (1,913 failures on one loop) is fixed.
+- Scheduled-task silence is fixed — THE SCHEDULER REPEAT GUARD (aidream 0.2.75) escalates on three
+  ceilings and raises one deduped assist on the schedule owner.
 - Publish→crawl, templates, research triggers, plan-status, CMS identity, findings→assists
   (pg_cron sweep), finding→fix, pipe primitive's AI leg, human→AI escalation sweeper, sitemap /
   robots / collections, crawl schedule + dual-world collapse, plan-drift UI.
@@ -119,7 +142,8 @@ Settled by Arman, 2026-08-13 — **never re-ask these** (full list in the system
 
 ## Decisions needed
 
-**None blocking.** Two worth Arman's eye when convenient:
+**One is blocking and it is not a code decision: enable the GA4 Data API (item 0).** Two more worth
+Arman's eye when convenient:
 
 - **Situation:** The supervisor ticks every 30 seconds per loop. With five loops that is already
   2,150 runs in a day; at a hundred client sites it is a large continuous load.
