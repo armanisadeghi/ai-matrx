@@ -1680,6 +1680,12 @@ export interface KeywordResearchList {
   keywords?: string[];
 }
 
+export interface KeywordVolumeBatchFailure {
+  batch_index: number;
+  keyword_count: number;
+  error: string;
+}
+
 export interface KeywordVolumeBatchReceipt {
   run_id: string;
   keyword_count: number;
@@ -1695,6 +1701,7 @@ export interface KeywordVolumeRefreshResult {
   fetched_phrases?: number;
   rejected_phrases?: KeywordVolumeRejectedPhrase[];
   batches?: KeywordVolumeBatchReceipt[];
+  failed_batches?: KeywordVolumeBatchFailure[];
 }
 
 export interface KeywordVolumeRejectedPhrase {
