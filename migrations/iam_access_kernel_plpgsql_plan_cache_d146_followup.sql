@@ -215,6 +215,19 @@ ANALYZE web.site;
 -- there is a platform-wide slowdown, which is exactly what happened.
 ALTER TABLE platform.associations SET (autovacuum_analyze_scale_factor = 0.02);
 
+-- Created while diagnosing the bad plan above. ANALYZE alone was enough to fix
+-- `_edu_can_read_via_assignment` (the planner picks `idx_assoc_source_live`
+-- there, not this one), so this index is NOT what closed that defect — it is
+-- kept because it independently earned its place: 5,916 scans for 1,035 tuples
+-- read in its first two hours live, i.e. 0.17 rows per scan. Compare
+-- `idx_assoc_target_live`, which has read 880 MILLION tuples over 4.6 M scans
+-- (191 rows per scan) — that ratio is the same mis-planning class, elsewhere,
+-- and is worth its own pass. Recorded here rather than left as undocumented
+-- live DDL.
+CREATE INDEX IF NOT EXISTS idx_assoc_source_target_role_live
+  ON platform.associations (source_type, source_id, target_type, role)
+  WHERE deleted_at IS NULL;
+
 
 -- =====================================================================
 -- 2. The file lane, re-expressed in plpgsql. Expressions copied verbatim.
