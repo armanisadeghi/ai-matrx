@@ -9,12 +9,21 @@
 import { NextResponse } from 'next/server';
 import twilio from 'twilio';
 import { validateTwilioWebhook } from '@/lib/communications/providers/twilio/webhook-validation';
-import { processInboundSms, isPhoneNumberOptedOut } from '@/lib/sms/receive';
-import type { InboundSmsPayload } from '@/lib/sms/types';
+import {
+  claimInboundSmsReceipt,
+  classifySmsPolicyKeyword,
+  completeInboundSmsReceipt,
+  isPhoneNumberOptedOut,
+  parseInboundSmsPayload,
+  processInboundSms,
+  releaseInboundSmsReceipt,
+  resolveSmsInboundContext,
+} from '@/lib/sms/receive';
 
 const WEBHOOK_PATH = '/api/webhooks/twilio/sms';
 
 export async function POST(request: Request) {
+  let claimedReceiptId: string | null = null;
   try {
     // Validate Twilio signature
     const { valid, params, error: validationError } = await validateTwilioWebhook(request, WEBHOOK_PATH);
@@ -24,21 +33,60 @@ export async function POST(request: Request) {
       return new NextResponse('Forbidden', { status: 403 });
     }
 
-    const payload = params as InboundSmsPayload;
+    const payload = parseInboundSmsPayload(params);
     const twiml = new twilio.twiml.MessagingResponse();
-
-    // Check if sender is opted out
-    const optedOut = await isPhoneNumberOptedOut(payload.From);
-    if (optedOut) {
-      // Twilio handles STOP/START keywords at the carrier level too,
-      // but we double-check in our DB
+    const receipt = await claimInboundSmsReceipt(payload);
+    claimedReceiptId = receipt.receiptId;
+    if (!receipt.processable) {
       return new NextResponse(twiml.toString(), {
         headers: { 'Content-Type': 'text/xml' },
       });
     }
 
-    // Process the inbound message (store in DB, create/find conversation)
-    const result = await processInboundSms(payload);
+    const context = await resolveSmsInboundContext(payload);
+    if (context.status !== 'resolved') {
+      await completeInboundSmsReceipt(
+        receipt.receiptId,
+        null,
+        `${context.status}:${context.reason}`,
+      );
+      return new NextResponse(twiml.toString(), {
+        headers: { 'Content-Type': 'text/xml' },
+      });
+    }
+
+    const policyKeyword = classifySmsPolicyKeyword(payload);
+
+    // START/STOP/HELP must be stored before opt-out enforcement so the existing
+    // consent trigger and canonical CRM adapter can reconcile the user's choice.
+    if (policyKeyword) {
+      await processInboundSms(payload, {
+        receipt,
+        context,
+        aiProcessingStatus: 'skipped',
+        skipReason: `policy_keyword_${policyKeyword}`,
+      });
+      return new NextResponse(twiml.toString(), {
+        headers: { 'Content-Type': 'text/xml' },
+      });
+    }
+
+    const optedOut = await isPhoneNumberOptedOut(context.source, context.organizationId);
+    if (optedOut) {
+      await completeInboundSmsReceipt(receipt.receiptId, null, 'sender_opted_out');
+      return new NextResponse(twiml.toString(), {
+        headers: { 'Content-Type': 'text/xml' },
+      });
+    }
+
+    const assistantReady =
+      context.assistantEnabled && context.agentMessagesEnabled && Boolean(context.agentId);
+    await processInboundSms(payload, {
+      receipt,
+      context,
+      aiProcessingStatus: assistantReady ? 'pending' : 'skipped',
+      skipReason: assistantReady ? undefined : 'assistant_not_configured_or_paused',
+    });
 
     // For AI agent conversations, we don't send an immediate auto-reply
     // since the AI will respond asynchronously. For other cases,
@@ -52,11 +100,16 @@ export async function POST(request: Request) {
   } catch (err) {
     console.error('Error processing inbound SMS webhook:', err);
 
-    // Return 200 to prevent Twilio from retrying on application errors
-    // (we've already logged the webhook payload to sms_webhook_logs)
+    if (claimedReceiptId) {
+      await releaseInboundSmsReceipt(
+        claimedReceiptId,
+        err instanceof Error ? err.message : 'Unknown inbound SMS processing error',
+      );
+    }
     const twiml = new twilio.twiml.MessagingResponse();
     return new NextResponse(twiml.toString(), {
       headers: { 'Content-Type': 'text/xml' },
+      status: claimedReceiptId ? 500 : 400,
     });
   }
 }
