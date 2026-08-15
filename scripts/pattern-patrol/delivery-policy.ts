@@ -129,7 +129,11 @@ export function authorizePatrolCommit(input: {
     return problems;
   }
 
-  const candidateSha = trailers.candidateSha!;
+  const candidateSha = trailers.candidateSha;
+  if (!candidateSha) {
+    problems.push("certified patrol delivery is missing Patrol-Candidate");
+    return problems;
+  }
   const certification = [...record.events]
     .reverse()
     .find(
@@ -221,8 +225,8 @@ export function checkContainedBlockedCandidates(input: {
     problems.push(...validation.map((problem) => `${path}: ${problem}`));
     if (validation.length > 0) continue;
     const latest = record.events.at(-1);
-    if (!latest || latest.state !== "infrastructure_blocked") continue;
-    const candidateSha = latest.blocker?.preservedSha;
+    if (!latest || !["infrastructure_blocked", "escaped_delivery"].includes(latest.state)) continue;
+    const candidateSha = latest.blocker?.preservedSha ?? latest.escape?.candidateSha;
     if (!candidateSha) continue;
     const contained = spawnSync("git", ["merge-base", "--is-ancestor", candidateSha, head], {
       cwd: repoRoot,
@@ -232,7 +236,7 @@ export function checkContainedBlockedCandidates(input: {
     );
     if (contained && !delivered) {
       problems.push(
-        `${path}: infrastructure-blocked candidate ${candidateSha} is already contained by ${head} without a DELIVERED reconciliation`,
+        `${path}: ${latest.state} candidate ${candidateSha} is already contained by ${head} without a DELIVERED reconciliation`,
       );
     }
   }

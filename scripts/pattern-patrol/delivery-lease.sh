@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-STATE_DIR="${MATRX_PATROL_DELIVERY_STATE_DIR:-${TMPDIR:-/tmp}/matrx-pattern-patrol-delivery-${UID:-$(id -u)}}"
+STATE_DIR="/tmp/matrx-pattern-patrol-delivery-${UID:-$(id -u)}"
 LOCK_DIR="$STATE_DIR.lock"
 OWNER_FILE="$LOCK_DIR/owner"
 
@@ -18,6 +18,16 @@ alive() {
   [[ "$pid" =~ ^[0-9]+$ ]] && kill -0 "$pid" 2>/dev/null
 }
 
+process_start() {
+  ps -o lstart= -p "${1:-}" 2>/dev/null | sed 's/^[[:space:]]*//'
+}
+
+owner_is_current() {
+  local pid
+  pid="$(owner_value PID)"
+  alive "$pid" && [[ "$(owner_value PROCESS_START)" == "$(process_start "$pid")" ]]
+}
+
 acquire() {
   local pid="${1:-}" root="${2:-}" run="${3:-general-release}" attempt owner_pid token
   [[ "$pid" =~ ^[0-9]+$ ]] || fail "acquire requires the owning PID"
@@ -29,6 +39,7 @@ acquire() {
       {
         echo "TOKEN=$token"
         echo "PID=$pid"
+        echo "PROCESS_START=$(process_start "$pid")"
         echo "ROOT=$root"
         echo "RUN=$run"
         echo "ACQUIRED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -37,8 +48,12 @@ acquire() {
       return 0
     fi
     owner_pid="$(owner_value PID)"
-    if [[ -n "$owner_pid" ]] && ! alive "$owner_pid"; then
+    if [[ -f "$OWNER_FILE" ]] && ! owner_is_current; then
       rm -f "$OWNER_FILE"
+      rmdir "$LOCK_DIR" 2>/dev/null || true
+      continue
+    fi
+    if [[ ! -f "$OWNER_FILE" ]] && [[ $attempt -gt 20 ]]; then
       rmdir "$LOCK_DIR" 2>/dev/null || true
       continue
     fi

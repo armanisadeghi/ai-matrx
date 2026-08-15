@@ -4,6 +4,7 @@ import {
   readFileSync,
   rmSync,
   renameSync,
+  statSync,
   unlinkSync,
   writeFileSync,
 } from "node:fs";
@@ -78,6 +79,11 @@ function processIsAlive(pid: number): boolean {
   }
 }
 
+function lockIsExpired(lockDir: string, acquiredAt?: string): boolean {
+  const timestamp = acquiredAt ? Date.parse(acquiredAt) : statSync(lockDir).mtimeMs;
+  return !Number.isFinite(timestamp) || Date.now() - timestamp > 15 * 60 * 1000;
+}
+
 function pause(milliseconds: number): void {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, milliseconds);
 }
@@ -114,13 +120,25 @@ export function withPatrolRunLease<T>(
       const code = (error as NodeJS.ErrnoException).code;
       if (code !== "EEXIST") throw error;
       try {
-        const owner = JSON.parse(readFileSync(ownerPath, "utf8")) as { pid?: number };
-        if (typeof owner.pid === "number" && !processIsAlive(owner.pid)) {
+        const owner = JSON.parse(readFileSync(ownerPath, "utf8")) as {
+          pid?: number;
+          acquiredAt?: string;
+        };
+        if (
+          (typeof owner.pid === "number" && !processIsAlive(owner.pid)) ||
+          lockIsExpired(lockDir, owner.acquiredAt)
+        ) {
           rmSync(lockDir, { recursive: true, force: true });
           continue;
         }
       } catch {
-        // The winner may be between mkdir and writing owner.json. Give it time.
+        // The winner may be between mkdir and writing owner.json. Reclaim only
+        // after the lease deadline so a crash in that small window cannot
+        // strand the fleet forever.
+        if (lockIsExpired(lockDir)) {
+          rmSync(lockDir, { recursive: true, force: true });
+          continue;
+        }
       }
       pause(100);
     }
@@ -139,7 +157,9 @@ export function savePatrolRun(repoRoot: string, record: PatrolRunRecord): string
     }
   }
   atomicWrite(path, canonicalPatrolRecordJson(record));
-  writeLatestProjection(repoRoot, record);
+  withPatrolRunLease(repoRoot, record.patrolId, "latest-projection", () =>
+    writeLatestProjection(repoRoot, record),
+  );
   return path;
 }
 
@@ -147,6 +167,21 @@ export function writeLatestProjection(repoRoot: string, record: PatrolRunRecord)
   const latestEvent = record.events.at(-1);
   if (!latestEvent) throw new Error("run record has no events");
   const path = join(patrolRunsRoot(repoRoot), safeSegment(record.patrolId, "patrol id"), "latest.json");
+  if (existsSync(path)) {
+    try {
+      const current = JSON.parse(readFileSync(path, "utf8")) as { updatedAt?: string };
+      if (
+        current.updatedAt &&
+        Number.isFinite(Date.parse(current.updatedAt)) &&
+        Date.parse(current.updatedAt) > Date.parse(latestEvent.at)
+      ) {
+        return path;
+      }
+    } catch {
+      // A corrupt projection is replaceable; the immutable run records remain
+      // authoritative and the loud verifier will report the repair.
+    }
+  }
   atomicWrite(
     path,
     `${JSON.stringify(

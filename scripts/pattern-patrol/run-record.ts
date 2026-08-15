@@ -8,6 +8,7 @@ export const PATROL_RUN_STATES = [
   "certified",
   "rejected",
   "infrastructure_blocked",
+  "escaped_delivery",
   "delivery_queued",
   "delivered",
   "reversed",
@@ -36,6 +37,13 @@ export interface PatrolDelivery {
   release?: string;
 }
 
+export interface PatrolEscape {
+  candidateSha: string;
+  integratedSha: string;
+  release: string;
+  reason: string;
+}
+
 export interface PatrolRunEvent {
   sequence: number;
   state: PatrolRunState;
@@ -46,6 +54,7 @@ export interface PatrolRunEvent {
   certification?: PatrolCertification;
   blocker?: PatrolBlocker;
   delivery?: PatrolDelivery;
+  escape?: PatrolEscape;
   previousEventHash: string | null;
   eventHash: string;
 }
@@ -68,6 +77,7 @@ export interface PatrolRunEventInput {
   certification?: PatrolCertification;
   blocker?: PatrolBlocker;
   delivery?: PatrolDelivery;
+  escape?: PatrolEscape;
 }
 
 const TRANSITIONS: Record<PatrolRunState, readonly PatrolRunState[]> = {
@@ -77,7 +87,8 @@ const TRANSITIONS: Record<PatrolRunState, readonly PatrolRunState[]> = {
   certifying: ["certified", "rejected", "infrastructure_blocked"],
   certified: ["delivery_queued", "infrastructure_blocked", "reversed"],
   rejected: ["fixing"],
-  infrastructure_blocked: ["fixing", "certifying", "delivery_queued"],
+  infrastructure_blocked: ["fixing", "certifying", "delivery_queued", "escaped_delivery"],
+  escaped_delivery: ["certifying", "reversed"],
   delivery_queued: ["delivered", "infrastructure_blocked", "reversed"],
   delivered: ["reversed", "closed"],
   reversed: ["fixing", "closed"],
@@ -176,6 +187,19 @@ function validateEventRequirements(
       nonEmpty(event.delivery.release ?? "", "release identifier");
     }
   }
+
+
+  if (event.state === "escaped_delivery") {
+    if (!event.escape) throw new Error("escaped_delivery events require escaped-delivery details");
+    for (const [label, value] of [
+      ["escaped candidate SHA", event.escape.candidateSha],
+      ["escaped integration SHA", event.escape.integratedSha],
+      ["escaped release", event.escape.release],
+      ["escaped reason", event.escape.reason],
+    ] as const) {
+      nonEmpty(value, label);
+    }
+  }
 }
 
 export function createPatrolRunRecord(input: {
@@ -248,6 +272,7 @@ export function appendPatrolRunEvent(
     certification: input.certification,
     blocker: input.blocker,
     delivery: input.delivery,
+    escape: input.escape,
     previousEventHash: previous.eventHash,
   };
   const event: PatrolRunEvent = { ...withoutHash, eventHash: hashEvent(withoutHash) };
@@ -329,7 +354,7 @@ export function canQueuePatrolDelivery(
 }
 
 export function isPrivilegedPatrolState(state: PatrolRunState): boolean {
-  return ["certified", "delivery_queued", "delivered", "reversed"].includes(state);
+  return ["certified", "escaped_delivery", "delivery_queued", "delivered", "reversed"].includes(state);
 }
 
 export function canonicalPatrolRecordJson(record: PatrolRunRecord): string {

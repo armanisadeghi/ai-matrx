@@ -32,6 +32,9 @@ function parseArgs(argv: string[]): Args {
   return { command, values };
 }
 
+function one(args: Args, key: string): string;
+function one(args: Args, key: string, required: true): string;
+function one(args: Args, key: string, required: false): string | undefined;
 function one(args: Args, key: string, required = true): string | undefined {
   const values = args.values.get(key) ?? [];
   if (values.length > 1) throw new Error(`--${key} may appear only once`);
@@ -65,8 +68,8 @@ function eventFromArgs(args: Args): PatrolRunEventInput {
   return {
     state,
     at: now(args),
-    actor: one(args, "actor")!,
-    summary: one(args, "summary")!,
+    actor: one(args, "actor"),
+    summary: one(args, "summary"),
     evidence: many(args, "evidence"),
     certification:
       state === "certified" && candidateSha && certifierTaskId
@@ -92,8 +95,8 @@ function main(): void {
   const args = parseArgs(process.argv.slice(2));
   if (!args.command || args.command === "help") usage();
   const repoRoot = resolve(one(args, "repo", false) ?? process.cwd());
-  const patrolId = one(args, "patrol")!;
-  const runId = one(args, "run")!;
+  const patrolId = one(args, "patrol");
+  const runId = one(args, "run");
   const path = patrolRunPath(repoRoot, patrolId, runId);
 
   if (args.command === "init") {
@@ -102,10 +105,10 @@ function main(): void {
       const record = createPatrolRunRecord({
         patrolId,
         runId,
-        baseSha: one(args, "base")!,
+        baseSha: one(args, "base"),
         createdAt: now(args),
-        actor: one(args, "actor")!,
-        summary: one(args, "summary")!,
+        actor: one(args, "actor"),
+        summary: one(args, "summary"),
         evidence: many(args, "evidence"),
       });
       return savePatrolRun(repoRoot, record);
@@ -121,9 +124,9 @@ function main(): void {
   }
   if (args.command === "publish") {
     const record = loadPatrolRun(path);
-    const authorityRef = one(args, "authority-ref")!;
-    const candidateSha = one(args, "candidate")!;
-    const actor = one(args, "actor")!;
+    const authorityRef = one(args, "authority-ref");
+    const candidateSha = one(args, "candidate");
+    const actor = one(args, "actor");
     const commit = publishPatrolRunAuthority({
       repoRoot,
       record,
@@ -150,23 +153,54 @@ function main(): void {
     return;
   }
   if (args.command === "certify") {
-    const authorityRef = one(args, "authority-ref")!;
-    const candidateSha = one(args, "candidate")!;
-    const actor = one(args, "actor")!;
-    const certifierTaskId = one(args, "certifier-task")!;
+    const authorityRef = one(args, "authority-ref");
+    const candidateSha = one(args, "candidate");
+    const actor = one(args, "actor");
+    const certifierTaskId = one(args, "certifier-task");
     const savedPath = withPatrolRunLease(repoRoot, patrolId, runId, () => {
       const record = loadPatrolRun(path);
       const next = appendPatrolRunEvent(record, {
         state: "certified",
         at: now(args),
         actor,
-        summary: one(args, "summary")!,
+        summary: one(args, "summary"),
         evidence: many(args, "evidence"),
         certification: {
           verdict: "CERTIFIED",
           candidateSha,
           certifierTaskId,
           checks: many(args, "check"),
+        },
+      });
+      publishPatrolRunAuthority({
+        repoRoot,
+        record: next,
+        candidateSha,
+        authorityRef,
+        actor,
+      });
+      return savePatrolRun(repoRoot, next);
+    });
+    console.log(savedPath);
+    return;
+  }
+  if (args.command === "record-escape") {
+    const candidateSha = one(args, "candidate");
+    const actor = one(args, "actor");
+    const authorityRef = one(args, "authority-ref");
+    const savedPath = withPatrolRunLease(repoRoot, patrolId, runId, () => {
+      const record = loadPatrolRun(path);
+      const next = appendPatrolRunEvent(record, {
+        state: "escaped_delivery",
+        at: now(args),
+        actor,
+        summary: one(args, "summary"),
+        evidence: many(args, "evidence"),
+        escape: {
+          candidateSha,
+          integratedSha: one(args, "integrated-sha"),
+          release: one(args, "release"),
+          reason: one(args, "reason"),
         },
       });
       publishPatrolRunAuthority({
