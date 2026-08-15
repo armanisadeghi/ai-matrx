@@ -401,7 +401,11 @@ Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) 
   - Two adjacent defects found and spun off, NOT fixed here: `code_file`'s entity-registry href
     `/code?tab=code-file:{id}` is aspirational (the code workspace never reads `?tab=`, so the
     Open door lands on the workspace without the file); and root `CLAUDE.md` still claims `.md`
-    links route through `/admin/docs/<path>`, which resolves nowhere.
+    links route through `/admin/docs/<path>`, which resolves nowhere. *(The second was closed
+    2026-08-14: `/admin/docs` was the pre-2026-06-29 viewer, deleted in `fd132b06a` when the
+    DB-backed feature-docs viewer replaced it; `CLAUDE.md` now names the real route and
+    `featureDocViewHref`. The emptied `feature_doc` registry row stays empty — that viewer is
+    keyed by repo PATH, which no `{id}`/`{slug}` template can express.)*
 - 2026-08-13 — **D158 key shape hardened.** Sharing and organization-module RPCs now accept canonical entity tokens only; bare physical table aliases were removed. Unknown tokens raise. The frontend resolver and visibility service removed their table-name fallback, and module catalogue keys no longer fall back to a physical table name. Guard/queue identities use exact `schema.table` pairs.
 - 2026-08-13 — **No share page sends its recipient to an auth wall** (Arman ruling, above). New
   `lenses/source-surface.ts` resolves the per-share-type destination; consumed by the `/s/[token]`

@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 
 import { getCurrentUserAdminStatus } from "@/utils/auth/adminUtils";
+import { featureDocViewHref } from "@/features/feature-docs/sync-utils";
 import { scanRoutesShallow } from "@/utils/route-discovery";
 import { cn } from "@/lib/utils";
 import type {
@@ -270,14 +271,13 @@ function WindowPanelDriftWarning({
 
 /**
  * Resolve a `FeatureAdminDocLink.href` to the right open-in-new-tab target.
- * Repo-relative `.md` paths route through the DB-backed feature docs viewer.
- * External URLs pass through unchanged.
+ * Repo-relative `.md` paths route through the DB-backed feature docs viewer
+ * via its canonical href builder (`featureDocViewHref`) — never hand-built
+ * here, so a viewer route change moves both. External URLs pass through.
  */
 function docHref(link: FeatureAdminDocLink): string {
   if (/^https?:\/\//.test(link.href)) return link.href;
-  const clean = link.href.replace(/^\/+/, "");
-  const segments = clean.split("/").map(encodeURIComponent).join("/");
-  return `/administration/documentation/feature-docs/view/${segments}`;
+  return featureDocViewHref(link.href);
 }
 
 export default async function FeatureAdminPage({ map }: FeatureAdminPageProps) {

@@ -263,6 +263,29 @@ const claims: Claim[] = [
     fix: "git mv .cursor/skills/<name> .claude/skills/<name>. Skills live in ONE place; .cursor/skills is not read by Claude Code.",
   },
   {
+    id: "feature-doc-viewer-route",
+    claim:
+      "admin-map `.md` links route through the feature-docs viewer, whose path CLAUDE.md names",
+    where: "CLAUDE.md § Per-feature admin map",
+    check: () => {
+      // The stale name `/admin/docs/<path>` outlived its route by six weeks
+      // (deleted in fd132b06a, 2026-06-29, when the DB-backed viewer replaced
+      // the filesystem one). Assert the doc names the prefix the canonical
+      // href builder actually emits, and that the route leaf exists.
+      const utils = readIfExists("features/feature-docs/sync-utils.ts");
+      if (!utils) return "features/feature-docs/sync-utils.ts is missing — featureDocViewHref has no home";
+      const prefix = /featureDocViewHref[\s\S]{0,300}?return\s+`(\/[^$`]*)\$\{/.exec(utils)?.[1];
+      if (!prefix) return "could not read the route prefix out of featureDocViewHref";
+      const trimmed = prefix.replace(/\/$/, "");
+      if (!CLAUDE_MD.includes(trimmed)) {
+        return `featureDocViewHref emits ${trimmed}/… but CLAUDE.md names a different doc-viewer route`;
+      }
+      const leaf = `app/(admin)${trimmed}/[[...path]]/page.tsx`;
+      return existsSync(join(ROOT, leaf)) ? null : `${trimmed} has no route leaf at ${leaf}`;
+    },
+    fix: "Move the doc and the route together: featureDocViewHref (features/feature-docs/sync-utils.ts) is the single href builder, and CLAUDE.md § Per-feature admin map must name the same path.",
+  },
+  {
     id: "proxy-not-middleware",
     claim: "proxy.ts (not middleware.ts) — auth, route guards, redirects only",
     where: "CLAUDE.md § Core invariants",
