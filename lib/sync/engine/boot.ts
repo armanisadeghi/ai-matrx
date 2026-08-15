@@ -1,9 +1,14 @@
 /**
  * lib/sync/engine/boot.ts
  *
- * `bootSync(store, identity)` — invoked by Providers before children render.
- * The awaited portion is strictly synchronous localStorage work (R1). Peer
- * hydration and (Phase 2+) IDB reads run in the background.
+ * `bootSync(store, identity)` — invoked by `SyncBootstrap` in React's
+ * post-hydration layout phase. Its localStorage phase dispatches synchronously
+ * once invoked; peer hydration and IDB reads continue in the background.
+ *
+ * Never invoke this during a Provider render. Persisted state can change DOM
+ * structure, which makes the first client tree differ from the server HTML and
+ * triggers React hydration error #418. Pre-paint DOM-only concerns (theme)
+ * belong to `SyncBootScript`, not Redux hydration.
  *
  * Lifecycle (awaited):
  *   1. Open the channel.
@@ -358,10 +363,9 @@ function attachChannelListener(
 }
 
 /**
- * Synchronous boot. The caller awaits the returned promise, but the work
- * inside is synchronous — the promise is already resolved. The `async`
- * signature preserves the option to add awaited sources in later phases
- * (cookies in Phase 3) without breaking callers.
+ * The localStorage phase is synchronous once boot begins. The `async`
+ * signature preserves the background IDB/remote lifecycle and keeps callers
+ * on one stable contract.
  */
 export async function bootSync(options: BootOptions): Promise<BootResult> {
     const started = typeof performance !== "undefined" ? performance.now() : 0;

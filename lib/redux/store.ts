@@ -38,6 +38,7 @@ import {
   createSyncMiddleware,
   type SyncEngineApi,
 } from "@/lib/sync/engine/middleware";
+import { bootSync } from "@/lib/sync/engine/boot";
 import { openSyncChannel, type SyncChannel } from "@/lib/sync/channel";
 import { deriveIdentity } from "@/lib/sync/identity";
 import { syncPolicies } from "@/lib/sync/registry";
@@ -93,8 +94,10 @@ function splitUserData(user: UserData): {
 const sagaMiddleware = createSagaMiddleware();
 
 /**
- * Sync engine context attached to the store as `_sync`. Consumed by
- * `StoreProvider` to drive `bootSync` without double-opening the channel.
+ * Sync engine context attached to the store as `_sync`. `SyncBootstrap`
+ * consumes it to call `boot()` after React hydration commits.
+ * Keeping the exactly-once guard on the store prevents remounts from opening
+ * duplicate channels, listeners, and refresh timers.
  *
  * Phase 5 adds `engineApi` — a getter for the engine's external API
  * (isPendingEcho + flushAutoSave). Consumers (notes realtime middleware,
@@ -107,6 +110,8 @@ export interface StoreSyncContext {
   setIdentity: (next: IdentityKey) => void;
   /** Phase 5: read the engine's external API. Null until middleware constructs. */
   engineApi: () => SyncEngineApi | null;
+  /** Idempotently hydrate persisted slices and attach sync listeners. */
+  boot: () => Promise<void>;
 }
 
 function resolveUserPreferencesForBootstrap(
@@ -218,6 +223,7 @@ export const makeStore = (initialState?: Partial<BaseReduxState>) => {
     devTools: process.env.NODE_ENV !== "production",
   });
 
+  let bootPromise: Promise<void> | null = null;
   const syncContext: StoreSyncContext = {
     channel: syncChannel,
     identity: initialIdentity,
@@ -228,6 +234,27 @@ export const makeStore = (initialState?: Partial<BaseReduxState>) => {
       syncContext.identity = next;
     },
     engineApi: () => engineApiRef.current,
+    boot: () => {
+      if (bootPromise) return bootPromise;
+
+      bootPromise = bootSync({
+        store,
+        identity: syncContext.identity,
+        policies: syncPolicies,
+        openChannel: () => syncContext.channel,
+        // Runtime identity swaps must be visible to stale refreshes without
+        // opening a second channel or re-running persisted hydration.
+        getIdentity: () => syncContext.getIdentity(),
+      })
+        .then(() => undefined)
+        .catch((error: unknown) => {
+          // Loud recovery: allow a later mount to retry a failed bootstrap.
+          bootPromise = null;
+          throw error;
+        });
+
+      return bootPromise;
+    },
   };
   const storeWithSync = Object.assign(store, { _sync: syncContext });
 

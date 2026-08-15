@@ -1,14 +1,15 @@
 // providers/StoreProvider.tsx
 //
-// Synchronous client-side store bootstrap. On the client the store is a
+// Synchronous client-side store creation. On the client the store is a
 // module-level singleton so it survives React remounts (HMR, route-level
-// re-renders, parent key changes) — `useRef` alone is per-instance and was
-// re-running `bootSync` on every remount, leaking a fresh BroadcastChannel +
-// channel listener each time.
+// re-renders, parent key changes). Persisted-state hydration is deliberately
+// NOT performed here: dispatching during the first client render changes the
+// tree React is hydrating and causes React #418. `SyncBootstrap` starts the
+// store-owned, idempotent boot in the post-hydration layout phase instead.
 //
 // SSR path: `typeof window === "undefined"` — skip the module cache, create a
-// per-render store via `useRef`. Each request stays isolated; `bootSync` is
-// not invoked on the server.
+// per-render store via `useRef`. Each request stays isolated; sync boot is not
+// invoked on the server.
 //
 // During the entity-isolation migration this provider became factory-agnostic:
 // it accepts an optional `makeStore` prop so that the `(authenticated)` /
@@ -27,10 +28,9 @@ import {
 } from "@/lib/redux/store";
 import { useRef } from "react";
 import { Provider } from "react-redux";
-import { bootSync } from "@/lib/sync/engine/boot";
-import { syncPolicies } from "@/lib/sync/registry";
 import { attachStore } from "@/lib/sync/identity";
 import { writeThemeCookie, type ThemeMode } from "@/styles/themes/themeSlice";
+import { SyncBootstrap } from "@/lib/sync/components/SyncBootstrap";
 
 // Generic factory shape — both `makeStore` (slim) and `makeEntityStore`
 // (entity) satisfy it. Their return types differ in `getState()` shape, but
@@ -60,20 +60,10 @@ function getOrCreateClientStore(
   // `app/Providers.tsx::setGlobalUserId` (deleted).
   attachStore(store);
 
-  void bootSync({
-    store,
-    identity: store._sync.identity,
-    policies: syncPolicies,
-    openChannel: () => store._sync.channel,
-    // Live getter so Phase 2 stale-refresh + remote-fetch see the current
-    // identity after a runtime swap (store._sync.setIdentity).
-    getIdentity: () => store._sync.getIdentity(),
-  });
-
   // Keep the `theme` cookie in lockstep with Redux so the server-side
-  // pre-paint always reflects the user's last choice. (The active org is NOT
-  // mirrored to localStorage — its durable cross-session restore is the
-  // default-org preference, handled by the userPreferences sync engine.)
+  // pre-paint always reflects the user's last choice. Active context is not
+  // mirrored to a cookie: appContextPolicy owns its local cache, while the
+  // default-org preference owns durable cross-device restore.
   let lastMode: ThemeMode | undefined = store.getState().theme?.mode;
   store.subscribe(() => {
     const state = store.getState();
@@ -115,5 +105,13 @@ export default function StoreProvider({
     throw new Error("Redux store failed to initialize");
   }
 
-  return <Provider store={storeRef.current}>{children}</Provider>;
+  return (
+    <Provider store={storeRef.current}>
+      {/* MUST stay first: hydration has committed when its layout effect runs,
+          and application passive effects have not yet had a chance to write
+          default state over persisted envelopes. */}
+      <SyncBootstrap />
+      {children}
+    </Provider>
+  );
 }

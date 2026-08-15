@@ -6,6 +6,13 @@
 
 Date: 2026-04-20.
 
+> **2026-08-15 lifecycle correction:** Running persisted Redux rehydration
+> inside `StoreProvider`'s first client render was not hydration-safe. When a
+> stored slice changed element structure, the client tree differed from SSR
+> and React raised #418. The current path keeps store creation synchronous but
+> starts `store._sync.boot()` from `SyncBootstrap` in the post-hydration layout
+> phase. `SyncBootScript` remains the separate DOM-only pre-paint theme path.
+
 ---
 
 ## 1. Deliverables
@@ -116,7 +123,10 @@ Projected Phase 1 total after 1.D: **engine +200, deletions ~−700, net ≈ −
 - 7 Jest suites / 46 tests under jsdom.
 - `themePolicy` registered; `themeSlice` handles `REHYDRATE_ACTION_TYPE`.
 - `<SyncBootScript />` in `<head>` — pre-paint class + attribute application, honours `prefers-color-scheme` as system fallback.
-- `bootSync` runs inside `StoreProvider`'s `useRef` initializer (synchronous, no hydration race).
+- `bootSync` originally ran inside `StoreProvider`'s `useRef` initializer. The
+  2026-08-15 correction above moved it to `SyncBootstrap` after hydration; the
+  original "no hydration race" conclusion was disproven by persisted
+  structure-changing state in production.
 - Legacy `'theme'` → `'matrx:theme'` one-shot migration.
 - Two legacy writers retargeted (`ThemeToggleMenuItem`, `GlobalMenuItems`).
 - Demo route at `/sync-demo/theme`.
