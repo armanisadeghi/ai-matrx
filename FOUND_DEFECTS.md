@@ -48,65 +48,34 @@ Everything upstream of the insert is verified working live: both entry points,
 the modal, inline category create (`crm`-style POST returns 201), and the
 auto-select. Only the final insert is blocked.
 
-### D199 — Dig Here + keyword-class rules are DARK in production (2026-08-14)
+### D199 — ~657 rows across 8 tables are invisible to EVERY non-admin user (2026-08-14)
 
-Measured live as a real signed-in user: **`seo.gsc_dig_rule` 0 of 8 rows visible,
-`seo.keyword_class_rule` 0 of 11 visible, and creating a rule is refused (42501).**
-Both tables were converted to the `component` variant with parent `web_site` via
-`site_id` — but `site_id` is NULL on **every** row, as are `created_by` and
-`organization_id`: these are ownerless BUILT-IN system templates. A NULL FK can
-never match an `IN`, so no policy arm can ever be true (the generator's
-owned-orphan arm can't save them either — no `created_by`). A site-less rule is
-the NORMAL case here, so `component of web_site` is the wrong model; the likely
-fix is the `entity` variant + the platform-global tier for the builtins
-(db-rules §6e), plus a backfill — **Arman's call, needs a brief.** Surfaces:
-`/marketing/search-console`, `/marketing/admin`. Write paths that must also be
-verified: `features/marketing/search-console/data-dig.ts`,
-`data-class-rules.ts` (both accept a null siteId and use `.select().single()`).
-Every other component table probed the same way is readable or legitimately
-partial — this is these two only. **Chip fired 2026-08-14.**
+The component-RLS conversion emits `fk IN (SELECT unnest(accessible_entity_ids(…)))`
+arms. **A NULL foreign key can never match an `IN`**, so any row whose parent FKs
+are all NULL and whose `created_by` is NULL has no true arm and is unreachable
+forever. Measured live, rows-unreachable/total: **`tool.ui` 25/28**,
+`tool.ui_version` 20/35, `tool.test_sample` 18/28, `tool.ui_incident` 30/441,
+`seo.keyword_market_observation` 545/2686, **`seo.gsc_dig_rule` 8/8**,
+**`seo.keyword_class_rule` 11/11**, `agent.usage` 1/69. The two SEO rule tables
+are fully dark AND refuse creation (42501, `std_insert` demands a non-null site).
 
-### D198 — the whole VAD voice-chat tree is unfinished: its engine was retired out from under it (2026-08-15)
+🚨 **Super-admins still see these rows — measuring with an admin account shows
+"all readable" and hides the bug.** Cross-checked as non-admin
+`d537f0cf-c5b8-4ec8-a859-09404ed0f699`: `tool.ui` 3/28, `test_sample` 10/28,
+`ui_version` 7/35, `keyword_market_observation` 0. **Always probe RLS as a
+non-admin.**
 
-🚨 **UNFINISHED WORK ALARM** — 1,106 lines of purpose-built voice-conversation code stranded at
-reachability rung 2, plus one exact duplicate. **Nothing here may be deleted** until Arman names
-it dead in writing (`common-docs/policies/unfinished-work-alarm.md`).
-
-**Surface:** none — no route mounts any of it. **Action:** if one were mounted, speak one sentence.
-**Wrong outcome:** an unconditional `throw`, because `processAiRequest`
-(`actions/ai-actions/assistant-modular.ts`) is a retirement stub with no implementation:
-*"Provider SDK calls no longer belong in Next server actions."* It is the sole engine of all three
-hooks — transcription, LLM turn, and the returned `voiceStream` all came from it.
-
-The tree, all of it unreachable:
-
-| File | Lines | State |
-|---|---|---|
-| `hooks/tts/useVoiceChat.ts` | 356 | imported only by `components/voice/voice-assistant-ui/*`, which **nothing mounts** |
-| `hooks/tts/useVoiceChatCdn.ts` | 352 | **byte-identical to `useVoiceChat`** apart from the export name — the "Cdn" name is stale (both now load VAD wasm from jsDelivr) |
-| `hooks/tts/useVoiceChatWithAutoSleep.ts` | 398 | `useVoiceChat` + the one asset unique in this tree: an auto-sleep timer that pauses VAD after 60s idle and a `wakeUp()` that restarts it |
-| `components/voice/voice-assistant-ui/**` | — | header, Sidebar, Footer, VoiceInputBar, VoiceSelect, AssistantSelect, CollapsibleSidebar, icons — a complete UI with no page |
-
-**Auth path:** none of these touch Cartesia or the token broker. They are clean of the second-auth-path
-hazard *because* the provider seam they used was a server action, and that is exactly what was retired.
-The canonical path (`lib/cartesia/accessToken.ts` → `connectCartesiaTts`) is untouched by this tree.
-
-**The live capability that overlaps it:** Scribe / Agent+ already does voice-in → agent → voice-out on
-the canonical stack — `useChunkedRecordAndTranscribe` for capture, `useAutoVoiceResponse` +
-`useCartesiaStreamingSpeaker` (mounted once in `providers/AudioOutputHostImpl.tsx`) for streaming
-read-aloud. What Scribe does **not** have, and this tree does: hands-free VAD turn-taking (`useMicVAD`
-detecting speech start/end with no button) and idle auto-sleep.
-
-**Fix (not attempted — it is a feature build, not a wiring job):** decide whether hands-free VAD
-turn-taking is wanted. If yes, it is one hook on the live stack — `useMicVAD` for turn boundaries,
-`useChunkedRecordAndTranscribe`/`features/audio/service/transcribe.ts` for the transcript,
-`launchAgentExecution` for the turn, `requestVoicePlayback` for the reply — and the auto-sleep timer
-from `useVoiceChatWithAutoSleep` is the piece worth lifting verbatim. Wiring any of these three hooks
-to a surface as-is ships a page that throws on first utterance. Full brief:
-[`docs/handoffs/voice-chat-vad-revival.md`](./docs/handoffs/voice-chat-vad-revival.md).
-
-**Arman decides:** is hands-free VAD voice chat still wanted? If it is not, say so in writing and the
-tree can go; until then it stays and stays flagged.
+The affected rows are ownerless BUILT-IN/platform data (the SEO ones are seeded
+system templates, `migrations/seo_gsc_dig_class.sql`), so modeling them as
+components of a site/tool they never belonged to is the wrong model — a
+parent-less row is the NORMAL case. Likely fix: `entity` variant + platform-global
+tier for builtins (db-rules §6e) + a backfill — **Arman's call, needs a brief.**
+Write paths to fix too: `features/marketing/search-console/data-dig.ts`,
+`data-class-rules.ts`. **Verified NOT affected** (invisible rows point at real
+unreachable parents — correct): `seo.backlink_observation`, `backlink_snapshot`,
+`reputation_case`, `competitor_opportunity`, `web.property`, `web.link_edge`,
+`web.analysis_result`. **Chip fired 2026-08-14**, including a standing guard so
+this class stops being invisible until a user complains.
 
 ### D197 — CMS `PageListView` is a bespoke list, not on the canonical entry-list shell (2026-08-14)
 
@@ -798,6 +767,8 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 ---
 
 ## RESOLVED
+
+- **D198 — Hands-free VAD voice chat revived (2026-08-15):** one live hook and reachable `/voice/playground` surface now use shared mic/VAD, canonical STT/agent/TTS, barge-in, auto-sleep, background pause, and brokered Cartesia credentials — see `hooks/tts/useVoiceChat.ts` and `features/audio/voice/HandsFreeVoiceChat.tsx`.
 
 One line per fix — title, date, pointer. History lives in git. Entries older than ~2 weeks get deleted.
 
