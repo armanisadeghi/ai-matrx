@@ -1,99 +1,137 @@
 ---
 status: active
 updated: 2026-08-14
-repos: [aidream, matrx-frontend]
-owner: unassigned — Arman will assign a dedicated agent
+repos: [aidream, matrx-frontend, common-docs]
+owner: partially built — see "What is built" before starting anything
 ---
 
-# Competitor link gap — the outreach target we cannot currently see
+# Competitor link gap + competitor classification
 
 **Arman, 2026-08-14:**
 
 > *"When we're doing things to try to get backlinks, it's not so much who's linking to us —
 > it's about analyzing who's linking to our competitors."*
 
-He is right, and **we do not collect that data.** Every backlink prospect the platform can
-currently produce comes from our OWN referring domains — which are, by definition, the
-people who already link to us. The highest-value prospect list in backlink outreach is the
-one we cannot build: *domains that link to two of my competitors and not to me.*
+> *"This is not things that we wanna guess about... We want true competitors."*
+
+> *"These things rise up out of SEO and into marketing... who your competitors are is not
+> just the web question. It's a company question."*
+
+**📖 Read `common-docs/systems/competitor-classification/FEATURE.md` FIRST.** It is the
+system of record for the taxonomy, the three-layer classification rule, and the link-gap
+seed rule. This file is only the work order.
 
 ---
 
-## What exists today (verified against live code + data, 2026-08-14)
+## The three laws (Arman's ruling — these govern every remaining task)
 
-| Capability | State |
-|---|---|
-| Our own referring domains (`seo.referring_domain_profile`, 777 rows live) | Live, crawled, quality-scored |
-| Those domains → canonical `crm.party` organizations | Live (outreach G1) |
-| `seo.competitor` — competitor records with `tracking_status` (`candidate`/`tracked`), `relevance_score`, `threat_level`, `discovery_source`, `human_ruling` | Live, 4 rows |
-| `seo.competitor_opportunity` — content/keyword opportunities per competitor | Live |
-| `backlink_dimension_snapshot.dimension_kind='competitor_domain'` (218 rows) | Live — but this is DataForSEO `/backlinks/competitors`, i.e. **domains that share referring domains with us**. It answers "who else do my linkers link to", NOT "who links to my competitor". |
-| `/v3/backlinks/domain_intersection/live` + `/page_intersection/live` | **Known to the operations catalogue and NOT collected** — no parser branch in `providers/dataforseo/backlinks.py`, no persistence, no consumer |
-
-So the gap is precise: **the provider endpoint that answers Arman's question is already
-catalogued and simply never wired.**
+1. **Nothing becomes a competitor because software said so.** Deterministic rules and AI
+   agents PROPOSE; a human CONFIRMS. Only `classification_status='confirmed'` competitors
+   may seed a paid run.
+2. **Typing a competitor's name is a first-class path.** User types "Shred Nations" → we
+   search the web → find the site → one click adds it. Arman called this *critical*. It
+   must be as fast as accepting a suggestion.
+3. **The user owns the decision; we own the default.** Our customer is often a marketing
+   agency acting for a client. Every axis is overridable; every derived label re-labellable.
 
 ---
 
-## The work
+## What is built (verified, committed, NOT yet deployed)
 
-1. **Collect it.** Add the intersection endpoints to the backlinks collector
-   (`packages/matrx-seo/matrx_seo/providers/dataforseo/backlinks.py`) the same way the
-   existing endpoints are parsed. Inputs are N competitor domains (from `seo.competitor`)
-   plus our own; the useful query is "links to ≥K competitors, not to us".
-2. **Persist it as first-class prospects, not a snapshot blob.** A link-gap domain deserves
-   the same `referring_domain_profile`-grade record our own linkers get, with the
-   attribution that makes it interesting: *which competitors it links to, and from what
-   page*. Decide deliberately whether that is a new column set on the existing profile
-   table or a sibling — do not smuggle it into `metadata`.
-3. **Fold it into the CRM** through the existing bridge
-   (`aidream/services/crm/seo_domains.py`) with its own provenance payload kind
-   (`party_link_gap`, alongside `party_link_prospect` / `party_outreach_case`) so the CRM
-   record can always answer "why is this org here" with "it links to 3 of your competitors
-   and not to you".
-4. **Prioritise.** A gap domain linking to three competitors with a good quality score is
-   worth more than one linking to one. This ranking is the actual product.
+| Piece | State | Where |
+|---|---|---|
+| Taxonomy + link-gap seed rule | **Done**, committed | `common-docs/systems/competitor-classification/FEATURE.md` |
+| `seo.competitor` classification axes | **LIVE in Supabase** — `business_overlap`, `market_overlap`, `search_overlap_band`, `entity_role`, `posture`, `classification_status`, `use_for_link_gap`, `custom_labels`, `classification_confirmed_at/_by` + CHECKs + 2 indexes | migration `seo_competitor_classification_axes` |
+| `seo.link_gap_domain` + `seo.link_gap_match` | **LIVE in Supabase**, `iam.verify_canonical` all PASS, components under `web.site` / `seo.competitor` | migration `seo_link_gap_tables` |
+| ORM models regenerated | Done (`LinkGapDomain`, `LinkGapMatch`, new competitor columns) | `packages/matrx-seo/matrx_seo/db/models_seo.py` |
+| Deterministic classifier (layer 1) | **Done + 38 tests** | `packages/matrx-seo/matrx_seo/competitor_classification.py` |
+| Link-gap normalizer | **Done + 14 tests against a real captured payload** | `packages/matrx-seo/matrx_seo/providers/dataforseo/link_gap.py` |
 
-## The second, separate gap: which competitors are REAL?
-
-Arman, same conversation:
-
-> *"Part of that would also be to identify our competitors — and that might be a completely
-> missing aspect of our marketing system, where it doesn't make it easy for us to look
-> through search engine results and identify which ones are our real competitors and which
-> ones are just search competitors, which makes them different."*
-
-A **search competitor** ranks for your keywords (Wikipedia, Reddit, a directory, a national
-publisher). A **real competitor** sells what you sell to the people you sell to. Treating
-them as one list poisons everything downstream — the link gap most of all, because chasing
-Wikipedia's linkers is worthless.
-
-`seo.competitor` already has the fields to record the distinction (`tracking_status`,
-`relevance_score`, `threat_level`, `human_ruling`, `resolved_assessment`) and a competitor
-autopsy agent exists (`aidream/services/seo/competitor_autopsy.py`). **What is missing is
-the judgment step and the surface for it:** nothing decides real-vs-search, and nothing asks
-the user. This is exactly the shape the platform is built for — a classification agent
-proposing, a human confirming in one click — per the assists doctrine
-(`common-docs/systems/assists/FEATURE.md`).
+⚠️ **Both new modules are BUILT AND NOT YET WIRED** — nothing calls them. That is
+deliberate staging, not abandoned work; the remaining tasks below are their consumers.
 
 ---
 
-## How to run this (Arman's instruction)
+## Provider facts, verified by a real live call (2026-08-14, $0.024)
 
-Research first — the live tables, the DataForSEO intersection endpoints, and how Ahrefs
-("Link Intersect"), Semrush ("Backlink Gap") and Majestic present this — then bring him the
-basics **plus open questions** and interview him for the vision. Do not invent the ranking
-model or the real-vs-search criteria alone.
+Do not re-derive these from the docs; the docs are ambiguous on the one that matters.
 
-**Scale reminder (his words):** this ships to tens of thousands of end users. Any inclusion
-threshold must be validated by running the candidate algorithm across every site in the
-system and comparing against what a human would have kept — never hand-tuned against one
-test account.
+- **`exclude_targets` does the gap subtraction provider-side.** Competitors in `targets`
+  (numbered map, up to 20), our domain in `exclude_targets` (up to 10). We diff nothing.
+- **🚨 The inversion trap.** The numbered KEY identifies the COMPETITOR (via
+  `result.targets`, which echoes the submitted map). The `target` field *inside* each
+  numbered entry is the **REFERRING** domain, repeated identically under every key.
+  Reading `target` as the competitor silently inverts the whole feature. Pinned by tests.
+- **`item.summary.intersections_count`** is the match count — Semrush "Matches", Ahrefs
+  intersect count. Use the provider's number, never recompute.
+- **"From what page" is NOT in this endpoint.** It returns per-target aggregates
+  (`referring_pages` counts) only. Page attribution needs the page-level call.
+- **Cost: `$0.024 + $0.000036/row`** — a 1,000-row gap pull is **$0.06 per site**. Cost is
+  not a reason to be stingy here.
+- The op is `BACKLINKS_INTERSECTIONS` in `providers/dataforseo/operations.py`, declared
+  `raw_only=True`. **That flag is why no parser branch existed** — it tells the adapter not
+  to normalize. Clearing it is part of wiring the collector.
+- ⚠️ **Default ordering returns junk.** The live probe's top 5 gap domains were
+  `livelycity.com`, `usindex.app`, `intently.co`, `z1biz.com`, `getpracticehelp.com` —
+  spam/link-farm shaped. A production run needs `order_by` on rank and `backlinks_filters`
+  on spam score. Do not ship the raw default order.
+
+---
+
+## Remaining work
+
+### T1 — Competitor identification + classification surface  ⭐ Arman called this critical
+Owner: spawned as a background task chip, 2026-08-14.
+- Manual add: type a name → web lookup → confirm the site → one-click add.
+- The approval queue: deterministic + AI proposals land as `classification_status='proposed'`
+  with a one-click confirm per the assists doctrine (`common-docs/systems/assists/FEATURE.md`).
+- Axis editors + custom labels; every default overridable.
+- Wire `matrx_seo.competitor_classification` (layer 1) ahead of any AI call.
+- Build the AI classifier as a **platform agent** (a slot, like
+  `seo.competitor_opportunity_autopsy`), never hardcoded heuristics.
+- Surface lives under `/marketing/competitors`, but competitors must appear wherever they
+  are relevant — this is a marketing fact, not an SEO report row.
+
+### T2 — Link-gap collection, persistence, ranking, CRM fold
+Owner: spawned as a background task chip, 2026-08-14.
+- Clear `raw_only`, wire `normalize_link_gap_payload` into the collector + repository.
+- Seed ONLY from `classification_status='confirmed'` AND link-gap-eligible competitors
+  (`default_use_for_link_gap`, or the explicit `use_for_link_gap` override).
+- **Minimum 2 matches** (Arman agreed; Ahrefs/Majestic default the same).
+- Human gate: rows land `review_status='pending'`; AI writes `priority_score` +
+  `priority_reason` to ORDER the list, never to filter it.
+- CRM fold via the existing bridge (`aidream/services/crm/seo_domains.py`) with a new
+  registered `party_link_gap` payload kind pinned to
+  `(party, seo_link_gap_domain)` — the other two kinds are the pattern to copy.
+  **Fold only APPROVED gap domains**, or the CRM drowns.
+
+### T3 — Page-level gap (`page_intersection`)
+Owner: spawned as a background task chip, 2026-08-14. Page identity already exists
+(`seo.backlink.page_id`, `resolve_backlink_target_page_ids`).
+
+---
+
+## Open questions for Arman (asked, not yet answered)
+
+1. **Custom user-defined types.** Free-text labels on top of the four fixed axes — is that
+   enough for an agency, or does an agency need to define its own *axis values*?
+2. **Are `supplier` / `partner` competitors at all?** They are modelled because they appear
+   in your SERP and often link to you, but they may belong in the CRM as relationships.
+3. **Multi-location businesses.** A franchise with 40 locations has a different competitor
+   set per location. `market_overlap` handles one site; it does not model a hierarchy.
+4. **Threshold validation cannot be done today.** Arman's standing rule is that an inclusion
+   threshold must be validated across every site in the system, never tuned on one account.
+   Live: only 4 of 31 sites have referring-domain data, only 2 have competitors (one is
+   `rival.example` test data), and **zero** referring domains have ever been human-reviewed —
+   so there is no ground truth to validate against. The band thresholds in
+   `competitor_classification.py` are marked PROVISIONAL. Options put to Arman: (a) collect
+   gap data for all 31 sites (~$2) and validate on distribution, (b) make the threshold a
+   visible user control so none needs defending, (c) generate ground truth by having the
+   classifier propose across all existing competitors and having a human rule on a sample.
 
 ## Related
 
-- `docs/handoffs/outreach-system.md` — the outreach engine this feeds (§1 names the
-  competitor link gap as an opportunity source).
-- `aidream/aidream/services/crm/FEATURE.md` — the bridge and its provenance contract.
-- `docs/handoffs/crm-record-classification.md` — where these records land without drowning
-  the CRM.
+- `common-docs/systems/competitor-classification/FEATURE.md` — the taxonomy (SoR)
+- `docs/handoffs/outreach-system.md` — the outreach engine this feeds
+- `aidream/aidream/services/crm/FEATURE.md` — the bridge and its provenance contract
+- `docs/handoffs/crm-record-classification.md` — where these records land
