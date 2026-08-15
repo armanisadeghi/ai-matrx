@@ -199,12 +199,6 @@ export const EnhancedDraggableCardBody = ({
       cardRef
     );
     
-    // Log for debugging
-    console.log('Card position:', { 
-      cardRect,
-      cssPosition: { x: x.get(), y: y.get() } 
-    });
-    
     // Update the container assignment
     setCurrentContainerId(intersectingContainerId);
     
@@ -311,14 +305,10 @@ export const EnhancedDraggableCardBody = ({
     });
   }, [controls, id, lastValidPos.x, lastValidPos.y, onPositionChange, snapPoints, springConfig, updatePosition, x, y, checkContainerIntersection]);
 
-  // Reset the velocity after a release
-  const decelerate = useCallback(() => {
-    mouseX.set(0);
-    mouseY.set(0);
-  }, [mouseX, mouseY]);
-
   return (
-    <div ref={containerRef} className={cn("[perspective:3000px]", className)}>
+    // `className` belongs to the card, not this wrapper — applying it to both
+    // double-applied every consumer's padding, background and border.
+    <div ref={containerRef} className="[perspective:3000px]">
       <motion.div
         ref={cardRef}
         drag
