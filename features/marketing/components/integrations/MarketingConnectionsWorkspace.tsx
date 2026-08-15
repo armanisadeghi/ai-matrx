@@ -29,8 +29,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { MarketingWorkspaceNav } from "@/features/marketing/components/shared/MarketingWorkspaceNav";
 import { useSiteOptions } from "@/features/marketing/data/hooks";
 import { parseSiteIntegrations } from "@/features/marketing/data/integrations-schema";
 import { useActiveOrganizationPicker } from "@/features/organizations/hooks/useActiveOrganizationPicker";
@@ -181,14 +179,6 @@ function MarketingConnectionsContent() {
 
   return (
     <>
-      <RouteHeader
-        left={
-          <h1 className="ml-2 truncate text-sm font-medium text-foreground">
-            Google Connection
-          </h1>
-        }
-        center={<MarketingWorkspaceNav />}
-      />
       <main className="h-full overflow-y-auto bg-textured px-3 pb-4 pt-[calc(var(--shell-header-h)+0.5rem)] sm:px-4">
         <div className="space-y-3">
           <section className="flex flex-wrap items-start justify-between gap-3 rounded-lg border border-border bg-card p-3">
