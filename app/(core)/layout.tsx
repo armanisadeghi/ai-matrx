@@ -15,6 +15,7 @@ import AppShell from "@/features/shell/components/AppShell";
 import { readSidebarExpandedCookie } from "@/features/shell/utils/server-cookies";
 import type { UserData } from "@/utils/userDataMapper";
 import type { Metadata } from "next";
+import { InternalGoogleAnalytics } from "@/lib/product-analytics/InternalGoogleAnalytics";
 
 export const metadata: Metadata = {
   title: {
@@ -50,6 +51,7 @@ export default async function AppLayout({
 
   let initialReduxState: BaseReduxState;
   let userData: UserData;
+  let enableInternalAnalytics = false;
 
   if (user) {
     // Phase 3: admin check is now a narrow single-row lookup on the `admins`
@@ -70,6 +72,8 @@ export default async function AppLayout({
     ]);
 
     const { isAdmin, level: adminLevel } = adminStatus;
+    enableInternalAnalytics =
+      adminLevel === "super_admin" && !pathname.startsWith("/education");
     const accessToken = session?.access_token;
     userData = mapUserData(user, accessToken, isAdmin, adminLevel);
 
@@ -94,6 +98,7 @@ export default async function AppLayout({
       sidebarExpanded={sidebarExpanded}
     >
       {children}
+      {enableInternalAnalytics ? <InternalGoogleAnalytics /> : null}
     </AppShell>
   );
 }

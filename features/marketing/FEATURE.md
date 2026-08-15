@@ -488,6 +488,11 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-08-15 — Codex: **The canonical site-move RPC now repairs a stranded
+  parent brand even when the site is already in the destination organization.**
+  The same-organization fast path runs only after the explicit
+  `move_brand`/`detach`/`keep` decision, closing the containment access gap that
+  blocked Arman from AI Matrx's own site settings after the site moved first.
 - 2026-08-15 — Codex: **Google Search Console is now named `GSC` across the
   product's compact marketing surfaces.** The canonical provider registry,
   source/provenance filters, connection cards, report/card copy, navigation,

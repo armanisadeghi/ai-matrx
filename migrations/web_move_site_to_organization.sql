@@ -75,6 +75,7 @@ declare
   v_preserved jsonb := '[]'::jsonb;
   v_total bigint := 0;
   v_brand record;
+  v_brand_organization_name text;
   v_brand_action text;
   v_brand_strays bigint;
   v_brand_outcome jsonb := null;
@@ -155,35 +156,26 @@ begin
 
   select o.name into v_source_name from iam.organizations o where o.id = v_site.organization_id;
 
-  if v_site.organization_id = p_target_organization_id then
-    return jsonb_build_object(
-      'moved', false,
-      'reason', 'already_there',
-      'site_id', p_site_id,
-      'site_name', v_site.name,
-      'organization_id', p_target_organization_id,
-      'organization_name', v_target.name,
-      'moved_tables', '[]'::jsonb,
-      'preserved_tables', '[]'::jsonb,
-      'rows_moved', 0
-    );
-  end if;
-
   -- ------------------------------------------------------- the brand's fate
-  -- Resolved BEFORE anything moves, so a caller who has not decided gets a
-  -- clean refusal rather than a half-move.
+  -- Resolved BEFORE the same-organization fast path as well as before a move.
+  -- A site can already be in its intended organization while its parent brand
+  -- is stranded elsewhere; returning early in that state preserves the exact
+  -- containment access hole this RPC exists to close.
   if v_site.brand_id is not null then
     select b.id, b.name, b.organization_id into v_brand
     from web.brand b where b.id = v_site.brand_id;
+    select o.name into v_brand_organization_name
+    from iam.organizations o where o.id = v_brand.organization_id;
   end if;
 
   if v_brand.id is not null and v_brand.organization_id is distinct from p_target_organization_id then
     v_brand_action := p_brand_action;
 
     if v_brand_action is null then
-      raise exception using errcode = '22023',
+        raise exception using errcode = '22023',
         message = format('%s belongs to the brand "%s", which stays in %s.',
-                         v_site.name, v_brand.name, coalesce(v_source_name, 'another organization')),
+                         v_site.name, v_brand.name,
+                         coalesce(v_brand_organization_name, 'another organization')),
         detail  = 'A brand conveys access to every site inside it, so leaving it behind '
                || 'lets members of the old organization keep reading this site.',
         hint    = 'Choose: move the brand too, detach this site from the brand, or '
@@ -228,6 +220,31 @@ begin
         'warning', format('Members of %s can still reach this site through the brand "%s".',
                           coalesce(v_source_name, 'the previous organization'), v_brand.name));
     end if;
+  end if;
+
+  if v_site.organization_id = p_target_organization_id then
+    return jsonb_build_object(
+      'moved', false,
+      'reason', case
+                  when v_brand_outcome is null then 'already_there'
+                  when v_brand_outcome ->> 'action' = 'kept' then 'brand_kept'
+                  else 'brand_reconciled'
+                end,
+      'site_id', p_site_id,
+      'site_name', v_site.name,
+      'organization_id', p_target_organization_id,
+      'organization_name', v_target.name,
+      'moved_tables', case when v_brand_outcome is null
+                                  or v_brand_outcome ->> 'action' = 'kept'
+                           then '[]'::jsonb
+                           else jsonb_build_array(
+                             jsonb_build_object('table', 'web.brand', 'rows', 1)) end,
+      'preserved_tables', '[]'::jsonb,
+      'rows_moved', case when v_brand_outcome is null
+                               or v_brand_outcome ->> 'action' = 'kept'
+                         then 0 else 1 end,
+      'brand', v_brand_outcome
+    );
   end if;
 
   -- THE SITE ROW MOVES FIRST, and that is not a style choice:
