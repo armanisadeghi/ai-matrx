@@ -35,18 +35,16 @@ policies|meta|skills>/...`), and ai-matrx's three root-level strays (archived to
 VISION/owner-quote exceptions were added by exact path, and inline code identifiers are now
 excluded from prose scanning. Root-level and pointer-path findings remain at zero.
 
-**Remaining:**
-- **Confident-title claimants** (0 ai-matrx + 70 aidream) that predate the policy — each needs
-  demote-or-allowlist-with-reason. The remaining backlog is in aidream.
-- **aidream root-level strays** (6): ACCEPTANCE_DEV_SERVER, AUDIO_STREAMING,
-  ENV_FLAG_ERADICATION, PERSISTENCE_AND_ERROR_HANDLING_BUGS, TASK-systemwide-error-tracking,
-  audit_api_types. Unlike ai-matrx's, these have **live referrers** — CLAUDE.md, `.claude/skills/`,
-  code comments, and CI (`audit_api_types.md` is written by `scripts/audit_api_types.py` and read by
-  `.github/workflows/audit-api-types.yml`). Moving them means updating every referrer and the
-  generator's output path in the same change; not a drive-by fix.
+**Cleared by the 2026-08-06 confident-title triage session** (archived record:
+`/Users/armanisadeghi/code/common-docs/projects/archive/confident-title-triage/TASK.md`):
+the entire aidream confident-title backlog, 71 → 0 (52 docs demoted, 7 reasoned allowlist
+entries; escalations for Arman recorded in that doc). aidream's root-level strays are also
+gone — `python3 scripts/check_docs_guards.py` verified fully green on aidream main
+2026-08-15 (confident-title + root-.md + pointer-path all zero).
 
-Then flip the guards from advisory to strict. The weekly `docs-hygiene` scheduled task chips at
-this; a dedicated session could clear the confident-title bulk in one pass.
+**Remaining — the last step:** flip both guards from advisory to strict. Self-contained
+task doc: `/Users/armanisadeghi/code/common-docs/projects/guards-advisory-to-strict/TASK.md`.
+The weekly `docs-hygiene` sweep holds the line against creep meanwhile.
 
 ## Deferred / blocked small items
 
