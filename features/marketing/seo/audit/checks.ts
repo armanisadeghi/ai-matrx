@@ -703,7 +703,7 @@ export const SYNC_GSC: Remediation = {
   scope: "site",
   label: "Pull this site's Google data",
   explainer:
-    "We ask Google Search Console for the clicks, impressions and average " +
+    "We ask GSC for the clicks, impressions and average " +
     "positions it recorded for this site, and store them so the search " +
     "checks can read real numbers instead of guessing. It reads only; " +
     "nothing on your website or in Google changes.",

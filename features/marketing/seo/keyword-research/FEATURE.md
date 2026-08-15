@@ -15,8 +15,12 @@ The site-scoped surface is
   `seo.site_keyword_performance_page` RPC. The generic
   `seo.v_site_keyword_performance` projection remains the point-read model for
   Keyword Intelligence; it is deliberately not the paged table boundary. A
-  read surface: collection and market enrichment remain explicit compute
-  operations.
+  mixed evidence/decision surface: provider observations and market enrichment
+  remain read-only, while the user can stage and save the site-specific **SEO
+  stage** through `seo.site_keyword_value`. Product labels translate the stored
+  vocabulary: `candidate` → Opportunity, null → Not tracked, `ignored` → Not
+  pursuing, and `suppressed` → Excluded by strategy. Suppression is displayed
+  but not directly selectable because it requires a recorded strategy reason.
 - **Classification** (`?view=classification`) — the GSC traffic-class
   truth-editing surface, owned by the search-console feature
   (`features/marketing/search-console/components/classification/KeywordClassificationWorkspace.tsx`;
@@ -235,6 +239,11 @@ and the same block renders read-only in chat.
 
 ## Invariants
 
+- **SEO stage is the human name; `workflow_status` is storage vocabulary.** Use
+  `workflow-status.ts` for labels, descriptions, filters, edit options, and
+  validation. Never render raw values such as `candidate` or "not classified".
+  Saves compare the projected value the user saw, then use the platform version
+  guard on the ledger row; stale tabs never silently overwrite a newer choice.
 - **No bespoke stream rendering.** No new parse session, chunk buffer, segment
   splitter, or hand-routed envelope anywhere in this feature. See above.
 - `(core)` shell rules: `<PageHeader>` center-only title; body `h-full overflow-hidden`
@@ -247,6 +256,13 @@ and the same block renders read-only in chat.
 
 ## Change Log
 
+- 2026-08-15 — **The site keyword decision column now explains itself and is
+  editable.** Raw `Workflow` / `candidate` / `Not classified` became `SEO
+  stage` / `Opportunity` / `Not tracked`, with hover explanations and one-line
+  guidance above the table. The canonical MatrxDataTable staged editor writes
+  the existing `seo.site_keyword_value` ledger directly through authenticated
+  Supabase, compares the value the user saw, and completes the write with the
+  shared version guard. No schema, RPC, or second editor was introduced.
 - 2026-08-13 — **Workbench deep-link intelligence + one-row launcher** (Arman
   review of the pilot). Arriving with `?keyword=` no longer shows the org's
   whole library under a phrase it has nothing to do with: saved research scopes

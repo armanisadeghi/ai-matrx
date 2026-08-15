@@ -219,7 +219,7 @@ function MarketingConnectionsContent() {
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 className="text-sm font-semibold">
-                      Google Search Console
+                      GSC
                     </h2>
                     <Badge
                       variant={

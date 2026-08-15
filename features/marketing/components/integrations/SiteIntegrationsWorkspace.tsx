@@ -96,6 +96,7 @@ import {
 import type { MarketingSite } from "@/features/marketing/types";
 import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
 import { useGoogleAPI } from "@/providers/google-provider/GoogleApiProvider";
+import { GOOGLE_SEARCH_CONSOLE_PROVIDER } from "@/features/marketing/lib/provider-names";
 
 const authorityLabels: Record<CredentialAuthority, string> = {
   user_secret: "Personal vault credential",
@@ -113,7 +114,7 @@ const builtIns: Array<{
 }> = [
   {
     key: "googleSearchConsole",
-    label: "Google Search Console",
+    label: GOOGLE_SEARCH_CONSOLE_PROVIDER.label,
     description:
       "Search performance, indexing, queries, and canonical URL evidence.",
     resourceLabel: "Search Console property",
@@ -353,7 +354,7 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
         );
       } else {
         setBuiltIn("googleSearchConsole", nextGoogleSearchConsole);
-        toast.success("Google Search Console authorized", {
+        toast.success("GSC authorized", {
           description:
             searchResources.length > 0
               ? "Select this site's Search Console property below, then click Connect selected property."

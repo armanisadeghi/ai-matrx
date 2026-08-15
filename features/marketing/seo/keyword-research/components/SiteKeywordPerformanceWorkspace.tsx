@@ -22,7 +22,10 @@ import {
   restoreKeywords,
 } from "@/features/marketing/seo/keyword-research/data/queries";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
-import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import type {
+  CellEditsMap,
+  MatrxColumnDef,
+} from "@/components/official/matrx-data-table/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
@@ -30,6 +33,7 @@ import { useMarketingSite } from "@/features/marketing/components/site/Marketing
 import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { GOOGLE_SEARCH_CONSOLE_PROVIDER } from "@/features/marketing/lib/provider-names";
 import { parseBingSiteBinding } from "@/features/marketing/bing/binding";
 import { syncBingSearchPerformance } from "@/features/marketing/bing/service";
 import { extractErrorMessage } from "@/utils/errors";
@@ -60,6 +64,18 @@ import { SiteKeywordsWriteTargets } from "./SiteKeywordsWriteTargets";
 
 import type { SiteKeywordPerformanceRow } from "../types";
 import { useSiteKeywordPerformance } from "../useSiteKeywordPerformance";
+import { updateSiteKeywordWorkflow } from "../data/site-performance";
+import {
+  isEditableKeywordWorkflowStatus,
+  isKeywordWorkflowStatus,
+  KEYWORD_WORKFLOW_EDIT_OPTIONS,
+  KEYWORD_WORKFLOW_FILTER_OPTIONS,
+  keywordWorkflowStage,
+} from "../workflow-status";
+
+function performanceRowId(row: SiteKeywordPerformanceRow): string {
+  return `${row.provider ?? "gsc"}:${row.keyword_id ?? "unmapped"}:${row.query ?? "unknown"}`;
+}
 
 export function SiteKeywordPerformanceWorkspace() {
   const { site, sitePath } = useMarketingSite();
@@ -73,6 +89,60 @@ export function SiteKeywordPerformanceWorkspace() {
   const { getBaseValues } = useMarketingSiteSurfaceBase();
   const bingBinding = parseBingSiteBinding(site.integrations);
   const [syncingBing, setSyncingBing] = useState(false);
+
+  const saveWorkflowEdits = async (
+    edits: CellEditsMap,
+    currentRows: SiteKeywordPerformanceRow[],
+  ) => {
+    const rowsById = new Map(
+      currentRows.map((row) => [performanceRowId(row), row]),
+    );
+    const updatesByKeyword = new Map<
+      string,
+      Parameters<typeof updateSiteKeywordWorkflow>[0]
+    >();
+
+    for (const [rowId, fields] of Object.entries(edits)) {
+      if (!Object.hasOwn(fields, "workflow_status")) continue;
+      const row = rowsById.get(rowId);
+      if (!row?.keyword_id) {
+        throw new Error(
+          "This search query is not mapped to the keyword library, so its SEO stage cannot be changed yet.",
+        );
+      }
+      const nextStatus = fields.workflow_status;
+      if (!isEditableKeywordWorkflowStatus(nextStatus)) {
+        throw new Error("Choose a supported SEO stage and try again.");
+      }
+      const expectedStatus = row.workflow_status;
+      if (expectedStatus !== null && !isKeywordWorkflowStatus(expectedStatus)) {
+        throw new Error(
+          `“${row.query ?? "This keyword"}” has an unrecognized SEO stage and cannot be edited here.`,
+        );
+      }
+      const existing = updatesByKeyword.get(row.keyword_id);
+      if (existing && existing.nextStatus !== nextStatus) {
+        throw new Error(
+          `“${row.query ?? "This keyword"}” was assigned two different stages. Choose one stage and try again.`,
+        );
+      }
+      updatesByKeyword.set(row.keyword_id, {
+        organizationId: site.organization_id,
+        siteId: site.id,
+        keywordId: row.keyword_id,
+        expectedStatus,
+        nextStatus,
+      });
+    }
+
+    try {
+      for (const update of updatesByKeyword.values()) {
+        await updateSiteKeywordWorkflow(update);
+      }
+    } finally {
+      await performance.refetch();
+    }
+  };
 
   /** Soft-archive the mapped library keyword (undoable). GSC/Bing query
    * evidence stays — only the seo.keyword library row is archived. */
@@ -182,7 +252,7 @@ export function SiteKeywordPerformanceWorkspace() {
       header: "Source",
       filter: "select",
       filterOptions: [
-        { value: "gsc", label: "Google Search Console" },
+        { value: "gsc", label: GOOGLE_SEARCH_CONSOLE_PROVIDER.label },
         { value: "bing_webmaster", label: "Bing Webmaster" },
       ],
       cell: (row) => (
@@ -308,24 +378,24 @@ export function SiteKeywordPerformanceWorkspace() {
     {
       id: "workflow_status",
       accessorKey: "workflow_status",
-      header: "Workflow",
+      header: "SEO stage",
       filter: "select",
-      filterOptions: [
-        { value: "candidate", label: "Candidate" },
-        { value: "targeted", label: "Targeted" },
-        { value: "in_progress", label: "In progress" },
-        { value: "ranking", label: "Ranking" },
-        { value: "ignored", label: "Ignored" },
-        { value: "suppressed", label: "Suppressed" },
-      ],
-      cell: (row) =>
-        row.workflow_status ? (
-          <Badge variant="outline">
-            {row.workflow_status.replaceAll("_", " ")}
-          </Badge>
+      filterOptions: KEYWORD_WORKFLOW_FILTER_OPTIONS,
+      editable: "select",
+      editableIf: (row) => Boolean(row.keyword_id),
+      editOptions: KEYWORD_WORKFLOW_EDIT_OPTIONS,
+      cell: (row) => {
+        const stage = keywordWorkflowStage(row.workflow_status);
+        return row.workflow_status ? (
+          <span title={stage.description}>
+            <Badge variant="outline">{stage.label}</Badge>
+          </span>
         ) : (
-          <span className="text-muted-foreground">Not classified</span>
-        ),
+          <span className="text-muted-foreground" title={stage.description}>
+            {stage.label}
+          </span>
+        );
+      },
     },
   ];
 
@@ -447,8 +517,13 @@ export function SiteKeywordPerformanceWorkspace() {
           </h1>
           <p className="mt-0.5 text-[11px] text-muted-foreground">
             Persisted 28-day query evidence for {site.domain} across every
-            connected source (Google Search Console, Bing Webmaster),
+            connected source ({GOOGLE_SEARCH_CONSOLE_PROVIDER.label}, Bing Webmaster),
             enriched with stored DataForSEO market data when available.
+          </p>
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            SEO stage records what you plan to do with each keyword. Click a
+            stage to change it, then Save. “Not tracked” means no decision has
+            been made yet.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -518,9 +593,7 @@ export function SiteKeywordPerformanceWorkspace() {
         <MatrxDataTable<SiteKeywordPerformanceRow>
           data={rows}
           columns={columns}
-          getRowId={(row) =>
-            `${row.provider ?? "gsc"}:${row.keyword_id ?? "unmapped"}:${row.query ?? "unknown"}`
-          }
+          getRowId={performanceRowId}
           isLoading={showSkeleton}
           isFetching={performance.isFetching}
           query={{
@@ -530,6 +603,7 @@ export function SiteKeywordPerformanceWorkspace() {
             onStateChange: table.onStateChange,
           }}
           toolbar={{ searchPlaceholder: "Search query or ranking page…" }}
+          edit={{ enabled: true, onSave: saveWorkflowEdits }}
           copy={{
             label: "Keyword",
             listLabel: "Keyword performance view",
@@ -604,7 +678,7 @@ export function SiteKeywordPerformanceWorkspace() {
                   icon: <Search className="h-8 w-8 text-muted-foreground" />,
                   title: "No search queries stored yet",
                   description:
-                    "Connect Google Search Console or Bing Webmaster and run a search-performance sync to populate this site.",
+                    "Connect GSC or Bing Webmaster and run a search-performance sync to populate this site.",
                 }
           }
           detail={{

@@ -342,6 +342,11 @@ Grants: `migrations/web_marketing_crud_grants.sql` added the missing authenticat
 
 ## Invariants & gotchas
 
+- **The compact product name for Google Search Console is `GSC`.** Use
+  `lib/provider-names.ts` for provider labels in tables, filters, cards, and
+  navigation. Spell out `GSC (Google Search Console)` only in explanatory
+  onboarding copy where teaching the acronym adds value; do not repeat the full
+  vendor name in dense surfaces.
 - **Moving a site between organizations is ONE RPC, never a client-side write — and the brand is part of the move.**
   `organization_id` is denormalized onto ~60 child tables across `web.*`, `seo.*`,
   `plan.*` and `growth.*`, so updating `web.site` alone strands every child in the
@@ -481,6 +486,12 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-08-15 — Codex: **Google Search Console is now named `GSC` across the
+  product's compact marketing surfaces.** The canonical provider registry,
+  source/provenance filters, connection cards, report/card copy, navigation,
+  setup states, page metrics, and keyword surfaces no longer spend table or card
+  width repeating the full vendor name. `lib/provider-names.ts` owns the compact
+  label and retains the expansion for onboarding prose.
 - 2026-08-15 — Codex: **Client Reports shipped at its reserved URL over the data that actually exists.** `/marketing/reports` is a live, printable 28-day Search Console report rather than an empty Analytics shell: it leads with plain-language findings, then shows human-labelled visit/visibility metrics, the canonical multi-site and selected-site traffic-class decomposition, class-resolved top queries, and top pages with `seo.gsc_perf_page_class_summary` rollups. Every named site and page is an `EntityRef` door; every keyword is an `EntityRef` opening the existing Keyword Intelligence window. Data stays on `seo.search_performance_daily` through the existing `seo.gsc_perf_*` hooks/RPCs, `GscClassBar`, `GscPortfolioClassBar`, `ClassChip`, `seo.gsc_keyword_class_by_text`, and `seo.gsc_keyword_class_map` — no `web.gsc_page_stat` read, second class mapper, or report table. The report copies in human/AI/JSON forms, prints/saves to PDF, emits a complete `matrx-user/marketing-reports` surface scope, and names the one-click classifier when unknown-value traffic exists. The reserved promise/nav flags moved together, the admin map and workspace nav now expose the live route, and Analytics remains reserved while its synced fact table is empty.
 - 2026-08-15 — Codex: **Marketing no longer hydrates through a mismatched root document.** The shared root boot scripts now use Next's tracked `beforeInteractive` primitive instead of raw React `<script>` children, removing the app-wide React 19.2 script warning and hydration recovery while keeping theme and stale-chunk guards pre-hydration.
 - 2026-08-15 — Claude: **Media split ruled (Arman): Library, Research, Sources and Generate belong to the BRAND, not the website.** `SiteMediaWorkspace` renders seven views but only Crawled and Videos are site-scoped — Library reads `brand_asset` by `brand_id`, Research reads `rs_media` by `organization_id`, Sources takes brand+org, Generate is brand-scoped — so two sites under one brand render identical Library/Research/Sources/Generate and editing there silently changes everything under the brand. The website keeps Crawled, Videos and Standards plus a door to the brand library; the four brand views move to the cockpit, mirroring the Discovery move. Implementation is the last open item in `docs/handoffs/marketing-navigation-hierarchy.md`.

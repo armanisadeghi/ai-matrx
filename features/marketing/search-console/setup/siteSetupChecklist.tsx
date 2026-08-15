@@ -91,7 +91,7 @@ export const siteSetupChecklist = registerChecklist<SiteSetupContext>({
     {
       kind: "verified",
       id: "search_console",
-      title: "Connected to Google Search Console",
+      title: "Connected to GSC",
       description:
         "This is where Google tells us what people searched for before they found you.",
       dependsOn: ["address"],
@@ -102,7 +102,7 @@ export const siteSetupChecklist = registerChecklist<SiteSetupContext>({
         if (!status || status.state === "off") {
           return {
             status: "fail",
-            reason: "Google Search Console isn't connected to this site yet.",
+            reason: "GSC isn't connected to this site yet.",
             fix: {
               label: "Connect Search Console",
               href: integrationsHref(site),

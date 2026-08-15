@@ -2,17 +2,25 @@ import type { MatrxDataTableQueryState } from "@/components/official/matrx-data-
 import {
   buildSiteKeywordPerformanceRpcArgs,
   listSiteKeywordPerformance,
+  SiteKeywordWorkflowConflictError,
+  updateSiteKeywordWorkflow,
 } from "./site-performance";
 
 const mockAbortSignal = jest.fn();
 const mockRpc = jest.fn(() => ({ abortSignal: mockAbortSignal }));
-const mockSchema = jest.fn((_schema: string) => ({ rpc: mockRpc }));
+const mockFrom = jest.fn();
+const mockSchema = jest.fn((_schema: string) => ({
+  rpc: mockRpc,
+  from: mockFrom,
+}));
 
 jest.mock("@/utils/supabase/client", () => ({
   supabase: { schema: (schema: string) => mockSchema(schema) },
 }));
 jest.mock("@/utils/supabase/webDb", () => ({
-  requireAuthenticatedSupabaseSession: jest.fn().mockResolvedValue(undefined),
+  requireAuthenticatedSupabaseSession: jest.fn().mockResolvedValue({
+    user: { id: "user-1" },
+  }),
 }));
 
 const STATE: MatrxDataTableQueryState = {
@@ -131,5 +139,107 @@ describe("site keyword performance database boundary", () => {
     expect(result.total).toBe(25900);
     expect(result.rows).toHaveLength(1);
     expect(result.rows[0]).not.toHaveProperty("total_count");
+  });
+
+  it("creates the site ledger row when an untracked keyword gets a stage", async () => {
+    const currentQuery = {
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      is: jest.fn().mockReturnThis(),
+      maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+    };
+    const insertQuery = {
+      insert: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({
+        data: { id: "value-1", workflow_status: "candidate", version: 1 },
+        error: null,
+      }),
+    };
+    mockFrom
+      .mockImplementationOnce(() => currentQuery)
+      .mockImplementationOnce(() => insertQuery);
+
+    await updateSiteKeywordWorkflow({
+      organizationId: "org-1",
+      siteId: "site-1",
+      keywordId: "keyword-1",
+      expectedStatus: null,
+      nextStatus: "candidate",
+    });
+
+    expect(insertQuery.insert).toHaveBeenCalledWith({
+      organization_id: "org-1",
+      site_id: "site-1",
+      keyword_id: "keyword-1",
+      workflow_status: "candidate",
+      metadata: {},
+      created_by: "user-1",
+      updated_by: "user-1",
+    });
+  });
+
+  it("version-guards an edit to an existing site ledger row", async () => {
+    const currentQuery = {
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      is: jest.fn().mockReturnThis(),
+      maybeSingle: jest.fn().mockResolvedValue({
+        data: { id: "value-1", workflow_status: "candidate", version: 3 },
+        error: null,
+      }),
+    };
+    const updateQuery = {
+      update: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      is: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      maybeSingle: jest.fn().mockResolvedValue({
+        data: { id: "value-1", workflow_status: "targeted", version: 4 },
+        error: null,
+      }),
+    };
+    mockFrom
+      .mockImplementationOnce(() => currentQuery)
+      .mockImplementationOnce(() => updateQuery);
+
+    await updateSiteKeywordWorkflow({
+      organizationId: "org-1",
+      siteId: "site-1",
+      keywordId: "keyword-1",
+      expectedStatus: "candidate",
+      nextStatus: "targeted",
+    });
+
+    expect(updateQuery.update).toHaveBeenCalledWith({
+      workflow_status: "targeted",
+      suppression_reason: null,
+      updated_by: "user-1",
+      version: 4,
+    });
+    expect(updateQuery.eq).toHaveBeenCalledWith("version", 3);
+  });
+
+  it("refuses to overwrite a stage that changed after the page loaded", async () => {
+    const currentQuery = {
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      is: jest.fn().mockReturnThis(),
+      maybeSingle: jest.fn().mockResolvedValue({
+        data: { id: "value-1", workflow_status: "ranking", version: 4 },
+        error: null,
+      }),
+    };
+    mockFrom.mockImplementationOnce(() => currentQuery);
+
+    await expect(
+      updateSiteKeywordWorkflow({
+        organizationId: "org-1",
+        siteId: "site-1",
+        keywordId: "keyword-1",
+        expectedStatus: "candidate",
+        nextStatus: "targeted",
+      }),
+    ).rejects.toBeInstanceOf(SiteKeywordWorkflowConflictError);
   });
 });

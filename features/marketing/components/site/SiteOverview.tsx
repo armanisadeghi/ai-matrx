@@ -284,7 +284,7 @@ export function SiteOverview() {
       ["Canonical pages", metrics.canonicalPages],
       ["Open findings", metrics.openFindings],
       ["Pages with a target keyword", metrics.targetKeywordPages],
-      ["Pages in Google Search Console", metrics.pagesInGsc],
+      ["Pages in GSC", metrics.pagesInGsc],
       ["Pages blocked from indexing", metrics.blockedPages],
       ["Pages failing SERP metadata checks", metrics.serpIssues],
       ["Sitemaps", metrics.sitemaps],

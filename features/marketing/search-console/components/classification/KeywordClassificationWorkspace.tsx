@@ -34,12 +34,12 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import {
+  BrainCircuit,
   Check,
   Fingerprint,
   ListFilter,
   Loader2,
   Scale,
-  Sparkles,
   Tags,
   X,
 } from "lucide-react";
@@ -994,7 +994,7 @@ export function KeywordClassificationWorkspace({
                 {aiBusy ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 ) : (
-                  <Sparkles className="h-3.5 w-3.5" />
+                  <BrainCircuit className="h-3.5 w-3.5" />
                 )}
                 Classify with AI
               </Button>
@@ -1113,7 +1113,7 @@ export function KeywordClassificationWorkspace({
               ? "The alias has corpus matches, but none appeared in this site's current review window."
               : preview
                 ? "Try a looser match kind or a shorter pattern."
-                : "Connect Google Search Console and run a sync, or loosen the class/source filters.",
+                : "Connect GSC and run a sync, or loosen the class/source filters.",
           }}
           className="min-h-0 flex-1"
         />

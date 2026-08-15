@@ -227,7 +227,7 @@ export function MarketingReportsWorkspace() {
     kind: "web-client-search-report",
     label: `${selectedSiteName ?? "Client"} search report`,
     description:
-      "A client-ready 28-day Google Search Console report with canonical traffic-class evidence.",
+      "A client-ready 28-day GSC report with canonical traffic-class evidence.",
     surface: "Marketing Reports",
     data: clientReport,
     lines: [

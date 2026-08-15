@@ -5,10 +5,12 @@
  * duplicate these at a callsite.
  */
 
+import { GOOGLE_SEARCH_CONSOLE_PROVIDER } from "@/features/marketing/lib/provider-names";
 import type { SiteKeywordPerformanceRow } from "./types";
+import { keywordWorkflowStage } from "./workflow-status";
 
 const PROVIDER_LABELS: Record<string, string> = {
-  gsc: "Google Search Console",
+  gsc: GOOGLE_SEARCH_CONSOLE_PROVIDER.label,
   bing_webmaster: "Bing Webmaster",
 };
 
@@ -50,7 +52,7 @@ export function humanKeywordPerformanceRow(
     `- Clicks: ${formatCount(row.clicks)} · Impressions: ${formatCount(row.impressions)} · CTR: ${ctr} · Position: ${formatDecimal(row.average_position)}`,
     `- Volume: ${formatCount(row.search_volume)} · CPC: ${formatMoney(row.cpc)} · Competition: ${row.competition ?? "—"}`,
     `- Strongest page: ${strongestPage}`,
-    `- Workflow: ${row.workflow_status ?? "not classified"}`,
+    `- SEO stage: ${keywordWorkflowStage(row.workflow_status).label}`,
   ].join("\n");
 }
 

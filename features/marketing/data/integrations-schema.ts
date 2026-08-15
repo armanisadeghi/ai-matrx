@@ -412,7 +412,7 @@ export function validateSiteIntegrations(
   validateBuiltIn(
     draft.googleSearchConsole,
     "googleSearchConsole",
-    "Google Search Console",
+    "GSC",
     "gsc",
     issues,
   );

@@ -632,7 +632,7 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
     description: "The plumbing — provider connections and automation.",
     iconName: "Plug",
     landingItems: [
-      "Google Search Console",
+      "GSC",
       "GA4 + PageSpeed",
       "Bing Webmaster",
       "DataForSEO",

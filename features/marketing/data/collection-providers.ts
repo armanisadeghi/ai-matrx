@@ -26,6 +26,7 @@ import {
   marketingRoutes,
   marketingSiteSettingsHref,
 } from "@/features/marketing/lib/routes";
+import { GOOGLE_SEARCH_CONSOLE_PROVIDER } from "@/features/marketing/lib/provider-names";
 
 /** Keys are `seo.collection_run.provider` values — never invent a new spelling. */
 export type CollectionProviderKey =
@@ -81,7 +82,7 @@ export interface CollectionDoor {
 export const COLLECTION_PROVIDERS: CollectionProviderSpec[] = [
   {
     key: "gsc",
-    label: "Google Search Console",
+    label: GOOGLE_SEARCH_CONSOLE_PROVIDER.label,
     icon: SearchCheck,
     what: "How people find this site on Google — the searches, clicks, positions, and which pages Google shows.",
     rowUnit: "stored search rows",

@@ -276,7 +276,7 @@ describe("buildBrandContextXml", () => {
 
 const STATUSES: SiteConnectionStatus[] = [
   { key: "initialized", label: "Init", name: "Site initialized", state: "connected", detail: "" },
-  { key: "search_console", label: "GSC", name: "Google Search Console", state: "attention", detail: "" },
+  { key: "search_console", label: "GSC", name: "GSC", state: "attention", detail: "" },
   { key: "analytics", label: "GA4", name: "Google Analytics 4", state: "off", detail: "" },
   { key: "pagespeed", label: "PSI", name: "PageSpeed Insights", state: "connected", detail: "" },
   { key: "cms", label: "CMS", name: "CMS connection", state: "off", detail: "" },

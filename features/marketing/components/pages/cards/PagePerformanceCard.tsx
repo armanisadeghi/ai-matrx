@@ -391,7 +391,7 @@ export function PagePerformanceCard({ page }: { page: MarketingPage }) {
     kind: "web-page-performance",
     label: "Page performance",
     description:
-      "Canonical per-page Lighthouse, CrUX field, regression, history, and Google Search Console evidence.",
+      "Canonical per-page Lighthouse, CrUX field, regression, history, and GSC evidence.",
     surface: `Page performance — ${page.url}`,
     data,
     lines: [
@@ -575,7 +575,7 @@ export function PagePerformanceCard({ page }: { page: MarketingPage }) {
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-2">
             <div>
               <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Google Search Console
+                GSC
               </h3>
               <p className="mt-0.5 text-[11px] text-muted-foreground">
                 {gsc.window_days}-day page performance · {gsc.start_date} to{" "}

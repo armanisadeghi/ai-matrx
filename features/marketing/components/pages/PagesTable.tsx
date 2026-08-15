@@ -57,6 +57,7 @@ import {
 } from "@/features/marketing/components/shared/MarketingUi";
 import { cn } from "@/lib/utils";
 import { GscClassBar } from "@/features/marketing/search-console/components/ambassador/GscClassBar";
+import { GOOGLE_SEARCH_CONSOLE_PROVIDER } from "@/features/marketing/lib/provider-names";
 
 const STATUS_OPTIONS = [
   { value: "active", label: "Active" },
@@ -66,7 +67,7 @@ const STATUS_OPTIONS = [
 
 const PROVENANCE_OPTIONS = [
   { value: "crawl", label: "Crawl" },
-  { value: "gsc", label: "Google Search Console" },
+  { value: "gsc", label: GOOGLE_SEARCH_CONSOLE_PROVIDER.label },
   { value: "sitemap", label: "Sitemap" },
   { value: "manual", label: "Manual" },
 ];

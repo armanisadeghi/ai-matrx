@@ -594,7 +594,7 @@ export function SitesPortfolio() {
                 Seed sites from connected data
               </p>
               <p className="truncate text-[10px] text-muted-foreground">
-                Set up Google Search Console or organization credentials, then
+                Set up GSC or organization credentials, then
                 bind a property to a managed site.
               </p>
             </div>

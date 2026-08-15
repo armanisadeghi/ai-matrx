@@ -89,7 +89,7 @@ const STATIC_ROUTES: Readonly<Record<string, MarketingRouteIdentity>> = {
   },
   "/marketing/connections/google": {
     titlePrefix: "Google",
-    description: "Connect Google Search Console and Analytics data sources.",
+    description: "Connect GSC and Analytics data sources.",
     letter: "Gg",
   },
   "/marketing/content-plan": {

@@ -53,7 +53,7 @@ export function gscSummaryCopy(input: {
     kind: "web-gsc-summary",
     label: "Search performance summary",
     description:
-      "Google Search Console totals for one site over the selected period (clicks, impressions, CTR, position), with compare-period values when a comparison is active.",
+      "GSC totals for one site over the selected period (clicks, impressions, CTR, position), with compare-period values when a comparison is active.",
     surface: "Search Console",
     data: summary,
     lines: [
@@ -102,7 +102,7 @@ export function gscTimeseriesCopy(input: {
     kind: "web-gsc-timeseries",
     label: "Search performance chart data",
     description:
-      "Daily Google Search Console series (clicks, impressions, CTR, position per day) behind the performance chart, including the compare-period series when active.",
+      "Daily GSC series (clicks, impressions, CTR, position per day) behind the performance chart, including the compare-period series when active.",
     surface: "Search Console",
     data: input.rows,
     lines: [

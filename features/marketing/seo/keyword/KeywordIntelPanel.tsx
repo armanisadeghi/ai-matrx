@@ -1053,7 +1053,7 @@ function KeywordProviderEvidence({
             <Badge variant="outline" className="uppercase">
               {providerStatus?.label ??
                 (provider === "gsc"
-                  ? "Google Search Console"
+                  ? "GSC"
                   : "Bing Webmaster")}
             </Badge>
             {providerStatus ? (

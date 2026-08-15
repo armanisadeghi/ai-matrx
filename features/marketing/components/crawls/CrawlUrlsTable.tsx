@@ -20,6 +20,7 @@ import {
   StatusBadge,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import { GOOGLE_SEARCH_CONSOLE_PROVIDER } from "@/features/marketing/lib/provider-names";
 
 const OUTCOME_OPTIONS = [
   { value: "discovered", label: "Discovered" },
@@ -44,7 +45,7 @@ const DISCOVERY_SOURCE_OPTIONS = [
   { value: "seed", label: "Seed" },
   { value: "link", label: "Link" },
   { value: "sitemap", label: "Sitemap" },
-  { value: "gsc", label: "Google Search Console" },
+  { value: "gsc", label: GOOGLE_SEARCH_CONSOLE_PROVIDER.label },
   { value: "manual", label: "Manual" },
   { value: "redirect", label: "Redirect" },
   { value: "canonical", label: "Canonical" },

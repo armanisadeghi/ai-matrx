@@ -171,10 +171,10 @@ export function PageSearchConsoleCard({ page }: { page: MarketingPage }) {
 
   const copy = webCopy({
     kind: "web-page-search-console",
-    label: "Google Search Console",
+    label: "GSC",
     description:
-      "Stored Google Search Console performance for this canonical page over the selected range: page totals plus the per-query breakdown.",
-    surface: `Google Search Console — ${page.url}`,
+      "Stored GSC performance for this canonical page over the selected range: page totals plus the per-query breakdown.",
+    surface: `GSC — ${page.url}`,
     data: {
       url: page.url,
       range: rangeLabel,
@@ -249,7 +249,7 @@ export function PageSearchConsoleCard({ page }: { page: MarketingPage }) {
     body = (
       <p className="flex items-center gap-2 p-4 text-xs text-muted-foreground">
         <Unplug className="h-4 w-4 shrink-0" />
-        Google Search Console has never been synced for this site — connect and
+        GSC has never been synced for this site — connect and
         run a sync from site integrations to see real search performance here.
       </p>
     );
@@ -324,7 +324,7 @@ export function PageSearchConsoleCard({ page }: { page: MarketingPage }) {
 
   return (
     <SectionCard
-      title="Google Search Console"
+      title="GSC"
       collapsible
       anchor="gsc_metrics_28d"
       headerExtra={rangeControl}

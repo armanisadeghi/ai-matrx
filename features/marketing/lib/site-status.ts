@@ -182,7 +182,7 @@ export function siteConnectionStatuses(
   const gscBase = providerStatus(
     "search_console",
     "GSC",
-    "Google Search Console",
+    "GSC",
     providerReferenceStatus(integrations.googleSearchConsole, true),
     "Not connected",
   );

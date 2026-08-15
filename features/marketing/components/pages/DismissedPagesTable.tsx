@@ -22,10 +22,11 @@ import {
 } from "@/features/marketing/components/shared/MarketingUi";
 import { PreviouslyDismissedBadge } from "@/features/marketing/components/shared/PreviouslyDismissedBadge";
 import { extractErrorMessage } from "@/utils/errors";
+import { GOOGLE_SEARCH_CONSOLE_PROVIDER } from "@/features/marketing/lib/provider-names";
 
 const PROVENANCE_OPTIONS = [
   { value: "crawl", label: "Crawl" },
-  { value: "gsc", label: "Google Search Console" },
+  { value: "gsc", label: GOOGLE_SEARCH_CONSOLE_PROVIDER.label },
   { value: "sitemap", label: "Sitemap" },
   { value: "manual", label: "Manual" },
 ];
