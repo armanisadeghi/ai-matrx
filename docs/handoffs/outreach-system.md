@@ -816,15 +816,36 @@ warm identity → logged as `crm.interaction`. **A working, human-approved 1:1 s
 useful on its own** (it is exactly how a careful link builder works today) and it de-risks
 everything after it.
 
-**Phase 5 — scale and listen, together.** G4 sequence runner + G6 inbound. **Do not ship the
-sequence runner without reply ingestion** — an unstoppable cadence is worse than no cadence, and
-stop-on-reply is the single most important behavior in the system.
+**Phase 5 — scale and listen, together.** ✅ **BUILT 2026-08-15 (WP1) — shipped together, as the
+rule demands.** G4: `aidream/services/outreach_sequence/` + the `crm_outreach_sequence_runner`
+task. It owns the cursor and the clock and NOTHING else — every message still exits through
+`outreach_single_send` → `sending_identity.gate` → `crm.check_send_eligibility()`, so a cadence
+has strictly LESS authority than a human, never more. Stop-on-reply is guaranteed in three
+independent layers, including a `Literal[True]` Pydantic refuses to unset and a cross-service test
+pinning that every status ingestion writes is terminal to the runner. G6:
+`aidream/services/outreach_inbound/` — one classifier stage (headers/DSN → the EXISTING opt-out
+detector → OOO with return-date parsing → interest) feeding BOTH suppression and branching, with
+Gmail `threadId` correlation (naive `In-Reply-To` matching would silently never match, because
+`sending_event.provider_message_id` holds the Gmail API id, not the RFC822 Message-ID).
+**Ingestion cannot RUN in production until the `gmail.readonly` grant is ruled on** — that
+decision collides with the in-flight Google verification campaign and belongs to Arman; see
+`common-docs/projects/outreach-system/DECISION_LOG.md` D-W1-10. Until then the system fails
+correctly: the cadence refuses to run un-listened rather than sending blind.
 
 **Phase 6 — prove it.** G8 attribution: close the loop against our own crawl. This is the payoff
 and the differentiator (§1).
 
-**Phase 7 — the surfaces.** G9 "Start outreach" from a backlink prospect and a reputation case,
-plus the Phase-1 frontend trigger, landing in the existing `/crm/outreach-lists` workspace.
+**Phase 7 — the surfaces.** ✅ **BUILT 2026-08-15 (WP1).** The reputation verdict is no longer a
+dead end: each verdict resolves to the action it implies, and `pitch`/`request_update`/`correct`/
+`respond` carry `reputation_case_id` through to the draft so attribution binds. The same door
+exists on backlink prospects (a `toxic` domain refuses WITH the reason). The Phase-1 frontend
+trigger landed with it — the `auto|manual|off` control rendered in both places from one record,
+and a fold report that names what it skipped and why. Provenance ("why is this org in my CRM") now
+renders on the party record with real doors. Plus the unified inbox `/crm/inbox` and the Chasebox
+`/crm/chasebox`, as VIEWS over `crm.interaction` + `outreach_list_member` — no new tables, no
+separate console. **Still open in G9:** the competitor link-gap prospect list has no "Start
+outreach" button yet (the `link_gap` fold producer and the provenance renderer already handle it —
+only the button is missing).
 
 Phases 1–4 are independently valuable and shippable. **Nothing before Phase 5 sends anything a
 human did not approve** — the correct risk posture for a system whose failure mode is "we helped
@@ -840,14 +861,18 @@ a customer spam strangers from their real mailbox."
    headers, reply-based opt-out, purchased-list detection — named in
    `common-docs/systems/outreach-compliance/ENGINEERING_GAPS.md` § "Still open". FLOOR items:
    no tier and no trust level buys past them.
-3. **Phase 5 — sequences + inbound (G4 + G6).** The cadence schema already exists unused on
-   `crm.outreach_list_member`. 🚨 **Do not ship the runner without reply ingestion** — an
-   unstoppable cadence is worse than no cadence, and reply-based opt-out (item 3) depends on the
-   same seam.
+3. ~~Phase 5 — sequences + inbound~~ ✅ **BUILT 2026-08-15 (WP1), together.** Remaining is a
+   HUMAN gate, not engineering: the `gmail.readonly` grant (Arman — it collides with the live
+   Google verification campaign, DECISION_LOG D-W1-10), the Pub/Sub topic + subscription, and the
+   two env vars. Until then the cadence refuses to run un-listened.
 4. **Phase 6 — attribution (G8).** The differentiator (§1): our own crawl closes the loop and
-   proves the link appeared. Nobody else in the category can do this.
-5. **Phase 7 — surfaces (G9).** "Start outreach" from a backlink prospect and a reputation case,
-   plus Phase 1's frontend trigger. Today the reputation verdict is still a dead end.
+   proves the link appeared. Nobody else in the category can do this. **Owned by WP4**, whose
+   IC-5 shape is `platform.outcome_event` (attribution PROPOSES, a human CONFIRMS).
+5. ~~Phase 7 — surfaces (G9)~~ ✅ **BUILT 2026-08-15 (WP1).** The reputation verdict now carries
+   the action it implies; the same door exists on backlink prospects; the Phase-1 fold trigger,
+   provenance on the party record, the unified inbox and the Chasebox all landed. **One piece
+   remains:** the competitor link-gap prospect list still has no "Start outreach" button (the
+   `link_gap` fold producer and the provenance renderer already handle it).
 6. **Scaled media ingestion** — the research and first crawl landed; volume ingestion did not.
 7. **Lane A, entire** (below). Committed vision, deliberately sequenced after Lane B.
 
