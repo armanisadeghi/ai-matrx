@@ -6,6 +6,11 @@
  * external stable backlinks (`seo.backlink` +
  * `seo.backlink_snapshot` page-level summary).
  *
+ * It also owns every read of the COMPETITOR LINK GAP (`seo.link_gap_domain` +
+ * `seo.link_gap_match`) — the page-level card and the site-wide prospect list
+ * both — so the review vocabulary and the unmeasured-score rule have exactly
+ * one owner. See the section marked "The SITE-WIDE competitor link gap".
+ *
  * Reads are deliberately capped (LINK_ROW_CAP / BACKLINK_ROW_CAP) and ordered
  * deterministically (created_at desc, id desc) so a truncated fetch reflects
  * the newest evidence. Aggregation happens client-side over the FULL fetched
@@ -13,6 +18,7 @@
  */
 
 import { useQuery } from "@tanstack/react-query";
+import type { MatrxDataTableQueryState } from "@/components/official/matrx-data-table/types";
 import { marketingKeys } from "@/features/marketing/data/hooks";
 import { assertData } from "@/features/marketing/data/service";
 import type {
@@ -972,6 +978,249 @@ export async function getPageLinkGap(
       ];
     }),
   };
+}
+
+// ── The SITE-WIDE competitor link gap (the prospect list) ────────────────────
+//
+// Same two tables as `getPageLinkGap` above — `seo.link_gap_domain` and its
+// `seo.link_gap_match` children — read at the SITE level instead of for one
+// page. Deliberately in this module rather than a second one: one owner for
+// link-gap reads means the review vocabulary, the null-score rule, and the
+// competitor-eligibility rule can never drift between the page card and the
+// site list.
+
+/** One prospect: a domain that links to competitors and not to us. */
+export interface LinkGapDomainRow {
+  id: string;
+  site_id: string;
+  normalized_domain: string;
+  display_domain: string;
+  match_count: number;
+  domain_rank: number | null;
+  spam_score: number | null;
+  total_backlinks: number | null;
+  referring_domains: number | null;
+  observed_at: string | null;
+  review_status: string;
+  reviewed_at: string | null;
+  reviewed_by: string | null;
+  priority_score: number | null;
+  priority_reason: string | null;
+  metadata: Json;
+}
+
+/** One piece of evidence: a competitor this domain already links to. */
+export interface LinkGapMatchRow {
+  id: string;
+  link_gap_domain_id: string;
+  competitor_id: string;
+  competitor_domain: string;
+  backlinks: number | null;
+  domain_rank: number | null;
+  spam_score: number | null;
+  source_url: string | null;
+  target_url: string | null;
+  is_dofollow: boolean | null;
+  page_id: string | null;
+}
+
+export interface LinkGapDomainPage {
+  rows: LinkGapDomainRow[];
+  total: number;
+  /** review_status → how many rows the site has, ignoring the current filter. */
+  statusCounts: Record<string, number>;
+}
+
+const LINK_GAP_DOMAIN_SELECT =
+  "id, site_id, normalized_domain, display_domain, match_count, domain_rank, spam_score, total_backlinks, referring_domains, observed_at, review_status, reviewed_at, reviewed_by, priority_score, priority_reason, metadata";
+
+const LINK_GAP_MATCH_SELECT =
+  "id, link_gap_domain_id, competitor_id, competitor_domain, backlinks, domain_rank, spam_score, source_url, target_url, is_dofollow, page_id";
+
+/** Columns the prospect table may sort on, server-side. */
+const LINK_GAP_SORT_COLUMNS = new Set([
+  "display_domain",
+  "match_count",
+  "priority_score",
+  "domain_rank",
+  "spam_score",
+  "total_backlinks",
+  "review_status",
+  "observed_at",
+]);
+
+function selectedFilterValues(filter: unknown): string[] {
+  if (!filter || typeof filter !== "object") return [];
+  const value = filter as { kind?: string; value?: string; values?: string[] };
+  if (value.kind !== "select") return [];
+  if (value.values?.length) return value.values;
+  return value.value ? [value.value] : [];
+}
+
+/**
+ * The site's prospect list, server-paged.
+ *
+ * THE UNMEASURED RULE: `priority_score` is NULL when we could not measure the
+ * domain, so every sort passes `nullsFirst: false` in BOTH directions — a null
+ * is never allowed to sort as a zero (worst) or as an unknown-best. The
+ * tiebreaker is `match_count`, the industry's primary signal.
+ */
+export async function listLinkGapDomains(
+  siteId: string,
+  state: MatrxDataTableQueryState,
+  signal?: AbortSignal,
+): Promise<LinkGapDomainPage> {
+  const db = await seoDb();
+  const abortSignal = signal ?? new AbortController().signal;
+  const from = (state.page - 1) * state.pageSize;
+  const to = from + state.pageSize - 1;
+  let query = db
+    .from("link_gap_domain")
+    .select(LINK_GAP_DOMAIN_SELECT, { count: "exact" })
+    .eq("site_id", siteId);
+  const search = state.search.trim().replace(/[(),"'\\]/g, " ");
+  if (search) {
+    query = query.or(
+      `display_domain.ilike.%${search}%,normalized_domain.ilike.%${search}%,priority_reason.ilike.%${search}%`,
+    );
+  }
+  const statuses = selectedFilterValues(state.columnFilters.review_status);
+  if (statuses.length === 1) query = query.eq("review_status", statuses[0]);
+  else if (statuses.length > 1) query = query.in("review_status", statuses);
+  const matchFilter = state.columnFilters.match_count;
+  if (matchFilter?.kind === "number") {
+    if (matchFilter.min !== undefined) {
+      query = query.gte("match_count", matchFilter.min);
+    }
+    if (matchFilter.max !== undefined) {
+      query = query.lte("match_count", matchFilter.max);
+    }
+  }
+  const scoreFilter = state.columnFilters.priority_score;
+  if (scoreFilter?.kind === "number") {
+    if (scoreFilter.min !== undefined) {
+      query = query.gte("priority_score", scoreFilter.min);
+    }
+    if (scoreFilter.max !== undefined) {
+      query = query.lte("priority_score", scoreFilter.max);
+    }
+  }
+  const spamFilter = state.columnFilters.spam_score;
+  if (spamFilter?.kind === "number") {
+    if (spamFilter.min !== undefined) {
+      query = query.gte("spam_score", spamFilter.min);
+    }
+    if (spamFilter.max !== undefined) {
+      query = query.lte("spam_score", spamFilter.max);
+    }
+  }
+  const sortColumn =
+    state.sort && LINK_GAP_SORT_COLUMNS.has(state.sort.id)
+      ? state.sort.id
+      : "priority_score";
+  const ascending = state.sort ? state.sort.direction === "asc" : false;
+  const [pageResponse, statusResponse] = await Promise.all([
+    query
+      .order(sortColumn, { ascending, nullsFirst: false })
+      .order("match_count", { ascending: false, nullsFirst: false })
+      .order("normalized_domain", { ascending: true })
+      .range(from, to)
+      .abortSignal(abortSignal),
+    // The backlog counts are the whole point of the review queue, so they are
+    // read UNFILTERED — a status filter must never make its own tab read zero.
+    db
+      .from("link_gap_domain")
+      .select("review_status")
+      .eq("site_id", siteId)
+      .limit(5000)
+      .abortSignal(abortSignal),
+  ]);
+  const rows = assertData(pageResponse.data, pageResponse.error);
+  const statusRows = assertData(statusResponse.data, statusResponse.error);
+  const statusCounts: Record<string, number> = {};
+  for (const row of statusRows) {
+    const key = row.review_status ?? "pending";
+    statusCounts[key] = (statusCounts[key] ?? 0) + 1;
+  }
+  return { rows, total: pageResponse.count ?? 0, statusCounts };
+}
+
+/** The evidence behind one prospect: which competitors it already links to. */
+export async function listLinkGapMatches(
+  linkGapDomainId: string,
+  signal?: AbortSignal,
+): Promise<LinkGapMatchRow[]> {
+  const db = await seoDb();
+  const response = await db
+    .from("link_gap_match")
+    .select(LINK_GAP_MATCH_SELECT)
+    .eq("link_gap_domain_id", linkGapDomainId)
+    .order("backlinks", { ascending: false, nullsFirst: false })
+    .order("competitor_domain", { ascending: true })
+    .limit(200)
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertData(response.data, response.error);
+}
+
+/**
+ * Which prospects already became a CRM record — `{domain_id: party_id}`.
+ *
+ * The server's fold writes a `party -> seo_link_gap_domain` association as the
+ * "why is this org in my CRM" edge, so that edge is also the honest answer to
+ * "is there a party for this row yet?". Read direct, so an approved row can
+ * offer the party door instead of a second Create button.
+ */
+export async function listLinkGapPartyLinks(
+  linkGapDomainIds: string[],
+  signal?: AbortSignal,
+): Promise<Record<string, string>> {
+  if (!linkGapDomainIds.length) return {};
+  const ids = Array.from(new Set(linkGapDomainIds));
+  const response = await supabase
+    .schema("platform")
+    .from("associations")
+    .select("source_id, target_id")
+    .eq("source_type", "party")
+    .eq("target_type", "seo_link_gap_domain")
+    .in("target_id", ids)
+    .is("deleted_at", null)
+    .abortSignal(signal ?? new AbortController().signal);
+  const rows = assertData(response.data, response.error);
+  const byDomain: Record<string, string> = {};
+  for (const row of rows) {
+    if (row.target_id && row.source_id) byDomain[row.target_id] = row.source_id;
+  }
+  return byDomain;
+}
+
+/**
+ * The human's ruling on a prospect — the ONE write path, used by the single-row
+ * actions and the bulk bar alike.
+ *
+ * `approved` is what makes a row eligible to become a CRM record, so who ruled
+ * and when is recorded on the row itself, never inferred later.
+ */
+export async function setLinkGapReviewStatus(
+  linkGapDomainIds: string[],
+  reviewStatus: string,
+): Promise<number> {
+  if (!linkGapDomainIds.length) return 0;
+  const db = await seoDb();
+  const auth = await supabase.auth.getUser();
+  if (auth.error) throw auth.error;
+  const userId = auth.data.user?.id;
+  if (!userId) throw new Error("Sign in again before reviewing prospects.");
+  const response = await db
+    .from("link_gap_domain")
+    .update({
+      review_status: reviewStatus,
+      reviewed_at: new Date().toISOString(),
+      reviewed_by: userId,
+    })
+    .in("id", Array.from(new Set(linkGapDomainIds)))
+    .select("id");
+  const rows = assertData(response.data, response.error);
+  return rows.length;
 }
 
 /** One referring domain's rollup over the fetched observations. */

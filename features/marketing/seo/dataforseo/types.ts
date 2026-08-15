@@ -150,6 +150,90 @@ export interface PageLinkGapReceipt {
   receipt: CollectionReceipt;
 }
 
+/**
+ * The site-wide competitor link gap: "who links to my competitors and not to
+ * me?". Both the no-spend seed preview and the paid streamed run take this
+ * body — one shape, so the preview can never be computed from a different
+ * request than the run it previews.
+ */
+export interface SiteLinkGapBody {
+  competitor_ids?: string[];
+  limit?: number;
+  max_spam_score?: number;
+  force_refresh?: boolean;
+  request_id?: string;
+}
+
+/** One competitor the run WOULD compare against, with why it qualifies. */
+export interface SeededCompetitor {
+  competitor_id: string;
+  domain: string;
+  entity_role: string | null;
+  business_overlap: string | null;
+  market_overlap: string | null;
+  explicitly_enabled: boolean;
+}
+
+/**
+ * The answer to "what would this cost me and who would it look at?" — returned
+ * by `/link-gap/seed`, which spends NOTHING. `can_run: false` carries a
+ * plain-language `reason` written for the user (today: no competitor has been
+ * confirmed yet), and the surface renders it as the next step, never an error.
+ */
+export interface SiteLinkGapSeedResponse {
+  site_id: string;
+  can_run: boolean;
+  seeded: SeededCompetitor[];
+  excluded: string[];
+  reason: string | null;
+  confirmed_competitors: number;
+  total_competitors: number;
+}
+
+/** Terminal receipt of the paid site-wide run (`seo.site_link_gap_completed`). */
+export interface DomainLinkGapReceipt {
+  site_id: string;
+  site_domain: string;
+  seeded: SeededCompetitor[];
+  excluded: string[];
+  receipt: CollectionReceipt;
+}
+
+/** One prospect domain resolved into a CRM organization by the server fold. */
+export interface FoldedLinkGapDomain {
+  domain: string;
+  party_id: string;
+  display_name: string;
+  created: boolean;
+  matched_by: string;
+  provenance_edge: boolean;
+}
+
+/** A row the fold deliberately did NOT turn into a CRM record, and why. */
+export interface SkippedLinkGapDomain {
+  domain: string;
+  row_id: string;
+  reason: string;
+}
+
+/**
+ * What the CRM fold did. Only APPROVED prospects are folded; everything else
+ * comes back in `skipped` with its current review state, so the backlog
+ * waiting on a human decision is visible instead of silent.
+ */
+export interface LinkGapFoldReport {
+  source: string;
+  site_id: string;
+  organization_id: string;
+  scanned: number;
+  already_linked: number;
+  created: number;
+  matched: number;
+  folded: FoldedLinkGapDomain[];
+  skipped: SkippedLinkGapDomain[];
+  errors: string[];
+}
+
 export interface BacklinkEnrichmentResult {
   result_kind: "backlinks.enrich";
   site_id: string;

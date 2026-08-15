@@ -8,9 +8,13 @@ import type {
   CollectionCreateBody,
   CollectionReceipt,
   DataForSeoOperationsResponse,
+  DomainLinkGapReceipt,
   JsonValue,
+  LinkGapFoldReport,
   RunEvidence,
   SeoStreamEvent,
+  SiteLinkGapBody,
+  SiteLinkGapSeedResponse,
 } from "./types";
 
 export class SeoApiError extends Error {
@@ -65,6 +69,12 @@ async function seoStreamTerminal<T>(
   terminalKind: string,
   project: (data: Record<string, unknown>) => T | null,
   onEvent?: (event: SeoStreamEvent) => void,
+  /**
+   * Abort the CLIENT's read of the stream (the server run is durable and keeps
+   * going). Without it, leaving the page left the response body draining for
+   * the life of a multi-minute run.
+   */
+  signal?: AbortSignal,
 ): Promise<T> {
   const response = await fetch(`${normalizedBaseUrl(serverUrl)}${path}`, {
     method: "POST",
@@ -73,6 +83,7 @@ async function seoStreamTerminal<T>(
       "Content-Type": "application/json",
     },
     body: JSON.stringify(body),
+    signal,
   });
   if (!response.ok) {
     const payload: unknown = await response.json().catch(() => null);
@@ -191,6 +202,75 @@ export function enrichSiteBacklinks(
     "seo.backlink_enrichment_completed",
     (data) => (data.result as BacklinkEnrichmentResult | undefined) ?? null,
     onEvent,
+  );
+}
+
+/**
+ * Who WOULD be compared, before anyone spends money. No provider call, no
+ * rows written — the seed is the honest preview of the paid run below, so the
+ * user sees the competitor list (and the confirmed ones left out, with the
+ * reason) before choosing to pay.
+ */
+export function previewSiteLinkGapSeed(
+  serverUrl: string,
+  accessToken: string,
+  siteId: string,
+  body: SiteLinkGapBody,
+): Promise<SiteLinkGapSeedResponse> {
+  return seoRequest(
+    serverUrl,
+    accessToken,
+    `/seo/sites/${encodeURIComponent(siteId)}/link-gap/seed`,
+    { method: "POST", body: JSON.stringify(body) },
+  );
+}
+
+/**
+ * The paid site-wide run: every domain that links to a confirmed competitor
+ * and not to us. Refused with HTTP 409 (a sentence written for the user) when
+ * the site has no confirmed, link-gap-eligible competitor — render that as
+ * guidance to the competitors workspace, never as a raw failure.
+ */
+export function collectSiteLinkGap(
+  serverUrl: string,
+  accessToken: string,
+  siteId: string,
+  body: SiteLinkGapBody,
+  onEvent?: (event: SeoStreamEvent) => void,
+  signal?: AbortSignal,
+): Promise<DomainLinkGapReceipt> {
+  return seoStreamTerminal(
+    serverUrl,
+    accessToken,
+    `/seo/sites/${encodeURIComponent(siteId)}/link-gap`,
+    { ...body },
+    "seo.site_link_gap_completed",
+    (data) => (data.receipt as DomainLinkGapReceipt | undefined) ?? null,
+    onEvent,
+    signal,
+  );
+}
+
+/**
+ * THE OUTREACH DOOR (contract IC-1): resolve this site's APPROVED prospects
+ * into `crm.party` organizations, each carrying a provenance edge naming the
+ * competitors that already get links from that site.
+ *
+ * The SAME route the automatic per-site fold runs, so the manual click and the
+ * schedule can never produce two different kinds of record. Approval is the
+ * only gate — the server refuses everything else and says so per row.
+ */
+export function foldLinkGapDomainsToCrm(
+  serverUrl: string,
+  accessToken: string,
+  siteId: string,
+  body: { limit?: number; refold?: boolean } = {},
+): Promise<LinkGapFoldReport> {
+  return seoRequest(
+    serverUrl,
+    accessToken,
+    `/seo/sites/${encodeURIComponent(siteId)}/crm/link-gap-domains`,
+    { method: "POST", body: JSON.stringify(body) },
   );
 }
 
