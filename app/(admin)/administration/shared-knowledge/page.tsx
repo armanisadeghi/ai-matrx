@@ -1,7 +1,7 @@
 // app/(admin)/administration/shared-knowledge/page.tsx
 //
 // Shared Knowledge admin console — the issuance and audit cockpit for
-// Shared Knowledge Resources (P2, shared-knowledge-projects). Super-admin
+// Shared Knowledge Resources. Super-admin
 // gating is inherited from app/(admin)/layout.tsx. The server loader pulls
 // the org directory + every kind='library' store (reads client RLS hides);
 // all mutations run client-side through the existing SECURITY DEFINER RPC
