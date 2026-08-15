@@ -194,6 +194,36 @@ export const EXPERT_STATUS_FILTERS = [
 ] as const;
 export type ExpertStatusFilter = (typeof EXPERT_STATUS_FILTERS)[number];
 
+/**
+ * THE RECORD-CLASS FACET — why your CRM is not full of things you never added.
+ *
+ * `crm.party.record_class` separates the parties a user WORKS WITH from the ones
+ * the PLATFORM discovered on its own: SEO link prospects, media outlets,
+ * research experts, folded social channels. One site's backlink profile is
+ * hundreds of organizations, so a salesperson searching for the six leads they
+ * make money from must not have to wade through them.
+ *
+ * The list defaults to `contacts`. `discovered` and `all` are one click away —
+ * hidden is not unreachable (THE DOOR LAW), and the SEO surfaces that produced
+ * those records link straight to them.
+ */
+export const RECORD_CLASS_FILTERS = ["contacts", "discovered", "all"] as const;
+export type RecordClassFilter = (typeof RECORD_CLASS_FILTERS)[number];
+
+export const RECORD_CLASS_FILTER_LABEL: Record<RecordClassFilter, string> = {
+  contacts: "My contacts",
+  discovered: "Found by the platform",
+  all: "Everything",
+};
+
+/** The DB value each facet option filters on (`all` filters on nothing). */
+export const RECORD_CLASS_FILTER_VALUE: Record<
+  RecordClassFilter,
+  "contact" | "discovered" | null
+> = { contacts: "contact", discovered: "discovered", all: null };
+
+export const DEFAULT_RECORD_CLASS_FILTER: RecordClassFilter = "contacts";
+
 export const CONTACT_PURPOSES = [
   "work",
   "personal",
@@ -262,6 +292,8 @@ export interface PartyListFilters {
   do_not_contact?: boolean;
   /** "any" = any tier at all; "none" = explicitly not an expert. */
   expert_status?: ExpertStatusFilter;
+  /** Contacts you work with vs records the platform found. Defaults to contacts. */
+  record_class?: RecordClassFilter;
   updated_at?: DateBucket;
   created_at?: DateBucket;
 }
@@ -284,7 +316,10 @@ export const DEFAULT_PARTY_QUERY: PartyListQuery = {
   scope: { kind: "mine" },
   search: "",
   kind: "all",
-  filters: {},
+  // The default is a REAL filter, not an empty bag: a CRM that shows every
+  // platform-discovered organization by default gets worse the more the
+  // platform learns.
+  filters: { record_class: DEFAULT_RECORD_CLASS_FILTER },
   page: 1,
   view: "active",
 };
@@ -334,6 +369,7 @@ export const PARTY_COLUMN_FILTER_KEYS = [
   "party_kind",
   "do_not_contact",
   "expert_status",
+  "record_class",
   "updated_at",
   "created_at",
 ] as const;

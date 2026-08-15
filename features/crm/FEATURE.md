@@ -77,6 +77,26 @@ DDL: [`migrations/crm_01_schema.sql`](../../migrations/crm_01_schema.sql),
 
 ## Invariants / gotchas
 
+- **🚨 `record_class` — the list defaults to CONTACTS, and that default is load-bearing.**
+  `crm.party.record_class` is `'contact'` (the DB default: manual entry, imports, form
+  fills) or `'discovered'` (the PLATFORM found it — SEO link prospects, media outlets,
+  research experts, folded channels). Live on 2026-08-14 before this shipped: **1,181
+  discovered rows against 6 real contacts**, all in the same list and the same search box.
+  - `applyPartyListPredicates` filters `record_class='contact'` when the caller says
+    nothing — an unset filter must NEVER mean "show everything". `all` is how a caller asks
+    for that on purpose.
+  - The **Record** column facet (My contacts / Found by the platform / Everything) is
+    always rendered, because the default IS a filter and the user has to be able to see and
+    change it. Hidden is never unreachable.
+  - `crm_list_scope_counts` takes the SAME `p_record_class` — a tab reading 1,181 above a
+    list of 6 rows is a bug, so the RPC and the predicate change together, always.
+  - **Not `platform.categories`** — that is the user's taxonomy (lifecycle, rating,
+    segments). This is a system-owned structural axis.
+  - Promotion (`discovered` → `contact`) is a human act; the server never reverses it.
+  - Foundation only. Saved-view/display-setting persistence, bulk promote, and every other
+    surface that lists parties are the work order in
+    [`docs/handoffs/crm-record-classification.md`](../../docs/handoffs/crm-record-classification.md).
+
 - **Employment is `crm.affiliation`, a real table — not an association edge.** The
   edge unique key is `(source_type, source_id, target_type, target_id, role)`, so an
   edge can express only ONE `works_at` between a person and a company, ever: no second
@@ -460,6 +480,10 @@ not an expert) and `ExpertStatusCard` on the record page.
 
 ## Change log
 
+- 2026-08-14 — **`record_class`: platform-discovered parties stop drowning the CRM.**
+  New `crm.party.record_class` column + backfill of 1,181 rows, default list predicate,
+  the Record facet, and `crm_list_scope_counts(p_record_class)`. Server half (every
+  automated producer stamps `discovered`): `aidream/aidream/services/crm/FEATURE.md`.
 - 2026-08-15 — **Scope counts are ONE round trip** (D139). `fetchPartyScopeCounts`
   fired `3 + N_orgs` `head:true` count queries — one per scope tab plus one per
   organization — and `usePartyList` re-ran the whole fan-out on every 200ms

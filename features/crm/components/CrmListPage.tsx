@@ -68,10 +68,13 @@ import type {
   PartyListRow,
   PartySortDirection,
   PartySortKey,
+  RecordClassFilter,
 } from "../types";
 import {
   CRM_LIST_SCOPES,
   DATE_BUCKETS,
+  DEFAULT_RECORD_CLASS_FILTER,
+  RECORD_CLASS_FILTERS,
   DATE_BUCKET_ENUM_TEXT,
   DATE_BUCKET_VALUES,
   EXPERT_STATUS_FILTERS,
@@ -125,6 +128,11 @@ function fromTableFilters(state: ColumnFiltersState): PartyListFilters {
           (EXPERT_STATUS_FILTERS as readonly string[]).includes(v),
         );
         if (value) out.expert_status = value as ExpertStatusFilter;
+      } else if (id === "record_class") {
+        const value = values.find((v) =>
+          (RECORD_CLASS_FILTERS as readonly string[]).includes(v),
+        );
+        if (value) out.record_class = value as RecordClassFilter;
       } else if (id === "updated_at" || id === "created_at") {
         const bucket = values.find((v) => BUCKET_VALUES.includes(v));
         if (bucket) out[id] = bucket as DateBucket;
@@ -155,6 +163,12 @@ function toTableFilters(filters: PartyListFilters): ColumnFiltersState {
     out.do_not_contact = { kind: "boolean", value: filters.do_not_contact };
   if (filters.expert_status)
     out.expert_status = { kind: "select", value: filters.expert_status };
+  // Always rendered, because the default IS a filter — a user must be able to
+  // see that the list is showing contacts only, and change it in one click.
+  out.record_class = {
+    kind: "select",
+    value: filters.record_class ?? DEFAULT_RECORD_CLASS_FILTER,
+  };
   if (filters.updated_at)
     out.updated_at = { kind: "select", value: filters.updated_at };
   if (filters.created_at)

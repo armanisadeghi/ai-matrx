@@ -22,6 +22,8 @@ import {
   DATE_BUCKETS,
   EXPERT_STATUSES,
   EXPERT_STATUS_LABEL,
+  RECORD_CLASS_FILTERS,
+  RECORD_CLASS_FILTER_LABEL,
 } from "../types";
 
 const DATE_BUCKET_OPTIONS = DATE_BUCKETS.map((b) => ({
@@ -207,6 +209,33 @@ export const PARTY_COLUMNS: MatrxColumnDef<PartyListRow>[] = [
     cell: (row) =>
       isExpertStatus(row.expert_status) ? (
         expertBadge(row.expert_status)
+      ) : (
+        <span className="text-xs text-muted-foreground">—</span>
+      ),
+  },
+  {
+    // THE VISIBLE HALF of the record-class rule. The list hides
+    // platform-discovered records by default; this is where a user says "show
+    // me the SEO prospects" or "show me everything". Hidden by default must
+    // never mean unreachable.
+    id: "record_class",
+    accessorKey: "record_class",
+    header: "Record",
+    sortable: false,
+    filter: "select",
+    filterOptions: RECORD_CLASS_FILTERS.map((v) => ({
+      value: v,
+      label: RECORD_CLASS_FILTER_LABEL[v],
+    })),
+    width: 120,
+    cell: (row) =>
+      row.record_class === "discovered" ? (
+        <span
+          className="rounded bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground"
+          title="Found by the platform (SEO prospect, media outlet, expert or channel) — not one of your contacts until you say so."
+        >
+          Found
+        </span>
       ) : (
         <span className="text-xs text-muted-foreground">—</span>
       ),

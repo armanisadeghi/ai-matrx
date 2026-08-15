@@ -11327,6 +11327,7 @@ export type Database = {
           primary_employer_party_id: string | null
           pronouns: string | null
           rating_id: string | null
+          record_class: string
           registration_number: string | null
           sort_name: string | null
           source: string | null
@@ -11384,6 +11385,7 @@ export type Database = {
           primary_employer_party_id?: string | null
           pronouns?: string | null
           rating_id?: string | null
+          record_class?: string
           registration_number?: string | null
           sort_name?: string | null
           source?: string | null
@@ -11441,6 +11443,7 @@ export type Database = {
           primary_employer_party_id?: string | null
           pronouns?: string | null
           rating_id?: string | null
+          record_class?: string
           registration_number?: string | null
           sort_name?: string | null
           source?: string | null
@@ -36459,15 +36462,30 @@ export type Database = {
         Args: { p_id: string }
         Returns: undefined
       }
-      crm_list_scope_counts: {
-        Args: { p_kind?: string; p_search?: string; p_view?: string }
-        Returns: {
-          label: string
-          narrow_id: string
-          scope: string
-          total: number
-        }[]
-      }
+      crm_list_scope_counts:
+        | {
+            Args: { p_kind?: string; p_search?: string; p_view?: string }
+            Returns: {
+              label: string
+              narrow_id: string
+              scope: string
+              total: number
+            }[]
+          }
+        | {
+            Args: {
+              p_kind?: string
+              p_record_class?: string
+              p_search?: string
+              p_view?: string
+            }
+            Returns: {
+              label: string
+              narrow_id: string
+              scope: string
+              total: number
+            }[]
+          }
       crm_merge_parties: {
         Args: {
           p_loser: string

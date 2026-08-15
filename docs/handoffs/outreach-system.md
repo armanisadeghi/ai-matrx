@@ -109,9 +109,26 @@ CRM". Idempotent on the domain key (refold creates nothing); a domain already in
 enriched, never duplicated. Toxic link farms, watch-list verdicts and the brand's own domain are
 skipped WITH the reason. Contract + earned traps: `aidream/aidream/services/crm/FEATURE.md`
 § "SEO domains".
-**Remaining (frontend, belongs with G9):** nothing calls these routes yet — a "Find these
-domains in my CRM" action on the backlink-prospect and reputation-case surfaces, and the
-provenance edge rendered on the party record page.
+**Triggered by the crawl, controlled by the user (2026-08-14).** The fold runs when a
+backlinks/competitors collection or a reputation run COMPLETES — data only changes then, so
+a timer would poll unchanged data and still be late. Per-site setting on
+`web.site.settings->'crm_fold'` (`auto` default · `manual` button-only · `off`, where the
+button refuses too), read/written at `GET|PUT /api/seo/sites/{site_id}/crm/fold-settings`
+and meant to render BOTH on the site-settings surface and beside the prospect list — one
+record, two renders.
+
+**Discovered records do not pollute the CRM.** `crm.party.record_class` (`contact` |
+`discovered`) now separates the parties a user works with from the ones the platform found;
+the CRM list defaults to contacts with a one-click **Record** facet. Live before the fix:
+1,181 platform rows against 6 real contacts. Foundation only — the full classification
+system is `docs/handoffs/crm-record-classification.md`.
+
+**Remaining (frontend, belongs with G9):** a "Find these domains in my CRM" button and the
+mode control on the backlink-prospect and reputation-case surfaces, and the provenance edge
+rendered on the party record page.
+
+**The prospect list we actually want is still missing:** who links to our COMPETITORS —
+`docs/handoffs/competitor-link-gap.md`.
 
 ### G2 — Contact discovery. *Who at that domain?*
 An organization is not an inbox. We need the editor, the author, the webmaster — and we already

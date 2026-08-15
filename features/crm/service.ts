@@ -44,7 +44,13 @@ import type {
   ExpertTopicRef,
   TopicExpertLink,
 } from "./types";
-import { DATE_BUCKETS, EXPERT_EDGE_ROLE, PARTY_SORT_KEYS } from "./types";
+import {
+  DATE_BUCKETS,
+  DEFAULT_RECORD_CLASS_FILTER,
+  EXPERT_EDGE_ROLE,
+  PARTY_SORT_KEYS,
+  RECORD_CLASS_FILTER_VALUE,
+} from "./types";
 import type { MediumBlock } from "./reachability";
 import { blocksSurvivingUnsuppress } from "./reachability";
 import type { EntityScopeCounts } from "@/lib/entity-list/types";
@@ -166,6 +172,12 @@ export function applyPartyListPredicates<Q extends PartyPredicateBuilder<Q>>(
   if (f.expert_status === "any") q = q.not("expert_status", "is", null);
   else if (f.expert_status === "none") q = q.is("expert_status", null);
   else if (f.expert_status) q = q.eq("expert_status", f.expert_status);
+  // Record class — the default when the caller says nothing is CONTACTS, not
+  // everything. An unset filter must never mean "show the 900 organizations the
+  // platform discovered"; `all` is how a caller asks for that on purpose.
+  const recordClass =
+    RECORD_CLASS_FILTER_VALUE[f.record_class ?? DEFAULT_RECORD_CLASS_FILTER];
+  if (recordClass) q = q.eq("record_class", recordClass);
   if (f.updated_at) q = q.gte("updated_at", bucketSince(f.updated_at));
   if (f.created_at) q = q.gte("created_at", bucketSince(f.created_at));
 
@@ -247,6 +259,14 @@ export async function fetchPartyScopeCounts(
     // Same sanitizer the page query uses, so a tab's number can never describe
     // a different search term than the rows below it.
     p_search: sanitizeSearch(query.search) || undefined,
+    // The tabs must count exactly what the list shows — same record-class
+    // filter, or a tab reads 1,181 above a list of 6 rows.
+    p_record_class:
+      query.filters.record_class === "all"
+        ? "all"
+        : (RECORD_CLASS_FILTER_VALUE[
+            query.filters.record_class ?? DEFAULT_RECORD_CLASS_FILTER
+          ] ?? "all"),
   });
   if (error) throw pgError(error);
 
