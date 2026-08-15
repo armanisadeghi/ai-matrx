@@ -2,7 +2,7 @@
 
 **Status:** `pointer only — no code lives here`
 **Tier:** `2`
-**Last updated:** `2026-08-12`
+**Last updated:** `2026-08-15`
 
 > This directory contains ONLY this file. There is no catalog UI, no `components/`, no
 > `types.ts`, no barrel — earlier revisions of this doc described a feature that does not
@@ -30,6 +30,11 @@ before changing MCP credential storage or resolution in any repo.
 
 - MCP tools integrate through the **durable delegated tool path** — never a parallel execution path ([`../agents/docs/DURABLE_TOOL_CALLS_CLIENT_INTEGRATION.md`](../agents/docs/DURABLE_TOOL_CALLS_CLIENT_INTEGRATION.md)).
 - OAuth tokens stay server-side; the client never sees raw credentials.
+- **DCR credentials are attempt-scoped.** Never cache a returned client ID without its
+  matching secret; a downstream failure must not poison the next authorization attempt.
+- **Classify the Next.js → aidream boundary before naming a service.** Cloudflare challenge
+  HTML means FastAPI and the vault never ran; preserve `cf-ray` / `x-request-id` and report
+  the edge failure instead of calling every 403 a vault denial.
 - Agent tool lists are server-computed; the client never mints tool definitions.
 
 ## Known state (D128)
@@ -55,20 +60,21 @@ defects each broke it on their own:
 4. **DB + FE, connecting at all** — `public.upsert_mcp_connection` omitted the NOT NULL
    `display_name`, so the metadata-only connect RPC raised 23502 for every server/user
    (migration `mcp_upsert_connection_display_name.sql`). And the no-auth Connect button
-   sent an *empty bearer token* to aidream's credentials endpoint (422) instead of calling
+   sent an _empty bearer token_ to aidream's credentials endpoint (422) instead of calling
    the metadata-only RPC.
 
-**Still open:** aidream is NOT deployed — production still returns the fix-1 500 on
-`/api/mcp-connections/{id}/tools`. Until it ships, discovery and invocation stay broken in
-prod even though connecting now works. `tool.definition` still has zero
-`source_kind='mcp_discovered'` rows; the only caller of `mcp_sync.sync_server` is
-`bundle_lister`, so nothing routinely syncs a server's catalog.
+**Still open:** `tool.definition` has no routine MCP catalog sync; the only caller of
+`mcp_sync.sync_server` is `bundle_lister`.
 
 The OAuth popup is no longer hand-copied — `services/mcp-oauth/popup.ts` is the one
 implementation (it also adds the origin check and listener cleanup the settings copy lacked).
 
 ## Change log
 
+- `2026-08-15` — Cloudflare Bot Fight Mode challenged Vercel's authenticated token-persist
+  POST before aidream ran. Disabled that zone-level machine-client blocker; DCR registration
+  is now attempt-scoped, and callback failures distinguish edge HTML from structured aidream
+  errors while preserving request identifiers.
 - `2026-08-15` — D128: fixed the four defects above; first successful MCP connection since the vault cutover; OAuth popup consolidated onto `mcp-oauth/popup.ts`.
 - `2026-08-12` — rewritten as an index card (D127): the described catalog feature never existed here; pointers corrected to the real agents-tree code.
 - `2026-07-23` — linked the Unified Credential Vault plan.

@@ -38,7 +38,8 @@ export async function GET(req: NextRequest) {
   }
 
   const { data: server, error: serverError } = await supabase
-    .schema("tool").from("mcp_server")
+    .schema("tool")
+    .from("mcp_server")
     .select(
       "endpoint_url, slug, auth_strategy, name, oauth_client_id, oauth_scopes, metadata",
     )
@@ -65,16 +66,14 @@ export async function GET(req: NextRequest) {
   // servers like Canva that use traditional OAuth without MCP discovery).
   const staticMeta = (server.metadata ?? {}) as Record<string, string>;
   const staticAuthEndpoint = staticMeta["oauth_auth_endpoint"] as
-    | string
-    | undefined;
+    string | undefined;
   const staticTokenEndpoint = staticMeta["oauth_token_endpoint"] as
-    | string
-    | undefined;
+    string | undefined;
 
   try {
     let authServer:
-      | Awaited<ReturnType<typeof discoverOAuthEndpoints>>["authServer"]
-      | null = null;
+      Awaited<ReturnType<typeof discoverOAuthEndpoints>>["authServer"] | null =
+      null;
     let protectedResource: Awaited<
       ReturnType<typeof discoverOAuthEndpoints>
     >["protectedResource"] = null;
@@ -157,8 +156,9 @@ export async function GET(req: NextRequest) {
     }
 
     // Strategy 2: Try Dynamic Client Registration if available.
-    // DCR auto-registers our app with the vendor and returns credentials.
-    // We cache the result in the DB so we don't re-register next time.
+    // DCR credentials are attempt-scoped. A registration may return a secret;
+    // caching only its public client_id globally creates an unusable credential
+    // on the next attempt if anything after token exchange fails.
     if (!clientId && authServer.registration_endpoint) {
       try {
         console.log(
@@ -175,15 +175,6 @@ export async function GET(req: NextRequest) {
         clientId = reg.client_id;
         clientSecret = reg.client_secret;
         console.log(`[MCP OAuth] DCR succeeded, got client_id: ${clientId}`);
-
-        // Cache DCR result in catalog so we reuse it on subsequent connects
-        await supabase
-          .schema("tool").from("mcp_server")
-          .update({
-            oauth_client_id: clientId,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", serverId);
       } catch (dcrErr) {
         console.warn(
           `[MCP OAuth] DCR failed (will try CIMD fallback):`,

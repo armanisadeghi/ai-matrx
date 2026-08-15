@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
+import { classifyMcpBackendFailure } from "@/features/agents/services/mcp-oauth/backend-failure";
 
 interface OAuthSession {
   serverId: string;
@@ -183,13 +184,11 @@ export async function GET(req: NextRequest) {
     );
 
     if (!persistRes.ok) {
-      const text = await persistRes.text().catch(() => "");
+      const failure = await classifyMcpBackendFailure(persistRes);
       console.error(
-        `[MCP OAuth Callback] Vault persistence failed (${persistRes.status}): ${text.slice(0, 200)}`,
+        `[MCP OAuth Callback] Connection persistence failed: ${failure.diagnostic}`,
       );
-      throw new Error(
-        `Failed to store connection (vault service ${persistRes.status})`,
-      );
+      throw new Error(failure.userMessage);
     }
 
     console.log(
