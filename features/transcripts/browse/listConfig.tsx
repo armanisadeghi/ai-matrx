@@ -8,7 +8,8 @@
 // collapsed to the trx_* RPC set.
 
 import type { EntityListConfig } from "@/lib/entity-list/config";
-import { relativeTime } from "@/lib/entity-list/columns";
+import { keyFieldsAiVariant } from "@/features/marketing/lib/copy-payloads";
+import { transcriptRowSummary } from "@/features/transcripts/format";
 import { TRANSCRIPT_COLUMNS } from "./columns";
 import { TranscriptBrowseCards } from "./TranscriptBrowseCards";
 import {
@@ -134,16 +135,97 @@ export const transcriptListConfig: EntityListConfig<TranscriptListRow> = {
     organization_name: "No organization",
     owner_email: "No owner",
   },
+  /**
+   * Copy / Copy-for-AI for the hub.
+   *
+   * This block existed but had `showRow` and `showToolbar` BOTH false, which
+   * meant MatrxDataTable rendered no copy control anywhere — the config was
+   * dead and the hub shipped with no way to get a row out. Both are on now,
+   * which also brings the toolbar's ExportMenu (JSON + CSV of the current
+   * view) for free.
+   *
+   * `rowKind` is `transcript-hub-item`, NOT `transcript`: this hub is
+   * heterogeneous (transcript | session | cleanup | unsorted) and its rows
+   * carry metadata only — no segments. The viewer's record payload uses
+   * `transcript` and DOES carry segments, so letting a metadata row claim the
+   * same slug would tell a future agent the two are interchangeable. The real
+   * per-row kind travels in `rowAttributes.kind`.
+   */
   copy: {
     label: "Transcript item",
     listLabel: "Transcripts",
     location: "/transcripts",
-    rowKind: "transcript",
-    listKind: "transcript-list",
+    rowKind: "transcript-hub-item",
+    listKind: "transcript-hub-list",
+    rowDescription:
+      "One row of the transcripts hub — a transcript, studio session, cleanup session or unsorted recording. Metadata only; no transcript body.",
+    listDescription:
+      "The transcripts hub as currently filtered and sorted. Metadata only; no transcript bodies.",
     humanRow: (row) =>
-      `${row.title} [${KIND_META[row.kind as TranscriptListKind]?.label ?? row.kind}] — updated ${relativeTime(row.updated_at)}`,
-    showRow: false,
-    showToolbar: false,
+      transcriptRowSummary({
+        kind: KIND_META[row.kind as TranscriptListKind]?.label ?? row.kind,
+        title: row.title,
+        updated_at: row.updated_at,
+        duration_seconds: row.duration_seconds,
+        word_count: row.word_count,
+        scope: row.organization_name,
+        id: row.id,
+      }),
+    agentRow: (row) => ({
+      id: row.id,
+      kind: row.kind,
+      title: row.title,
+      description: row.description,
+      status: row.status,
+      folder_name: row.folder_name,
+      tags: row.tags,
+      duration_seconds: row.duration_seconds,
+      word_count: row.word_count,
+      is_draft: row.is_draft,
+      visibility: row.visibility,
+      organization_name: row.organization_name,
+      owner_email: row.owner_email,
+      access_level: row.access_level,
+      updated_at: row.updated_at,
+      created_at: row.created_at,
+      href: primaryRowHref(row),
+      body_included: false,
+    }),
+    rowAttributes: (row) => ({
+      id: row.id,
+      kind: row.kind,
+      title: row.title,
+      words: row.word_count,
+      draft: row.is_draft,
+    }),
+    listAttributes: (visible, all) => ({
+      rows: visible.length,
+      rows_loaded: all.length,
+      // trx_list_scoped carries the true server-side total on every row, so a
+      // paged view states what it is a slice OF instead of implying the loaded
+      // page is everything.
+      rows_total: all[0]?.total_count ?? visible.length,
+    }),
+    aiVariants: (visible, all) => [
+      keyFieldsAiVariant({
+        kind: "transcript-hub-list",
+        location: "/transcripts",
+        description:
+          "Hub rows projected to kind / title / duration / words / updated.",
+        visible,
+        project: (row) => ({
+          kind: row.kind,
+          title: row.title,
+          duration_seconds: row.duration_seconds,
+          word_count: row.word_count,
+          updated_at: row.updated_at,
+        }),
+        attributes: {
+          rows: visible.length,
+          rows_total: all[0]?.total_count ?? visible.length,
+        },
+      }),
+    ],
   },
   views: {
     cards: (p) => <TranscriptBrowseCards {...p} />,
