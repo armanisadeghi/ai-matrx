@@ -3,7 +3,7 @@
 
 **Status:** `migrating`
 **Tier:** `1`
-**Last updated:** `2026-07-14`
+**Last updated:** `2026-08-15`
 
 ---
 
@@ -35,6 +35,7 @@
 - ✅ **Realtime sync** — `UserTableViewer` subscribes to `udt_dataset_rows` changes for its tableId; debounced 400ms refetch
 - ✅ **Column-type badges** — every header now shows the `data_type` under the display name
 - ✅ **`op:'merge'` in `udt_bulk_write`** — applied live + verified; partial-row patch via `jsonb_concat`
+- ✅ **Table-native selection + scoped copy** — every `UserTableViewer` surface has persistent page-spanning row checkboxes, direct Copy / Copy for AI, selected-row copy, and a custom row/column picker. Tables with ≤20 rows expose every row in the picker; larger tables use the grid selection so the dialog never becomes a second giant table.
 
 **P4 workbook surface (lossless spreadsheet, v1):**
 - ✅ `udt_workbook_snapshots` table — append-only content store keyed by `workbook_id`; RLS mirrors `udt_workbooks`; viewers see all snapshots they can view the parent of; editors can append; in `supabase_realtime` publication.
@@ -156,6 +157,7 @@ become 5 linked datasets under one workbook.
   hover), field display-name labels via `fieldLabels`, copy-snapshot-as-JSON, Load more
   past the first 50, `onRowChanged` refetch callback. Honours `changed_by = NULL` as
   "System".
+- `features/data-tables/components/TableCopyControls.tsx` + `table-copy.ts` — the shared user-table copy surface and pure projection/Markdown/AI-envelope builders. `UserTableViewer` mounts it once, so route, quick-data sheet, resource picker, canvas, modal, dataset overlay, and WindowPanel consumers stay identical.
 
 **Services / business logic**
 - `utils/user-tables-rpc.ts` — RPC response unwrapping (`unwrapGetUserTableComplete`,
@@ -316,6 +318,8 @@ the `shareable_resource_registry` (both `udt_datasets` and `udt_workbooks` are r
   leave it off and keep the content-sized `70dvh` cap. There is no in-body table selector any
   more: `onTablesChange` hands the list to whatever surface owns the switcher, so the RPC is
   fetched once and the header owns the choice.
+- **Selection belongs to `UserTableViewer`, not an export modal.** Checkbox state survives page changes, header selection applies to the current page, Shift selects a range, and Clear removes every selected id. Copy consumes those ids; it never invents a separate row-selection model.
+- **Quick copy means the complete current view, never the loaded page.** Copy and Copy for AI read the full table through `getCompleteTable()` and then apply the active search, column filters, and sort. Copy emits Markdown. Copy for AI uses the canonical XML envelope with table identity, row/column counts, and friendly display-name keys. Custom copy defaults to every column and row, provides Select all / Clear all, and can narrow to checked table rows.
 - **`validation_mode='permissive'` enforces NOTHING.** It is a pure passthrough so the 118
   pre-existing datasets keep their exact prior write behavior. Enforcement is opt-in via
   `'strict'`. Do not "helpfully" make permissive enforce things — that silently breaks live data.
@@ -535,6 +539,8 @@ into:
 Decide before agent-heavy workloads land.
 
 ## Change log
+
+- 2026-08-15 — codex: **Table-native selection and direct, scoped copy shipped across every `UserTableViewer` consumer.** Added persistent checkbox selection (page select-all, Shift-range, clear-all), visible selection count, direct Markdown Copy and XML-wrapped Copy for AI, selected-row variants, and a custom picker for columns plus rows. Small tables (≤20) show individual rows in the picker; large tables reuse the grid selection. The complete sorted/filtered view comes from the typed `getCompleteTable()` service read, so copy never silently truncates to the loaded page. Pure shaping lives in `table-copy.ts` with focused tests. The shared `MatrxDataTable` bulk bar also gains Copy / JSON / Copy for AI automatically whenever a selected table has a `copy` config.
 
 - 2026-08-14 — claude: **ONE table-settings modal, and Strict Validation is reachable at last
   (D189).** `TableSettingsModal` was the only surface carrying the strict-mode toggle and

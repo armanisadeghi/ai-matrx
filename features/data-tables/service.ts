@@ -229,6 +229,68 @@ export async function getTablePage(
   };
 }
 
+export type CompleteTableField = Record<string, unknown> & {
+  id: string;
+  field_name: string;
+  display_name: string;
+};
+
+export type CompleteTableRow = Record<string, unknown> & {
+  id: string;
+  data: Record<string, unknown>;
+};
+
+export type CompleteTable = {
+  table: Record<string, unknown>;
+  fields: CompleteTableField[];
+  rows: CompleteTableRow[];
+};
+
+/**
+ * Every row plus the complete schema. This intentionally expensive read is
+ * reserved for full-table copy/export; metadata and paginated views must use
+ * `getTableMetadata` / `getTablePage` instead.
+ */
+export async function getCompleteTable(args: {
+  tableId: string;
+  sortField?: string | null;
+  sortDirection?: "asc" | "desc";
+}): Promise<ServiceResult<CompleteTable>> {
+  const { data, error } = await supabase.rpc("get_user_table_complete", {
+    p_table_id: args.tableId,
+    p_sort_field: args.sortField ?? undefined,
+    p_sort_direction: args.sortDirection ?? "asc",
+  });
+  if (error) return { success: false, error: error.message };
+  if (!isRecord(data) || data.success !== true || !isRecord(data.table)) {
+    return {
+      success: false,
+      error:
+        isRecord(data) && typeof data.error === "string"
+          ? data.error
+          : "Invalid response from complete table RPC",
+    };
+  }
+
+  const fields = Array.isArray(data.fields)
+    ? data.fields.filter(
+        (field): field is CompleteTableField =>
+          isRecord(field) &&
+          typeof field.id === "string" &&
+          typeof field.field_name === "string" &&
+          typeof field.display_name === "string",
+      )
+    : [];
+  const rows = Array.isArray(data.data)
+    ? data.data.filter(
+        (row): row is CompleteTableRow =>
+          isRecord(row) && typeof row.id === "string" && isRecord(row.data),
+      )
+    : [];
+
+  return { success: true, data: { table: data.table, fields, rows } };
+}
+
 // ─── udt_upsert_row ──────────────────────────────────────────────────────────
 
 export type UpsertRowArgs = {
