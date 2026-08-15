@@ -76,8 +76,23 @@ export function CreatorPayoutsPanel() {
     toast.success("Thanks — we're checking with Stripe now.");
   }, [connectParam]);
 
+  /**
+   * The checklist's one `auto` action. On failure it BOTH toasts and rethrows:
+   * the checklist re-checks the moment a run settles, which immediately
+   * overwrites the failure message with the (still true) "you don't have a
+   * payouts account yet" — so without the toast the creator presses the button
+   * and watches nothing happen. This is the live path when Connect is not
+   * enabled on the platform account, which answers 409.
+   */
   const createAccount = useCallback(async () => {
-    await ensureConnectAccount();
+    try {
+      await ensureConnectAccount();
+    } catch (cause: unknown) {
+      toast.error("We couldn't set up your payouts account", {
+        description: cause instanceof Error ? cause.message : undefined,
+      });
+      throw cause;
+    }
     await refresh();
   }, [refresh]);
 

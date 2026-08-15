@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P9",
+  "runId": "019ff9f6-6062-78f0-a8d2-e96ec520f635",
+  "baseSha": "199fd6cc6d317f730e56fa18f06066753694815b",
+  "createdAt": "2026-08-15T06:27:28.911Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-15T06:27:28.911Z",
+      "actor": "pattern-patrol-p9",
+      "summary": "Coming Soon Compliance found unregistered promises and began a repair batch.",
+      "evidence": [
+        "report:.matrx/patrol-reports/coming-soon-compliance.md",
+        "task:019ff9f6-6062-78f0-a8d2-e96ec520f635"
+      ],
+      "previousEventHash": null,
+      "eventHash": "cedbda807e68d373f6b9d1a718667bb4299c6f6d0bbd6ea6332f8fdb58ae599b"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-15T06:27:30.544Z",
+      "actor": "pattern-patrol-p9",
+      "summary": "Registered the approved Coming Soon promises and repaired the first two certifier-found defects.",
+      "evidence": [
+        "candidate:5bf578b45e084d57beeeb6eb5198f58a90bd9c0d",
+        "original-candidate:e771f3fa8"
+      ],
+      "previousEventHash": "cedbda807e68d373f6b9d1a718667bb4299c6f6d0bbd6ea6332f8fdb58ae599b",
+      "eventHash": "e0b5c1a68722f7692281f6f00eaf6be255c717bcd641ff7e10456563e4eff355"
+    },
+    {
+      "sequence": 3,
+      "state": "certifying",
+      "at": "2026-08-15T06:27:31.639Z",
+      "actor": "p9_exact_certification",
+      "summary": "Independent exact-patch review found no remaining source-level batch defect and requested bounded click-through proof.",
+      "evidence": [
+        "patch-id:62bbfe88a0bcd3b2c317ede0da59b5b3c15072c8",
+        "type-check:pass",
+        "scoped-eslint:0-errors",
+        "registry-tests:7/7-pass",
+        "registry-integrity:pass"
+      ],
+      "previousEventHash": "e0b5c1a68722f7692281f6f00eaf6be255c717bcd641ff7e10456563e4eff355",
+      "eventHash": "c2cbfa7279093fdb1d16863924115ff929358d4b49b467004aa600b1ed0c96ce"
+    },
+    {
+      "sequence": 4,
+      "state": "infrastructure_blocked",
+      "at": "2026-08-15T06:27:32.652Z",
+      "actor": "pattern-patrol-fleet-health",
+      "summary": "Final interaction certification is blocked because the managed preview twice exceeded its 96 GB cap and terminated automatically.",
+      "evidence": [
+        "preview-stop:97.4GB>96GB",
+        "preview-stop:102.8GB>96GB",
+        "release:v0.4.561-already-contains-candidate"
+      ],
+      "blocker": {
+        "prerequisite": "A stable managed preview capable of completing the bounded P9 click-through without exceeding its memory cap.",
+        "preservedRef": "refs/tags/patrol-P9-019ff9f6-6062-78f0-a8d2-e96ec520f635",
+        "preservedSha": "5bf578b45e084d57beeeb6eb5198f58a90bd9c0d"
+      },
+      "previousEventHash": "c2cbfa7279093fdb1d16863924115ff929358d4b49b467004aa600b1ed0c96ce",
+      "eventHash": "41b3abafb4443960bd795b1559b094c7a7c5d0a8035c6da978f2f404c50f4ccb"
+    }
+  ]
+}

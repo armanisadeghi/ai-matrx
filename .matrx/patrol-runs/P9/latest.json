@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P9",
+  "runId": "019ff9f6-6062-78f0-a8d2-e96ec520f635",
+  "state": "infrastructure_blocked",
+  "updatedAt": "2026-08-15T06:27:32.652Z",
+  "summary": "Final interaction certification is blocked because the managed preview twice exceeded its 96 GB cap and terminated automatically.",
+  "source": "019ff9f6-6062-78f0-a8d2-e96ec520f635.json",
+  "eventHash": "41b3abafb4443960bd795b1559b094c7a7c5d0a8035c6da978f2f404c50f4ccb"
+}

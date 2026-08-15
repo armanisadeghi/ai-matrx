@@ -2,6 +2,7 @@ import {
   appendPatrolRunEvent,
   canQueuePatrolDelivery,
   createPatrolRunRecord,
+  isPrivilegedPatrolState,
   validatePatrolRunRecord,
 } from "./run-record";
 
@@ -87,5 +88,40 @@ describe("Pattern Patrol permanent run record", () => {
         delivery: { candidateSha: CANDIDATE },
       }),
     ).toThrow("durable preservedRef");
+  });
+
+  it("keeps certification and delivery out of generic worker transitions", () => {
+    expect(isPrivilegedPatrolState("certified")).toBe(true);
+    expect(isPrivilegedPatrolState("delivery_queued")).toBe(true);
+    expect(isPrivilegedPatrolState("fixing")).toBe(false);
+  });
+
+  it("refuses a certifier identity that also performed the fix", () => {
+    const fixing = appendPatrolRunEvent(run(), {
+      state: "fixing",
+      at: "2026-08-14T12:01:00.000Z",
+      actor: "same-task",
+      summary: "Fixed the candidate",
+    });
+    const certifying = appendPatrolRunEvent(fixing, {
+      state: "certifying",
+      at: "2026-08-14T12:02:00.000Z",
+      actor: "same-task",
+      summary: "Started review",
+    });
+    expect(() =>
+      appendPatrolRunEvent(certifying, {
+        state: "certified",
+        at: "2026-08-14T12:03:00.000Z",
+        actor: "same-task",
+        summary: "Self-certified",
+        certification: {
+          verdict: "CERTIFIED",
+          certifierTaskId: "same-task",
+          candidateSha: CANDIDATE,
+          checks: ["claimed proof"],
+        },
+      }),
+    ).toThrow("independent");
   });
 });

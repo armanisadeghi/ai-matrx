@@ -58,6 +58,12 @@ interface Props<TRow> {
     filters: EntityFilters;
   }) => void;
   emptyAction?: React.ReactNode;
+  /** Resolved empty state from the page (which knows if a search/filter is on). */
+  emptyState?: {
+    title: string;
+    description: string;
+    action?: React.ReactNode;
+  };
 }
 
 /** Our filter bag → the table's controlled `columnFilters` shape. */
@@ -108,6 +114,7 @@ export function EntityListTable<TRow>({
   onSaveEdits,
   onQueryChange,
   emptyAction,
+  emptyState,
 }: Props<TRow>) {
   const isMobile = useIsMobile();
   const { favorite } = config;
@@ -283,11 +290,7 @@ export function EntityListTable<TRow>({
         </ItemMenu>
       )}
       copy={config.copy}
-      emptyState={{
-        title: config.emptyState.title,
-        description: config.emptyState.description,
-        action: emptyAction,
-      }}
+      emptyState={emptyState ?? { ...config.emptyState, action: emptyAction }}
     />
   );
 }

@@ -263,7 +263,13 @@ function StepRow<Ctx>({
               </Button>
             ) : null}
 
-            {resolved.status === "busy" &&
+            {/*
+              `running`, not `busy`: a step whose CHECK is in flight is busy
+              too, and printing "Setting up your payouts account…" while we are
+              merely looking claims we started something on the user's behalf
+              that we did not. (Caught in live render, 2026-08-14.)
+            */}
+            {resolved.running &&
             definition.kind === "auto" &&
             definition.runningLabel ? (
               <span className="text-xs text-muted-foreground">

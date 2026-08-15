@@ -144,7 +144,6 @@ export const MARKETING_SITE_SUBVIEWS = [
       { id: "performance", label: "Performance" },
       { id: "classification", label: "Classification" },
     ],
-    legacyMechanism: "view-param",
   },
   {
     // The only section that already got this right: real sub-routes at
@@ -183,6 +182,20 @@ export function listMarketingSubViews(
   section: string,
 ): readonly MarketingSubView[] {
   return ENTRIES.find((entry) => entry.section === section)?.views ?? [];
+}
+
+/**
+ * True once a section reads its view from the URL and has dropped its own tab
+ * bar — i.e. once the SITE HEADER is allowed to render its sub-views.
+ *
+ * This is what makes the rollout safe one section at a time: an unmigrated
+ * section still draws its own switcher, so the header must stay out of its way
+ * or the user sees the same tabs twice. When the last `legacyMechanism` is
+ * gone, this function and the field go with it.
+ */
+export function isMarketingSubNavMigrated(section: string): boolean {
+  const entry = ENTRIES.find((item) => item.section === section);
+  return !!entry && !entry.legacyMechanism;
 }
 
 /** The view rendered when `?view=` is absent. */

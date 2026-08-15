@@ -22,16 +22,18 @@
  * straight over: a site whose website we could not read reads `unknown` WITH
  * the reason, never a red "you haven't done this".
  *
- * WHY THE FOUNDATION IS THREE STEPS AND NOT FIVE. A `ChecklistDefinition` has
- * STATIC step ids (they are persistence keys), and an archetype's foundation
- * requirements are dynamic (`asset:service_icon` exists only for shapes that
- * declare it) — so one step per requirement is not expressible, and would be
- * wrong even if it were: the CMS starter kit writes styles + header + footer +
- * menu in ONE guarded call, so four rows would print one action four times
- * (exactly the defect live rendering caught in the last consumer). The four
- * shell requirements therefore collapse into one `design` step whose `detail`
- * names each piece by state, and every asset requirement into one `images`
- * step. Nothing measured is lost; nothing is said twice.
+ * WHY THE FOUNDATION IS THREE STEPS AND NOT ONE-PER-REQUIREMENT. A
+ * `ChecklistDefinition` has STATIC step ids (they are persistence keys), and an
+ * archetype's foundation requirements are dynamic (`asset:service_icon` exists
+ * only for shapes that declare it) — so one step per requirement is not
+ * expressible, and would be wrong even if it were: the CMS starter kit writes
+ * styles + header + footer in ONE guarded call, so three rows would print one
+ * action three times (exactly the defect live rendering caught in the last
+ * consumer). What GROUPS a step here is therefore the ACTION that finishes it:
+ * `design` (one starter-kit call), `menu` (fills itself in from the pages, so
+ * no button can finish it early — found by rendering it), `images` (nowhere in
+ * the product to do it yet). Each step's `detail` still names every piece it
+ * covers by state, so nothing measured is lost and nothing is said twice.
  */
 
 import Link from "next/link";
@@ -63,15 +65,24 @@ export interface ContentPlanSetupContext {
   onChanged: () => Promise<void>;
 }
 
-/** The four requirements the starter kit builds, in the order it builds them. */
-const SHELL_KEYS = ["tokens", "header", "footer", "nav_entries"] as const;
+/**
+ * What the starter kit BUILDS OUT OF NOTHING — and therefore what one "build it
+ * for me" button can actually finish.
+ *
+ * `nav_entries` is deliberately NOT here, and that is a live-render finding, not
+ * an oversight: the starter kit seeds the menu FROM the site's show-in-nav
+ * pages, so on a website whose pages don't exist yet it writes styles, header
+ * and footer and leaves the menu empty. Kept in this list, the step stayed red
+ * forever with a button that would then refuse ("the site is not empty") — a
+ * dead end wearing a fix's clothes. The menu is its own step below.
+ */
+const SHELL_KEYS = ["tokens", "header", "footer"] as const;
 
 /** Plain words for each shell piece — the archetype's own labels are jargon. */
 const SHELL_WORDS: Record<string, string> = {
   tokens: "Colours and fonts",
   header: "Header",
   footer: "Footer",
-  nav_entries: "Menu",
 };
 
 const cmsHref = (ctx: ContentPlanSetupContext, suffix = "") =>
@@ -183,9 +194,9 @@ export const contentPlanSetupChecklist = registerChecklist<ContentPlanSetupConte
       dependsOn: ["website"],
       title: "Your website has a look and feel",
       description:
-        "Colours and fonts, a header, a footer, and a menu — the frame every page sits inside. We can build a first version for you, and you can change any of it afterwards.",
+        "Colours and fonts, a header and a footer — the frame every page sits inside. We can build a first version for you, and you can change any of it afterwards.",
       runLabel: "Build it for me",
-      runningLabel: "Building your header, footer and menu…",
+      runningLabel: "Building your colours, header and footer…",
       check: async (ctx): Promise<CheckResult> => {
         const blocked = unreadable(ctx);
         if (blocked) return blocked;
@@ -260,6 +271,45 @@ export const contentPlanSetupChecklist = registerChecklist<ContentPlanSetupConte
             </Link>
           </p>
         );
+      },
+    },
+    {
+      kind: "verified",
+      id: "menu",
+      dependsOn: ["website"],
+      title: "Your website has a menu",
+      description:
+        "The links across the top of every page. It's built from the pages you choose to show, so it fills in as your pages go live.",
+      check: async (ctx): Promise<CheckResult> => {
+        const blocked = unreadable(ctx);
+        if (blocked) return blocked;
+        const nav = (ctx.foundation ?? []).find(
+          (item) => item.key === "nav_entries",
+        );
+        if (!nav) {
+          return { status: "pass", detail: "This site shape doesn't ask for one." };
+        }
+        if (nav.state === "unknown") {
+          return {
+            status: "unknown",
+            reason: "We couldn't read your website's menu, so we haven't judged it.",
+            detail: nav.detail,
+          };
+        }
+        if (nav.state === "met") {
+          return { status: "pass", detail: `${nav.actual} links` };
+        }
+        return {
+          status: "fail",
+          reason:
+            nav.actual === 0
+              ? "Your menu is still empty. It fills itself in from the pages you mark as visible, so build the pages first — then set it here."
+              : `Your menu has ${nav.actual} of the ${nav.required} links this site shape expects.`,
+          fix: {
+            label: "Set up the menu",
+            href: cmsHref(ctx, "/settings") ?? "/cms",
+          },
+        };
       },
     },
     {

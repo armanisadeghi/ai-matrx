@@ -279,6 +279,7 @@ export type FeSynthesizedBlockType =
   | "video_prompt_options"
   | "keyword_research"
   | "keyword_classification_batch"
+  | "keyword_serp_intent_analysis"
   | "page_brief"
   | "media_chapters"
   | "episode_title_options"
@@ -292,9 +293,7 @@ export type FeSynthesizedBlockType =
  * membership): the editor pill round-trip plumbing + audio citations.
  */
 export type DetectorProtocolBlockType =
-  | "editor_error"
-  | "editor_code_snippet"
-  | "audiocite";
+  "editor_error" | "editor_code_snippet" | "audiocite";
 
 /** Crosswalk classification: protocol — control plumbing, never Shapes. */
 export type ProtocolBlockType =
@@ -358,6 +357,7 @@ export type ShapeBlockType =
   | "video_prompt_options"
   | "keyword_research"
   | "keyword_classification_batch"
+  | "keyword_serp_intent_analysis"
   | "page_brief"
   | "media_chapters"
   | "episode_title_options"
@@ -373,10 +373,7 @@ export type ShapeBlockType =
 export type OpaqueBlockType = ServerOpaqueRenderBlock["type"];
 
 export type KnownBlockType =
-  | ProtocolBlockType
-  | ScalarGenericBlockType
-  | ShapeBlockType
-  | OpaqueBlockType;
+  ProtocolBlockType | ScalarGenericBlockType | ShapeBlockType | OpaqueBlockType;
 
 // ── Compile-time exhaustiveness (the satisfies/never gate) ──────────────────
 
@@ -384,9 +381,7 @@ type AssertNever<T extends never> = T;
 
 /** The complete GENERATED vocabulary this renderer must cover. */
 type GeneratedBlockType =
-  | TypedRenderBlock["type"]
-  | ServerOnlyBlockType
-  | ClientOnlyBlockType;
+  TypedRenderBlock["type"] | ServerOnlyBlockType | ClientOnlyBlockType;
 
 /**
  * Every generated block type MUST be classified. A new type landing in
@@ -544,8 +539,7 @@ function renderHtmlCode(ctx: BlockDispatchContext) {
       onCodeChange={
         isStreamActive
           ? undefined
-          : (newCode: string) =>
-              ctx.replaceBlockContent(block.content, newCode)
+          : (newCode: string) => ctx.replaceBlockContent(block.content, newCode)
       }
     />
   );
@@ -566,8 +560,7 @@ function renderReactCode(ctx: BlockDispatchContext) {
       onCodeChange={
         isStreamActive
           ? undefined
-          : (newCode: string) =>
-              ctx.replaceBlockContent(block.content, newCode)
+          : (newCode: string) => ctx.replaceBlockContent(block.content, newCode)
       }
     />
   );
@@ -613,8 +606,7 @@ function renderJsonCode(ctx: BlockDispatchContext) {
       onCodeChange={
         isStreamActive
           ? undefined
-          : (newCode: string) =>
-              ctx.replaceBlockContent(block.content, newCode)
+          : (newCode: string) => ctx.replaceBlockContent(block.content, newCode)
       }
     />
   );
@@ -631,8 +623,7 @@ function renderMarkdownPreviewCode(ctx: BlockDispatchContext) {
       onCodeChange={
         isStreamActive
           ? undefined
-          : (newCode: string) =>
-              ctx.replaceBlockContent(block.content, newCode)
+          : (newCode: string) => ctx.replaceBlockContent(block.content, newCode)
       }
     />
   );
@@ -1111,9 +1102,7 @@ const SCALAR_GENERIC_BLOCK_DISPATCH = {
     // A Matrx signed URL recovers its file_id before actions render, so copy
     // and share can never expose the private playback credential.
     if (!block.src) return null;
-    return (
-      <VideoOutputBlockRenderer key={index} data={{ url: block.src }} />
-    );
+    return <VideoOutputBlockRenderer key={index} data={{ url: block.src }} />;
   },
 
   // NOTE: like `table` — normally consumed by the unified artifact stage
@@ -1234,19 +1223,21 @@ const SCALAR_GENERIC_BLOCK_DISPATCH = {
       const videoId = (sd.video_id ?? sd.videoId) as string | undefined;
       if (!videoId) return null;
       const externalUrl = (sd.external_url ?? sd.externalUrl) as
-        | string
-        | undefined;
-      const start = externalUrl ? parseYouTubeUrl(externalUrl)?.start : undefined;
+        string | undefined;
+      const start = externalUrl
+        ? parseYouTubeUrl(externalUrl)?.start
+        : undefined;
       const sourceLabel = (sd.source_label ?? sd.sourceLabel) as
-        | string
-        | undefined;
+        string | undefined;
       return (
         <BlockComponents.YouTubeEmbedBlock
           key={index}
           videoId={videoId}
           start={start}
           title={sourceLabel}
-          publishedAt={(sd.published_at ?? sd.publishedAt) as string | undefined}
+          publishedAt={
+            (sd.published_at ?? sd.publishedAt) as string | undefined
+          }
         />
       );
     }
@@ -1347,6 +1338,27 @@ const SHAPE_BLOCK_DISPATCH = {
     if (block.serverData) {
       return (
         <BlockComponents.KeywordClassificationBatchBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) {
+      return <MatrxMiniLoader key={index} />;
+    }
+    return (
+      <BlockComponents.CodeBlock
+        key={index}
+        code={block.content}
+        language="json"
+      />
+    );
+  },
+
+  keyword_serp_intent_analysis: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.KeywordSerpIntentAnalysisBlock
           key={index}
           serverData={block.serverData}
         />

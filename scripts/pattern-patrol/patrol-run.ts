@@ -5,10 +5,12 @@ import { resolve } from "node:path";
 import {
   appendPatrolRunEvent,
   createPatrolRunRecord,
+  isPrivilegedPatrolState,
   type PatrolRunEventInput,
   type PatrolRunState,
 } from "./run-record";
-import { loadPatrolRun, patrolRunPath, savePatrolRun } from "./storage";
+import { loadPatrolRun, patrolRunPath, savePatrolRun, withPatrolRunLease } from "./storage";
+import { publishPatrolRunAuthority } from "./git-authority";
 
 interface Args {
   command: string;
@@ -95,28 +97,88 @@ function main(): void {
   const path = patrolRunPath(repoRoot, patrolId, runId);
 
   if (args.command === "init") {
-    if (existsSync(path)) throw new Error(`run already exists: ${path}`);
-    const record = createPatrolRunRecord({
-      patrolId,
-      runId,
-      baseSha: one(args, "base")!,
-      createdAt: now(args),
-      actor: one(args, "actor")!,
-      summary: one(args, "summary")!,
-      evidence: many(args, "evidence"),
+    const savedPath = withPatrolRunLease(repoRoot, patrolId, runId, () => {
+      if (existsSync(path)) throw new Error(`run already exists: ${path}`);
+      const record = createPatrolRunRecord({
+        patrolId,
+        runId,
+        baseSha: one(args, "base")!,
+        createdAt: now(args),
+        actor: one(args, "actor")!,
+        summary: one(args, "summary")!,
+        evidence: many(args, "evidence"),
+      });
+      return savePatrolRun(repoRoot, record);
     });
-    console.log(savePatrolRun(repoRoot, record));
+    console.log(savedPath);
     return;
   }
 
-  const record = loadPatrolRun(path);
   if (args.command === "verify") {
+    const record = loadPatrolRun(path);
     console.log(`${path}: valid (${record.events.length} events, ${record.events.at(-1)?.state})`);
     return;
   }
+  if (args.command === "publish") {
+    const record = loadPatrolRun(path);
+    const authorityRef = one(args, "authority-ref")!;
+    const candidateSha = one(args, "candidate")!;
+    const actor = one(args, "actor")!;
+    const commit = publishPatrolRunAuthority({
+      repoRoot,
+      record,
+      candidateSha,
+      authorityRef,
+      actor,
+    });
+    console.log(`${authorityRef} -> ${commit}`);
+    return;
+  }
   if (args.command === "transition") {
-    const next = appendPatrolRunEvent(record, eventFromArgs(args));
-    console.log(savePatrolRun(repoRoot, next));
+    const requestedState = one(args, "state") as PatrolRunState;
+    if (isPrivilegedPatrolState(requestedState)) {
+      throw new Error(
+        `${requestedState} is controller/certifier-owned and cannot use generic transition`,
+      );
+    }
+    const savedPath = withPatrolRunLease(repoRoot, patrolId, runId, () => {
+      const record = loadPatrolRun(path);
+      const next = appendPatrolRunEvent(record, eventFromArgs(args));
+      return savePatrolRun(repoRoot, next);
+    });
+    console.log(savedPath);
+    return;
+  }
+  if (args.command === "certify") {
+    const authorityRef = one(args, "authority-ref")!;
+    const candidateSha = one(args, "candidate")!;
+    const actor = one(args, "actor")!;
+    const certifierTaskId = one(args, "certifier-task")!;
+    const savedPath = withPatrolRunLease(repoRoot, patrolId, runId, () => {
+      const record = loadPatrolRun(path);
+      const next = appendPatrolRunEvent(record, {
+        state: "certified",
+        at: now(args),
+        actor,
+        summary: one(args, "summary")!,
+        evidence: many(args, "evidence"),
+        certification: {
+          verdict: "CERTIFIED",
+          candidateSha,
+          certifierTaskId,
+          checks: many(args, "check"),
+        },
+      });
+      publishPatrolRunAuthority({
+        repoRoot,
+        record: next,
+        candidateSha,
+        authorityRef,
+        actor,
+      });
+      return savePatrolRun(repoRoot, next);
+    });
+    console.log(savedPath);
     return;
   }
   usage();

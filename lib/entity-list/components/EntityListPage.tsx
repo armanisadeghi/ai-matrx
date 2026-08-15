@@ -21,6 +21,7 @@ import { defaultHiddenColumns } from "../columns";
 import type { EntityListConfig } from "../config";
 import { useEntityList } from "../useEntityList";
 import { entityListRowHref } from "../doors";
+import { countActiveFilters } from "../types";
 import { EntityScopeTabs } from "./EntityScopeTabs";
 import { EntityListToolbar } from "./EntityListToolbar";
 import { EntityListTable } from "./EntityListTable";
@@ -48,6 +49,10 @@ export function EntityListPage<TRow>({
     ...config.prefsDefaults,
   });
 
+  // An empty RESULT is not an empty LIST. Saying "Nothing here yet — create
+  // your first one" to someone who has 117 rows and mistyped a search is a lie,
+  // and it buries the actual way out (clear the search). Resolved here, where
+  // the query lives, and handed to every view so they cannot disagree.
   const list = useEntityList<TRow>({
     service: config.service,
     getRowId: config.getRowId,
@@ -91,6 +96,32 @@ export function EntityListPage<TRow>({
         : `${entries.length} ${plural} updated`,
     );
   };
+
+  const isNarrowed =
+    Boolean(list.query.search.trim()) || countActiveFilters(list.query) > 0;
+
+  const resolvedEmptyState = isNarrowed
+    ? {
+        title: `No ${config.entityLabel.plural} match`,
+        description:
+          "Nothing matched your current search and filters. Widen them, or check a different scope.",
+        // Clears the SEARCH too — `resetFilters` alone leaves the search term
+        // in place, so the "way out" button would have left the user staring at
+        // the same empty result.
+        action: (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              list.setSearch("");
+              list.resetFilters();
+            }}
+          >
+            Clear search and filters
+          </Button>
+        ),
+      }
+    : { ...config.emptyState, action: emptyAction };
 
   const cardsView = config.views?.cards;
   const rowsView = config.views?.rows;
@@ -192,7 +223,7 @@ export function EntityListPage<TRow>({
             showSharedColumns={showSharedColumns}
             hiddenColumns={prefs.hiddenColumns}
             onSaveEdits={saveEdits}
-            emptyAction={emptyAction}
+            emptyState={resolvedEmptyState}
             onQueryChange={(next) => {
               if (
                 next.sort !== prefs.sort ||
@@ -219,7 +250,7 @@ export function EntityListPage<TRow>({
           // the empty state (and its emptyAction door) existed only in the table
           // branch, so a user whose saved view style was "cards" met a blank
           // page with no title, no explanation, and no way forward.
-          <EntityListEmpty config={config} action={emptyAction} />
+          <EntityListEmpty state={resolvedEmptyState} />
         ) : view === "cards" && cardsView ? (
           cardsView(altViewProps)
         ) : rowsView ? (
@@ -242,23 +273,17 @@ export function EntityListPage<TRow>({
   );
 }
 
-/** Empty state for the non-table views — same copy + action slot the table uses. */
-function EntityListEmpty<TRow>({
-  config,
-  action,
+/** Empty state for the non-table views — same copy + action the table renders. */
+function EntityListEmpty({
+  state,
 }: {
-  config: EntityListConfig<TRow>;
-  action?: ReactNode;
+  state: { title: string; description: string; action?: ReactNode };
 }) {
   return (
     <div className="flex flex-col items-center gap-2 px-4 py-12 text-center">
-      <p className="text-sm font-medium text-foreground">
-        {config.emptyState.title}
-      </p>
-      <p className="text-xs text-muted-foreground">
-        {config.emptyState.description}
-      </p>
-      {action}
+      <p className="text-sm font-medium text-foreground">{state.title}</p>
+      <p className="text-xs text-muted-foreground">{state.description}</p>
+      {state.action}
     </div>
   );
 }

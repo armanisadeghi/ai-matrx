@@ -72,12 +72,12 @@ export interface PatrolRunEventInput {
 
 const TRANSITIONS: Record<PatrolRunState, readonly PatrolRunState[]> = {
   discovered: ["awaiting_approval", "fixing", "infrastructure_blocked", "closed"],
-  awaiting_approval: ["fixing", "closed"],
+  awaiting_approval: ["fixing"],
   fixing: ["certifying", "rejected", "infrastructure_blocked"],
   certifying: ["certified", "rejected", "infrastructure_blocked"],
   certified: ["delivery_queued", "infrastructure_blocked", "reversed"],
-  rejected: ["fixing", "closed"],
-  infrastructure_blocked: ["fixing", "certifying", "delivery_queued", "closed"],
+  rejected: ["fixing"],
+  infrastructure_blocked: ["fixing", "certifying", "delivery_queued"],
   delivery_queued: ["delivered", "infrastructure_blocked", "reversed"],
   delivered: ["reversed", "closed"],
   reversed: ["fixing", "closed"],
@@ -138,6 +138,15 @@ function validateEventRequirements(
     nonEmpty(certification.candidateSha, "certified candidate SHA");
     if (certification.checks.length === 0) {
       throw new Error("certified events require at least one recorded check");
+    }
+    if (certification.checks.some((check) => !check.trim())) {
+      throw new Error("certification checks must not be blank");
+    }
+    const fixingActors = new Set(
+      priorEvents.filter((prior) => prior.state === "fixing").map((prior) => prior.actor),
+    );
+    if (fixingActors.has(certification.certifierTaskId) || fixingActors.has(event.actor)) {
+      throw new Error("certifier identity must be independent from every fixing actor");
     }
   }
 
@@ -317,6 +326,10 @@ export function canQueuePatrolDelivery(
     return { allowed: false, reason: `candidate ${candidateSha} was rejected or reversed after certification` };
   }
   return { allowed: true };
+}
+
+export function isPrivilegedPatrolState(state: PatrolRunState): boolean {
+  return ["certified", "delivery_queued", "delivered", "reversed"].includes(state);
 }
 
 export function canonicalPatrolRecordJson(record: PatrolRunRecord): string {

@@ -105,11 +105,40 @@ export const keywordClassificationKindSchema: KindSchema = {
   },
 };
 
+export const keywordSerpIntentAnalysisKindSchema: KindSchema = {
+  kind: "keyword_serp_intent_analysis_v1",
+  fields: {
+    analyzer_version: { type: "string", required: true },
+    keyword_id: { type: "string", required: true },
+    phrase: { type: "string", required: true },
+    language: { type: "string", required: true },
+    context: { type: "json", required: true },
+    original_classification: { type: "json", required: true },
+    enhanced_classification: { type: "json", required: true },
+    changes: { type: "json[]", required: true },
+    provider_findings: { type: "json[]", required: true },
+    serp_consensus: {
+      type: "enum",
+      values: ["aligned", "mixed", "conflicted"],
+      required: true,
+    },
+    intent_summary: { type: "string", required: true },
+    content_expectations: { type: "json", required: true },
+    difficulty_signal: {
+      type: "enum",
+      values: ["low", "moderate", "high", "very_high"],
+      required: true,
+    },
+    limitations: { type: "string[]", required: true },
+  },
+};
+
 export const KEYWORD_RESEARCH_KIND_SCHEMAS: KindSchema[] = [
   keywordRelationshipResearchKindSchema,
   keywordListKindSchema,
   keywordClassificationBatchKindSchema,
   keywordClassificationKindSchema,
+  keywordSerpIntentAnalysisKindSchema,
 ];
 
 // ---------------------------------------------------------------------------
@@ -273,6 +302,18 @@ export function keywordClassificationServerDataFromEnvelope(
   };
 }
 
+export function keywordSerpIntentAnalysisServerDataFromEnvelope(
+  envelope: CanonicalBlockIR,
+): (Record<string, unknown> & { isComplete: boolean }) | undefined {
+  if (envelope.root.kind !== "keyword_serp_intent_analysis_v1") {
+    return undefined;
+  }
+  return {
+    ...envelope.root.value,
+    isComplete: envelope.root.status === "complete",
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Stream segmentation — the workbench's raw chunk buffer may carry SEVERAL
 // sequential classification batch payloads (the server classifies in
@@ -367,6 +408,42 @@ export function keywordClassificationMarkdownFromValue(
   ]);
 }
 
+export function keywordSerpIntentAnalysisMarkdownFromValue(
+  value: Record<string, unknown>,
+): string {
+  const changes = Array.isArray(value.changes)
+    ? value.changes.filter(isRecordValue)
+    : [];
+  return joinBlocks([
+    `# Search-informed intent: ${nonEmptyString(value.phrase) ?? "Keyword"}`,
+    nonEmptyString(value.intent_summary),
+    `- **Provider agreement:** ${nonEmptyString(value.serp_consensus) ?? "unknown"}`,
+    `- **Difficulty signal:** ${nonEmptyString(value.difficulty_signal) ?? "unknown"}`,
+    changes.length > 0
+      ? joinBlocks([
+          "## Classification changes",
+          changes
+            .map((change) => {
+              const dimension = nonEmptyString(change.dimension) ?? "field";
+              const original =
+                nonEmptyString(change.original_value) ?? "unknown";
+              const enhanced =
+                nonEmptyString(change.enhanced_value) ?? "unknown";
+              const rationale = nonEmptyString(change.rationale);
+              return `- **${dimension.replaceAll("_", " ")}**: ${original} → ${enhanced}${rationale ? ` — ${rationale}` : ""}`;
+            })
+            .join("\n"),
+        ])
+      : "## Classification changes\nNo material changes.",
+    Array.isArray(value.limitations) && value.limitations.length > 0
+      ? `## Limitations\n${value.limitations
+          .filter((item): item is string => typeof item === "string")
+          .map((item) => `- ${item}`)
+          .join("\n")}`
+      : null,
+  ]);
+}
+
 // ---------------------------------------------------------------------------
 // Compiled definitions — registered centrally in system-kinds.ts.
 // ---------------------------------------------------------------------------
@@ -405,5 +482,16 @@ export const KEYWORD_RESEARCH_KIND_DEFINITIONS: KindDefinition[] = [
     schemaSource: "system",
     tier: "eager",
     schema: keywordClassificationKindSchema,
+  },
+  {
+    kind: "keyword_serp_intent_analysis_v1",
+    schemaSource: "system",
+    tier: "eager",
+    legacyBlockType: "keyword_serp_intent_analysis",
+    toLegacyServerData: keywordSerpIntentAnalysisServerDataFromEnvelope,
+    toMarkdown: keywordSerpIntentAnalysisMarkdownFromValue,
+    persistence: { persistStructured: true },
+    loadingComponent: "report",
+    schema: keywordSerpIntentAnalysisKindSchema,
   },
 ];

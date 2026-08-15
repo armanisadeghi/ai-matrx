@@ -262,6 +262,14 @@ export interface ResolvedStep {
   status: StepStatus;
   /** Live result for auto/verified steps; null for confirmed steps. */
   result: CheckResult | null;
+  /**
+   * True only while this step's `run` is actually in flight — NOT while its
+   * check is. Both read as `busy`, but they are opposite claims: one is "we
+   * are doing it", the other is "we are looking". Saying "Setting up your
+   * payouts account…" while merely checking tells the user we started
+   * something on their behalf that we did not. (Caught in live render.)
+   */
+  running: boolean;
   /** True while the live check has not landed and we are showing last-known. */
   stale: boolean;
   /** When last-known is what is on screen, when it was taken. */

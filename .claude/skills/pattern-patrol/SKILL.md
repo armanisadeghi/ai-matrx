@@ -7,6 +7,7 @@ description: The Pattern Patrols system — recurring, certified sweeps that kee
 
 **Canonical system (read first):**
 `/Users/armanisadeghi/code/common-docs/systems/pattern-patrols/FEATURE.md`
+**Arman's target:** `.../pattern-patrols/VISION.md`
 **The patrol list + status:** `.../pattern-patrols/PATROL_REGISTRY.md`
 This skill is the matrx-frontend mechanics. Never duplicate the registry here.
 
@@ -25,7 +26,9 @@ the last two, whatever your mission.
 Follow the per-run template in `CODEX_OPERATOR.md` (same directory as the
 system doc). The repo-specific facts it needs:
 
-- **Ledger:** `.matrx/PATROL_SIGHTINGS.md`. **Reports:** `.matrx/patrol-reports/<id>.md`
+- **Ledger:** `.matrx/PATROL_SIGHTINGS.md`. **Permanent run history:**
+  `.matrx/patrol-runs/<P#>/<run-id>.json` (append only through
+  `pnpm patrol:run`; `latest.json` is only a projection). **Reports:** `.matrx/patrol-reports/<id>.md`
   (create the directory on first use; one file per patrol, overwritten each run
   — it carries your scan baseline).
 - **Tiers (from the registry row — when unsure, downgrade):** R = report/rank
@@ -45,8 +48,9 @@ system doc). The repo-specific facts it needs:
   touch generated files, or change how a component enters a chunk (THE
   FRAGMENTATION LAW — `code-splitting` skill before ANY such change); fixing
   one side must not move the other (mobile↔desktop, dark↔light);
-  `pnpm type-check` before any done-claim; deploy only via
-  `./scripts/release.sh` — and if you commit without releasing, SAY SO.
+  `pnpm type-check` before any done-claim. A patrol worker never moves
+  `origin/main` and never deploys; it preserves its candidate and hands the
+  exact SHA to the delivery controller.
 - **Isolation:** scheduled patrols run in an isolated Codex worktree. If this
   run is in the shared checkout or sees unrelated dirty files, stop before
   mutation and repair the execution environment; do not treat concurrent work
@@ -59,8 +63,9 @@ system doc). The repo-specific facts it needs:
   owned by this exact checkout. If another worktree owns the machine-wide slot,
   the command fails and this patrol queues; never certify against the other
   worktree's URL. `pnpm preview:status` reports the global owner, and only that
-  checkout may stop it. The lifecycle monitor enforces the 8 GB process-group
-  cap and five-minute startup-progress cap without automatic restart.
+  checkout may stop it. Read the machine-profile RSS cap from launcher status
+  (the current 256 GB host uses 96 GB); the five-minute startup-progress cap
+  remains fixed. The launcher never restarts automatically.
 - **Certification (Tier M):** a second adversarial agent ("assume this batch
   broke something; find it") compares pre-edit and post-edit type/gate
   diagnostics. New batch-caused failures reject; unchanged baseline debt is
@@ -73,11 +78,12 @@ system doc). The repo-specific facts it needs:
   is never proof that product code broke. Only one managed preview runs
   machine-wide; concurrent patrols queue and never reuse a different
   worktree's build. No independent verdict → invalid run.
-- **Serialized delivery lane:** integration to `origin/main` and
-  `./scripts/release.sh` are one lane. While another patrol owns it, push only
-  the preservation branch. After explicit release, rebase, integrate, and
-  release. If this patrol's commit is already an ancestor of a newer release,
-  record that version as shipped instead of creating a redundant bump.
+- **Serialized delivery lane:** push only a durable preservation ref. After an
+  independent certifier records `CERTIFIED` for the exact candidate SHA, the
+  controller may run `pnpm patrol:delivery:queue`. Only the controller claims
+  the machine-wide release lane and runs `./scripts/release.sh`; its hard gate
+  refuses uncertified or unqueued patrol commits. If the candidate is already
+  in a newer release, record that version instead of creating another bump.
 - **Scoping:** structural novelty (new `app/**/page.tsx` leaves, new
   `features/*` dirs, new files matching the patrol's surface signature) + the
   ledger + a full pass every Nth run. NEVER scope by raw git churn.
@@ -129,6 +135,8 @@ patterns.
   preview harness failed.
 - Reusing a preview from another worktree or moving `origin/main` while another
   patrol owns the delivery lane.
+- Treating a Markdown report or automation memory as more authoritative than
+  the permanent run record, or rewriting an earlier lifecycle event.
 - Stopping after detection because no finding was auto-approved instead of
   routing the safe repairs to Arman.
 - Treating “looks intentional” or “false positive” as approval to suppress it.

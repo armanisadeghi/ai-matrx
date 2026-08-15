@@ -68,6 +68,8 @@ import type { KeywordWithMarket } from "@/features/marketing/seo/keyword-researc
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { isJsonObject } from "@/types/json";
+import KeywordSerpIntentAnalysisBlock from "@/components/mardown-display/blocks/keyword-research/KeywordSerpIntentAnalysisBlock";
 
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
@@ -134,6 +136,20 @@ const CLASSIFICATION_LABELS: [keyof KeywordWithMarket, string][] = [
   ["compliance_framing", "Compliance"],
 ];
 
+function savedSerpIntentAnalysis(
+  keyword: KeywordWithMarket | null,
+): Record<string, unknown> | null {
+  if (!keyword || !isJsonObject(keyword.classification_detail)) return null;
+  const analysis = keyword.classification_detail.serp_intent_analysis;
+  if (
+    !isJsonObject(analysis) ||
+    analysis.__kind !== "keyword_serp_intent_analysis_v1"
+  ) {
+    return null;
+  }
+  return { ...analysis, isComplete: true };
+}
+
 export interface KeywordIntelPanelProps {
   phrase: string;
   activeTab: KeywordIntelTab;
@@ -168,6 +184,7 @@ export function KeywordIntelPanel({
   const volumeRefresh = useKeywordVolumeRefresh(scope?.organizationId);
   const siteId = scope?.siteId;
   const organizationId = scope?.organizationId;
+  const serpIntentAnalysis = savedSerpIntentAnalysis(keyword);
   const [researchState, setResearchState] =
     useState<KeywordResearchPanelState>(EMPTY_RESEARCH_STATE);
   const [visibilityView, setVisibilityView] = useState<"positions" | "serp">(
@@ -477,12 +494,53 @@ export function KeywordIntelPanel({
 
               {activeTab === "classification" ? (
                 savedResearch.data ? (
-                  <SavedResearchFeed
-                    artifact={savedResearch.data.artifact}
-                    instanceId={savedResearch.data.id}
-                    sections={["classification"]}
-                    onKeywordNavigate={navigateToKeyword}
-                  />
+                  <div className="grid gap-5">
+                    <SavedResearchFeed
+                      artifact={savedResearch.data.artifact}
+                      instanceId={savedResearch.data.id}
+                      sections={["classification"]}
+                      onKeywordNavigate={navigateToKeyword}
+                    />
+                    {serpIntentAnalysis ? (
+                      <section className="grid gap-2 border-t border-border pt-4">
+                        <div>
+                          <h3 className="text-sm font-semibold text-foreground">
+                            Enhanced with result-page evidence
+                          </h3>
+                          <p className="text-[11px] text-muted-foreground">
+                            This review is stored separately. It never silently
+                            changes the intrinsic classification above.
+                          </p>
+                        </div>
+                        <KeywordSerpIntentAnalysisBlock
+                          serverData={serpIntentAnalysis}
+                        />
+                      </section>
+                    ) : (
+                      <section className="flex items-center justify-between gap-3 border-t border-border pt-4">
+                        <div>
+                          <p className="text-xs font-medium text-foreground">
+                            Search-informed enhancement is optional
+                          </p>
+                          <p className="text-[11px] text-muted-foreground">
+                            Collect Google and Brave result pages, then compare
+                            observed behavior with this baseline.
+                          </p>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 shrink-0"
+                          onClick={() => {
+                            setVisibilityView("serp");
+                            onTabChange("visibility");
+                          }}
+                        >
+                          Open result pages
+                        </Button>
+                      </section>
+                    )}
+                  </div>
                 ) : (
                   <UnavailableUntilResearch
                     title="Classification starts with the research pipeline"
@@ -509,6 +567,8 @@ export function KeywordIntelPanel({
                   keywordId={keyword?.id ?? null}
                   view={visibilityView}
                   onViewChange={setVisibilityView}
+                  hasSerpIntentAnalysis={Boolean(serpIntentAnalysis)}
+                  onAnalysisComplete={() => onTabChange("classification")}
                 />
               ) : null}
             </>
@@ -1147,6 +1207,8 @@ function SearchVisibilityTab({
   keywordId,
   view,
   onViewChange,
+  hasSerpIntentAnalysis,
+  onAnalysisComplete,
 }: {
   siteId: string | null;
   organizationId: string | null;
@@ -1154,6 +1216,8 @@ function SearchVisibilityTab({
   keywordId: string | null;
   view: "positions" | "serp";
   onViewChange: (view: "positions" | "serp") => void;
+  hasSerpIntentAnalysis: boolean;
+  onAnalysisComplete: () => void;
 }) {
   if (!siteId || !organizationId) {
     return (
@@ -1209,6 +1273,8 @@ function SearchVisibilityTab({
           organizationId={organizationId}
           phrase={phrase}
           keywordId={keywordId}
+          hasSerpIntentAnalysis={hasSerpIntentAnalysis}
+          onAnalysisComplete={onAnalysisComplete}
         />
       ) : (
         <KeywordSerpTab

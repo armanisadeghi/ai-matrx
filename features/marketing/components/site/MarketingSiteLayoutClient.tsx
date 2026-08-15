@@ -32,7 +32,7 @@ import {
   listMarketingSiteModes,
   marketingSiteSectionSuffix,
 } from "@/features/marketing/lib/route-sections";
-import { MARKETING_SITE_SECTION_ICONS } from "@/features/marketing/lib/site-section-icons";
+import { useMarketingSiteSubNav } from "@/features/marketing/lib/useMarketingSubView";
 
 /**
  * A site reached through the wrong brand's URL is a broken link, not a locked
@@ -96,6 +96,9 @@ export function MarketingSiteLayoutClient({
   const brand = useBrand(brandId);
   const options = useSiteOptions();
   const crawlActivity = useSiteCrawlActivity(siteId);
+  // Computed from the URL alone, so it can sit above the loading/access gates
+  // where every hook must run unconditionally.
+  const subNav = useMarketingSiteSubNav(marketingRoutes.site(brandId, siteId));
 
   if (site.isLoading) {
     return (
@@ -168,7 +171,6 @@ export function MarketingSiteLayoutClient({
     );
   }
   const base = marketingRoutes.site(brandId, siteId);
-  const siteModes = listMarketingSiteModes(base);
   const activeCrawl = crawlActivity.activeCrawl;
   const fetched = activeCrawl
     ? jsonNumber(activeCrawl.stats, ["pages_fetched"])
@@ -213,12 +215,8 @@ export function MarketingSiteLayoutClient({
           href: `${marketingRoutes.site(option.brand_id, option.id)}${marketingSiteSectionSuffix(pathname, base)}`,
           active: option.id === siteId,
         }))}
-        modes={siteModes.map((mode) => ({
-          name: mode.name,
-          href: mode.href,
-          icon: MARKETING_SITE_SECTION_ICONS[mode.slug],
-          exact: mode.exact,
-        }))}
+        modes={subNav.modes}
+        activeModeHref={subNav.activeHref}
         actions={[
           ...(activeCrawl
             ? [

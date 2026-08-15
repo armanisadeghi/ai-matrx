@@ -1,10 +1,7 @@
--- D146 FOLLOW-UP — hoist the `files.pages` and `docproc.processed_document_pages`
--- SELECT policies out of the per-row SECURITY DEFINER scan path.
+-- D146 FOLLOW-UP — take the per-row SECURITY DEFINER calls out of the
+-- `files.pages` and `docproc.processed_document_pages` SELECT scan paths.
 --
--- Both tables are ALREADY OVER THE `authenticated` 8s statement_timeout today:
--- these are live 57014 -> HTTP 500s, not merely slow reads.
---
--- THE DEFECT (the same class as
+-- THE DEFECT CLASS (same as
 -- migrations/docproc_extraction_grant_lane_set_wise_d146_followup.sql and
 -- migrations/iam_hoist_has_org_access_set_wise_d146.sql). A `SECURITY DEFINER`
 -- function in a policy's `USING` clause is called ONCE PER CANDIDATE ROW —
@@ -12,101 +9,88 @@
 -- are OR'd, so every row pays every lane. THE CLASS IS THE SHAPE, NOT THE
 -- HELPER NAME.
 --
--- MEASURED LIVE, 2026-08-14, session-mode pooler (port 5432), as each real
--- signed-in identity with that role's real statement_timeout applied:
+-- 🚨 READ THIS BEFORE "FINISHING THE JOB" ON files.pages. The set-wise parent
+-- pivot that fixed the docproc extraction tables was TRIED HERE, MEASURED, AND
+-- REJECTED — it made things WORSE. The measurements and the reason are in
+-- section 2 below. Do not re-apply it without re-reading them.
 --
---   select count(*) from files.pages                        -- 6,567 rows / 66 files
---     owner (5,808 rows visible) ................ 3,513 ms
---     grant-reader / other user / stranger ...... 57014 TIMEOUT at 8,000 ms
+-- MEASURED LIVE, 2026-08-14/15, session-mode pooler (port 5432), as each real
+-- signed-in identity with that role's real statement_timeout applied.
 --
---   select count(*) from docproc.processed_document_pages    -- 8,787 rows / 137 docs
---     owner ..................................... 2,428 ms
---     everyone else ............................. 57014 TIMEOUT at 8,000 ms
+--   BEFORE, docproc.processed_document_pages (8,787 rows / 137 docs):
+--     select count(*)                     owner ......... 2,428 ms
+--                                         everyone else . 57014 TIMEOUT @ 8s
+--     ... where processed_document_id = '<one doc>'   (618 candidates)
+--                                         non-owner ..... 4,855 ms
+--   AFTER:
+--     select count(*)                     owner ........... 206 ms
+--                                         grant reader .... 549 ms
+--                                         non-owner ....... 779 ms
+--     ... filtered by one doc             non-owner ....... 793 ms
 --
---   select count(*) from docproc.processed_document_pages
---     where processed_document_id = '<one doc>'             -- only 618 candidates
---     non-owner ................................. 4,855 ms
---
--- That last one is why `pnpm check:access-matrix` was red at 41/42 with
+-- That filtered read is why `pnpm check:access-matrix` was red at 41/42 with
 -- `doc f3cf55a1 pages RLS (control) expected 0, got -1`: `-1` is
 -- scripts/access-matrix/lib.ts's "the read itself errored" sentinel (NOT a
 -- leak). PostgREST's `count=exact` pays that 4.9s twice — once to count, once
--- to fetch — crossing the 8s cap.
+-- to fetch — crossing the 8s cap. It is green after this migration.
 --
 -- ============================================================================
--- THE REWRITE, AND WHY EACH PIECE IS EXACTLY EQUIVALENT
+-- WHY EACH REWRITE IS EXACTLY EQUIVALENT
 -- ============================================================================
--- Every arm below is COPIED BYTE-FOR-BYTE into a `RETURNS SETOF uuid` STABLE
--- SECURITY DEFINER twin owned by postgres (BYPASSRLS — so the inner scan sees
--- the same rows the old per-row helper saw, and the twin does not silently
--- become dependent on the scanned table's own RLS). Nothing about WHO is
--- admitted is re-derived, re-modeled, or widened — only WHEN the arms run.
+-- Every arm is COPIED BYTE-FOR-BYTE into a `RETURNS SETOF uuid` STABLE twin.
+-- Nothing about WHO is admitted is re-derived, re-modeled, or widened — only
+-- WHEN the arms run.
 --
--- 🚨 `iam.has_access` IS NOT SWAPPED FOR `accessible_entity_ids`. Re-deriving
--- the access model is the move that broke component reads on 2026-08-13. The
--- win here comes purely from CARDINALITY.
+-- 🚨 `iam.has_access` / `can_read_processed_document` are NOT swapped for
+-- `accessible_entity_ids`. Re-deriving the access model is the move that broke
+-- component reads on 2026-08-13. The win comes purely from CARDINALITY.
 --
 -- THE MEMBERSHIP IDENTITY. Each old predicate has the form
 --     f(K)  =  EXISTS (SELECT 1 FROM parent d WHERE d.id = K AND COND(d))
 -- and `d.id` is the parent's PRIMARY KEY, so
 --     f(K)  <=>  K IN (SELECT d.id FROM parent d WHERE COND(d))
--- by construction — no argument about `has_access`/`can_read_*` semantics is
--- needed at all, because COND is character-identical on both sides.
+-- by construction — no argument about `can_read_*` semantics is needed at all,
+-- because COND is character-identical on both sides.
+--
+-- SECURITY CONTEXT IS NOT UNIFORM ACROSS THE TWINS, AND THAT IS DELIBERATE:
+--   * A twin replacing a FUNCTION CALL (`can_read_processed_document`,
+--     `can_curate_library_document`) must be SECURITY DEFINER. Those helpers
+--     are postgres-owned definers that already read their tables WITHOUT RLS,
+--     so the twin must iterate the FULL parent table. Making it INVOKER would
+--     shrink the domain to RLS-visible parents and NARROW the result.
+--   * A twin replacing a DIRECT TABLE REFERENCE (the former `via_doc_all`
+--     `EXISTS (SELECT 1 FROM docproc.processed_documents d ...)`) must be
+--     SECURITY INVOKER. PostgreSQL applies a referenced table's own RLS to
+--     subqueries inside a policy expression, so that subquery was already
+--     filtered by processed_documents' policies — notably
+--     `processed_documents_org_member_select`, which also requires
+--     `deleted_at IS NULL`. A BYPASSRLS definer twin would see rows that
+--     subquery could not (a soft-deleted document whose org the caller belongs
+--     to) and would WIDEN the admitted set.
+-- Over-tightening is as serious a defect as a hole (db-rules §6), so both
+-- directions were checked, not just the leaky one.
 --
 -- THE `IS NOT NULL` GUARD is not optional. For a NULL key the old helper
 -- returns FALSE while `NULL IN (<non-empty set>)` returns NULL. Both reject the
 -- row, but only the guard keeps the predicate identical in all THREE truth
 -- values rather than merely in which rows it admits (D146's reasoning,
--- unchanged). Every key column here — `files.pages.file_id`,
--- `processed_document_pages.processed_document_id` — is NOT NULL live with 0
--- NULL rows, so the guard can never fire. It is written anyway so the predicate
--- stays correct if a column is ever relaxed, and so no future reader has to
--- re-derive the question.
+-- unchanged). `processed_document_id` is NOT NULL live with 0 NULL rows, so the
+-- guard can never fire. It is written anyway so the predicate stays correct if
+-- the column is ever relaxed, and so no future reader has to re-derive it.
 --
--- DOMAIN COMPLETENESS (why the twins cannot omit an admitted key):
---   * `readable_file_page_file_ids()` iterates `SELECT DISTINCT file_id FROM
---     files.pages` — its domain is EXACTLY the set of keys that occur, so it is
---     complete by construction and needs no FK argument.
---   * The three `processed_document` twins iterate `docproc.processed_documents`
---     (186 rows). `processed_document_pages.processed_document_id` is NOT NULL
---     with FK `..._processed_document_id_fkey` REFERENCES
---     `docproc.processed_documents(id)` ON DELETE CASCADE, and 0 rows violate
---     it, so every occurring key is in the domain. This matters because
---     `can_curate_library_document` short-circuits TRUE for a super-admin
---     *regardless of whether the doc exists*; over the FK-guaranteed domain the
---     two forms still agree on every real row, and the twin then emits all 186
---     ids for a super-admin exactly as the old per-row form returned TRUE for
---     all of them.
---
--- WHY `file_pages_select` COLLAPSES TO A PLAIN COLUMN COMPARISON. This one arm
--- is not hoisted — it is REDUCED, and the reduction was read out of the live
--- function body and the live registry row rather than assumed:
---   1. `public.resolve_shareable_resource('file_pages')` SUCCEEDS live —
---      `platform.shareable_resource_registry` has an `is_active` row
---      (schema_name='files', table_name='pages', id_column='id',
---      owner_column='owner_id'), so `is_resource_owner`'s exception arm (which
---      would make the policy fail silent-closed, per THE ONE TOKEN invariant,
---      db-rules FEATURE.md §6c) is NOT taken. The token IS valid.
---   2. `public.shareable_owner_column('files','pages','owner_id')` returns
---      'owner_id' (the column exists, so the `created_by` fallback is not
---      reached — `files.pages` has no `created_by`, correctly: it is a
---      component, §6d-1).
---   3. The helper then runs `SELECT owner_id FROM files.pages WHERE id = $1`.
---      `id` is the PRIMARY KEY, so this returns exactly the scanned row's own
---      `owner_id`; the helper is owned by postgres (BYPASSRLS) so the lookup is
---      not itself RLS-filtered.
---   4. `owner_id` is NOT NULL live (0 NULL rows), so `v_owner_id IS NOT NULL`
---      is always true, and the helper returns FALSE (never NULL) when
---      `auth.uid()` is NULL.
---   Therefore `is_resource_owner('file_pages', id)` is, in all three truth
---   values, `(SELECT auth.uid()) IS NOT NULL AND owner_id = (SELECT auth.uid())`
---   — which is character-for-character what this table's OWN `file_pages_insert`
---   / `file_pages_update` / `file_pages_delete` policies already assert. The
---   rewrite makes the four policies agree instead of expressing one of them
---   through a dynamic-SQL registry lookup executed 6,567 times.
---   Role is deliberately left as PUBLIC (unchanged): anon evaluated the old
---   helper to FALSE via its `v_uid IS NULL` early return, and evaluates the new
---   predicate to FALSE via the same guard. Anon is not widened by one row.
+-- ⚠️ ONE DELIBERATE, UNREACHABLE EXCEPTION — stated because the proof FOUND it
+-- rather than assumed it away. `can_curate_library_document(p_doc, p_user)`
+-- begins `SELECT public.is_super_admin_user(p_user) OR EXISTS (...)`, so for a
+-- SUPER-ADMIN caller it short-circuits TRUE **without ever looking at p_doc** —
+-- including a NULL p_doc. The curator twin, being a set of real document ids,
+-- yields FALSE there. Probed live across all ten identities over all 186
+-- document ids plus an explicit NULL: the ONLY disagreeing key in the entire
+-- matrix is that synthetic NULL, and only for the three super-admins:
+--     key=NULL  old=TRUE  new=FALSE      (all 186 real keys: identical)
+-- It is unreachable — `processed_document_id` is NOT NULL with 0 NULL rows and
+-- an FK to `docproc.processed_documents` — and it NARROWS only a row that
+-- cannot exist (a page belonging to no document). The old form admitting such a
+-- row was itself the latent defect; it is not preserved.
 --
 -- WHY THE `FOR ALL` POLICY IS DECOMPOSED. `processed_document_pages_via_doc_all`
 -- carried USING (owner OR org-member) and a deliberately NARROWER WITH CHECK
@@ -120,11 +104,11 @@
 --     INSERT -> WITH CHECK (original owner-only expr, unchanged)
 --     UPDATE -> USING (original expr) WITH CHECK (original owner-only expr)
 --     DELETE -> USING (original expr)
---   Same roles (PUBLIC), same PERMISSIVE-ness, so per-command OR semantics are
---   identical.
+-- Same roles (PUBLIC), same PERMISSIVE-ness, so per-command OR semantics are
+-- identical.
 --
 -- ============================================================================
--- EQUIVALENCE PROOF (run live, 2026-08-14, BEFORE applying this file)
+-- EQUIVALENCE PROOF (run live, 2026-08-14/15, before and after applying)
 -- ============================================================================
 -- Ten identities — four page owners, a shared-knowledge grant reader, an
 -- industry curator, three super-admins, an org admin, an org member, a member
@@ -134,45 +118,28 @@
 -- and silently corrupts identity-scoped RLS testing), asserting `current_user`
 -- AND `auth.uid()` INSIDE every probe.
 --
--- For every identity, over EVERY row / EVERY distinct key (plus an explicit
--- NULL key), under a strict `IS DISTINCT FROM`:
---        old predicate  IS DISTINCT FROM  new predicate   ->  0 disagreements.
--- Admitted-row sets were snapshotted per identity before and after and compared
--- ELEMENT-WISE: identical for all ten identities on both tables.
+-- For every identity, over EVERY row / EVERY distinct key, under a strict
+-- `IS DISTINCT FROM`: 0 disagreements on every lane — the files.pages owner
+-- lane compared per-ROW over all 6,567 rows, not per key. The single exception
+-- in the whole matrix is the synthetic NULL key on the curator lane for
+-- super-admins, dissected above.
 --
--- The proof is not vacuous: the grant reader sees 618 `processed_document_pages`
--- rows through `can_read_processed_document`'s data-store lane, the super-admins
--- take `can_curate_library_document`'s short-circuit, and the page owners are
--- admitted through the owner lane.
+-- Admitted-row sets were snapshotted per identity before and after and compared
+-- ELEMENT-WISE: 38,686 admitted rows across 10 identities x 2 tables, ZERO
+-- differences. The proof is not vacuous: the grant reader sees 618
+-- `processed_document_pages` rows through `can_read_processed_document`'s
+-- data-store lane, the super-admins take `can_curate_library_document`'s
+-- short-circuit, and the page owners are admitted through the owner lane.
 --
 -- Idempotent: CREATE OR REPLACE + DROP POLICY IF EXISTS / CREATE POLICY.
 
 
 -- =====================================================================
--- 1. Set-valued twins. Arms copied verbatim from the policies/helpers they
---    replace; security context (postgres-owned SECURITY DEFINER, BYPASSRLS,
---    STABLE, explicit search_path) identical.
+-- 1. Set-valued twins for docproc.processed_document_pages. Arms copied
+--    verbatim from the policies/helpers they replace.
 -- =====================================================================
 
--- files.pages grant lane: iam.has_access('file', file_id, 'viewer')
-CREATE OR REPLACE FUNCTION public.readable_file_page_file_ids()
- RETURNS SETOF uuid
- LANGUAGE sql
- STABLE SECURITY DEFINER
- SET search_path TO 'public', 'files', 'iam'
-AS $function$
-  SELECT k.file_id
-  FROM (SELECT DISTINCT p.file_id FROM files.pages p) k
-  WHERE iam.has_access('file'::text, k.file_id, 'viewer'::public.permission_level)
-$function$;
-
-COMMENT ON FUNCTION public.readable_file_page_file_ids() IS
-  'Set-wise twin of the files.pages grant lane: every file_id occurring in files.pages that the caller may read at viewer level. Uncorrelated, so `file_id IN (SELECT public.readable_file_page_file_ids())` plans as ONE hashed SubPlan per query — the iam.has_access chain runs once per FILE (66) instead of once per PAGE (6,567). USE THIS FORM IN RLS POLICIES — never a per-row SECURITY DEFINER call (D146). MUST stay owned by a BYPASSRLS role: it reads files.pages from inside that table''s own SELECT policy, and only the definer''s RLS bypass keeps that from recursing.';
-
-REVOKE ALL ON FUNCTION public.readable_file_page_file_ids() FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.readable_file_page_file_ids() TO authenticated, anon, service_role;
-
--- processed_document_pages curator lane: can_curate_library_document(doc, uid)
+-- curator lane: can_curate_library_document(doc, auth.uid())
 CREATE OR REPLACE FUNCTION public.curatable_processed_document_ids()
  RETURNS SETOF uuid
  LANGUAGE sql
@@ -185,12 +152,12 @@ AS $function$
 $function$;
 
 COMMENT ON FUNCTION public.curatable_processed_document_ids() IS
-  'Set-wise twin of can_curate_library_document(doc, auth.uid()): the ids of every processed document the caller may curate. Uncorrelated — the definer chain runs once per DOCUMENT (186) instead of once per PAGE (8,787). USE THIS FORM IN RLS POLICIES (D146).';
+  'Set-wise twin of can_curate_library_document(doc, auth.uid()): the ids of every processed document the caller may curate. Uncorrelated, so `x IN (SELECT ...)` plans as ONE hashed SubPlan — the definer chain runs once per DOCUMENT (186) instead of once per PAGE (8,787). USE THIS FORM IN RLS POLICIES (D146).';
 
 REVOKE ALL ON FUNCTION public.curatable_processed_document_ids() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.curatable_processed_document_ids() TO authenticated, anon, service_role;
 
--- processed_document_pages library-grant lane: can_read_processed_document(doc, uid)
+-- library-grant lane: can_read_processed_document(doc, auth.uid())
 CREATE OR REPLACE FUNCTION public.readable_processed_document_ids()
  RETURNS SETOF uuid
  LANGUAGE sql
@@ -208,25 +175,8 @@ COMMENT ON FUNCTION public.readable_processed_document_ids() IS
 REVOKE ALL ON FUNCTION public.readable_processed_document_ids() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.readable_processed_document_ids() TO authenticated, anon, service_role;
 
--- processed_document_pages via-doc lane: the EXISTS(owner OR org-member) arm.
---
--- 🚨 THIS ONE IS `SECURITY INVOKER`, AND THAT IS THE WHOLE POINT — it is the
--- only twin here replacing a DIRECT TABLE REFERENCE rather than a function
--- call. PostgreSQL applies a referenced table's OWN RLS to subqueries inside a
--- policy expression, so the former `EXISTS (SELECT 1 FROM
--- docproc.processed_documents d ...)` was already filtered by
--- processed_documents' policies (notably `processed_documents_org_member_select`,
--- which additionally requires `deleted_at IS NULL`). A SECURITY DEFINER twin
--- owned by a BYPASSRLS role would see rows that subquery could not — e.g. a
--- soft-deleted document whose org the caller belongs to — and would WIDEN the
--- admitted set. INVOKER reproduces the original filtering exactly.
---
--- The other three twins replace FUNCTION CALLS (`iam.has_access`,
--- `can_read_processed_document`, `can_curate_library_document`), which are
--- themselves postgres-owned SECURITY DEFINER and therefore already read their
--- tables WITHOUT RLS. Those twins must stay SECURITY DEFINER — making them
--- INVOKER would shrink their domain to the RLS-visible parents and NARROW the
--- result. Over-tightening is as serious a defect as a hole (db-rules §6).
+-- via-doc lane: the EXISTS(owner OR org-member) arm.
+-- SECURITY INVOKER ON PURPOSE — see the security-context note in the header.
 CREATE OR REPLACE FUNCTION public.owned_or_org_processed_document_ids()
  RETURNS SETOF uuid
  LANGUAGE sql
@@ -240,7 +190,7 @@ AS $function$
 $function$;
 
 COMMENT ON FUNCTION public.owned_or_org_processed_document_ids() IS
-  'Set-wise twin of the processed_document_pages via-doc SELECT lane: the ids of every processed document the caller owns or reaches through org membership. Arms copied verbatim from the former processed_document_pages_via_doc_all USING clause. Uncorrelated — is_member_of_organization runs once per DOCUMENT (186) instead of once per PAGE (8,787). DELIBERATELY SECURITY INVOKER: it replaces a direct table reference inside a policy, which PostgreSQL already filters through docproc.processed_documents'' own RLS; a BYPASSRLS definer twin would widen the admitted set (e.g. soft-deleted org documents). USE THIS FORM IN RLS POLICIES (D146).';
+  'Set-wise twin of the processed_document_pages via-doc SELECT lane: the ids of every processed document the caller owns or reaches through org membership. Arms copied verbatim from the former processed_document_pages_via_doc_all USING clause. DELIBERATELY SECURITY INVOKER: it replaces a direct table reference inside a policy, which PostgreSQL already filters through docproc.processed_documents'' own RLS; a BYPASSRLS definer twin would widen the admitted set (e.g. soft-deleted org documents). USE THIS FORM IN RLS POLICIES (D146).';
 
 REVOKE ALL ON FUNCTION public.owned_or_org_processed_document_ids() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.owned_or_org_processed_document_ids() TO authenticated, anon, service_role;
@@ -252,27 +202,99 @@ COMMENT ON FUNCTION public.can_read_processed_document(uuid, uuid) IS
   'TRUE when the given user may read this processed document (owner, curator, org member, data-store grant, or iam grant). NEVER call this from an RLS USING clause — a SECURITY DEFINER helper there runs once per candidate row (measured: 4.9s over 618 candidate rows, 8s TIMEOUT over 8,787). Use public.readable_processed_document_ids() set-wise instead (D146).';
 
 COMMENT ON FUNCTION public.can_curate_library_document(uuid, uuid) IS
-  'TRUE when the given user may curate this library document (super-admin, or industry curator on a data store granting it). NEVER call this from an RLS USING clause — a SECURITY DEFINER helper there runs once per candidate row. Use public.curatable_processed_document_ids() set-wise instead (D146).';
+  'TRUE when the given user may curate this library document (super-admin, or industry curator on a data store granting it). NEVER call this from an RLS USING clause — a SECURITY DEFINER helper there runs once per candidate row. Use public.curatable_processed_document_ids() set-wise instead (D146). NOTE: short-circuits TRUE for a super-admin without inspecting p_doc, so it returns TRUE even for a non-existent or NULL doc id.';
 
 COMMENT ON FUNCTION public.is_resource_owner(text, uuid) IS
-  'TRUE when auth.uid() owns the given shareable resource, resolved dynamically through platform.shareable_resource_registry. NEVER call this from an RLS USING clause — it is SECURITY DEFINER (so it runs once per candidate row) AND each call re-resolves the registry and queries information_schema before a dynamic single-row lookup. On a table that already carries its own owner column, compare that column directly, exactly as the table''s INSERT/UPDATE/DELETE policies do (D146; files.pages, 2026-08-14).';
+  'TRUE when auth.uid() owns the given shareable resource, resolved dynamically through platform.shareable_resource_registry. NEVER call this from an RLS USING clause — it is SECURITY DEFINER (so it runs once per candidate row) AND each call re-resolves the registry and queries information_schema before a dynamic single-row lookup. On a table that already carries its own owner column, compare that column directly, exactly as that table''s INSERT/UPDATE/DELETE policies do (D146; files.pages, 2026-08-15).';
 
 
 -- =====================================================================
--- 2. files.pages — both SELECT policies hoisted in place. Same policy names,
---    same commands, same roles, same PERMISSIVE-ness; only the predicate form
---    changes. The INSERT/UPDATE/DELETE policies are untouched.
+-- 2. files.pages — the OWNER lane only.
+--
+--    `file_pages_select` used `is_resource_owner('file_pages', id)`: a
+--    SECURITY DEFINER that, PER ROW, re-resolved the shareable registry,
+--    queried information_schema, and then ran a dynamic single-row lookup —
+--    6,567 times per scan. It reduces exactly to a plain column comparison,
+--    and the reduction was read out of the live function body and the live
+--    registry row rather than assumed:
+--      1. `public.resolve_shareable_resource('file_pages')` SUCCEEDS live —
+--         `platform.shareable_resource_registry` has an `is_active` row
+--         (schema_name='files', table_name='pages', id_column='id',
+--         owner_column='owner_id'), so `is_resource_owner`'s exception arm
+--         (which would make the policy fail silent-closed, per THE ONE TOKEN
+--         invariant, db-rules §6c) is NOT taken. The token IS valid.
+--      2. `public.shareable_owner_column('files','pages','owner_id')` returns
+--         'owner_id' (the column exists, so the `created_by` fallback is not
+--         reached — files.pages has no `created_by`, correctly: it is a
+--         component, §6d-1).
+--      3. The helper then runs `SELECT owner_id FROM files.pages WHERE id=$1`.
+--         `id` is the PRIMARY KEY, so this returns exactly the scanned row's
+--         own `owner_id`; the helper is postgres-owned (BYPASSRLS) so the
+--         lookup is not itself RLS-filtered.
+--      4. `owner_id` is NOT NULL live (0 NULL rows), so `v_owner_id IS NOT
+--         NULL` is always true, and the helper returns FALSE (never NULL)
+--         when `auth.uid()` is NULL.
+--    Therefore it is, in all three truth values,
+--      `(SELECT auth.uid()) IS NOT NULL AND owner_id = (SELECT auth.uid())`
+--    — character-for-character what this table's OWN file_pages_insert /
+--    file_pages_update / file_pages_delete policies already assert. Proven
+--    per-ROW over all 6,567 rows for all ten identities: 0 disagreements.
+--    Role stays PUBLIC: anon evaluated the old helper to FALSE via its
+--    `v_uid IS NULL` early return and evaluates the new predicate to FALSE via
+--    the same guard. Anon is not widened by one row.
+--
+-- 🚨 WHY `file_pages_grant_read` IS LEFT ALONE — TRIED, MEASURED, REVERTED.
+--    The obvious next move is the docproc parent pivot: hoist
+--    `iam.has_access('file', file_id, 'viewer')` into a
+--    `readable_file_page_file_ids()` twin over the 66 distinct file_ids. That
+--    was built and applied here on 2026-08-15, and it made the table WORSE:
+--
+--      filtered read of ONE file (618 rows), grant reader
+--          per-row grant lane (original) ....... PASSED the access matrix
+--          hoisted twin ........................ 12,606 ms  -> matrix -1
+--      unfiltered count(*), owner
+--          per-row grant lane (original) ........ 3,513 ms
+--          hoisted twin ......................... 7,009 ms
+--
+--    THE PIVOT ASSUMES THE PER-CALL COST IS SMALL AND THE ROW COUNT IS THE
+--    PROBLEM. On this table that assumption is false. `EXPLAIN (ANALYZE,
+--    BUFFERS)` shows the hoist itself worked perfectly — ONE `hashed SubPlan`,
+--    `loops=1` — while a SINGLE `iam.has_access('file', ...)` call costs
+--    ~110 ms and ~25,000 shared buffers, because the file lane
+--    (`files.has_access_for` -> `files.is_crawl_artifact` /
+--    `files.crawl_site_conveys` / `iam.has_access_for_base`) is expensive.
+--    66 x 110 ms is ~7 s of UNCONDITIONAL work on every read, however narrow —
+--    the twin cannot see the query's `file_id` filter, so a request for one
+--    document pays for all 66. The per-row form, by contrast, costs nothing
+--    when the filter excludes rows and runs warm on repeated identical
+--    file_ids, which is exactly how the app reads pages (always by file).
+--
+--    So the per-row shape is retained here DELIBERATELY. The real defect on
+--    this table is not the policy shape — it is that `iam.has_access` on the
+--    'file' type is ~110 ms / 25k buffers per call. Fixing THAT is a separate,
+--    tracked piece of work; it must not be "fixed" by re-deriving the access
+--    model with `accessible_entity_ids` (the 2026-08-13 component-read
+--    breakage). Until it is fixed, an UNFILTERED `select * from files.pages`
+--    remains over the 8 s cap for non-owners. Every real surface reads pages
+--    filtered by file, which is served fine.
 -- =====================================================================
-
-DROP POLICY IF EXISTS file_pages_grant_read ON files.pages;
-CREATE POLICY file_pages_grant_read ON files.pages
-  FOR SELECT TO authenticated
-  USING (file_id IS NOT NULL AND file_id IN (SELECT public.readable_file_page_file_ids()));
 
 DROP POLICY IF EXISTS file_pages_select ON files.pages;
 CREATE POLICY file_pages_select ON files.pages
   FOR SELECT TO PUBLIC
   USING ((SELECT auth.uid()) IS NOT NULL AND owner_id = (SELECT auth.uid()));
+
+-- Restored to its original per-row form (see the note above). Recreated
+-- explicitly, rather than left untouched, so this file is a complete and
+-- idempotent statement of the live policy set.
+DROP POLICY IF EXISTS file_pages_grant_read ON files.pages;
+CREATE POLICY file_pages_grant_read ON files.pages
+  FOR SELECT TO authenticated
+  USING (iam.has_access('file'::text, file_id, 'viewer'::public.permission_level));
+
+-- The abandoned twin from the reverted attempt. Dropped so no future reader
+-- finds an unused set-wise helper and assumes it is the intended form.
+DROP FUNCTION IF EXISTS public.readable_file_page_file_ids();
 
 
 -- =====================================================================

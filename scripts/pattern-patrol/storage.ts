@@ -2,11 +2,13 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
+  rmSync,
   renameSync,
   unlinkSync,
   writeFileSync,
 } from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import { execFileSync } from "node:child_process";
 
 import {
   canonicalPatrolRecordJson,
@@ -57,6 +59,73 @@ function atomicWrite(path: string, contents: string): void {
   } finally {
     if (existsSync(temp)) unlinkSync(temp);
   }
+}
+
+function gitCommonDir(repoRoot: string): string {
+  const value = execFileSync("git", ["rev-parse", "--git-common-dir"], {
+    cwd: repoRoot,
+    encoding: "utf8",
+  }).trim();
+  return resolve(repoRoot, value);
+}
+
+function processIsAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function pause(milliseconds: number): void {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, milliseconds);
+}
+
+export function withPatrolRunLease<T>(
+  repoRoot: string,
+  patrolId: string,
+  runId: string,
+  operation: () => T,
+): T {
+  const lockDir = join(
+    gitCommonDir(repoRoot),
+    "pattern-patrol-locks",
+    safeSegment(patrolId, "patrol id"),
+    `${safeSegment(runId, "run id")}.lock`,
+  );
+  mkdirSync(dirname(lockDir), { recursive: true });
+  const ownerPath = join(lockDir, "owner.json");
+
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    try {
+      mkdirSync(lockDir);
+      writeFileSync(
+        ownerPath,
+        `${JSON.stringify({ pid: process.pid, repoRoot, acquiredAt: new Date().toISOString() })}\n`,
+        "utf8",
+      );
+      try {
+        return operation();
+      } finally {
+        rmSync(lockDir, { recursive: true, force: true });
+      }
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code !== "EEXIST") throw error;
+      try {
+        const owner = JSON.parse(readFileSync(ownerPath, "utf8")) as { pid?: number };
+        if (typeof owner.pid === "number" && !processIsAlive(owner.pid)) {
+          rmSync(lockDir, { recursive: true, force: true });
+          continue;
+        }
+      } catch {
+        // The winner may be between mkdir and writing owner.json. Give it time.
+      }
+      pause(100);
+    }
+  }
+  throw new Error(`timed out waiting for patrol run lease: ${patrolId}/${runId}`);
 }
 
 export function savePatrolRun(repoRoot: string, record: PatrolRunRecord): string {

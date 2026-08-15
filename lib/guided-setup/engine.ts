@@ -188,6 +188,7 @@ export function resolveChecklist<Ctx>(args: {
       optional: step.optional === true,
       status,
       result,
+      running: busy.has(step.id),
       stale,
       lastCheckedAt,
       blockedBy,

@@ -102,6 +102,26 @@ warn()    { echo -e "${YELLOW}[WARN]${NC}  $*"; }
 fail()    { echo -e "${RED}[FAIL]${NC}  $*" >&2; exit 1; }
 preview() { echo -e "${CYAN}[DRY]${NC}   $*"; }
 
+verify_patrol_delivery() {
+    info "Checking Pattern Patrol certification records..."
+    if pnpm --silent patrol:delivery:check -- --head HEAD; then
+        ok "Pattern Patrol delivery records authorize every patrol commit."
+    else
+        fail "Pattern Patrol delivery blocked: certify the exact candidate and queue it before releasing."
+    fi
+}
+
+# Every real release shares one machine-wide delivery lane. The token makes
+# release safe to nest in failure paths: only its owner may release the lane.
+DELIVERY_LEASE_TOKEN=""
+release_delivery_lease() {
+    if [[ -n "$DELIVERY_LEASE_TOKEN" ]]; then
+        bash "$REPO_ROOT/scripts/pattern-patrol/delivery-lease.sh" release "$DELIVERY_LEASE_TOKEN" >/dev/null 2>&1 || true
+        DELIVERY_LEASE_TOKEN=""
+    fi
+}
+trap release_delivery_lease EXIT
+
 # Like fail(), but for failures AFTER the release commit + tag were created.
 # Clears the ERR trap so the generic "nothing was committed" box does not print
 # (it would be a lie — the release exists locally, it just was not pushed).
@@ -177,6 +197,15 @@ fi
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 [[ "$CURRENT_BRANCH" == "$BRANCH" ]] \
     || fail "Not on '$BRANCH' branch (currently on '$CURRENT_BRANCH'). Switch first."
+
+if ! $DRY_RUN; then
+    info "Claiming the serialized delivery lane..."
+    DELIVERY_LEASE_TOKEN="$(
+        bash "$REPO_ROOT/scripts/pattern-patrol/delivery-lease.sh" acquire \
+            "$$" "$REPO_ROOT" "${MATRX_PATROL_RUN_ID:-general-release}"
+    )" || fail "Another release owns the delivery lane. Wait for it to finish, then retry."
+    ok "Delivery lane claimed."
+fi
 
 # Dirty tree is fine for a plain release (bump + push committed work only).
 # FF/rebase still needs a clean tree — enforced only when sync must mutate.
@@ -261,6 +290,11 @@ EOF
         fi
     fi
 fi
+
+# Hard checkpoint before migrations, generated files, version bumps, tags, or
+# pushes. A patrol product change can enter release only when its immutable run
+# record certifies the exact candidate and places it in the delivery queue.
+verify_patrol_delivery
 
 # ── Apply pending matrx-frontend migrations (via aidream applier) ─────────────
 # Same shared DB + ledger as aidream. This repo cannot run DDL itself (PostgREST
@@ -528,6 +562,12 @@ git commit -m "$COMMIT_MSG"
 echo ""
 ok "Committed: '$COMMIT_MSG'"
 
+# --ship materializes the dirty tree only at the commit above. Check again now
+# so report/run files and any patrol trailers in that new commit cannot bypass
+# the earlier history-only checkpoint. Failure preserves the local commit and
+# stops before tag/push.
+verify_patrol_delivery
+
 # ── Tag ──────────────────────────────────────────────────────────────────────
 info "Creating tag $NEW_TAG..."
 git tag "$NEW_TAG"
@@ -554,6 +594,10 @@ EOF
 )"
 
     if git rebase "$REMOTE/$BRANCH" >/dev/null 2>&1; then
+        # The remote may have gained an unreleased patrol candidate while this
+        # release was being prepared. Recheck the exact rebased tree before it
+        # receives a release tag or is pushed.
+        verify_patrol_delivery
         # The rebase rewrote our release commit, so the tag now points at the
         # old (orphaned) SHA — move it onto the new HEAD before retrying.
         git tag -f "$NEW_TAG" HEAD >/dev/null

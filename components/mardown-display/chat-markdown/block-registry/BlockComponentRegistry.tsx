@@ -19,6 +19,7 @@ import FlashcardsBlock from "../../blocks/flashcards/FlashcardsBlock";
 import VideoPromptOptionsBlock from "../../blocks/video-prompt-options/VideoPromptOptionsBlock";
 import KeywordResearchBlock from "../../blocks/keyword-research/KeywordResearchBlock";
 import KeywordClassificationBatchBlock from "../../blocks/keyword-research/KeywordClassificationBatchBlock";
+import KeywordSerpIntentAnalysisBlock from "../../blocks/keyword-research/KeywordSerpIntentAnalysisBlock";
 import PageBriefBlock from "../../blocks/page-brief/PageBriefBlock";
 import EpisodeTitleOptionsBlock from "../../blocks/episode-title-options/EpisodeTitleOptionsBlock";
 import MediaChaptersBlock from "../../blocks/media-chapters/MediaChaptersBlock";
@@ -156,7 +157,9 @@ export const BlockComponents = {
     </LazyBlockWrapper>
   ),
 
-  HtmlInlinePreview: (props: React.ComponentProps<typeof HtmlInlinePreview>) => (
+  HtmlInlinePreview: (
+    props: React.ComponentProps<typeof HtmlInlinePreview>,
+  ) => (
     <LazyBlockWrapper>
       <HtmlInlinePreview {...props} />
     </LazyBlockWrapper>
@@ -169,17 +172,23 @@ export const BlockComponents = {
   ),
 
   // Wrapped lazy components
-  ThinkingVisualization: (props: React.ComponentProps<typeof ThinkingVisualization>) => (
+  ThinkingVisualization: (
+    props: React.ComponentProps<typeof ThinkingVisualization>,
+  ) => (
     <LazyBlockWrapper>
       <ThinkingVisualization {...props} />
     </LazyBlockWrapper>
   ),
-  ReasoningVisualization: (props: React.ComponentProps<typeof ReasoningVisualization>) => (
+  ReasoningVisualization: (
+    props: React.ComponentProps<typeof ReasoningVisualization>,
+  ) => (
     <LazyBlockWrapper>
       <ReasoningVisualization {...props} />
     </LazyBlockWrapper>
   ),
-  ConsolidatedReasoningVisualization: (props: React.ComponentProps<typeof ConsolidatedReasoningVisualization>) => (
+  ConsolidatedReasoningVisualization: (
+    props: React.ComponentProps<typeof ConsolidatedReasoningVisualization>,
+  ) => (
     <LazyBlockWrapper>
       <ConsolidatedReasoningVisualization {...props} />
     </LazyBlockWrapper>
@@ -194,7 +203,9 @@ export const BlockComponents = {
       <MatrxFileBlock {...props} />
     </LazyBlockWrapper>
   ),
-  YouTubeEmbedBlock: (props: React.ComponentProps<typeof YouTubeEmbedBlock>) => (
+  YouTubeEmbedBlock: (
+    props: React.ComponentProps<typeof YouTubeEmbedBlock>,
+  ) => (
     <LazyBlockWrapper>
       <YouTubeEmbedBlock {...props} />
     </LazyBlockWrapper>
@@ -209,7 +220,9 @@ export const BlockComponents = {
       <TasksBlock {...props} />
     </LazyBlockWrapper>
   ),
-  StructuredPlanBlock: (props: React.ComponentProps<typeof StructuredPlanBlock>) => (
+  StructuredPlanBlock: (
+    props: React.ComponentProps<typeof StructuredPlanBlock>,
+  ) => (
     <LazyBlockWrapper>
       <StructuredPlanBlock {...props} />
     </LazyBlockWrapper>
@@ -240,6 +253,13 @@ export const BlockComponents = {
       <KeywordClassificationBatchBlock {...props} />
     </LazyBlockWrapper>
   ),
+  KeywordSerpIntentAnalysisBlock: (
+    props: React.ComponentProps<typeof KeywordSerpIntentAnalysisBlock>,
+  ) => (
+    <LazyBlockWrapper>
+      <KeywordSerpIntentAnalysisBlock {...props} />
+    </LazyBlockWrapper>
+  ),
   PageBriefBlock: (props: React.ComponentProps<typeof PageBriefBlock>) => (
     <LazyBlockWrapper>
       <PageBriefBlock {...props} />
@@ -252,7 +272,9 @@ export const BlockComponents = {
       <EpisodeTitleOptionsBlock {...props} />
     </LazyBlockWrapper>
   ),
-  MediaChaptersBlock: (props: React.ComponentProps<typeof MediaChaptersBlock>) => (
+  MediaChaptersBlock: (
+    props: React.ComponentProps<typeof MediaChaptersBlock>,
+  ) => (
     <LazyBlockWrapper>
       <MediaChaptersBlock {...props} />
     </LazyBlockWrapper>
@@ -262,7 +284,9 @@ export const BlockComponents = {
       <SeoPackageBlock {...props} />
     </LazyBlockWrapper>
   ),
-  MultipleChoiceQuiz: (props: React.ComponentProps<typeof MultipleChoiceQuiz>) => (
+  MultipleChoiceQuiz: (
+    props: React.ComponentProps<typeof MultipleChoiceQuiz>,
+  ) => (
     <LazyBlockWrapper>
       <MultipleChoiceQuiz {...props} />
     </LazyBlockWrapper>
@@ -287,32 +311,44 @@ export const BlockComponents = {
       <ResearchBlock {...props} />
     </LazyBlockWrapper>
   ),
-  ResourceCollectionBlock: (props: React.ComponentProps<typeof ResourceCollectionBlock>) => (
+  ResourceCollectionBlock: (
+    props: React.ComponentProps<typeof ResourceCollectionBlock>,
+  ) => (
     <LazyBlockWrapper>
       <ResourceCollectionBlock {...props} />
     </LazyBlockWrapper>
   ),
-  ProgressTrackerBlock: (props: React.ComponentProps<typeof ProgressTrackerBlock>) => (
+  ProgressTrackerBlock: (
+    props: React.ComponentProps<typeof ProgressTrackerBlock>,
+  ) => (
     <LazyBlockWrapper>
       <ProgressTrackerBlock {...props} />
     </LazyBlockWrapper>
   ),
-  ComparisonTableBlock: (props: React.ComponentProps<typeof ComparisonTableBlock>) => (
+  ComparisonTableBlock: (
+    props: React.ComponentProps<typeof ComparisonTableBlock>,
+  ) => (
     <LazyBlockWrapper>
       <ComparisonTableBlock {...props} />
     </LazyBlockWrapper>
   ),
-  TroubleshootingBlock: (props: React.ComponentProps<typeof TroubleshootingBlock>) => (
+  TroubleshootingBlock: (
+    props: React.ComponentProps<typeof TroubleshootingBlock>,
+  ) => (
     <LazyBlockWrapper>
       <TroubleshootingBlock {...props} />
     </LazyBlockWrapper>
   ),
-  DecisionTreeBlock: (props: React.ComponentProps<typeof DecisionTreeBlock>) => (
+  DecisionTreeBlock: (
+    props: React.ComponentProps<typeof DecisionTreeBlock>,
+  ) => (
     <LazyBlockWrapper>
       <DecisionTreeBlock {...props} />
     </LazyBlockWrapper>
   ),
-  InteractiveDiagramBlock: (props: React.ComponentProps<typeof InteractiveDiagramBlock>) => (
+  InteractiveDiagramBlock: (
+    props: React.ComponentProps<typeof InteractiveDiagramBlock>,
+  ) => (
     <LazyBlockWrapper>
       <InteractiveDiagramBlock {...props} />
     </LazyBlockWrapper>
@@ -332,17 +368,23 @@ export const BlockComponents = {
       <ChartBlock {...props} />
     </LazyBlockWrapper>
   ),
-  ItemPresentationBlock: (props: React.ComponentProps<typeof ItemPresentationBlock>) => (
+  ItemPresentationBlock: (
+    props: React.ComponentProps<typeof ItemPresentationBlock>,
+  ) => (
     <LazyBlockWrapper>
       <ItemPresentationBlock {...props} />
     </LazyBlockWrapper>
   ),
-  MatrxEnvelopeBlock: (props: React.ComponentProps<typeof MatrxEnvelopeBlock>) => (
+  MatrxEnvelopeBlock: (
+    props: React.ComponentProps<typeof MatrxEnvelopeBlock>,
+  ) => (
     <LazyBlockWrapper>
       <MatrxEnvelopeBlock {...props} />
     </LazyBlockWrapper>
   ),
-  SchemaProposalBlock: (props: React.ComponentProps<typeof SchemaProposalBlock>) => (
+  SchemaProposalBlock: (
+    props: React.ComponentProps<typeof SchemaProposalBlock>,
+  ) => (
     <LazyBlockWrapper>
       <SchemaProposalBlock {...props} />
     </LazyBlockWrapper>
@@ -352,7 +394,9 @@ export const BlockComponents = {
       <MathProblemBlock {...props} />
     </LazyBlockWrapper>
   ),
-  QuestionnaireRenderer: (props: React.ComponentProps<typeof QuestionnaireRenderer>) => (
+  QuestionnaireRenderer: (
+    props: React.ComponentProps<typeof QuestionnaireRenderer>,
+  ) => (
     <LazyBlockWrapper>
       <QuestionnaireProvider>
         <QuestionnaireRenderer {...props} />
@@ -364,22 +408,30 @@ export const BlockComponents = {
       <MarkdownTable {...props} />
     </LazyBlockWrapper>
   ),
-  StreamingTableRenderer: (props: React.ComponentProps<typeof StreamingTableRenderer>) => (
+  StreamingTableRenderer: (
+    props: React.ComponentProps<typeof StreamingTableRenderer>,
+  ) => (
     <LazyBlockWrapper>
       <StreamingTableRenderer {...props} />
     </LazyBlockWrapper>
   ),
-  StreamingDiffBlock: (props: React.ComponentProps<typeof StreamingDiffBlock>) => (
+  StreamingDiffBlock: (
+    props: React.ComponentProps<typeof StreamingDiffBlock>,
+  ) => (
     <LazyBlockWrapper>
       <StreamingDiffBlock {...props} />
     </LazyBlockWrapper>
   ),
-  SearchReplaceBlock: (props: React.ComponentProps<typeof SearchReplaceBlock>) => (
+  SearchReplaceBlock: (
+    props: React.ComponentProps<typeof SearchReplaceBlock>,
+  ) => (
     <LazyBlockWrapper>
       <SearchReplaceBlock {...props} />
     </LazyBlockWrapper>
   ),
-  InlineDecisionBlock: (props: React.ComponentProps<typeof InlineDecisionBlock>) => (
+  InlineDecisionBlock: (
+    props: React.ComponentProps<typeof InlineDecisionBlock>,
+  ) => (
     <LazyBlockWrapper>
       <InlineDecisionBlock {...props} />
     </LazyBlockWrapper>
@@ -399,12 +451,16 @@ export const BlockComponents = {
       <EditorErrorBlock {...props} />
     </LazyBlockWrapper>
   ),
-  EditorCodeSnippetBlock: (props: React.ComponentProps<typeof EditorCodeSnippetBlock>) => (
+  EditorCodeSnippetBlock: (
+    props: React.ComponentProps<typeof EditorCodeSnippetBlock>,
+  ) => (
     <LazyBlockWrapper>
       <EditorCodeSnippetBlock {...props} />
     </LazyBlockWrapper>
   ),
-  AudioCitationBlock: (props: React.ComponentProps<typeof AudioCitationBlock>) => (
+  AudioCitationBlock: (
+    props: React.ComponentProps<typeof AudioCitationBlock>,
+  ) => (
     <LazyBlockWrapper>
       <AudioCitationBlock {...props} />
     </LazyBlockWrapper>
@@ -439,7 +495,9 @@ export const BlockComponents = {
       <TreeBlock {...props} />
     </LazyBlockWrapper>
   ),
-  MarkdownPreviewBlock: (props: React.ComponentProps<typeof MarkdownPreviewBlock>) => (
+  MarkdownPreviewBlock: (
+    props: React.ComponentProps<typeof MarkdownPreviewBlock>,
+  ) => (
     <LazyBlockWrapper>
       <MarkdownPreviewBlock {...props} />
     </LazyBlockWrapper>
@@ -449,12 +507,16 @@ export const BlockComponents = {
       <AudioOutputBlock {...props} />
     </LazyBlockWrapper>
   ),
-  ImageOutputBlock: (props: React.ComponentProps<typeof UnifiedImageBlockRenderer>) => (
+  ImageOutputBlock: (
+    props: React.ComponentProps<typeof UnifiedImageBlockRenderer>,
+  ) => (
     <LazyBlockWrapper>
       <UnifiedImageBlockRenderer {...props} />
     </LazyBlockWrapper>
   ),
-  SearchResultsBlock: (props: React.ComponentProps<typeof SearchResultsBlock>) => (
+  SearchResultsBlock: (
+    props: React.ComponentProps<typeof SearchResultsBlock>,
+  ) => (
     <LazyBlockWrapper>
       <SearchResultsBlock {...props} />
     </LazyBlockWrapper>
@@ -464,62 +526,86 @@ export const BlockComponents = {
       <SearchErrorBlock {...props} />
     </LazyBlockWrapper>
   ),
-  FunctionResultBlock: (props: React.ComponentProps<typeof FunctionResultBlock>) => (
+  FunctionResultBlock: (
+    props: React.ComponentProps<typeof FunctionResultBlock>,
+  ) => (
     <LazyBlockWrapper>
       <FunctionResultBlock {...props} />
     </LazyBlockWrapper>
   ),
-  WorkflowStepBlock: (props: React.ComponentProps<typeof WorkflowStepBlock>) => (
+  WorkflowStepBlock: (
+    props: React.ComponentProps<typeof WorkflowStepBlock>,
+  ) => (
     <LazyBlockWrapper>
       <WorkflowStepBlock {...props} />
     </LazyBlockWrapper>
   ),
-  CategorizationResultBlock: (props: React.ComponentProps<typeof CategorizationResultBlock>) => (
+  CategorizationResultBlock: (
+    props: React.ComponentProps<typeof CategorizationResultBlock>,
+  ) => (
     <LazyBlockWrapper>
       <CategorizationResultBlock {...props} />
     </LazyBlockWrapper>
   ),
-  FetchResultsBlock: (props: React.ComponentProps<typeof FetchResultsBlock>) => (
+  FetchResultsBlock: (
+    props: React.ComponentProps<typeof FetchResultsBlock>,
+  ) => (
     <LazyBlockWrapper>
       <FetchResultsBlock {...props} />
     </LazyBlockWrapper>
   ),
-  PodcastCompleteBlock: (props: React.ComponentProps<typeof PodcastCompleteBlockLazy>) => (
+  PodcastCompleteBlock: (
+    props: React.ComponentProps<typeof PodcastCompleteBlockLazy>,
+  ) => (
     <LazyBlockWrapper>
       <PodcastCompleteBlockLazy {...props} />
     </LazyBlockWrapper>
   ),
-  PodcastStageBlock: (props: React.ComponentProps<typeof PodcastStageBlockLazy>) => (
+  PodcastStageBlock: (
+    props: React.ComponentProps<typeof PodcastStageBlockLazy>,
+  ) => (
     <LazyBlockWrapper>
       <PodcastStageBlockLazy {...props} />
     </LazyBlockWrapper>
   ),
-  ScrapeBatchCompleteBlock: (props: React.ComponentProps<typeof ScrapeBatchCompleteBlock>) => (
+  ScrapeBatchCompleteBlock: (
+    props: React.ComponentProps<typeof ScrapeBatchCompleteBlock>,
+  ) => (
     <LazyBlockWrapper>
       <ScrapeBatchCompleteBlock {...props} />
     </LazyBlockWrapper>
   ),
-  StructuredInputWarningBlock: (props: React.ComponentProps<typeof StructuredInputWarningBlock>) => (
+  StructuredInputWarningBlock: (
+    props: React.ComponentProps<typeof StructuredInputWarningBlock>,
+  ) => (
     <LazyBlockWrapper>
       <StructuredInputWarningBlock {...props} />
     </LazyBlockWrapper>
   ),
-  DisplayQuestionnaireBlock: (props: React.ComponentProps<typeof DisplayQuestionnaireBlock>) => (
+  DisplayQuestionnaireBlock: (
+    props: React.ComponentProps<typeof DisplayQuestionnaireBlock>,
+  ) => (
     <LazyBlockWrapper>
       <DisplayQuestionnaireBlock {...props} />
     </LazyBlockWrapper>
   ),
-  UnknownDataEventBlock: (props: React.ComponentProps<typeof UnknownDataEventBlock>) => (
+  UnknownDataEventBlock: (
+    props: React.ComponentProps<typeof UnknownDataEventBlock>,
+  ) => (
     <LazyBlockWrapper>
       <UnknownDataEventBlock {...props} />
     </LazyBlockWrapper>
   ),
-  ValueStoreStoredBlock: (props: React.ComponentProps<typeof ValueStoreStoredBlock>) => (
+  ValueStoreStoredBlock: (
+    props: React.ComponentProps<typeof ValueStoreStoredBlock>,
+  ) => (
     <LazyBlockWrapper>
       <ValueStoreStoredBlock {...props} />
     </LazyBlockWrapper>
   ),
-  ContextGroomedBlock: (props: React.ComponentProps<typeof ContextGroomedBlock>) => (
+  ContextGroomedBlock: (
+    props: React.ComponentProps<typeof ContextGroomedBlock>,
+  ) => (
     <LazyBlockWrapper>
       <ContextGroomedBlock {...props} />
     </LazyBlockWrapper>

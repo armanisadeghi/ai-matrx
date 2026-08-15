@@ -16,6 +16,7 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   Crosshair,
+  BrainCircuit,
   Loader2,
   Minus,
   Play,
@@ -34,6 +35,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/lib/toast";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { cn } from "@/lib/utils";
 import { extractErrorMessage } from "@/utils/errors";
 import { formatDate } from "@/features/marketing/components/shared/MarketingUi";
@@ -50,6 +52,7 @@ import {
 import { SerpResult } from "@/features/marketing/seo/serp/SerpResult";
 
 import { normalizeKeywordPhrase } from "./data";
+import { useKeywordSerpIntentAnalysis } from "./hooks";
 
 /** The portfolio rows tracking THIS keyword (id match first, phrase fallback). */
 function matchingTargets(
@@ -298,13 +301,18 @@ export function KeywordSerpTab({
   organizationId,
   phrase,
   keywordId,
+  hasSerpIntentAnalysis = false,
+  onAnalysisComplete,
 }: {
   siteId: string;
   organizationId: string;
   phrase: string;
   keywordId: string | null;
+  hasSerpIntentAnalysis?: boolean;
+  onAnalysisComplete?: () => void;
 }) {
   const portfolio = usePortfolio(siteId, organizationId);
+  const intentAnalysis = useKeywordSerpIntentAnalysis();
   const targets = matchingTargets(portfolio.items, phrase, keywordId);
   const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
   const resultPageTargets = targets.filter(
@@ -321,6 +329,51 @@ export function KeywordSerpTab({
     resultPageTargets.find((item) => item.target_id === selectedTargetId) ??
     freshestTarget;
   const history = useRankTargetHistory(target?.target_id ?? null);
+  const checkedTargets = [...resultPageTargets]
+    .filter((item) => item.last_checked_at)
+    .sort((a, b) =>
+      (b.last_checked_at ?? "").localeCompare(a.last_checked_at ?? ""),
+    );
+  const evidencePair = checkedTargets.flatMap((google) => {
+    if (google.engine !== "google") return [];
+    const brave = checkedTargets.find(
+      (candidate) =>
+        candidate.engine === "brave" &&
+        candidate.device === google.device &&
+        candidate.language === google.language,
+    );
+    return brave ? [{ google, brave }] : [];
+  })[0];
+
+  const enhanceClassification = async () => {
+    if (!keywordId || !evidencePair) return;
+    if (hasSerpIntentAnalysis) {
+      const approved = await confirm({
+        title: `Refresh search-informed intent for “${phrase}”?`,
+        description:
+          "This replaces the displayed enhancement using the latest stored Google and Brave snapshots. The original intrinsic classification stays unchanged, and prior versions remain in record history.",
+        confirmLabel: "Refresh enhanced analysis",
+        variant: "destructive",
+      });
+      if (!approved) return;
+    }
+    const completed = await intentAnalysis.run({
+      keywordId,
+      phrase,
+      googleTargetId: evidencePair.google.target_id,
+      braveTargetId: evidencePair.brave.target_id,
+    });
+    if (completed) {
+      toast.success("Search-informed intent analysis saved", {
+        description: "Open Classification to compare it with the baseline.",
+      });
+      onAnalysisComplete?.();
+    } else if (intentAnalysis.state.error) {
+      toast.error("Intent analysis could not complete", {
+        description: intentAnalysis.state.error,
+      });
+    }
+  };
 
   if (portfolio.loading && portfolio.items.length === 0) {
     return (
@@ -404,6 +457,43 @@ export function KeywordSerpTab({
   return (
     <div className="grid gap-3">
       {resultPageHeader}
+      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/20 p-3">
+        <BrainCircuit className="h-4 w-4 text-primary" />
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-medium text-foreground">
+            Enhance intent from observed results
+          </p>
+          <p className="text-[10px] leading-4 text-muted-foreground">
+            {evidencePair
+              ? "Compare the existing classification with the latest stored Google and Brave result pages. This does not run another search."
+              : "Collect matching Google and Brave result pages for the same device and language before this analysis becomes available."}
+          </p>
+        </div>
+        <Button
+          size="sm"
+          className="h-8"
+          disabled={
+            !keywordId ||
+            !evidencePair ||
+            intentAnalysis.state.status === "running"
+          }
+          onClick={() => void enhanceClassification()}
+        >
+          {intentAnalysis.state.status === "running" ? (
+            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <BrainCircuit className="mr-1.5 h-3.5 w-3.5" />
+          )}
+          {hasSerpIntentAnalysis
+            ? "Refresh analysis"
+            : "Enhance classification"}
+        </Button>
+        {intentAnalysis.state.status === "error" ? (
+          <p className="w-full text-[10px] text-destructive">
+            {intentAnalysis.state.error}
+          </p>
+        ) : null}
+      </div>
       <p className="text-[10px] text-muted-foreground">
         {trackingModeLabelForItem(target)} results for “{target.keyword}” as
         observed{" "}

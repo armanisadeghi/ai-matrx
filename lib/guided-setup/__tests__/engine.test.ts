@@ -161,6 +161,29 @@ describe("resolveChecklist", () => {
   });
 });
 
+describe("running vs checking", () => {
+  it("is `running` only while the step's own action is in flight", () => {
+    const checking = resolveChecklist({
+      definition,
+      ctx,
+      state: emptyState,
+      live: {},
+    }).steps.find((s) => s.id === "import")!;
+    // A check in flight reads busy — but we are LOOKING, not DOING.
+    expect(checking.status).toBe("busy");
+    expect(checking.running).toBe(false);
+
+    const acting = resolveChecklist({
+      definition,
+      ctx,
+      state: emptyState,
+      live: { connect: { status: "pass" }, import: { status: "fail" } },
+      busy: new Set(["import"]),
+    }).steps.find((s) => s.id === "import")!;
+    expect(acting.running).toBe(true);
+  });
+});
+
 describe("autoRunnableSteps", () => {
   const runnable = (args: Parameters<typeof autoRunnableSteps<Ctx>>[0]) =>
     autoRunnableSteps(args);
