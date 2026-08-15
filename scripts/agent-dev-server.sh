@@ -24,7 +24,7 @@ READY="$BASE.ready"
 JAR="$BASE.jar"
 LOCK="$BASE.lock"
 FAILED="$BASE.failed"
-# Runaway watchdog, NOT a budget. Raised 8 -> 96 GB on 2026-08-15, MEASURED.
+# Runaway watchdog, NOT a budget. Raised 8 -> 192 GB on 2026-08-15, MEASURED.
 #
 # 8 GB did not catch runaways; it guaranteed that NO agent could ever verify
 # anything in a browser. This app's dev server needs far more than that just to
@@ -33,18 +33,14 @@ FAILED="$BASE.failed"
 # server" blocker, and the reason multiple agents in one session reported that
 # browser verification was impossible.
 #
-# The real numbers, measured on this host: at an 8 GB cap it died compiling `/`;
-# at 24 GB it died the same way; with the cap lifted it SERVED every route
-# (/login 200, /marketing/keyword-research 200, auth redirects correct) and
-# settled at 58.6 GB RSS for the process tree. That is consistent with this
-# repo's documented build-graph weight (production builds OOM'd near 60 GB and
-# ship as three separate Vercel builds; turbopackMemoryLimit is 40 GiB).
+# The real numbers, measured on this 256 GB host: at 8 and 24 GB it died before
+# serving heavy routes. A cold `/marketing` compile completed at 90.7 GB RSS;
+# adding `/chat/new` and the administration entry raised the shared tree to
+# 138.3 GB. That is normal retained Turbopack/native memory, not a runaway.
 #
-# 96 GB is ~1.6x the observed peak — enough headroom for a cold compile of a
-# heavier route, still well under the host's 256 GB, and still low enough that a
-# genuine leak trips it. If you raise this again, MEASURE first and update these
-# numbers; do not nudge it blind.
-MAX_RSS_GB="${MATRX_PREVIEW_MAX_RSS_GB:-96}"
+# 192 GB is ~1.4x the observed peak and leaves 64 GB to the host. If you raise
+# this again, MEASURE first and update these numbers; do not nudge it blind.
+MAX_RSS_GB="${MATRX_PREVIEW_MAX_RSS_GB:-192}"
 NO_PROGRESS_SEC="${MATRX_PREVIEW_NO_PROGRESS_SEC:-300}"
 
 log() { printf '[preview] %s\n' "$1"; }
@@ -54,6 +50,17 @@ meta_value() { sed -n "s/^$1=//p" "$META" 2>/dev/null | head -1; }
 server_cwd() { lsof -a -p "$1" -d cwd -Fn 2>/dev/null | awk '/^n/{print substr($0,2); exit}'; }
 mtime() {
   stat -f %m "$1" 2>/dev/null || stat -c %Y "$1" 2>/dev/null || echo 0
+}
+
+report_previous_failure() {
+  [[ -f "$FAILED" ]] || return 0
+  printf '\n' >&2
+  printf '[preview] ============================================================\n' >&2
+  printf '[preview] WATCHDOG STOPPED THE PREVIOUS PREVIEW\n' >&2
+  printf '[preview] %s\n' "$(head -1 "$FAILED")" >&2
+  printf '[preview] Logs: %s\n' "$LOG" >&2
+  printf '[preview] ============================================================\n' >&2
+  printf '\n' >&2
 }
 
 load_token() {
@@ -129,6 +136,7 @@ acquire_start_lock() {
 cmd_start() {
   mkdir -p "$STATE_DIR"
   clear_stale_state
+  report_previous_failure
   reuse_managed_meta && return 0
 
   local running pid port owner
@@ -202,8 +210,25 @@ PY
   } >"$META"
   rm -f "$READY" "$JAR" "$FAILED"
 
-  nohup "$0" warm "$pid" >/dev/null 2>&1 &
-  nohup "$0" monitor "$pid" >/dev/null 2>&1 &
+  # exec_command reaps ordinary child process groups even under `nohup`.
+  # Detach helpers exactly like Next itself or the watchdog silently vanishes
+  # as soon as `preview:start` returns.
+  /usr/bin/python3 - "$REPO_ROOT" "$REPO_ROOT/scripts/agent-dev-server.sh" "$pid" <<'PY'
+import os
+import subprocess
+import sys
+
+root, script, pid = sys.argv[1:]
+for mode in ("warm", "monitor"):
+    subprocess.Popen(
+        [script, mode, pid],
+        cwd=root,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True,
+    )
+PY
 
   log "started the shared managed preview: http://localhost:$PORT (pid $pid)"
   log "it is tracked, reused by Claude and Codex, and may take 30–90s to compile"
@@ -244,6 +269,7 @@ group_rss_kb() {
 stop_for_limit() {
   local pid="$1" reason="$2"
   printf '%s\n' "$reason" >"$FAILED"
+  printf '[preview] WATCHDOG: %s\n' "$reason" >>"$LOG"
   log "$reason"
   killtree "$pid" TERM
   for _ in 1 2 3 4 5 6; do
@@ -300,7 +326,8 @@ cmd_status() {
     read -r pid port owner <<<"$running"
     log "UNMANAGED/BLOCKING pid=$pid port=$port owner=$owner cwd=$(server_cwd "$pid")"
   elif [[ -f "$FAILED" ]]; then
-    log "STOPPED — $(head -1 "$FAILED")"
+    report_previous_failure
+    log "STOPPED — fix the reported cause, then run pnpm preview:start"
   else
     log "no machine-wide managed preview is running"
   fi

@@ -199,5 +199,8 @@ are client redirect shims; `/marketing/discovery/youtube` is an unrelated featur
 
 ## Gotchas
 
-- **The dev server cannot hold a marketing route on this machine.** `scripts/agent-dev-server.sh` caps RSS at 8 GB; `/marketing` alone peaks ~9.7 GB and a site route far more, so the watchdog reaps it mid-compile leaving only a line in `<tmp>/matrx-frontend-preview-501/shared-next-dev.failed`. Start with `MATRX_PREVIEW_MAX_RSS_GB=24` and expect it still to struggle under parallel agent load. Spun off as its own task.
+- **The dev-server OOM blocker is fixed.** `scripts/agent-dev-server.sh`
+  defaults to a measured 192 GB runaway guard over a 138.3 GB normal peak, and a
+  watchdog stop is printed by the status command, the next start, and the dev
+  log.
 - **One section keeps a local switcher on purpose.** `LinksInspectionTable` serves the site's Links section AND a crawl's links page; on a crawl the header already carries that crawl's six modes, so its switcher stays local (keyed off `crawlId`).

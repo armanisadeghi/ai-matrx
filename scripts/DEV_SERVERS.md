@@ -5,10 +5,10 @@ the machine-wide guard also refuses a second Next.js dev tree from another repo.
 
 ## Why this exists
 
-A single `next dev` for this repo has measured **22.8 GB RSS** with 17 worker
-processes after compiling `/dashboard`. Seven concurrent servers measured
-43.3 GB of RAM and 90 GB of `.next*` on disk. Two servers can hard-crash a
-16 GB workstation.
+A single `next dev` for this repo measured **90.7 GB RSS** after compiling
+`/marketing`, then **138.3 GB** after adding Chat and the Administration entry.
+Seven concurrent servers once consumed 43.3 GB of RAM and 90 GB of `.next*` on
+disk before the app reached its current weight.
 
 The failure classes are:
 
@@ -34,12 +34,15 @@ Claude and Codex start the same process, then open `http://localhost:3001` in
 their own in-app browser. The state records the exact owning checkout; another
 checkout must wait for an explicit release and then start its own build.
 
-The launcher continuously measures the whole preview process group. At 8 GB RSS
-it stops the server and records a loud failure instead of allowing the old
-23–27 GB runaway. It also stops startup after five minutes without log progress.
-Neither limit automatically restarts the server. Advanced local use can override
-the defaults with `MATRX_PREVIEW_MAX_RSS_GB` and
-`MATRX_PREVIEW_NO_PROGRESS_SEC`.
+The launcher continuously measures the whole preview process group. Its **192
+GB RSS watchdog is a runaway guard, not a budget**: the measured normal peak is
+138.3 GB on this 256 GB host. The monitor runs in its own detached OS session;
+`nohup` is insufficient because agent shell cleanup reaps ordinary child
+process groups. It also stops startup after five minutes without
+log progress. Neither limit automatically restarts the server. A watchdog stop
+is written into the dev log and printed prominently by both the next
+`preview:status` and `preview:start`. Advanced local use can override the
+defaults with `MATRX_PREVIEW_MAX_RSS_GB` and `MATRX_PREVIEW_NO_PROGRESS_SEC`.
 
 **Named `preview_start` and raw `pnpm dev` are banned.** The installed hook
 blocks both and names `pnpm preview:start` as the repair. The shared server is
@@ -73,10 +76,9 @@ can share a process group with its agent; killing that group can kill the agent.
 | Abandoned | uptime ≥ 4 h | `MATRX_DEV_MAX_AGE_H` |
 | Untracked orphan | uptime ≥ 90 min | `MATRX_DEV_MAX_UNTRACKED_AGE_MIN` |
 
-A server idles around 0.3 GB and can retain 7–9 GB after heavy routes. The 16 GB
-ceiling catches pathological native/Turbopack growth without killing normal
-heavy work. No `--max-old-space-size` flag solves native allocation; RSS is the
-correct guard.
+`dev:reap` governs unmanaged servers; the shared managed preview has its own
+192 GB watchdog and is never reaped by this 16 GB cleanup threshold. No
+`--max-old-space-size` flag solves native allocation; RSS is the correct guard.
 
 ## Machine setup
 
