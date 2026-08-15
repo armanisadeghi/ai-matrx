@@ -112,6 +112,16 @@ const NONE = "__none__";
 const ACTIVE_FIELD =
   "bg-background text-foreground disabled:cursor-not-allowed disabled:opacity-50";
 
+/**
+ * A `urlPattern` like `/marketing/brands/[brandId]/sites/[siteId]/backlinks`
+ * is a route TEMPLATE. Passing one to `<Link href>` throws Next's E267
+ * (`app-dir-dynamic-href`) and takes the whole page down, so every caller must
+ * check first.
+ */
+function hasUnfilledRouteParams(pattern: string): boolean {
+  return /\[[^\]]+\]/.test(pattern);
+}
+
 interface Props {
   /** Server-fetched `ui_surface` row; the page reloads it after mutations. */
   initialSurface: UiSurfaceRow;
@@ -421,23 +431,39 @@ export function SurfaceAdminDetailPage({
           </div>
 
           <div className="ml-auto flex items-center gap-1.5">
-            {surface.url_pattern && (
-              <Button
-                asChild
-                variant="ghost"
-                size="sm"
-                className="h-7 gap-1.5 text-xs"
-              >
-                <Link
-                  href={surface.url_pattern}
-                  target="_blank"
-                  rel="noopener noreferrer"
+            {surface.url_pattern &&
+              (hasUnfilledRouteParams(surface.url_pattern) ? (
+                // A urlPattern with `[param]` segments is a route TEMPLATE, not
+                // a URL. Next's App Router throws E267 on a dynamic `href`,
+                // which took the whole page down for every parameterized
+                // surface. Show the template honestly instead of crashing.
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled
+                  title={`This surface lives at ${surface.url_pattern} — open it from a specific record, since the route needs real ids.`}
+                  className="h-7 gap-1.5 text-xs"
                 >
                   <ExternalLink className="h-3.5 w-3.5" />
-                  Open live page
-                </Link>
-              </Button>
-            )}
+                  Needs a record
+                </Button>
+              ) : (
+                <Button
+                  asChild
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 gap-1.5 text-xs"
+                >
+                  <Link
+                    href={surface.url_pattern}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    Open live page
+                  </Link>
+                </Button>
+              ))}
             <Button
               variant="ghost"
               size="sm"
