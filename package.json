@@ -163,6 +163,7 @@
     "check:protocol-sync:strict": "tsx scripts/check-protocol-sync.ts --strict",
     "check:protocol-sync:fix": "tsx scripts/check-protocol-sync.ts --fix",
     "check:doc-claims": "tsx scripts/check-doc-claims.ts",
+    "check:shared-skills": "tsx scripts/check-shared-skills.ts",
     "check:doc-claims:strict": "tsx scripts/check-doc-claims.ts --strict",
     "check:access-guards": "tsx scripts/check-access-guards.ts",
     "check:access-guards:strict": "tsx scripts/check-access-guards.ts --strict",

@@ -3,6 +3,12 @@ name: handoffs
 description: The handoff-document system for docs/handoffs/*.md — how to write one, take one over, groom it every turn, and delete it. Use whenever you (1) end a large task with work remaining and need to hand off, (2) are told to continue / take over / pick up work from a handoff doc, (3) finish ANY task covered by an existing handoff (grooming it before the turn ends is mandatory), or (4) touch any file under docs/handoffs/. Triggers on "write a handoff", "handoff doc", "pick up where X left off", "continue the X work", docs/handoffs/**. Cross-repo — matrx-frontend and aidream share ONE system; a piece of work gets ONE handoff in the repo that owns most of it.
 ---
 
+<!-- SYNCED COPY — do not edit here.
+     Canonical: common-docs/skills/handoffs/SKILL.md
+     This file is distributed to every consuming repo by
+     common-docs/meta/scripts/sync_skills.py. Edit the canonical, run the
+     sync, and commit each repo. Edits made here are overwritten and lost. -->
+
 # Handoffs — forward-looking work orders, not history
 
 A handoff exists so a fresh agent can start producing in minutes: a work order + resource map, grounded in Arman's vision. It is **not** a record of what you did — git and `FEATURE.md` hold history. **A handoff with no remaining work gets deleted, not archived.**
@@ -11,7 +17,7 @@ A handoff exists so a fresh agent can start producing in minutes: a work order +
 
 - `docs/handoffs/<topic>.md` (kebab-case), in whichever repo owns most of the **remaining** work (matrx-frontend or aidream). Unowned ones are listed in the cross-repo orphan list — see The orphan list.
 - Cross-repo work gets **ONE doc** — never twins. Frontmatter `repos:` lists every repo involved; cross-repo file references use absolute paths.
-- Canonical doctrine is THIS file (matrx-frontend); aidream carries a pointer stub at `aidream/.claude/skills/handoffs/SKILL.md`. **Edit only the canonical.** *(Placement debt, 2026-08-14: this is cross-repo doctrine living in a repo — it belongs in `common-docs/skills/`, symlinked, the way `cross-repo-docs` already is. Tracked in the docs-placement cleanup; do not add more doctrine here in the meantime.)*
+- **This doctrine is cross-repo and canonical in `common-docs/skills/handoffs/SKILL.md`.** Every repo carries a real synced copy (see the banner at the top of this file) so it works in a one-repo sandbox. Edit the canonical, run `python3 common-docs/meta/scripts/sync_skills.py`, commit each repo — never edit a copy.
 - **The orphan register is NOT a handoff and does not live in a repo** — `common-docs/operations/unassigned-handoffs.md`. See The orphan list below.
 
 ## Format

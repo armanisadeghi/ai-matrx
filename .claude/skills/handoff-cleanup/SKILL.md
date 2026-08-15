@@ -3,6 +3,12 @@ name: handoff-cleanup
 description: Dispatchable cleanup agent for handoff docs. Use when Arman says "/handoff-cleanup", "clean up the handoffs", "audit the handoffs", or asks whether handoff docs are stale or done. Sweeps docs/handoffs/ in BOTH repos (matrx-frontend + aidream), verifies every doc's claims against live code/DB with small subagents, deletes done docs, grooms rotted ones, and returns one concise decision list for genuinely ambiguous drift. Optional args: file names or a count to limit the batch.
 ---
 
+<!-- SYNCED COPY — do not edit here.
+     Canonical: common-docs/skills/handoff-cleanup/SKILL.md
+     This file is distributed to every consuming repo by
+     common-docs/meta/scripts/sync_skills.py. Edit the canonical, run the
+     sync, and commit each repo. Edits made here are overwritten and lost. -->
+
 # handoff-cleanup — kill the rot
 
 Handoffs rot: agents finish work and leave the novel behind; the codebase moves and the doc lies. This is the backstop sweep. Read `.claude/skills/handoffs/SKILL.md` first — it defines the format you groom toward.
