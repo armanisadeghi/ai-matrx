@@ -82,5 +82,12 @@
     "findings": 986,
     "lines": 41311,
     "filesWithFindings": 687
+  },
+  {
+    "generatedAt": "2026-08-15T07:53:17.973Z",
+    "commit": "14304a6a820782c05385292b42dcaade7c4a7942",
+    "findings": 762,
+    "lines": 35436,
+    "filesWithFindings": 574
   }
 ]
