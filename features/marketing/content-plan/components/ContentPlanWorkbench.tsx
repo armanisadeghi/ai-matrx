@@ -16,6 +16,14 @@ import dynamic from "next/dynamic";
 import { useQueryClient } from "@tanstack/react-query";
 import { Panel, type Layout } from "react-resizable-panels";
 
+import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import {
+  buildGroomerPresetPayload,
+  groomerPresetVariants,
+  type AgentCopyGroomerConfig,
+} from "@/components/agent-copy/groomer-types";
+import { webLocation } from "@/features/marketing/lib/copy-payloads";
 import { ClientGroup } from "@/features/resizable-panels/ClientGroup";
 import { Handle } from "@/features/resizable-panels/Handle";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -35,7 +43,14 @@ import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 
 import { buildContentPlanScope } from "../lib/content-plan-scope";
-import { contentPlanKpis } from "../format";
+import {
+  contentPlanKpiLine,
+  contentPlanKpis,
+  driftItemSummary,
+  planEntitySummary,
+  planNodeKeyFields,
+  planNodeSummary,
+} from "../format";
 import {
   planKeys,
   usePlanEntities,
@@ -344,6 +359,193 @@ export function ContentPlanWorkbench({
     ],
   );
 
+  /**
+   * The whole-page payload, declared ONCE as groomer sections. The Groomer
+   * window, the quick pair's Everything payload and its Balanced/Minimal
+   * variants all read this one list — a page never maintains two.
+   *
+   * Resolved when the user opens/clicks, so the sections capture what is on
+   * screen at that moment. Every section carries the page's leading KPIs in
+   * the shared envelope, so a section payload is never adrift from what the
+   * page led with.
+   */
+  const getGroomerConfig = useCallback((): AgentCopyGroomerConfig => {
+    const siteLabel = site ? (site.domain ?? site.name) : "no site";
+    const entityRows = entities.data ?? [];
+    const partyRows = siteParties.data ?? [];
+    const cmsPageList = cmsPages.map?.pages ?? [];
+    return {
+      label: `Content plan — ${siteLabel}`,
+      kind: "content-plan-workspace",
+      location: webLocation("Content Plan — workspace"),
+      description:
+        "The Content Plan workspace for one site: its pages, how they differ from the live website, the website pairing, and the E-E-A-T roster behind them.",
+      summary: [
+        `Content plan — ${siteLabel}`,
+        contentPlanKpiLine(pageKpis),
+      ].join("\n"),
+      attributes: { site_id: siteId, view, ...pageKpis },
+      context: {
+        site_domain: site?.domain ?? undefined,
+        site_id: siteId ?? undefined,
+        view,
+        plan_kpis: contentPlanKpiLine(pageKpis),
+      },
+      sections: [
+        {
+          id: "overview",
+          title: "Overview & counts",
+          description: "The numbers this workspace leads with.",
+          // Never cuttable: nothing below is interpretable without it.
+          build: () => ({
+            site: {
+              id: siteId,
+              domain: site?.domain ?? null,
+              name: site?.name ?? null,
+              has_brand: site ? site.brand_id !== null : null,
+            },
+            view,
+            kpis: pageKpis,
+            kpi_line: contentPlanKpiLine(pageKpis),
+          }),
+        },
+        {
+          id: "pages",
+          title: "Planned pages",
+          description: "Every URL this site should have.",
+          levelLabels: {
+            full: `All ${nodeRows.length}`,
+            compact: "Route, type, status, gaps",
+            brief: "Counts only",
+          },
+          build: (level) => {
+            if (level === "brief") {
+              return {
+                pages_planned: nodeRows.length,
+                without_keyword: nodeRows.filter(
+                  (node) => !node.primary_keyword_id,
+                ).length,
+                without_brief: emptyBriefNodes.length,
+              };
+            }
+            if (level === "compact") {
+              return nodeRows.map((node) => ({
+                route: node.route,
+                label: node.label,
+                node_type: node.node_type,
+                status_id: node.status_id,
+                has_keyword: Boolean(node.primary_keyword_id),
+                has_brief: Boolean(node.brief && node.brief.length > 0),
+              }));
+            }
+            return nodeRows.map(planNodeKeyFields);
+          },
+        },
+        {
+          id: "plan_vs_site",
+          title: "Plan vs. the live site",
+          description: "What the plan and the real website disagree about.",
+          levelLabels: {
+            full: `All ${drift.model.items.length}`,
+            compact: "One line each",
+            brief: "Counts only",
+          },
+          build: (level) => {
+            if (level === "brief") return drift.model.counts;
+            if (level === "compact") {
+              return {
+                counts: drift.model.counts,
+                items: drift.model.items.map(driftItemSummary),
+              };
+            }
+            return {
+              counts: drift.model.counts,
+              is_paired: drift.model.isPaired,
+              has_crawl_data: drift.model.hasCrawlData,
+              items: drift.model.items,
+              unreadable: drift.model.unreadable,
+            };
+          },
+        },
+        {
+          id: "website",
+          title: "The website behind the plan",
+          description: "The CMS pairing and what is actually built on it.",
+          build: (level) => {
+            const base = {
+              linked: cmsLink.data?.linked ?? false,
+              reason: cmsLink.data?.reason ?? null,
+              cms_site_id: resolvedCmsSiteId,
+              pages_built: pageKpis.pages_built,
+              pages_live: pageKpis.pages_live,
+              pages_on_site_not_planned: pageKpis.pages_on_site_not_planned,
+            };
+            if (level === "full") {
+              return { ...base, cms_pages: cmsPageList };
+            }
+            return base;
+          },
+        },
+        {
+          id: "entities",
+          title: "People, companies & sources",
+          description: "The E-E-A-T roster behind this plan.",
+          cuttable: true,
+          build: (level) => {
+            if (level === "brief") {
+              return {
+                people_and_companies: partyRows.length,
+                sources_and_media: entityRows.length,
+              };
+            }
+            if (level === "compact") {
+              return {
+                people_and_companies: partyRows.map(
+                  (party) => party.display_name,
+                ),
+                sources_and_media: entityRows.map(planEntitySummary),
+              };
+            }
+            return {
+              people_and_companies: partyRows,
+              sources_and_media: entityRows,
+              profiles: profiles.data ?? [],
+            };
+          },
+        },
+        {
+          id: "selected_page",
+          title: "The page open in the panel",
+          description: selectedNode
+            ? (selectedNode.route ?? selectedNode.label)
+            : "Nothing selected.",
+          cuttable: true,
+          build: (level) => {
+            if (!selectedNode) return null;
+            if (level === "brief") return planNodeSummary(selectedNode);
+            if (level === "compact") return planNodeKeyFields(selectedNode);
+            return selectedNode;
+          },
+        },
+      ],
+    };
+  }, [
+    site,
+    siteId,
+    view,
+    pageKpis,
+    nodeRows,
+    emptyBriefNodes.length,
+    drift.model,
+    cmsLink.data,
+    resolvedCmsSiteId,
+    cmsPages.map,
+    entities.data,
+    siteParties.data,
+    profiles.data,
+    selectedNode,
+  ]);
+
   const handleReparent = useCallback(
     (id: string, parentId: string | null) => {
       reparent.mutate(
@@ -525,6 +727,36 @@ export function ContentPlanWorkbench({
           <div className="border-b border-destructive/40 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
             This site has no brand — the database rejects plan rows for it
             (loudly, by design). Assign a brand in Marketing → Sites, then plan.
+          </div>
+        ) : null}
+
+        {/* Whole-page copy. The workspace's chrome lives in the shell header,
+          which cannot see this body's data — so the page-level pair and the
+          Groomer sit here, with the sections that describe every area of the
+          page. Present on every view: "copy this page" must not move. */}
+        {siteId ? (
+          <div className="flex items-center justify-end gap-0.5 border-b border-border/40 px-2 py-0.5">
+            <CopyButtons
+              size="icon"
+              label={`Content plan — ${site ? (site.domain ?? site.name) : "site"}`}
+              human={() =>
+                [
+                  `Content plan — ${site ? (site.domain ?? site.name) : "site"}`,
+                  contentPlanKpiLine(pageKpis),
+                  "",
+                  ...nodeRows.map(planNodeSummary),
+                ].join("\n")
+              }
+              json={() => nodeRows.map(planNodeKeyFields)}
+              agent={() =>
+                buildGroomerPresetPayload(getGroomerConfig(), "everything")
+              }
+              aiVariants={groomerPresetVariants(getGroomerConfig)}
+            />
+            <AgentCopyGroomerLauncher
+              config={getGroomerConfig}
+              className="h-6 px-1.5 text-[11px] text-muted-foreground"
+            />
           </div>
         ) : null}
 
