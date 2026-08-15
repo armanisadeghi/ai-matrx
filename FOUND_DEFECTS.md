@@ -523,9 +523,6 @@ Server announces the persisted invisible steering row via `record_reserved cx_me
 
 `Workers Builds: ai-matrx-admin` fails while Vercel is green; no Cloudflare config exists in the repo. **Decides: Arman** — retire the integration or configure it.
 
-### D108 — seven historic feedback screenshots are permanently dead (2026-07-27)
-
-`users.user_feedback.image_urls` has seven expired share-link pointers (404). Recover from backups if possible, else mark irrecoverable. New MCP writes already reject this URL class.
 
 ### D105b — file surfaces must separate MY files from ORG files (Arman ruling 2026-07-28)
 
@@ -666,6 +663,7 @@ One line per fix — title, date, pointer. History lives in git. Entries older t
 - **D172** — `acceptPageUrlInput` scheme check made case-insensitive to match the scraper's `_normalise_url` (`5bdf85834`). 2026-08-12.
 - **D166** — kind-activation guard + `set_kind_activation` genuinely exempt the service role; `activate-kinds.ts --apply` goes through the canonical RPC (`content_ir_activation_service_role_fix.sql`, `4f2804efa`). 2026-08-12.
 - **D120** — `chart.tsx` typed against recharts 3.9, `@ts-nocheck` deleted (`409a98d2b`). 2026-08-12.
+- **D108** — the 7 "permanently dead" feedback screenshots were never dead (only the share LINK died; all 7 files live + public, CDN 200): healed in place, and the real defect closed — a revocable `/share/<token>/download` URL no longer classifies as durable in either the DB or `lib/media` twin (`feedback_screenshots_heal_and_share_url_not_durable.sql`, `d630b6f73`). 2026-08-15.
 - **D94** — forbidden project FK dropped from `docproc.page_extraction_jobs` (32 rows, zero non-null, no reader) + all FE refs + aidream model regen (`docproc_page_extraction_jobs_drop_project_fk.sql`, `c08ab7047` / aidream `58a3c13f6`). 2026-08-15.
 - **D167 (research saves)** — access half fixed by the RLS reorg (proven live: an entitled org member's `rs_topic_append_output` succeeds). The remaining lie is gone too: the RPC no longer asserts "not found" for an access denial — it raises an honest ambiguous message under errcode `P0002` (RLS stays the sole authority; no definer probe added) and `appendTopicOutput` routes it to `<AccessGate token="research_topic"/>`. Also hardened: a zero-row write now raises instead of reporting success on a paid run. `migrations/rs_topic_append_output_honest_access_error.sql`, applied + ledgered. Class sweep of the other 18 invoker functions → chip. 2026-08-14.
 - **D181** — component-table `INSERT…RETURNING` 42501 platform-wide: component `std_select` leads with `created_by = (select auth.uid())`; 126 policies repaired (`iam_apply_rls_component_select_owner_arm.sql`). Remainder → D182. 2026-08-13.
