@@ -164,7 +164,9 @@ Agency-scale brand operations. The anchor entity is the **Brand** (`web.brand`) 
   shared `EntityModeHeader`. `/socials/...` will join as a sibling.
 - `/marketing/sites` — flattened all-sites view (kept deliberately); rows link to the nested canonical URLs.
 - `/marketing/sites/[siteId]/**` — LEGACY shim only: client redirect that resolves the brand under the caller's session and replaces the URL. Cross-links built from rows that only carry `site_id` may target it.
-- `/marketing/connections` — user/org credential onboarding and site-provider binding guide.
+- `/marketing/connections` — user/org credential onboarding and site-provider
+  binding guide. Its route layout owns one persistent `RouteModeNav` for
+  Overview, Google, and Bing; child pages never mount a competing header.
 - `/marketing/sites/new` — selected-organization site creation (creates-or-reuses the brand via `web.create_site`).
 - `.../pages`, `.../pages/[pageId]`, and `.../snapshots/**` — canonical page registry, user intent, and observed history.
 - `.../crawls`, `.../crawls/new`, `.../crawls/[crawlId]`, `.../urls`, and `.../logs` — direct live commands, sessions, reconciliation, encountered URLs, and durable events.
@@ -492,6 +494,10 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
   setup states, page metrics, and keyword surfaces no longer spend table or card
   width repeating the full vendor name. `lib/provider-names.ts` owns the compact
   label and retains the expansion for onboarding prose.
+- 2026-08-15 — Codex: **Connections no longer strand users inside a provider
+  setup page.** The route layout owns one deep-linked Overview / Google / Bing
+  `RouteModeNav`; narrow screens use its canonical route menu, and child pages
+  never mount divergent headers.
 - 2026-08-15 — Codex: **Client Reports shipped at its reserved URL over the data that actually exists.** `/marketing/reports` is a live, printable 28-day Search Console report rather than an empty Analytics shell: it leads with plain-language findings, then shows human-labelled visit/visibility metrics, the canonical multi-site and selected-site traffic-class decomposition, class-resolved top queries, and top pages with `seo.gsc_perf_page_class_summary` rollups. Every named site and page is an `EntityRef` door; every keyword is an `EntityRef` opening the existing Keyword Intelligence window. Data stays on `seo.search_performance_daily` through the existing `seo.gsc_perf_*` hooks/RPCs, `GscClassBar`, `GscPortfolioClassBar`, `ClassChip`, `seo.gsc_keyword_class_by_text`, and `seo.gsc_keyword_class_map` — no `web.gsc_page_stat` read, second class mapper, or report table. The report copies in human/AI/JSON forms, prints/saves to PDF, emits a complete `matrx-user/marketing-reports` surface scope, and names the one-click classifier when unknown-value traffic exists. The reserved promise/nav flags moved together, the admin map and workspace nav now expose the live route, and Analytics remains reserved while its synced fact table is empty.
 - 2026-08-15 — Codex: **Marketing no longer hydrates through a mismatched root document.** The shared root boot scripts now use Next's tracked `beforeInteractive` primitive instead of raw React `<script>` children, removing the app-wide React 19.2 script warning and hydration recovery while keeping theme and stale-chunk guards pre-hydration.
 - 2026-08-15 — Claude: **Media split ruled (Arman): Library, Research, Sources and Generate belong to the BRAND, not the website.** `SiteMediaWorkspace` renders seven views but only Crawled and Videos are site-scoped — Library reads `brand_asset` by `brand_id`, Research reads `rs_media` by `organization_id`, Sources takes brand+org, Generate is brand-scoped — so two sites under one brand render identical Library/Research/Sources/Generate and editing there silently changes everything under the brand. The website keeps Crawled, Videos and Standards plus a door to the brand library; the four brand views move to the cockpit, mirroring the Discovery move. Implementation is the last open item in `docs/handoffs/marketing-navigation-hierarchy.md`.
