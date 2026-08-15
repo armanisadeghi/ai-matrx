@@ -19,9 +19,13 @@ import { v4 as uuidv4 } from "uuid";
 import { supabase } from "@/utils/supabase/client";
 import { pgErrorToError } from "@/utils/supabase/pg-error";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { assignField, fieldFlagsKeys } from "@/features/agents/redux/shared/field-flags";
+import {
+  assignField,
+  fieldFlagsKeys,
+} from "@/features/agents/redux/shared/field-flags";
 import type { AgentApp } from "./types";
 import { agentAppActions } from "./slice";
+import { agentAppPublicationPatch } from "@/features/agent-apps/lib/publication";
 
 interface ThunkApi {
   dispatch: AppDispatch;
@@ -51,7 +55,8 @@ export const fetchAppsInitial = createAsyncThunk<void, void, ThunkApi>(
 
     // VIEW LAW: deliberate blended "everything I can see" view — see docblock above
     const { data, error } = await supabase
-      .schema("app").from("definition")
+      .schema("app")
+      .from("definition")
       .select("*")
       .order("updated_at", { ascending: false });
 
@@ -80,7 +85,8 @@ export const fetchAppById = createAsyncThunk<void, string, ThunkApi>(
     dispatch(agentAppActions.setAppError({ id: appId, error: null }));
 
     const { data, error } = await supabase
-      .schema("app").from("definition")
+      .schema("app")
+      .from("definition")
       .select("*")
       .eq("id", appId)
       .single();
@@ -131,10 +137,14 @@ export const saveApp = createAsyncThunk<void, string, ThunkApi>(
     // Update type has no `null` variant), but the domain type allows null
     // before the field is set. A dirty patch should never carry a null org
     // id — omit it rather than send a value the column will reject.
-    const dbPatch = { ...patch, organization_id: patch.organization_id ?? undefined };
+    const dbPatch = {
+      ...patch,
+      organization_id: patch.organization_id ?? undefined,
+    };
 
     const { error } = await supabase
-      .schema("app").from("definition")
+      .schema("app")
+      .from("definition")
       .update(dbPatch)
       .eq("id", appId);
 
@@ -163,10 +173,14 @@ export const saveAppField = createAsyncThunk<
   const patch: Partial<AgentApp> = {};
   assignField(patch, field, value);
   // See saveApp: organization_id is NOT NULL in the DB; never send null.
-  const dbPatch = { ...patch, organization_id: patch.organization_id ?? undefined };
+  const dbPatch = {
+    ...patch,
+    organization_id: patch.organization_id ?? undefined,
+  };
 
   const { error } = await supabase
-    .schema("app").from("definition")
+    .schema("app")
+    .from("definition")
     .update(dbPatch)
     .eq("id", appId);
 
@@ -181,6 +195,31 @@ export const saveAppField = createAsyncThunk<
       [field]: value,
     } as Partial<AgentApp> & { id: string }),
   );
+});
+
+/**
+ * Publish/unpublish as one transition. The public resolver requires both
+ * `status='published'` and `visibility='public'`; independent field writes can
+ * create a URL the UI advertises but the public route refuses.
+ */
+export const setAgentAppPublication = createAsyncThunk<
+  void,
+  { appId: string; published: boolean },
+  ThunkApi
+>("agentApp/setPublication", async ({ appId, published }, { dispatch }) => {
+  const patch = agentAppPublicationPatch(published);
+  const { error } = await supabase
+    .schema("app")
+    .from("definition")
+    .update(patch)
+    .eq("id", appId);
+
+  if (error) {
+    dispatch(agentAppActions.setAppError({ id: appId, error: error.message }));
+    throw pgErrorToError(error);
+  }
+
+  dispatch(agentAppActions.mergePartialApp({ id: appId, ...patch }));
 });
 
 /**
@@ -208,12 +247,15 @@ export const createApp = createAsyncThunk<
     layout_config: payload.layout_config ?? {},
     styling_config: payload.styling_config ?? {},
     use_latest: payload.use_latest ?? true,
-    status: payload.status ?? "draft",
     ...payload,
+    // A completed app is live on creation. Draft is reserved for the
+    // recoverable, incomplete AI-generation row in auto-create-draft.ts.
+    ...agentAppPublicationPatch(true),
   };
 
   const { data, error } = await supabase
-    .schema("app").from("definition")
+    .schema("app")
+    .from("definition")
     .insert(insert)
     .select()
     .single();
@@ -241,13 +283,16 @@ export const deleteApp = createAsyncThunk<void, string, ThunkApi>(
     if (!userId) throw new Error("Not authenticated");
 
     const { error } = await supabase
-      .schema("app").from("definition")
+      .schema("app")
+      .from("definition")
       .delete()
       .eq("id", appId)
       .eq("created_by", userId);
 
     if (error) {
-      dispatch(agentAppActions.setAppError({ id: appId, error: error.message }));
+      dispatch(
+        agentAppActions.setAppError({ id: appId, error: error.message }),
+      );
       throw pgErrorToError(error);
     }
 

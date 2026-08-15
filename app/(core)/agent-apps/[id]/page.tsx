@@ -1,8 +1,6 @@
 import { getAgentApp } from "@/lib/agent-apps/data";
 import { AgentAppOverviewContent } from "@/features/agent-apps/route/AgentAppOverviewContent";
-import PageHeader from "@/features/shell/components/header/PageHeader";
 import { AgentAppHeader } from "@/features/agent-apps/components/route-header/AgentAppHeader";
-
 
 interface AgentAppPageProps {
   params: Promise<{ id: string }>;
@@ -19,9 +17,14 @@ export default async function AgentAppOverviewPage({
 
   return (
     <>
-      <PageHeader>
-        <AgentAppHeader appId={app.id} appName={app.name} active="overview" />
-      </PageHeader>
+      <AgentAppHeader
+        appId={app.id}
+        appName={app.name}
+        agentId={app.agent_id}
+        initialStatus={app.status}
+        initialVisibility={app.visibility}
+        active="overview"
+      />
       <AgentAppOverviewContent appId={app.id} />
     </>
   );

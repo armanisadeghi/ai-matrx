@@ -42,6 +42,10 @@ import {
   PUBLIC_AGENT_APP_SURFACE_NAME,
   createPublicAgentAppScope,
 } from "@/features/surfaces/manifests/public-agent-app.manifest";
+import {
+  AgentAppMarkdownStream,
+  AgentAppStreamProvider,
+} from "@/features/agent-apps/components/shells/AgentAppMarkdownStreamBridge";
 
 const HtmlPreviewModal = dynamic(
   () => import("@/features/html-pages/components/HtmlPreviewModal"),
@@ -85,8 +89,7 @@ export function AgentAppPublicRenderer({
       shellKind !== "fully_custom" &&
       SHELL_REGISTRY[shellKind as keyof typeof SHELL_REGISTRY]
     ) {
-      const Shell =
-        SHELL_REGISTRY[shellKind as keyof typeof SHELL_REGISTRY]!;
+      const Shell = SHELL_REGISTRY[shellKind as keyof typeof SHELL_REGISTRY]!;
       return <Shell app={app} />;
     }
     if (shellKind === "fully_custom") {
@@ -94,7 +97,13 @@ export function AgentAppPublicRenderer({
     }
   }
 
-  return <CustomComponentRenderer app={app} slug={slug} TestComponent={TestComponent} />;
+  return (
+    <CustomComponentRenderer
+      app={app}
+      slug={slug}
+      TestComponent={TestComponent}
+    />
+  );
 }
 
 function CustomComponentRenderer({
@@ -105,9 +114,10 @@ function CustomComponentRenderer({
   const dispatch = useAppDispatch();
 
   const [isExecuting, setIsExecuting] = useState(false);
-  const [localError, setLocalError] = useState<
-    { type: string; message: string } | null
-  >(null);
+  const [localError, setLocalError] = useState<{
+    type: string;
+    message: string;
+  } | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
 
   const { isAuthenticated, fingerprintId } = useApiAuth();
@@ -211,7 +221,12 @@ function CustomComponentRenderer({
       }
 
       for (const schemaItem of schema) {
-        const { name, required, type, default: defaultValue } = schemaItem as {
+        const {
+          name,
+          required,
+          type,
+          default: defaultValue,
+        } = schemaItem as {
           name: string;
           required?: boolean;
           type?: string;
@@ -231,8 +246,7 @@ function CustomComponentRenderer({
           if (normalizedType === "string" || !normalizedType) {
             valid[name] = String(value);
           } else if (normalizedType === "number") {
-            const numValue =
-              typeof value === "number" ? value : Number(value);
+            const numValue = typeof value === "number" ? value : Number(value);
             valid[name] = Number.isNaN(numValue) ? 0 : numValue;
           } else if (normalizedType === "boolean") {
             valid[name] = Boolean(value);
@@ -411,9 +425,9 @@ function CustomComponentRenderer({
 
       transformed = transformed.replace(/export\s+default\s+/g, "return ");
 
-      const scope = buildComponentScope(
-        (app.allowed_imports as unknown) ?? [],
-      );
+      const scope = buildComponentScope((app.allowed_imports as unknown) ?? []);
+      scope.MarkdownStream = AgentAppMarkdownStream;
+      scope.Markdown = AgentAppMarkdownStream;
 
       if (transformed) {
         patchScopeForMissingIdentifiers(transformed, scope);
@@ -511,135 +525,146 @@ function CustomComponentRenderer({
       surfaceName={PUBLIC_AGENT_APP_SURFACE_NAME}
       getScope={buildScope}
     >
-    <div className="h-full flex flex-col">
-      {guestLimit.showWarning && (
-        <div className="flex-shrink-0 p-4">
-          <GuestLimitWarning
-            remaining={guestLimit.remaining}
-            onDismiss={guestLimit.dismissWarning}
-          />
-        </div>
-      )}
-
-      <SignupConversionModal
-        isOpen={guestLimit.showSignupModal}
-        onClose={guestLimit.dismissSignupModal}
-        totalUsed={guestLimit.totalUsed}
-      />
-
-      <div className="flex-1 overflow-auto">
-        {CustomUIComponent ? (
-          <AgentAppErrorBoundary appName={app.name}>
-            <CustomUIComponent
-              onExecute={handleExecute}
-              response={responseText}
-              streamEvents={streamEvents}
-              isStreaming={!isStreamComplete && isExecuting}
-              isExecuting={isExecuting}
-              error={error}
-              rateLimitInfo={
-                !isAuthenticated
-                  ? { remaining: guestLimit.remaining, total: 5 }
-                  : null
-              }
-              conversationId={conversationId}
-              onResetConversation={resetConversation}
+      <div className="h-full flex flex-col">
+        {guestLimit.showWarning && (
+          <div className="flex-shrink-0 p-4">
+            <GuestLimitWarning
+              remaining={guestLimit.remaining}
+              onDismiss={guestLimit.dismissWarning}
             />
-          </AgentAppErrorBoundary>
-        ) : (
-          <div className="p-6 max-w-4xl mx-auto">
-            <div className="mb-6">
-              <h1 className="text-2xl font-bold mb-2">{app.name}</h1>
-              {app.tagline && (
-                <p className="text-muted-foreground">{app.tagline}</p>
-              )}
-            </div>
-
-            {error && (
-              <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-md flex items-start gap-3">
-                <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-destructive mb-1">
-                    Error
-                  </p>
-                  <p className="text-sm text-destructive/80">{error.message}</p>
-                </div>
-              </div>
-            )}
-
-            <div className="mb-6">
-              <button
-                onClick={() => handleExecute({})}
-                disabled={isExecuting}
-                className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isExecuting ? "Running..." : "Run"}
-              </button>
-            </div>
-
-            {responseText && (
-              <div className="bg-textured">
-                <MarkdownStream
-                  content={responseText}
-                  isStreamActive={isExecuting && !isStreamComplete}
-                  onError={(err) =>
-                    setLocalError({ type: "render_error", message: err })
-                  }
-                />
-              </div>
-            )}
           </div>
         )}
-      </div>
 
-      {showActionBar && (
-        <div className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 border-t border-border/40">
-          <button
-            onClick={handleCopy}
-            className="flex items-center gap-1.5 h-7 px-2 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-          >
-            {isCopied ? (
-              <>
-                <Check className="w-3.5 h-3.5 text-green-500" />
-                <span>Copied</span>
-              </>
-            ) : (
-              <>
-                <Copy className="w-3.5 h-3.5" />
-                <span>Copy</span>
-              </>
-            )}
-          </button>
-          <button
-            ref={moreButtonRef}
-            onClick={() => setIsOptionsOpen(true)}
-            className="flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-            aria-label="More options"
-          >
-            <MoreHorizontal className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      )}
-
-      <PublicMessageOptionsMenu
-        isOpen={isOptionsOpen}
-        onClose={() => setIsOptionsOpen(false)}
-        content={responseText}
-        anchorElement={moreButtonRef.current}
-        onShowHtmlPreview={handleShowHtmlPreview}
-        onOpenCanvas={handleOpenCanvas}
-        onQuickHtmlShare={() => {}}
-      />
-
-      {htmlPreviewOpen && (
-        <HtmlPreviewModal
-          isOpen={htmlPreviewOpen}
-          onClose={() => setHtmlPreviewOpen(false)}
-          htmlContent={htmlPreviewContent}
-          title={htmlPreviewTitle}
+        <SignupConversionModal
+          isOpen={guestLimit.showSignupModal}
+          onClose={guestLimit.dismissSignupModal}
+          totalUsed={guestLimit.totalUsed}
         />
-      )}
-    </div>
+
+        <div className="flex-1 overflow-auto">
+          {CustomUIComponent ? (
+            <AgentAppErrorBoundary appName={app.name}>
+              <AgentAppStreamProvider
+                value={{
+                  response: responseText,
+                  requestId,
+                  conversationId,
+                  isStreaming,
+                }}
+              >
+                <CustomUIComponent
+                  onExecute={handleExecute}
+                  response={responseText}
+                  streamEvents={streamEvents}
+                  isStreaming={!isStreamComplete && isExecuting}
+                  isExecuting={isExecuting}
+                  error={error}
+                  rateLimitInfo={
+                    !isAuthenticated
+                      ? { remaining: guestLimit.remaining, total: 5 }
+                      : null
+                  }
+                  conversationId={conversationId}
+                  onResetConversation={resetConversation}
+                />
+              </AgentAppStreamProvider>
+            </AgentAppErrorBoundary>
+          ) : (
+            <div className="p-6 max-w-4xl mx-auto">
+              <div className="mb-6">
+                <h1 className="text-2xl font-bold mb-2">{app.name}</h1>
+                {app.tagline && (
+                  <p className="text-muted-foreground">{app.tagline}</p>
+                )}
+              </div>
+
+              {error && (
+                <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-md flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-destructive mb-1">
+                      Error
+                    </p>
+                    <p className="text-sm text-destructive/80">
+                      {error.message}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div className="mb-6">
+                <button
+                  onClick={() => handleExecute({})}
+                  disabled={isExecuting}
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isExecuting ? "Running..." : "Run"}
+                </button>
+              </div>
+
+              {responseText && (
+                <div className="bg-textured">
+                  <MarkdownStream
+                    content={responseText}
+                    isStreamActive={isExecuting && !isStreamComplete}
+                    onError={(err) =>
+                      setLocalError({ type: "render_error", message: err })
+                    }
+                  />
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {showActionBar && (
+          <div className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 border-t border-border/40">
+            <button
+              onClick={handleCopy}
+              className="flex items-center gap-1.5 h-7 px-2 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            >
+              {isCopied ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-green-500" />
+                  <span>Copied</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>Copy</span>
+                </>
+              )}
+            </button>
+            <button
+              ref={moreButtonRef}
+              onClick={() => setIsOptionsOpen(true)}
+              className="flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              aria-label="More options"
+            >
+              <MoreHorizontal className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
+        <PublicMessageOptionsMenu
+          isOpen={isOptionsOpen}
+          onClose={() => setIsOptionsOpen(false)}
+          content={responseText}
+          anchorElement={moreButtonRef.current}
+          onShowHtmlPreview={handleShowHtmlPreview}
+          onOpenCanvas={handleOpenCanvas}
+          onQuickHtmlShare={() => {}}
+        />
+
+        {htmlPreviewOpen && (
+          <HtmlPreviewModal
+            isOpen={htmlPreviewOpen}
+            onClose={() => setHtmlPreviewOpen(false)}
+            htmlContent={htmlPreviewContent}
+            title={htmlPreviewTitle}
+          />
+        )}
+      </div>
     </SurfaceRuntimeProvider>
   );
 }

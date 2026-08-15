@@ -27,6 +27,12 @@ export interface CompileSlotArgs {
   code: string;
   /** Allowed imports from the app row (or a tier default). */
   allowedImports?: string[] | Json | null;
+  /**
+   * Host-owned replacements for allowlisted scope entries. This is the seam
+   * for runtime-aware primitives (for example, Agent Apps supplies a
+   * MarkdownStream that carries the live request identity automatically).
+   */
+  scopeOverrides?: Readonly<Record<string, unknown>>;
 }
 
 export interface CompileSlotResult {
@@ -57,6 +63,7 @@ function stripImportDeclarationsPlugin() {
 export function compileSlotComponent({
   code,
   allowedImports,
+  scopeOverrides,
 }: CompileSlotArgs): CompileSlotResult {
   if (!code || !code.trim()) {
     return { Component: null, error: null };
@@ -82,6 +89,7 @@ export function compileSlotComponent({
     transformed = transformed.replace(/export\s+default\s+/g, "return ");
 
     const scope = buildComponentScope(allowedImports ?? []);
+    Object.assign(scope, scopeOverrides);
     if (transformed)
       patchScopeForMissingIdentifiers(transformed, scope, declaredTopLevel);
 

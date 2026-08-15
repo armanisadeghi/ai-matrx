@@ -21,6 +21,7 @@
 import { supabase } from "@/utils/supabase/client";
 import type { Json } from "@/types/database.types";
 import type { AppMetadata } from "../types";
+import { agentAppPublicationPatch } from "@/features/agent-apps/lib/publication";
 
 /** Where an auto-create attempt got to. Anything but `complete` is unfinished. */
 export type AutoCreateStage =
@@ -131,7 +132,9 @@ export async function createGenerationDraft(
       shell_kind: "fully_custom",
       rate_limit_per_ip: 10,
       rate_limit_window_hours: 24,
-      status: "draft",
+      // This is the one legitimate draft state: the paid generation is not
+      // complete yet. finalizeDraft atomically makes it public.
+      ...agentAppPublicationPatch(false),
       metadata: { auto_create: progress as unknown as Json },
     })
     .select("id, metadata")
@@ -239,14 +242,21 @@ export async function saveDraftCode(
   );
 }
 
-/** Mark the draft fully assembled. Failure here still leaves the code intact. */
+/**
+ * Mark the generated app fully assembled and publish it. The temporary draft
+ * exists only to preserve paid generation work; it is not the terminal state.
+ * Failure here still leaves the generated code intact and recoverable.
+ */
 export async function finalizeDraft(handle: DraftHandle): Promise<void> {
   const { metadata } = mergeMetadata(handle, { stage: "complete" });
 
   const { error } = await supabase
     .schema("app")
     .from("definition")
-    .update({ metadata: metadata as Json })
+    .update({
+      metadata: metadata as Json,
+      ...agentAppPublicationPatch(true),
+    })
     .eq("id", handle.appId);
 
   if (error) throw new Error(error.message || "Failed to finalize app");

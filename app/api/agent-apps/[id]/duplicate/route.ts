@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { NextRequest, NextResponse } from "next/server";
+import { agentAppPublicationPatch } from "@/features/agent-apps/lib/publication";
 
 /**
  * POST /api/agent-apps/[id]/duplicate
@@ -135,8 +136,7 @@ export async function POST(
         metadata: original.metadata,
         preview_image_url: original.preview_image_url,
         favicon_url: original.favicon_url,
-        status: "draft",
-        visibility: "internal",
+        ...agentAppPublicationPatch(true),
         rate_limit_per_ip: original.rate_limit_per_ip,
         rate_limit_window_hours: original.rate_limit_window_hours,
         rate_limit_authenticated: original.rate_limit_authenticated,

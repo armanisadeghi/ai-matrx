@@ -39,6 +39,10 @@ import type {
   AgentAppShellConfigCommon,
   PublicAgentApp,
 } from "@/features/agent-apps/types";
+import {
+  AgentAppMarkdownStream,
+  AgentAppStreamProvider,
+} from "@/features/agent-apps/components/shells/AgentAppMarkdownStreamBridge";
 
 const HtmlPreviewModal = dynamic(
   () => import("@/features/html-pages/components/HtmlPreviewModal"),
@@ -63,6 +67,10 @@ export function AgentAppFullyCustomShell({
       compileSlotComponent({
         code: sourceCode,
         allowedImports: app.allowed_imports,
+        scopeOverrides: {
+          MarkdownStream: AgentAppMarkdownStream,
+          Markdown: AgentAppMarkdownStream,
+        },
       }),
     [sourceCode, app.allowed_imports],
   );
@@ -232,9 +240,7 @@ export function AgentAppFullyCustomShell({
     streamEvents: [],
     isStreaming: ctx.isStreaming,
     isExecuting: ctx.isExecuting,
-    error: error
-      ? { type: "execution_error", message: error }
-      : null,
+    error: error ? { type: "execution_error", message: error } : null,
     rateLimitInfo: !isAuthenticated
       ? { remaining: guestLimit.remaining, total: 5 }
       : null,
@@ -264,7 +270,16 @@ export function AgentAppFullyCustomShell({
 
       <div className="flex-1 overflow-auto">
         <AgentAppErrorBoundary appName={app.name}>
-          <CustomApp {...hookProps} {...legacyProps} />
+          <AgentAppStreamProvider
+            value={{
+              response: ctx.response,
+              requestId: ctx.requestId,
+              conversationId: ctx.conversationId,
+              isStreaming: ctx.isStreaming,
+            }}
+          >
+            <CustomApp {...hookProps} {...legacyProps} />
+          </AgentAppStreamProvider>
         </AgentAppErrorBoundary>
       </div>
 
@@ -344,9 +359,7 @@ function DefaultFallback({
     <div className="p-6 max-w-4xl mx-auto">
       <div className="mb-6">
         <h1 className="text-2xl font-bold mb-2">{app.name}</h1>
-        {app.tagline && (
-          <p className="text-muted-foreground">{app.tagline}</p>
-        )}
+        {app.tagline && <p className="text-muted-foreground">{app.tagline}</p>}
       </div>
 
       {error && (

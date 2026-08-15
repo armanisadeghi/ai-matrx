@@ -16,20 +16,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "@/lib/toast-service";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
@@ -61,6 +49,7 @@ import { selectAppById } from "@/features/agents/redux/agent-apps/selectors";
 import {
   saveAppField,
   deleteApp,
+  setAgentAppPublication,
 } from "@/features/agents/redux/agent-apps/thunks";
 import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { AGENT_APPS_SURFACE_NAME } from "@/features/surfaces/manifests/agent-apps.manifest";
@@ -69,7 +58,6 @@ import {
   validateAppTags,
 } from "./agent-app-entity-writes";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
-import type { AppStatus } from "@/features/agent-apps/types";
 
 interface AgentAppSettingsContentProps {
   appId: string;
@@ -101,12 +89,6 @@ function requireOpenApp(app: unknown, target: string): void {
     );
   }
 }
-
-const STATUS_OPTIONS: { value: AppStatus; label: string }[] = [
-  { value: "draft", label: "Draft" },
-  { value: "published", label: "Published" },
-  { value: "archived", label: "Archived" },
-];
 
 export function AgentAppSettingsContent({
   appId,
@@ -252,7 +234,9 @@ export function AgentAppSettingsContent({
       window.location.href = "/agent-apps";
     } catch (err) {
       toast.error(
-        err instanceof Error ? `Delete failed: ${err.message}` : "Delete failed.",
+        err instanceof Error
+          ? `Delete failed: ${err.message}`
+          : "Delete failed.",
       );
       setIsDeleting(false);
     }
@@ -265,6 +249,22 @@ export function AgentAppSettingsContent({
       toast.success("Public URL copied");
     } catch {
       toast.error("Copy failed");
+    }
+  };
+
+  const handlePublicationChange = async (published: boolean) => {
+    setSavingField("publication");
+    try {
+      await dispatch(setAgentAppPublication({ appId, published })).unwrap();
+      toast.success(published ? "App published." : "App unpublished.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? `Publication failed: ${error.message}`
+          : "Publication failed.",
+      );
+    } finally {
+      setSavingField(null);
     }
   };
 
@@ -506,9 +506,7 @@ export function AgentAppSettingsContent({
             <div className="border-t border-border/60 pt-4">
               <ShellConfigPanel
                 shellKind={app.shell_kind as AgentAppShellKind}
-                value={
-                  (app.shell_config ?? {}) as AgentAppShellConfigCommon
-                }
+                value={(app.shell_config ?? {}) as AgentAppShellConfigCommon}
                 onChange={(next) => saveField("shell_config", next)}
                 disabled={savingField === "shell_config"}
               />
@@ -516,13 +514,9 @@ export function AgentAppSettingsContent({
             <div className="border-t border-border/60 pt-4">
               <SlotOverrideEditor
                 shellKind={app.shell_kind as AgentAppShellKind}
-                overrides={
-                  (app.slot_overrides ?? {}) as AgentAppSlotOverrides
-                }
+                overrides={(app.slot_overrides ?? {}) as AgentAppSlotOverrides}
                 code={(app.slot_code ?? {}) as AgentAppSlotCode}
-                onChangeOverrides={(next) =>
-                  saveField("slot_overrides", next)
-                }
+                onChangeOverrides={(next) => saveField("slot_overrides", next)}
                 onChangeCode={(next) => saveField("slot_code", next)}
                 disabled={
                   savingField === "slot_overrides" ||
@@ -554,51 +548,43 @@ export function AgentAppSettingsContent({
             </Row>
           </TabsContent>
 
-          {/* ── Sharing (status + visibility + URL + scope + limits) ──── */}
+          {/* ── Sharing (publication + URL + scope + limits) ─────────── */}
           <TabsContent value="sharing" className="space-y-5">
-            <Row label="Status">
-              <Select
-                value={app.status}
-                onValueChange={(v) => saveField("status", v as AppStatus)}
-                disabled={savingField === "status"}
-              >
-                <SelectTrigger className="h-8 w-[180px]" size="sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {STATUS_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Row>
-            {/* Visibility is the canonical platform enum. The switch stays a
-                two-state control because that is the real choice for an app —
-                published to the world, or kept inside the owning org. */}
-            <Row label="Public">
+            <Row label="Published">
               <Switch
-                checked={app.visibility === "public"}
-                onCheckedChange={(v) =>
-                  saveField("visibility", v ? "public" : "internal")
+                checked={
+                  app.status === "published" && app.visibility === "public"
                 }
-                disabled={savingField === "visibility"}
+                onCheckedChange={handlePublicationChange}
+                disabled={savingField === "publication"}
               />
             </Row>
             <Row label="Public URL">
               <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted/40 border border-border/60">
-                <span className="text-sm font-mono text-foreground truncate flex-1">
-                  {publicUrl}
-                </span>
-                <button
-                  type="button"
-                  onClick={handleCopyUrl}
-                  className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground"
-                  aria-label="Copy"
-                >
-                  <Copy className="w-3.5 h-3.5" />
-                </button>
+                {app.status === "published" && app.visibility === "public" ? (
+                  <>
+                    <a
+                      href={publicUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm font-mono text-foreground hover:underline truncate flex-1"
+                    >
+                      {publicUrl}
+                    </a>
+                    <button
+                      type="button"
+                      onClick={handleCopyUrl}
+                      className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground"
+                      aria-label="Copy public URL"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                    </button>
+                  </>
+                ) : (
+                  <span className="text-sm text-muted-foreground">
+                    Publish this app to activate its public link.
+                  </span>
+                )}
               </div>
             </Row>
 
@@ -650,7 +636,8 @@ export function AgentAppSettingsContent({
                 label="Window (hrs)"
                 busy={savingField === "rate_limit_window_hours"}
                 dirty={
-                  rateWindow.trim() !== String(app.rate_limit_window_hours ?? "")
+                  rateWindow.trim() !==
+                  String(app.rate_limit_window_hours ?? "")
                 }
                 onSave={() => {
                   const n =
@@ -673,8 +660,7 @@ export function AgentAppSettingsContent({
                 label="Authenticated / window"
                 busy={savingField === "rate_limit_authenticated"}
                 dirty={
-                  rateAuth.trim() !==
-                  String(app.rate_limit_authenticated ?? "")
+                  rateAuth.trim() !== String(app.rate_limit_authenticated ?? "")
                 }
                 onSave={() => {
                   const n = rateAuth.trim() === "" ? null : Number(rateAuth);
@@ -723,7 +709,13 @@ export function AgentAppSettingsContent({
 
 // ── Internal layout primitives ───────────────────────────────────────────────
 
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
+function Row({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="grid grid-cols-[140px_1fr] items-start gap-3">
       <Label className="pt-1.5 text-xs uppercase tracking-wider text-muted-foreground">

@@ -7,11 +7,7 @@ import {
   Tag,
   Webhook,
 } from "lucide-react";
-import {
-  getAgentApp,
-  getAgentAppVersion,
-} from "@/lib/agent-apps/data";
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { getAgentApp, getAgentAppVersion } from "@/lib/agent-apps/data";
 import { AgentAppHeader } from "@/features/agent-apps/components/route-header/AgentAppHeader";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,12 +17,13 @@ import { VersionCodeCompare } from "./VersionCodeCompare";
 import { VersionRecordCopy } from "./VersionRecordCopy";
 import { formatDateTime } from "@/features/agent-apps/format";
 
-
 interface VersionPageProps {
   params: Promise<{ id: string; version: string }>;
 }
 
-export default async function AgentAppVersionPage({ params }: VersionPageProps) {
+export default async function AgentAppVersionPage({
+  params,
+}: VersionPageProps) {
   const { id, version } = await params;
   const versionNumber = Number(version);
   if (!Number.isFinite(versionNumber)) notFound();
@@ -43,9 +40,14 @@ export default async function AgentAppVersionPage({ params }: VersionPageProps) 
 
   return (
     <>
-      <PageHeader>
-        <AgentAppHeader appId={app.id} appName={app.name} active="versions" />
-      </PageHeader>
+      <AgentAppHeader
+        appId={app.id}
+        appName={app.name}
+        agentId={app.agent_id}
+        initialStatus={app.status}
+        initialVisibility={app.visibility}
+        active="versions"
+      />
 
       <div
         className="h-full overflow-y-auto"
@@ -103,10 +105,7 @@ export default async function AgentAppVersionPage({ params }: VersionPageProps) 
               <CardContent className="space-y-2 text-sm">
                 <KV label="Name" value={snapshot.name ?? "—"} />
                 <KV label="Tagline" value={snapshot.tagline ?? "—"} />
-                <KV
-                  label="Description"
-                  value={snapshot.description ?? "—"}
-                />
+                <KV label="Description" value={snapshot.description ?? "—"} />
                 <KV label="Category" value={snapshot.category ?? "—"} />
                 <KV
                   label="Tags"
@@ -122,7 +121,9 @@ export default async function AgentAppVersionPage({ params }: VersionPageProps) 
             <Card>
               <CardHeader className="pb-2 flex-row items-center gap-2">
                 <Webhook className="w-4 h-4 text-muted-foreground" />
-                <CardTitle className="text-sm">Agent binding (snapshot)</CardTitle>
+                <CardTitle className="text-sm">
+                  Agent binding (snapshot)
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
                 <KV label="Agent ID" value={snapshot.agent_id ?? "—"} mono />
@@ -150,15 +151,18 @@ export default async function AgentAppVersionPage({ params }: VersionPageProps) 
                 )}
               </CardHeader>
               <CardContent className="text-sm text-muted-foreground space-y-1">
-                <KV label="Language" value={snapshot.component_language ?? "—"} />
+                <KV
+                  label="Language"
+                  value={snapshot.component_language ?? "—"}
+                />
                 <KV
                   label="Lines"
                   value={codeLines > 0 ? String(codeLines) : "—"}
                 />
                 {isCurrent ? (
                   <p className="text-xs pt-2">
-                    This is the current version — its code is what the app renders
-                    now.
+                    This is the current version — its code is what the app
+                    renders now.
                   </p>
                 ) : (
                   <p className="text-xs pt-2">

@@ -6,6 +6,7 @@ import type { CreateAgentAppInput } from "@/features/agent-apps/types";
 import type { Database } from "@/types/database.types";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";
+import { agentAppPublicationPatch } from "@/features/agent-apps/lib/publication";
 
 type AgentAppInsert = Database["app"]["Tables"]["definition"]["Insert"];
 
@@ -175,7 +176,7 @@ export async function POST(request: NextRequest) {
       ...(shell_config !== undefined ? { shell_config } : {}),
       ...(slot_overrides !== undefined ? { slot_overrides } : {}),
       ...(slot_code !== undefined ? { slot_code } : {}),
-      status: "draft",
+      ...agentAppPublicationPatch(true),
     };
 
     // Global apps bypass RLS via the admin client because created_by = null

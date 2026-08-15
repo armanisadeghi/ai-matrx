@@ -1,3 +1,5 @@
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { compileSlotComponent } from "./compile-slot";
 
 describe("compileSlotComponent", () => {
@@ -96,5 +98,26 @@ describe("compileSlotComponent", () => {
 
     expect(result.error).toBeNull();
     expect(typeof result.Component).toBe("function");
+  });
+
+  it("lets the host replace an allowlisted runtime primitive", () => {
+    const HostMarkdownStream = () =>
+      createElement("span", { "data-host-stream": "true" });
+    const result = compileSlotComponent({
+      code: `
+        import MarkdownStream from "@/components/MarkdownStream";
+        export default function Result() {
+          return <MarkdownStream content="live" />;
+        }
+      `,
+      allowedImports: ["react", "@/components/MarkdownStream"],
+      scopeOverrides: { MarkdownStream: HostMarkdownStream },
+    });
+
+    expect(result.error).toBeNull();
+    const Component = result.Component;
+    if (!Component) throw new Error("Expected the slot component to compile");
+    const markup = renderToStaticMarkup(createElement(Component, {}));
+    expect(markup).toContain('data-host-stream="true"');
   });
 });
