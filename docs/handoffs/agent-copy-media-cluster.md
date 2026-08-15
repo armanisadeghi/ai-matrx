@@ -49,9 +49,9 @@ whole page · **SKIP** non-record tool.
 |---|---|---|---|---|
 | `core/FileList/FileList.tsx` | browser rows + grid cells | L | none | row `icon` pair + view copy + ExportMenu (JSON+CSV) |
 | `core/FileTree/FileTree.tsx` | folder tree rows | L | none | row `xs` hover pair + subtree copy |
-| `core/FileVersions/FileVersionsList.tsx` | version history rows | L | none | row `xs` pair + list copy + ExportMenu |
-| `surfaces/FileInfoTab.tsx` | file metadata record | R | **wired, D-A** | keep pair; sanitize payload |
-| `surfaces/FileShareTab.tsx` | active share links | L | none | list copy (tokens only, never signed URLs) |
+| `core/FileVersions/FileVersionsList.tsx` | version history rows | L | **DONE** | header triple + ExportMenu (JSON+CSV, all rows) + per-row `xs` hover pair |
+| `surfaces/FileInfoTab.tsx` | file metadata record | R | **DONE** (D-A fixed) | pair kept; payload sanitized |
+| `surfaces/FileShareTab.tsx` | sharing config | **R / field group** | none | **reclassified**: not a list — it renders `Section`/`Row` field groups (Status, link config, Organization), no `.map()` over share links. Needs a record header pair built from LIVE form state, not list copy + ExportMenu. |
 | `core/PermissionsDialog` | permission grants | L | none | list copy + per-row `xs` |
 | `core/FilePreview/previewers/*` (12) | viewers | SKIP | — | no copyable record |
 | `core/FileUploadDropzone`, `UploadProgressList` | transient progress | SKIP | — | — |
@@ -109,7 +109,8 @@ whole page · **SKIP** non-record tool.
 | 1 | Shared media-safe payload helper + **D-A fix** (`FileInfoTab`) | **done** — `930c469` |
 | 2 | `features/image-manager` metadata record + shared `copy-format.ts` | **done** — `485b00c` |
 | 3 | `features/audio` diagnostics record (+ repair-prompt variant) | **done** — `b2cf198` |
-| 4 | `features/files` lists (FileList rows, versions, share links, permissions) | not started |
+| 4a | `features/files` version history (list copy + ExportMenu + row pairs) | **done** |
+| 4b | `features/files` remaining: `FileList` rows/grid, `PermissionsDialog`, `FileShareTab` record pair, `FileTree` | not started — see the `FileList` note below |
 | 5 | `features/podcasts` (PodcastsTable, runs, episode record, dashboard groomer) | not started |
 | 6 | `features/pdf-extractor` `aiCustom` extraction levers + scanner review list | not started |
 | 7 | `components/image/cloud/CloudFilesTab.tsx` grid copy (serves every cloud-file grid) | not started |
@@ -119,6 +120,18 @@ Batches 4–8 are wired the same way: the shared `mediaSafe` / `agentFileRef`
 pair from batch 1 is the only correct way to put a file row in a payload in
 this cluster, and every list additionally needs `ExportMenu` (JSON + CSV) plus
 a show-all for any truncated slice.
+
+### Open question — where `FileList`'s view copy goes
+
+`FileList` has **no toolbar of its own**: it renders a sort-header row and then
+the rows, and it is embedded by `WindowPanelShell`, `EmbeddedShell`, and the
+resource picker. Per the skill, a whole-list copy belongs in the header/toolbar,
+and `copy.showToolbar: false` exists precisely so a page's own header row owns
+it rather than the list growing a near-empty toolbar strip. So the view copy +
+ExportMenu should go in each **host's** header rather than inside `FileList` —
+otherwise the picker and the window panel each sprout a copy strip they did not
+ask for. Per-row `xs` pairs in `FileListRow`/`FileListGridCell` are unambiguous
+and can land independently.
 
 ### Routes for the wired surfaces
 
