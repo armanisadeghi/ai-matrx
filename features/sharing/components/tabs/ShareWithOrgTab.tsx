@@ -19,6 +19,11 @@ import type {
 import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
 import { PermissionLevelDescription } from "../PermissionBadge";
 import { useToast } from "@/components/ui/use-toast";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import {
+  sharingLocation,
+  type SharingCopyContext,
+} from "@/features/sharing/format";
 
 interface ShareWithOrgTabProps {
   onShare: (
@@ -29,6 +34,8 @@ interface ShareWithOrgTabProps {
   resourceType: ResourceType;
   /** IDs of organizations that already have access (to disable in dropdown) */
   sharedOrgIds?: string[];
+  /** Identity + the page's leading KPIs, mirrored into the blocker payload. */
+  copy?: SharingCopyContext;
 }
 
 /**
@@ -39,6 +46,7 @@ export function ShareWithOrgTab({
   onSuccess,
   resourceType,
   sharedOrgIds = [],
+  copy,
 }: ShareWithOrgTabProps) {
   const [selectedOrgId, setSelectedOrgId] = useState("");
   const [permissionLevel, setPermissionLevel] =
@@ -102,8 +110,19 @@ export function ShareWithOrgTab({
   }
 
   if (shareableOrgs.length === 0) {
+    /*
+     * A BLOCKER IS CONTENT. The user came here to grant an org access and the
+     * tab renders no controls at all — that state, and the workarounds it
+     * offers, is exactly what they'd hand an agent asking "why can't I share
+     * this with my team?".
+     */
+    const blockedSentences = [
+      "Organization Management Coming Soon",
+      "The organization management system is still being built",
+      "In the meantime, you can: Share with specific users instead; Make resources public for everyone",
+    ];
     return (
-      <div className="p-6 text-center space-y-3 bg-muted/30 rounded-lg border flex flex-col items-center justify-center">
+      <div className="group p-6 text-center space-y-3 bg-muted/30 rounded-lg border flex flex-col items-center justify-center">
         <Building2 className="w-12 h-12 mx-auto text-muted-foreground opacity-20" />
         <div>
           <h4 className="text-sm font-medium mb-1">
@@ -119,6 +138,53 @@ export function ShareWithOrgTab({
             <li>• Share with specific users instead</li>
             <li>• Make resources public for everyone</li>
           </ul>
+        </div>
+        <div className="opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+          <CopyButtons
+            size="xs"
+            label="Organization sharing unavailable"
+            human={() =>
+              [
+                "Organization sharing is unavailable on this surface.",
+                ...blockedSentences.map((sentence) => `- ${sentence}`),
+                `Shareable organizations available to you: 0 (of ${orgs.length} org(s) in your nav tree, all personal).`,
+                `Resource: ${resourceType}`,
+                `Organizations already granted access: ${sharedOrgIds.length}`,
+              ].join("\n")
+            }
+            json={() => ({
+              shareable_orgs: 0,
+              orgs_in_nav_tree: orgs.length,
+              shared_org_ids: sharedOrgIds,
+              resource_type: resourceType,
+            })}
+            agent={() => ({
+              kind: "share-with-org-blocked",
+              location: sharingLocation(
+                copy?.surface ?? "Share with organization",
+              ),
+              description:
+                "The organizations tab renders no grant controls: the viewer has no non-personal organization to share with. These are the sentences on screen, verbatim.",
+              data: {
+                rendered_sentences: blockedSentences,
+                shareable_orgs: 0,
+                orgs_in_nav_tree: orgs.length,
+                shared_org_ids: sharedOrgIds,
+                resource: {
+                  type: resourceType,
+                  id: copy?.resourceId ?? null,
+                  name: copy?.resourceName ?? null,
+                },
+                kpis: copy?.kpis ?? null,
+              },
+              attributes: {
+                ...(copy?.kpis ?? {}),
+                resource_type: resourceType,
+                state: "no-shareable-organizations",
+                orgs_in_nav_tree: orgs.length,
+              },
+            })}
+          />
         </div>
       </div>
     );
