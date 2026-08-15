@@ -29,7 +29,10 @@ the platform was missing and did not know it was missing.
 > **The current production blocker is concrete:** the real `info@aimatrx.com` identity
 > (`3489a446-1356-4dae-824f-90c65267732f`) correctly refuses sending because the
 > `_matrx-verify.aimatrx.com` TXT proof is not published; authentication and warmup cannot begin.
-> Two things only Arman can do: publish that TXT record
+> It is also a shared-role sender (`info@`), which `crm.check_send_eligibility()` permanently
+> refuses for Lane B even after setup. The first real send therefore needs a connected **named
+> human mailbox**, its generated TXT proof, passing SPF/DKIM/DMARC, and the earned 28-day warmup.
+> Arman must connect that named mailbox and publish its generated TXT record
 > (an agent may not touch a production DNS zone), and take `ATTORNEY_BRIEF.md` to counsel — every
 > jurisdiction row is `ratified_by='agent-research'`, and each row counsel ratifies is a market
 > that opens.
