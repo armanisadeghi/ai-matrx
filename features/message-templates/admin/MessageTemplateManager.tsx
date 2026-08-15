@@ -80,6 +80,7 @@ import type {
   TypedStreamEvent,
   RenderBlockEvent,
 } from "@/types/python-generated/stream-events";
+import { isJsonObject } from "@/types/json";
 
 interface MessageTemplateManagerProps {
   className?: string;
@@ -96,7 +97,12 @@ const AutoResizeTextarea = React.forwardRef<
 >(({ className, value, onChange, minHeight = 100, ...props }, ref) => {
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
 
-  React.useImperativeHandle(ref, () => textareaRef.current!);
+  React.useImperativeHandle(ref, () => {
+    if (!textareaRef.current) {
+      throw new Error("Message template textarea is not mounted.");
+    }
+    return textareaRef.current;
+  });
 
   const adjustHeight = React.useCallback(() => {
     const textarea = textareaRef.current;
@@ -222,9 +228,13 @@ export function MessageTemplateManager({
             },
           );
           if (!res.ok) {
-            const d = await res.json().catch(() => ({}));
+            const d: unknown = await res.json().catch(() => ({}));
+            const detail = isJsonObject(d) ? d.detail : undefined;
+            const message = isJsonObject(d) ? d.message : undefined;
             throw new Error(
-              (d as any)?.detail || (d as any)?.message || `HTTP ${res.status}`,
+              (typeof detail === "string" ? detail : undefined) ??
+                (typeof message === "string" ? message : undefined) ??
+                `HTTP ${res.status}`,
             );
           }
           const text = await res.text();
@@ -262,9 +272,13 @@ export function MessageTemplateManager({
             },
           );
           if (!res.ok) {
-            const d = await res.json().catch(() => ({}));
+            const d: unknown = await res.json().catch(() => ({}));
+            const detail = isJsonObject(d) ? d.detail : undefined;
+            const message = isJsonObject(d) ? d.message : undefined;
             throw new Error(
-              (d as any)?.detail || (d as any)?.message || `HTTP ${res.status}`,
+              (typeof detail === "string" ? detail : undefined) ??
+                (typeof message === "string" ? message : undefined) ??
+                `HTTP ${res.status}`,
             );
           }
           const { events } = parseNdjsonStream(res, controller.signal);
@@ -322,7 +336,8 @@ export function MessageTemplateManager({
   }, [toast]);
 
   useEffect(() => {
-    loadData();
+    const timer = window.setTimeout(() => void loadData(), 0);
+    return () => window.clearTimeout(timer);
   }, [loadData]);
 
   // Filtered and searched templates
@@ -360,17 +375,21 @@ export function MessageTemplateManager({
       ? templates.find((t) => t.id === selectedTemplateId)
       : null;
     if (selectedTemplate) {
-      setEditData({
-        id: selectedTemplate.id,
-        label: selectedTemplate.label,
-        content: selectedTemplate.content,
-        role: selectedTemplate.role,
-        metadata: selectedTemplate.metadata,
-        visibility: selectedTemplate.visibility,
-        tags: selectedTemplate.tags,
-      });
-      setHasUnsavedChanges(false);
+      const timer = window.setTimeout(() => {
+        setEditData({
+          id: selectedTemplate.id,
+          label: selectedTemplate.label,
+          content: selectedTemplate.content,
+          role: selectedTemplate.role,
+          metadata: selectedTemplate.metadata,
+          visibility: selectedTemplate.visibility,
+          tags: selectedTemplate.tags,
+        });
+        setHasUnsavedChanges(false);
+      }, 0);
+      return () => window.clearTimeout(timer);
     }
+    return undefined;
   }, [selectedTemplateId, templates]);
 
   const handleCreateNew = () => {
@@ -385,7 +404,10 @@ export function MessageTemplateManager({
     setIsCreateDialogOpen(true);
   };
 
-  const handleEditChange = (field: string, value: any) => {
+  const handleEditChange = <K extends keyof MessageTemplateDB>(
+    field: K,
+    value: MessageTemplateDB[K],
+  ) => {
     setEditData((prev) => ({ ...prev, [field]: value }));
     setHasUnsavedChanges(true);
   };
@@ -399,7 +421,9 @@ export function MessageTemplateManager({
         label: editData.label || "",
         content: editData.content || "",
         role: editData.role || "user",
-        metadata: editData.metadata ?? undefined,
+        metadata: isJsonObject(editData.metadata)
+          ? editData.metadata
+          : undefined,
         visibility: editData.visibility,
         tags: editData.tags || [],
       });
@@ -817,7 +841,7 @@ export function MessageTemplateManager({
                         <Select
                           value={editData.role || "user"}
                           onValueChange={(value) =>
-                            handleEditChange("role", value)
+                            handleEditChange("role", value as MessageRole)
                           }
                         >
                           <SelectTrigger>

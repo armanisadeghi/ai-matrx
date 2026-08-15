@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import {
   Dialog,
   DialogContent,
@@ -146,9 +147,15 @@ export default function SandboxStoragePage() {
             Total across all tiers
           </CardTitle>
           <CardDescription>
-            {persistence.loading
-              ? "Loading…"
-              : `${formatPersistenceSize(persistence.info?.total_size_bytes ?? 0)} stored across ${tierEntries.length} tier${tierEntries.length === 1 ? "" : "s"}.`}
+            {persistence.loading ? (
+              <SuspenseLoader
+                centered={false}
+                size="xs"
+                message="Loading sandbox storage totals…"
+              />
+            ) : (
+              `${formatPersistenceSize(persistence.info?.total_size_bytes ?? 0)} stored across ${tierEntries.length} tier${tierEntries.length === 1 ? "" : "s"}.`
+            )}
           </CardDescription>
         </CardHeader>
       </Card>
@@ -156,8 +163,10 @@ export default function SandboxStoragePage() {
       {persistence.loading && tierEntries.length === 0 ? (
         <Card>
           <CardContent className="p-6 text-sm text-muted-foreground">
-            <Loader2 className="w-4 h-4 mr-2 inline animate-spin" />
-            Querying orchestrators…
+            <SuspenseLoader
+              centered={false}
+              message="Checking sandbox storage across available services…"
+            />
           </CardContent>
         </Card>
       ) : tierEntries.length === 0 ? (

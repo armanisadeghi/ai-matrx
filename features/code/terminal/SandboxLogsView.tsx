@@ -16,6 +16,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronDown, Pause, Play, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 
 const SOURCES = [
   { value: "all", label: "All" },
@@ -66,7 +67,9 @@ export const SandboxLogsView: React.FC<SandboxLogsViewProps> = ({
       const resp = await fetch(url, { method: "GET", cache: "no-store" });
       if (!resp.ok) {
         const body = await resp.text().catch(() => "");
-        throw new Error(`${resp.status} ${resp.statusText}${body ? `: ${body}` : ""}`);
+        throw new Error(
+          `${resp.status} ${resp.statusText}${body ? `: ${body}` : ""}`,
+        );
       }
       const body = await resp.text();
       setText(body);
@@ -117,7 +120,12 @@ export const SandboxLogsView: React.FC<SandboxLogsViewProps> = ({
   }, []);
 
   return (
-    <div className={cn("flex h-full min-h-0 flex-col bg-white dark:bg-neutral-950", className)}>
+    <div
+      className={cn(
+        "flex h-full min-h-0 flex-col bg-white dark:bg-neutral-950",
+        className,
+      )}
+    >
       {/* Toolbar */}
       <div className="flex h-7 shrink-0 items-center gap-2 border-b border-neutral-200 px-2 text-[11px] dark:border-neutral-800">
         <label className="flex items-center gap-1">
@@ -157,7 +165,10 @@ export const SandboxLogsView: React.FC<SandboxLogsViewProps> = ({
             title="Refresh now"
             className="flex h-5 w-5 items-center justify-center rounded-sm text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
           >
-            <RefreshCw size={12} className={loading ? "animate-spin" : undefined} />
+            <RefreshCw
+              size={12}
+              className={loading ? "animate-spin" : undefined}
+            />
           </button>
           <button
             type="button"
@@ -191,9 +202,17 @@ export const SandboxLogsView: React.FC<SandboxLogsViewProps> = ({
         ) : text ? (
           text
         ) : loading ? (
-          <span className="text-neutral-500 dark:text-neutral-400">Loading…</span>
+          <span className="text-neutral-500 dark:text-neutral-400">
+            <SuspenseLoader
+              centered={false}
+              size="xs"
+              message={`Loading ${SOURCES.find((item) => item.value === source)?.label.toLowerCase() ?? "sandbox"} logs…`}
+            />
+          </span>
         ) : (
-          <span className="text-neutral-500 dark:text-neutral-400">No output.</span>
+          <span className="text-neutral-500 dark:text-neutral-400">
+            No output.
+          </span>
         )}
       </pre>
     </div>

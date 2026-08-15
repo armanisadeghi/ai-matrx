@@ -3,7 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, ArrowLeft, ExternalLink, FileSearch } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  ExternalLink,
+  FileSearch,
+} from "lucide-react";
 import { DuplicateClustersPanel } from "@/features/marketing/components/crawls/DuplicateClustersPanel";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
@@ -17,13 +22,16 @@ import {
 } from "@/features/marketing/components/shared/MarketingUi";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import {
+  useBrokenCrawlLinks,
   useCrawlCanonicalMap,
   useCrawlChainEvidence,
+  useCrawlLinkStatusEvidence,
   useCrawlSnapshots,
 } from "@/features/marketing/data/inspection-hooks";
 import { useCrawl, useCrawlUrls } from "@/features/marketing/data/hooks";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import type { CrawlUrl } from "@/features/marketing/types";
+import type { InspectionLinkRow } from "@/features/marketing/data/inspection-types";
 import { formatFileSize } from "@/features/files/utils/format";
 import {
   CRAWL_REPORTS,
@@ -82,17 +90,103 @@ function urlCell(url: string, pageHref?: string) {
           {url}
         </span>
       )}
-      <a
-        href={url}
-        target="_blank"
-        rel="noreferrer"
-        className="shrink-0 text-muted-foreground hover:text-primary"
-        aria-label={`Open ${url}`}
-      >
-        <ExternalLink className="h-3 w-3" />
-      </a>
+      {url.startsWith("http://") || url.startsWith("https://") ? (
+        <a
+          href={url}
+          target="_blank"
+          rel="noreferrer"
+          className="shrink-0 text-muted-foreground hover:text-primary"
+          aria-label={`Open ${url}`}
+        >
+          <ExternalLink className="h-3 w-3" />
+        </a>
+      ) : null}
     </div>
   );
+}
+
+function brokenLinkColumns(
+  brandId: string | null,
+  siteId: string,
+): MatrxColumnDef<InspectionLinkRow>[] {
+  return [
+    {
+      id: "source_page",
+      header: "Source page",
+      sortable: false,
+      filter: false,
+      cellKind: "text",
+      cell: (row) =>
+        urlCell(
+          row.source_page?.url ?? "Source page unavailable",
+          marketingRoutes.sitePage(brandId, siteId, row.source_page_id),
+        ),
+    },
+    {
+      id: "target_url",
+      accessorKey: "target_url",
+      header: "Broken target",
+      filter: "text",
+      cellKind: "text",
+      cell: (row) =>
+        urlCell(
+          row.target_url,
+          row.target_page_id
+            ? marketingRoutes.sitePage(brandId, siteId, row.target_page_id)
+            : undefined,
+        ),
+    },
+    {
+      id: "http_status",
+      accessorKey: "http_status",
+      header: "HTTP",
+      filter: false,
+      align: "right",
+      cell: (row) => (
+        <StatusBadge
+          value={
+            row.http_status === 0 ? "no-response" : String(row.http_status)
+          }
+        />
+      ),
+    },
+    {
+      id: "is_internal",
+      accessorKey: "is_internal",
+      header: "Scope",
+      filter: "boolean",
+      cell: (row) => (
+        <StatusBadge value={row.is_internal ? "internal" : "external"} />
+      ),
+    },
+    {
+      id: "anchor_text",
+      accessorKey: "anchor_text",
+      header: "Anchor text",
+      filter: "text",
+      cellKind: "text",
+      cell: (row) => (
+        <span className="block min-w-40 max-w-xl truncate text-xs">
+          {row.anchor_text || "—"}
+        </span>
+      ),
+    },
+    {
+      id: "rel",
+      accessorKey: "rel",
+      header: "Rel",
+      filter: "text",
+      cellKind: "text",
+      cell: (row) => row.rel || "—",
+    },
+    {
+      id: "position",
+      accessorKey: "position",
+      header: "Position",
+      filter: "number",
+      align: "right",
+    },
+  ];
 }
 
 /** Render a resolved URL path (A → B → C) as one compact mono line. */
@@ -592,6 +686,7 @@ function snapshotReportColumns(
         },
       ]);
     case "response-codes":
+    case "broken-links":
       return base;
   }
 }
@@ -846,6 +941,7 @@ function snapshotHumanLines(
         ["Bytes", row.bytes],
       ];
     case "response-codes":
+    case "broken-links":
       return common;
   }
 }
@@ -865,14 +961,17 @@ export function CrawlReportWorkspace({
   const [contentView, setContentView] = useState<"pages" | "duplicates">(
     "pages",
   );
-  const showDuplicates = reportKey === "content" && contentView === "duplicates";
+  const showDuplicates =
+    reportKey === "content" && contentView === "duplicates";
   const table = useMarketingTableState({
     defaultSort:
       report.source === "crawl-url"
         ? { id: "sequence", direction: "asc" }
-        : reportKey === "content"
-          ? { id: "content_hash", direction: "asc" }
-          : { id: "captured_at", direction: "desc" },
+        : report.source === "link-edge"
+          ? { id: "http_status", direction: "desc" }
+          : reportKey === "content"
+            ? { id: "content_hash", direction: "asc" }
+            : { id: "captured_at", direction: "desc" },
     defaultPageSize: 50,
   });
   const crawl = useCrawl(site.id, crawlId);
@@ -888,6 +987,12 @@ export function CrawlReportWorkspace({
     table.queryState,
     report.source === "snapshot",
   );
+  const brokenLinks = useBrokenCrawlLinks(
+    site.id,
+    crawlId,
+    table.queryState,
+    report.source === "link-edge",
+  );
   // Chain evidence — session-wide, report-specific. The canonical map powers
   // canonical CHAIN resolution; the crawl_url probe distinguishes "no
   // redirects" from "crawled before hop capture existed".
@@ -900,6 +1005,11 @@ export function CrawlReportWorkspace({
     site.id,
     crawlId,
     reportKey === "response-codes",
+  );
+  const linkStatusEvidence = useCrawlLinkStatusEvidence(
+    site.id,
+    crawlId,
+    reportKey === "broken-links",
   );
   const reportRoot = marketingRoutes.crawlReports(
     site.brand_id,
@@ -923,7 +1033,12 @@ export function CrawlReportWorkspace({
   }
 
   const isResponseReport = report.source === "crawl-url";
-  const query = isResponseReport ? urls : snapshots;
+  const isLinkReport = report.source === "link-edge";
+  const query = isResponseReport
+    ? urls
+    : isLinkReport
+      ? brokenLinks
+      : snapshots;
   const snapshotRows = (snapshots.data?.rows ?? []).map(
     toCrawlSnapshotReportRow,
   );
@@ -938,9 +1053,11 @@ export function CrawlReportWorkspace({
     chainEvidence.data === false &&
     (urls.data?.total ?? 0) > 0
       ? "This crawl ran before redirect-chain evidence existed — hop-by-hop chains were not recorded. Re-crawl the site to populate them."
-      : reportKey === "canonicals" && canonicalMap.data?.truncated
-        ? `Canonical-chain resolution covers the first ${canonicalMap.data.rows.length.toLocaleString()} of ${canonicalMap.data.total.toLocaleString()} captures — deeper targets may show as "target-not-crawled".`
-        : null;
+      : reportKey === "broken-links" && linkStatusEvidence.data === "missing"
+        ? "This crawl ran before link-status evidence existed — re-crawl the site to populate it."
+        : reportKey === "canonicals" && canonicalMap.data?.truncated
+          ? `Canonical-chain resolution covers the first ${canonicalMap.data.rows.length.toLocaleString()} of ${canonicalMap.data.total.toLocaleString()} captures — deeper targets may show as "target-not-crawled".`
+          : null;
 
   return (
     <CrawlSurfaceProvider
@@ -949,7 +1066,10 @@ export function CrawlReportWorkspace({
       view="report"
       getViewSummary={() =>
         query.data
-          ? { loaded_rows: query.data.rows.length, total_rows: query.data.total }
+          ? {
+              loaded_rows: query.data.rows.length,
+              total_rows: query.data.total,
+            }
           : undefined
       }
       reportKey={reportKey}
@@ -964,263 +1084,342 @@ export function CrawlReportWorkspace({
         };
       }}
     >
-    <main className="flex h-full min-h-0 flex-col gap-3 overflow-hidden bg-textured p-3 sm:p-4">
-      <CrawlSubnav crawl={crawl.data} />
-      <section className="flex shrink-0 flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 py-2">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <Link
-              href={reportRoot}
-              aria-label="Back to all crawl reports"
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-            <h1 className="text-sm font-semibold text-foreground">
-              {report.label}
-            </h1>
-            <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-              {(query.data?.total ?? 0).toLocaleString()} rows
-            </span>
-          </div>
-          <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
-            {report.description}
-          </p>
-        </div>
-        <div className="flex shrink-0 items-center gap-3">
-          <CopyButtons
-            size="icon"
-            {...webCopy({
-              kind: "web-crawl-report",
-              label: `${report.label} report`,
-              description:
-                "This crawl report's identity and current result counts (row data is copyable from the table below).",
-              surface: `Crawl report — ${report.label} — session ${crawlId}`,
-              data: {
-                report_key: report.key,
-                report_label: report.label,
-                report_source: report.source,
-                session_id: crawlId,
-                loaded_rows: query.data?.rows.length ?? 0,
-                total_rows: query.data?.total ?? 0,
-                evidence_notice: evidenceNotice,
-              },
-              lines: [
-                ["Report", report.label],
-                ["Session", crawlId],
-                ["Site", site.root_url],
-                ["Rows", query.data?.total ?? 0],
-                ["Loaded", query.data?.rows.length ?? 0],
-                ["Notice", evidenceNotice],
-              ],
-              attributes: {
-                session_id: crawlId,
-                site_id: site.id,
-                report_key: report.key,
-              },
-            })}
-          />
-          {reportKey === "content" ? (
-            <div
-              role="tablist"
-              aria-label="Content report view"
-              className="flex overflow-hidden rounded-md border border-border"
-            >
-              {(
-                [
-                  ["pages", "Pages"],
-                  ["duplicates", "Duplicates"],
-                ] as const
-              ).map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  role="tab"
-                  aria-selected={contentView === value}
-                  onClick={() => setContentView(value)}
-                  className={`px-2.5 py-1 text-[11px] font-medium transition-colors ${
-                    contentView === value
-                      ? "bg-accent text-foreground"
-                      : "bg-background text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
+      <main className="flex h-full min-h-0 flex-col gap-3 overflow-hidden bg-textured p-3 sm:p-4">
+        <CrawlSubnav crawl={crawl.data} />
+        <section className="flex shrink-0 flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 py-2">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <Link
+                href={reportRoot}
+                aria-label="Back to all crawl reports"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Link>
+              <h1 className="text-sm font-semibold text-foreground">
+                {report.label}
+              </h1>
+              <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                {(query.data?.total ?? 0).toLocaleString()} rows
+              </span>
             </div>
-          ) : null}
-        <label className="flex shrink-0 items-center gap-2 text-[11px] text-muted-foreground">
-          Report
-          <select
-            value={reportKey}
-            onChange={(event) =>
-              router.push(
-                marketingRoutes.crawlReport(
-                  site.brand_id,
-                  site.id,
-                  crawlId,
-                  event.target.value,
-                ),
-              )
-            }
-            className="h-8 rounded-md border border-border bg-background px-2 text-xs text-foreground"
-          >
-            {CRAWL_REPORTS.map((candidate) => (
-              <option key={candidate.key} value={candidate.key}>
-                {candidate.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        </div>
-      </section>
-      {evidenceNotice ? (
-        <div className="flex shrink-0 items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2">
-          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
-          <p className="text-[11px] text-foreground">{evidenceNotice}</p>
-        </div>
-      ) : null}
-      <div className="min-h-0 flex-1">
-        {showDuplicates ? (
-          <DuplicateClustersPanel crawlId={crawlId} />
-        ) : query.isError ? (
-          <QueryError
-            error={query.error}
-            onRetry={() => void query.refetch()}
-          />
-        ) : isResponseReport ? (
-          <MatrxDataTable<CrawlUrl>
-            data={urls.data?.rows ?? []}
-            columns={responseColumns(sitePath)}
-            getRowId={(row) => row.id}
-            isLoading={urls.isLoading}
-            isFetching={urls.isFetching}
-            query={{
-              mode: "controlled",
-              state: table.state,
-              totalItems: urls.data?.total ?? 0,
-              onStateChange: table.onStateChange,
-            }}
-            toolbar={{
-              searchPlaceholder:
-                "Search encountered, final URL, or failure reason…",
-            }}
-            copy={{
-              label: "Response record",
-              listLabel: "Response code report",
-              location: webLocation(`Response codes — session ${crawlId}`),
-              rowKind: "web-crawl-response",
-              listKind: "web-crawl-response-report",
-              rowDescription:
-                "One URL outcome from the crawl response-code report.",
-              listDescription:
-                "The currently loaded response-code rows, respecting query state.",
-              humanRow: (row) => {
-                const chain = summarizeRedirectChain(
-                  row.metadata,
-                  row.http_status,
-                );
-                return humanLines([
-                  ["URL", row.raw_url],
-                  ["HTTP", row.http_status],
-                  ["Outcome", row.outcome],
-                  ["Final URL", row.final_url],
+            <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+              {report.description}
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-3">
+            <CopyButtons
+              size="icon"
+              {...webCopy({
+                kind: "web-crawl-report",
+                label: `${report.label} report`,
+                description:
+                  "This crawl report's identity and current result counts (row data is copyable from the table below).",
+                surface: `Crawl report — ${report.label} — session ${crawlId}`,
+                data: {
+                  report_key: report.key,
+                  report_label: report.label,
+                  report_source: report.source,
+                  session_id: crawlId,
+                  loaded_rows: query.data?.rows.length ?? 0,
+                  total_rows: query.data?.total ?? 0,
+                  evidence_notice: evidenceNotice,
+                },
+                lines: [
+                  ["Report", report.label],
+                  ["Session", crawlId],
+                  ["Site", site.root_url],
+                  ["Rows", query.data?.total ?? 0],
+                  ["Loaded", query.data?.rows.length ?? 0],
+                  ["Notice", evidenceNotice],
+                ],
+                attributes: {
+                  session_id: crawlId,
+                  site_id: site.id,
+                  report_key: report.key,
+                },
+              })}
+            />
+            {reportKey === "content" ? (
+              <div
+                role="tablist"
+                aria-label="Content report view"
+                className="flex overflow-hidden rounded-md border border-border"
+              >
+                {(
                   [
-                    "Redirect chain",
-                    !FETCHED_OUTCOMES.has(row.outcome)
-                      ? null
-                      : !chain.recorded
-                        ? "not recorded (pre-hop-capture crawl)"
-                        : chain.redirectCount === 0
-                          ? null
-                          : chain.hops
-                              .map((hop) => `${hop.status ?? "?"} ${hop.url}`)
-                              .join(" → "),
-                  ],
-                  ["Chain finding", chain.issue],
-                  ["Depth", row.depth],
-                  ["Reason", row.reason],
-                ]);
-              },
-              rowAttributes: (row) => ({
-                crawl_url_id: row.id,
-                session_id: crawlId,
-                site_id: site.id,
-              }),
-              listAttributes: () => ({
-                session_id: crawlId,
-                site_id: site.id,
-                report: reportKey,
-                total_matching: urls.data?.total ?? 0,
-              }),
-            }}
-            detail={{
-              title: (row) => row.raw_url,
-              description: (row) =>
-                `${row.http_status ?? "No response"} · ${row.outcome}`,
-            }}
-            emptyState={{
-              icon: <FileSearch className="h-8 w-8 text-muted-foreground" />,
-              title: "No response records",
-              description:
-                "The crawl did not persist encountered URL outcomes.",
-            }}
-          />
-        ) : (
-          <MatrxDataTable<CrawlSnapshotReportRow>
-            data={snapshotRows}
-            columns={snapshotReportColumns(reportKey, sitePath, canonicalLookup)}
-            getRowId={(row) => row.id}
-            isLoading={snapshots.isLoading}
-            isFetching={snapshots.isFetching}
-            query={{
-              mode: "controlled",
-              state: table.state,
-              totalItems: snapshots.data?.total ?? 0,
-              onStateChange: table.onStateChange,
-            }}
-            toolbar={{
-              searchPlaceholder: `Search URLs in ${report.label.toLowerCase()}…`,
-            }}
-            copy={{
-              label: report.shortLabel,
-              listLabel: `${report.label} report`,
-              location: webLocation(`${report.label} — session ${crawlId}`),
-              rowKind: `web-crawl-report-${report.key}`,
-              listKind: `web-crawl-report-${report.key}-list`,
-              rowDescription: `One page in the crawl's ${report.label.toLowerCase()} report.`,
-              listDescription: `The currently loaded ${report.label.toLowerCase()} rows, respecting query state.`,
-              humanRow: (row) =>
-                humanLines(snapshotHumanLines(reportKey, row, canonicalLookup)),
-              rowAttributes: (row) => ({
-                snapshot_id: row.id,
-                page_id: row.pageId,
-                session_id: crawlId,
-                site_id: site.id,
-                report: reportKey,
-              }),
-              listAttributes: () => ({
-                session_id: crawlId,
-                site_id: site.id,
-                report: reportKey,
-                total_matching: snapshots.data?.total ?? 0,
-              }),
-            }}
-            detail={{
-              title: (row) => row.url,
-              description: (row) =>
-                `${row.httpStatus ?? "No HTTP status"} · ${report.label}`,
-            }}
-            emptyState={{
-              icon: <FileSearch className="h-8 w-8 text-muted-foreground" />,
-              title: `No ${report.label.toLowerCase()} data`,
-              description:
-                "This report is populated from immutable page snapshots produced by the crawl.",
-            }}
-          />
-        )}
-      </div>
-    </main>
+                    ["pages", "Pages"],
+                    ["duplicates", "Duplicates"],
+                  ] as const
+                ).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    role="tab"
+                    aria-selected={contentView === value}
+                    onClick={() => setContentView(value)}
+                    className={`px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                      contentView === value
+                        ? "bg-accent text-foreground"
+                        : "bg-background text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+            <label className="flex shrink-0 items-center gap-2 text-[11px] text-muted-foreground">
+              Report
+              <select
+                value={reportKey}
+                onChange={(event) =>
+                  router.push(
+                    marketingRoutes.crawlReport(
+                      site.brand_id,
+                      site.id,
+                      crawlId,
+                      event.target.value,
+                    ),
+                  )
+                }
+                className="h-8 rounded-md border border-border bg-background px-2 text-xs text-foreground"
+              >
+                {CRAWL_REPORTS.map((candidate) => (
+                  <option key={candidate.key} value={candidate.key}>
+                    {candidate.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        </section>
+        {evidenceNotice ? (
+          <div className="flex shrink-0 items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2">
+            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+            <p className="text-[11px] text-foreground">{evidenceNotice}</p>
+          </div>
+        ) : null}
+        <div className="min-h-0 flex-1">
+          {showDuplicates ? (
+            <DuplicateClustersPanel crawlId={crawlId} />
+          ) : query.isError ? (
+            <QueryError
+              error={query.error}
+              onRetry={() => void query.refetch()}
+            />
+          ) : isResponseReport ? (
+            <MatrxDataTable<CrawlUrl>
+              data={urls.data?.rows ?? []}
+              columns={responseColumns(sitePath)}
+              getRowId={(row) => row.id}
+              isLoading={urls.isLoading}
+              isFetching={urls.isFetching}
+              query={{
+                mode: "controlled",
+                state: table.state,
+                totalItems: urls.data?.total ?? 0,
+                onStateChange: table.onStateChange,
+              }}
+              toolbar={{
+                searchPlaceholder:
+                  "Search encountered, final URL, or failure reason…",
+              }}
+              copy={{
+                label: "Response record",
+                listLabel: "Response code report",
+                location: webLocation(`Response codes — session ${crawlId}`),
+                rowKind: "web-crawl-response",
+                listKind: "web-crawl-response-report",
+                rowDescription:
+                  "One URL outcome from the crawl response-code report.",
+                listDescription:
+                  "The currently loaded response-code rows, respecting query state.",
+                humanRow: (row) => {
+                  const chain = summarizeRedirectChain(
+                    row.metadata,
+                    row.http_status,
+                  );
+                  return humanLines([
+                    ["URL", row.raw_url],
+                    ["HTTP", row.http_status],
+                    ["Outcome", row.outcome],
+                    ["Final URL", row.final_url],
+                    [
+                      "Redirect chain",
+                      !FETCHED_OUTCOMES.has(row.outcome)
+                        ? null
+                        : !chain.recorded
+                          ? "not recorded (pre-hop-capture crawl)"
+                          : chain.redirectCount === 0
+                            ? null
+                            : chain.hops
+                                .map((hop) => `${hop.status ?? "?"} ${hop.url}`)
+                                .join(" → "),
+                    ],
+                    ["Chain finding", chain.issue],
+                    ["Depth", row.depth],
+                    ["Reason", row.reason],
+                  ]);
+                },
+                rowAttributes: (row) => ({
+                  crawl_url_id: row.id,
+                  session_id: crawlId,
+                  site_id: site.id,
+                }),
+                listAttributes: () => ({
+                  session_id: crawlId,
+                  site_id: site.id,
+                  report: reportKey,
+                  total_matching: urls.data?.total ?? 0,
+                }),
+              }}
+              detail={{
+                title: (row) => row.raw_url,
+                description: (row) =>
+                  `${row.http_status ?? "No response"} · ${row.outcome}`,
+              }}
+              emptyState={{
+                icon: <FileSearch className="h-8 w-8 text-muted-foreground" />,
+                title: "No response records",
+                description:
+                  "The crawl did not persist encountered URL outcomes.",
+              }}
+            />
+          ) : isLinkReport ? (
+            <MatrxDataTable<InspectionLinkRow>
+              data={brokenLinks.data?.rows ?? []}
+              columns={brokenLinkColumns(site.brand_id, site.id)}
+              getRowId={(row) => row.id}
+              isLoading={brokenLinks.isLoading || linkStatusEvidence.isLoading}
+              isFetching={brokenLinks.isFetching}
+              query={{
+                mode: "controlled",
+                state: table.state,
+                totalItems: brokenLinks.data?.total ?? 0,
+                onStateChange: table.onStateChange,
+              }}
+              toolbar={{
+                searchPlaceholder: "Search target, anchor, or rel…",
+              }}
+              copy={{
+                label: "Broken link",
+                listLabel: "Broken links report",
+                location: webLocation(`Broken links — session ${crawlId}`),
+                rowKind: "web-crawl-broken-link",
+                listKind: "web-crawl-broken-links-report",
+                rowDescription:
+                  "One broken link and the source page that contains it.",
+                listDescription:
+                  "The currently loaded broken links, respecting query state.",
+                humanRow: (row) =>
+                  humanLines([
+                    ["Source page", row.source_page?.url ?? row.source_page_id],
+                    ["Broken target", row.target_url],
+                    [
+                      "HTTP",
+                      row.http_status === 0 ? "No response" : row.http_status,
+                    ],
+                    ["Scope", row.is_internal ? "Internal" : "External"],
+                    ["Anchor text", row.anchor_text],
+                    ["Rel", row.rel],
+                  ]),
+                rowAttributes: (row) => ({
+                  link_edge_id: row.id,
+                  source_page_id: row.source_page_id,
+                  target_page_id: row.target_page_id,
+                  session_id: crawlId,
+                  site_id: site.id,
+                }),
+                listAttributes: () => ({
+                  session_id: crawlId,
+                  site_id: site.id,
+                  report: reportKey,
+                  total_matching: brokenLinks.data?.total ?? 0,
+                }),
+              }}
+              detail={{
+                title: (row) => row.target_url,
+                description: (row) =>
+                  `${row.http_status === 0 ? "No response" : row.http_status} · from ${row.source_page?.url ?? row.source_page_id}`,
+              }}
+              emptyState={{
+                icon: <FileSearch className="h-8 w-8 text-muted-foreground" />,
+                title:
+                  linkStatusEvidence.data === "missing"
+                    ? "Link status was not recorded"
+                    : linkStatusEvidence.data === "no-links"
+                      ? "No links captured"
+                      : "No broken links found",
+                description:
+                  linkStatusEvidence.data === "missing"
+                    ? "This crawl ran before link-status evidence existed — re-crawl the site to populate it."
+                    : linkStatusEvidence.data === "no-links"
+                      ? "This crawl did not capture any link edges to verify."
+                      : "Every checked link in this crawl returned a healthy response.",
+              }}
+            />
+          ) : (
+            <MatrxDataTable<CrawlSnapshotReportRow>
+              data={snapshotRows}
+              columns={snapshotReportColumns(
+                reportKey,
+                sitePath,
+                canonicalLookup,
+              )}
+              getRowId={(row) => row.id}
+              isLoading={snapshots.isLoading}
+              isFetching={snapshots.isFetching}
+              query={{
+                mode: "controlled",
+                state: table.state,
+                totalItems: snapshots.data?.total ?? 0,
+                onStateChange: table.onStateChange,
+              }}
+              toolbar={{
+                searchPlaceholder: `Search URLs in ${report.label.toLowerCase()}…`,
+              }}
+              copy={{
+                label: report.shortLabel,
+                listLabel: `${report.label} report`,
+                location: webLocation(`${report.label} — session ${crawlId}`),
+                rowKind: `web-crawl-report-${report.key}`,
+                listKind: `web-crawl-report-${report.key}-list`,
+                rowDescription: `One page in the crawl's ${report.label.toLowerCase()} report.`,
+                listDescription: `The currently loaded ${report.label.toLowerCase()} rows, respecting query state.`,
+                humanRow: (row) =>
+                  humanLines(
+                    snapshotHumanLines(reportKey, row, canonicalLookup),
+                  ),
+                rowAttributes: (row) => ({
+                  snapshot_id: row.id,
+                  page_id: row.pageId,
+                  session_id: crawlId,
+                  site_id: site.id,
+                  report: reportKey,
+                }),
+                listAttributes: () => ({
+                  session_id: crawlId,
+                  site_id: site.id,
+                  report: reportKey,
+                  total_matching: snapshots.data?.total ?? 0,
+                }),
+              }}
+              detail={{
+                title: (row) => row.url,
+                description: (row) =>
+                  `${row.httpStatus ?? "No HTTP status"} · ${report.label}`,
+              }}
+              emptyState={{
+                icon: <FileSearch className="h-8 w-8 text-muted-foreground" />,
+                title: `No ${report.label.toLowerCase()} data`,
+                description:
+                  "This report is populated from immutable page snapshots produced by the crawl.",
+              }}
+            />
+          )}
+        </div>
+      </main>
     </CrawlSurfaceProvider>
   );
 }

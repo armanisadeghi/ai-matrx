@@ -1,56 +1,53 @@
-// Database types for message templates system
+import type { Database } from "@/types/database.types";
+import { type JsonObject, isJsonObject } from "@/types/json";
 
-export type MessageRole = 'user' | 'system' | 'assistant' | 'tool';
+type MessageTemplateTable = Database["agent"]["Tables"]["message_template"];
 
-export interface MessageTemplateDB {
-    id: string;
-    label: string | null;
-    content: string | null;
-    role: MessageRole | null;
-    metadata: Record<string, any> | null;
-    /** Canonical platform visibility enum — replaced the legacy `is_public`
-     *  boolean when agent.message_template was certified (2026-08-13). */
-    visibility: string;
-    created_by: string | null;
-    created_at: string;
-    updated_at: string | null;
-    tags: string[] | null;
-}
+export type MessageTemplateDB = MessageTemplateTable["Row"];
+export type MessageTemplateUpdate = MessageTemplateTable["Update"];
+export type MessageTemplateEditorSource = Pick<
+  MessageTemplateDB,
+  "id" | "label" | "content" | "metadata" | "role" | "tags" | "visibility"
+>;
+export type MessageRole = NonNullable<MessageTemplateDB["role"]>;
+export type MessageVisibility = MessageTemplateDB["visibility"];
 
-// Input types for creating/updating records
-export interface CreateMessageTemplateInput {
-    label: string;
-    content: string;
-    role: MessageRole;
-    metadata?: Record<string, any>;
-    visibility?: string;
-    tags?: string[];
-}
+export type CreateMessageTemplateInput = Pick<
+  MessageTemplateTable["Insert"],
+  "label" | "content" | "role" | "tags"
+> & {
+  label: string;
+  content: string;
+  role: MessageRole;
+  metadata?: JsonObject;
+  visibility?: MessageVisibility;
+};
 
-export interface UpdateMessageTemplateInput extends Partial<CreateMessageTemplateInput> {
-    id: string;
-}
+export type UpdateMessageTemplateInput = Partial<CreateMessageTemplateInput> & {
+  id: string;
+};
 
-// Query options
 export interface MessageTemplateQueryOptions {
-    role?: MessageRole;
-    visibility?: string;
-    search?: string;
-    tags?: string[];
-    limit?: number;
-    offset?: number;
-    order_by?: 'label' | 'created_at' | 'updated_at' | 'role';
-    order_direction?: 'asc' | 'desc';
+  role?: MessageRole;
+  visibility?: MessageVisibility;
+  search?: string;
+  tags?: string[];
+  limit?: number;
+  offset?: number;
+  order_by?: "label" | "created_at" | "updated_at" | "role";
+  order_direction?: "asc" | "desc";
 }
 
-// API response types
 export interface MessageTemplatesResponse {
-    templates: MessageTemplateDB[];
-    total: number;
+  templates: MessageTemplateDB[];
+  total: number;
 }
 
-// Grouped by role
 export interface TemplatesByRole {
-    [role: string]: MessageTemplateDB[];
+  [role: string]: MessageTemplateDB[];
 }
 
+/** Narrow only the JSONB field; the generated row remains the source of truth. */
+export function readMessageTemplateMetadata(value: unknown): JsonObject {
+  return isJsonObject(value) ? value : {};
+}

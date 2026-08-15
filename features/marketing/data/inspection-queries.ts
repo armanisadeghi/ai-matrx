@@ -129,6 +129,7 @@ async function listLinks(
   crawlId: string | null,
   state: MatrxDataTableQueryState,
   signal?: AbortSignal,
+  brokenOnly = false,
 ): Promise<InspectionPagedResult<InspectionLinkRow>> {
   const { from, to } = rangeFor(state);
   const sortColumns = {
@@ -182,30 +183,71 @@ async function listLinks(
     query = query.lte("http_status", httpStatus.max);
   if (position?.min !== undefined) query = query.gte("position", position.min);
   if (position?.max !== undefined) query = query.lte("position", position.max);
+  if (brokenOnly) query = query.or("http_status.eq.0,http_status.gte.400");
   query = query.order(sortColumn, { ascending, nullsFirst: false });
   query = query.order("id", { ascending });
   const abortSignal = signal ?? new AbortController().signal;
-  const [response, countResponse] = await Promise.all([
+  const countPromise = brokenOnly
+    ? Promise.all([
+        db
+          .rpc("count_link_edges", {
+            p_site_id: siteId,
+            p_session_id: crawlId ?? undefined,
+            p_search: search || undefined,
+            p_target_url: targetUrl ?? undefined,
+            p_anchor_text: anchorText ?? undefined,
+            p_rel: rel ?? undefined,
+            p_is_internal: internal ?? undefined,
+            p_http_status_min: 0,
+            p_http_status_max: 0,
+            p_position_min: position?.min,
+            p_position_max: position?.max,
+          })
+          .abortSignal(abortSignal),
+        db
+          .rpc("count_link_edges", {
+            p_site_id: siteId,
+            p_session_id: crawlId ?? undefined,
+            p_search: search || undefined,
+            p_target_url: targetUrl ?? undefined,
+            p_anchor_text: anchorText ?? undefined,
+            p_rel: rel ?? undefined,
+            p_is_internal: internal ?? undefined,
+            p_http_status_min: 400,
+            p_position_min: position?.min,
+            p_position_max: position?.max,
+          })
+          .abortSignal(abortSignal),
+      ]).then(
+        ([unreachable, httpErrors]) =>
+          assertData(unreachable.data, unreachable.error) +
+          assertData(httpErrors.data, httpErrors.error),
+      )
+    : db
+        .rpc("count_link_edges", {
+          p_site_id: siteId,
+          p_session_id: crawlId ?? undefined,
+          p_search: search || undefined,
+          p_target_url: targetUrl ?? undefined,
+          p_anchor_text: anchorText ?? undefined,
+          p_rel: rel ?? undefined,
+          p_is_internal: internal ?? undefined,
+          p_http_status_min: httpStatus?.min,
+          p_http_status_max: httpStatus?.max,
+          p_position_min: position?.min,
+          p_position_max: position?.max,
+        })
+        .abortSignal(abortSignal)
+        .then((countResponse) =>
+          assertData(countResponse.data, countResponse.error),
+        );
+  const [response, total] = await Promise.all([
     query.range(from, to).abortSignal(abortSignal),
-    db
-      .rpc("count_link_edges", {
-        p_site_id: siteId,
-        p_session_id: crawlId ?? undefined,
-        p_search: search || undefined,
-        p_target_url: targetUrl ?? undefined,
-        p_anchor_text: anchorText ?? undefined,
-        p_rel: rel ?? undefined,
-        p_is_internal: internal ?? undefined,
-        p_http_status_min: httpStatus?.min,
-        p_http_status_max: httpStatus?.max,
-        p_position_min: position?.min,
-        p_position_max: position?.max,
-      })
-      .abortSignal(abortSignal),
+    countPromise,
   ]);
   return {
     rows: assertData(response.data, response.error),
-    total: assertData(countResponse.data, countResponse.error),
+    total,
   };
 }
 
@@ -226,6 +268,16 @@ export function listCrawlLinks(
   signal?: AbortSignal,
 ) {
   return listLinks(siteId, crawlId, state, signal);
+}
+
+/** Broken (no response, 4xx, or 5xx) link edges from one crawl session. */
+export function listBrokenCrawlLinks(
+  siteId: string,
+  crawlId: string,
+  state: MatrxDataTableQueryState,
+  signal?: AbortSignal,
+) {
+  return listLinks(siteId, crawlId, state, signal, true);
 }
 
 // The graph aggregates duplicate edges client-side, so the cap bounds payload
@@ -375,7 +427,11 @@ export async function listCrawlFingerprints(
   const abortSignal = signal ?? new AbortController().signal;
   const rows: CrawlFingerprintQueryRow[] = [];
   let total = 0;
-  for (let from = 0; from < FINGERPRINT_ROW_CAP; from += FINGERPRINT_PAGE_SIZE) {
+  for (
+    let from = 0;
+    from < FINGERPRINT_ROW_CAP;
+    from += FINGERPRINT_PAGE_SIZE
+  ) {
     const to = Math.min(from + FINGERPRINT_PAGE_SIZE, FINGERPRINT_ROW_CAP) - 1;
     const response = await db
       .from("snapshot")
@@ -424,7 +480,8 @@ export async function listCrawlCanonicalMap(
     from < CANONICAL_MAP_ROW_CAP;
     from += CANONICAL_MAP_PAGE_SIZE
   ) {
-    const to = Math.min(from + CANONICAL_MAP_PAGE_SIZE, CANONICAL_MAP_ROW_CAP) - 1;
+    const to =
+      Math.min(from + CANONICAL_MAP_PAGE_SIZE, CANONICAL_MAP_ROW_CAP) - 1;
     const response = await db
       .from("snapshot")
       .select(CANONICAL_MAP_SELECT, from === 0 ? { count: "exact" } : undefined)
@@ -468,3 +525,29 @@ export async function crawlHasChainEvidence(
   return assertData(response.data, response.error).length > 0;
 }
 
+/** Whether this crawl contains any derived link-status evidence at all. */
+export async function crawlHasLinkStatusEvidence(
+  siteId: string,
+  crawlId: string,
+  signal?: AbortSignal,
+): Promise<"available" | "missing" | "no-links"> {
+  const db = await authenticatedWebDb(supabase);
+  const abortSignal = signal ?? new AbortController().signal;
+  const base = () =>
+    db
+      .from("link_edge")
+      .select("id, snapshot:snapshot!inner(session_id)")
+      .eq("site_id", siteId)
+      .eq("snapshot.session_id", crawlId)
+      .is("deleted_at", null)
+      .limit(1)
+      .abortSignal(abortSignal);
+  const [anyEdge, statusEdge] = await Promise.all([
+    base(),
+    base().not("http_status", "is", null),
+  ]);
+  const anyRows = assertData(anyEdge.data, anyEdge.error);
+  const statusRows = assertData(statusEdge.data, statusEdge.error);
+  if (statusRows.length > 0) return "available";
+  return anyRows.length > 0 ? "missing" : "no-links";
+}

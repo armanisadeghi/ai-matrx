@@ -20,7 +20,7 @@ Format: `- [ ] <P#> | <file-or-route> | <one line> | <date>`
 - [ ] P4 | `.matrx/patrol-reports/light-dark-integrity-exception-review.md` | 46 active files / 100 raw-token lines remain proposed fixed-palette exceptions after the 2026-08-14 full reconciliation; none is approved and every active proposal needs Arman's UI decision (5 applet files / 9 lines resolved by deletion; WebpageBody resolved before this run) | verified-open | 2026-08-14
 - [x] P4 | `features/applet/**` (ModernGlass.tsx, StyledComponents.tsx) | moot — the whole applet/app-builder feature was deleted 2026-08-13 (Arman); both files are gone | resolved-by-deletion | 2026-08-13
 - [x] P7 | see `.matrx/patrol-reports/no-browser-dialogs.md` | prior manual findings were resolved before the 2026-08-13 patrol by canonical `confirm({...})` and `TextInputDialog` replacements in `460ff2dcc`; the full scope-aware detector is clean in `v0.4.561` | resolved-before-run | 2026-08-13
-- [ ] P8 | see `.matrx/patrol-reports/real-loading-states.md` | full pass verified 83 findings: 3 exact Suspense fallbacks auto-fixed and CERTIFIED, 12 compact repairs await item-scoped approval, and 68 mapping/skeleton cases remain open with missing evidence | fixed-certified; approval-pending | 2026-08-14
+- [ ] P8 | see `.matrx/patrol-reports/real-loading-states.md` | full pass verified 83 findings: 3 exact Suspense fallbacks are delivered, the 12 compact contextual-loader repairs are implemented under standing authority and awaiting independent certification, and 68 mapping/skeleton cases remain open with missing evidence | delivered; certification-pending; no-human-approval | 2026-08-15
 
 ## Cleared
 

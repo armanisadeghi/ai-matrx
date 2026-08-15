@@ -41,7 +41,7 @@ vision: []
 
 ## Live board and current line
 
-Live Supabase count on 2026-08-15: **75 verified / 90 partial / 1 stub / 7 unregistered-active = 173 active**. The seven unregistered-active rows are deliberate non-web contracts: `matrx-default/{default,basic-content-display,basic-editor}`, `chrome-extension/{assistant,pilot}`, and `matrx-local/desktop`.
+Live count after the `matrx-public/p` promotion on 2026-08-15: **75 verified / 90 partial / 1 stub / 7 unregistered-active = 173 active**. The seven unregistered-active rows are deliberate non-web contracts: `matrx-default/{default,basic-content-display,basic-editor}`, `chrome-extension/{assistant,pilot}`, and `matrx-local/desktop`.
 
 Registration is complete. Promotion is the main remaining line.
 

@@ -138,9 +138,12 @@ me” and “take me off your list”, then the service-role-only `crm.honor_rep
 sets permanent suppression and writes one idempotent `unsubscribed` event. The detector and write
 are live now; only provider reply delivery remains in G6.
 
-`findUnresolvedMergeFields()` implements the merge-field rule: **an unresolved variable is a
-refusal, never an empty string.** "Hi ," is the most recognizable automated-spam tell there is, and
-it is a rendering bug we can make impossible.
+`findUnresolvedMergeFields()` gives the browser an early warning. The authoritative rule lives in
+aidream's generic `services/message_templates` renderer: **an unresolved, null, blank, empty, or
+malformed variable is a refusal, never an empty string.** Phase 4 renders against the real target,
+fingerprints the exact preview for approval, and renders again before the only send primitive.
+"Hi ," is the most recognizable automated-spam tell there is, and it is now structurally
+impossible at the send boundary.
 
 ---
 

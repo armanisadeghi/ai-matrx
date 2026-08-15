@@ -18484,6 +18484,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/outreach/single/drafts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Message Draft
+         * @description Render a real target and persist the exact preview as a planned interaction.
+         */
+        post: operations["create_message_draft_outreach_single_drafts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/outreach/single/drafts/{draft_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve Message Draft */
+        post: operations["approve_message_draft_outreach_single_drafts__draft_id__approve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/outreach/single/drafts/{draft_id}/send": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send Message Draft */
+        post: operations["send_message_draft_outreach_single_drafts__draft_id__send_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -52801,6 +52855,160 @@ export interface components {
             /** Error Message */
             error_message?: string | null;
         };
+        /** ApprovalDecision */
+        ApprovalDecision: {
+            /** Trust Stage */
+            trust_stage: number;
+            /**
+             * Requirement
+             * @enum {string}
+             */
+            requirement: "every_message" | "sampled" | "none";
+            /** Required For This Message */
+            required_for_this_message: boolean;
+            /** Sample Percent */
+            sample_percent: number;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "organization_policy" | "safe_default";
+        };
+        /** CreateDraftRequest */
+        CreateDraftRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Outreach List Id */
+            outreach_list_id: string;
+            /** Member Id */
+            member_id: string;
+            /** Template Id */
+            template_id: string;
+            /** Contact Point Id */
+            contact_point_id?: string | null;
+            /** Reputation Case Id */
+            reputation_case_id?: string | null;
+            /** Backlink Id */
+            backlink_id?: string | null;
+        };
+        /**
+         * DraftActionRequest
+         * @description Typed empty body for approve/send actions in the generated contract.
+         */
+        DraftActionRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+        };
+        /** DraftResponse */
+        DraftResponse: {
+            /** Id */
+            id: string;
+            /** Status */
+            status: string;
+            /** Outreach List Id */
+            outreach_list_id: string;
+            /** Member Id */
+            member_id: string;
+            /** Party Id */
+            party_id: string;
+            /** Party Name */
+            party_name: string;
+            /** Contact Point Id */
+            contact_point_id: string;
+            /** Medium Id */
+            medium_id: string;
+            /** Recipient */
+            recipient: string;
+            /** Identity Id */
+            identity_id: string;
+            /** From Address */
+            from_address: string;
+            /** Template Id */
+            template_id: string;
+            /** Subject */
+            subject: string;
+            /** Body */
+            body: string;
+            /** Variables */
+            variables: string[];
+            eligibility: components["schemas"]["EligibilityVerdict"];
+            approval: components["schemas"]["ApprovalDecision"];
+            /** Approved At */
+            approved_at?: string | null;
+            /** Approved By */
+            approved_by?: string | null;
+            /** Sent At */
+            sent_at?: string | null;
+            /** Provider Message Id */
+            provider_message_id?: string | null;
+        };
+        /** EligibilityBlock */
+        EligibilityBlock: {
+            /** Code */
+            code: string;
+            /** Message */
+            message: string;
+            /** Fix */
+            fix: string;
+        };
+        /** EligibilityNotice */
+        EligibilityNotice: {
+            /** Code */
+            code: string;
+            /** Message */
+            message: string;
+            /** Fix */
+            fix?: string | null;
+        };
+        /** EligibilityVerdict */
+        EligibilityVerdict: {
+            /** Allowed */
+            allowed: boolean;
+            /** Lane */
+            lane?: string | null;
+            /** Blocks */
+            blocks?: components["schemas"]["EligibilityBlock"][];
+            /** Warnings */
+            warnings?: components["schemas"]["EligibilityNotice"][];
+            /** Resolved */
+            resolved?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+        };
+        /** SendResponse */
+        SendResponse: {
+            draft: components["schemas"]["DraftResponse"];
+            /** Interaction Id */
+            interaction_id: string;
+            /** Provider Message Id */
+            provider_message_id: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -85853,6 +86061,109 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LabelMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_message_draft_outreach_single_drafts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateDraftRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DraftResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    approve_message_draft_outreach_single_drafts__draft_id__approve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                draft_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DraftActionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DraftResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    send_message_draft_outreach_single_drafts__draft_id__send_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                draft_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DraftActionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SendResponse"];
                 };
             };
             /** @description Validation Error */

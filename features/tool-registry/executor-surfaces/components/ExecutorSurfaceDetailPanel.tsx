@@ -27,6 +27,7 @@ import {
 import { AddToolBindingDialog } from "@/features/tool-registry/executor-surfaces/components/AddToolBindingDialog";
 import { SourceKindBadge } from "@/features/tool-call-visualization/admin/mcp-tools/source-kind-badge";
 import { AiToolRef } from "@/components/official/entity-ref/AiIdentityRef";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 
 interface Props {
   /**
@@ -261,9 +262,14 @@ export function ExecutorSurfaceDetailPanel({
         />
         {bindings.length === 0 ? (
           <EmptyState>
-            {loading
-              ? "Loading…"
-              : "No tools bound to this executor yet. Click 'Add tool' above to bind one."}
+            {loading ? (
+              <SuspenseLoader
+                centered={false}
+                message="Loading tool bindings…"
+              />
+            ) : (
+              "No tools bound to this executor yet. Click 'Add tool' above to bind one."
+            )}
           </EmptyState>
         ) : (
           <BindingList
