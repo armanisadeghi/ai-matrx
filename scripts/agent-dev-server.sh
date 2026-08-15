@@ -24,7 +24,27 @@ READY="$BASE.ready"
 JAR="$BASE.jar"
 LOCK="$BASE.lock"
 FAILED="$BASE.failed"
-MAX_RSS_GB="${MATRX_PREVIEW_MAX_RSS_GB:-8}"
+# Runaway watchdog, NOT a budget. Raised 8 -> 96 GB on 2026-08-15, MEASURED.
+#
+# 8 GB did not catch runaways; it guaranteed that NO agent could ever verify
+# anything in a browser. This app's dev server needs far more than that just to
+# compile its first route, so the cap fired every single time and left the
+# shared server STOPPED with "no automatic restart" — the standing "OOM dev
+# server" blocker, and the reason multiple agents in one session reported that
+# browser verification was impossible.
+#
+# The real numbers, measured on this host: at an 8 GB cap it died compiling `/`;
+# at 24 GB it died the same way; with the cap lifted it SERVED every route
+# (/login 200, /marketing/keyword-research 200, auth redirects correct) and
+# settled at 58.6 GB RSS for the process tree. That is consistent with this
+# repo's documented build-graph weight (production builds OOM'd near 60 GB and
+# ship as three separate Vercel builds; turbopackMemoryLimit is 40 GiB).
+#
+# 96 GB is ~1.6x the observed peak — enough headroom for a cold compile of a
+# heavier route, still well under the host's 256 GB, and still low enough that a
+# genuine leak trips it. If you raise this again, MEASURE first and update these
+# numbers; do not nudge it blind.
+MAX_RSS_GB="${MATRX_PREVIEW_MAX_RSS_GB:-96}"
 NO_PROGRESS_SEC="${MATRX_PREVIEW_NO_PROGRESS_SEC:-300}"
 
 log() { printf '[preview] %s\n' "$1"; }
@@ -146,6 +166,16 @@ root, log_path, distdir, port = sys.argv[1:]
 env = os.environ.copy()
 env["NODE_OPTIONS"] = "--dns-result-order=ipv4first"
 env["NEXT_DISTDIR"] = distdir
+# THE PROFILE IS THE MEMORY FIX, not the RSS cap. With no MATRX_PROFILE the
+# config falls back to `full` — every route group at once — which is the exact
+# profile that OOMs PRODUCTION (it is why the app ships as three separate
+# Vercel builds). Measured 2026-08-15: `full` climbed past 24 GB still
+# compiling its FIRST route and never served one, so browser verification
+# failed for every agent and the watchdog left the shared server stopped.
+# `core` = (core) + (admin) + (transitional) + (public) — everything normally
+# verified; only (dev)/demos is parked. Override for a demos task:
+#   MATRX_PREVIEW_PROFILE=user pnpm preview:start
+env["MATRX_PROFILE"] = os.environ.get("MATRX_PREVIEW_PROFILE", "core")
 with open(log_path, "ab", buffering=0) as log:
     process = subprocess.Popen(
         [os.path.join(root, "node_modules/.bin/next"), "dev", "-p", port],
@@ -177,6 +207,7 @@ PY
 
   log "started the shared managed preview: http://localhost:$PORT (pid $pid)"
   log "it is tracked, reused by Claude and Codex, and may take 30–90s to compile"
+  log "profile=${MATRX_PREVIEW_PROFILE:-core} (demos routes are PARKED — for /demos/* use: MATRX_PREVIEW_PROFILE=user pnpm preview:start)"
   log "logs: $LOG"
 }
 

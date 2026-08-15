@@ -4,9 +4,12 @@ Every rule here was verified live on 2026-08-09 against production and localhost
 
 ## THE ONE DEV SERVER LAW
 
-**This machine has 16GB. Two Next dev servers is a reliable hard crash.** The cap is **ONE dev server, machine-wide** — shared by you, Arman, and Codex.
+**One Next dev server, machine-wide** — shared by you, Arman, and Codex. A second one is a reliable hard crash.
+
+**This server is HUGE by nature — measured 2026-08-15: ~31 GB serving `(core)` routes, 58.6 GB after a cold compile across several.** That is consistent with the repo's documented build weight (production OOM'd near 60 GB and ships as three separate Vercel builds; `turbopackMemoryLimit` is 40 GiB). The host has **256 GB**, so this is normal, not a leak. (This line previously claimed the machine had 16 GB — false, and it is why the watchdog was set to 8 GB, which killed the server on EVERY start and made browser verification impossible for every agent. If you change the cap in `scripts/agent-dev-server.sh`, measure first.)
 
 - **Start or reuse it only with `pnpm preview:start`** → port **3001**, distdir `.next-preview`. The command is provider-neutral, detached, and tracked.
+- **It runs `MATRX_PROFILE=core`** — `(core)` + `(admin)` + `(transitional)` + `(public)`. `(dev)`/`/demos/*` routes are **parked** and will 404. To verify a demo: `MATRX_PREVIEW_PROFILE=user pnpm preview:start`. The active profile is printed on every start.
 - **Never use named `preview_start` or raw `pnpm dev` / `npm run dev`.** Those paths create untracked server trees.
 - A running server (Arman's, Claude's, or Codex's) is **reused**, never duplicated. `pnpm preview:status` shows the process; `pnpm preview:stop` stops the managed preview.
 - `pnpm setup:agent-harness` installs Claude/Codex guards. Codex requires one trust review for a new or changed hook via `/hooks`; this trusts the guard, not each server launch.
