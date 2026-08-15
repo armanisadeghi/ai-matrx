@@ -461,6 +461,33 @@ the footer. **Before the first customer send, a qualified compliance/legal revie
 this is not something an agent should infer from memory, and the AUP and ToS must be written by
 someone qualified.** That is the one piece of this section that cannot be closed in code.
 
+### ✅ BUILT AND LIVE 2026-08-15 — the compliance layer is done; only ratification remains
+
+`migrations/crm_06_compliance.sql` (applied + ledger-recorded) · `features/crm/compliance/`
+([FEATURE.md](../../features/crm/compliance/FEATURE.md)) · `app/(public)/unsubscribe/[token]/`
+· `app/api/unsubscribe/[token]/` · shipped in **v0.4.649**.
+
+🚨 **THE ONE SEND AUTHORITY is `crm.check_send_eligibility()`** — a DB function, so a caller in
+another repo or language cannot route around it. It returns a verdict where **every block carries
+a `fix`**. Ask it before any send; never reimplement one of its checks elsewhere.
+
+Live and proven against production, not asserted:
+- **Unsubscribe** — permanent opaque token, RFC 8058 one-click POST, anonymous human page.
+  Verified end-to-end on `www.aimatrx.com`: GET renders with a **masked** address, the one-click
+  POST returns `{"ok":true}`, a retry stays 200, the recipient becomes non-contactable, and the
+  gate then blocks with `unsubscribed`. Anon **cannot** enumerate the token table (401).
+- **Jurisdiction policy** — 35 countries, **30 of which block**. Germany and Austria are hard
+  blocks; the unresearched EEA blocks by default; a generic TLD resolves to *nothing*, never a
+  default country.
+- **Circuit breaker** — trips at 0.10% complaints / 3.00% bounces (min 50 sends), pauses the
+  identity **and its campaigns**, `paused_by_kind='system'`, human-only resume.
+- **Consent provenance** on `crm.contact_medium` — the thing §5.4 warned could not be retrofitted.
+
+**What is left is not engineering.** Every jurisdiction row is `ratified_by='agent-research'`,
+which is not ratification. Counsel's answers replace them one at a time, and each ratified row is
+a market opening. Still-open engineering (MX verification, DKIM-signing the headers, reply-based
+opt-out, purchased-list detection) is named with reasons in `ENGINEERING_GAPS.md` § "Still open".
+
 ### ✅ Research pass DONE 2026-08-14 — read it before writing any send code
 
 **System-of-record: `/Users/armanisadeghi/code/common-docs/systems/outreach-compliance/`**
