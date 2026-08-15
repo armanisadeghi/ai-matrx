@@ -5,6 +5,9 @@ import { appendPatrolRunEvent, canQueuePatrolDelivery } from "./run-record";
 import { publishPatrolRunAuthority } from "./git-authority";
 import { loadPatrolRun, patrolRunPath, savePatrolRun, withPatrolRunLease } from "./storage";
 
+function value(name: string): string;
+function value(name: string, required: true): string;
+function value(name: string, required: false): string | undefined;
 function value(name: string, required = true): string | undefined {
   const index = process.argv.indexOf(`--${name}`);
   const result = index >= 0 ? process.argv[index + 1] : undefined;
@@ -14,12 +17,12 @@ function value(name: string, required = true): string | undefined {
 
 try {
   const repoRoot = resolve(value("repo", false) ?? process.cwd());
-  const patrolId = value("patrol")!;
-  const runId = value("run")!;
-  const candidateSha = value("candidate")!;
-  const preservedRef = value("authority-ref")!;
-  const actor = value("actor")!;
-  const summary = value("summary")!;
+  const patrolId = value("patrol");
+  const runId = value("run");
+  const candidateSha = value("candidate");
+  const preservedRef = value("authority-ref");
+  const actor = value("actor");
+  const summary = value("summary");
   const path = patrolRunPath(repoRoot, patrolId, runId);
   const saved = withPatrolRunLease(repoRoot, patrolId, runId, () => {
     const record = loadPatrolRun(path);
