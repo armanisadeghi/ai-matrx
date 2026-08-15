@@ -18,6 +18,14 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useDictionaryContext } from "@/features/dictionary/hooks/useDictionaryContext";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
+import {
+  dictLocation,
+  dictOwnerData,
+  dictOwnerSummary,
+} from "@/features/dictionary/format";
 import type { DictEntryDraft, DictOwner, DictSelection } from "@/features/dictionary/types";
 
 const OVERLAY_ID = "dictionarySelectorWindow";
@@ -60,6 +68,59 @@ export function DictionarySelectorWindow({ onClose, surfaceKey }: Props) {
     );
   }, [owners]);
 
+  // ── agent-copy ────────────────────────────────────────────────────────────
+  // The tier list flattened to one row shape, each carrying whether it is
+  // currently selected — the checkbox state IS what the user sees, so a payload
+  // listing tiers without it would miss the whole point of this window.
+  const isSelected = useCallback(
+    (owner: DictOwner): boolean => {
+      if (selection.all) return true;
+      if (owner.level === "user") return selection.includePersonal;
+      if (owner.level === "organization")
+        return selection.organizationIds.includes(owner.owner_id);
+      if (owner.level === "scope_type")
+        return selection.scopeTypeIds.includes(owner.owner_id);
+      return selection.scopeIds.includes(owner.owner_id);
+    },
+    [selection],
+  );
+
+  const catalogueOwners = useCallback((): DictOwner[] => {
+    if (!owners) return [];
+    return [
+      ...(owners.personal ? [owners.personal] : []),
+      ...owners.organizations,
+      ...owners.scope_types,
+      ...owners.scopes,
+    ];
+  }, [owners]);
+
+  const catalogueRows = useCallback(
+    () =>
+      catalogueOwners().map((o) => ({
+        ...dictOwnerData(o),
+        selected: isSelected(o),
+      })),
+    [catalogueOwners, isSelected],
+  );
+
+  const catalogueSummary = useCallback(() => {
+    const list = catalogueOwners();
+    const header = [
+      `Dictionary sources — ${activeCount} active term${activeCount === 1 ? "" : "s"}`,
+      `Tiers available: ${list.length} (${totalEntries} term${totalEntries === 1 ? "" : "s"} total)`,
+      `Selected: ${list.filter(isSelected).length}`,
+    ].join("\n");
+    if (list.length === 0) return `${header}\n\n(no dictionaries available)`;
+    const body = list
+      .map(
+        (o) =>
+          `[${isSelected(o) ? "x" : " "}] ${dictOwnerSummary(o).replace(/\n/g, " · ")}`,
+      )
+      .join("\n");
+    return `${header}\n\n${body}`;
+  }, [catalogueOwners, isSelected, activeCount, totalEntries]);
+
   return (
     <WindowPanel
       id={WINDOW_ID}
@@ -78,10 +139,56 @@ export function DictionarySelectorWindow({ onClose, surfaceKey }: Props) {
     >
       <ScrollArea className="h-full">
         <div className="space-y-4 p-3">
-          <p className="text-xs text-muted-foreground">
-            Choose which dictionaries apply here. The active set is merged and de-duplicated; the
-            most specific level wins on conflicts.
-          </p>
+          <div className="flex items-start gap-2">
+            <p className="flex-1 text-xs text-muted-foreground">
+              Choose which dictionaries apply here. The active set is merged and de-duplicated; the
+              most specific level wins on conflicts.
+            </p>
+            <CopyButtons
+              size="xs"
+              label="Dictionary sources"
+              className="shrink-0"
+              human={() => catalogueSummary()}
+              json={() => catalogueRows()}
+              agent={() => ({
+                kind: "dictionary-owner-catalogue",
+                location: dictLocation("Dictionary context selector"),
+                description:
+                  "Every dictionary tier this user can attach to on this surface, with which are currently selected.",
+                data: {
+                  surface_key: surfaceKey,
+                  active_terms: activeCount,
+                  selection,
+                  tiers: catalogueRows(),
+                  per_task_entries: customEntries,
+                },
+                summary: catalogueSummary(),
+                attributes: {
+                  rows: catalogueRows().length,
+                  active_terms: activeCount,
+                  available_terms: totalEntries,
+                },
+                context: { surface_key: surfaceKey },
+              })}
+            />
+            <ExportMenu
+              label="Dictionary sources"
+              className="shrink-0"
+              items={[
+                jsonExportItem(() => catalogueRows()),
+                csvExportItem(() =>
+                  catalogueRows().map((r) => ({
+                    level: r.level,
+                    name: r.name,
+                    owner_id: r.owner_id,
+                    entry_count: r.entry_count,
+                    selected: r.selected,
+                    max_inline_chars: r.max_inline_chars ?? "",
+                  })),
+                ),
+              ]}
+            />
+          </div>
 
           {/* All toggle */}
           <Row
@@ -119,6 +226,7 @@ export function DictionarySelectorWindow({ onClose, surfaceKey }: Props) {
             selectedIds={selection.organizationIds}
             disabled={selection.all}
             onToggle={(id) => toggleId("organizationIds", id)}
+            surfaceKey={surfaceKey}
           />
           <Group
             icon={<Tag className="h-4 w-4" />}
@@ -127,6 +235,7 @@ export function DictionarySelectorWindow({ onClose, surfaceKey }: Props) {
             selectedIds={selection.scopeTypeIds}
             disabled={selection.all}
             onToggle={(id) => toggleId("scopeTypeIds", id)}
+            surfaceKey={surfaceKey}
           />
           <Group
             icon={<Layers className="h-4 w-4" />}
@@ -135,6 +244,7 @@ export function DictionarySelectorWindow({ onClose, surfaceKey }: Props) {
             selectedIds={selection.scopeIds}
             disabled={selection.all}
             onToggle={(id) => toggleId("scopeIds", id)}
+            surfaceKey={surfaceKey}
           />
 
           <CustomEntriesSection
@@ -282,6 +392,7 @@ function Group({
   selectedIds,
   disabled,
   onToggle,
+  surfaceKey,
 }: {
   icon: React.ReactNode;
   title: string;
@@ -289,6 +400,7 @@ function Group({
   selectedIds: string[];
   disabled?: boolean;
   onToggle: (id: string) => void;
+  surfaceKey: string;
 }) {
   if (owners.length === 0) return null;
   const selected = new Set(selectedIds);
@@ -301,7 +413,7 @@ function Group({
         {owners.map((o) => (
           <label
             key={o.owner_id}
-            className="flex items-center gap-2.5 rounded-md border border-border px-2.5 py-1.5 cursor-pointer hover:bg-accent/20"
+            className="group/dict-tier flex items-center gap-2.5 rounded-md border border-border px-2.5 py-1.5 cursor-pointer hover:bg-accent/20"
           >
             <Checkbox
               checked={selected.has(o.owner_id)}
@@ -310,6 +422,44 @@ function Group({
             />
             <span className="flex-1 min-w-0 truncate text-sm">{o.name}</span>
             <span className="text-[11px] text-muted-foreground">{o.entry_count}</span>
+            {/*
+              A <label> activates its control on ANY descendant click, and
+              stopPropagation alone does not cancel that default — copying a
+              tier would silently toggle it in or out of the merge. preventDefault
+              on the wrapper is what actually keeps the checkbox still.
+            */}
+            <span
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+            >
+              <CopyButtons
+                size="xs"
+                label={`${o.name} dictionary`}
+                className="opacity-0 transition-opacity group-hover/dict-tier:opacity-100 focus-within:opacity-100"
+                human={() => dictOwnerSummary(o)}
+                json={() => dictOwnerData(o)}
+                agent={() => ({
+                  kind: "dictionary-owner",
+                  location: dictLocation("Dictionary context selector"),
+                  description:
+                    "One dictionary tier available to this surface, with its entry count and inline policy.",
+                  data: {
+                    ...dictOwnerData(o),
+                    selected: selected.has(o.owner_id),
+                  },
+                  summary: dictOwnerSummary(o),
+                  attributes: {
+                    level: o.level,
+                    name: o.name,
+                    entries: o.entry_count,
+                    selected: selected.has(o.owner_id),
+                  },
+                  context: { surface_key: surfaceKey },
+                })}
+              />
+            </span>
           </label>
         ))}
       </div>
