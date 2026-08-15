@@ -309,11 +309,17 @@ function resolveMarketingSurface(stripped: string): string | null {
   // site-vertical map below).
   if (segments[1] === "ranks") return "matrx-user/marketing-ranks-hub";
   if (segments[1] === "initiatives") return "matrx-user/marketing-initiatives";
+  if (segments[1] === "reports") return "matrx-user/marketing-reports";
 
   // /marketing/brands/[brandId][...]
   if (segments[1] === "brands" && segments.length >= 3) {
     if (segments[3] === "discovery") {
       return "matrx-user/marketing-discovery";
+    }
+    // The brand's asset desk — library / research / sources / generate, split
+    // out of the site's media section on 2026-08-15.
+    if (segments[3] === "assets") {
+      return "matrx-user/marketing-brand-assets";
     }
     // /marketing/brands/[brandId]/sites/[siteId][...]
     if (segments[3] === "sites" && segments.length >= 5) {

@@ -23,7 +23,13 @@
  * Nested providers (e.g. split-pane notes) stack — the topmost wins.
  */
 
-import { createContext, useContext, useEffect, useRef, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  type ReactNode,
+} from "react";
 import { useSyncExternalStore } from "react";
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
 
@@ -97,6 +103,24 @@ export function getSurfaceRuntime(): SurfaceRuntimeValue | null {
     }
   }
   return winner?.value ?? null;
+}
+
+/**
+ * Read the deepest live provider for one canonical surface name.
+ *
+ * Submit-time execution refreshes must follow the surface stamped onto the
+ * conversation, not an unrelated overlay that happens to be the registry's
+ * current global winner. Within the requested surface the normal provider
+ * law still applies: deepest wins, registration recency breaks ties.
+ */
+export function getSurfaceRuntimeForName(
+  surfaceName: string,
+): SurfaceRuntimeValue | null {
+  return (
+    getSurfaceRuntimeStack().find(
+      (runtime) => runtime.surfaceName === surfaceName,
+    ) ?? null
+  );
 }
 
 function getServerSnapshot(): SurfaceRuntimeValue | null {
@@ -291,7 +315,10 @@ export function useSurfaceClientTools(
       proxied[key] = (input: unknown) => handlersRef.current[key]?.(input);
     }
     const list = extraClientToolHandlers.get(surfaceName) ?? [];
-    extraClientToolHandlers.set(surfaceName, [...list, { id, handlers: proxied }]);
+    extraClientToolHandlers.set(surfaceName, [
+      ...list,
+      { id, handlers: proxied },
+    ]);
     emit();
     return () => {
       const current = extraClientToolHandlers.get(surfaceName) ?? [];

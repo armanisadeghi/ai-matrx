@@ -7,13 +7,12 @@ vision: [features/marketing/FEATURE.md, .claude/skills/module-landing-pages/SKIL
 
 # Marketing module — consolidation and build-out
 
-The module was **structurally repaired and then given its full intended shape**. The repair is shipped and verified in production; the shape is declared, and the pillars are filling in one by one (ranks, AI Visibility, Competitor Autopsy, Initiatives so far — 12 of 16 reserved routes left).
+The module was **structurally repaired and then given its full intended shape**. The repair is shipped and verified in production; the shape is declared, and the pillars are filling in one by one (ranks, AI Visibility, Competitor Autopsy, Initiatives, and Client Reports so far — 11 of 16 reserved routes left).
 
 **This doc owns the module SHAPE (pillars, reserved routes, nav, landing). Sibling handoffs own the deep verticals — read the one for the area you touch** (doc-family audit 2026-08-12: siblings verified current; `matrx-marketing-platform-handoff-2026-07-19.md` and `content-plan-client.md` deleted as superseded; the Studio-alignment doc merged into page-workspace-evolution):
 
 | Area | Doc |
 | --- | --- |
-| Navigation BELOW the pillar level (the site's 26 sections, sub-view hierarchy, marketing mode sidebar) | [marketing-navigation-hierarchy.md](marketing-navigation-hierarchy.md) |
 | Websites vertical (brands, crawls, coverage, GSC) **+ the `web.*` access model** | [marketing-brand-coverage-program.md](marketing-brand-coverage-program.md) |
 | ↳ Backlinks workspace (provider profile, assessments, outreach) | [backlink-intelligence-frontend.md](backlink-intelligence-frontend.md) + aidream `docs/handoffs/backlink-intelligence-backend.md` |
 | ↳ Competitor link-gap / outreach targets | [competitor-link-gap.md](competitor-link-gap.md) · [outreach-system.md](outreach-system.md) |
@@ -46,16 +45,17 @@ The module was **structurally repaired and then given its full intended shape**.
 ### Done and verified
 - **Module SHAPE finished and live**: route consolidation (308s from `/content-plan` + `/seo/keyword-research`), 8-pillar hub, guest landing on every `/marketing/*` URL, admin map. All map surfaces (sidebar, hub, landing areas, reserved-route metadata, `/marketing/tools`) GENERATED from `MARKETING_PILLARS` (`features/marketing/lib/marketing-nav.ts`), 28 entries across 8 pillars.
 - **Initiatives is live end to end (2026-08-15).** `/marketing/initiatives` reads `marketing.initiative` through dedicated scoped list/count/facet RPCs; creation and version-guarded editing cover name, brand, objective, goal, status, dates, and budget. `/marketing/initiatives/[id]` is the registered share destination and its brand is a canonical door. The `matrx-user/marketing-initiatives` surface is registered and synced.
-- **Reserved routes: 12 of 16 remain.** Shipped at their permanent URLs: `/marketing/ranks`, AI Visibility, Competitor Autopsy, and Initiatives. Remaining 12 stubs: local, calendar, audience, content-studio, social, email, ads, outreach, monitoring, analytics, reports, automations. The coming-soon registry also holds 11 `marketing.tools.*` analyzer promises + `marketing.generate-video`.
+- **Client Reports is live over Search Console (2026-08-15).** `/marketing/reports` assembles a printable 28-day client report from the canonical `seo.gsc_perf_*` reads: plain-language findings, prior-period evidence, traffic-class portfolio/site/page rollups, class-resolved keywords, and openable site/page/keyword references. It deliberately does not imply GA4 attribution while `seo.web_analytics_daily` is empty. `matrx-user/marketing-reports` is registered and emits the complete report scope.
+- **Reserved routes: 11 of 16 remain.** Shipped at their permanent URLs: `/marketing/ranks`, AI Visibility, Competitor Autopsy, Initiatives, and Client Reports. Remaining 11 stubs: local, calendar, audience, content-studio, social, email, ads, outreach, monitoring, analytics, automations. The coming-soon registry also holds 11 `marketing.tools.*` analyzer promises + `marketing.generate-video`.
 - **Agent-writable surface fleet (2026-08-09→12):** 23 marketing surface manifests exist (`features/surfaces/manifests/marketing-*`) — brand, backlinks, findings, reputation, hub, discovery, keyword-research, crawls, site-media, and more; marketing-integrations ruled READ-ONLY for agents. Access model collapsed to one canonical downward tree rooted at `web_brand` (2026-08-12). See `features/marketing/FEATURE.md` change log — it is the authority; this doc only names the shape.
 - **GSC ambassador sweep complete:** traffic-class decomposition reaches site overview, site KPI peeks, brand pages, both page-query cards, target-keyword performance, the pages registry, and the sites portfolio. `GscClassBar` owns site/page rendering; `GscPortfolioClassBar` owns multi-site rendering; query rows reuse `ClassChip`. Server truth stays in `seo.gsc_keyword_class_map`, with text resolution and page rollups in `seo.gsc_keyword_class_by_text` / `seo.gsc_perf_page_class_summary`.
 
 ### Partial
-1. **No surface manifests for the 12 reserved routes** — correct for now (nothing to declare), but a manifest is part of "done" for each one (`surface-authoring` skill).
+1. **No surface manifests for the 11 reserved routes** — correct for now (nothing to declare), but a manifest is part of "done" for each one (`surface-authoring` skill).
 2. **Access asymmetry on `/marketing/ranks`:** `seo.rank_target` rows can be readable where their `web.site` row is not → raw site UUID instead of a name. Belongs to the access-model work in [marketing-brand-coverage-program.md](marketing-brand-coverage-program.md).
 
 ### Not started
-The other 12 pillar promises + 11 `marketing.tools.*` analyzer promises. **No database schema exists for any of them** (re-verified 2026-08-15: no social/email/ads/automation tables anywhere). The schema is the real work; routes and nav are already waiting. The user-facing promise text in `lib/coming-soon/registry.ts` IS the spec.
+The other 11 pillar promises + 11 `marketing.tools.*` analyzer promises. **No database schema exists for any of them** (re-verified 2026-08-15: no social/email/ads/automation tables anywhere). The schema is the real work; routes and nav are already waiting. The user-facing promise text in `lib/coming-soon/registry.ts` IS the spec.
 
 ### Known issues
 1. This repo has many concurrent agent sessions — check `git status` for files you don't own; prefer additive changes.
@@ -68,7 +68,7 @@ The other 12 pillar promises + 11 `marketing.tools.*` analyzer promises. **No da
 
 `features/marketing/lib/marketing-nav.ts` (`MARKETING_PILLARS`) is the shape. Readers: `app/(core)/marketing/page.tsx` + `tools/page.tsx` (→ `MarketingHub.tsx`), `features/shell/constants/nav-data.ts` (`marketingNavChildren()`), `features/marketing/lib/route-metadata.ts` (`RESERVED_ROUTES`), `MarketingLanding.tsx` (`listMarketingLandingAreas()` — derives Live vs Coming soon from what's actually built). **Adding a surface = one edit there.**
 
-Routes: `app/(core)/marketing/` — `layout.tsx` (guest/authed branch), `page.tsx` (hub), `admin/`, the live verticals (`brands/`, `content-plan/`, `keyword-research/`, `discovery/`, `tools/`, `connections/`, `batches/`, `cost/`, `ranks/`, `initiatives/`, `ai-visibility/`, `competitors/`), and 12 reserved stubs, each 3 lines: `<MarketingComingSoon comingSoonId="marketing.<id>" />`.
+Routes: `app/(core)/marketing/` — `layout.tsx` (guest/authed branch), `page.tsx` (hub), `admin/`, the live verticals (`brands/`, `content-plan/`, `keyword-research/`, `discovery/`, `tools/`, `connections/`, `batches/`, `cost/`, `ranks/`, `initiatives/`, `reports/`, `ai-visibility/`, `competitors/`), and 11 reserved stubs, each 3 lines: `<MarketingComingSoon comingSoonId="marketing.<id>" />`.
 
 Feature layout: `features/marketing/` — `lib/routes.ts` (never hand-build a `/marketing` URL), `lib/route-metadata.ts`, `components/MarketingHub.tsx`, `components/MarketingComingSoon.tsx`, the websites vertical under `components/`, plus `content-plan/`, `seo/`, `google/ bing/ crawler/ pagespeed/ analytics/ data/`. Public analyzers stay at `app/(public)/seo/*` reading from `features/marketing/seo/`.
 
@@ -78,7 +78,7 @@ Testing: `/login` admin@admin.com / Password1234#. Dev server ONLY via `pnpm pre
 
 ## 4. Next steps, in order
 
-1. **`/marketing/reports` before `/marketing/analytics`.** Both read providers bound in `/marketing/connections`, but GA4 has no synced data yet (`seo.web_analytics_daily` empty) — reports over GSC is the better first build. GA4 activation is server work (aidream seo-vertical.md; OAuth/GA4 threads tracked in brand-coverage-program.md item 13).
+1. **Keep `/marketing/analytics` reserved until GA4 has honest synced evidence.** Reports now consume the GSC data that exists; `seo.web_analytics_daily` remains empty. GA4 activation is server work (aidream seo-vertical.md; OAuth/GA4 threads tracked in brand-coverage-program.md item 13).
 2. **The access-asymmetry question (§2 Partial 2).**
 3. **Open defects touching this module** (from `FOUND_DEFECTS.md`, all still open 2026-08-15): D199 GSC keyword-class rules dark in prod · D180 hydration mismatch on every `(core)` marketing route · D150 item surfaces hide identities/doors · D141 audit dead-ends on large sites · D153 no per-site cost attribution · D74 `web.link_edge.http_status` never populated (no broken-link detection). Backlinks follow-ups are chipped in `.matrx/AGENT_TASKS.md` (`TASK-BL-*`).
 

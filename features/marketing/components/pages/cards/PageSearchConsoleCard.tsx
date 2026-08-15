@@ -41,7 +41,7 @@ import {
 import type { PageQueryStat } from "@/features/marketing/seo/keyword/types";
 import type { MarketingPage } from "@/features/marketing/types";
 import { GscClassBar } from "@/features/marketing/search-console/components/ambassador/GscClassBar";
-import { ClassChip } from "@/features/marketing/search-console/components/insights/ClassInsights";
+import { ClassChip } from "@/features/marketing/search-console/components/insights/ClassChip";
 import { useGscKeywordClasses } from "@/features/marketing/search-console/hooks/useGscQuery";
 
 function formatCtr(ctr: number | null): string {

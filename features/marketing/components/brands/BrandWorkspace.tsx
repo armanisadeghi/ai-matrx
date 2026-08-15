@@ -1043,6 +1043,18 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
           <SectionCard
             title="Brand assets"
             copy={assetsCopy}
+            headerExtra={
+              // THE DOOR: the full asset desk — library, research, stock
+              // sources, AI generation — moved here from the site's Media
+              // section on 2026-08-15. This card is the summary; that is the
+              // place you work.
+              <Button asChild size="sm" variant="outline" className="h-7 gap-1.5">
+                <Link href={marketingRoutes.brandAssets(brandId)}>
+                  <Images className="h-3.5 w-3.5" />
+                  Open asset desk
+                </Link>
+              </Button>
+            }
             action={{
               label: "Add asset",
               onClick: () => setAssetEditor({ open: true, asset: null }),
@@ -1055,6 +1067,8 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                   No confirmed assets yet. Add one directly, or initialize a
                   site and confirm logos, favicons, and imagery from its
                   discovery inbox — they become the brand's asset library here.
+                  The asset desk also holds research imagery, stock sources,
+                  and AI image generation.
                 </p>
               </div>
             ) : (

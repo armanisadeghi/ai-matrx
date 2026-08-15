@@ -1,56 +1,49 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
-import { useParams, usePathname, useRouter } from "next/navigation";
-import { ArrowRight, ImageIcon } from "lucide-react";
+import { useCallback, useMemo } from "react";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { FolderOpen, ImageIcon } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { Button } from "@/components/ui/button";
 import { useMarketingSubView } from "@/features/marketing/lib/useMarketingSubView";
-import { marketingSubViewHref } from "@/features/marketing/lib/site-subviews";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { marketingKeys } from "@/features/marketing/data/hooks";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import {
   MARKETING_SITE_MEDIA_SURFACE_NAME,
   buildSiteMediaScope,
 } from "@/features/marketing/lib/scopes/site-media-scope";
 import type { SiteMediaPageRow } from "@/features/marketing/lib/snapshot-media";
-import type { BrandAsset } from "@/features/marketing/types";
 import { CrawledMediaView } from "@/features/marketing/components/media/CrawledMediaView";
-import { BrandLibraryView } from "@/features/marketing/components/media/BrandLibraryView";
-import { ResearchMediaView } from "@/features/marketing/components/media/ResearchMediaView";
-import { GenerateMediaView } from "@/features/marketing/components/media/GenerateMediaView";
-import { StockSourcesView } from "@/features/marketing/components/media/StockSourcesView";
 import { MediaStandardsView } from "@/features/marketing/components/media/MediaStandardsView";
 import { SiteVideosView } from "@/features/marketing/components/media/SiteVideosView";
-import { SiteMediaWriteTargets } from "@/features/marketing/components/media/SiteMediaWriteTargets";
 import { parseSiteMediaStandards } from "@/features/marketing/data/media-library";
-import type { ResearchImageRow } from "@/features/marketing/data/media-library";
-import {
-  EMPTY_MEDIA_ORDER_DRAFT,
-  type MediaOrderDraft,
-} from "@/features/marketing/lib/site-media-write-targets";
 import type { SnapshotMediaAsset } from "@/features/marketing/lib/snapshot-media";
 
 /**
- * SiteMediaWorkspace — the site's full media command center, seven views on
- * one route. The views are declared in `lib/site-subviews.ts` and rendered by
- * the SITE HEADER, which owns switching (it writes `?view=`); this file only
- * reads which one is active:
+ * SiteMediaWorkspace — THIS WEBSITE's own media, three views on one route. The
+ * views are declared in `lib/site-subviews.ts` and rendered by the SITE
+ * HEADER, which owns switching (it writes `?view=`); this file only reads
+ * which one is active:
  *
  *  - `crawled`   — every image observed across canonical pages (evidence)
  *  - `videos`    — crawled video/embed evidence + owned video assets, with
  *                  the metadata agent flow (SiteVideosView)
- *  - `library`   — the brand's OWNED assets (uploads, promoted, generated)
- *  - `research`  — research-captured images: reuse + inspiration
- *  - `sources`   — free stock search (Unsplash) + the brand's portal links
- *  - `generate`  — order AI images off the preset menu, saved to the library
- *  - `standards` — the site's target image sizes/rules, feeding Generate
+ *  - `standards` — the site's target image sizes/rules
  *
- * Cross-view flows: a crawled asset can be promoted to the library or sent
- * to Generate as a replacement order; a research image can be promoted or
- * become a creative brief; a crawled video can be promoted or get agent
- * metadata written.
+ * Library, Research, Sources and Generate LEFT this workspace on 2026-08-15
+ * for the brand's asset desk (`marketingRoutes.brandAssets`). All four read
+ * brand- or organization-scoped data, so two sites under one brand rendered
+ * identical rows and someone editing "this site's library" was editing
+ * everything under the brand. What is left here is genuinely per-site: what
+ * this website serves, and the standards it holds itself to.
+ *
+ * The door out is explicit — the header link below, and the crawled view's
+ * "order a replacement" flow, which now navigates to the brand desk with the
+ * brief in the URL and SAYS so rather than teleporting the user silently.
  */
 
 export function SiteMediaWorkspace() {
@@ -60,20 +53,8 @@ export function SiteMediaWorkspace() {
   const { getBaseValues } = useMarketingSiteSurfaceBase();
   const queryClient = useQueryClient();
   const router = useRouter();
-  const pathname = usePathname();
 
   const view = useMarketingSubView("media");
-
-  /**
-   * The cross-view flows below hand a drafted order to Generate. That is a
-   * navigation the CONTENT triggers, not a tab bar — the header still owns
-   * switching, so this goes through the same canonical href it renders.
-   */
-  const goToGenerate = useCallback(() => {
-    router.replace(marketingSubViewHref(pathname ?? "", "media", "generate"), {
-      scroll: false,
-    });
-  }, [router, pathname]);
 
   const standards = useMemo(
     () => parseSiteMediaStandards(site.settings),
@@ -81,80 +62,42 @@ export function SiteMediaWorkspace() {
   );
 
   /**
-   * The Generate view's image order, owned HERE rather than in that view so it
-   * survives view switches — which is what lets the surface emit it as
-   * `media_order_draft` and lets the `media_order` write target stay
-   * registered on every view (see SiteMediaWriteTargets).
+   * A crawled image the user wants replaced becomes an image ORDER — and image
+   * orders are placed on the brand's asset desk now, because the generated
+   * image is a brand asset. The brief crosses the level boundary in the URL
+   * (`marketingRoutes.brandAssets(..., "generate", brief)`), which is also
+   * what makes the move visible: the user watches the address change from
+   * their website to their brand.
    */
-  const [order, setOrder] = useState<MediaOrderDraft>(EMPTY_MEDIA_ORDER_DRAFT);
-
-  const setBrief = useCallback(
-    (brief: string) => setOrder((current) => ({ ...current, brief })),
-    [],
-  );
-
   const orderReplacement = useCallback(
     (asset: SnapshotMediaAsset) => {
-      setBrief(
-        [
-          `Replace an existing site image${asset.alt ? ` ("${asset.alt}")` : ""}.`,
-          asset.sizeLabel ? `The current image is ${asset.sizeLabel}.` : null,
-          `It appears on: ${asset.pages
-            .slice(0, 3)
-            .map((page) => page.path ?? page.url)
-            .join(", ")}${asset.pages.length > 3 ? "…" : ""}.`,
-          "Keep the same purpose and placement, improve the quality.",
-        ]
-          .filter(Boolean)
-          .join(" "),
-      );
-      goToGenerate();
+      const brief = [
+        `Replace an existing image on ${site.name}${asset.alt ? ` ("${asset.alt}")` : ""}.`,
+        asset.sizeLabel ? `The current image is ${asset.sizeLabel}.` : null,
+        `It appears on: ${asset.pages
+          .slice(0, 3)
+          .map((page) => page.path ?? page.url)
+          .join(", ")}${asset.pages.length > 3 ? "…" : ""}.`,
+        "Keep the same purpose and placement, improve the quality.",
+      ]
+        .filter(Boolean)
+        .join(" ");
+      router.push(marketingRoutes.brandAssets(brandId, "generate", brief));
     },
-    [goToGenerate, setBrief],
-  );
-
-  const useResearchBrief = useCallback(
-    (image: ResearchImageRow) => {
-      setBrief(
-        [
-          "Create an original image inspired by a reference found in research.",
-          image.alt || image.caption
-            ? `The reference shows: ${image.alt ?? image.caption}.`
-            : null,
-          image.sourceHostname
-            ? `Reference source: ${image.sourceHostname} (do NOT copy it — original work only).`
-            : null,
-        ]
-          .filter(Boolean)
-          .join(" "),
-      );
-      goToGenerate();
-    },
-    [goToGenerate, setBrief],
+    [router, brandId, site.name],
   );
 
   // Surface emitter — nested inside the site provider (deeper wins), built at
-  // trigger time. The views load their data lazily, so the crawled / library /
-  // research inputs are opportunistic cache reads (getScope must never fetch).
+  // trigger time. The crawled view loads its data lazily, so the inventory
+  // input is an opportunistic cache read (getScope must never fetch).
   const getScope = () =>
     buildSiteMediaScope({
       base: getBaseValues(),
       view,
       standards,
-      order,
       mediaRows: queryClient.getQueryData<SiteMediaPageRow[]>(
         marketingKeys.siteMedia(site.id),
       ),
-      brandAssets: queryClient.getQueryData<BrandAsset[]>([
-        ...marketingKeys.root,
-        "brand",
-        brandId,
-        "assets",
-      ]),
-      researchImages: queryClient.getQueryData<ResearchImageRow[]>(
-        marketingKeys.researchImages(site.organization_id),
-      ),
-      siteRootUrl: site.root_url,
     });
 
   return (
@@ -162,60 +105,40 @@ export function SiteMediaWorkspace() {
       surfaceName={MARKETING_SITE_MEDIA_SURFACE_NAME}
       getScope={getScope}
     >
-    <SiteMediaWriteTargets onOrderChange={setOrder} />
-    <div className="h-full overflow-y-auto">
-      <div className="mx-auto max-w-7xl space-y-4 p-3 sm:p-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1.5">
-            <ImageIcon className="h-4 w-4 text-foreground/60" />
-            <h1 className="text-sm font-semibold text-foreground">Media</h1>
+      <div className="h-full overflow-y-auto">
+        <div className="mx-auto max-w-7xl space-y-4 p-3 sm:p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5">
+              <ImageIcon className="h-4 w-4 text-foreground/60" />
+              <h1 className="text-sm font-semibold text-foreground">Media</h1>
+              <span className="text-[10px] text-muted-foreground">
+                What this website serves
+              </span>
+            </div>
+            {/* THE DOOR: the brand's owned library, research, stock sources and
+                image generation live one level up. Nobody should have to hunt
+                for where their assets went. */}
+            <Button asChild size="sm" variant="outline" className="h-8 gap-1.5">
+              <Link href={marketingRoutes.brandAssets(brandId)}>
+                <FolderOpen className="h-3.5 w-3.5" />
+                Brand asset library
+              </Link>
+            </Button>
           </div>
-          {order.brief.trim() && view !== "generate" ? (
-            <button
-              type="button"
-              onClick={goToGenerate}
-              title={order.brief}
-              className="flex items-center gap-1 rounded-md border border-primary/40 bg-primary/5 px-2 py-1 text-[10px] text-primary transition-colors hover:bg-primary/10"
-            >
-              <ArrowRight className="h-3 w-3" />
-              Image order drafted — review
-            </button>
-          ) : null}
-        </div>
 
-        {view === "crawled" ? (
-          <CrawledMediaView
-            brandId={brandId}
-            standards={standards}
-            onOrderReplacement={orderReplacement}
-          />
-        ) : view === "videos" ? (
-          <SiteVideosView brandId={brandId} standards={standards} />
-        ) : view === "library" ? (
-          <BrandLibraryView
-            brandId={brandId}
-            organizationId={site.organization_id}
-            standards={standards}
-          />
-        ) : view === "research" ? (
-          <ResearchMediaView brandId={brandId} onUseAsBrief={useResearchBrief} />
-        ) : view === "sources" ? (
-          <StockSourcesView
-            brandId={brandId}
-            organizationId={site.organization_id}
-          />
-        ) : view === "generate" ? (
-          <GenerateMediaView
-            brandId={brandId}
-            standards={standards}
-            order={order}
-            onOrderChange={setOrder}
-          />
-        ) : (
-          <MediaStandardsView standards={standards} />
-        )}
+          {view === "crawled" ? (
+            <CrawledMediaView
+              brandId={brandId}
+              standards={standards}
+              onOrderReplacement={orderReplacement}
+            />
+          ) : view === "videos" ? (
+            <SiteVideosView brandId={brandId} standards={standards} />
+          ) : (
+            <MediaStandardsView standards={standards} />
+          )}
+        </div>
       </div>
-    </div>
     </SurfaceRuntimeProvider>
   );
 }

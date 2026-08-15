@@ -126,11 +126,26 @@ export function LandscapeBriefCard({
   };
 
   const save = async () => {
-    if (!site || !correction.trim()) return;
+    if (!site || !brief || !correction.trim()) return;
     setBusy("save");
     try {
-      await ruleOnLandscapeBrief(site.id, correction.trim(), dispatch);
-      await refresh();
+      const result = await ruleOnLandscapeBrief(brief, correction.trim());
+      if (result.status === "conflict") {
+        // Never silently overwrite: someone else corrected this brief while it
+        // was open, and their words matter as much as these.
+        setBrief(result.currentRow);
+        toast.error(
+          "Someone else corrected this while you were typing. Their version is now on screen — add yours to it and save again.",
+        );
+        return;
+      }
+      if (result.status === "not_found") {
+        toast.error("This brief no longer exists. Work it out again.");
+        await refresh();
+        return;
+      }
+      setBrief(result.row);
+      setCorrection(result.row.guidance ?? "");
       await onGuidanceSaved?.();
       toast.success("Saved. Everything we run from here uses your words.");
     } catch (error) {

@@ -195,15 +195,6 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
     stage: "planned",
     surfaces: ["/marketing hub card", "/marketing/analytics route"],
   },
-  "marketing.reports": {
-    id: "marketing.reports",
-    label: "Client Reports",
-    owner: "marketing",
-    promise:
-      "Assemble scheduled, branded, client-ready reports from live marketing data — the deliverable an agency actually sends.",
-    stage: "planned",
-    surfaces: ["/marketing hub card", "/marketing/reports route"],
-  },
   "marketing.automations": {
     id: "marketing.automations",
     label: "Marketing Automations",

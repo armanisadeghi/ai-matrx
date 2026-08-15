@@ -59,16 +59,19 @@ describe("what the site header renders", () => {
   it("points the default view at the bare section URL", () => {
     const media = navFor(`${SITE}/media`);
     expect(media.modes[0]?.href).toBe(`${SITE}/media`);
-    expect(media.modes[2]?.href).toBe(`${SITE}/media?view=library`);
+    expect(media.modes[2]?.href).toBe(`${SITE}/media?view=standards`);
     expect(media.activeHref).toBe(`${SITE}/media`);
   });
 
   it("marks the active item from the query string", () => {
     // Sub-views differ only by query string, so the header cannot resolve this
     // from the pathname — this is what `activeModeHref` exists for.
-    expect(navFor(`${SITE}/media`, "library").activeHref).toBe(
-      `${SITE}/media?view=library`,
+    expect(navFor(`${SITE}/media`, "standards").activeHref).toBe(
+      `${SITE}/media?view=standards`,
     );
+    // `library` left for the brand asset desk on 2026-08-15 — an unknown view
+    // resolves to the section default, and the route itself redirects it.
+    expect(navFor(`${SITE}/media`, "library").activeHref).toBe(`${SITE}/media`);
     expect(navFor(`${SITE}/settings`, "access-public").activeHref).toBe(
       `${SITE}/settings?view=access-public`,
     );

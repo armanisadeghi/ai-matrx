@@ -203,6 +203,15 @@ export function getMarketingRouteMetadata(pathname: string): Metadata {
     });
   }
 
+  if (segments[3] === "assets") {
+    return createMarketingMetadata(normalizedPath, {
+      titlePrefix: "Brand Assets",
+      description:
+        "The brand's owned asset library, research imagery, stock sources, and AI image generation.",
+      letter: "Ba",
+    });
+  }
+
   const isSiteRoute = segments[3] === "sites" && Boolean(segments[4]);
   if (!isSiteRoute) {
     return createMarketingMetadata(normalizedPath, MARKETING_ROOT);

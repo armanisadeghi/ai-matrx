@@ -124,7 +124,7 @@ export const MARKETING_SITE_SECTIONS = [
     name: "Media",
     titlePrefix: "Site Media",
     description:
-      "Inspect crawled media, the brand library, research, generation, and site media standards.",
+      "Inspect the images and videos this website serves, and the media standards it holds them to.",
     letter: "Me",
     group: "Content",
   },

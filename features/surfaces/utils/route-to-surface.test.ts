@@ -115,6 +115,12 @@ describe("surfaceFromPathname — marketing tree", () => {
     );
   });
 
+  it("resolves the live marketing reports surface", () => {
+    expect(surfaceFromPathname("/marketing/reports")).toBe(
+      "matrx-user/marketing-reports",
+    );
+  });
+
   it("legacy flat site shims fall back to the hub (they client-redirect)", () => {
     expect(surfaceFromPathname(`/marketing/sites/${S}`)).toBe(
       "matrx-user/marketing",

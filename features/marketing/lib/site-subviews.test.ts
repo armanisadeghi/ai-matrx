@@ -52,9 +52,13 @@ describe("marketing site sub-view registry", () => {
     const mediaHref = `${SITE_PATH}/media`;
     expect(defaultMarketingSubView("media")?.id).toBe("crawled");
     expect(marketingSubViewHref(mediaHref, "media", "crawled")).toBe(mediaHref);
-    expect(marketingSubViewHref(mediaHref, "media", "library")).toBe(
-      `${mediaHref}?view=library`,
+    expect(marketingSubViewHref(mediaHref, "media", "standards")).toBe(
+      `${mediaHref}?view=standards`,
     );
+    // The four moved views are no longer the website's to name — an old
+    // `?view=library` URL is handled by the media route's redirect, not here.
+    expect(isMarketingSubView("media", "library")).toBe(false);
+    expect(isMarketingSubView("media", "generate")).toBe(false);
   });
 
   it("builds AI Visibility's real sub-routes from its path-style registry", () => {
@@ -99,15 +103,25 @@ describe("marketing site sub-view registry", () => {
     // Discovery moved to the brand cockpit; Capabilities moved to Marketing.
     // Access, Integrations, and Intake folded into Settings without losing a
     // destination: Settings now owns six declared views instead of Access's 3.
+    //
+    // 2026-08-15 — Media split by level (Arman's ruling). FOUR sub-views left
+    // the website for the brand asset desk at
+    // `/marketing/brands/[brandId]/assets` (`marketingRoutes.brandAssets`):
+    //   media:library   → brand assets ?view=library  (reads web.brand_asset)
+    //   media:research  → brand assets ?view=research (reads rs_media by org)
+    //   media:sources   → brand assets ?view=sources  (brand portal links)
+    //   media:generate  → brand assets ?view=generate (mints web.brand_asset)
+    // None went dark: the old `?view=` URLs server-redirect, and the site's
+    // Media section carries a door to the library. 43 - 4 = 39, 64 - 4 = 60.
     expect(MARKETING_SITE_SECTIONS.length).toBe(21);
     expect(
       MARKETING_SITE_SUBVIEWS.reduce(
         (total, entry) => total + entry.views.length,
         0,
       ),
-    ).toBe(43);
+    ).toBe(39);
     expect(countMarketingSiteDestinations(MARKETING_SITE_SECTIONS.length)).toBe(
-      64,
+      60,
     );
   });
 });

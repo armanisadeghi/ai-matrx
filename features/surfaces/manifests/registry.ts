@@ -85,10 +85,12 @@ import { marketingReputationManifest } from "./marketing-reputation.manifest";
 import { marketingRanksManifest } from "./marketing-ranks.manifest";
 import { marketingRanksHubManifest } from "./marketing-ranks-hub.manifest";
 import { marketingInitiativesManifest } from "./marketing-initiatives.manifest";
+import { marketingReportsManifest } from "./marketing-reports.manifest";
 import { marketingCoverageManifest } from "./marketing-coverage.manifest";
 import { marketingCompetitorsManifest } from "./marketing-competitors.manifest";
 import { marketingSitemapsManifest } from "./marketing-sitemaps.manifest";
 import { marketingDiscoveryManifest } from "./marketing-discovery.manifest";
+import { marketingBrandAssetsManifest } from "./marketing-brand-assets.manifest";
 import { marketingIntegrationsManifest } from "./marketing-integrations.manifest";
 import { marketingSiteSettingsManifest } from "./marketing-site-settings.manifest";
 import { contentPlanManifest } from "./content-plan.manifest";
@@ -260,10 +262,12 @@ const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   marketingRanksManifest,
   marketingRanksHubManifest,
   marketingInitiativesManifest,
+  marketingReportsManifest,
   marketingCoverageManifest,
   marketingCompetitorsManifest,
   marketingSitemapsManifest,
   marketingDiscoveryManifest,
+  marketingBrandAssetsManifest,
   marketingIntegrationsManifest,
   marketingSiteSettingsManifest,
   // Content planning (plan schema) — sibling of the marketing fleet.
