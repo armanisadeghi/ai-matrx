@@ -1,3 +1,5 @@
+> ARCHIVED 2026-08-14 — work completed 2026-06-02 (all four repos + DB internals audited; dead-RPC drop applied). Current truth: [features/data-tables/FEATURE.md](../../../features/data-tables/FEATURE.md).
+
 # Cross-repo verification tasks for `udt_v2` (data-tables backbone)
 
 > **Purpose.** The `udt_v2_backbone` migration was applied live on Supabase project

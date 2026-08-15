@@ -1,3 +1,5 @@
+> ARCHIVED 2026-08-14 — status DONE, executed 2026-06-02. Current truth: [features/data-tables/FEATURE.md](../../../features/data-tables/FEATURE.md).
+
 # `udt_v2` cross-repo handoff → data-tables / frontend team
 
 > **From:** pass-1 agent (`aidream` + `matrx-extend` access, 2026-06-02) → **pass-2 agent**
