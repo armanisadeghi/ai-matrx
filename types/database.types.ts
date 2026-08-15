@@ -12665,6 +12665,20 @@ export type Database = {
         Args: { p_identity_id: string; p_window?: string }
         Returns: Json
       }
+      evaluate_outreach_list_quality: {
+        Args: { p_list_id: string }
+        Returns: Json
+      }
+      honor_reply_opt_out: {
+        Args: {
+          p_detected_phrase: string
+          p_identity_id: string
+          p_in_reply_to_provider_message_id: string
+          p_received_at?: string
+          p_reply_provider_message_id: string
+        }
+        Returns: Json
+      }
       issue_unsubscribe_token: {
         Args: {
           p_contact_medium_id: string

@@ -11,6 +11,7 @@ import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { Button } from "@/components/ui/button";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { cn } from "@/lib/utils";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import {
@@ -190,9 +191,15 @@ export default function SitePeekWindow({
           </p>
           {(topPages.data?.length ?? 0) === 0 ? (
             <p className="text-[11px] text-muted-foreground">
-              {topPages.isLoading
-                ? "Loading…"
-                : "Google reports no page data yet."}
+              {topPages.isLoading ? (
+                <SuspenseLoader
+                  centered={false}
+                  size="xs"
+                  message="Loading top pages…"
+                />
+              ) : (
+                "Google reports no page data yet."
+              )}
             </p>
           ) : (
             <div className="space-y-px">
@@ -226,7 +233,12 @@ export default function SitePeekWindow({
           <span className="capitalize">
             {site.visibility} · updated {formatCompactDate(site.updated_at)}
           </span>
-          <Button asChild size="sm" variant="outline" className="h-6 text-[11px]">
+          <Button
+            asChild
+            size="sm"
+            variant="outline"
+            className="h-6 text-[11px]"
+          >
             <Link href={marketingRoutes.site(site.brand_id, site.id)}>
               Open workspace
             </Link>

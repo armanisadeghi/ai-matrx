@@ -28,6 +28,7 @@ import type { FilesystemAdapter } from "../../adapters/FilesystemAdapter";
 import type { FilesystemNode } from "../../types";
 import { FileIcon } from "../../styles/file-icon";
 import { extractErrorMessage } from "@/utils/errors";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import {
   ACTIVE_ROW,
   HOVER_ROW,
@@ -510,67 +511,66 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({
         enableFloatingIcon={false}
         onMenuOpenChange={handleContextMenuOpenChange}
       >
-          <div
-            role="treeitem"
-            aria-expanded={isDir ? expanded : undefined}
-            aria-selected={activePath === node.path}
-            tabIndex={0}
-            onClick={handleClick}
-            onKeyDown={handleKeyDown}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={(e) => void handleDrop(e)}
-            className={cn(
-              "flex items-center gap-1 text-[13px]",
-              ROW_HEIGHT,
-              TEXT_BODY,
-              !renaming && HOVER_ROW,
-              activePath === node.path && !renaming && ACTIVE_ROW,
-              dragOver &&
-                "bg-blue-100 outline outline-1 outline-blue-400 dark:bg-blue-950/60",
-              !renaming && "cursor-pointer rounded-sm",
-              renaming &&
-                "rounded-sm bg-card outline outline-1 outline-blue-400",
-            )}
-            style={indentStyle}
-          >
-            {isDir ? (
-              <ChevronRight
-                size={12}
-                className={cn(
-                  "shrink-0 text-neutral-500 transition-transform",
-                  expanded && "rotate-90",
-                )}
-              />
-            ) : (
-              <span className="inline-block w-3" />
-            )}
-            <FileIcon name={node.name} kind={node.kind} expanded={expanded} />
-            {renaming ? (
-              <input
-                ref={renameInputRef}
-                type="text"
-                value={renameValue}
-                onChange={(e) => setRenameValue(e.target.value)}
-                onClick={(e) => e.stopPropagation()}
-                onKeyDown={(e) => {
-                  e.stopPropagation();
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    void commitRename();
-                  } else if (e.key === "Escape") {
-                    e.preventDefault();
-                    cancelRename();
-                  }
-                }}
-                onBlur={() => void commitRename()}
-                disabled={busy}
-                className="min-w-0 flex-1 bg-transparent font-mono text-[13px] outline-none"
-              />
-            ) : (
-              <span className="truncate">{node.name}</span>
-            )}
-          </div>
+        <div
+          role="treeitem"
+          aria-expanded={isDir ? expanded : undefined}
+          aria-selected={activePath === node.path}
+          tabIndex={0}
+          onClick={handleClick}
+          onKeyDown={handleKeyDown}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={(e) => void handleDrop(e)}
+          className={cn(
+            "flex items-center gap-1 text-[13px]",
+            ROW_HEIGHT,
+            TEXT_BODY,
+            !renaming && HOVER_ROW,
+            activePath === node.path && !renaming && ACTIVE_ROW,
+            dragOver &&
+              "bg-blue-100 outline outline-1 outline-blue-400 dark:bg-blue-950/60",
+            !renaming && "cursor-pointer rounded-sm",
+            renaming && "rounded-sm bg-card outline outline-1 outline-blue-400",
+          )}
+          style={indentStyle}
+        >
+          {isDir ? (
+            <ChevronRight
+              size={12}
+              className={cn(
+                "shrink-0 text-neutral-500 transition-transform",
+                expanded && "rotate-90",
+              )}
+            />
+          ) : (
+            <span className="inline-block w-3" />
+          )}
+          <FileIcon name={node.name} kind={node.kind} expanded={expanded} />
+          {renaming ? (
+            <input
+              ref={renameInputRef}
+              type="text"
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => {
+                e.stopPropagation();
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  void commitRename();
+                } else if (e.key === "Escape") {
+                  e.preventDefault();
+                  cancelRename();
+                }
+              }}
+              onBlur={() => void commitRename()}
+              disabled={busy}
+              className="min-w-0 flex-1 bg-transparent font-mono text-[13px] outline-none"
+            />
+          ) : (
+            <span className="truncate">{node.name}</span>
+          )}
+        </div>
       </NonEditableContextMenu>
 
       {/* Inline "new file / new folder" input — only renders when this node
@@ -624,7 +624,11 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({
               className="px-2 text-[11px] text-neutral-500"
               style={childIndentStyle}
             >
-              Loading…
+              <SuspenseLoader
+                centered={false}
+                size="xs"
+                message="Loading folder contents…"
+              />
             </div>
           )}
           {children?.map((child) => (
