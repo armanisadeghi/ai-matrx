@@ -31,6 +31,10 @@ system doc). The repo-specific facts it needs:
   `pnpm patrol:run`; `latest.json` is only a projection). **Reports:** `.matrx/patrol-reports/<id>.md`
   (create the directory on first use; one file per patrol, overwritten each run
   — it carries your scan baseline).
+- **Resume before discovering:** inspect `latest.json` and its permanent record
+  before a new scan. An unfinished approval, fix, certification,
+  infrastructure retry, or delivery resumes with its exact candidate first.
+  Never strand it, overwrite its report, or ask Arman to repeat a decision.
 - **Tiers (from the registry row — when unsure, downgrade):** R = report/rank
   only · M = mechanical fixes per the named skill, batches ≤15 files · C =
   write a precise chip, fix nothing.

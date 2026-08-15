@@ -24,6 +24,7 @@ describe("Pattern Patrol typed manifest", () => {
         "ENFORCED PREVIEW LEASE",
         "FAST INTEGRATION CONTRACT",
         "SERIALIZED RELEASE LANE",
+        "RESUME UNFINISHED WORK",
         "LOUD FAILURE CONTRACT",
         "HUMAN EXCEPTION CONTRACT",
         "PROFESSIONAL IMPROVEMENT AUTHORITY",
