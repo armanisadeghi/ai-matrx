@@ -66,6 +66,7 @@ import {
   Sparkles,
   Table,
   Tag,
+  Target,
   Webhook,
   Workflow,
   UsersRound,
@@ -445,6 +446,11 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     Icon: Building2,
     labelPlural: "Marketing Accounts",
     hrefFor: (id) => `/marketing/brands/${id}`,
+  },
+  marketing_initiative: {
+    Icon: Target,
+    labelPlural: "Initiatives",
+    hrefFor: (id) => `/marketing/initiatives/${id}`,
   },
   web_site: {
     Icon: Globe,

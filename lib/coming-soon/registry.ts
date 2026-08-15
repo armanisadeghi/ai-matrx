@@ -105,15 +105,6 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
       "/marketing/content-plan/[siteId]?view=setup — 'Your website has the pictures it needs'",
     ],
   },
-  "marketing.initiatives": {
-    id: "marketing.initiatives",
-    label: "Initiatives",
-    owner: "marketing",
-    promise:
-      "Group content, social, email, ads, and outreach under one goal with shared budget, timeline, and attribution — the container every channel reports into.",
-    stage: "planned",
-    surfaces: ["/marketing/initiatives hub card", "/marketing/initiatives route"],
-  },
   "marketing.calendar": {
     id: "marketing.calendar",
     label: "Marketing Calendar",

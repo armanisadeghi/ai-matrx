@@ -401,8 +401,6 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
         description:
           "The container above channels — goal, budget, timeline, assets, and shared attribution.",
         iconName: "Target",
-        status: "coming-soon",
-        comingSoonId: "marketing.initiatives",
       },
       {
         label: "Calendar",

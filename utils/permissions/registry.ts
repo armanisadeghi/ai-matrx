@@ -225,6 +225,17 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     urlPathTemplate: "/settings/message-templates/{id}",
     rlsUsesHasPermission: true,
   },
+  marketing_initiative: {
+    resourceType: "marketing_initiative",
+    tableName: "initiative",
+    schemaName: "marketing",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Initiative",
+    urlPathTemplate: "/marketing/initiatives/{id}",
+    rlsUsesHasPermission: true,
+  },
   conversation: {
     resourceType: "conversation",
     tableName: "conversation",

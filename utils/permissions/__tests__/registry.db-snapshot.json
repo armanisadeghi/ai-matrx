@@ -330,6 +330,17 @@
     "is_active": true
   },
   {
+    "resource_type": "marketing_initiative",
+    "table_name": "initiative",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Initiative",
+    "url_path_template": "/marketing/initiatives/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "message_template",
     "table_name": "message_template",
     "id_column": "id",

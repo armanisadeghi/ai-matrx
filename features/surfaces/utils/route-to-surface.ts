@@ -309,6 +309,7 @@ function resolveMarketingSurface(stripped: string): string | null {
   // /marketing/ranks — the CROSS-SITE hub (per-site ranks resolve via the
   // site-vertical map below).
   if (segments[1] === "ranks") return "matrx-user/marketing-ranks-hub";
+  if (segments[1] === "initiatives") return "matrx-user/marketing-initiatives";
 
   // /marketing/brands/[brandId][...]
   if (segments[1] === "brands" && segments.length >= 3) {

@@ -55,9 +55,17 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       url: "/marketing/initiatives",
       label: "Initiatives",
       description:
-        "RESERVED — renders <MarketingComingSoon>. Declared in features/marketing/lib/marketing-nav.ts and tracked in lib/coming-soon/registry.ts. Renamed from /marketing/campaigns 2026-08-13 (the word is retired platform-wide — db-rules §1a); the old path 308s here and this URL is now permanent.",
+        "Canonical initiative list: scoped counts, server paging/search/filtering, inline edits, creation, and brand doors.",
       filePath: "app/(core)/marketing/initiatives/page.tsx",
-      status: "Coming soon",
+      status: "Live",
+    },
+    {
+      url: "/marketing/initiatives/[id]",
+      label: "Initiative detail",
+      description:
+        "Shareable initiative detail with brand door, timeline, goal, budget, and version-guarded editing.",
+      filePath: "app/(core)/marketing/initiatives/[id]/page.tsx",
+      status: "Live",
     },
     {
       url: "/marketing/calendar",
