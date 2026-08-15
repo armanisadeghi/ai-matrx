@@ -47,10 +47,17 @@ describe("marketing site sub-view registry", () => {
     // The ceiling moved 7 → 8 on 2026-08-15 for backlinks only, when Prospects
     // (the site-wide competitor link gap) joined it. Every backlinks sub-view
     // has an icon, so RouteModeNav's measured `icons` variant carries the
-    // eighth item rather than collapsing to a dropdown. This is the ceiling,
-    // not a new default: a ninth splits the section.
+    // eighth item rather than collapsing to a dropdown.
+    //
+    // 🚨 It moved 8 → 9 on 2026-08-15 when Link changes joined backlinks
+    // (`seo.backlink_change_event`), and that ninth item is the one the
+    // previous note said should SPLIT the section instead. It is registered
+    // because the view is otherwise unreachable (no dead ends) — but backlinks
+    // is now past the size the header was rebuilt for, and the split is a real
+    // outstanding decision, not a settled new ceiling. Nothing else may use
+    // the ninth slot.
     for (const entry of MARKETING_SITE_SUBVIEWS) {
-      expect(entry.views.length).toBeLessThanOrEqual(8);
+      expect(entry.views.length).toBeLessThanOrEqual(9);
     }
   });
 
@@ -122,15 +129,19 @@ describe("marketing site sub-view registry", () => {
     //
     // 2026-08-15 — `backlinks:prospects` added (the site-wide competitor link
     // gap, the top of the outreach funnel). 39 + 1 = 40, 60 + 1 = 61.
+    //
+    // 2026-08-15 — `backlinks:changes` added (Link changes: what happened to
+    // the links we already have, from `seo.backlink_change_event`). Nothing
+    // moved or went dark. 40 + 1 = 41, 61 + 1 = 62.
     expect(MARKETING_SITE_SECTIONS.length).toBe(21);
     expect(
       MARKETING_SITE_SUBVIEWS.reduce(
         (total, entry) => total + entry.views.length,
         0,
       ),
-    ).toBe(40);
+    ).toBe(41);
     expect(countMarketingSiteDestinations(MARKETING_SITE_SECTIONS.length)).toBe(
-      61,
+      62,
     );
   });
 });
