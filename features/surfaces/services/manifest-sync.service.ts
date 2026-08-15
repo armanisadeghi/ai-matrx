@@ -35,6 +35,7 @@ import {
   getRegisteredSurfaceNames,
 } from "@/features/surfaces/manifests/registry";
 import { listRegisteredNamespaces } from "@/features/surfaces/config/namespace-registry";
+import { readAllRows } from "@/lib/supabase/readAllRows";
 import type {
   BrokenMapping,
   SurfaceAgentRole,
@@ -486,41 +487,94 @@ export async function listSurfaceValues(
 
 export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
   // 1. Pull all DB rows we care about.
+  //
+  // Every one of these is a COMPLETENESS read: the rows become `db_only` /
+  // `missing_in_db` / `diff` verdicts, so a row PostgREST silently dropped at
+  // its 1000-row cap is reported as "not in the DB" and the sync is told to
+  // create a row that already exists. `ui.ui_surface_value` alone is 4185 rows
+  // — a bare `.select()` here saw 1000 of them. See lib/supabase/readAllRows.ts.
   const [
-    allDbRowsRes,
-    allDbRoleRowsRes,
-    allDbWriteTargetRowsRes,
-    allDbClientToolRowsRes,
-    configNamespaceRowsRes,
-    agentBindingsRes,
+    allDbRows,
+    allDbRoleRows,
+    allDbWriteTargetRows,
+    allDbClientToolRows,
+    configNamespaceRows,
+    agentBindings,
   ] = await Promise.all([
-    sb.schema("ui").from("ui_surface_value").select("*"),
-    sb.schema("ui").from("ui_surface_agent_role").select("*"),
-    sb.schema("ui").from("ui_surface_write_target").select("*"),
-    sb.schema("ui").from("ui_surface_client_tool").select("*"),
-    sb
-      .schema("ui")
-      .from("ui_surface_config")
-      .select("namespace")
-      .is("deleted_at", null),
-    sb
-      .schema("agent")
-      .from("menu_surface")
-      .select("id, surface_name, value_mappings")
-      .neq("value_mappings", "{}"),
+    readAllRows(
+      ({ from, to }) =>
+        sb
+          .schema("ui")
+          .from("ui_surface_value")
+          .select("*", { count: "exact" })
+          .order("surface_name", { ascending: true })
+          .order("name", { ascending: true })
+          .range(from, to),
+      { label: "ui.ui_surface_value" },
+    ),
+    readAllRows(
+      ({ from, to }) =>
+        sb
+          .schema("ui")
+          .from("ui_surface_agent_role")
+          .select("*", { count: "exact" })
+          .order("surface_name", { ascending: true })
+          .order("name", { ascending: true })
+          .range(from, to),
+      { label: "ui.ui_surface_agent_role" },
+    ),
+    readAllRows(
+      ({ from, to }) =>
+        sb
+          .schema("ui")
+          .from("ui_surface_write_target")
+          .select("*", { count: "exact" })
+          .order("surface_name", { ascending: true })
+          .order("name", { ascending: true })
+          .range(from, to),
+      { label: "ui.ui_surface_write_target" },
+    ),
+    readAllRows(
+      ({ from, to }) =>
+        sb
+          .schema("ui")
+          .from("ui_surface_client_tool")
+          .select("*", { count: "exact" })
+          .order("surface_name", { ascending: true })
+          .order("name", { ascending: true })
+          .range(from, to),
+      { label: "ui.ui_surface_client_tool" },
+    ),
+    readAllRows(
+      ({ from, to }) =>
+        sb
+          .schema("ui")
+          .from("ui_surface_config")
+          .select("namespace", { count: "exact" })
+          .is("deleted_at", null)
+          .order("namespace", { ascending: true })
+          .range(from, to),
+      { label: "ui.ui_surface_config" },
+    ),
+    readAllRows(
+      ({ from, to }) =>
+        sb
+          .schema("agent")
+          .from("menu_surface")
+          .select("id, surface_name, value_mappings", { count: "exact" })
+          .neq("value_mappings", "{}")
+          .order("id", { ascending: true })
+          .range(from, to),
+      { label: "agent.menu_surface" },
+    ),
   ]);
 
-  if (allDbRowsRes.error) throw allDbRowsRes.error;
-  if (allDbRoleRowsRes.error) throw allDbRoleRowsRes.error;
-  if (allDbWriteTargetRowsRes.error) throw allDbWriteTargetRowsRes.error;
-  if (allDbClientToolRowsRes.error) throw allDbClientToolRowsRes.error;
-  if (configNamespaceRowsRes.error) throw configNamespaceRowsRes.error;
-  if (agentBindingsRes.error) throw agentBindingsRes.error;
-
-  const dbRows = allDbRowsRes.data ?? [];
-  const dbRoleRows = allDbRoleRowsRes.data ?? [];
-  const dbWriteTargetRows = allDbWriteTargetRowsRes.data ?? [];
-  const dbClientToolRows = allDbClientToolRowsRes.data ?? [];
+  // readAllRows throws (labelled) on a query error or a provably-incomplete
+  // read, so there is no error branch and no `?? []` to swallow one.
+  const dbRows = allDbRows;
+  const dbRoleRows = allDbRoleRows;
+  const dbWriteTargetRows = allDbWriteTargetRows;
+  const dbClientToolRows = allDbClientToolRows;
 
   // 2. Index DB rows by surface for fast lookup.
   const dbBySurface = new Map<string, Map<string, UiSurfaceValueRow>>();
@@ -792,7 +846,7 @@ export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
     }
   }
   const dbNamespaces = new Set(
-    (configNamespaceRowsRes.data ?? []).map((r) => r.namespace),
+    configNamespaceRows.map((r) => r.namespace),
   );
   for (const namespace of [...dbNamespaces].sort()) {
     if (!registeredNamespaces.has(namespace)) {
@@ -803,7 +857,7 @@ export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
   // 8. brokenAgentMappings: every `surface_value` mapping whose target
   //    doesn't exist in the (effective) manifest for that surface.
   const brokenAgentMappings = collectBrokenMappings(
-    (agentBindingsRes.data ?? [])
+    agentBindings
       // View columns are typed nullable; a binding edge always has both.
       .filter(
         (b): b is typeof b & { id: string; surface_name: string } =>
@@ -819,16 +873,21 @@ export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
   );
 
   // 9. ui_surface-level drift — url_pattern, canonical label, value_groups.
-  const surfacesRes = await sb
-    .schema("ui")
-    .from("ui_surface")
-    .select("name, url_pattern, label, value_groups");
-  if (surfacesRes.error) throw surfacesRes.error;
+  const surfaceRows = await readAllRows(
+    ({ from, to }) =>
+      sb
+        .schema("ui")
+        .from("ui_surface")
+        .select("name, url_pattern, label, value_groups", { count: "exact" })
+        .order("name", { ascending: true })
+        .range(from, to),
+    { label: "ui.ui_surface" },
+  );
   const manifestBySurface = new Map(
     ALL_MANIFESTS.map((m) => [m.surfaceName, m] as const),
   );
   const urlPatternDrifts: SurfaceUrlPatternDrift[] = [];
-  for (const row of surfacesRes.data ?? []) {
+  for (const row of surfaceRows) {
     const manifest = manifestBySurface.get(row.name);
     const expected = manifest
       ? resolveSurfaceUrlPattern(manifest)
@@ -857,7 +916,7 @@ export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
   // 10. Canonical label + value_groups drift (THE NAMING LAW's DB check).
   const surfaceLabelDrifts: SurfaceLabelDrift[] = [];
   const valueGroupsDrifts: SurfaceValueGroupsDrift[] = [];
-  for (const row of surfacesRes.data ?? []) {
+  for (const row of surfaceRows) {
     const manifest = manifestBySurface.get(row.name);
     if (!manifest) continue;
     const dbLabel = row.label?.trim() || null;
@@ -1051,6 +1110,8 @@ export async function remediateBrokenMapping(
     .eq("id", bindingId)
     .eq("source_type", "agent")
     .eq("target_type", "surface")
+    // A tombstoned edge (an endpoint entity was trashed) is not a live binding — D135.
+    .is("deleted_at", null)
     .single();
   if (readErr) throw readErr;
   const payload = (row?.payload ?? {}) as Record<string, unknown>;
@@ -1101,9 +1162,20 @@ export async function applyManifestSync(
   const { deleteStale = false, createMissingSurfaces = false } = opts;
 
   // 1. Make sure surfaces referenced by manifests exist in ui_surface.
-  const surfacesRes = await sb.schema("ui").from("ui_surface").select("name");
-  if (surfacesRes.error) throw surfacesRes.error;
-  const existingSurfaces = new Set((surfacesRes.data ?? []).map((r) => r.name));
+  // Existence read: `existingSurfaces.has()` below decides whether a manifest is
+  // skipped or a ui_surface row is INSERTED. A truncated read makes an existing
+  // surface look absent and drives a duplicate insert.
+  const existingSurfaceRows = await readAllRows(
+    ({ from, to }) =>
+      sb
+        .schema("ui")
+        .from("ui_surface")
+        .select("name", { count: "exact" })
+        .order("name", { ascending: true })
+        .range(from, to),
+    { label: "ui.ui_surface" },
+  );
+  const existingSurfaces = new Set(existingSurfaceRows.map((r) => r.name));
 
   const skippedMissingSurface: string[] = [];
   const targetManifests = ALL_MANIFESTS.filter((m) => {
@@ -1301,13 +1373,18 @@ export async function applyManifestSync(
 
   // 3d. Backfill url_pattern for any other ui_surface row still empty when a
   //     route-map entry or client/local heuristic exists.
-  const allSurfacesRes = await sb
-    .schema("ui")
-    .from("ui_surface")
-    .select("name, url_pattern");
-  if (allSurfacesRes.error) throw allSurfacesRes.error;
+  const allSurfaceRows = await readAllRows(
+    ({ from, to }) =>
+      sb
+        .schema("ui")
+        .from("ui_surface")
+        .select("name, url_pattern", { count: "exact" })
+        .order("name", { ascending: true })
+        .range(from, to),
+    { label: "ui.ui_surface" },
+  );
   const manifestSurfaceSet = new Set(targetManifests.map((m) => m.surfaceName));
-  for (const row of allSurfacesRes.data ?? []) {
+  for (const row of allSurfaceRows) {
     if (manifestSurfaceSet.has(row.name)) continue;
     if (row.url_pattern?.trim()) continue;
     const urlPattern = getDefaultUrlPatternForSurface(row.name);
@@ -1328,11 +1405,20 @@ export async function applyManifestSync(
   // 4. Delete stale rows (db_only) for surfaces we manage in manifests.
   const deleted: ApplyManifestSyncResult["deleted"] = [];
   if (deleteStale) {
-    const allDb = await sb
-      .schema("ui")
-      .from("ui_surface_value")
-      .select("surface_name, name");
-    if (allDb.error) throw allDb.error;
+    // Set-subtraction read that decides what gets DELETED. ui.ui_surface_value is
+    // 4185 rows; a 1000-row truncation silently spares stale rows (and, if the
+    // manifest side ever changed shape, could target the wrong ones).
+    const allDb = await readAllRows(
+      ({ from, to }) =>
+        sb
+          .schema("ui")
+          .from("ui_surface_value")
+          .select("surface_name, name", { count: "exact" })
+          .order("surface_name", { ascending: true })
+          .order("name", { ascending: true })
+          .range(from, to),
+      { label: "ui.ui_surface_value" },
+    );
 
     const managedSurfaces = new Set(targetManifests.map((m) => m.surfaceName));
     const manifestKeys = new Set(
@@ -1341,7 +1427,7 @@ export async function applyManifestSync(
       ),
     );
 
-    const toDelete = (allDb.data ?? []).filter(
+    const toDelete = allDb.filter(
       (r) =>
         managedSurfaces.has(r.surface_name) &&
         !manifestKeys.has(`${r.surface_name}::${r.name}`),
@@ -1364,11 +1450,17 @@ export async function applyManifestSync(
   const roleDeleted: ApplyManifestSyncResult["roleDeleted"] = [];
   let sweptPrefCount = 0;
   if (deleteStale) {
-    const allDbRoles = await sb
-      .schema("ui")
-      .from("ui_surface_agent_role")
-      .select("surface_name, name");
-    if (allDbRoles.error) throw allDbRoles.error;
+    const allDbRoles = await readAllRows(
+      ({ from, to }) =>
+        sb
+          .schema("ui")
+          .from("ui_surface_agent_role")
+          .select("surface_name, name", { count: "exact" })
+          .order("surface_name", { ascending: true })
+          .order("name", { ascending: true })
+          .range(from, to),
+      { label: "ui.ui_surface_agent_role" },
+    );
 
     const managedSurfaces = new Set(targetManifests.map((m) => m.surfaceName));
     const manifestRoleKeys = new Set(
@@ -1377,7 +1469,7 @@ export async function applyManifestSync(
       ),
     );
 
-    const rolesToDelete = (allDbRoles.data ?? []).filter(
+    const rolesToDelete = allDbRoles.filter(
       (r) =>
         managedSurfaces.has(r.surface_name) &&
         !manifestRoleKeys.has(`${r.surface_name}::${r.name}`),
@@ -1409,11 +1501,17 @@ export async function applyManifestSync(
   //     nothing can service.
   const writeTargetDeleted: ApplyManifestSyncResult["writeTargetDeleted"] = [];
   if (deleteStale) {
-    const allDbTargets = await sb
-      .schema("ui")
-      .from("ui_surface_write_target")
-      .select("surface_name, name");
-    if (allDbTargets.error) throw allDbTargets.error;
+    const allDbTargets = await readAllRows(
+      ({ from, to }) =>
+        sb
+          .schema("ui")
+          .from("ui_surface_write_target")
+          .select("surface_name, name", { count: "exact" })
+          .order("surface_name", { ascending: true })
+          .order("name", { ascending: true })
+          .range(from, to),
+      { label: "ui.ui_surface_write_target" },
+    );
 
     const managedForTargets = new Set(targetManifests.map((m) => m.surfaceName));
     const manifestTargetKeys = new Set(
@@ -1421,7 +1519,7 @@ export async function applyManifestSync(
         (m.writeTargets ?? []).map((t) => `${m.surfaceName}::${t.name}`),
       ),
     );
-    const targetsToDelete = (allDbTargets.data ?? []).filter(
+    const targetsToDelete = allDbTargets.filter(
       (t) =>
         managedForTargets.has(t.surface_name) &&
         !manifestTargetKeys.has(`${t.surface_name}::${t.name}`),
@@ -1446,11 +1544,17 @@ export async function applyManifestSync(
   //     can no longer service it.
   const clientToolDeleted: ApplyManifestSyncResult["clientToolDeleted"] = [];
   if (deleteStale) {
-    const allDbTools = await sb
-      .schema("ui")
-      .from("ui_surface_client_tool")
-      .select("surface_name, name");
-    if (allDbTools.error) throw allDbTools.error;
+    const allDbTools = await readAllRows(
+      ({ from, to }) =>
+        sb
+          .schema("ui")
+          .from("ui_surface_client_tool")
+          .select("surface_name, name", { count: "exact" })
+          .order("surface_name", { ascending: true })
+          .order("name", { ascending: true })
+          .range(from, to),
+      { label: "ui.ui_surface_client_tool" },
+    );
 
     const managedForTools = new Set(targetManifests.map((m) => m.surfaceName));
     const manifestToolKeys = new Set(
@@ -1458,7 +1562,7 @@ export async function applyManifestSync(
         (m.clientTools ?? []).map((t) => `${m.surfaceName}::${t.name}`),
       ),
     );
-    const toolsToDelete = (allDbTools.data ?? []).filter(
+    const toolsToDelete = allDbTools.filter(
       (t) =>
         managedForTools.has(t.surface_name) &&
         !manifestToolKeys.has(`${t.surface_name}::${t.name}`),

@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createMainSupabaseClient } from "@/utils/supabase/server";
 import { requireSuperAdmin } from "@/utils/auth/adminUtils";
+import { readAllRows } from "@/lib/supabase/readAllRows";
 import {
   getCmsClient,
   verifySiteOwnership,
@@ -386,11 +387,19 @@ export async function POST(request: NextRequest) {
         // (route `/blog/about`) just because a root `/about` exists. A promote
         // never sets `parent_id`, so the candidate route derives from
         // slug + category alone.
-        const { data: siblingRows } = await db
-          .from("client_pages")
-          .select("route")
-          .eq("client_id", siteId);
-        const taken = new Set((siblingRows ?? []).map((r) => r.route));
+        // Uniqueness check: `taken.has(...)` decides 409-vs-create. A truncated
+        // read lets a real route collision through to the DB unique constraint.
+        const siblingRows = await readAllRows<{ route: string }>(
+          ({ from, to }) =>
+            db
+              .from("client_pages")
+              .select("route", { count: "exact" })
+              .eq("client_id", siteId)
+              .order("route", { ascending: true })
+              .range(from, to),
+          { label: "cms.client_pages" },
+        );
+        const taken = new Set(siblingRows.map((r) => r.route));
         const routeFor = (candidate: string) =>
           clientPageRoute({ slug: candidate, category: resolvedCategory });
         let resolvedSlug: string;

@@ -25,6 +25,7 @@ import { config } from "dotenv";
 import { resolve } from "node:path";
 
 import { validateStructuralLeg } from "@/features/content-ir/registry/kind-dual-gate";
+import { readAllRows } from "../../lib/supabase/readAllRows";
 
 config({ path: resolve(process.cwd(), ".env.local") });
 
@@ -54,23 +55,33 @@ async function main(): Promise<void> {
     db: { schema: "content_ir" },
   });
 
-  const { data: kinds, error: kErr } = await sb
-    .from("kind_definition")
-    .select("id, kind, version, emitted_json_schema")
-    .is("deleted_at", null);
-  if (kErr) throw new Error(`kind_definition read failed: ${kErr.message}`);
-
-  const { data: examples, error: eErr } = await sb
-    .from("kind_example")
-    .select("id, kind_definition_id, kind_version, data")
-    .eq("is_canonical", true)
-    .is("deleted_at", null);
-  if (eErr) throw new Error(`kind_example read failed: ${eErr.message}`);
-
-  const byId = new Map<string, KindRow>(
-    (kinds as KindRow[]).map((k) => [k.id, k]),
+  // Completeness reads: an example missing from a truncated read looks
+  // un-stranded, and a kind missing from one makes its examples un-resolvable.
+  const kinds = await readAllRows<KindRow>(
+    ({ from, to }) =>
+      sb
+        .from("kind_definition")
+        .select("id, kind, version, emitted_json_schema", { count: "exact" })
+        .is("deleted_at", null)
+        .order("id", { ascending: true })
+        .range(from, to),
+    { label: "content_ir.kind_definition" },
   );
-  const stranded = (examples as ExampleRow[]).filter((e) => {
+
+  const examples = await readAllRows<ExampleRow>(
+    ({ from, to }) =>
+      sb
+        .from("kind_example")
+        .select("id, kind_definition_id, kind_version, data", { count: "exact" })
+        .eq("is_canonical", true)
+        .is("deleted_at", null)
+        .order("id", { ascending: true })
+        .range(from, to),
+    { label: "content_ir.kind_example" },
+  );
+
+  const byId = new Map<string, KindRow>(kinds.map((k) => [k.id, k]));
+  const stranded = examples.filter((e) => {
     const k = byId.get(e.kind_definition_id);
     return k !== undefined && k.version !== e.kind_version;
   });

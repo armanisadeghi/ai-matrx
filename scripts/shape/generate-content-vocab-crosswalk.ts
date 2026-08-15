@@ -48,6 +48,7 @@ import {
   GENERATED_CONTRACT_FAMILIES,
 } from "../../features/content-ir/registry/shape-doctor";
 import { extractDetectorTokensFromTexts } from "../../features/content-ir/registry/shape-doctor-extract";
+import { readAllRows } from "../../lib/supabase/readAllRows";
 import {
   parseContractManifestSnapshot,
   type ContractManifestSnapshot,
@@ -381,38 +382,53 @@ async function fetchDbVocab(): Promise<DbVocab> {
     fail("Missing NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SECRET_KEY (.env.local)");
   }
   const supabase = createClient(url, key);
-  const [kindsRes, surfacesRes] = await Promise.all([
-    supabase
-      .schema("content_ir")
-      .from("kind_definition")
-      .select("kind,is_active,metadata")
-      .is("deleted_at", null),
-    supabase
-      .schema("content_ir")
-      .from("kind_surface")
-      .select("surface_type,token,kind_definition_id")
-      .is("deleted_at", null),
+  // Completeness reads: the crosswalk asserts "every live slug/token is
+  // classified" — a truncated read silently drops slugs out of that judgement.
+  const [kindRows, surfaceRows] = await Promise.all([
+    readAllRows<DbKindRow>(
+      ({ from, to }) =>
+        supabase
+          .schema("content_ir")
+          .from("kind_definition")
+          .select("kind,is_active,metadata", { count: "exact" })
+          .is("deleted_at", null)
+          .order("id", { ascending: true })
+          .range(from, to),
+      { label: "content_ir.kind_definition" },
+    ),
+    readAllRows<DbSurfaceRow>(
+      ({ from, to }) =>
+        supabase
+          .schema("content_ir")
+          .from("kind_surface")
+          .select("surface_type,token,kind_definition_id", { count: "exact" })
+          .is("deleted_at", null)
+          .order("id", { ascending: true })
+          .range(from, to),
+      { label: "content_ir.kind_surface" },
+    ),
   ]);
-  if (kindsRes.error) fail(`read content_ir.kind_definition: ${kindsRes.error.message}`);
-  if (surfacesRes.error) fail(`read content_ir.kind_surface: ${surfacesRes.error.message}`);
 
   // Need id→slug to resolve surface targets.
-  const idRes = await supabase
-    .schema("content_ir")
-    .from("kind_definition")
-    .select("id,kind")
-    .is("deleted_at", null);
-  if (idRes.error) fail(`read kind_definition ids: ${idRes.error.message}`);
-  const slugById = new Map<string, string>(
-    ((idRes.data ?? []) as Array<{ id: string; kind: string }>).map((r) => [r.id, r.kind]),
+  const idRows = await readAllRows<{ id: string; kind: string }>(
+    ({ from, to }) =>
+      supabase
+        .schema("content_ir")
+        .from("kind_definition")
+        .select("id,kind", { count: "exact" })
+        .is("deleted_at", null)
+        .order("id", { ascending: true })
+        .range(from, to),
+    { label: "content_ir.kind_definition (id→slug)" },
   );
+  const slugById = new Map<string, string>(idRows.map((r) => [r.id, r.kind]));
 
   const kinds = new Map<string, { family: string | null; isActive: boolean }>();
-  for (const row of (kindsRes.data ?? []) as DbKindRow[]) {
+  for (const row of kindRows) {
     kinds.set(row.kind, { family: familyOf(row.metadata), isActive: row.is_active });
   }
   const surfaces = new Map<string, { surfaceTypes: string[]; kinds: string[] }>();
-  for (const row of (surfacesRes.data ?? []) as DbSurfaceRow[]) {
+  for (const row of surfaceRows) {
     const target = slugById.get(row.kind_definition_id);
     if (!target) fail(`kind_surface token "${row.token}" points at unknown kind_definition id`);
     const entry = surfaces.get(row.token) ?? { surfaceTypes: [], kinds: [] };

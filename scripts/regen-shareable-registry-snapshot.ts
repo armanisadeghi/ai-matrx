@@ -38,6 +38,7 @@ import { createClient } from "@supabase/supabase-js";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { config as loadEnv } from "dotenv";
+import { readAllRows } from "../lib/supabase/readAllRows";
 
 loadEnv({ path: ".env.local" });
 loadEnv({ path: ".env" });
@@ -74,15 +75,24 @@ async function fetchRegistryJson(): Promise<string> {
 
   const supabase = createClient(url, key);
 
-  const { data, error } = await supabase
-    .schema("platform").from("shareable_resource_registry")
-    .select(
-      "resource_type, table_name, id_column, owner_column, is_public_column, display_label, url_path_template, rls_uses_has_permission, is_active",
-    )
-    .order("resource_type");
-
-  if (error) {
-    console.error("Failed to load shareable_resource_registry:", error);
+  // Paged: the snapshot is compared whole under --check, so a PostgREST
+  // truncation would read as registry drift. See lib/supabase/readAllRows.ts.
+  let data: unknown[];
+  try {
+    data = await readAllRows<unknown>(
+      ({ from, to }) =>
+        supabase
+          .schema("platform").from("shareable_resource_registry")
+          .select(
+            "resource_type, table_name, id_column, owner_column, is_public_column, display_label, url_path_template, rls_uses_has_permission, is_active",
+            { count: "exact" },
+          )
+          .order("resource_type")
+          .range(from, to),
+      { label: "platform.shareable_resource_registry" },
+    );
+  } catch (err) {
+    console.error("Failed to load shareable_resource_registry:", err);
     process.exit(1);
   }
 

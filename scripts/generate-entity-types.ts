@@ -32,6 +32,7 @@ import { createClient } from "@supabase/supabase-js";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { config as loadEnv } from "dotenv";
+import { readAllRows } from "../lib/supabase/readAllRows";
 
 loadEnv({ path: ".env.local" });
 loadEnv({ path: ".env" });
@@ -88,11 +89,20 @@ export async function fetchEntityTypes(): Promise<EntityTypeSourceRow[]> {
   }
   // The client has no direct grant on `platform.*`; read the registry through
   // the public SECURITY-DEFINER RPC (migrations/entity_types_list_rpc.sql).
-  const { data, error } = await supabase.rpc("entity_types_list");
-  if (error) {
-    throw new Error(`Failed to read entity_types_list(): ${error.message}`);
-  }
-  const rows = (data ?? []) as EntityTypeSourceRow[];
+  // Paged: a `setof` RPC is subject to the same 1000-row PostgREST cap, and this
+  // set feeds both a --check gate and the runtime token allowlist.
+  const rows = await readAllRows<EntityTypeSourceRow>(
+    ({ from, to }) =>
+      supabase
+        .rpc("entity_types_list", {}, { count: "exact" })
+        .order("token", { ascending: true })
+        .range(from, to) as PromiseLike<{
+        data: EntityTypeSourceRow[] | null;
+        error: { message: string } | null;
+        count?: number | null;
+      }>,
+    { label: "entity_types_list()" },
+  );
   if (rows.length === 0) {
     throw new Error("platform.entity_types returned no active rows — aborting.");
   }
@@ -111,11 +121,18 @@ export interface ReferenceCategorySourceRow {
 export async function fetchReferenceCategories(): Promise<ReferenceCategorySourceRow[]> {
   const supabase = loadSupabase();
   if (!supabase) throw new Error("Missing Supabase env (see fetchEntityTypes).");
-  const { data, error } = await supabase.rpc("reference_categories_list");
-  if (error) {
-    throw new Error(`Failed to read reference_categories_list(): ${error.message}`);
-  }
-  const rows = (data ?? []) as ReferenceCategorySourceRow[];
+  const rows = await readAllRows<ReferenceCategorySourceRow>(
+    ({ from, to }) =>
+      supabase
+        .rpc("reference_categories_list", {}, { count: "exact" })
+        .order("slug", { ascending: true })
+        .range(from, to) as PromiseLike<{
+        data: ReferenceCategorySourceRow[] | null;
+        error: { message: string } | null;
+        count?: number | null;
+      }>,
+    { label: "reference_categories_list()" },
+  );
   return [...rows].sort(
     (a, b) => a.sort_order - b.sort_order || a.slug.localeCompare(b.slug, "en"),
   );
@@ -132,11 +149,18 @@ export interface SchemaSourceRow {
 export async function fetchSchemas(): Promise<SchemaSourceRow[]> {
   const supabase = loadSupabase();
   if (!supabase) throw new Error("Missing Supabase env (see fetchEntityTypes).");
-  const { data, error } = await supabase.rpc("entity_schemas_list");
-  if (error) {
-    throw new Error(`Failed to read entity_schemas_list(): ${error.message}`);
-  }
-  const rows = (data ?? []) as SchemaSourceRow[];
+  const rows = await readAllRows<SchemaSourceRow>(
+    ({ from, to }) =>
+      supabase
+        .rpc("entity_schemas_list", {}, { count: "exact" })
+        .order("schema_name", { ascending: true })
+        .range(from, to) as PromiseLike<{
+        data: SchemaSourceRow[] | null;
+        error: { message: string } | null;
+        count?: number | null;
+      }>,
+    { label: "entity_schemas_list()" },
+  );
   if (rows.length === 0) {
     throw new Error("platform.schemas returned no rows — aborting.");
   }

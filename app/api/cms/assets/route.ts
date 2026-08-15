@@ -23,6 +23,7 @@ import { createClient as createMainSupabaseClient } from "@/utils/supabase/serve
 import { getCmsClient, verifySiteOwnership, verifyAssetOwnership } from "../_lib/cmsDb";
 import { logCmsActivity } from "../_lib/activityLog";
 import { requireSuperAdmin } from "@/utils/auth/adminUtils";
+import { readAllRows } from "@/lib/supabase/readAllRows";
 
 // Durable public hosts a library asset URL may live on. Anything else — an
 // arbitrary external https URL — is refused so
@@ -96,13 +97,23 @@ async function scanUsage(
   const usedInPages: PageUsage[] = [];
   const usedInComponents: ComponentUsage[] = [];
   if (url) {
-    const { data: pages } = await db
-      .from("client_pages")
-      .select(
-        "id, slug, title, html_content, html_content_draft, css_content, css_content_draft, js_content, js_content_draft, featured_image, og_image, og_image_draft",
-      )
-      .eq("client_id", asset.client_id);
-    for (const p of (pages ?? []) as Array<Record<string, unknown>>) {
+    // Completeness read: an unscanned page makes an in-use asset report
+    // `inUse: false` AND overwrites `used_in_pages` with a short array — a
+    // deletion-safety answer, so a truncated read is not survivable here.
+    const pages = await readAllRows<Record<string, unknown>>(
+      ({ from, to }) =>
+        db
+          .from("client_pages")
+          .select(
+            "id, slug, title, html_content, html_content_draft, css_content, css_content_draft, js_content, js_content_draft, featured_image, og_image, og_image_draft",
+            { count: "exact" },
+          )
+          .eq("client_id", asset.client_id)
+          .order("id", { ascending: true })
+          .range(from, to),
+      { label: "cms.client_pages" },
+    );
+    for (const p of pages) {
       const fields = PAGE_SCAN_FIELDS.filter((f) => typeof p[f] === "string" && (p[f] as string).includes(url));
       if (fields.length > 0) {
         usedInPages.push({
@@ -113,11 +124,20 @@ async function scanUsage(
         });
       }
     }
-    const { data: components } = await db
-      .from("client_components")
-      .select("id, component_type, name, html_content, html_content_draft, css_content, css_content_draft")
-      .eq("client_id", asset.client_id);
-    for (const c of (components ?? []) as Array<Record<string, unknown>>) {
+    const components = await readAllRows<Record<string, unknown>>(
+      ({ from, to }) =>
+        db
+          .from("client_components")
+          .select(
+            "id, component_type, name, html_content, html_content_draft, css_content, css_content_draft",
+            { count: "exact" },
+          )
+          .eq("client_id", asset.client_id)
+          .order("id", { ascending: true })
+          .range(from, to),
+      { label: "cms.client_components" },
+    );
+    for (const c of components) {
       const fields = COMPONENT_SCAN_FIELDS.filter((f) => typeof c[f] === "string" && (c[f] as string).includes(url));
       if (fields.length > 0) {
         usedInComponents.push({

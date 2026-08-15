@@ -38,6 +38,7 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 import * as dotenv from "dotenv";
+import { readAllRows } from "../../lib/supabase/readAllRows";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const AIDREAM_ROOT = process.env.AIDREAM_ROOT ?? resolve(ROOT, "..", "aidream");
@@ -72,18 +73,26 @@ async function fetchLiveSurfaces(): Promise<ExportedSurfaceRow[]> {
     fail("Missing NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SECRET_KEY (.env.local) — generation NEEDS the live DB");
   }
   const supabase = createClient(url, key);
-  const { data, error } = await supabase
-    .schema("content_ir")
-    .from("kind_surface")
-    .select(
-      "surface_type, token, parser_strategy, streaming, kind_definition:kind_definition_id(kind)",
-    )
-    .eq("is_active", true)
-    .is("deleted_at", null);
-  if (error) fail(`read content_ir.kind_surface: ${error.message}`);
+  // Completeness read: this list IS the exported frozen detector table — a
+  // truncated read would silently drop live surfaces out of the committed file.
+  const data = await readAllRows<unknown>(
+    ({ from, to }) =>
+      supabase
+        .schema("content_ir")
+        .from("kind_surface")
+        .select(
+          "surface_type, token, parser_strategy, streaming, kind_definition:kind_definition_id(kind)",
+          { count: "exact" },
+        )
+        .eq("is_active", true)
+        .is("deleted_at", null)
+        .order("id", { ascending: true })
+        .range(from, to),
+    { label: "content_ir.kind_surface" },
+  );
 
   const rows: ExportedSurfaceRow[] = [];
-  for (const raw of (data ?? []) as unknown[]) {
+  for (const raw of data) {
     // Ingress narrowing (untyped service-key client): checks, never assertions.
     const row = raw as Record<string, unknown>;
     const kindRef = row.kind_definition as Record<string, unknown> | null | undefined;
