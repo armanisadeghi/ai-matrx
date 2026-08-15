@@ -35,9 +35,8 @@ import { formatDateOnly } from "@/utils/dateOnly";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectTaskById } from "@/features/agent-context/redux/tasksSlice";
 import { TASK_PRIORITY_META } from "@/features/tasks/components/TaskPriorityPicker";
-import { TaskCopyForAiButton } from "@/features/tasks/components/TaskCopyForAiButton";
+import { TaskEditorCopyButtons } from "./TaskEditorCopyButtons";
 import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
-import { CopyForAiIcon } from "@/components/agent-copy/CopyForAiIcon";
 import { useOpenTaskEditorWindow } from "@/features/overlays/openers/taskEditorWindow";
 import { useTaskEditorControllerCtx } from "./TaskEditorControllerContext";
 
@@ -211,13 +210,10 @@ export function TaskHeaderActions() {
           </button>
         </>
       )}
-      <TaskCopyForAiButton
-        taskId={taskId}
-        taskTitle={effective.title}
-        location="Tasks — task window"
-        compact
-        icon={CopyForAiIcon}
-      />
+      {/* One control: human Copy + JSON + an AI menu whose DEFAULT is the
+          live on-screen editor state (with an unsaved_changes diff) and
+          whose variant is the fetched full task tree. */}
+      <TaskEditorCopyButtons size="xs" location="Tasks — task window" />
       <ReferenceCopyButton
         referenceType="task"
         id={taskId}

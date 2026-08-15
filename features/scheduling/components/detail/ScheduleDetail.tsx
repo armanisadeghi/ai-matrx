@@ -28,6 +28,16 @@ import {
   buildScheduleRosterValues,
   buildScheduleRunValues,
 } from "../../lib/schedules-scope";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
+import {
+  buildScheduleRecordPayload,
+  runCsvRows,
+  scheduleKpis,
+  scheduleRecordVariants,
+  scheduleSummary,
+} from "../../lib/copy";
 import { SpecCard } from "./SpecCard";
 import { TriggerCard } from "./TriggerCard";
 import { RunHistoryCard } from "./RunHistoryCard";
@@ -47,11 +57,7 @@ export function ScheduleDetail({ taskId }: Props) {
   const dispatch = useAppDispatch();
   const { task } = useTaskDetail(taskId);
   const { tasks, status, error } = useScheduledTasks();
-  const {
-    runs,
-    status: runsStatus,
-    error: runsError,
-  } = useTaskRuns(taskId);
+  const { runs, status: runsStatus, error: runsError } = useTaskRuns(taskId);
 
   // Write half of the schedules surface, ENTITY side (the editor registers the
   // `schedule_draft_*` targets instead — see ScheduleForm). This route owns no
@@ -65,7 +71,11 @@ export function ScheduleDetail({ taskId }: Props) {
   // agent reads. Fresh closures per call (getWriteHandlers contract).
   const getSurfaceWriteHandlers = () => ({
     schedule_title: async (value: unknown) => {
-      if (typeof value !== "string" || !value.trim() || value.trim().length > 200)
+      if (
+        typeof value !== "string" ||
+        !value.trim() ||
+        value.trim().length > 200
+      )
         throw new Error(
           "schedule_title expects a non-empty string of at most 200 characters.",
         );
@@ -108,6 +118,9 @@ function ScheduleDetailBody({ taskId }: Props) {
   const dispatch = useAppDispatch();
   const { task, status, error } = useTaskDetail(taskId);
   const { tasks } = useScheduledTasks();
+  // Same hook RunHistoryCard mounts — it no-ops when the runs are already
+  // loaded, so reading them here for the record payload adds no fetch.
+  const { runs, status: runsStatus, error: runsError } = useTaskRuns(taskId);
   const [running, setRunning] = useState(false);
 
   if (status === "loading" || status === "idle") {
@@ -218,14 +231,58 @@ function ScheduleDetailBody({ taskId }: Props) {
         ]}
       />
       <div className="space-y-4">
-        {task.description && (
-          <p className="text-sm text-muted-foreground">{task.description}</p>
-        )}
+        {/* Record-level copy. The plain click is the what-I-see payload (spec +
+            trigger + run history with errors verbatim); the menu grades it into
+            the two reasons this page gets copied. */}
+        <div className="flex items-start justify-between gap-3">
+          {task.description ? (
+            <p className="text-sm text-muted-foreground">{task.description}</p>
+          ) : (
+            <span />
+          )}
+          <div className="flex shrink-0 items-center gap-1">
+            <CopyButtons
+              size="sm"
+              label={`Schedule ${task.title}`}
+              human={() => scheduleSummary(task)}
+              json={() => ({ schedule: task, runs })}
+              agent={() =>
+                buildScheduleRecordPayload({
+                  task,
+                  runs,
+                  runsStatus,
+                  runsError,
+                  kpis: scheduleKpis(tasks),
+                })
+              }
+              agentVariant={{
+                id: "this-schedule",
+                label: "This schedule",
+                hint: "Spec, trigger and run history as rendered",
+                position: "first",
+              }}
+              aiVariants={scheduleRecordVariants(() => ({
+                task,
+                runs,
+                runsStatus,
+                runsError,
+                kpis: scheduleKpis(tasks),
+              }))}
+            />
+            <ExportMenu
+              label={`Schedule ${task.title}`}
+              items={[
+                jsonExportItem(() => ({ schedule: task, runs })),
+                csvExportItem(() => runCsvRows(runs), "CSV (all runs)"),
+              ]}
+            />
+          </div>
+        </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
           <SpecCard task={task} />
           <TriggerCard task={task} />
         </div>
-        <RunHistoryCard taskId={task.id} />
+        <RunHistoryCard taskId={task.id} task={task} />
       </div>
     </>
   );

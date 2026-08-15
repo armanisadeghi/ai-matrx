@@ -22,10 +22,21 @@ import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderToggle from "@/features/shell/components/header/variants/variants/HeaderToggle";
 import type { HeaderAction } from "@/features/shell/components/header/variants/types";
 import {
+  selectAllRoomCardStats,
   selectListStatus,
   selectOrphanThreadIds,
   selectSessionsList,
 } from "@/features/war-room/redux/selectors";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
+import {
+  buildRoomListPayload,
+  roomCsvRows,
+  roomListHuman,
+  roomRow,
+  type RoomWithStats,
+} from "@/features/war-room/lib/copy";
 import {
   createWarRoomSession,
   loadSessionsList,
@@ -67,6 +78,7 @@ export function WarRoomAllView() {
   const sessions = useAppSelector(selectSessionsList);
   const orphanIds = useAppSelector(selectOrphanThreadIds);
   const status = useAppSelector(selectListStatus);
+  const roomStats = useAppSelector(selectAllRoomCardStats);
 
   const [view, setView] = useState<WarRoomAllViewMode>("rooms");
 
@@ -102,6 +114,16 @@ export function WarRoomAllView() {
       startTransition(() => router.push(`/war-room/${session.id}`));
     }
   }
+
+  // Copy/export cover ALL rooms, never the search-filtered slice.
+  const roomsWithStats: RoomWithStats[] = sessions.map((session) => ({
+    session,
+    stats: roomStats[session.id] ?? {
+      threadCount: 0,
+      pinnedCount: 0,
+      hasProject: false,
+    },
+  }));
 
   const headerActions: HeaderAction[] = [
     {
@@ -157,7 +179,7 @@ export function WarRoomAllView() {
             {/* Search — war room titles first, thread titles second (results below) */}
             {!isLoading && !isEmpty ? (
               <div className="shrink-0 border-b border-border px-4 sm:px-6 lg:px-8 py-2.5">
-                <div className="container mx-auto max-w-[1600px]">
+                <div className="container mx-auto max-w-[1600px] flex items-center gap-2">
                   <WarRoomSearchField
                     value={searchQuery}
                     onChange={setSearchQuery}
@@ -166,6 +188,41 @@ export function WarRoomAllView() {
                     className="w-full max-w-xl"
                     inputClassName="flex-1"
                   />
+                  {/* Copy/export cover ALL rooms. The shell header takes a
+                      declarative HeaderAction list that cannot hold a
+                      component, so the view copy lives in this row rather
+                      than a second near-empty toolbar. */}
+                  <div className="ml-auto flex items-center gap-1">
+                    <CopyButtons
+                      size="icon"
+                      label="All War Rooms"
+                      human={() => roomListHuman(roomsWithStats)}
+                      json={() =>
+                        roomsWithStats.map((r) => roomRow(r.session, r.stats))
+                      }
+                      agent={() =>
+                        buildRoomListPayload({
+                          rooms: roomsWithStats,
+                          orphanThreadCount: orphanIds.length,
+                          searchQuery,
+                        })
+                      }
+                    />
+                    <ExportMenu
+                      label="War Rooms"
+                      items={[
+                        jsonExportItem(() =>
+                          roomsWithStats.map((r) =>
+                            roomRow(r.session, r.stats),
+                          ),
+                        ),
+                        csvExportItem(
+                          () => roomCsvRows(roomsWithStats),
+                          "CSV (all War Rooms)",
+                        ),
+                      ]}
+                    />
+                  </div>
                 </div>
               </div>
             ) : null}

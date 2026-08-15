@@ -20,6 +20,7 @@ import { openOrphanThreadInNewRoom } from "@/features/war-room/redux/thunks";
 import { containerKey } from "@/features/war-room/types";
 import { threadDisplayTitle } from "@/features/war-room/utils/threadDisplayTitle";
 import { formatRelativeTime, formatAbsoluteDate } from "@/utils/datetime";
+import { keyFieldsAiVariant } from "@/features/marketing/lib/copy-payloads";
 
 const NO_ROOM_LABEL = "No room";
 
@@ -246,11 +247,49 @@ export function WarRoomThreadsTable({ isLoading }: { isLoading: boolean }) {
       }}
       copy={{
         label: "Thread",
-        location: "/war-room/all (Threads view)",
+        listLabel: "All threads",
+        location: "AI Matrx — War Rooms — Threads view (/war-room/all)",
         rowKind: "war-room-thread",
         listKind: "war-room-threads",
+        rowDescription: "One thread row from the cross-room Threads view.",
+        listDescription:
+          "Every thread the user owns across all War Rooms, including orphans, as the Threads view renders them.",
         humanRow: (row) =>
           `${row.title} — ${row.roomTitle} · ${row.anchorType} · updated ${formatRelativeTime(row.updatedAt)}`,
+        rowAttributes: (row) => ({
+          id: row.id,
+          room: row.roomTitle,
+          anchor_type: row.anchorType,
+          pinned: row.isPinned,
+        }),
+        // The list KPIs, so a copied view is never interpretable only by
+        // re-counting rows the agent may not have received.
+        listAttributes: (visible, all) => ({
+          visible_rows: visible.length,
+          total_rows: all.length,
+          orphan_rows: all.filter((r) => !r.roomId).length,
+          pinned_rows: all.filter((r) => r.isPinned).length,
+        }),
+        // Medium data: a "key fields" projection of the visible rows beside
+        // the automatic never-lossy Everything dump. Shared builder — never
+        // a local fork.
+        aiVariants: (visible) => [
+          keyFieldsAiVariant<ThreadTableRow>({
+            kind: "war-room-threads",
+            location: "AI Matrx — War Rooms — Threads view (/war-room/all)",
+            description:
+              "The visible thread rows projected to title, room and anchor.",
+            visible,
+            project: (row) => ({
+              id: row.id,
+              title: row.title,
+              room: row.roomTitle,
+              anchor_type: row.anchorType,
+              pinned: row.isPinned,
+              updated_at: row.updatedAt,
+            }),
+          }),
+        ],
       }}
       rowActions={(row) => <OpenThreadAction row={row} />}
       emptyState={{

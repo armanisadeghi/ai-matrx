@@ -58,6 +58,18 @@ import { toast } from "@/lib/toast";
 import { formatDistanceToNow } from "date-fns";
 import { idMatchesQuery } from "@/utils/search-scoring";
 import type { ConnectionUser } from "@/features/messaging/hooks/useUserConnections";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
+import {
+  buildInvitationListPayload,
+  buildInvitationRowPayload,
+  invitationCsvRows,
+  invitationListHuman,
+  invitationRow,
+  invitationSummary,
+  type MembershipCopyContainer,
+} from "./copy";
 import type { MembershipRole, MembershipRoleOption } from "./types";
 
 export interface PanelInvitation {
@@ -124,6 +136,12 @@ export interface InvitationsPanelProps {
   canManage?: boolean;
   /** Optional label above the email field (e.g. "Invite to Acme"). */
   inviteLabel?: React.ReactNode;
+  /**
+   * Which org/project these invitations belong to. Stamped into every copy /
+   * export payload. Defaults to an unnamed "organization".
+   */
+  copyContainer?: Omit<MembershipCopyContainer, "noun"> &
+    Partial<Pick<MembershipCopyContainer, "noun">>;
 }
 
 export function InvitationsPanel({
@@ -141,7 +159,13 @@ export function InvitationsPanel({
   refreshing = false,
   canManage = true,
   inviteLabel,
+  copyContainer,
 }: InvitationsPanelProps) {
+  const container: MembershipCopyContainer = {
+    noun: copyContainer?.noun ?? "organization",
+    id: copyContainer?.id,
+    name: copyContainer?.name,
+  };
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<MembershipRole>(defaultRole);
   const [invitationToCancel, setInvitationToCancel] =
@@ -408,20 +432,45 @@ export function InvitationsPanel({
             {invitations.length} pending{" "}
             {invitations.length === 1 ? "invitation" : "invitations"}
           </span>
-          {invitations.length > 0 && onRefresh && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onRefresh}
-              disabled={refreshing}
-              className="h-7 px-2"
-              title="Refresh"
-            >
-              <RefreshCw
-                className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`}
-              />
-            </Button>
-          )}
+          <div className="flex items-center gap-1">
+            {invitations.length > 0 && (
+              <>
+                <CopyButtons
+                  size="icon"
+                  label="Pending invitations"
+                  human={() => invitationListHuman(invitations, container)}
+                  json={() => invitations.map(invitationRow)}
+                  agent={() =>
+                    buildInvitationListPayload({ invitations, container })
+                  }
+                />
+                <ExportMenu
+                  label={`${container.name ?? container.noun} invitations`}
+                  items={[
+                    jsonExportItem(() => invitations.map(invitationRow)),
+                    csvExportItem(
+                      () => invitationCsvRows(invitations),
+                      "CSV (all invitations)",
+                    ),
+                  ]}
+                />
+              </>
+            )}
+            {invitations.length > 0 && onRefresh && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onRefresh}
+                disabled={refreshing}
+                className="h-7 px-2"
+                title="Refresh"
+              >
+                <RefreshCw
+                  className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`}
+                />
+              </Button>
+            )}
+          </div>
         </div>
 
         {invitations.length === 0 ? (
@@ -453,7 +502,7 @@ export function InvitationsPanel({
               return (
                 <div
                   key={invitation.id}
-                  className={`flex items-center justify-between p-4 rounded-lg border bg-card ${
+                  className={`group/invitation flex items-center justify-between p-4 rounded-lg border bg-card ${
                     isExpired ? "opacity-60 border-dashed" : ""
                   }`}
                 >
@@ -461,10 +510,7 @@ export function InvitationsPanel({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <p className="font-medium truncate">{invitation.email}</p>
-                      <Badge
-                        variant="secondary"
-                        className="text-xs capitalize"
-                      >
+                      <Badge variant="secondary" className="text-xs capitalize">
                         {invitation.role}
                       </Badge>
                       {isExpired && (
@@ -486,6 +532,24 @@ export function InvitationsPanel({
                       </span>
                     </div>
                   </div>
+
+                  {/* Row copy — renders for view-only viewers too. The
+                      existing "Copy Link" action below is untouched; this
+                      pair carries the invitation WITHOUT its accept token. */}
+                  <CopyButtons
+                    size="xs"
+                    label={`Invitation to ${invitation.email}`}
+                    className="flex-shrink-0 lg:opacity-0 lg:group-hover/invitation:opacity-100 lg:focus-within:opacity-100 transition-opacity"
+                    human={() => invitationSummary(invitation)}
+                    json={() => invitationRow(invitation)}
+                    agent={() =>
+                      buildInvitationRowPayload({
+                        invitation,
+                        container,
+                        totalInvitations: invitations.length,
+                      })
+                    }
+                  />
 
                   {/* Actions */}
                   {canManage && (

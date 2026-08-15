@@ -3,10 +3,18 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronRight, Code, Rocket, Settings } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  Code,
+  Rocket,
+  Settings,
+} from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { SURFACE_META } from "../../constants/surfaces";
+import { humanLines, scheduleDetailLocation } from "../../lib/copy";
 import type { AgendaTask } from "../../types";
 
 interface Props {
@@ -17,10 +25,79 @@ export function SpecCard({ task }: Props) {
   const [promptOpen, setPromptOpen] = useState(false);
   const varEntries = Object.entries(task.variables);
 
+  // What this card renders — prompt included in full, since a truncated
+  // prompt is the single most useless thing to hand an agent debugging one.
+  const specHuman = () =>
+    humanLines([
+      ["Schedule", task.title],
+      ["Agent", task.agentId ?? "Platform default"],
+      ["Prompt", task.prompt],
+      ...varEntries.map(
+        ([k, v]) =>
+          [`Variable ${k}`, typeof v === "string" ? v : JSON.stringify(v)] as [
+            string,
+            string,
+          ],
+      ),
+      ["Surfaces", task.surfaces.join(", ")],
+      ["Auth mode", task.authMode],
+      ["Max runtime", `${task.maxRuntimeSeconds}s`],
+      ["Max concurrent", task.maxConcurrent],
+      ["Conversation", task.persistentConversationId],
+      ["Tags", task.tags.join(", ")],
+    ]);
+
   return (
-    <Card>
+    <Card className="group/spec">
       <CardContent className="p-4 sm:p-5 space-y-4">
-        <SectionTitle icon={Rocket} label="Agent" />
+        <div className="flex items-center justify-between gap-2">
+          <SectionTitle icon={Rocket} label="Agent" />
+          <CopyButtons
+            size="xs"
+            label={`${task.title} spec`}
+            className="lg:opacity-0 lg:group-hover/spec:opacity-100 lg:focus-within:opacity-100 transition-opacity"
+            human={specHuman}
+            json={() => ({
+              agent_id: task.agentId,
+              prompt: task.prompt,
+              variables: task.variables,
+              surfaces: task.surfaces,
+              auth_mode: task.authMode,
+              max_runtime_seconds: task.maxRuntimeSeconds,
+              max_concurrent: task.maxConcurrent,
+              persistent_conversation_id: task.persistentConversationId,
+              tags: task.tags,
+            })}
+            agent={() => ({
+              kind: "schedule-spec-card",
+              location: scheduleDetailLocation(task),
+              description:
+                "The Agent/Prompt/Execution card of the open schedule, as rendered.",
+              data: {
+                agent_id: task.agentId,
+                prompt: task.prompt,
+                variables: task.variables,
+                surfaces: task.surfaces,
+                auth_mode: task.authMode,
+                max_runtime_seconds: task.maxRuntimeSeconds,
+                max_concurrent: task.maxConcurrent,
+                persistent_conversation_id: task.persistentConversationId,
+                tags: task.tags,
+              },
+              summary: specHuman(),
+              attributes: {
+                schedule_id: task.id,
+                prompt_chars: task.prompt.length,
+              },
+              context: {
+                schedule_title: task.title,
+                schedule_enabled: task.enabled,
+                next_due_at: task.nextDueAt,
+                last_run_at: task.lastRunAt,
+              },
+            })}
+          />
+        </div>
         <Row label="Agent">
           <span className="font-mono text-xs">
             {task.agentId ?? "Platform default"}
@@ -124,7 +201,13 @@ function SectionTitle({
   );
 }
 
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
+function Row({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="grid grid-cols-[6rem_1fr] sm:grid-cols-[8rem_1fr] items-center gap-2">
       <span className="text-xs text-muted-foreground">{label}</span>

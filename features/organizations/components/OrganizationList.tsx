@@ -19,6 +19,16 @@ import { useUserOrganizations } from "../hooks";
 import { OrganizationCard } from "./OrganizationCard";
 import { CreateOrgModal } from "./CreateOrgModal";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
+import {
+  buildOrganizationListPayload,
+  organizationCsvRows,
+  organizationKpis,
+  organizationListHuman,
+  organizationRow,
+} from "../lib/copy";
 
 /**
  * OrganizationList - Main component for displaying user's organizations
@@ -44,7 +54,7 @@ export function OrganizationList() {
 
   // Filter organizations based on search
   const filteredOrgs = searchTerm
-      ? filterAndSortBySearch(organizations, searchTerm, [
+    ? filterAndSortBySearch(organizations, searchTerm, [
         { get: (o) => o.name, weight: "title" },
         { get: (o) => o.abbreviation, weight: "title" },
         { get: (o) => o.slug, weight: "subtitle" },
@@ -55,6 +65,7 @@ export function OrganizationList() {
   // Separate personal and team organizations
   const personalOrg = filteredOrgs.find((org) => org.isPersonal);
   const teamOrgs = filteredOrgs.filter((org) => !org.isPersonal);
+  const kpis = organizationKpis(organizations);
 
   // Loading state
   if (loading) {
@@ -124,13 +135,38 @@ export function OrganizationList() {
             className="pl-10"
           />
         </div>
-        <Button
-          onClick={() => setIsCreateModalOpen(true)}
-          className="bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          New Organization
-        </Button>
+        <div className="flex items-center gap-1">
+          {/* Copy/export cover ALL organizations, never the filtered slice. */}
+          <CopyButtons
+            size="icon"
+            label="All organizations"
+            human={() => organizationListHuman(organizations)}
+            json={() => organizations.map(organizationRow)}
+            agent={() =>
+              buildOrganizationListPayload({
+                organizations,
+                searchQuery: searchTerm,
+              })
+            }
+          />
+          <ExportMenu
+            label="Organizations"
+            items={[
+              jsonExportItem(() => organizations.map(organizationRow)),
+              csvExportItem(
+                () => organizationCsvRows(organizations),
+                "CSV (all organizations)",
+              ),
+            ]}
+          />
+          <Button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            New Organization
+          </Button>
+        </div>
       </div>
 
       {/* Personal Organization */}
@@ -140,7 +176,11 @@ export function OrganizationList() {
             <UserIcon className="h-4 w-4" />
             Personal Space
           </h2>
-          <OrganizationCard organization={personalOrg} onUpdate={refresh} />
+          <OrganizationCard
+            organization={personalOrg}
+            onUpdate={refresh}
+            kpis={kpis}
+          />
         </div>
       )}
 
@@ -157,6 +197,7 @@ export function OrganizationList() {
                 key={org.id}
                 organization={org}
                 onUpdate={refresh}
+                kpis={kpis}
               />
             ))}
           </div>

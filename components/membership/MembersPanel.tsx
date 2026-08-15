@@ -67,10 +67,20 @@ import {
 } from "@/features/messaging/redux/messagingSlice";
 import { useConversations } from "@/hooks/useSupabaseMessaging";
 import { EmailComposeSheet } from "@/components/admin/EmailComposeSheet";
+import { UserIdentity, type UserLike } from "@/components/user/UserIdentity";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import {
-  UserIdentity,
-  type UserLike,
-} from "@/components/user/UserIdentity";
+  buildMemberListPayload,
+  buildMemberRowPayload,
+  memberCsvRows,
+  memberListHuman,
+  memberName,
+  memberRow,
+  memberSummary,
+  type MembershipCopyContainer,
+} from "./copy";
 import type { MembershipRole, MembershipRoleOption } from "./types";
 
 /**
@@ -97,7 +107,10 @@ export interface MembersPanelProps {
   canAssignRole?: (member: PanelMember, role: MembershipRole) => boolean;
   /** True when removing this member is forbidden (e.g. the last owner). */
   isLastOwner: (member: PanelMember) => boolean;
-  onChangeRole: (member: PanelMember, role: MembershipRole) => void | Promise<void>;
+  onChangeRole: (
+    member: PanelMember,
+    role: MembershipRole,
+  ) => void | Promise<void>;
   onRemove: (member: PanelMember) => void | Promise<void>;
   /** Disable role/remove controls while a mutation is in flight. */
   operationLoading?: boolean;
@@ -111,6 +124,13 @@ export interface MembersPanelProps {
   footerNotice?: React.ReactNode;
   /** Word used in the count line. Default "member". */
   memberNoun?: string;
+  /**
+   * Which org/project this roster belongs to. Stamped into every copy /
+   * export payload — a member list is meaningless without saying whose
+   * members these are. `noun` defaults to `containerNoun`.
+   */
+  copyContainer?: Omit<MembershipCopyContainer, "noun"> &
+    Partial<Pick<MembershipCopyContainer, "noun">>;
 }
 
 const ROLE_ICONS: Record<MembershipRole, LucideIcon> = {
@@ -146,11 +166,19 @@ export function MembersPanel({
   containerNoun = "organization",
   footerNotice,
   memberNoun = "member",
+  copyContainer,
 }: MembersPanelProps) {
+  const container: MembershipCopyContainer = {
+    noun: copyContainer?.noun ?? containerNoun,
+    id: copyContainer?.id,
+    name: copyContainer?.name,
+  };
   const currentUser = useAppSelector(selectUser);
   const dispatch = useAppDispatch();
   const [searchTerm, setSearchTerm] = useState("");
-  const [memberToRemove, setMemberToRemove] = useState<PanelMember | null>(null);
+  const [memberToRemove, setMemberToRemove] = useState<PanelMember | null>(
+    null,
+  );
   const [emailRecipient, setEmailRecipient] = useState<{
     id: string;
     email: string;
@@ -217,6 +245,34 @@ export function MembersPanel({
           {members.length} {memberNoun}
           {members.length !== 1 ? "s" : ""}
         </span>
+        {members.length > 0 && (
+          <div className="flex items-center gap-1">
+            <CopyButtons
+              size="icon"
+              label={`${memberNoun}s`}
+              human={() => memberListHuman(members, container, memberNoun)}
+              json={() => members.map(memberRow)}
+              agent={() =>
+                buildMemberListPayload({
+                  members,
+                  container,
+                  memberNoun,
+                  searchQuery: searchTerm,
+                })
+              }
+            />
+            <ExportMenu
+              label={`${container.name ?? container.noun} ${memberNoun}s`}
+              items={[
+                jsonExportItem(() => members.map(memberRow)),
+                csvExportItem(
+                  () => memberCsvRows(members),
+                  `CSV (all ${memberNoun}s)`,
+                ),
+              ]}
+            />
+          </div>
+        )}
       </div>
 
       {/* Members List */}
@@ -230,7 +286,7 @@ export function MembersPanel({
           return (
             <div
               key={member.id}
-              className="flex items-center justify-between p-4 rounded-lg border bg-card hover:shadow-sm transition-shadow"
+              className="group/member flex items-center justify-between p-4 rounded-lg border bg-card hover:shadow-sm transition-shadow"
             >
               {/* Member Info */}
               <UserIdentity
@@ -262,6 +318,21 @@ export function MembersPanel({
                   <RoleIcon className="h-3 w-3" />
                   {ROLE_LABELS[member.role]}
                 </Badge>
+
+                <CopyButtons
+                  size="xs"
+                  label={memberName(member)}
+                  className="lg:opacity-0 lg:group-hover/member:opacity-100 lg:focus-within:opacity-100 transition-opacity"
+                  human={() => memberSummary(member)}
+                  json={() => memberRow(member)}
+                  agent={() =>
+                    buildMemberRowPayload({
+                      member,
+                      container,
+                      totalMembers: members.length,
+                    })
+                  }
+                />
 
                 {/* Quick Actions - Message & Email (not for self) */}
                 {!isCurrentUser &&

@@ -27,21 +27,29 @@ import { toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import {
   deleteScheduledTask,
   runTaskNowThunk,
   toggleTaskEnabled,
 } from "../../redux/tasks/thunks";
 import { humanizeRelative } from "../../utils/triggerHumanize";
+import {
+  buildScheduleRowPayload,
+  scheduleSummary,
+  type ScheduleKpis,
+} from "../../lib/copy";
 import type { AgendaTask } from "../../types";
 import { TriggerChip } from "./TriggerChip";
 import { SurfacesChips } from "./SurfacesChips";
 
 interface Props {
   task: AgendaTask;
+  /** The list's rendered KPIs — carried into every row payload. */
+  kpis: ScheduleKpis;
 }
 
-export function ScheduleRow({ task }: Props) {
+export function ScheduleRow({ task, kpis }: Props) {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -137,6 +145,16 @@ export function ScheduleRow({ task }: Props) {
       </Link>
 
       <div className="flex items-center gap-2">
+        {/* Hover-reveal on desktop; always present for touch (the row is a
+            Link — CopyButtons stops propagation so copying never navigates). */}
+        <CopyButtons
+          size="icon"
+          label={`Schedule ${task.title}`}
+          className="lg:opacity-0 lg:group-hover:opacity-100 lg:focus-within:opacity-100 transition-opacity"
+          human={() => scheduleSummary(task)}
+          json={() => task}
+          agent={() => buildScheduleRowPayload(task, kpis)}
+        />
         <Switch
           checked={task.enabled}
           onCheckedChange={handleToggle}

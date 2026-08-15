@@ -23,6 +23,9 @@ import {
   selectActiveProject,
   selectTasksLoading,
   selectGroupBy,
+  selectSmartView,
+  selectSearchQuery,
+  selectShowCompleted,
   setSelectedTaskId,
   setNewTaskTitle,
 } from "@/features/tasks/redux/taskUiSlice";
@@ -43,6 +46,20 @@ import { cn } from "@/utils/cn";
 import type { TaskWithProject } from "@/features/tasks/types";
 import TasksTableView from "@/features/tasks/components/TasksTableView";
 import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
+import {
+  buildTaskListPayload,
+  buildTaskRowPayload,
+  taskCsvRows,
+  taskListHuman,
+  taskListKpis,
+  taskRow,
+  taskSummary,
+  type TaskListKpis,
+  type TaskListView,
+} from "@/features/tasks/lib/copy";
 import {
   useListViewPrefs,
   type LegacyListViewImport,
@@ -83,6 +100,9 @@ export default function TaskListPane() {
   const projects = useAppSelector(selectProjects);
   const loading = useAppSelector(selectTasksLoading);
   const groupBy = useAppSelector(selectGroupBy);
+  const smartView = useAppSelector(selectSmartView);
+  const searchQuery = useAppSelector(selectSearchQuery);
+  const showCompleted = useAppSelector(selectShowCompleted);
   const groupByBanner = getTaskGroupByBanner(groupBy);
   const isGrouped = groupBy !== "none";
   const orgId = useAppSelector(selectOrganizationId);
@@ -127,6 +147,23 @@ export default function TaskListPane() {
   const collapsed = collapsedOverride ?? defaultCollapsed;
 
   const totalCount = groups.reduce((sum, g) => sum + g.tasks.length, 0);
+
+  // Copy/export cover every task the current view produces — ALL groups
+  // flattened, never the expanded ones only, and never a collapsed group's
+  // rows silently dropped.
+  const allVisibleTasks = groups.flatMap((g) => g.tasks);
+  const listKpis = taskListKpis(allVisibleTasks);
+  const activeProjectName =
+    activeProject && activeProject !== "__unassigned__"
+      ? (projects.find((p) => p.id === activeProject)?.name ?? null)
+      : null;
+  const listView: TaskListView = {
+    groupBy,
+    smartView: typeof smartView === "string" ? smartView : null,
+    projectName: activeProjectName,
+    searchQuery: typeof searchQuery === "string" ? searchQuery : null,
+    showCompleted: showCompleted === true,
+  };
 
   const handleSelectTask = (taskId: string) => {
     dispatch(setSelectedTaskId(taskId));
@@ -221,6 +258,37 @@ export default function TaskListPane() {
             disabled={isCreatingTask}
           />
         </div>
+        {allVisibleTasks.length > 0 && (
+          <div className="flex shrink-0 items-center gap-0.5">
+            <CopyButtons
+              size="xs"
+              label="Task list"
+              human={() => taskListHuman(allVisibleTasks, listView)}
+              json={() => allVisibleTasks.map(taskRow)}
+              agent={() =>
+                buildTaskListPayload({
+                  tasks: allVisibleTasks,
+                  view: listView,
+                  groups: groups.map((g) => ({
+                    key: g.key,
+                    label: g.label,
+                    taskIds: g.tasks.map((t) => t.id),
+                  })),
+                })
+              }
+            />
+            <ExportMenu
+              label="Tasks"
+              items={[
+                jsonExportItem(() => allVisibleTasks.map(taskRow)),
+                csvExportItem(
+                  () => taskCsvRows(allVisibleTasks),
+                  "CSV (every task in this view)",
+                ),
+              ]}
+            />
+          </div>
+        )}
       </div>
 
       {groupByBanner && !isTableView && (
@@ -294,6 +362,8 @@ export default function TaskListPane() {
                         <TaskRow
                           key={`${group.key}:${task.id}`}
                           task={task}
+                          kpis={listKpis}
+                          view={listView}
                           isSelected={selectedTaskId === task.id}
                           onSelect={() => handleSelectTask(task.id)}
                           onToggle={() =>
@@ -322,11 +392,16 @@ function TaskRow({
   isSelected,
   onSelect,
   onToggle,
+  kpis,
+  view,
 }: {
   task: TaskWithProject;
   isSelected: boolean;
   onSelect: () => void;
   onToggle: () => void;
+  /** The list's rendered KPIs + view state — carried into the row payload. */
+  kpis: TaskListKpis;
+  view: TaskListView;
 }) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -346,6 +421,17 @@ function TaskRow({
       {isSelected && (
         <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full bg-primary" />
       )}
+
+      {/* Hover-reveal pair. The row selects on click — CopyButtons stops
+          propagation so copying never changes the open task. */}
+      <CopyButtons
+        size="xs"
+        label={task.title}
+        className="absolute right-1.5 top-1.5 z-10 rounded bg-background/90 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100"
+        human={() => taskSummary(task)}
+        json={() => taskRow(task)}
+        agent={() => buildTaskRowPayload({ task, kpis, view })}
+      />
 
       <button
         onClick={(e) => {

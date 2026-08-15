@@ -29,14 +29,14 @@ const selectEntityScopeIds = makeSelectEntityScopeIds();
 // ── Roots ─────────────────────────────────────────────────────────────
 export const selectSessionsById = (state: RootState) =>
   state.warRoom.sessionsById;
-const selectSessionIds = (state: RootState) => state.warRoom.sessionIds;
+export const selectSessionIds = (state: RootState) => state.warRoom.sessionIds;
 export const selectThreadsById = (state: RootState) =>
   state.warRoom.threadsById;
 const selectThreadIdsByRoom = (state: RootState) =>
   state.warRoom.threadIdsByRoom;
 export const selectOrphanThreadIds = (state: RootState) =>
   state.warRoom.orphanThreadIds;
-const selectThreadUserStateById = (state: RootState) =>
+export const selectThreadUserStateById = (state: RootState) =>
   state.warRoom.threadUserStateById;
 
 export const selectListStatus = (state: RootState) => state.warRoom.listStatus;
@@ -259,7 +259,7 @@ export function selectThreadEffectiveContext(
 
 // ── Associations ────────────────────────────────────────────────────────
 const EMPTY_ASSIGNMENTS: WarRoomAssignment[] = [];
-const selectAssignmentsByContainer = (state: RootState) =>
+export const selectAssignmentsByContainer = (state: RootState) =>
   state.warRoom.assignmentsByContainer;
 
 const assignmentsContainerCache = new Map<
@@ -282,6 +282,38 @@ export function selectAssignmentsForContainer(
   }
   return sel;
 }
+
+/**
+ * Every room's card stats in one memoized map — what the rooms gallery needs
+ * to build a copy/export payload covering ALL rooms without calling the
+ * per-id `selectRoomCardStats` in a loop.
+ */
+export const selectAllRoomCardStats = createSelector(
+  [
+    selectSessionIds,
+    selectThreadIdsByRoom,
+    selectThreadUserStateById,
+    selectAssignmentsByContainer,
+  ],
+  (roomIds, idsByRoom, userStateById, byContainer) => {
+    const out: Record<string, RoomCardStats> = {};
+    for (const roomId of roomIds) {
+      const ids = idsByRoom[roomId] ?? EMPTY_IDS;
+      let pinned = 0;
+      for (const id of ids) {
+        if (userStateById[id]?.isPinned) pinned++;
+      }
+      const roomBucket =
+        byContainer[containerKey("room", roomId)] ?? EMPTY_ASSIGNMENTS;
+      out[roomId] = {
+        threadCount: ids.length,
+        pinnedCount: pinned,
+        hasProject: roomBucket.some((r) => r.entity_type === "project"),
+      };
+    }
+    return out;
+  },
+);
 
 function bucket(
   state: RootState,

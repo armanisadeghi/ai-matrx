@@ -61,6 +61,19 @@ import {
   ORGANIZATIONS_SURFACE_NAME,
   createOrganizationsScope,
 } from "@/features/surfaces/manifests/organizations.manifest";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
+import {
+  buildOrganizationCardPayload,
+  buildOrganizationListPayload,
+  organizationCsvRows,
+  organizationKpis,
+  organizationListHuman,
+  organizationRow,
+  organizationSummary,
+  type OrganizationKpis,
+} from "@/features/organizations/lib/copy";
 
 interface RoleMeta {
   label: string;
@@ -105,9 +118,12 @@ const PERSONAL_META: RoleMeta = {
 function OrgCard({
   org,
   suggestions,
+  kpis,
 }: {
   org: OrganizationWithRole;
   suggestions: UseScopeSuggestionsResult;
+  /** The launcher's leading stats — carried into every card payload. */
+  kpis: OrganizationKpis;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = React.useTransition();
@@ -126,7 +142,7 @@ function OrgCard({
   }
 
   return (
-    <Card className="relative overflow-hidden flex flex-col hover:border-primary/40 hover:shadow-sm transition-all">
+    <Card className="group/org relative overflow-hidden flex flex-col hover:border-primary/40 hover:shadow-sm transition-all">
       <span className={`absolute inset-x-0 top-0 h-1 ${meta.bar} opacity-80`} />
       {isPending && (
         <div className="absolute inset-0 bg-background/70 backdrop-blur-sm z-10 flex items-center justify-center">
@@ -272,6 +288,21 @@ function OrgCard({
             Manage
           </Link>
         </Button>
+        <CopyButtons
+          size="xs"
+          label={org.name}
+          className="lg:opacity-0 lg:group-hover/org:opacity-100 lg:focus-within:opacity-100 transition-opacity"
+          human={() => organizationSummary(org)}
+          json={() => organizationRow(org)}
+          agent={() =>
+            buildOrganizationCardPayload({
+              org,
+              kpis,
+              scopeTypeCount: scopeTypes.length,
+              scopeCount: scopes.length,
+            })
+          }
+        />
       </div>
     </Card>
   );
@@ -316,6 +347,7 @@ export default function OrganizationsPage() {
   const personal = filtered.filter((o) => o.isPersonal);
   const teams = filtered.filter((o) => !o.isPersonal);
   const teamCount = organizations.filter((o) => !o.isPersonal).length;
+  const kpis = organizationKpis(organizations);
 
   // ── Surface runtime (matrx-user/organizations, list mode) ───────────────
   // Built at trigger time only; emits the launcher's full org list — no org
@@ -351,12 +383,42 @@ export default function OrganizationsPage() {
           </span>
         }
         right={
-          <TapTargetButtonSolid
-            icon={<Plus className="h-4 w-4" />}
-            label={isMobile ? undefined : "New organization"}
-            ariaLabel="New organization"
-            onClick={() => setCreateOpen(true)}
-          />
+          <>
+            {/* View copy + export live in the page's own header row. Both
+                cover ALL organizations, never the search-filtered slice. */}
+            {organizations.length > 0 ? (
+              <>
+                <CopyButtons
+                  size="icon"
+                  label="All organizations"
+                  human={() => organizationListHuman(organizations)}
+                  json={() => organizations.map(organizationRow)}
+                  agent={() =>
+                    buildOrganizationListPayload({
+                      organizations,
+                      searchQuery: query,
+                    })
+                  }
+                />
+                <ExportMenu
+                  label="Organizations"
+                  items={[
+                    jsonExportItem(() => organizations.map(organizationRow)),
+                    csvExportItem(
+                      () => organizationCsvRows(organizations),
+                      "CSV (all organizations)",
+                    ),
+                  ]}
+                />
+              </>
+            ) : null}
+            <TapTargetButtonSolid
+              icon={<Plus className="h-4 w-4" />}
+              label={isMobile ? undefined : "New organization"}
+              ariaLabel="New organization"
+              onClick={() => setCreateOpen(true)}
+            />
+          </>
         }
       />
       <div className="h-full overflow-y-auto bg-textured">
@@ -444,6 +506,7 @@ export default function OrganizationsPage() {
                         key={org.id}
                         org={org}
                         suggestions={suggestions}
+                        kpis={kpis}
                       />
                     ))}
                   </div>
@@ -461,6 +524,7 @@ export default function OrganizationsPage() {
                         key={org.id}
                         org={org}
                         suggestions={suggestions}
+                        kpis={kpis}
                       />
                     ))}
                   </div>
