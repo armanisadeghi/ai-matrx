@@ -414,8 +414,8 @@ export const STAGES: LoopStage[] = [
     entry: "/marketing/search-console",
     pipes: {
       code: {
-        state: "partial",
-        note: "GSC, backlinks and ranks sync nightly; PageSpeed coverage runs in small resumable ten-minute batches; GA4 remains on-demand only.",
+        state: "live",
+        note: "GSC, backlinks and ranks sync nightly; PageSpeed runs in resumable ten-minute batches with terminal-page quarantine; GA4 runs daily and reports provider configuration failures loudly.",
         ref: "aidream/aidream/services/scheduling/system_task_runner.py#register_builtin_system_tasks",
       },
       human: {
@@ -1100,14 +1100,15 @@ export const GAPS: LoopGap[] = [
   },
   {
     id: "G-MEASURE-SCHEDULE",
-    title: "GA4 never refreshes itself",
+    title: "Measurement schedules could poison the Growth Loop",
     severity: "minor",
-    status: "in-progress",
+    status: "closed",
     at: "measure",
     breaks: ["code"],
     detail:
-      "BOTH HANDLERS NOW LIVE AND BOTH FAILING. Verified 2026-08-13: GA4 shipped and its task is enabled — and has failed 2 of 2 runs with the swallowed message '3 site syncs failed' (a count where the per-site cause must be). PageSpeed regressed hard: 267 runs / 155 failed (58%), up from 49/13, and 90 of those failures are TWO page ids retried forever on terminal PSI verdicts (NO_FCP, FAILED_DOCUMENT_REQUEST) — a poison-pill loop, not a systemic break; 16 more are 'runner cancelled before completion' (the ten-minute budget). Scheduling is solved; error handling is not. Separately, SitePerformanceWorkspace reads an automation field the backend does not return.",
+      "CLOSED AND LIVE-VERIFIED 2026-08-15. PageSpeed and GA4 tasks are both enabled (PageSpeed every ten minutes; GA4 daily). The All Green Recycling loop advanced to analyze after deployment and its measure count held at 344 while a new PageSpeed sweep ran: scheduled per-page collections can no longer rewind loop focus. Terminal PSI verdicts reuse pagespeed_health, quarantine the page/strategy, and complete measure with a loud terminal_unmeasurable outcome plus the canonical release RPC. GA4 is scheduling correctly but its current daily runs fail loudly because Google Analytics Data API is disabled for the configured Google project; that is a provider configuration incident, not a missing schedule.",
     lane: "L1",
+    evidence: "aidream/aidream/services/seo/pagespeed_health.py",
   },
 ];
 
