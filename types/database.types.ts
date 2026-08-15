@@ -9386,6 +9386,24 @@ export type Database = {
           to_number: string
         }[]
       }
+      claim_recoverable_sms_command_turns: {
+        Args: {
+          p_lease_seconds?: number
+          p_limit?: number
+          p_worker_id: string
+        }
+        Returns: {
+          agent_id: string
+          agent_version_id: string
+          chat_conversation_id: string
+          chat_conversation_is_new: boolean
+          inbound_message_id: string
+          organization_id: string
+          sms_conversation_id: string
+          text: string
+          user_id: string
+        }[]
+      }
       configure_my_sms_assistant: {
         Args: { p_agent_id: string; p_enabled: boolean; p_program_key: string }
         Returns: {
