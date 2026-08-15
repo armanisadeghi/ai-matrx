@@ -31286,6 +31286,39 @@ export type Database = {
         }
         Relationships: []
       }
+      entity_grants: {
+        Row: {
+          audience: string
+          created_at: string
+          entity_id: string
+          entity_type: string
+          granted_by: string | null
+          id: string
+          industry_id: string | null
+          organization_id: string | null
+        }
+        Insert: {
+          audience: string
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          granted_by?: string | null
+          id?: string
+          industry_id?: string | null
+          organization_id?: string | null
+        }
+        Update: {
+          audience?: string
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          granted_by?: string | null
+          id?: string
+          industry_id?: string | null
+          organization_id?: string | null
+        }
+        Relationships: []
+      }
       entity_relationships: {
         Row: {
           child_type: string
@@ -41642,44 +41675,6 @@ export type Database = {
         }
         Relationships: []
       }
-      data_store_grants: {
-        Row: {
-          audience: string
-          created_at: string
-          data_store_id: string
-          granted_by: string | null
-          id: string
-          industry_id: string | null
-          organization_id: string | null
-        }
-        Insert: {
-          audience: string
-          created_at?: string
-          data_store_id: string
-          granted_by?: string | null
-          id?: string
-          industry_id?: string | null
-          organization_id?: string | null
-        }
-        Update: {
-          audience?: string
-          created_at?: string
-          data_store_id?: string
-          granted_by?: string | null
-          id?: string
-          industry_id?: string | null
-          organization_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "data_store_grants_data_store_id_fkey"
-            columns: ["data_store_id"]
-            isOneToOne: false
-            referencedRelation: "data_stores"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       data_store_members: {
         Row: {
           added_at: string
@@ -43277,7 +43272,36 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      data_store_grants: {
+        Row: {
+          audience: string | null
+          created_at: string | null
+          data_store_id: string | null
+          granted_by: string | null
+          id: string | null
+          industry_id: string | null
+          organization_id: string | null
+        }
+        Insert: {
+          audience?: string | null
+          created_at?: string | null
+          data_store_id?: string | null
+          granted_by?: string | null
+          id?: string | null
+          industry_id?: string | null
+          organization_id?: string | null
+        }
+        Update: {
+          audience?: string | null
+          created_at?: string | null
+          data_store_id?: string | null
+          granted_by?: string | null
+          id?: string | null
+          industry_id?: string | null
+          organization_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       fn_bulk_delete_library_documents: {
@@ -43397,11 +43421,11 @@ export type Database = {
           p_store_id: string
         }
         Returns: {
-          audience: string
-          created_at: string
-          data_store_id: string
+          audience: string | null
+          created_at: string | null
+          data_store_id: string | null
           granted_by: string | null
-          id: string
+          id: string | null
           industry_id: string | null
           organization_id: string | null
         }
@@ -43423,11 +43447,11 @@ export type Database = {
           p_store_id: string
         }
         Returns: {
-          audience: string
-          created_at: string
-          data_store_id: string
+          audience: string | null
+          created_at: string | null
+          data_store_id: string | null
           granted_by: string | null
-          id: string
+          id: string | null
           industry_id: string | null
           organization_id: string | null
         }
