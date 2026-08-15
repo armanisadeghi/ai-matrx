@@ -9458,6 +9458,27 @@ export type Database = {
           user_id: string
         }[]
       }
+      claim_voice_call_consent_event: {
+        Args: {
+          p_consented_at: string
+          p_disclosed_at: string
+          p_disclosure_text_hash: string
+          p_disclosure_version: string
+          p_program_key: string
+          p_provider: string
+          p_provider_account_id: string
+          p_provider_call_id: string
+          p_provider_event_key: string
+          p_response_kind: string
+          p_response_value: string
+          p_source: string
+        }
+        Returns: {
+          disposition: string
+          event_id: number
+          interaction_id: string
+        }[]
+      }
       claim_voice_call_lifecycle_event: {
         Args: {
           p_occurred_at?: string
@@ -9705,6 +9726,33 @@ export type Database = {
         Returns: {
           disposition: string
           interaction_id: string
+        }[]
+      }
+      resolve_voice_owner_call_context: {
+        Args: {
+          p_called_phone: string
+          p_caller_phone: string
+          p_destination_id: string
+          p_program_key: string
+          p_provider: string
+          p_provider_account_id: string
+        }
+        Returns: {
+          contact_point_id: string
+          organization_id: string
+          party_id: string
+          recording_owner_id: string
+        }[]
+      }
+      voice_call_consent_persistence_readiness: {
+        Args: { p_program_key?: string }
+        Returns: {
+          canonical_identity_binding_count: number
+          consent_claim_ready: boolean
+          event_idempotency_ready: boolean
+          ready: boolean
+          registration_ready: boolean
+          resolver_ready: boolean
         }[]
       }
       voice_recording_persistence_readiness: {
@@ -13568,6 +13616,10 @@ export type Database = {
       compute_sending_health: {
         Args: { p_identity_id: string; p_window?: string }
         Returns: Json
+      }
+      ensure_user_party: {
+        Args: { p_source?: string; p_user_id: string }
+        Returns: string
       }
       evaluate_outreach_list_quality: {
         Args: { p_list_id: string }

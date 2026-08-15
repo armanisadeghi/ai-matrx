@@ -6,7 +6,13 @@ import {
   authorizeVoiceOwnerBetaCall,
   inspectVoiceOwnerBetaProgram,
 } from "@/lib/communications/voice/owner-beta-program";
-import { getVoiceRecordingPersistenceReadiness } from "@/lib/communications/voice/persistence";
+import {
+  claimVoiceCallConsentEvent,
+  getVoiceCallConsentPersistenceReadiness,
+  getVoiceRecordingPersistenceReadiness,
+  registerVoiceCallInteraction,
+  resolveVoiceOwnerCallContext,
+} from "@/lib/communications/voice/persistence";
 import { OWNER_BETA_VOICE_DISCLOSURE_VERSION } from "@/lib/communications/providers/twilio/voice-twiml";
 
 import { GET, POST } from "./route";
@@ -16,7 +22,11 @@ jest.mock("@/lib/communications/voice/owner-beta-program", () => ({
   inspectVoiceOwnerBetaProgram: jest.fn(),
 }));
 jest.mock("@/lib/communications/voice/persistence", () => ({
+  claimVoiceCallConsentEvent: jest.fn(),
+  getVoiceCallConsentPersistenceReadiness: jest.fn(),
   getVoiceRecordingPersistenceReadiness: jest.fn(),
+  registerVoiceCallInteraction: jest.fn(),
+  resolveVoiceOwnerCallContext: jest.fn(),
 }));
 
 const WEBHOOK_URL = "https://www.aimatrx.com/api/webhooks/twilio/voice";
@@ -43,6 +53,7 @@ function signedRequest(
 
 describe("POST /api/webhooks/twilio/voice", () => {
   beforeEach(() => {
+    jest.clearAllMocks();
     process.env.TWILIO_AUTH_TOKEN = AUTH_TOKEN;
     jest.mocked(authorizeVoiceOwnerBetaCall).mockResolvedValue({
       status: "authorized",
@@ -65,6 +76,29 @@ describe("POST /api/webhooks/twilio/voice", () => {
       ready: true,
       recording_claim_ready: true,
       schema_ready: true,
+    });
+    jest.mocked(getVoiceCallConsentPersistenceReadiness).mockResolvedValue({
+      canonical_identity_binding_count: 1,
+      consent_claim_ready: true,
+      event_idempotency_ready: true,
+      ready: true,
+      registration_ready: true,
+      resolver_ready: true,
+    });
+    jest.mocked(resolveVoiceOwnerCallContext).mockResolvedValue({
+      party_id: "party-1",
+      contact_point_id: "contact-point-1",
+      organization_id: "5dc930e9-bd65-44a1-8369-af773f6e1a5b",
+      recording_owner_id: "owner-1",
+    });
+    jest.mocked(registerVoiceCallInteraction).mockResolvedValue({
+      interaction_id: "interaction-1",
+      disposition: "created",
+    });
+    jest.mocked(claimVoiceCallConsentEvent).mockResolvedValue({
+      interaction_id: "interaction-1",
+      event_id: 123,
+      disposition: "created",
     });
     jest.spyOn(console, "info").mockImplementation(() => undefined);
     jest.spyOn(console, "error").mockImplementation(() => undefined);
@@ -98,6 +132,22 @@ describe("POST /api/webhooks/twilio/voice", () => {
     expect(body).toContain("press 1 or say, I agree");
     expect(body).toContain("<Gather");
     expect(body).not.toContain("<Record");
+    expect(resolveVoiceOwnerCallContext).toHaveBeenCalledWith({
+      programKey: "ai_matrx_owner_beta",
+      destinationId: "destination-1",
+      provider: "twilio",
+      providerAccountId: "AC123",
+      callerPhone: "+14155550100",
+      calledPhone: "+14158059951",
+    });
+    expect(registerVoiceCallInteraction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        partyId: "party-1",
+        contactPointId: "contact-point-1",
+        providerCallId: "CA123",
+        direction: "inbound",
+      }),
+    );
     expect(console.info).toHaveBeenCalledWith(
       "Twilio Voice owner beta consent offered",
       expect.objectContaining({
@@ -155,6 +205,52 @@ describe("POST /api/webhooks/twilio/voice", () => {
     );
   });
 
+  test.each([
+    "missing canonical party",
+    "ambiguous canonical party",
+    "missing or mismatched verified contact point",
+  ])("fails canonical identity resolution closed: %s", async (reason) => {
+    jest.mocked(resolveVoiceOwnerCallContext).mockRejectedValueOnce(
+      new Error(reason),
+    );
+    const response = await POST(
+      signedRequest({
+        AccountSid: "AC123",
+        CallSid: "CA123",
+        From: "+14155550100",
+        To: "+14158059951",
+        Direction: "inbound",
+      }),
+    );
+    const body = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(body).toContain("not available for this caller");
+    expect(body).toContain("Nothing was recorded");
+    expect(body).not.toContain("<Gather");
+    expect(body).not.toContain("<Record");
+    expect(registerVoiceCallInteraction).not.toHaveBeenCalled();
+  });
+
+  test("accepts an idempotent canonical call registration replay", async () => {
+    jest.mocked(registerVoiceCallInteraction).mockResolvedValueOnce({
+      interaction_id: "interaction-1",
+      disposition: "replay",
+    });
+    const response = await POST(
+      signedRequest({
+        AccountSid: "AC123",
+        CallSid: "CA123",
+        From: "+14155550100",
+        To: "+14158059951",
+        Direction: "inbound",
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.text()).toContain("press 1 or say, I agree");
+  });
+
   test("fails a consent timeout closed and never starts recording", async () => {
     const disclosedAt = new Date().toISOString();
     const consentUrl = new URL(WEBHOOK_URL);
@@ -183,6 +279,43 @@ describe("POST /api/webhooks/twilio/voice", () => {
     expect(response.status).toBe(200);
     expect(body).toContain("did not receive affirmative consent");
     expect(body).toContain("Nothing was recorded");
+    expect(body).not.toContain("<Record");
+    expect(claimVoiceCallConsentEvent).not.toHaveBeenCalled();
+  });
+
+  test("fails an affirmative response closed when durable consent persistence fails", async () => {
+    jest.mocked(claimVoiceCallConsentEvent).mockRejectedValueOnce(
+      new Error("database unavailable"),
+    );
+    const disclosedAt = new Date().toISOString();
+    const consentUrl = new URL(WEBHOOK_URL);
+    consentUrl.searchParams.set("stage", "owner-beta-consent");
+    consentUrl.searchParams.set("call", "CA123");
+    consentUrl.searchParams.set("disclosed_at", disclosedAt);
+    consentUrl.searchParams.set(
+      "disclosure_version",
+      OWNER_BETA_VOICE_DISCLOSURE_VERSION,
+    );
+    const response = await POST(
+      signedRequest(
+        {
+          AccountSid: "AC123",
+          CallSid: "CA123",
+          From: "+14155550100",
+          To: "+14158059951",
+          Direction: "inbound",
+          Digits: "1",
+        },
+        undefined,
+        consentUrl.toString(),
+      ),
+    );
+    const body = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(body).toContain("did not receive affirmative consent");
+    expect(body).toContain("Nothing was recorded");
+    expect(body).not.toContain("consent was received");
     expect(body).not.toContain("<Record");
   });
 
@@ -216,6 +349,15 @@ describe("POST /api/webhooks/twilio/voice", () => {
     expect(body).toContain("consent was received");
     expect(body).toContain("not recording this call");
     expect(body).not.toContain("<Record");
+    expect(claimVoiceCallConsentEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        providerAccountId: "AC123",
+        providerCallId: "CA123",
+        providerEventKey:
+          "twilio:voice-consent:AC123:CA123:owner-beta-2026-08-15-v1",
+        consented: true,
+      }),
+    );
     expect(console.info).toHaveBeenCalledWith(
       "Twilio Voice owner beta consent accepted",
       expect.objectContaining({
@@ -244,6 +386,7 @@ describe("POST /api/webhooks/twilio/voice", () => {
         totalGateCount: 9,
       },
     });
+    expect(body.consent.persistence).toBe("durable_activity_ledger_ready");
     expect(body.recording.readiness.gates).toEqual(
       expect.arrayContaining([
         expect.objectContaining({

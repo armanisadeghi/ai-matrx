@@ -6,6 +6,7 @@ import type { Database } from "@/types/database.types";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import type { CallLifecycleEvent } from "./lifecycle";
 import type { CallRecordingLifecycleEvent } from "./recording-lifecycle";
+import type { CallConsentEvidence } from "./consent";
 
 type CommunicationFunctions = Database["communication"]["Functions"];
 
@@ -15,6 +16,12 @@ export type VoiceRecordingLifecycleClaim =
   CommunicationFunctions["claim_voice_recording_lifecycle_event"]["Returns"][number];
 export type VoiceCallRegistration =
   CommunicationFunctions["register_voice_call_interaction"]["Returns"][number];
+export type VoiceOwnerCallContext =
+  CommunicationFunctions["resolve_voice_owner_call_context"]["Returns"][number];
+export type VoiceCallConsentClaim =
+  CommunicationFunctions["claim_voice_call_consent_event"]["Returns"][number];
+export type VoiceCallConsentPersistenceReadiness =
+  CommunicationFunctions["voice_call_consent_persistence_readiness"]["Returns"][number];
 export type VoiceRecordingFileFinalization =
   CommunicationFunctions["finalize_voice_recording_file"]["Returns"][number];
 export type VoiceRecordingPersistenceReadiness =
@@ -65,6 +72,35 @@ export interface RegisterVoiceCallInput {
   occurredAt: string | null;
 }
 
+export interface ResolveVoiceOwnerCallContextInput {
+  programKey: string;
+  destinationId: string;
+  provider: "twilio";
+  providerAccountId: string;
+  callerPhone: string;
+  calledPhone: string;
+}
+
+/**
+ * Resolve only an already-enrolled caller to one verified phone point on one
+ * pre-existing person in the normal AI Matrx CRM tenant.
+ */
+export async function resolveVoiceOwnerCallContext(
+  input: ResolveVoiceOwnerCallContextInput,
+): Promise<VoiceOwnerCallContext> {
+  const { data, error } = await createAdminClient()
+    .schema("communication")
+    .rpc("resolve_voice_owner_call_context", {
+      p_program_key: input.programKey,
+      p_destination_id: input.destinationId,
+      p_provider: input.provider,
+      p_provider_account_id: input.providerAccountId,
+      p_caller_phone: input.callerPhone,
+      p_called_phone: input.calledPhone,
+    });
+  return requireSingleRow("Voice owner call context resolution", data, error);
+}
+
 /** Register the one canonical CRM interaction before accepting lifecycle callbacks. */
 export async function registerVoiceCallInteraction(
   input: RegisterVoiceCallInput,
@@ -104,6 +140,29 @@ export async function claimVoiceCallLifecycleEvent(
       p_occurred_at: event.occurredAt ?? undefined,
     });
   return requireSingleRow("Voice call lifecycle claim", data, error);
+}
+
+/** Persist one affirmative consent event before returning continuation TwiML. */
+export async function claimVoiceCallConsentEvent(
+  evidence: CallConsentEvidence,
+): Promise<VoiceCallConsentClaim> {
+  const { data, error } = await createAdminClient()
+    .schema("communication")
+    .rpc("claim_voice_call_consent_event", {
+      p_provider: evidence.provider,
+      p_provider_account_id: evidence.providerAccountId,
+      p_provider_call_id: evidence.providerCallId,
+      p_provider_event_key: evidence.providerEventKey,
+      p_program_key: evidence.programKey,
+      p_disclosure_version: evidence.disclosureVersion,
+      p_disclosure_text_hash: evidence.disclosureTextHash,
+      p_disclosed_at: evidence.disclosedAt,
+      p_response_kind: evidence.responseKind,
+      p_response_value: evidence.responseValue,
+      p_consented_at: evidence.consentedAt,
+      p_source: evidence.source,
+    });
+  return requireSingleRow("Voice call consent claim", data, error);
 }
 
 /** Atomically append and apply one signed provider recording lifecycle event. */
@@ -161,6 +220,14 @@ export async function getVoiceRecordingPersistenceReadiness(): Promise<VoiceReco
     .schema("communication")
     .rpc("voice_recording_persistence_readiness");
   return requireSingleRow("Voice recording persistence readiness", data, error);
+}
+
+/** Read the installed resolver, registration, consent ledger, and identity gates. */
+export async function getVoiceCallConsentPersistenceReadiness(): Promise<VoiceCallConsentPersistenceReadiness> {
+  const { data, error } = await createAdminClient()
+    .schema("communication")
+    .rpc("voice_call_consent_persistence_readiness");
+  return requireSingleRow("Voice call consent persistence readiness", data, error);
 }
 
 export function voicePersistenceHttpStatus(error: unknown): number {

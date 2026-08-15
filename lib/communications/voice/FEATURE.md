@@ -14,24 +14,25 @@ long-lived media and agent execution stay in aidream.
   enrollment. It admits a call only when the active program has exactly one destination and one
   verified caller, and the signed request's provider account, called number, caller, and inbound
   direction all match. Missing or ambiguous bindings fail closed.
-- The read uses the server-only client because a provider webhook has no user session. It is
-  read-only: the Voice route cannot enroll a caller, change a program, create consent, or mutate a
-  call.
+- Provider webhooks use the server-only client because they have no user session. Admission itself
+  remains read-only; after admission, a separate service-only resolver must prove one pre-existing
+  same-tenant party and verified contact point before the route can register the canonical call.
 - The caller's full phone number is never returned by the policy and is absent from route logs and
   readiness output.
 - Admission returns only the program/destination decision. It deliberately does not return the
-  verified enrollment's organization or user as call ownership. Future call registration must
-  independently bind the program to the normal AI Matrx tenant
+  verified enrollment's organization or user as call ownership. Call registration independently
+  binds the program to the normal AI Matrx tenant
   `5dc930e9-bd65-44a1-8369-af773f6e1a5b` and resolve a pre-existing same-tenant CRM party and
-  caller contact point; this gate never creates or infers either one.
+  verified caller contact point; the webhook never creates or infers either one.
 - The initial authorized response uses `<Gather input="dtmf speech">` with
   `actionOnEmptyResult="true"`. Only keypad `1` or a narrow explicit phrase such as `I agree`
   continues; no response, another digit/phrase, low-confidence speech, conflicting inputs, an
   expired disclosure, or a mismatched call reference ends the call without recording.
-- `consent.ts` emits the provider-neutral affirmative evidence contract for the future durable
-  lifecycle writer: program, disclosure version/hash/time, response kind/value, consent time,
-  source, and provider account/call/event keys. This phase emits structured evidence but does not
-  persist it.
+- `consent.ts` emits the provider-neutral affirmative evidence contract: program, disclosure
+  version/hash/time, response kind/value, consent time, source, and provider account/call/event
+  keys. The service-only claim RPC atomically correlates that exact evidence to the canonical call,
+  writes it to the interaction, and appends its uniquely keyed activity event before accepted
+  TwiML can be returned. Mutated replays and persistence failures fail closed.
 
 ## Recording safety boundary
 
@@ -57,12 +58,16 @@ long-lived media and agent execution stay in aidream.
 ## Visibility
 
 `GET /api/webhooks/twilio/voice`, `/status`, and `/recording` derive persistence visibility from
-the installed schema, unique indexes, service RPCs, ambiguity count, and provider-URL violation
-count. They contain no phone number, provider credential, or storage secret and fail closed if the
-database proof is unavailable.
+the installed schema, unique indexes, service RPCs, exact CRM identity count, ambiguity count, and
+provider-URL violation count. They contain no phone number, provider credential, or storage secret
+and fail closed if the database proof is unavailable.
 
 ## Change log
 
+- **2026-08-15** — Wired the admitted owner call to one pre-existing AI Matrx-tenant CRM party and
+  verified phone point, idempotently registered its canonical interaction, and durably claimed
+  affirmative consent into the interaction plus activity ledger before accepted TwiML. Resolver,
+  registration, consent, and visibility all fail closed; recording remains disabled.
 - **2026-08-15** — Applied the provider-neutral call/recording persistence contract to Matrx Main:
   canonical CRM interaction fields, uniquely keyed evidence, exact service-only claim/finalize
   RPCs, monotonic/replay-safe callbacks, canonical file custody binding, live-derived readiness,

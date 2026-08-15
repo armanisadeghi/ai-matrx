@@ -24,7 +24,13 @@ import {
   createCallConsentEvidence,
   isFreshCallDisclosure,
 } from "@/lib/communications/voice/consent";
-import { getVoiceRecordingPersistenceReadiness } from "@/lib/communications/voice/persistence";
+import {
+  claimVoiceCallConsentEvent,
+  getVoiceCallConsentPersistenceReadiness,
+  getVoiceRecordingPersistenceReadiness,
+  registerVoiceCallInteraction,
+  resolveVoiceOwnerCallContext,
+} from "@/lib/communications/voice/persistence";
 import { evaluateVoiceRecordingReadiness } from "@/lib/communications/voice/recording-readiness";
 
 export const runtime = "nodejs";
@@ -109,6 +115,45 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
   const url = new URL(signedUrl);
   const stage = url.searchParams.get("stage");
+
+  try {
+    const callContext = await resolveVoiceOwnerCallContext({
+      programKey: admission.programKey,
+      destinationId: admission.destinationId,
+      provider: "twilio",
+      providerAccountId: parsed.value.accountSid,
+      callerPhone: parsed.value.from,
+      calledPhone: parsed.value.to,
+    });
+    await registerVoiceCallInteraction({
+      partyId: callContext.party_id,
+      contactPointId: callContext.contact_point_id,
+      organizationId: callContext.organization_id,
+      recordingOwnerId: callContext.recording_owner_id,
+      direction: "inbound",
+      provider: "twilio",
+      providerAccountId: parsed.value.accountSid,
+      providerCallId: parsed.value.callSid,
+      programKey: admission.programKey,
+      fromAddress: parsed.value.from,
+      toAddress: parsed.value.to,
+      occurredAt: null,
+    });
+  } catch {
+    console.error("Twilio Voice canonical call registration unavailable", {
+      provider: "twilio",
+      providerAccountId: parsed.value.accountSid,
+      providerCallId: parsed.value.callSid,
+      programKey: admission.programKey,
+      recordingStarted: false,
+    });
+    return twimlResponse(
+      stage === CONSENT_STAGE
+        ? buildOwnerBetaNoConsentTwiml()
+        : buildOwnerBetaRejectedCallerTwiml(),
+    );
+  }
+
   if (stage === null && url.search === "") {
     const disclosedAt = new Date().toISOString();
     console.info("Twilio Voice owner beta consent offered", {
@@ -181,6 +226,20 @@ export async function POST(request: Request): Promise<NextResponse> {
     source: "twiml",
   });
 
+  try {
+    await claimVoiceCallConsentEvent(consentEvidence);
+  } catch {
+    console.error("Twilio Voice affirmative consent persistence failed", {
+      provider: consentEvidence.provider,
+      providerAccountId: consentEvidence.providerAccountId,
+      providerCallId: consentEvidence.providerCallId,
+      providerEventKey: consentEvidence.providerEventKey,
+      programKey: consentEvidence.programKey,
+      recordingStarted: false,
+    });
+    return twimlResponse(buildOwnerBetaNoConsentTwiml());
+  }
+
   console.info("Twilio Voice owner beta consent accepted", {
     ...consentEvidence,
     recordingStarted: false,
@@ -214,6 +273,14 @@ export async function GET(): Promise<NextResponse> {
   } catch {
     lifecyclePersistenceReady = false;
   }
+  let consentPersistenceReady = false;
+  try {
+    consentPersistenceReady = (
+      await getVoiceCallConsentPersistenceReadiness()
+    ).ready;
+  } catch {
+    consentPersistenceReady = false;
+  }
   const recordingReadiness = evaluateVoiceRecordingReadiness({
     owner_only_program_bound: ownerBeta.ready,
     disclosure_and_consent_verified: false,
@@ -238,7 +305,9 @@ export async function GET(): Promise<NextResponse> {
       required: true,
       acceptedInputs: ["DTMF 1", 'speech: "I agree"'],
       disclosureVersion: OWNER_BETA_VOICE_DISCLOSURE_VERSION,
-      persistence: "pending_lifecycle_integration",
+      persistence: consentPersistenceReady
+        ? "durable_activity_ledger_ready"
+        : "unavailable",
     },
     statusCallback: "https://www.aimatrx.com/api/webhooks/twilio/voice/status",
     recording: {
