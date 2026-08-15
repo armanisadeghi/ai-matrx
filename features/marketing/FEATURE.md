@@ -236,6 +236,17 @@ Agency-scale brand operations. The anchor entity is the **Brand** (`web.brand`) 
 - `features/marketing/crawler/direct-client.ts` — direct authenticated scraper commands and transient NDJSON only; its origin comes from the canonical scraper service target, never a feature-local constant.
 - Persisted Marketing reads never use Next.js, Python history routes, or AI Dream intermediaries. Google authorization reuses the canonical `GoogleAPIProvider` and Google Identity Services popup; the one-time code exchange and disconnect are aidream endpoints (`/api/google-integrations/exchange|disconnect`, called directly from the browser with the caller's JWT) because client secrets and refresh tokens cannot run in the browser. There are no Next.js OAuth routes.
 
+### Public robots.txt tester
+
+`/seo/robots-tester` accepts one full page URL and one crawler. It derives the
+origin/path, forces a live server check, and consumes the generated
+`RobotsCheckResult` contract after runtime validation. The primary result is the
+allowed/blocked verdict plus the server's exact matched directive and source line.
+The fetched robots file, HTTP receipt, syntax warnings, and declared sitemaps are
+visible and linked; source lines that caused the verdict are highlighted. The page
+also has native-share/clipboard fallback, a canonical URL, one descriptive H1,
+compact robots guidance, and doors to the related public audit tools.
+
 ## Data model
 
 - `web.brand` — anchor entity and access root for the brand layer (`web_brand` token; canonical `iam.apply_rls`). Its `profile` jsonb holds the human-authored editorial brand profile (`BrandProfile` in `types.ts`; narrow ONLY via `parseBrandProfile`, serialize via `brandProfileToJson`) — the voice-of-the-client document downstream agents rely on; agents propose, humans author.
@@ -488,6 +499,12 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-08-15 — Codex: **The public robots.txt tester now answers the actual
+  question.** One page URL and crawler produce an explainable allowed/blocked
+  verdict, exact matched rule/line, linked live source and sitemaps, syntax
+  warnings, and a fetch receipt. Sharing, canonical metadata, a clear H1, compact
+  guidance, and related-tool doors complete the public landing page without
+  turning it into a marketing article.
 - 2026-08-15 — Codex: **The canonical site-move RPC now repairs a stranded
   parent brand even when the site is already in the destination organization.**
   The same-organization fast path runs only after the explicit
