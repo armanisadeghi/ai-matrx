@@ -15,7 +15,7 @@ the platform was missing and did not know it was missing.
 
 > ## Status 2026-08-15 — the RIGHT to send is built; the ACT of sending is not
 >
-> **Shipped and live:** domain→party (G1) · **the sending identity** (G5 — DNS proof, SPF/DKIM/
+> **Shipped and live:** domain→party (G1) · crawl-backed contact discovery (G2) · **the sending identity** (G5 — DNS proof, SPF/DKIM/
 > DMARC, warm-up ramp, health, circuit breaker, kill switch) · **the compliance layer**
 > (`crm.check_send_eligibility()` as THE one send authority, unsubscribe proven on production,
 > 35-country jurisdiction policy) · tiers + entitlements · the guided-checklist primitive · and
@@ -147,13 +147,28 @@ rendered on the party record page.
 **The prospect list we actually want is still missing:** who links to our COMPETITORS —
 `docs/handoffs/competitor-link-gap.md`.
 
-### G2 — Contact discovery. *Who at that domain?*
+### G2 — Contact discovery. *Who at that domain?* ✅ **DONE 2026-08-15 — deployed both repos**
 An organization is not an inbox. We need the editor, the author, the webmaster — and we already
 extract bylines and credentialed authors from every page we crawl, then bury them in
 `rs_source.page_analysis` JSONB. That is the exact same buried-signal problem the experts work is
 fixing, through the same resolver, and it should reuse that path rather than invent a second one.
 **Suggestion-gated:** a scraped `info@` or a guessed pattern address is a *candidate*, never an
 auto-created contact — a wrong guess is a spam complaint against our sending domain.
+
+The server now reads those saved signals without a second crawl, explains every candidate with
+confidence and source-page evidence, and performs no write until a human confirms. Confirmation
+uses `resolve_party`, promotes the person to `record_class='contact'`, creates/reuses a real
+`crm.affiliation` to the outlet, and attaches only a literal observed address selected by the
+human. Role mailboxes and weak bylines require a second explicit confirmation; guessed address
+patterns are never generated. The outlet record renders the review surface with doors to every
+source page and to every confirmed person.
+
+**Live proof:** source `73c87bf3-8eaf-427b-a521-a2e5784e20c0` resolved Pearlman, Brown & Wax LLP
+to party `4fd1e808-8ff1-46b5-a64e-cd91f68facaf`; its saved crawl produced Barry Pearlman, Steven
+Wax, and Dean Brown with literal evidence. Confirming Steven created person
+`c44be919-9da2-40c4-9e19-5a39ebf7d86b`, current affiliation
+`e88e1740-b7e8-4d5e-b71a-6c4791da7a69`, and observed `shw@4pbw.com`. Repeating confirmation
+matched the same person by email, reused the affiliation, and added zero contact points.
 
 ### G3 — Message templates + personalization. *No primitive exists anywhere.*
 Nothing in the platform composes a parameterized message. Needed: variables bound to real record
@@ -735,8 +750,11 @@ against All Green Recycling (a referring domain and a TechCrunch reputation case
 parties that open at `/crm/[partyId]`). The only Phase-1 remainder is the frontend trigger, which
 is Phase 6 / G9 work.
 
-**Phase 2 — targets worth writing to.** G2 contact discovery from data we already crawl,
-suggestion-gated, through the same resolver the experts work uses.
+**Phase 2 — targets worth writing to.** ✅ **DONE 2026-08-15 — deployed both repos.** G2 contact
+discovery from data we already crawl is suggestion-gated and runs through the same governed
+resolver the experts promotion uses. Real observed addresses remain unverified until the
+verification/send authority clears them; low-confidence people and role mailboxes never become
+auto-contactable.
 
 **Phase 3 — the right to send (G5, §5).** ✅ **DONE 2026-08-14 — deployed both repos.**
 The sending-identity record is live end to end (see G5). Proven live against the real DB and
@@ -772,29 +790,26 @@ Phases 1–4 are independently valuable and shippable. **Nothing before Phase 5 
 human did not approve** — the correct risk posture for a system whose failure mode is "we helped
 a customer spam strangers from their real mailbox."
 
-## What is actually open, 2026-08-15 — chips fired for the first three
+## What is actually open, 2026-08-15
 
 1. **Phase 4 — the message + the first real send.** *(chip fired)* The template primitive
    (unresolved variable = refuse to send) plus the human-approved single-send path through
    `check_send_eligibility()`. **The next move, fully unblocked** — everything it needs is live.
    Design the approval requirement as a §5.5b ladder input, never a hardcoded constant.
-2. **Phase 2 — contact discovery (G2).** *(chip fired)* We resolve the domain but still have no
-   human to write to. The bylines are already extracted and buried in `rs_source.page_analysis`;
-   promote them through the same resolver the experts work uses. **Suggestion-gated always.**
-3. **Compliance engineering gaps.** *(chip fired)* MX verification, DKIM-signed unsubscribe
+2. **Compliance engineering gaps.** *(chip fired)* MX verification, DKIM-signed unsubscribe
    headers, reply-based opt-out, purchased-list detection — named in
    `common-docs/systems/outreach-compliance/ENGINEERING_GAPS.md` § "Still open". FLOOR items:
    no tier and no trust level buys past them.
-4. **Phase 5 — sequences + inbound (G4 + G6).** The cadence schema already exists unused on
+3. **Phase 5 — sequences + inbound (G4 + G6).** The cadence schema already exists unused on
    `crm.outreach_list_member`. 🚨 **Do not ship the runner without reply ingestion** — an
    unstoppable cadence is worse than no cadence, and reply-based opt-out (item 3) depends on the
    same seam.
-5. **Phase 6 — attribution (G8).** The differentiator (§1): our own crawl closes the loop and
+4. **Phase 6 — attribution (G8).** The differentiator (§1): our own crawl closes the loop and
    proves the link appeared. Nobody else in the category can do this.
-6. **Phase 7 — surfaces (G9).** "Start outreach" from a backlink prospect and a reputation case,
+5. **Phase 7 — surfaces (G9).** "Start outreach" from a backlink prospect and a reputation case,
    plus Phase 1's frontend trigger. Today the reputation verdict is still a dead end.
-7. **Scaled media ingestion** — the research and first crawl landed; volume ingestion did not.
-8. **Lane A, entire** (below). Committed vision, deliberately sequenced after Lane B.
+6. **Scaled media ingestion** — the research and first crawl landed; volume ingestion did not.
+7. **Lane A, entire** (below). Committed vision, deliberately sequenced after Lane B.
 
 ## Lane A (opt-in marketing) — a separate, later track. DO NOT LOSE IT.
 

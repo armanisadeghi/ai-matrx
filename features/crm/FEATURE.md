@@ -51,19 +51,19 @@ schema exists to prevent.
 
 ## Tables (schema `crm`, live 2026-07-27)
 
-| Table                 | Variant                 | Versioned | Holds                                                   |
-| --------------------- | ----------------------- | --------- | ------------------------------------------------------- |
-| `party`               | entity                  | ✅        | person or company; identity, curation, per-org stance   |
-| `contact_medium`      | entity                  | ❌        | one row per value per org; deliverability + suppression |
-| `party_contact_point` | component of `party`    | ❌        | who uses a medium, purpose, validity                    |
-| `address`             | component of `party`    | ❌        | structured postal + geo                                 |
-| `affiliation`         | component of `party`    | ✅        | person ↔ company employment, with dates                 |
-| `interaction`         | component of `party`    | ❌        | calls/emails/meetings, planned AND completed            |
-| `outreach_list`       | entity                  | ✅        | a named audience or worked cold list                    |
-| `outreach_list_member`| component of `outreach_list` | ❌   | per-member state, attempts, dialer claim                |
-| `party_merge`         | component of `party`    | ❌        | the exact unmerge record                                |
-| `merge_candidate`     | component of `party`    | ❌        | duplicate suggestion (ordered pair, durable dismissal)  |
-| `saved_view`          | entity                  | ✅        | a named, re-runnable party-list query (smart view)      |
+| Table                  | Variant                      | Versioned | Holds                                                   |
+| ---------------------- | ---------------------------- | --------- | ------------------------------------------------------- |
+| `party`                | entity                       | ✅        | person or company; identity, curation, per-org stance   |
+| `contact_medium`       | entity                       | ❌        | one row per value per org; deliverability + suppression |
+| `party_contact_point`  | component of `party`         | ❌        | who uses a medium, purpose, validity                    |
+| `address`              | component of `party`         | ❌        | structured postal + geo                                 |
+| `affiliation`          | component of `party`         | ✅        | person ↔ company employment, with dates                 |
+| `interaction`          | component of `party`         | ❌        | calls/emails/meetings, planned AND completed            |
+| `outreach_list`        | entity                       | ✅        | a named audience or worked cold list                    |
+| `outreach_list_member` | component of `outreach_list` | ❌        | per-member state, attempts, dialer claim                |
+| `party_merge`          | component of `party`         | ❌        | the exact unmerge record                                |
+| `merge_candidate`      | component of `party`         | ❌        | duplicate suggestion (ordered pair, durable dismissal)  |
+| `saved_view`           | entity                       | ✅        | a named, re-runnable party-list query (smart view)      |
 
 `party_kind ('person','organization')` is the **only** closed set. Expert, lead,
 vendor, journalist, competitor, customer are **roles** — `platform.categories` rows in
@@ -181,9 +181,9 @@ person/company capture directly. All consume `features/crm/`:
 | `components/CrmListPage.tsx`                        | List assembly on the canonical entity-list primitives (`MatrxDataTable` controlled, `BrowseScopeTabs`, `useListViewPrefs("crm-parties")`, `ItemMenu`) |
 | `components/PartyCreateForm.tsx`                    | Shared person/company capture core; used by `crmCreatePartyWindow` and writes optional email/phone through the canonical medium/contact-point flow    |
 | `components/record/PartyRecordPage.tsx`             | The 360°: identity, contact, addresses, employment (both directions), activity, notes (`platform.comments`), Files/Tasks via `AssociationCardGrid`    |
-| `reachability.ts`                                   | **THE ONE suppression rule** — `contactPointBlockReason` + its labels. Channel-agnostic; the dialer and the record agent-surface both read it        |
-| `normalize.ts`                                      | The canonical `normalizeMediumValue` (re-exported by `service.ts`), split out so pure consumers can use it without the Supabase client               |
-| `agent-context/`                                    | `buildCrmListContextData` · `buildCrmRecordContextData` · `parseContactSelection` (+ its Jest tests) — see § Agent surfaces                          |
+| `reachability.ts`                                   | **THE ONE suppression rule** — `contactPointBlockReason` + its labels. Channel-agnostic; the dialer and the record agent-surface both read it         |
+| `normalize.ts`                                      | The canonical `normalizeMediumValue` (re-exported by `service.ts`), split out so pure consumers can use it without the Supabase client                |
+| `agent-context/`                                    | `buildCrmListContextData` · `buildCrmRecordContextData` · `parseContactSelection` (+ its Jest tests) — see § Agent surfaces                           |
 
 **WindowPanels:** `crmManagerWindow` is the full scoped list route inside
 WindowPanel chrome; `crmCreatePartyWindow` is the compact create flow. Both are
@@ -262,15 +262,15 @@ Highlight a name, an email signature, a byline or a company footer on ANY
 surface → right-click → **Convert → Save as contact**.
 
 - Registered as a **rich-document action** (`features/rich-document/actions/
-  handlers/contact.ts`), not per-surface wiring: a CRM that only captures from
+handlers/contact.ts`), not per-surface wiring: a CRM that only captures from
   `/crm` captures nothing, and the v3 menu is already everywhere. Gated by
   `looksLikeContact`, so the row never appears on prose.
 - **A deterministic parser fills the dialog** (`parseContactSelection`) before
   any model runs — the user reviews a filled form, not a spinner. The parser is
   hints only; the agent corrects it against the raw selection.
 - **The save is governed and has no client fallback.** `SaveContactFromSelection
-  Dialog` runs the `crm.save_contact` agent slot → `data_action(operation=
-  "resolve_contact")` → the party resolver (canonicalize + dedupe on
+Dialog` runs the `crm.save_contact` agent slot → `data_action(operation=
+"resolve_contact")` → the party resolver (canonicalize + dedupe on
   email/phone/domain/platform ids + merge lineage). **Never a raw insert:** the
   raw `database` tool is blocked from the `crm` schema server-side, and a direct
   `.insert()` would manufacture exactly the duplicates `/crm/duplicates` exists
@@ -498,6 +498,29 @@ not an expert) and `ExpertStatusCard` on the record page.
   is false for persons): expert candidates carry no email or phone, so without
   name matching every re-scan would mint a duplicate of every expert.
 
+## People found on an outlet — Outreach Phase 2 / G2
+
+An organization record with a `primary_domain` now renders
+`OutreachContactCandidatesCard` in its existing `/crm/[partyId]` record page.
+There is no outreach-only console. The card calls the typed Python contract in
+`outreach-contacts/service.ts`; the server reads the research crawl and returns
+current authors/editors/contributors without writing.
+
+- Every candidate shows confidence, the deterministic reasons, and a new-tab
+  door to every source page. Once confirmed, the person's name becomes the
+  canonical `EntityRef` door to their CRM record.
+- Literal observed addresses show their own confidence and association reason,
+  plus a door to the exact page where the address appeared. High-confidence
+  personal addresses are preselected for one-click confirmation; role addresses
+  are never preselected and require a second warning/confirmation.
+- A weak person likewise requires the second act. The server independently
+  revalidates both person and selected addresses, so UI state cannot inject a
+  guess. An observed address remains visibly unverified; Phase 4's send gate is
+  still responsible for refusing unverified delivery.
+- Confirmation refreshes the same card. Existing party, affiliation, and email
+  state render as `Confirmed` / `Attached`, making reruns understandable rather
+  than silently no-oping.
+
 ## Not built yet
 
 - "Shared" list scope (needs a crm grant-reader RPC).
@@ -508,6 +531,10 @@ not an expert) and `ExpertStatusCard` on the record page.
 
 ## Change log
 
+- 2026-08-15 — **Outreach Phase 2 / G2:** organization record pages now expose
+  crawl-backed people with visible why/source evidence and governed one-click
+  confirmation. Reused `SectionCard`, `EntityRef`, typed Python client, canonical
+  CRM record page, and the existing confirmation dialog; no new route or console.
 - 2026-08-15 — **Discovered records and merge losers are gone from every party
   picker/import/dedup surface.** The universal candidate RPC now reads structured
   equality predicates from `platform.entity_types.reference_candidate_predicates`;
