@@ -13,6 +13,12 @@ interface RawExecResponse {
   cwd?: string;
 }
 
+interface SandboxPtyCredential {
+  token: string;
+  ws_base: string;
+  sandbox_id: string;
+}
+
 /**
  * Sandbox ProcessAdapter.
  *
@@ -115,6 +121,7 @@ export class SandboxProcessAdapter implements ProcessAdapter {
     let stdout = "";
     let stderr = "";
     let cwd = this.cwd;
+    let eventCount = 0;
 
     // Robust SSE parsing — the standard says events are separated by blank
     // lines; data lines start with "data: ". Multi-line data values are joined
@@ -139,6 +146,7 @@ export class SandboxProcessAdapter implements ProcessAdapter {
             dataLines.push(line.slice(5).replace(/^ /, ""));
         }
         if (!dataLines.length) continue;
+        eventCount += 1;
 
         let payload: Record<string, unknown> = {};
         try {
@@ -171,6 +179,12 @@ export class SandboxProcessAdapter implements ProcessAdapter {
       }
     }
 
+    if (eventCount === 0) {
+      throw new Error(
+        "Streaming terminal returned HTTP 200 with no events; buffered fallback required",
+      );
+    }
+
     if (cwd) this.cwd = cwd;
     return { stdout, stderr, exitCode, cwd };
   }
@@ -178,11 +192,9 @@ export class SandboxProcessAdapter implements ProcessAdapter {
   /**
    * Open a PTY session.
    *
-   * Connects via same-origin WebSocket to `/api/sandbox/[id]/pty`. The Next
-   * API route's role is to forward the upgrade to the orchestrator's
-   * `/sandboxes/{sandbox_id}/pty` endpoint (see
-   * [app/api/sandbox/[id]/pty/route.ts](../../app/api/sandbox/%5Bid%5D/pty/route.ts)
-   * for the wire-format contract).
+   * Mints a short-lived, sandbox-bound `pty` credential through the existing
+   * ownership-checking route, then connects the browser directly to the
+   * orchestrator. Vercel route handlers cannot complete WebSocket upgrades.
    *
    * Each frame is a single JSON object terminated by `\n`. Falls back
    * gracefully when the browser cannot reach the WebSocket — the caller
@@ -193,15 +205,36 @@ export class SandboxProcessAdapter implements ProcessAdapter {
       throw new Error("openPty is only available in the browser");
     }
 
-    const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const credentialResponse = await fetch(
+      `/api/sandbox/${encodeURIComponent(this.instanceId)}/access-tokens`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scopes: ["pty"], single_use: true }),
+      },
+    );
+    if (!credentialResponse.ok) {
+      const detail = await credentialResponse.text().catch(() => "");
+      throw new Error(
+        `PTY credential mint failed (${credentialResponse.status}): ${detail}`,
+      );
+    }
+    const credential =
+      (await credentialResponse.json()) as Partial<SandboxPtyCredential>;
+    if (!credential.token || !credential.ws_base || !credential.sandbox_id) {
+      throw new Error(
+        "PTY credential response is missing token, ws_base, or sandbox_id",
+      );
+    }
+
     const params = new URLSearchParams();
     if (opts.cols) params.set("cols", String(opts.cols));
     if (opts.rows) params.set("rows", String(opts.rows));
     if (opts.cwd) params.set("cwd", opts.cwd);
     if (opts.shell) params.set("shell", opts.shell);
     if (opts.env) params.set("env", JSON.stringify(opts.env));
-    const qs = params.toString();
-    const url = `${proto}//${window.location.host}/api/sandbox/${this.instanceId}/pty${qs ? `?${qs}` : ""}`;
+    params.set("access_token", credential.token);
+    const url = `${credential.ws_base.replace(/\/$/, "")}/sandboxes/${encodeURIComponent(credential.sandbox_id)}/pty?${params.toString()}`;
 
     const socket = new WebSocket(url);
     let isOpen = false;
@@ -281,8 +314,7 @@ export class SandboxProcessAdapter implements ProcessAdapter {
     // The Promise resolves only once the socket is actually OPEN — that
     // way callers can safely swap their input listener over to the PTY
     // without losing keystrokes during the connect window. If the
-    // connection fails (Vercel returns 426 because route handlers can't
-    // perform the upgrade, host unreachable, auth failure, …) the Promise
+    // connection fails (host unreachable, auth failure, …) the Promise
     // rejects and the caller can stay on the buffered fallback.
     return await new Promise<PtyHandle>((resolve, reject) => {
       const CONNECT_TIMEOUT_MS = 4000;
@@ -304,12 +336,9 @@ export class SandboxProcessAdapter implements ProcessAdapter {
         });
       }, CONNECT_TIMEOUT_MS);
 
-      // Track whether the WebSocket ever reached the OPEN state. Vercel /
-      // standard Next route handlers can't complete a 101 upgrade — they
-      // return 426 and the socket goes straight from CONNECTING to CLOSED.
-      // In that case `onExit` semantically should NOT fire (the PTY never
-      // existed) and we must NOT show a misleading "[pty closed]" message
-      // in the terminal — the buffered/SSE fallback is still working fine.
+      // Track whether the WebSocket ever reached OPEN. A rejected credential
+      // or unreachable orchestrator goes straight from CONNECTING to CLOSED;
+      // in that case `onExit` must not claim a PTY existed.
       let everOpened = false;
 
       socket.onopen = () => {

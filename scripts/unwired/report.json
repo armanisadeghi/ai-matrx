@@ -1,23 +1,23 @@
 {
-  "generatedAt": "2026-08-15T07:54:41.180Z",
-  "commit": "c9d395985ef50cb19035510bf8c07d8241b2f8db",
+  "generatedAt": "2026-08-15T08:01:37.920Z",
+  "commit": "925d7887396a4f38d962b875201c1a0f7e9f9382",
   "aidreamCommit": "95b508637494a44360e434d06bbe2bf49977a6e7",
   "totals": {
-    "findings": 761,
-    "lines": 34811,
-    "filesWithFindings": 573,
-    "filesScanned": 13581,
+    "findings": 753,
+    "lines": 34026,
+    "filesWithFindings": 566,
+    "filesScanned": 13563,
     "suppressed": 5,
     "byDetector": {
-      "react-component-unmounted": 364,
-      "export-unimported": 387,
+      "react-component-unmounted": 358,
+      "export-unimported": 385,
       "router-unmounted": 2,
       "host-installer-unset": 1,
       "scheduler-handler-unregistered": 0,
       "python-module-unreached": 7
     },
     "byRepository": {
-      "matrx-frontend": 715,
+      "matrx-frontend": 707,
       "aidream": 46
     }
   },
@@ -29,11 +29,6 @@
       "lines": 431
     },
     {
-      "key": "matrx-frontend:hooks/tts/useVoiceChatWithAutoSleep.ts",
-      "findings": 1,
-      "lines": 366
-    },
-    {
       "key": "matrx-frontend:components/ts-function-registry/AppletBuilder.tsx",
       "findings": 1,
       "lines": 350
@@ -42,11 +37,6 @@
       "key": "matrx-frontend:components/layout/adaptive-layout/AdaptiveLayout.tsx",
       "findings": 1,
       "lines": 329
-    },
-    {
-      "key": "matrx-frontend:hooks/tts/useVoiceChatCdn.ts",
-      "findings": 1,
-      "lines": 314
     },
     {
       "key": "matrx-frontend:features/code-editor/components/ContextAwareCodeEditorModal.tsx",
@@ -272,6 +262,16 @@
       "key": "matrx-frontend:components/animated/ExpandableCards/GriddExpadableCards.tsx",
       "findings": 1,
       "lines": 163
+    },
+    {
+      "key": "matrx-frontend:features/recipes/components/RecipesGrid.tsx",
+      "findings": 1,
+      "lines": 162
+    },
+    {
+      "key": "matrx-frontend:features/research/components/links/LinkExplorer.tsx",
+      "findings": 1,
+      "lines": 162
     }
   ],
   "findings": [
@@ -288,20 +288,6 @@
       "intent": "an exported component with 431 implementation line(s)",
       "remains": "mount it from the page, panel, overlay, or parent surface it was built for, then exercise that user path",
       "feature": "features/notes"
-    },
-    {
-      "repository": "matrx-frontend",
-      "detector": "export-unimported",
-      "file": "hooks/tts/useVoiceChatWithAutoSleep.ts",
-      "line": 33,
-      "column": 14,
-      "symbol": "useVoiceChatWithAutoSleep",
-      "lines": 366,
-      "title": "useVoiceChatWithAutoSleep appears unfinished — it is built but has no runtime consumer",
-      "evidence": "no runtime import resolves to this exported hook, service, or producer; tests and re-export barrels do not count",
-      "intent": "an exported hook with 366 implementation line(s)",
-      "remains": "wire the runtime consumer it was built for, then prove a real page, action, producer, or workflow reaches it",
-      "feature": "hooks"
     },
     {
       "repository": "matrx-frontend",
@@ -330,20 +316,6 @@
       "intent": "an exported component with 329 implementation line(s)",
       "remains": "mount it from the page, panel, overlay, or parent surface it was built for, then exercise that user path",
       "feature": "components"
-    },
-    {
-      "repository": "matrx-frontend",
-      "detector": "export-unimported",
-      "file": "hooks/tts/useVoiceChatCdn.ts",
-      "line": 40,
-      "column": 14,
-      "symbol": "useVoiceChatCdn",
-      "lines": 314,
-      "title": "useVoiceChatCdn appears unfinished — it is built but has no runtime consumer",
-      "evidence": "no runtime import resolves to this exported hook, service, or producer; tests and re-export barrels do not count",
-      "intent": "an exported hook with 314 implementation line(s)",
-      "remains": "wire the runtime consumer it was built for, then prove a real page, action, producer, or workflow reaches it",
-      "feature": "hooks"
     },
     {
       "repository": "matrx-frontend",
@@ -1646,6 +1618,20 @@
       "intent": "an exported component with 100 implementation line(s)",
       "remains": "mount it from the page, panel, overlay, or parent surface it was built for, then exercise that user path",
       "feature": "features/legal"
+    },
+    {
+      "repository": "matrx-frontend",
+      "detector": "export-unimported",
+      "file": "hooks/tts/usePlayerSafe.ts",
+      "line": 4,
+      "column": 1,
+      "symbol": "usePlayerSafe",
+      "lines": 100,
+      "title": "usePlayerSafe appears unfinished — it is built but has no runtime consumer",
+      "evidence": "no runtime import resolves to this exported hook, service, or producer; tests and re-export barrels do not count",
+      "intent": "an exported hook with 100 implementation line(s)",
+      "remains": "wire the runtime consumer it was built for, then prove a real page, action, producer, or workflow reaches it",
+      "feature": "hooks"
     },
     {
       "repository": "matrx-frontend",
@@ -3386,20 +3372,6 @@
     {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
-      "file": "components/voice/voice-assistant-ui/Footer.tsx",
-      "line": 14,
-      "column": 14,
-      "symbol": "Footer",
-      "lines": 44,
-      "title": "Footer appears unfinished — it is built but has no runtime consumer",
-      "evidence": "no JSX tag in the runtime TypeScript graph resolves to this exported component",
-      "intent": "an exported component with 44 implementation line(s)",
-      "remains": "mount it from the page, panel, overlay, or parent surface it was built for, then exercise that user path",
-      "feature": "components"
-    },
-    {
-      "repository": "matrx-frontend",
-      "detector": "react-component-unmounted",
       "file": "features/canvas/artifact-types/renderers/DecisionTreeArtifact.tsx",
       "line": 20,
       "column": 1,
@@ -3875,20 +3847,6 @@
     },
     {
       "repository": "matrx-frontend",
-      "detector": "export-unimported",
-      "file": "features/audio/service/transcribe.ts",
-      "line": 63,
-      "column": 1,
-      "symbol": "transcribe",
-      "lines": 38,
-      "title": "transcribe appears unfinished — it is built but has no runtime consumer",
-      "evidence": "no runtime import resolves to this exported hook, service, or producer; tests and re-export barrels do not count",
-      "intent": "an exported service with 38 implementation line(s)",
-      "remains": "wire the runtime consumer it was built for, then prove a real page, action, producer, or workflow reaches it",
-      "feature": "features/audio"
-    },
-    {
-      "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
       "file": "features/tool-call-visualization/components/ToolTabBodies.tsx",
       "line": 71,
@@ -4296,20 +4254,6 @@
     {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
-      "file": "components/voice/voice-assistant-ui/Sidebar.tsx",
-      "line": 16,
-      "column": 14,
-      "symbol": "Sidebar",
-      "lines": 33,
-      "title": "Sidebar appears unfinished — it is built but has no runtime consumer",
-      "evidence": "no JSX tag in the runtime TypeScript graph resolves to this exported component",
-      "intent": "an exported component with 33 implementation line(s)",
-      "remains": "mount it from the page, panel, overlay, or parent surface it was built for, then exercise that user path",
-      "feature": "components"
-    },
-    {
-      "repository": "matrx-frontend",
-      "detector": "react-component-unmounted",
       "file": "features/window-panels/components/WindowSidebar.tsx",
       "line": 21,
       "column": 1,
@@ -4346,20 +4290,6 @@
       "title": "MermaidView appears unfinished — it is built but has no runtime consumer",
       "evidence": "no JSX tag in the runtime TypeScript graph resolves to this exported component",
       "intent": "an exported component with 32 implementation line(s)",
-      "remains": "mount it from the page, panel, overlay, or parent surface it was built for, then exercise that user path",
-      "feature": "components"
-    },
-    {
-      "repository": "matrx-frontend",
-      "detector": "react-component-unmounted",
-      "file": "components/voice/voice-assistant-ui/extras/VoiceAssistantStatus.tsx",
-      "line": 114,
-      "column": 14,
-      "symbol": "CollapsibleStatus",
-      "lines": 31,
-      "title": "CollapsibleStatus appears unfinished — it is built but has no runtime consumer",
-      "evidence": "no JSX tag in the runtime TypeScript graph resolves to this exported component",
-      "intent": "an exported component with 31 implementation line(s)",
       "remains": "mount it from the page, panel, overlay, or parent surface it was built for, then exercise that user path",
       "feature": "components"
     },
@@ -5388,20 +5318,6 @@
     {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
-      "file": "components/voice/voice-assistant-ui/header.tsx",
-      "line": 12,
-      "column": 14,
-      "symbol": "Header",
-      "lines": 22,
-      "title": "Header appears unfinished — it is built but has no runtime consumer",
-      "evidence": "no JSX tag in the runtime TypeScript graph resolves to this exported component",
-      "intent": "an exported component with 22 implementation line(s)",
-      "remains": "mount it from the page, panel, overlay, or parent surface it was built for, then exercise that user path",
-      "feature": "components"
-    },
-    {
-      "repository": "matrx-frontend",
-      "detector": "react-component-unmounted",
       "file": "features/agents/components/run-controls/RunSettingsModal.tsx",
       "line": 15,
       "column": 1,
@@ -6171,20 +6087,6 @@
     },
     {
       "repository": "matrx-frontend",
-      "detector": "react-component-unmounted",
-      "file": "components/voice/voice-assistant-ui/icons.tsx",
-      "line": 1,
-      "column": 1,
-      "symbol": "LoadingIcon",
-      "lines": 19,
-      "title": "LoadingIcon appears unfinished — it is built but has no runtime consumer",
-      "evidence": "no JSX tag in the runtime TypeScript graph resolves to this exported component",
-      "intent": "an exported component with 19 implementation line(s)",
-      "remains": "mount it from the page, panel, overlay, or parent surface it was built for, then exercise that user path",
-      "feature": "components"
-    },
-    {
-      "repository": "matrx-frontend",
       "detector": "export-unimported",
       "file": "features/legal/wc/pd-ratings/api/hooks.ts",
       "line": 433,
@@ -6570,20 +6472,6 @@
       "symbol": "Spinner",
       "lines": 18,
       "title": "Spinner appears unfinished — it is built but has no runtime consumer",
-      "evidence": "no JSX tag in the runtime TypeScript graph resolves to this exported component",
-      "intent": "an exported component with 18 implementation line(s)",
-      "remains": "mount it from the page, panel, overlay, or parent surface it was built for, then exercise that user path",
-      "feature": "components"
-    },
-    {
-      "repository": "matrx-frontend",
-      "detector": "react-component-unmounted",
-      "file": "components/voice/voice-assistant-ui/icons.tsx",
-      "line": 21,
-      "column": 1,
-      "symbol": "EnterIcon",
-      "lines": 18,
-      "title": "EnterIcon appears unfinished — it is built but has no runtime consumer",
       "evidence": "no JSX tag in the runtime TypeScript graph resolves to this exported component",
       "intent": "an exported component with 18 implementation line(s)",
       "remains": "mount it from the page, panel, overlay, or parent surface it was built for, then exercise that user path",

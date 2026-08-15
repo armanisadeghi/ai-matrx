@@ -96,5 +96,19 @@
     "findings": 761,
     "lines": 34811,
     "filesWithFindings": 573
+  },
+  {
+    "generatedAt": "2026-08-15T08:01:37.904Z",
+    "commit": "925d7887396a4f38d962b875201c1a0f7e9f9382",
+    "findings": 752,
+    "lines": 34017,
+    "filesWithFindings": 565
+  },
+  {
+    "generatedAt": "2026-08-15T08:01:37.920Z",
+    "commit": "925d7887396a4f38d962b875201c1a0f7e9f9382",
+    "findings": 753,
+    "lines": 34026,
+    "filesWithFindings": 566
   }
 ]

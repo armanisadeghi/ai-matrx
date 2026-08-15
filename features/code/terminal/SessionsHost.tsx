@@ -27,6 +27,7 @@ import {
   setLastAutoSpawnedSandboxId,
 } from "../redux/terminalSessionsSlice";
 import { selectActiveSandboxId } from "../redux/codeWorkspaceSlice";
+import { TerminalTab } from "./TerminalTab";
 import { SimpleTerminal } from "./SimpleTerminal";
 import { SandboxLogsView } from "./SandboxLogsView";
 import { SessionList } from "./SessionList";
@@ -46,7 +47,9 @@ export const SessionsHost: React.FC<SessionsHostProps> = ({
   const sessions = useAppSelector(selectAllSessions);
   const activeId = useAppSelector(selectActiveSessionId);
   const activeSandboxId = useAppSelector(selectActiveSandboxId);
-  const lastAutoSpawnedSandboxId = useAppSelector(selectLastAutoSpawnedSandboxId);
+  const lastAutoSpawnedSandboxId = useAppSelector(
+    selectLastAutoSpawnedSandboxId,
+  );
 
   // Auto-spawn shell + logs on sandbox transition. Runs exactly once per
   // unique activeSandboxId (the slice tracks the last-spawned id) so HMR /
@@ -59,7 +62,9 @@ export const SessionsHost: React.FC<SessionsHostProps> = ({
     // longer have credentials / proxy URL for.
     if (lastAutoSpawnedSandboxId !== "__init__") {
       dispatch(
-        clearSessionsForSandbox({ sandboxId: lastAutoSpawnedSandboxId ?? null }),
+        clearSessionsForSandbox({
+          sandboxId: lastAutoSpawnedSandboxId ?? null,
+        }),
       );
     }
 
@@ -105,10 +110,14 @@ export const SessionsHost: React.FC<SessionsHostProps> = ({
                 className={cn("absolute inset-0", !isActive && "hidden")}
               >
                 {s.kind === "shell" ? (
-                  <SimpleTerminal
-                    sandboxId={s.sandboxId}
-                    visible={visible && isActive}
-                  />
+                  s.sandboxId ? (
+                    <TerminalTab visible={visible && isActive} />
+                  ) : (
+                    <SimpleTerminal
+                      sandboxId={null}
+                      visible={visible && isActive}
+                    />
+                  )
                 ) : s.sandboxId ? (
                   <SandboxLogsView
                     sandboxId={s.sandboxId}
@@ -128,4 +137,3 @@ export const SessionsHost: React.FC<SessionsHostProps> = ({
 };
 
 export default SessionsHost;
-

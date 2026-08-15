@@ -82,8 +82,14 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
   const sessionRef = useRef<SessionState | null>(null);
   const historyRef = useRef(history);
   const processRef = useRef(process);
-  historyRef.current = history;
-  processRef.current = process;
+
+  useEffect(() => {
+    historyRef.current = history;
+  }, [history]);
+
+  useEffect(() => {
+    processRef.current = process;
+  }, [process]);
 
   const [ready, setReady] = useState(false);
 
@@ -171,24 +177,35 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
           // the user sees output live (git clone progress, npm install
           // logs, test output, …) instead of waiting for the buffered
           // result at end-of-command.
-          const result = await adapter.stream(
-            command,
-            (event) => {
-              // Write stdout and stderr the same way. stderr ≠ error —
-              // git/npm/docker put progress on stderr by design. Only the
-              // catch path below paints red (real exec-layer failures).
-              // Programs that want color emit their own ANSI.
-              if (
-                (event.type === "stdout" || event.type === "stderr") &&
-                event.text
-              ) {
-                state.term.write(ansiNormalize(event.text));
-              }
-              // `info` and `exit` events are summarised after the await
-              // resolves so we render a single trailing exit line.
-            },
-            { signal: ac.signal, env: baseEnv },
-          );
+          let result;
+          try {
+            result = await adapter.stream(
+              command,
+              (event) => {
+                // Write stdout and stderr the same way. stderr ≠ error —
+                // git/npm/docker put progress on stderr by design. Only the
+                // catch path below paints red (real exec-layer failures).
+                // Programs that want color emit their own ANSI.
+                if (
+                  (event.type === "stdout" || event.type === "stderr") &&
+                  event.text
+                ) {
+                  state.term.write(ansiNormalize(event.text));
+                }
+                // `info` and `exit` events are summarised after the await
+                // resolves so we render a single trailing exit line.
+              },
+              { signal: ac.signal, env: baseEnv },
+            );
+          } catch (streamError) {
+            if (ac.signal.aborted) throw streamError;
+            state.term.write(
+              `${RED}[live stream unavailable: ${extractErrorMessage(streamError)}; using buffered command execution]${RESET}\r\n`,
+            );
+            result = await adapter.exec(command, { env: baseEnv });
+            if (result.stdout) state.term.write(ansiNormalize(result.stdout));
+            if (result.stderr) state.term.write(ansiNormalize(result.stderr));
+          }
           exitCode = result.exitCode;
           cwd = result.cwd;
         } else {
@@ -256,7 +273,9 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
 
   // Keep the ref in sync so the queue-drain hop above always calls the
   // current `runCommand`.
-  runCommandRef.current = runCommand;
+  useEffect(() => {
+    runCommandRef.current = runCommand;
+  }, [runCommand]);
 
   // ── Input handler (read-line emulation, used when no PTY is available) ─
   const handleData = useCallback(
@@ -435,7 +454,6 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
 
     const boot = async () => {
       if (!containerRef.current) return;
-      // eslint-disable-next-line @typescript-eslint/consistent-type-imports
       const xtermModule = await import("@xterm/xterm");
       const fitModule = await import("@xterm/addon-fit");
       const linksModule = await import("@xterm/addon-web-links");
@@ -491,8 +509,7 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
 
       // Try to upgrade to a real PTY in the background. If the adapter
       // doesn't expose `openPty` (Mock) or the WebSocket can't connect
-      // (Vercel deploy without an upgrade hook), we silently keep the
-      // buffered fallback so users still get a working terminal.
+      // fails, we visibly retain the buffered fallback.
       void attachPty(session);
     };
 
@@ -542,9 +559,11 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
         // Clear the local-prompt scaffolding so we don't render two
         // prompts on top of each other when the daemon emits its own.
         term.write("\r\x1b[K");
-      } catch {
-        // Adapter said it supports PTY but the connection failed; keep
-        // the buffered fallback active.
+      } catch (error) {
+        term.write(
+          `\r\n${RED}[interactive PTY unavailable: ${extractErrorMessage(error)}; using buffered terminal]${RESET}\r\n`,
+        );
+        writePromptFor(state);
       }
     };
 
@@ -574,7 +593,6 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
         sessionRef.current = null;
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── Resize observer ─────────────────────────────────────────────────────

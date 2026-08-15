@@ -33,7 +33,7 @@ import {
  *     sandbox row's `config.tier`.
  *
  * Body (optional):
- *   { scopes?: string[] }   // default ["ai"]; future: "fs", "exec", …
+ *   { scopes?: string[], single_use?: boolean, ttl_seconds?: number }
  */
 export async function POST(
   request: NextRequest,
@@ -105,6 +105,9 @@ export async function POST(
         )
       : ["ai"];
     const scopes = requestedScopes.length > 0 ? requestedScopes : ["ai"];
+    const singleUse = body?.single_use === true;
+    const ttlSeconds =
+      typeof body?.ttl_seconds === "number" ? body.ttl_seconds : undefined;
 
     // 3) Forward to the orchestrator hosting this sandbox's tier.
     let resp: Response;
@@ -116,6 +119,8 @@ export async function POST(
           headers: orchestratorJsonHeaders(lookup.orchestrator),
           body: JSON.stringify({
             scopes,
+            single_use: singleUse,
+            ...(ttlSeconds !== undefined ? { ttl_seconds: ttlSeconds } : {}),
             actor: {
               user_id: user.id,
               email: user.email ?? null,
