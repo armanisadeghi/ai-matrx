@@ -52,6 +52,22 @@ not in Redux. Legacy `openCanvas` items carry a full payload. Anything reading
 
 The slice is **not persisted** — a full page reload empties the canvas.
 
+**The owner of a canvas write is `auth.uid()`, never a value the client sends.**
+`cx_canvas_upsert` / `cx_canvas_upsert_source` / `cx_canvas_create_manual` /
+`cx_canvas_update_version` still take `p_user_id` (no client change was needed),
+but since 2026-08-15 it is **validated, not trusted** — `canvas._require_actor()`
+resolves the owner from the JWT, raises `28000 not authenticated` when there is
+no session, and `42501 cannot write a canvas item for another user` on a
+mismatch. `service_role` may still name the owner. **Never hand-write a second
+actor resolver in this family, and never reintroduce inserting `p_user_id`
+directly** — that is what let an authenticated caller write a row owned by
+someone else, and what turned an unauthenticated write into the nonsense
+`cannot create another user's personal organization` (the org-stamp trigger fell
+through to the caller-supplied user). Client half:
+`runWithSessionRetry` ([`lib/supabase/authRetry.ts`](../../lib/supabase/authRetry.ts))
+re-resolves the session and retries ONCE on that one cause, so a momentary
+session gap no longer drops a streamed artifact.
+
 ---
 
 ## Surface integration — `matrx-user/canvas`
@@ -96,4 +112,5 @@ CLIENT-SIDE navigation with the pane open, since a reload empties the slice.
 
 ## Change Log
 
+- **2026-08-15 — Canvas write RPCs resolve the owner from `auth.uid()`; the "personal organization" error on artifact materialization is gone.** An agent-app run lost a react artifact to `42501 cannot create another user's personal organization` — a red herring: the write had reached PostgREST with no user JWT, so `_stamp_actor` left `created_by` NULL, `_stamp_org_default` fell through to the client-supplied `user_id`, and the D31 identity guard fired on an organization nobody was creating. Proven live, along with a second defect in the same call: **authenticated + mismatched `p_user_id` SUCCEEDED**, writing `user_id` = another user with the caller's `created_by`/org — mis-tenancy RLS could not catch, since `std_insert` only checks `created_by`. Both closed by `canvas._require_actor()` (migration `canvas_write_rpcs_resolve_actor_from_auth.sql`) plus `runWithSessionRetry` on the client. Verified live on all four branches (anon / authed-self / authed-other / service_role) and end-to-end through a real agent-app run.
 - **2026-08-11 — First `SurfaceRuntimeProvider` for `matrx-user/canvas`; manifest re-authored against the live pane; `selectCanvasRenderMode` fallback fixed.** The manifest previously declared diagram-node vocabulary (`selected_node_id`, `selected_nodes`, `current_text_block`) for an editor this codebase does not contain, and documented `render_mode` with an edit/preview enum it never had. Those values are gone; the real ones the pane owns are declared and now actually emitted, with `canvas_json` documented as only the `{ artifactId }` pointer for materialized artifacts. `selectCanvasRenderMode` fell back to `"panel"` — never a `CanvasRenderMode` — and now falls back to the slice's own `"auto"` and is typed. Deliberately NO write targets: the canvas is a host, and its artifacts' own surfaces are strictly closer to the content. Live-verified with a Badass Agent run on `/artifacts` with the pane open; `check:surface-drift` green.
