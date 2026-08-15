@@ -87,10 +87,7 @@ import {
   selectSessionProjectId,
   selectSessionProjectMode,
 } from "@/features/war-room/redux/selectors";
-import {
-  deleteSession,
-  renameSession,
-} from "@/features/war-room/redux/thunks";
+import { deleteSession, renameSession } from "@/features/war-room/redux/thunks";
 import { reportWarRoomError } from "@/features/war-room/utils/reportWarRoomError";
 import type { ThreadTab } from "@/features/war-room/types";
 import { EditableTitle } from "../shared/EditableTitle";
@@ -98,6 +95,7 @@ import { RoomIdentityEditor } from "./RoomIdentityButton";
 import { RoomProjectPickerBody } from "./RoomProjectButton";
 import { RoomResourcesSheet } from "./RoomResourcesButton";
 import { RoomProjectCopyForAiButton } from "./RoomProjectCopyForAiButton";
+import { RoomCopyControls } from "./RoomCopyControls";
 import { ThreadSearchBox } from "./ThreadSearchBox";
 import { roomColorOf, roomIconOf } from "./roomIdentity";
 import { THREAD_KIND_ORDER, threadKindOf } from "./threadKind";
@@ -238,6 +236,10 @@ export function RoomHeader({
                   the room has a project. */}
               <div className="flex min-w-0 items-center gap-1.5">
                 {ready ? <ThreadSearchBox /> : null}
+                {/* Whole-room copy + Groomer. The anchored-project export
+                    below is unchanged and still renders when the room has a
+                    project — this pair works for every room, project or not. */}
+                {ready ? <RoomCopyControls sessionId={sessionId} /> : null}
                 <RoomProjectCopyForAiButton sessionId={sessionId} />
                 {/* Same working-context control as /chat — writes
                     appContextSlice (Surface A). Global by design. */}
@@ -280,7 +282,9 @@ export function RoomHeader({
                             const k = threadKindOf(id);
                             return (
                               <DropdownMenuRadioItem key={id} value={id}>
-                                <k.Icon className={cn("size-3.5 mr-2", k.text)} />
+                                <k.Icon
+                                  className={cn("size-3.5 mr-2", k.text)}
+                                />
                                 {k.label}
                               </DropdownMenuRadioItem>
                             );
@@ -668,7 +672,9 @@ function SheetRow({
               : "text-muted-foreground",
         )}
       />
-      <span className={cn("text-[15px] flex-1 text-left", active && "font-medium")}>
+      <span
+        className={cn("text-[15px] flex-1 text-left", active && "font-medium")}
+      >
         {label}
       </span>
       {active ? <Check className="w-4 h-4 text-primary shrink-0" /> : null}

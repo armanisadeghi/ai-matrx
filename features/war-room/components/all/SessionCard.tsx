@@ -16,7 +16,16 @@ import {
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { deleteSession } from "@/features/war-room/redux/thunks";
-import { selectRoomCardStats } from "@/features/war-room/redux/selectors";
+import {
+  selectRoomCardStats,
+  selectSessionIds,
+} from "@/features/war-room/redux/selectors";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import {
+  buildRoomCardPayload,
+  roomRow,
+  roomSummary,
+} from "@/features/war-room/lib/copy";
 import {
   roomColorOf,
   roomIconOf,
@@ -32,6 +41,7 @@ export function SessionCard({ session }: { session: WarRoomSession }) {
   const [pending, startTransition] = useTransition();
   const [deleting, setDeleting] = useState(false);
   const stats = useAppSelector(selectRoomCardStats(session.id));
+  const listTotal = useAppSelector(selectSessionIds).length;
 
   const RoomIcon = roomIconOf(session.icon);
   const roomColor = roomColorOf(session.color);
@@ -85,10 +95,7 @@ export function SessionCard({ session }: { session: WarRoomSession }) {
       {/* Colored accent spine — the room's identity color, runs the card's height. */}
       <span
         aria-hidden
-        className={cn(
-          "absolute inset-y-0 left-0 w-1.5",
-          roomColor.swatch,
-        )}
+        className={cn("absolute inset-y-0 left-0 w-1.5", roomColor.swatch)}
       />
 
       <div className="flex items-start justify-between gap-2">
@@ -101,18 +108,30 @@ export function SessionCard({ session }: { session: WarRoomSession }) {
         >
           <RoomIcon className="size-4.5" />
         </span>
-        <button
-          type="button"
-          onClick={handleDelete}
-          className="grid place-items-center size-7 rounded-md text-muted-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-destructive/10 hover:text-destructive transition-all"
-          aria-label="Delete War Room"
-        >
-          {deleting ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <Trash2 className="size-4" />
-          )}
-        </button>
+        <div className="flex items-center gap-0.5">
+          {/* The card navigates on click/Enter — CopyButtons stops propagation
+            so copying never opens the room. */}
+          <CopyButtons
+            size="xs"
+            label={`War Room ${session.title}`}
+            className="opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity"
+            human={() => roomSummary(session, stats)}
+            json={() => roomRow(session, stats)}
+            agent={() => buildRoomCardPayload({ session, stats, listTotal })}
+          />
+          <button
+            type="button"
+            onClick={handleDelete}
+            className="grid place-items-center size-7 rounded-md text-muted-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-destructive/10 hover:text-destructive transition-all"
+            aria-label="Delete War Room"
+          >
+            {deleting ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Trash2 className="size-4" />
+            )}
+          </button>
+        </div>
       </div>
 
       <div className="min-w-0 flex-1">

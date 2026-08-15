@@ -33,7 +33,7 @@ import { ThreadTabContent } from "./ThreadTabContent";
 import { ThreadMetricChips } from "./ThreadMetricChips";
 import { ThreadOptionsMenu } from "./ThreadOptionsMenu";
 import { ThreadResourcesButton } from "./ThreadResourcesSheet";
-import { ThreadCopyForAiButton } from "../shared/ThreadCopyForAiButton";
+import { ThreadCopyButtons } from "../shared/ThreadCopyButtons";
 import { useThreadActions } from "@/features/war-room/hooks/useThreadActions";
 import { useThreadMetrics } from "@/features/war-room/hooks/useThreadMetrics";
 import { useRoomView } from "../room/roomViewContext";
@@ -122,9 +122,15 @@ export function WarRoomThread({
             threadId={threadId}
             threadTitle={actions.title}
           />
-          <span onClick={(e) => e.stopPropagation()}>
-            <ThreadCopyForAiButton threadId={threadId} />
-          </span>
+          {/* One control: human Copy + JSON + an AI menu whose default is
+              the TILE as rendered and whose variant is the anchored
+              project/task full tree. Always renders — a canvas tile with no
+              anchor used to have no copy path at all. */}
+          <ThreadCopyButtons
+            threadId={threadId}
+            sessionId={sessionId}
+            className="opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover/thread:opacity-100"
+          />
           <ThreadTabSelect
             threadId={threadId}
             active={shownTab}
