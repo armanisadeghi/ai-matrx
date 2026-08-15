@@ -1,7 +1,7 @@
 // features/scopes/hooks/useCategories.ts
 //
 // Public hook for the canonical faceted taxonomy (`platform.categories`) — the
-// one primitive any UI consumes to read and create categories for a facet
+// one primitive any UI consumes to read and manage categories for a facet
 // (`dimension`). The sibling of `useAssociations`: that hook owns an entity's
 // assignment EDGES, this hook owns the category NOUNS for a dimension.
 //
@@ -42,10 +42,6 @@ export interface UseCategoriesArgs {
   /** Disable the auto-load on mount. Defaults to false (auto-load). */
   autoLoad?: boolean;
 }
-
-// Single declaration lives in the thunk; re-export so consumers can keep
-// importing it from the hook (doctrine forbids the duplicate definition).
-export type { CategoryCreateResult };
 
 export interface UseCategoriesReturn {
   /** Every category visible to the caller in this facet (system + their orgs). */

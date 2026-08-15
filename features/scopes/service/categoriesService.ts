@@ -35,7 +35,8 @@ import type {
 } from "@/features/scopes/types";
 import type { Database } from "@/types/database.types";
 
-type CatListRow = Database["public"]["Functions"]["cat_list"]["Returns"][number];
+type CatListRow =
+  Database["public"]["Functions"]["cat_list"]["Returns"][number];
 
 function toCategory(row: CatListRow): PlatformCategory {
   return {

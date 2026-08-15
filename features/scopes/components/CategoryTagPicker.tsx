@@ -113,8 +113,11 @@ export function CategoryTagPicker({
   const [writing, setWriting] = useState(false);
   const [search, setSearch] = useState("");
   const [createParentId, setCreateParentId] = useState(ROOT_PARENT);
-  const { categories, create: createCategory, reload: reloadCategories } =
-    useCategories({ dimension });
+  const {
+    categories,
+    create: createCategory,
+    reload: reloadCategories,
+  } = useCategories({ dimension });
   const { edges, setTargets } = useAssociations({
     type: entityType,
     id: entityId,
@@ -168,9 +171,7 @@ export function CategoryTagPicker({
     try {
       const resolvedOrgId = await ensureOrgId(orgId ?? null);
       const parentId =
-        showHierarchy && createParentId !== ROOT_PARENT
-          ? createParentId
-          : null;
+        showHierarchy && createParentId !== ROOT_PARENT ? createParentId : null;
       const createRes = await createCategory({
         name,
         orgId: resolvedOrgId,
@@ -281,9 +282,7 @@ export function CategoryTagPicker({
                         <Check
                           className={cn(
                             "mr-2 h-3.5 w-3.5",
-                            selectedIds.has(c.id)
-                              ? "opacity-100"
-                              : "opacity-0",
+                            selectedIds.has(c.id) ? "opacity-100" : "opacity-0",
                           )}
                         />
                         {c.name}

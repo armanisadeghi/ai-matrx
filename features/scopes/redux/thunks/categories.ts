@@ -14,7 +14,10 @@ import { categoriesService } from "@/features/scopes/service/categoriesService";
 import { scopesActions } from "@/features/scopes/redux/scopesSlice";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type { RootState } from "@/lib/redux/rootReducer";
-import type { CategoryDimension, PlatformCategory } from "@/features/scopes/types";
+import type {
+  CategoryDimension,
+  PlatformCategory,
+} from "@/features/scopes/types";
 
 type AppThunk<R = void> = ThunkAction<R, RootState, unknown, UnknownAction>;
 

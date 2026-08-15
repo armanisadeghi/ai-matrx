@@ -33,23 +33,26 @@ All RPCs return `Promise<RpcResult<T>>`:
 ```ts
 type RpcResult<T> =
   | { ok: true; data: T }
-  | { ok: false; error: { code: string; message: string; hint?: string; detail?: unknown } };
+  | {
+      ok: false;
+      error: { code: string; message: string; hint?: string; detail?: unknown };
+    };
 ```
 
 Standard error codes:
 
-| Code | Meaning |
-|---|---|
-| `unauthorized` | No `auth.uid()`. |
-| `forbidden_org` | User is not a member of the requested org. |
-| `forbidden_role` | User's role in the org is insufficient for the action. |
-| `not_found` | Target row does not exist or is filtered out by RLS (collapsed deliberately). |
-| `conflict_in_use` | Cannot delete because the row is referenced elsewhere. |
+| Code               | Meaning                                                                          |
+| ------------------ | -------------------------------------------------------------------------------- |
+| `unauthorized`     | No `auth.uid()`.                                                                 |
+| `forbidden_org`    | User is not a member of the requested org.                                       |
+| `forbidden_role`   | User's role in the org is insufficient for the action.                           |
+| `not_found`        | Target row does not exist or is filtered out by RLS (collapsed deliberately).    |
+| `conflict_in_use`  | Cannot delete because the row is referenced elsewhere.                           |
 | `invalid_argument` | Input fails server-side validation (e.g. negative `max_assignments_per_entity`). |
-| `version_conflict` | Optimistic concurrency check failed on values write. |
-| `quota_exceeded` | Soft limits hit (max scope_types per org, etc.). |
-| `template_missing` | `apply_template` target does not exist or is inactive. |
-| `internal` | Unexpected server error. Always include `detail` if safe to expose. |
+| `version_conflict` | Optimistic concurrency check failed on values write.                             |
+| `quota_exceeded`   | Soft limits hit (max scope_types per org, etc.).                                 |
+| `template_missing` | `apply_template` target does not exist or is inactive.                           |
+| `internal`         | Unexpected server error. Always include `detail` if safe to expose.              |
 
 Never throw to the client. Return a typed result.
 
@@ -87,8 +90,8 @@ The boot fetch. One round-trip. ~20 KB for a typical user.
     id: string;
     name: string;
     slug: string;
-    is_personal: boolean;        // true for the user's real personal organization row
-    role: 'owner' | 'admin' | 'member';   // mirrors public.org_role exactly — no read-only role exists
+    is_personal: boolean; // true for the user's real personal organization row
+    role: "owner" | "admin" | "member"; // mirrors public.org_role exactly — no read-only role exists
     scope_types: Array<{
       id: string;
       organization_id: string;
@@ -121,7 +124,7 @@ The boot fetch. One round-trip. ~20 KB for a typical user.
       scope_ids: string[];
     }>;
   }>;
-  fetched_at: string;          // ISO timestamp
+  fetched_at: string; // ISO timestamp
 }
 ```
 
@@ -154,10 +157,10 @@ On-demand tasks for a tree node. Called when the user expands a scope/project/or
     status: string;
     project_id: string | null;
     organization_id: string | null;
-    scope_ids: string[];        // M2M assignments
+    scope_ids: string[]; // M2M assignments
     updated_at: string;
   }>;
-  total_count: number;          // for pagination
+  total_count: number; // for pagination
   fetched_at: string;
 }
 ```
@@ -196,7 +199,7 @@ Projects in `p_org_id` with no `ctx_scope_assignments` row. Distinct from `get_u
 
 ```ts
 {
-  tasks: Array<{ id; title; status; updated_at; }>;
+  tasks: Array<{ id; title; status; updated_at }>;
   fetched_at: string;
 }
 ```
@@ -216,10 +219,11 @@ Tasks within the level node's scope but with no scope/project association. Mirro
     display_name: string;
     description: string;
     category: string | null;
-    value_type: 'text' | 'number' | 'boolean' | 'json' | 'document' | 'reference';
-    fetch_hint: 'eager' | 'on_demand' | 'manual';
-    sensitivity: 'public' | 'internal' | 'sensitive';
-    depends_on: string[];        // other context item ids
+    value_type:
+      "text" | "number" | "boolean" | "json" | "document" | "reference";
+    fetch_hint: "eager" | "on_demand" | "manual";
+    sensitivity: "public" | "internal" | "sensitive";
+    depends_on: string[]; // other context item ids
     is_active: boolean;
     review_interval_days: number | null;
     last_verified_at: string | null;
@@ -390,8 +394,11 @@ Partial update.
 ### Context items (columns on a scope type)
 
 #### `create_context_item(p_scope_type_id uuid, p_payload jsonb)`
+
 #### `update_context_item(p_item_id uuid, p_payload jsonb)`
+
 #### `delete_context_item(p_item_id uuid, p_cascade boolean default false)`
+
 #### `reorder_context_items(p_scope_type_id uuid, p_ordered_ids uuid[])`
 
 Same pattern as scope_types. Admin role required.
@@ -449,6 +456,7 @@ Role: caller must have write access to the entity (delegated check — RPC calls
 ```
 
 #### `add_entity_scopes(p_entity_type text, p_entity_id uuid, p_scope_ids uuid[])`
+
 #### `remove_entity_scopes(p_entity_type text, p_entity_id uuid, p_scope_ids uuid[])`
 
 Delta variants. Useful for keyboard-driven taggers. Same return shape.
@@ -495,7 +503,7 @@ For globally-triggered actions. No entity in scope.
 ```ts
 {
   organization_id: string | null;
-  scope_selections: Record<string, string>;   // scope_type_id → scope_id
+  scope_selections: Record<string, string>; // scope_type_id → scope_id
   project_id: string | null;
   task_id: string | null;
   conversation_id: string | null;
@@ -506,10 +514,10 @@ For globally-triggered actions. No entity in scope.
 
 ```ts
 {
-  values: Record<string, ResolvedValue>;       // context_item.key → value bundle
+  values: Record<string, ResolvedValue>; // context_item.key → value bundle
   source_per_key: Record<string, ContextSource>;
   active_scopes: Array<ContextSource>;
-  contradictions: [];                          // always empty for global-only
+  contradictions: []; // always empty for global-only
   organization_id: string | null;
   user_id: string;
 }

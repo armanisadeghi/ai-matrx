@@ -261,11 +261,11 @@ export interface UserEntityState {
 //
 // The canonical faceted taxonomy. ONE table, partitioned by `dimension`
 // (the facet — `agent-shortcut`, `skill`, `industry`, …), replacing the
-// fragmented per-feature category systems. `orgId === null` is a system /
-// global category visible to everyone; a non-null `orgId` is an org-owned
-// category. The client has NO direct grant on `platform.categories`; every
-// read/write goes through `cat_list` / `cat_create` (PUBLIC SECURITY-DEFINER
-// RPCs), and every call to those RPCs goes through `categoriesService.ts` —
+// fragmented per-feature category systems. System/global categories belong to
+// the Matrx System org and carry `isSystem=true`; ordinary categories belong to
+// their tenant org. The client has NO direct grant on `platform.categories`; every
+// read/write goes through the PUBLIC SECURITY-DEFINER `cat_*` RPCs, and every
+// call to those RPCs goes through `categoriesService.ts` —
 // the sibling chokepoint to `associationsService`.
 //
 // ASSIGNMENT of a category to an entity is NOT a category concern: it reuses
@@ -284,7 +284,7 @@ export type CategoryDimension = string;
 /** One `platform.categories` row, camelCased (mirrors `cat_list`'s return). */
 export interface PlatformCategory {
   id: string;
-  /** `null` = system / global category (visible to everyone). */
+  /** Owning organization; system/global rows use the Matrx System org. */
   orgId: string | null;
   dimension: CategoryDimension;
   name: string;
