@@ -39,7 +39,7 @@ One Explore agent per doc (batch 3–4 docs per agent when they're small). Each 
 
 ## Orphan-list reconciliation
 
-`matrx-frontend/docs/handoffs/UNASSIGNED.md` lists every handoff with no owner (both repos).
+`/Users/armanisadeghi/code/common-docs/operations/unassigned-handoffs.md` lists every handoff with no owner (every repo).
 The sweep is its ONLY automated maintainer, and it may do exactly two things:
 
 - **Remove a row whose handoff file no longer exists** (including ones you deleted this sweep).

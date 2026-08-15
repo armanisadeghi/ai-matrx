@@ -381,7 +381,7 @@ Built a demo page, new route, or reviewable UI surface Arman didn't watch you ma
 
 `docs/handoffs/` holds forward-looking work orders (shared system with aidream — one doc per piece of work). **Invoke the `handoffs` skill** before writing one, taking one over, or ending any turn that progressed work a handoff covers — completed tasks collapse to one bullet, finished handoffs get deleted. Rot backstop: `/handoff-cleanup`.
 
-🚨 **[`docs/handoffs/UNASSIGNED.md`](./docs/handoffs/UNASSIGNED.md) is the ONE list of handoffs with no owner** (both repos), and it is how Arman decides what to staff next. **Taking a handoff over → DELETE its row first, before you read the doc.** **Writing a new handoff, or leaving remaining work nobody is continuing → ADD its row in the same commit.** A row's existence is the status — statuses, notes, and history are banned in that file.
+🚨 **`/Users/armanisadeghi/code/common-docs/operations/unassigned-handoffs.md` is the ONE list of handoffs with no owner** (EVERY repo — it lives in common-docs because both repos write to it), and it is how Arman decides what to staff next. **Taking a handoff over → DELETE its row first, before you read the doc.** **Writing a new handoff, or leaving remaining work nobody is continuing → ADD its row in the same commit.** A row's existence is the status — statuses, notes, and history are banned in that file.
 
 ---
 
@@ -393,7 +393,7 @@ Every Tier 1/2 feature has a `FEATURE.md` — the single source of truth for tha
 
 **Editing this file, any `FEATURE.md`, `PRINCIPLES.md`, or a `SKILL.md`?** Invoke the `context-docs` skill first — every doc edit is a full-document review (place it right, merge don't stack, lose no rule, max punch per word).
 
-**Cross-repo truth lives in `/Users/armanisadeghi/code/common-docs/` (its own repo) — ONE doc, pointer lines in each touched repo, NEVER a per-repo copy.** Documenting anything that spans repos (e.g. `common-docs/systems/cms-system/FEATURE.md` for the CMS platform)? **Invoke the `cross-repo-docs` skill.**
+🚨 **THE PLACEMENT DEFAULT IS common-docs (Arman, 2026-08-14).** A doc lives in a repo ONLY when its subject is genuinely, entirely that one repo and does not exist in the others. The moment it is about something shared — agents, the CMS, the envelope, the DB, a protocol, a shared list — it lives in `/Users/armanisadeghi/code/common-docs/` and ONLY there, with pointer lines in each touched repo and NEVER a per-repo copy. "Most of the work is in this repo" does not move cross-repo truth into this repo, and a shared register (list/board/index other repos write to) is never repo-local. Unsure → common-docs. Rules + the decision block: `common-docs/policies/document-types.md`; **invoke the `cross-repo-docs` skill** before creating or moving any doc that spans repos.
 
 ### Feature entry pages are LIST views, not forced workspaces
 

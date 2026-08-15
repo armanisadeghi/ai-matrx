@@ -9,9 +9,10 @@ A handoff exists so a fresh agent can start producing in minutes: a work order +
 
 ## Where they live
 
-- `docs/handoffs/<topic>.md` (kebab-case), in whichever repo owns most of the **remaining** work (matrx-frontend or aidream). Unowned ones are listed in `matrx-frontend/docs/handoffs/UNASSIGNED.md` — see The orphan list.
+- `docs/handoffs/<topic>.md` (kebab-case), in whichever repo owns most of the **remaining** work (matrx-frontend or aidream). Unowned ones are listed in the cross-repo orphan list — see The orphan list.
 - Cross-repo work gets **ONE doc** — never twins. Frontmatter `repos:` lists every repo involved; cross-repo file references use absolute paths.
-- Canonical doctrine is THIS file (matrx-frontend); aidream carries a pointer stub at `aidream/.claude/skills/handoffs/SKILL.md`. **Edit only the canonical.**
+- Canonical doctrine is THIS file (matrx-frontend); aidream carries a pointer stub at `aidream/.claude/skills/handoffs/SKILL.md`. **Edit only the canonical.** *(Placement debt, 2026-08-14: this is cross-repo doctrine living in a repo — it belongs in `common-docs/skills/`, symlinked, the way `cross-repo-docs` already is. Tracked in the docs-placement cleanup; do not add more doctrine here in the meantime.)*
+- **The orphan register is NOT a handoff and does not live in a repo** — `common-docs/operations/unassigned-handoffs.md`. See The orphan list below.
 
 ## Format
 
@@ -34,7 +35,7 @@ Sections, in this order (omit empty ones):
 
 **Banned everywhere:** chronology, session narratives, subagent/effort counts, "we then…", self-praise, restating `FEATURE.md` content (point to it instead).
 
-## The orphan list — `docs/handoffs/UNASSIGNED.md` (matrx-frontend, canonical for BOTH repos)
+## The orphan list — `/Users/armanisadeghi/code/common-docs/operations/unassigned-handoffs.md`
 
 One table, one meaning: **every row is a handoff with no owner.** It is how Arman decides what to
 staff next, so it stays short and true.
@@ -49,7 +50,7 @@ staff next, so it stays short and true.
 
 ## Taking one over
 
-0. **Delete your row from [`docs/handoffs/UNASSIGNED.md`](../../../docs/handoffs/UNASSIGNED.md)** — first action of the turn, committed immediately. You are the owner now.
+0. **Delete your row from the orphan list** (`/Users/armanisadeghi/code/common-docs/operations/unassigned-handoffs.md`, committed in the common-docs repo) — first action of the turn. You are the owner now.
 1. **Vision first.** Read every `vision:` link before touching code. Arman's docs outrank the handoff's summary of them.
 2. **Trust nothing dated.** The codebase moves daily. Fan out small parallel Explore subagents to verify each load-bearing claim — files exist? RPC live? still wired? **A comment in code is not a fact**; agents write wrong comments. Verify behavior and artifacts, not prose.
 3. Plan, then execute in a loop — build, adversarially verify, fix — until done or blocked on a genuine Arman-decision (one with no best-practice answer). The handoff already authorizes the work; don't stop to ask permission for it.
@@ -62,8 +63,8 @@ Any turn that progressed work covered by a handoff ends with a rewrite of that h
 - **A completed task's entire description collapses to one Done bullet.** 8,000 words of pipeline spec, 4 hours, 15 subagents → `- RAG pipeline built — see services/rag/`. Readers who need detail read the code.
 - **Rewrite, never append.** No "Update 2026-07-07:" blocks. The doc is always the current state, one voice.
 - **The doc shrinks as work completes.** Target ≤150 lines. If it grew after progress, you appended instead of grooming.
-- **Everything done → delete the file** (git keeps history) + one dated line in the affected `FEATURE.md` Change Log + **remove its row from `UNASSIGNED.md`**. Deleting is the success state — do not ask permission.
-- **Work remains and nobody is continuing it → its row goes in `UNASSIGNED.md`** (add it if absent; if you took it over this turn you deleted the row at step 0, so put it back). Handing work back is what makes it an orphan again.
+- **Everything done → delete the file** (git keeps history) + one dated line in the affected `FEATURE.md` Change Log + **remove its row from the orphan list**. Deleting is the success state — do not ask permission.
+- **Work remains and nobody is continuing it → its row goes in the orphan list** (add it if absent; if you took it over this turn you deleted the row at step 0, so put it back). Handing work back is what makes it an orphan again.
 - Refresh `updated:` and `status:`.
 
 ## Escalating decisions to Arman
