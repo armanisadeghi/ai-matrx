@@ -555,7 +555,11 @@ Decide before agent-heavy workloads land.
   exceeded a phone viewport, dragging Save off-screen for every control in it. Verified live:
   toggled on → reload → switch reads the stored value; a paste of `not-a-number` into a
   `number` column was refused by the DB with `udt_validate_row: field score value is not
-  numeric`; toggled back off → persisted. Light, dark, and 375px.
+  numeric`; toggled back off → persisted. Light, dark, and 375px. Re-verified 2026-08-15 on
+  `/data/11111111-…0001`, adding the required-field half: with a field marked Req and strict
+  armed, an insert omitting it is refused with `udt_validate_row: required field category
+  missing on insert` — the refusal comes from the DB, not from `AddRowModal`'s own client-side
+  required check (proven by calling `udt_upsert_row` directly, bypassing the form).
 
 - 2026-08-14 — claude: **Columns can finally be deleted; reorder-row labels fixed; display
   formats added.** (1) `udt_delete_field` — there had been NO delete-column path since
