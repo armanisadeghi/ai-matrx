@@ -26,6 +26,14 @@ Arman plus dozens of concurrent agents edit this ONE checkout simultaneously; th
 
 **AI Matrx is where expertise becomes reliable, reusable, and accountable** — not a no-code platform, not an app builder, not a prompt library. Canonical (Arman's words): `/Users/armanisadeghi/code/common-docs/systems/ai-dream-platform/ai-matrx-core.md`. The build test: does this make expertise more reliable, more reusable, or more accountable? If not, cut it.
 
+## 🚨 WE ARE OUR OWN CUSTOMER — no privileged internal path, no partial application
+
+**Every capability we sell, we consume as a tenant of our own product** — same tables, same code paths, same UI. Already true of AI: every agent interaction in this platform runs on the SAME agent system users build and run. Canonical law: **`/Users/armanisadeghi/code/common-docs/policies/we-are-our-own-customer.md`** — read it before building any internal/admin surface.
+
+- **The test, before you build anything internal:** *do we already sell a surface that does this?* **Yes → use the product**; if it can't do the job that is a **product gap**, and fixing it ships value to every customer (fixing it internally ships value to nobody). **No → declare the exception in writing** in the FEATURE.md. An undeclared internal twin of a shipped feature is the violation.
+- **No partial application.** Half our data inside a surface and half beside it is worse than either choice — nothing downstream can tell which rows are which.
+- **CRM (2026-08-14):** AI Matrx operates in its own CRM under the system org `39c38960-d30c-4840-b0c1-c9960de95582`. People who contact *us* are `crm.party` rows there. **EVERY USER HAS A PARTY — no exceptions, created at signup, never at request time**; the party is the person, the user account is their login, `claimed_by` is the join. The same human being a separate party in each org is CORRECT (orgs never share contacts) — never build a cross-org party bridge.
+
 ## 🚨 NO DEAD ENDS — every identity is a door, every capability is on the table
 
 > **THE DOOR LAW.** If the UI names a thing that has an identity in our system, the UI must let the user reach it.
