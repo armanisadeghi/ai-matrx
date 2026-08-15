@@ -98,6 +98,7 @@ All SMS tables live in the `communication` schema. The enrollment contract prima
 
 ## Change log
 
+- `2026-08-15` — Aligned the inbound webhook test with the canonical `www.aimatrx.com` signing host and current processor result contract; the route now accepts the standard `Request` surface it actually consumes.
 - `2026-08-15` — Moved the canonical Twilio signature validator to the shared communications
   provider adapter and removed the former SMS-only implementation after migrating every consumer.
 - `2026-08-15` — Linked the cross-repo communications record and corrected the feature truth after a live/source audit: documented the transitional consent authority, Twilio-before-ledger ordering, broken START path, pending messages without a worker, incomplete identity resolution, unenforced daily cap, broad system bypass, and unlinked notification receipts.

@@ -14,7 +14,7 @@ jest.mock("@/lib/sms/receive", () => ({
   processInboundSms: jest.fn(),
 }));
 
-const URL = "https://aimatrx.com/api/webhooks/twilio/sms";
+const URL = "https://www.aimatrx.com/api/webhooks/twilio/sms";
 const AUTH_TOKEN = "sms-route-test-auth-token";
 const originalAuthToken = process.env.TWILIO_AUTH_TOKEN;
 
@@ -47,9 +47,11 @@ describe("POST /api/webhooks/twilio/sms with shared Twilio validation", () => {
     jest.clearAllMocks();
     jest.mocked(isPhoneNumberOptedOut).mockResolvedValue(false);
     jest.mocked(processInboundSms).mockResolvedValue({
-      success: true,
       messageId: "11111111-1111-4111-8111-111111111111",
       conversationId: "22222222-2222-4222-8222-222222222222",
+      userId: null,
+      isNewConversation: false,
+      hasMedia: false,
     });
     jest.spyOn(console, "error").mockImplementation(() => undefined);
   });
