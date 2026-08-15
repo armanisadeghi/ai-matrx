@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { CircleGauge, ExternalLink, Play, Radio } from "lucide-react";
@@ -28,8 +28,20 @@ import {
   SectionCard,
   formatCompactDate,
 } from "@/features/marketing/components/shared/MarketingUi";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import {
+  csvExportItem,
+  jsonExportItem,
+} from "@/components/agent-copy/export";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { humanizeItemKey } from "@/features/marketing/lib/finding-remedies";
+
+/**
+ * Render-only preview size. The rollup carries every open item; showing a
+ * slice is fine, silently discarding the rest is not — hence the toggle and
+ * the export below.
+ */
+const OPEN_ITEM_PREVIEW = 8;
 
 function scoreTone(score: number | null): "default" | "good" | "warning" | "bad" {
   if (score === null) return "default";
@@ -94,6 +106,7 @@ export function CatalogueAnalysisPanel() {
     startNavigation(() => router.push(href));
   };
 
+  const [showAllItems, setShowAllItems] = useState(false);
   const data = overview.data;
   const copy = data
     ? webCopy({
@@ -112,6 +125,16 @@ export function CatalogueAnalysisPanel() {
         attributes: { site_id: site.id },
       })
     : undefined;
+
+  const openItemCsvRows = () =>
+    (data?.openByItem ?? []).map((item) => ({
+      item_key: item.itemKey,
+      item: humanizeItemKey(item.itemKey),
+      category: item.category,
+      subcategory: item.subcategory,
+      worst_severity: item.worstSeverity,
+      open_findings: item.count,
+    }));
 
   const analyzeButton = (
     <Button
@@ -133,7 +156,31 @@ export function CatalogueAnalysisPanel() {
     <SectionCard
       anchor="catalogue_analysis"
       title="Catalogue analysis"
-      headerExtra={analyzeButton}
+      headerExtra={
+        <>
+          {data && data.openByItem.length > OPEN_ITEM_PREVIEW ? (
+            <button
+              type="button"
+              className="text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+              onClick={() => setShowAllItems((current) => !current)}
+            >
+              {showAllItems
+                ? `top ${OPEN_ITEM_PREVIEW}`
+                : `all ${data.openByItem.length.toLocaleString()}`}
+            </button>
+          ) : null}
+          {data && data.openByItem.length > 0 ? (
+            <ExportMenu
+              label={`catalogue-analysis-${site.domain}`}
+              items={[
+                jsonExportItem(() => data, "Analysis overview (.json)"),
+                csvExportItem(openItemCsvRows, "CSV (all open items)"),
+              ]}
+            />
+          ) : null}
+          {analyzeButton}
+        </>
+      }
       copy={copy}
     >
       {overview.isPending ? (
@@ -208,7 +255,10 @@ export function CatalogueAnalysisPanel() {
                 </p>
               ) : (
                 <ul className="divide-y divide-border">
-                  {data.openByItem.slice(0, 8).map((item) => (
+                  {(showAllItems
+                    ? data.openByItem
+                    : data.openByItem.slice(0, OPEN_ITEM_PREVIEW)
+                  ).map((item) => (
                     <li key={item.itemKey}>
                       <button
                         type="button"

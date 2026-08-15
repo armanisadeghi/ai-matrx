@@ -91,7 +91,10 @@ function auditPageKpis(rollup: SiteAuditRollup): AuditPageKpis {
     pages_audited: rollup.auditedPages,
     pages_uncomputed: rollup.uncomputedPages,
     non_html_resources: rollup.nonHtmlResources,
-    gone_pages: rollup.gonePages,
+    // `pages_gone` is the COUNT; the manifest's `gone_pages` is the list.
+    // Same vocabulary as the surface scope, so a copied payload and the
+    // agent's surface values never disagree about what a name means.
+    pages_gone: rollup.gonePages,
     indexable: rollup.verdicts.indexable,
     needs_review: rollup.verdicts.check,
     blocked: rollup.verdicts.blocked,
