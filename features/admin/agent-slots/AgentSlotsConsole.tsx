@@ -472,6 +472,7 @@ export function AgentSlotsConsole() {
                   <RepinToTwinButton
                     slot={r.slot}
                     twin={twin}
+                    currentAgentId={r.agentId}
                     onSaved={reload}
                   />
                 </>
