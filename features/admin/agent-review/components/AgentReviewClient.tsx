@@ -26,7 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { SearchInput } from "@/components/official/SearchInput";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { toast } from "@/lib/toast";
@@ -271,9 +271,9 @@ function ReviewItemCard({
           </AccordionTrigger>
           <Button
             asChild
-            variant="ghost"
-            size="icon"
-            className="mt-1.5 h-10 w-10 shrink-0"
+            variant="outline"
+            size="sm"
+            className="mt-1.5 min-h-10 shrink-0 gap-1.5 px-3"
           >
             <a
               href={row.url}
@@ -282,6 +282,7 @@ function ReviewItemCard({
               aria-label={`Open ${row.title} in a new tab`}
             >
               <ExternalLink className="h-4 w-4" />
+              Open page
             </a>
           </Button>
         </div>
@@ -335,12 +336,15 @@ function ReviewItemCard({
 
             {!isArchived ? (
               <div className="space-y-2">
-                <Textarea
+                <ProTextarea
                   value={feedback}
                   onChange={(event) => setFeedback(event.target.value)}
                   placeholder="Feedback for the repair agent…"
                   aria-label={`Feedback for ${row.title}`}
-                  className="min-h-24 text-sm"
+                  autoGrow
+                  minHeight={96}
+                  maxHeight={320}
+                  className="text-sm"
                 />
                 <div className="flex flex-wrap items-center gap-2">
                   <Button
