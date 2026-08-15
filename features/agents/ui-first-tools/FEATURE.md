@@ -342,6 +342,14 @@ server-side; the same Realtime subscription updates the panel with no delegation
 
 ## Change Log
 
+- `2026-08-15` — **Ask card scroll: question + answers now scroll as ONE region.**
+  `AgentCardShell` previously gave the title its own capped `max-h-[28dvh]` scroll
+  and the body a separate `flex-1` scroll, so a long question starved the answers
+  into a tiny slot. Now only the meta row (icon/eyebrow/dismiss) and footer/countdown
+  stay pinned; the question and answers share a single scroll. Mobile lets the host
+  bottom-drawer (`PendingAsksZone`) own that scroll (card flows at natural height);
+  desktop caps the card and scrolls it internally. Both get a soft scroll-edge fade
+  via the new `useScrollFade` primitive (`components/ui/scroll-fade.tsx`).
 - `2026-08-12` — **`scratchpad` and `storage` DELETED (tools, handlers, services,
   schemas, registry entries, names, and the drift-checker rows).** Neither filled
   a gap. `storage` was a per-user persistent KV — that is exactly the server-side

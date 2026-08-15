@@ -25,6 +25,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
+import { useScrollFade } from "@/components/ui/scroll-fade";
 import {
   groupPendingAsks,
   selectActivePendingAsksForConversation,
@@ -88,6 +89,9 @@ function MobileAsksDrawer({
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(true);
+  // Soft fade at the drawer's scroll edges — the whole question+answers scroll
+  // as one here, so the fade cues "there's more above/below".
+  const fade = useScrollFade<HTMLDivElement>();
   // Track which asks we've already surfaced so re-opening only happens for a
   // genuinely new interaction — not every time the pending list re-renders.
   const seenRef = useRef<Set<string>>(new Set());
@@ -166,6 +170,8 @@ function MobileAsksDrawer({
             </button>
           </div>
           <div
+            ref={fade.ref}
+            style={fade.style}
             className={cn(
               "flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain px-3 pt-1",
               "pb-[calc(env(safe-area-inset-bottom,0px)+1rem)]",
