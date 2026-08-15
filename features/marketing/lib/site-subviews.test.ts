@@ -43,8 +43,14 @@ describe("marketing site sub-view registry", () => {
     // point of moving the 26 sections into the sidebar is that what remains in
     // the header is a set this size. A section that grows past this is a
     // signal to split it, not to let the header degrade again.
+    //
+    // The ceiling moved 7 → 8 on 2026-08-15 for backlinks only, when Prospects
+    // (the site-wide competitor link gap) joined it. Every backlinks sub-view
+    // has an icon, so RouteModeNav's measured `icons` variant carries the
+    // eighth item rather than collapsing to a dropdown. This is the ceiling,
+    // not a new default: a ninth splits the section.
     for (const entry of MARKETING_SITE_SUBVIEWS) {
-      expect(entry.views.length).toBeLessThanOrEqual(7);
+      expect(entry.views.length).toBeLessThanOrEqual(8);
     }
   });
 
@@ -113,15 +119,18 @@ describe("marketing site sub-view registry", () => {
     //   media:generate  → brand assets ?view=generate (mints web.brand_asset)
     // None went dark: the old `?view=` URLs server-redirect, and the site's
     // Media section carries a door to the library. 43 - 4 = 39, 64 - 4 = 60.
+    //
+    // 2026-08-15 — `backlinks:prospects` added (the site-wide competitor link
+    // gap, the top of the outreach funnel). 39 + 1 = 40, 60 + 1 = 61.
     expect(MARKETING_SITE_SECTIONS.length).toBe(21);
     expect(
       MARKETING_SITE_SUBVIEWS.reduce(
         (total, entry) => total + entry.views.length,
         0,
       ),
-    ).toBe(39);
+    ).toBe(40);
     expect(countMarketingSiteDestinations(MARKETING_SITE_SECTIONS.length)).toBe(
-      60,
+      61,
     );
   });
 });

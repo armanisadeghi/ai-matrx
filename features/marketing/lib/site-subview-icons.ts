@@ -44,6 +44,7 @@ import {
   Settings,
   Table2,
   Tags,
+  Target,
   TrendingUp,
   Type,
   Users,
@@ -75,6 +76,7 @@ export const MARKETING_SUBVIEW_ICONS: Record<string, LucideIcon> = {
   "backlinks:anchors": Type,
   "backlinks:pages": FileText,
   "backlinks:competitors": Swords,
+  "backlinks:prospects": Target,
   "backlinks:insights": Lightbulb,
 
   "changes:tracked": FlaskConical,

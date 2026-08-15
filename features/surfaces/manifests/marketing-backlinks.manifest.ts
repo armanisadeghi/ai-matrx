@@ -72,6 +72,13 @@ const groups: SurfaceValueGroup[] = [
       "Captured referring-page content, first-party judgments, concrete actions, and the known-domain directory.",
   },
   {
+    key: "link_prospects",
+    label: "Link prospects",
+    sortOrder: 460,
+    description:
+      "The site-wide competitor link gap: who would be compared, the sites that link to confirmed competitors and not to us, and where each one stands with the human reviewing it.",
+  },
+  {
     key: "collection",
     label: "Collection & refresh",
     sortOrder: 500,
@@ -225,6 +232,42 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 470,
   },
 
+  // ── Link prospects ────────────────────────────────────────────────────
+  {
+    group: "link_prospects",
+    name: "link_gap_seed",
+    label: "Who would be compared",
+    description:
+      "The no-spend preview of the site-wide competitor link gap: { can_run, reason, confirmed_competitors, total_competitors, seeded (each competitor's domain, entity role, business/market overlap, and whether the user included it explicitly), excluded }. When can_run is false, `reason` is the server's own sentence explaining why — today, that no competitor has been confirmed yet. Populated once the Prospects tab has been opened; empty on every other tab.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 900,
+    sortOrder: 600,
+  },
+  {
+    group: "link_prospects",
+    name: "link_gap_prospects",
+    label: "Link prospects on screen",
+    description:
+      "The prospect rows the user is currently paging through (server-paged, respecting search, filters and sort): domain, how many confirmed competitors it links to, the Matrx Authority Score with its band, why it scored that, what could NOT be measured, spam score, the provider's own rank kept separate, the human's review status, and whether a CRM record already exists. matrx_authority_score is NULL when we could not measure the domain — matrx_authority_measured says so explicitly, and a null is never a zero and never the worst prospect. Empty when the comparison has never been run or the filter matches nothing.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 6000,
+    autoContext: false,
+    sortOrder: 610,
+  },
+  {
+    group: "link_prospects",
+    name: "link_gap_review_backlog",
+    label: "Prospect review backlog",
+    description:
+      "How many prospects sit in each review state for this whole site ({ pending, approved, rejected, snoozed }) — unfiltered, so it always reports the real backlog rather than what the current filter shows. Approving is what makes a prospect eligible to become a CRM record. Empty until the comparison has produced rows.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 120,
+    sortOrder: 620,
+  },
+
   // ── Collection & refresh ──────────────────────────────────────────────
   {
     group: "collection",
@@ -319,6 +362,7 @@ export const marketingBacklinksManifest: SurfaceManifest = {
 You are on the backlink intelligence workspace of a managed website: provider discovery PLUS first-party source-page capture and analysis. The brand_context and site_context values give you the client and website framing; read them first.
 Keep evidence layers separate. Provider rank/spam values are third-party signals; backlink_rows and referring_domain_opinions carry our page-content judgments, relevance, controllability, risk, and recommended actions; human rulings are explicit ground truth. Never call a link paid, controlled, toxic, or disavow-worthy from a provider score alone.
 The user works here to protect valuable links, reclaim losses, improve controllable listings/placements, and request specific edits. Recommend the stored action and explain its evidence; never invent a relationship, owner, referring domain, anchor, or metric.
+The Prospects tab is the OTHER direction: link_gap_seed / link_gap_prospects / link_gap_review_backlog describe sites that link to the user's confirmed competitors and NOT to them. The Matrx Authority Score is ours, and a null score means UNMEASURED — never zero, never the worst prospect; say "we have not measured it" rather than implying a low value. Approval is a human act and the only thing that makes a prospect a CRM record; never speak as if a machine score approved anything.
 Freshness has two clocks: backlink_summary carries when the KPI snapshot was collected, backlinks_collected_at when the individual rows were. The collection values (refresh_schedule, refresh_profile, seo_environment, refresh_receipt) tell you how this evidence is kept current — when data is stale or missing, the right recommendation names the profile to run, not a fabricated number.
 </surface_intro>`,
   groups,
@@ -376,6 +420,9 @@ export function createMarketingBacklinksScope(values: {
   backlink_rows?: Array<Record<string, unknown>>;
   backlinks_collected_at?: string;
   backlink_enrichment_summary?: Record<string, unknown>;
+  link_gap_seed?: Record<string, unknown>;
+  link_gap_prospects?: Array<Record<string, unknown>>;
+  link_gap_review_backlog?: Record<string, unknown>;
   referring_domain_opinions?: Array<Record<string, unknown>>;
   refresh_schedule?: Record<string, unknown>;
   refresh_profile?: string;

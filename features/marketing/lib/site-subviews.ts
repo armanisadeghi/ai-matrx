@@ -97,6 +97,11 @@ export const MARKETING_SITE_SUBVIEWS = [
       { id: "anchors", label: "Anchors" },
       { id: "pages", label: "Top pages" },
       { id: "competitors", label: "Competitors" },
+      // The site-wide competitor link gap: the sites that link to confirmed
+      // competitors and not to us. A different question, a different table and
+      // a paid run of its own — not a filter over the backlinks we already
+      // have, which are by definition the links we DID get.
+      { id: "prospects", label: "Prospects" },
       { id: "insights", label: "Insights" },
     ],
   },

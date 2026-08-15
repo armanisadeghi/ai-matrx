@@ -84,6 +84,9 @@ import { BacklinkTrendChart } from "@/features/marketing/components/backlinks/Ba
 import { BacklinkObservationTable } from "@/features/marketing/components/backlinks/BacklinkObservationTable";
 import { BacklinkDimensionTable } from "@/features/marketing/components/backlinks/BacklinkDimensionTable";
 import { BacklinkInsightsTab } from "@/features/marketing/components/backlinks/BacklinkInsightsTab";
+import { BacklinkProspectsTab } from "@/features/marketing/components/backlinks/BacklinkProspectsTab";
+import { useLinkGapProspects } from "@/features/marketing/components/backlinks/useLinkGapProspects";
+import { parseMatrxAuthority } from "@/features/marketing/components/backlinks/lib/link-gap";
 import { BacklinkEnrichmentRunPanel } from "@/features/marketing/components/backlinks/BacklinkEnrichmentRunPanel";
 import { BacklinksAssistStrip } from "@/features/marketing/components/backlinks/BacklinksAssistStrip";
 import { ReferringDomainIntelligenceTable } from "@/features/marketing/components/backlinks/ReferringDomainIntelligenceTable";
@@ -459,6 +462,18 @@ export function BacklinksWorkspace() {
   };
 
   const tab = useMarketingSubView("backlinks");
+  /**
+   * The Prospects tab's controller lives HERE, not inside the tab, because the
+   * surface scope below must report the same prospect list the user is looking
+   * at — a second fetch inside the tab would let the agent read one list while
+   * the human reads another. It stays idle (`enabled`) until the tab is open,
+   * so the other six tabs pay nothing for it.
+   */
+  const prospects = useLinkGapProspects({
+    siteId: site.id,
+    siteDomain: site.domain,
+    enabled: tab === "prospects",
+  });
   const domainViewParam = searchParams.get(DOMAIN_VIEW_PARAM);
   const domainView: DomainViewKey = isDomainViewKey(domainViewParam)
     ? domainViewParam
@@ -991,6 +1006,48 @@ export function BacklinksWorkspace() {
             human_ruling: row.human_ruling,
           })),
           backlinks_collected_at: detailSnapshot?.observed_at ?? undefined,
+          // ── Prospects (the site-wide competitor link gap) ────────────────
+          // Only what the user is looking at: the seed the run WOULD use, the
+          // rows on the current page, and the backlog counts. The score is
+          // never handed over as a bare number — its explanation rides with it,
+          // and an unmeasured row says so instead of reading zero.
+          link_gap_seed: prospects.seed
+            ? {
+                can_run: prospects.seed.can_run,
+                reason: prospects.seed.reason,
+                confirmed_competitors: prospects.seed.confirmed_competitors,
+                total_competitors: prospects.seed.total_competitors,
+                seeded: prospects.seed.seeded.map((competitor) => ({
+                  domain: competitor.domain,
+                  entity_role: competitor.entity_role,
+                  business_overlap: competitor.business_overlap,
+                  market_overlap: competitor.market_overlap,
+                  explicitly_enabled: competitor.explicitly_enabled,
+                })),
+                excluded: prospects.seed.excluded,
+              }
+            : undefined,
+          link_gap_prospects: prospects.rows.length
+            ? prospects.rows.map((row) => {
+                const authority = parseMatrxAuthority(row.metadata);
+                return {
+                  domain: row.display_domain,
+                  competitors_linked: row.match_count,
+                  matrx_authority_score: row.priority_score,
+                  matrx_authority_measured: row.priority_score !== null,
+                  matrx_authority_band: authority.band,
+                  why: row.priority_reason,
+                  not_measured: authority.missing,
+                  spam_score: row.spam_score,
+                  provider_domain_rank: row.domain_rank,
+                  review_status: row.review_status,
+                  has_crm_record: Boolean(prospects.partyByDomainId[row.id]),
+                };
+              })
+            : undefined,
+          link_gap_review_backlog: Object.keys(prospects.statusCounts).length
+            ? prospects.statusCounts
+            : undefined,
           refresh_schedule: {
             enabled: savedSchedule.enabled,
             cadence: savedSchedule.cadence,
@@ -1412,6 +1469,12 @@ export function BacklinksWorkspace() {
                 analysisDisabled={analysisDisabled}
               />
             </div>
+          ) : tab === "prospects" ? (
+            <BacklinkProspectsTab
+              prospects={prospects}
+              sitePath={sitePath}
+              siteDomain={site.domain}
+            />
           ) : tab === "insights" ? (
             <div className="flex min-h-0 flex-1 flex-col">
               <BacklinkInsightsTab
