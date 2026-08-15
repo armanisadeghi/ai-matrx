@@ -10780,6 +10780,14 @@ export type Database = {
           calling_time_zone: string | null
           channel: string
           complaint_at: string | null
+          consent_basis: string
+          consent_evidence: Json
+          consent_evidence_at: string | null
+          consent_expires_at: string | null
+          consent_jurisdiction: string | null
+          consent_recorded_at: string | null
+          consent_source: string | null
+          consent_source_url: string | null
           created_at: string
           created_by: string | null
           deleted_at: string | null
@@ -10801,6 +10809,8 @@ export type Database = {
           phone_country: string | null
           platform_slug: string | null
           profile_url: string | null
+          source_disclosed_at: string | null
+          subscriber_kind: string
           suppressed_at: string | null
           suppression_expires_at: string | null
           suppression_reason: string | null
@@ -10820,6 +10830,14 @@ export type Database = {
           calling_time_zone?: string | null
           channel: string
           complaint_at?: string | null
+          consent_basis?: string
+          consent_evidence?: Json
+          consent_evidence_at?: string | null
+          consent_expires_at?: string | null
+          consent_jurisdiction?: string | null
+          consent_recorded_at?: string | null
+          consent_source?: string | null
+          consent_source_url?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -10841,6 +10859,8 @@ export type Database = {
           phone_country?: string | null
           platform_slug?: string | null
           profile_url?: string | null
+          source_disclosed_at?: string | null
+          subscriber_kind?: string
           suppressed_at?: string | null
           suppression_expires_at?: string | null
           suppression_reason?: string | null
@@ -10860,6 +10880,14 @@ export type Database = {
           calling_time_zone?: string | null
           channel?: string
           complaint_at?: string | null
+          consent_basis?: string
+          consent_evidence?: Json
+          consent_evidence_at?: string | null
+          consent_expires_at?: string | null
+          consent_jurisdiction?: string | null
+          consent_recorded_at?: string | null
+          consent_source?: string | null
+          consent_source_url?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -10881,6 +10909,8 @@ export type Database = {
           phone_country?: string | null
           platform_slug?: string | null
           profile_url?: string | null
+          source_disclosed_at?: string | null
+          subscriber_kind?: string
           suppressed_at?: string | null
           suppression_expires_at?: string | null
           suppression_reason?: string | null
@@ -11027,6 +11057,78 @@ export type Database = {
           },
         ]
       }
+      jurisdiction_policy: {
+        Row: {
+          citation: string | null
+          cold_b2b: string
+          cold_b2c: string
+          conditions: string | null
+          country_code: string
+          country_name: string
+          created_at: string
+          distinguishes_subscriber_kind: boolean
+          honor_within_hours: number
+          is_active: boolean
+          metadata: Json
+          notes: string | null
+          ratified_at: string | null
+          ratified_by: string
+          ratified_note: string | null
+          region: string
+          requires_postal_address: boolean
+          requires_role_relevance: boolean
+          requires_source_disclosure: boolean
+          unsubscribe_validity_days: number
+          updated_at: string
+        }
+        Insert: {
+          citation?: string | null
+          cold_b2b?: string
+          cold_b2c?: string
+          conditions?: string | null
+          country_code: string
+          country_name: string
+          created_at?: string
+          distinguishes_subscriber_kind?: boolean
+          honor_within_hours?: number
+          is_active?: boolean
+          metadata?: Json
+          notes?: string | null
+          ratified_at?: string | null
+          ratified_by?: string
+          ratified_note?: string | null
+          region: string
+          requires_postal_address?: boolean
+          requires_role_relevance?: boolean
+          requires_source_disclosure?: boolean
+          unsubscribe_validity_days?: number
+          updated_at?: string
+        }
+        Update: {
+          citation?: string | null
+          cold_b2b?: string
+          cold_b2c?: string
+          conditions?: string | null
+          country_code?: string
+          country_name?: string
+          created_at?: string
+          distinguishes_subscriber_kind?: boolean
+          honor_within_hours?: number
+          is_active?: boolean
+          metadata?: Json
+          notes?: string | null
+          ratified_at?: string | null
+          ratified_by?: string
+          ratified_note?: string | null
+          region?: string
+          requires_postal_address?: boolean
+          requires_role_relevance?: boolean
+          requires_source_disclosure?: boolean
+          unsubscribe_validity_days?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       merge_candidate: {
         Row: {
           confidence: number
@@ -11105,6 +11207,48 @@ export type Database = {
           },
         ]
       }
+      outreach_acceptance: {
+        Row: {
+          accepted_at: string
+          accepted_by: string
+          accepted_text: string
+          created_at: string
+          id: string
+          lane: string
+          metadata: Json
+          organization_id: string
+          policy_version: string
+          updated_at: string
+          user_agent: string | null
+        }
+        Insert: {
+          accepted_at?: string
+          accepted_by: string
+          accepted_text: string
+          created_at?: string
+          id?: string
+          lane: string
+          metadata?: Json
+          organization_id: string
+          policy_version: string
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Update: {
+          accepted_at?: string
+          accepted_by?: string
+          accepted_text?: string
+          created_at?: string
+          id?: string
+          lane?: string
+          metadata?: Json
+          organization_id?: string
+          policy_version?: string
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       outreach_list: {
         Row: {
           created_at: string
@@ -11114,6 +11258,13 @@ export type Database = {
           description: string | null
           ended_at: string | null
           id: string
+          lane: string
+          lawful_basis: string | null
+          lia_balancing: string | null
+          lia_completed_at: string | null
+          lia_completed_by: string | null
+          lia_interest: string | null
+          lia_necessity: string | null
           list_kind: string
           metadata: Json
           name: string
@@ -11138,6 +11289,13 @@ export type Database = {
           description?: string | null
           ended_at?: string | null
           id?: string
+          lane?: string
+          lawful_basis?: string | null
+          lia_balancing?: string | null
+          lia_completed_at?: string | null
+          lia_completed_by?: string | null
+          lia_interest?: string | null
+          lia_necessity?: string | null
           list_kind?: string
           metadata?: Json
           name: string
@@ -11162,6 +11320,13 @@ export type Database = {
           description?: string | null
           ended_at?: string | null
           id?: string
+          lane?: string
+          lawful_basis?: string | null
+          lia_balancing?: string | null
+          lia_completed_at?: string | null
+          lia_completed_by?: string | null
+          lia_interest?: string | null
+          lia_necessity?: string | null
           list_kind?: string
           metadata?: Json
           name?: string
@@ -11866,8 +12031,10 @@ export type Database = {
           display_name: string
           dkim_pass: boolean | null
           dmarc_pass: boolean | null
+          domain_age_checked_at: string | null
           domain_check_error: string | null
           domain_checked_at: string | null
+          domain_registered_at: string | null
           domain_verification_token: string
           domain_verified_at: string | null
           from_address: string
@@ -11887,6 +12054,13 @@ export type Database = {
           paused_at: string | null
           paused_by: string | null
           paused_by_kind: string | null
+          postal_city: string | null
+          postal_code: string | null
+          postal_country: string | null
+          postal_line1: string | null
+          postal_line2: string | null
+          postal_name: string | null
+          postal_region: string | null
           provider: string
           provider_account: string | null
           quiet_hours_end: number
@@ -11920,8 +12094,10 @@ export type Database = {
           display_name: string
           dkim_pass?: boolean | null
           dmarc_pass?: boolean | null
+          domain_age_checked_at?: string | null
           domain_check_error?: string | null
           domain_checked_at?: string | null
+          domain_registered_at?: string | null
           domain_verification_token: string
           domain_verified_at?: string | null
           from_address: string
@@ -11941,6 +12117,13 @@ export type Database = {
           paused_at?: string | null
           paused_by?: string | null
           paused_by_kind?: string | null
+          postal_city?: string | null
+          postal_code?: string | null
+          postal_country?: string | null
+          postal_line1?: string | null
+          postal_line2?: string | null
+          postal_name?: string | null
+          postal_region?: string | null
           provider: string
           provider_account?: string | null
           quiet_hours_end?: number
@@ -11974,8 +12157,10 @@ export type Database = {
           display_name?: string
           dkim_pass?: boolean | null
           dmarc_pass?: boolean | null
+          domain_age_checked_at?: string | null
           domain_check_error?: string | null
           domain_checked_at?: string | null
+          domain_registered_at?: string | null
           domain_verification_token?: string
           domain_verified_at?: string | null
           from_address?: string
@@ -11995,6 +12180,13 @@ export type Database = {
           paused_at?: string | null
           paused_by?: string | null
           paused_by_kind?: string | null
+          postal_city?: string | null
+          postal_code?: string | null
+          postal_country?: string | null
+          postal_line1?: string | null
+          postal_line2?: string | null
+          postal_name?: string | null
+          postal_region?: string | null
           provider?: string
           provider_account?: string | null
           quiet_hours_end?: number
@@ -12099,6 +12291,15 @@ export type Database = {
           notes: string | null
           organization_id: string
           outreach_enabled: boolean
+          postal_city: string | null
+          postal_code: string | null
+          postal_country: string | null
+          postal_line1: string | null
+          postal_line2: string | null
+          postal_name: string | null
+          postal_region: string | null
+          postal_verified_at: string | null
+          privacy_notice_url: string | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -12120,6 +12321,15 @@ export type Database = {
           notes?: string | null
           organization_id: string
           outreach_enabled?: boolean
+          postal_city?: string | null
+          postal_code?: string | null
+          postal_country?: string | null
+          postal_line1?: string | null
+          postal_line2?: string | null
+          postal_name?: string | null
+          postal_region?: string | null
+          postal_verified_at?: string | null
+          privacy_notice_url?: string | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -12141,6 +12351,15 @@ export type Database = {
           notes?: string | null
           organization_id?: string
           outreach_enabled?: boolean
+          postal_city?: string | null
+          postal_code?: string | null
+          postal_country?: string | null
+          postal_line1?: string | null
+          postal_line2?: string | null
+          postal_name?: string | null
+          postal_region?: string | null
+          postal_verified_at?: string | null
+          privacy_notice_url?: string | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -12148,12 +12367,105 @@ export type Database = {
         }
         Relationships: []
       }
+      unsubscribe_token: {
+        Row: {
+          contact_medium_id: string
+          created_at: string
+          issued_at: string
+          last_user_agent: string | null
+          metadata: Json
+          organization_id: string
+          outreach_list_id: string | null
+          party_id: string | null
+          sending_identity_id: string | null
+          token: string
+          updated_at: string
+          use_count: number
+          used_at: string | null
+        }
+        Insert: {
+          contact_medium_id: string
+          created_at?: string
+          issued_at?: string
+          last_user_agent?: string | null
+          metadata?: Json
+          organization_id: string
+          outreach_list_id?: string | null
+          party_id?: string | null
+          sending_identity_id?: string | null
+          token: string
+          updated_at?: string
+          use_count?: number
+          used_at?: string | null
+        }
+        Update: {
+          contact_medium_id?: string
+          created_at?: string
+          issued_at?: string
+          last_user_agent?: string | null
+          metadata?: Json
+          organization_id?: string
+          outreach_list_id?: string | null
+          party_id?: string | null
+          sending_identity_id?: string | null
+          token?: string
+          updated_at?: string
+          use_count?: number
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unsubscribe_token_contact_medium_id_fkey"
+            columns: ["contact_medium_id"]
+            isOneToOne: false
+            referencedRelation: "contact_medium"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unsubscribe_token_outreach_list_id_fkey"
+            columns: ["outreach_list_id"]
+            isOneToOne: false
+            referencedRelation: "outreach_list"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unsubscribe_token_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: false
+            referencedRelation: "party"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unsubscribe_token_sending_identity_id_fkey"
+            columns: ["sending_identity_id"]
+            isOneToOne: false
+            referencedRelation: "sending_identity"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      issue_unsubscribe_token: {
+        Args: {
+          p_contact_medium_id: string
+          p_outreach_list_id?: string
+          p_sending_identity_id?: string
+        }
+        Returns: string
+      }
       name_key: { Args: { p_name: string }; Returns: string }
+      resolve_recipient_jurisdiction: {
+        Args: { p_medium_id: string }
+        Returns: {
+          confidence: string
+          country_code: string
+          method: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
@@ -38917,6 +39229,11 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      outreach_unsubscribe: {
+        Args: { p_reason?: string; p_token: string; p_user_agent?: string }
+        Returns: Json
+      }
+      outreach_unsubscribe_preview: { Args: { p_token: string }; Returns: Json }
       page_extraction_clear_job_results: {
         Args: { p_job_id: string }
         Returns: undefined
@@ -39256,6 +39573,7 @@ export type Database = {
         Returns: boolean
       }
       rag_user_can_see_note: { Args: { p_note_id: string }; Returns: boolean }
+      readable_extraction_job_ids: { Args: never; Returns: string[] }
       readable_processed_doc_for_file: {
         Args: { p_file: string }
         Returns: string
