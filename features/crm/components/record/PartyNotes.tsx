@@ -8,7 +8,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
-import { NotebookText, Send, Trash2 } from "lucide-react";
+import { AlertTriangle, NotebookText, Send, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { commentsService } from "@/features/comments/service/commentsService";
@@ -23,6 +23,11 @@ interface Props {
 
 export function PartyNotes({ partyId, orgId }: Props) {
   const [comments, setComments] = useState<Comment[]>([]);
+  // A failed load is NOT an empty list. Rendering "No notes yet" over a failure
+  // tells the user this record has no notes when it may have many — and it hid
+  // a real `cmt_list` failure on this page (2026-08-14) behind a calm, wrong
+  // empty state. Track the failure and say so, with a way to retry.
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
   const generationRef = useRef(0);
@@ -33,8 +38,10 @@ export function PartyNotes({ partyId, orgId }: Props) {
     if (generationRef.current !== gen) return;
     if (result.ok) {
       setComments(result.data.comments);
+      setLoadError(null);
     } else {
       console.error("[crm] notes load failed:", result.error);
+      setLoadError(result.error.message);
     }
   }, [partyId]);
 
@@ -78,7 +85,13 @@ export function PartyNotes({ partyId, orgId }: Props) {
   };
 
   return (
-    <SectionCard title="Notes" Icon={NotebookText} count={comments.length}>
+    <SectionCard
+      title="Notes"
+      Icon={NotebookText}
+      // No count while the load is failing — an authoritative "0" is the same
+      // lie as "No notes yet".
+      count={loadError ? undefined : comments.length}
+    >
       <div className="mb-2 flex gap-1.5">
         <textarea
           value={draft}
@@ -101,7 +114,19 @@ export function PartyNotes({ partyId, orgId }: Props) {
         </Button>
       </div>
 
-      {comments.length === 0 ? (
+      {loadError ? (
+        <div className="flex items-center justify-center gap-2 py-3 text-xs text-muted-foreground">
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-destructive" />
+          <span>Couldn&apos;t load notes — {loadError}</span>
+          <button
+            type="button"
+            onClick={() => void load()}
+            className="rounded px-1.5 py-0.5 font-medium text-primary hover:bg-accent"
+          >
+            Retry
+          </button>
+        </div>
+      ) : comments.length === 0 ? (
         <SectionEmpty>No notes yet</SectionEmpty>
       ) : (
         <ul className="space-y-1">
