@@ -642,6 +642,11 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
 
+- 2026-08-15 — **The `open_entity_editor` write-target contract says
+  source/media, not generic entity.** The full roster still contains
+  person/org CRM records, but this editor accepts only `plan.entity`
+  citations from `entities_detail`; its focused error-copy assertions now
+  enforce that distinction.
 - 2026-08-15 — **Setup AI work order groomed to live truth; no code change.**
   Re-verified against `main`: the Keyword Intelligence 500 is **fixed** (the
   `seo.search_performance_daily` `std_select` policy now resolves through

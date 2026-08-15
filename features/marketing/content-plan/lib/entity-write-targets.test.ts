@@ -64,19 +64,19 @@ describe("parseOpenEntityEditorWrite", () => {
     expect(parseOpenEntityEditorWrite("", ids)).toBeNull();
   });
 
-  it("returns a live entity id, trimmed", () => {
+  it("returns a live source/media entity id, trimmed", () => {
     expect(parseOpenEntityEditorWrite(" bbb ", ids)).toBe("bbb");
   });
 
-  it("refuses an id that is not on the roster", () => {
+  it("refuses a source/media id that is not on the roster", () => {
     expect(() => parseOpenEntityEditorWrite("ccc", ids)).toThrow(
-      /is not a live entity on this site/,
+      /is not a live source on this site/,
     );
   });
 
   it("refuses a non-string id", () => {
     expect(() => parseOpenEntityEditorWrite(42, ids)).toThrow(
-      /expected an entity UUID/,
+      /expected a source\/media entity UUID from entities_detail/,
     );
   });
 });
