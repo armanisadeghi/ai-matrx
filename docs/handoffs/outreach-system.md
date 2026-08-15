@@ -508,3 +508,36 @@ by design, and collapsing them is the trap (§7).
 - **Do not show a technical gate as a bare error.** DNS, DMARC and warmup are guided steps — do it
   for them, machine-check it, or teach them (§5.3b). Our user is a non-technical expert.
 - **Do not take a capability away from an existing user while introducing tiers** (§5.6).
+
+---
+
+# 8. Open decisions — Arman only (raised 2026-08-14, not yet ruled)
+
+These are genuinely his: each is a product/ethics/money call an agent must not make alone. Each
+carries a recommendation so it can be answered with a yes.
+
+1. **Reply ingestion — how much of the customer's mailbox may we read?** *(Blocks Phase 5. The
+   biggest one.)* Stop-on-reply is the single most important behavior in the system, and it
+   requires knowing a human replied. Instantly/Smartlead take full IMAP access to the customer's
+   mailbox. That is a large trust ask for a mailbox containing everything else in their business.
+   **Recommendation: request the narrowest scope that works — read only threads we sent** (Gmail
+   API can scope to the thread ids we created), and say so plainly in the connect flow. Broader
+   access only if a customer opts in explicitly for a stated reason.
+2. **AI-generated cold email at volume — human approval required, or not?** We can generate 500
+   personalized pitches in a minute. That capability, unchecked, makes us the tool flooding
+   inboxes — the exact behavior Google's bulk-sender rules and every spam filter now target, and
+   the fastest route to our OAuth app being flagged (§5.3). **Recommendation: for Lane B, a human
+   approves every message before its first send** — consistent with THE INTENTIONAL-ACTION LAW in
+   the assists doctrine, and it is also what actually gets replies. Revisit only with evidence.
+3. **Warmup pools — build one or not?** Instantly/Smartlead run networks where customer mailboxes
+   email each other to manufacture sending reputation. It is industry standard, it works, and it is
+   ethically grey (it exists to fool spam filters, and providers dislike it). **Recommendation:
+   no pool for v1** — do honest gradual volume ramp (§5.2.4), which is safe and sufficient at
+   backlink/media volumes. Reconsider only as a deliberate, documented decision.
+4. **Media database — crawl-only, or license one?** Muck Rack/Cision own large proprietary
+   journalist databases and charge accordingly. **Recommendation: crawl-only to start** — we
+   already extract bylines and credentialed authors (G2), and our own attribution loop (§1) is the
+   differentiator, not database size. Revisit if media outreach becomes a headline product.
+5. **Outreach pricing shape** — per connected mailbox, per seat, per send, or per campaign?
+   Competitors mostly price per mailbox/seat. Ties directly into the tier work (§5.6), so answering
+   it early keeps that build from guessing.
