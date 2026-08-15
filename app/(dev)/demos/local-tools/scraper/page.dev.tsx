@@ -738,7 +738,6 @@ function ResultCard({
           >
             {copied ? (
               <>
-                <span className="text-green-600">✓</span>
                 <span className="text-green-600 text-[10px]">Copied</span>
               </>
             ) : (

@@ -299,7 +299,7 @@ export const SkeletonOne = () => {
                     className="flex flex-col justify-center items-center"
                 >
                     <AWSLogo />
-                    <p className="text-[8px] bg-transparent ">your site is live ✨</p>
+                    <p className="text-[8px] bg-transparent ">your site is live</p>
                 </Container>
             </div>
         </div>

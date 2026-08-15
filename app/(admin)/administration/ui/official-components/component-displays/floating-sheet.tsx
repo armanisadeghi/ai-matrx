@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/lib/toast';
+import { Check } from 'lucide-react';
 
 interface ComponentDisplayProps {
   component?: ComponentEntry;
@@ -98,16 +99,16 @@ export default function FloatingSheetDisplay({ component }: ComponentDisplayProp
 </FloatingSheet>
 
 // Features:
-// ✅ Multiple positions (right, left, top, bottom, center)
-// ✅ Customizable width and height
-// ✅ Mobile-optimized mode
-// ✅ Scroll locking and preservation
-// ✅ ESC key support
-// ✅ Focus management
-// ✅ Customizable animations
-// ✅ Header and footer support
-// ✅ Backdrop control
-// ✅ Fully accessible (ARIA)`;
+// Multiple positions (right, left, top, bottom, center)
+// Customizable width and height
+// Mobile-optimized mode
+// Scroll locking and preservation
+// ESC key support
+// Focus management
+// Customizable animations
+// Header and footer support
+// Backdrop control
+// Fully accessible (ARIA)`;
 
   // The guard sits BELOW every hook: an early return above them makes the hook
   // calls conditional (react-hooks/rules-of-hooks) and React throws the moment
@@ -182,51 +183,51 @@ export default function FloatingSheetDisplay({ component }: ComponentDisplayProp
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-gray-700 dark:text-gray-300">
             <div className="flex items-start gap-2">
-              <span className="text-green-600 dark:text-green-400">✓</span>
+              <Check className="size-4 shrink-0 text-green-600 dark:text-green-400" aria-hidden="true" />
               <span>5 position options (right, left, top, bottom, center)</span>
             </div>
             <div className="flex items-start gap-2">
-              <span className="text-green-600 dark:text-green-400">✓</span>
+              <Check className="size-4 shrink-0 text-green-600 dark:text-green-400" aria-hidden="true" />
               <span>Mobile-optimized mode</span>
             </div>
             <div className="flex items-start gap-2">
-              <span className="text-green-600 dark:text-green-400">✓</span>
+              <Check className="size-4 shrink-0 text-green-600 dark:text-green-400" aria-hidden="true" />
               <span>Customizable width and height</span>
             </div>
             <div className="flex items-start gap-2">
-              <span className="text-green-600 dark:text-green-400">✓</span>
+              <Check className="size-4 shrink-0 text-green-600 dark:text-green-400" aria-hidden="true" />
               <span>Scroll locking & preservation</span>
             </div>
             <div className="flex items-start gap-2">
-              <span className="text-green-600 dark:text-green-400">✓</span>
+              <Check className="size-4 shrink-0 text-green-600 dark:text-green-400" aria-hidden="true" />
               <span>ESC key and backdrop click</span>
             </div>
             <div className="flex items-start gap-2">
-              <span className="text-green-600 dark:text-green-400">✓</span>
+              <Check className="size-4 shrink-0 text-green-600 dark:text-green-400" aria-hidden="true" />
               <span>Auto focus management</span>
             </div>
             <div className="flex items-start gap-2">
-              <span className="text-green-600 dark:text-green-400">✓</span>
+              <Check className="size-4 shrink-0 text-green-600 dark:text-green-400" aria-hidden="true" />
               <span>Smooth animations</span>
             </div>
             <div className="flex items-start gap-2">
-              <span className="text-green-600 dark:text-green-400">✓</span>
+              <Check className="size-4 shrink-0 text-green-600 dark:text-green-400" aria-hidden="true" />
               <span>Header & footer support</span>
             </div>
             <div className="flex items-start gap-2">
-              <span className="text-green-600 dark:text-green-400">✓</span>
+              <Check className="size-4 shrink-0 text-green-600 dark:text-green-400" aria-hidden="true" />
               <span>Custom header actions</span>
             </div>
             <div className="flex items-start gap-2">
-              <span className="text-green-600 dark:text-green-400">✓</span>
+              <Check className="size-4 shrink-0 text-green-600 dark:text-green-400" aria-hidden="true" />
               <span>Fully accessible (ARIA)</span>
             </div>
             <div className="flex items-start gap-2">
-              <span className="text-green-600 dark:text-green-400">✓</span>
+              <Check className="size-4 shrink-0 text-green-600 dark:text-green-400" aria-hidden="true" />
               <span>Backdrop control</span>
             </div>
             <div className="flex items-start gap-2">
-              <span className="text-green-600 dark:text-green-400">✓</span>
+              <Check className="size-4 shrink-0 text-green-600 dark:text-green-400" aria-hidden="true" />
               <span>State preservation</span>
             </div>
           </div>

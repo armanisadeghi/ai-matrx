@@ -1179,7 +1179,7 @@ export default function DocumentsPage() {
               </div>
               {conflicts.length === 0 ? (
                 <p className="text-xs text-muted-foreground italic">
-                  No conflicts — everything in sync ✓
+                  No conflicts — everything in sync
                 </p>
               ) : (
                 <div className="space-y-3">

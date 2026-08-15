@@ -5,6 +5,7 @@ import { ComponentEntry } from "../parts/component-list";
 import { ComponentDisplayWrapper } from "../component-usage";
 import TextArrayInput from "@/components/official/TextArrayInput";
 import { Label } from "@/components/ui/label";
+import { Check, Lightbulb } from "lucide-react";
 
 interface ComponentDisplayProps {
   component?: ComponentEntry;
@@ -61,15 +62,15 @@ export default function TextArrayInputDisplay({
 />
 
 // Features:
-// ✅ Add items by pressing Enter
-// ✅ Add multiple items at once (comma-separated)
-// ✅ Remove items by clicking X
-// ✅ Copy all items to clipboard
-// ✅ Optional URL cleaning
-// ✅ Optional unique filtering
-// ✅ Custom chip styling
-// ✅ Controlled or uncontrolled
-// ✅ Visual feedback on copy`;
+// Add items by pressing Enter
+// Add multiple items at once (comma-separated)
+// Remove items by clicking X
+// Copy all items to clipboard
+// Optional URL cleaning
+// Optional unique filtering
+// Custom chip styling
+// Controlled or uncontrolled
+// Visual feedback on copy`;
 
   // The guard sits BELOW every hook: an early return above them makes the hook
   // calls conditional (react-hooks/rules-of-hooks) and React throws the moment
@@ -104,7 +105,8 @@ export default function TextArrayInputDisplay({
               </code>
             </p>
             <p className="text-xs text-muted-foreground">
-              💡 <strong>Tip:</strong> Type "vue, angular, svelte" to add
+              <Lightbulb className="mr-1 inline size-3.5" aria-hidden="true" />
+              <strong>Tip:</strong> Type "vue, angular, svelte" to add
               multiple items at once
             </p>
           </div>
@@ -127,7 +129,8 @@ export default function TextArrayInputDisplay({
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              💡 URLs are automatically cleaned (removes protocols, www,
+              <Lightbulb className="mr-1 inline size-3.5" aria-hidden="true" />
+              URLs are automatically cleaned (removes protocols, www,
               trailing slashes)
             </p>
           </div>
@@ -204,43 +207,43 @@ export default function TextArrayInputDisplay({
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-gray-700 dark:text-gray-300">
             <div className="flex items-start gap-2">
-              <span className="text-green-600 dark:text-green-400">✓</span>
+              <Check className="size-4 shrink-0 text-green-600 dark:text-green-400" aria-hidden="true" />
               <span>Add items with Enter key</span>
             </div>
             <div className="flex items-start gap-2">
-              <span className="text-green-600 dark:text-green-400">✓</span>
+              <Check className="size-4 shrink-0 text-green-600 dark:text-green-400" aria-hidden="true" />
               <span>Add multiple items (comma-separated)</span>
             </div>
             <div className="flex items-start gap-2">
-              <span className="text-green-600 dark:text-green-400">✓</span>
+              <Check className="size-4 shrink-0 text-green-600 dark:text-green-400" aria-hidden="true" />
               <span>Remove items with X button</span>
             </div>
             <div className="flex items-start gap-2">
-              <span className="text-green-600 dark:text-green-400">✓</span>
+              <Check className="size-4 shrink-0 text-green-600 dark:text-green-400" aria-hidden="true" />
               <span>Copy all items to clipboard</span>
             </div>
             <div className="flex items-start gap-2">
-              <span className="text-green-600 dark:text-green-400">✓</span>
+              <Check className="size-4 shrink-0 text-green-600 dark:text-green-400" aria-hidden="true" />
               <span>Optional URL cleaning</span>
             </div>
             <div className="flex items-start gap-2">
-              <span className="text-green-600 dark:text-green-400">✓</span>
+              <Check className="size-4 shrink-0 text-green-600 dark:text-green-400" aria-hidden="true" />
               <span>Optional duplicate prevention</span>
             </div>
             <div className="flex items-start gap-2">
-              <span className="text-green-600 dark:text-green-400">✓</span>
+              <Check className="size-4 shrink-0 text-green-600 dark:text-green-400" aria-hidden="true" />
               <span>Fully customizable chip styles</span>
             </div>
             <div className="flex items-start gap-2">
-              <span className="text-green-600 dark:text-green-400">✓</span>
+              <Check className="size-4 shrink-0 text-green-600 dark:text-green-400" aria-hidden="true" />
               <span>Controlled or uncontrolled</span>
             </div>
             <div className="flex items-start gap-2">
-              <span className="text-green-600 dark:text-green-400">✓</span>
+              <Check className="size-4 shrink-0 text-green-600 dark:text-green-400" aria-hidden="true" />
               <span>Visual feedback on copy</span>
             </div>
             <div className="flex items-start gap-2">
-              <span className="text-green-600 dark:text-green-400">✓</span>
+              <Check className="size-4 shrink-0 text-green-600 dark:text-green-400" aria-hidden="true" />
               <span>Empty state display</span>
             </div>
           </div>

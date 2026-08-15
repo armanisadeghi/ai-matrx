@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Send } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Send } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { PageSpecificHeader } from '@/components/layout/new-layout/PageSpecificHeader';
@@ -49,7 +49,8 @@ export default function FixedInputPage() {
         <div className="p-4">
           <div className="bg-green-100 dark:bg-green-950 p-2 rounded-t-lg text-center">
             <span className="text-xs font-bold text-green-900 dark:text-green-100">
-              ✅ This input should ALWAYS be visible (pb-safe)
+              <CheckCircle2 className="mr-1 inline size-3.5" aria-hidden="true" />
+              This input should ALWAYS be visible (pb-safe)
             </span>
           </div>
           <div className="flex gap-2 bg-zinc-100 dark:bg-zinc-900 p-3 rounded-b-lg">
@@ -70,4 +71,3 @@ export default function FixedInputPage() {
     </>
   );
 }
-
