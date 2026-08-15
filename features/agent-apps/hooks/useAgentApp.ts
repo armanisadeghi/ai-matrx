@@ -28,7 +28,7 @@
  * responsibility is rendering and binding to UI.
  */
 
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
@@ -453,12 +453,29 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
   // branches) — a provider in the returned JSX would unregister and
   // re-register the surface on each branch flip. Scope is read at Run time,
   // so it always carries the CURRENT input, variables, and stream state.
-  const liveSurfaceValues: AgentAppSurfaceLiveValues = {
+  // `submit()` stages Redux values and dispatches smartExecute in the SAME JS
+  // tick, before React can render the selector updates below. The registered
+  // getScope therefore reads this ref for run input: submit writes it
+  // synchronously, while ordinary renders keep it aligned with Redux.
+  const renderedRunInput: AgentAppSurfaceLiveValues = {
     user_input: text || undefined,
     form_variable_values:
       Object.keys(variables).length > 0
         ? (variables as Record<string, unknown>)
         : undefined,
+  };
+  const liveRunInputRef = useRef<AgentAppSurfaceLiveValues>(renderedRunInput);
+  useEffect(() => {
+    liveRunInputRef.current = {
+      user_input: text || undefined,
+      form_variable_values:
+        Object.keys(variables).length > 0
+          ? (variables as Record<string, unknown>)
+          : undefined,
+    };
+  }, [text, variables]);
+  const liveSurfaceValues: AgentAppSurfaceLiveValues = {
+    ...renderedRunInput,
     conversation_id: conversationId ?? undefined,
     run_status: error
       ? "error"
@@ -473,7 +490,11 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
     surface
       ? {
           surfaceName: surface.surfaceName,
-          getScope: () => buildAgentAppSurfaceScope(surface, liveSurfaceValues),
+          getScope: () =>
+            buildAgentAppSurfaceScope(surface, {
+              ...liveSurfaceValues,
+              ...liveRunInputRef.current,
+            }),
         }
       : null,
   );
@@ -550,6 +571,17 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
   const submit = useCallback(
     async (submitArgs?: SubmitArgs) => {
       if (!conversationId) return;
+      const submittedVariables = {
+        ...(variables as Record<string, unknown>),
+        ...(submitArgs?.variables ?? {}),
+      };
+      liveRunInputRef.current = {
+        user_input: (submitArgs?.text ?? text) || undefined,
+        form_variable_values:
+          Object.keys(submittedVariables).length > 0
+            ? submittedVariables
+            : undefined,
+      };
       // Pre-stage any per-call writes BEFORE dispatching execute, so the
       // executor reads the latest state. smartExecute doesn't take an
       // explicit payload — it composes from the per-instance slices.
@@ -574,7 +606,7 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
       }
       await dispatch(smartExecute({ conversationId, surfaceKey }));
     },
-    [conversationId, dispatch, surfaceKey],
+    [conversationId, dispatch, surfaceKey, text, variables],
   );
 
   const loadConversationCb = useCallback(

@@ -258,9 +258,9 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const publicAgentAppManifest: SurfaceManifest = {
   surfaceName: PUBLIC_AGENT_APP_SURFACE_NAME,
-  readiness: "partial",
+  readiness: "verified",
   readinessNote:
-    "All five /p render paths now emit (built-in shells + fully_custom via useAgentApp, no-shell apps via CustomComponentRenderer). Two gaps remain: (1) no live agent-binding / Matrx-vs-matrix verification against an anonymous session; (2) on the shell paths the launch happens at mount, so the run_input values (user_input, form_variable_values) are EMPTY in the mapped launch scope — the visitor fills the form after the instance exists, and the later submit goes through smartExecute, which does not re-run value_mappings. Agents bound to run_input values get them live only from the Agents-chrome Run path. Binding run_input at submit needs a scope-refresh seam in the execution system.",
+    "All five /p render paths emit. Shell conversations remain mount-created, then smartExecute refreshes the named live provider and re-applies bindings at submit. Live-verified 2026-08-15 signed in and signed out with chat-shell app surface-submit-scope-probe and the deliberately non-name-matched mapping topic <- user_input; chat.conversation.variables.topic contained the exact typed Matrx-vs-matrix phrases in rows 71eb5d6e-b376-42f9-a07f-2030e237e4ae and 07f5dedc-c7df-45c3-a41a-bf884b373bb0.",
   label: "Public Agent App",
   urlPattern: "/p",
   intro: `<surface_intro>

@@ -21,7 +21,7 @@ vision: []
 - Canonical checklist: `.claude/skills/surface-authoring/SKILL.md`.
 - System doc: `features/surfaces/FEATURE.md`.
 - Exemplars: `marketing-page.manifest.ts`; `admin-database.manifest.ts`; overlay `markdown-editor.manifest.ts`.
-- Managed preview only: `pnpm preview:start` on port 3001. Login: `admin@admin.com` / `Password1234#`.
+- Managed preview only: `pnpm preview:start` on port 3001. Login: `/login` with `admin@admin.com` / `Password1234#`.
 - Sync: `scripts/emit-surface-sync-sql.ts --surface <name>…` → idempotent `migrations/*.sql` → `aidream/.venv/bin/python db/apply_migrations.py --source matrx-frontend`.
 - Gates: `pnpm check:surface-drift`, `pnpm type-check`, and route tests when mappings change.
 
@@ -47,9 +47,8 @@ Registration is complete. Promotion is the main remaining line.
 
 1. **Continue the admin browser fleet.** Start with the unfinished `matrx-admin/scheduling` pass, then `official-components`, `agent-review`, `kind-registry`, `growth-loop`, `documentation`, `knowledge`, `skills`, `reporting`, and `utilities`. `server-logs`, `sandbox`, and `email` are done. Feedback stays partial for a real selected-record/detail-form emitter gap.
 2. **Scheduling is honestly partial.** All seven emitters are wired, mirrors are synchronized, and Locate anchors now cover every declared page value. Observed in browser: Overview Surface Context opened with `contract honored`; Tasks loaded real rows and emitted `active_tab` + `task_row_count`; Runs loaded the real empty result. Still observe the Runs Context window and Orphan leases, Cron tester, Scanner health, and Templates before promotion. The Cron tester's two write targets were already live-agent verified.
-3. **Then education, then Image Studio.** Image Studio's four surfaces remain partial on exactly two fleet-wide items: Locate anchors and the non-matching-name binding test. Do not mount a provider in `EmbeddedImageStudio`; it is a widget inside host surfaces.
-4. **Run the Matrx-vs-matrix binding test once.** Bind a test agent with deliberately non-matching surface/agent variable names, launch it from a surface, confirm its output spells `Matrx`, then inspect `cx_conversation.variables`. This is still unproven after the 2026-07 overhaul and validates the whole mapping chain.
-5. **The sole stub is deliberate:** `matrx-user/education-learn` is pure Server Components. Do not regress public SEO rendering merely to clear the count; see Decisions needed.
+3. **Then education, then Image Studio.** Image Studio's four surfaces remain partial on the fleet-wide Locate-anchor item. The non-matching-name binding primitive is now live-proven; see Done. Do not mount a provider in `EmbeddedImageStudio`; it is a widget inside host surfaces.
+4. **The sole stub is deliberate:** `matrx-user/education-learn` is pure Server Components. Do not regress public SEO rendering merely to clear the count; see Decisions needed.
 
 ## Current browser-pass evidence
 
@@ -57,9 +56,11 @@ Registration is complete. Promotion is the main remaining line.
 - `matrx-admin/sandbox`: live fleet counts/table, 7/15 supplied, `contract honored`.
 - `matrx-admin/email`: 3/14 supplied initially and 5/14 after applying the Welcome template, `contract honored`, 1/1 write target live; recipient/compose/template/send/result Locate anchors added and Subject → Locate checked against the real input.
 - `matrx-admin/scheduling`: Overview 1/35 while its DB counters were still loading, `contract honored`; Tasks loaded real rows and showed 2/35 (`active_tab`, `task_row_count`); Runs loaded its real zero-row result but its Context window was not observed after the browser reconnect failed.
+- `matrx-public/p`: public chat-shell fixture `surface-submit-scope-probe`, mapping `topic <- user_input`. Signed-in and signed-out submissions visibly rendered `Topic: <typed Matrx-vs-matrix phrase>`; `chat.conversation.variables.topic` matched in rows `71eb5d6e-b376-42f9-a07f-2030e237e4ae` and `07f5dedc-c7df-45c3-a41a-bf884b373bb0`.
 
 ## Done
 
+- **2026-08-15 Matrx-vs-matrix + public shell submit refresh:** the shared execution seam now re-reads the conversation's exact live surface provider and reapplies bindings at submit without recreating the mount-owned instance. Durable fixture: app `0a59ecc7-9eb7-4460-978a-d26d28c20c15`, global binding `9ddd22e3-0577-41e6-9887-3f0b3b58eca6`, deliberately non-name-matched `topic <- user_input`. Signed-in and signed-out browser runs both persisted the typed phrase to `chat.conversation.variables.topic`. Former item 4 is closed; `matrx-public/p` is `verified`.
 - **2026-08-15 browser batch 1:** promoted `matrx-admin/{server-logs,sandbox,email}` to verified, synced and ledgered `migrations/surface_sync_admin_browser_verified_batch1_20260815.sql`, added Email and Scheduling Locate anchors, corrected Scheduling's stale readiness note without promoting it, and refreshed the live board at 75 verified / 90 partial / 1 stub / 7 deliberate non-web rows after one concurrent promotion.
 
 ## Decisions needed

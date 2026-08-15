@@ -2,7 +2,7 @@
 
 **Status:** `🟢 green-light for prompt_apps deletion` — 61/61 prompt_apps rows migrated to `aga_apps`. Public dual-path resolver in `/p/[slug]` prefers agent path. User-facing route family mirrors `/agents/[id]`: `/agent-apps`, `/agent-apps/new`, `/agent-apps/[id]` (overview), `/agent-apps/[id]/code`, `/agent-apps/[id]/settings`, `/agent-apps/[id]/versions`, `/agent-apps/[id]/v/[version]`, `/agent-apps/[id]/run`, `/agent-apps/templates`. List page is Redux-driven (consumer namespace + memoized selectors) with 7 filter dimensions and 8 sort options including agent-name. AutoCreate AI flow, admin tabs (Dashboard/Apps/Categories/Executions/Analytics/Rate Limits), `/agents/[id]/apps`, and `/org/[slug]/agent-apps` placeholder all live. Redux thunks wired to real Supabase queries. See [MIGRATION-STATUS.md](MIGRATION-STATUS.md) for the full ledger and remaining manual smoke checklist.
 **Tier:** `1`
-**Last updated:** `2026-08-13`
+**Last updated:** `2026-08-15`
 
 ---
 
@@ -73,8 +73,8 @@ see [`../scopes/FEATURE.md`](../scopes/FEATURE.md).
 
 Some Apps are public (`visibility = 'public'`). The public URL is `/p/[slug]`; see `phase-08-agent-apps-public.md`. Public apps:
 
-- Run without authentication
-- Use ephemeral invocation (no DB persistence) — see [`AGENT_INVOCATION_LIFECYCLE`](../agents/docs/AGENT_INVOCATION_LIFECYCLE.md) ephemeral branch
+- Run without a prior user login; guest-auth bootstrap gives anonymous visitors the same launcher path without an authenticated-only dependency
+- Use the managed conversation lifecycle. Current public-shell runs persist `chat.conversation` rows (including guest runs), which is the authoritative place to verify mapped `variables`; do not revive the obsolete "no DB persistence" claim
 - Have fingerprint + IP rate limiting (inherited pattern from prompt-apps)
 
 ---
@@ -98,9 +98,10 @@ Some Apps are public (`visibility = 'public'`). The public URL is `/p/[slug]`; s
 ### Flow 3 — Public App request
 
 1. Public URL → server fetches App row (public SELECT via RLS).
-2. Client mounts with `origin.isEphemeral: true`.
-3. First turn → `POST /ai/agents/{id}` with `store: false`.
-4. Subsequent turns → `POST /ai/chat` with full history.
+2. Client mounts the managed launcher used by agent run surfaces; guest identity and quota state come from the public auth/limit bootstrap.
+3. Shell apps create the managed conversation at mount so launcher-owned conversation identity, focus tracking, and execution gates are ready. This is intentionally **not** deferred to submit.
+4. On submit, `useAgentApp` synchronously updates its registered `run_input` ref from the submitted text/form values before Redux can re-render; shared `smartExecute` then refreshes `matrx-public/p`'s live scope and re-applies the canonical surface binding mappings.
+5. First turn → `POST /ai/agents/{id}`; subsequent turns → `POST /ai/chat` with full history. The refresh path has no authenticated dependency, so anonymous `/p/[slug]` visitors use the same execution primitive. The resulting `chat.conversation.variables` is the durable verification source.
 
 ---
 
@@ -170,6 +171,8 @@ and admin/user route families are live. Remaining migration work is tracked in:
 ---
 
 ## Change log
+
+- `2026-08-15` — codex: **public shell submissions now bind the values the visitor actually submitted.** Shell instances still launch at mount — preserving conversation id lifecycle, focus tracking, and execution gates — but every `smartExecute` now calls the shared surface scope-refresh seam before execution. The seam resolves the provider stamped on the conversation by exact surface name, re-fetches and merges the canonical agent↔surface + shortcut mapping layers, and replaces only the prior surface-owned variable/context tier. `useAgentApp.submit()` synchronously writes submitted text/form values into the registered live-scope ref because selector updates cannot re-render between staging Redux and dispatching `smartExecute` in the same tick. This is a platform primitive consumed by agent apps, not a `/p`-specific mapper, and it remains anonymous-safe. Live browser proof used the durable chat-shell fixture `surface-submit-scope-probe` with `topic <- user_input`: signed-in conversation `71eb5d6e-b376-42f9-a07f-2030e237e4ae` and signed-out guest conversation `07f5dedc-c7df-45c3-a41a-bf884b373bb0` both stored the exact typed Matrx-vs-matrix phrase in `chat.conversation.variables.topic`. That proof also corrected this document's stale assertion that public runs never persist.
 
 - `2026-08-15` — codex: **repaired the generated-app host boundary.** Removed nested Agent App header portals; moved run history to the canonical Agent Run History window; added host-aware MarkdownStream request context for sandboxed code; embedded the no-parser/one-Shape-component generator contract; collapsed publication to one atomic transition and made completed/new apps publish by default. The triggering stored component was audited but not edited; see [`docs/GENERATOR_CONTRACT.md`](docs/GENERATOR_CONTRACT.md).
 

@@ -29,38 +29,29 @@ import { resolveAgentSlot } from "@/features/agents/slots/service";
 import { mapScopeToInstanceWithSurface } from "@/features/agents/utils/scope-mapping";
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import { toast } from "@/lib/toast";
-import type {
-  ValueMapping,
-  ValueMappingMap,
-  WritePolicyMap,
-} from "@/features/surfaces/types";
-import { fetchSurfaceBindingLayers } from "@/features/surfaces/services/bind-agent-to-surface.service";
-import {
-  mergeValueMappingLayers,
-  type MappingLayer,
-  type MergedValueMappings,
-} from "@/features/surfaces/utils/merge-value-mappings";
-import { resolveShortcutMappings } from "@/features/agent-shortcuts/utils/resolveShortcutMappings";
+import type { ValueMappingMap } from "@/features/surfaces/types";
 import { withBaselineScope } from "@/features/surfaces/utils/baseline-scope";
-import { registerSurfaceWritePolicies } from "@/features/surfaces/runtime/surface-writeback";
 import { getSurfaceRuntime } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { withSurfaceDocumentEvidence } from "@/features/surfaces/utils/document-evidence";
-import {
-  promptForValues,
-  type ValuePromptField,
-} from "@/components/dialogs/value-prompts/ValuePromptsDialogHost";
 import { fetchAgentExecutionFull } from "@/features/agents/redux/agent-definition/thunks";
 import { selectAgentCustomExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
 import { getShortcutRecordFromState } from "@/features/agents/redux/agent-shortcuts/selectors";
 import { ensureShortcutLoaded } from "@/features/agents/redux/agent-shortcuts/thunks";
+import { resolveShortcutMappings } from "@/features/agent-shortcuts/utils/resolveShortcutMappings";
 import {
   createManualInstance,
   createInstanceFromShortcut,
   createManualInstanceNoAgent,
 } from "./create-instance.thunk";
 import { executeInstance } from "./execute-instance.thunk";
-import { setUserVariableValues } from "../instance-variable-values/instance-variable-values.slice";
-import { setContextEntries } from "../instance-context/instance-context.slice";
+import {
+  replaceSurfaceVariableValues,
+  setUserVariableValues,
+} from "../instance-variable-values/instance-variable-values.slice";
+import {
+  replaceSurfaceContextEntries,
+  setContextEntries,
+} from "../instance-context/instance-context.slice";
 import { setUserInputText } from "../instance-user-input/instance-user-input.slice";
 import { setDisplayMode as setDisplayModeAction } from "../instance-ui-state/instance-ui-state.slice";
 import {
@@ -80,6 +71,12 @@ import {
   logProjectCreateAiStage,
   warnProjectCreateAi,
 } from "@/features/projects/debug/projectCreateAiDebug";
+import {
+  applyLaunchWritePolicies,
+  prepareLaunchMappings,
+  resolveLaunchMappingLayers,
+  type MergedValueMappings,
+} from "./surface-scope-mapping";
 
 export interface LaunchResult {
   /** The conversation id — client-generated, honored by the server end-to-end. */
@@ -145,179 +142,6 @@ async function pollForCompletion(
     await new Promise((r) => setTimeout(r, intervalMs));
   }
   return "";
-}
-
-// =============================================================================
-// Surface value_mappings — layered launch resolution
-//
-// Layers, weakest → strongest (later wins PER KEY):
-//   1. agent↔surface binding edges global binding
-//   2. agent↔surface binding edges org bindings — by MEMBERSHIP: RLS only returns
-//      member-org rows, so every visible org row applies. There is no
-//      "active org" filter (the old read targeted a field the organizations
-//      slice never defined, so the org tier could never fire).
-//   3. agent↔surface binding edges user binding
-//   4. the shortcut's own mappings (value_mappings layered over the promoted
-//      legacy scope_mappings / context_mappings) — the most specific intent.
-//
-// `prepareLaunchMappings` then makes the merged map runnable:
-//   - required surface_value entries missing from the live scope ABORT the
-//     launch loudly (toast + throw) before any instance is created;
-//   - prompt_user entries drain through the global value-prompts dialog
-//     (interactive modes) or hard-error/skip (direct & background);
-//   - inert layers (present but fully shadowed) console.warn with full
-//     provenance, so a misconfigured binding is never silent.
-// =============================================================================
-
-interface ShortcutMappingSource {
-  valueMappings: ValueMappingMap | null;
-  scopeMappings: Record<string, string> | null;
-  contextMappings: Record<string, string> | null;
-  /** The shortcut's per-write-target overrides — strongest layer of the merge. */
-  writePolicies?: WritePolicyMap | null;
-}
-
-async function resolveLaunchMappingLayers(
-  agentId: string,
-  surfaceName: string | undefined,
-  shortcut: ShortcutMappingSource | null,
-): Promise<MergedValueMappings | null> {
-  const layers: MappingLayer[] = [];
-  if (surfaceName) {
-    layers.push(...(await fetchSurfaceBindingLayers(agentId, surfaceName)));
-  }
-  if (shortcut) {
-    const shortcutMappings = resolveShortcutMappings(shortcut);
-    const shortcutPolicies = shortcut.writePolicies ?? null;
-    // A shortcut that ONLY overrides write policies is still the strongest
-    // layer — dropping it would discard the user's manual/ask/auto choice.
-    if (
-      Object.keys(shortcutMappings).length > 0 ||
-      (shortcutPolicies && Object.keys(shortcutPolicies).length > 0)
-    ) {
-      layers.push({
-        name: "shortcut",
-        mappings: shortcutMappings,
-        writePolicies: shortcutPolicies,
-      });
-    }
-  }
-  if (layers.length === 0) return null;
-
-  const result = mergeValueMappingLayers(layers);
-  // A binding that ONLY overrides write policies (no mappings) is still a
-  // result — dropping it would discard the user's manual/ask/auto choice.
-  if (
-    Object.keys(result.merged).length === 0 &&
-    Object.keys(result.writePolicies).length === 0
-  ) {
-    return null;
-  }
-
-  for (const inert of result.inertLayers) {
-    console.warn(
-      `[surfaces] mapping layer "${inert}" for (agent=${agentId}, surface=${surfaceName ?? "none"}) exists but contributed no keys — fully shadowed by more specific layers`,
-      { provenance: result.provenance },
-    );
-  }
-  return result;
-}
-
-/**
- * Register the run's binding-resolved write-policy overrides with the
- * writeback runtime (the user's manual/ask/auto choice, made wherever they
- * bound the agent). Keyed by (agent, surface) so a re-launch REPLACES the
- * prior registration instead of stacking. The surface's own per-target
- * default still floors `manual` — a binding can tighten, never open.
- */
-function applyLaunchWritePolicies(
-  resolved: MergedValueMappings | null,
-  agentId: string,
-  surfaceName: string | null | undefined,
-): void {
-  // No surface ⇒ no targets these could ever apply to. No resolution ⇒ leave
-  // whatever stands (we learned nothing new about the binding).
-  if (!surfaceName || !resolved) return;
-  // Register even an EMPTY map: keyed replacement is how removing an override
-  // from the binding actually takes effect on relaunch (adversarial find D4).
-  registerSurfaceWritePolicies(
-    resolved.writePolicies,
-    `${agentId}::${surfaceName}`,
-    surfaceName,
-  );
-}
-
-async function prepareLaunchMappings(args: {
-  merged: ValueMappingMap;
-  applicationScope: Record<string, unknown>;
-  /** False for direct/background — no UI may interrupt those launches. */
-  interactive: boolean;
-  /** Dialog title — the shortcut/agent label. */
-  title: string;
-}): Promise<ValueMappingMap> {
-  const { merged, applicationScope, interactive, title } = args;
-
-  // Required surface_value pre-check — abort BEFORE creating the instance.
-  const missingRequired: string[] = [];
-  for (const [key, mapping] of Object.entries(merged)) {
-    if (
-      mapping.mapType === "surface_value" &&
-      mapping.required &&
-      applicationScope[mapping.target] === undefined
-    ) {
-      missingRequired.push(`"${key}" needs surface value "${mapping.target}"`);
-    }
-  }
-  if (missingRequired.length > 0) {
-    const message = `Cannot run "${title}" — required values are missing from this page: ${missingRequired.join("; ")}`;
-    toast.error(message);
-    throw new Error(message);
-  }
-
-  const promptEntries = Object.entries(merged).filter(
-    (
-      entry,
-    ): entry is [string, Extract<ValueMapping, { mapType: "prompt_user" }>] =>
-      entry[1].mapType === "prompt_user",
-  );
-  if (promptEntries.length === 0) return merged;
-
-  const out: ValueMappingMap = { ...merged };
-
-  if (!interactive) {
-    const requiredNames = promptEntries
-      .filter(([, m]) => m.required)
-      .map(([k]) => `"${k}"`);
-    if (requiredNames.length > 0) {
-      const message = `Cannot run "${title}" in the background — required input(s) ${requiredNames.join(", ")} must be entered by a user. Use an interactive display mode.`;
-      toast.error(message);
-      throw new Error(message);
-    }
-    for (const [key] of promptEntries) {
-      console.warn(
-        `[surfaces] optional prompt_user mapping "${key}" skipped — non-interactive display mode`,
-      );
-      delete out[key];
-    }
-    return out;
-  }
-
-  const fields: ValuePromptField[] = promptEntries.map(([name, m]) => ({
-    name,
-    prompt: m.prompt,
-    defaultValue: m.defaultValue,
-    required: m.required,
-  }));
-  const answers = await promptForValues({ title, fields });
-  if (answers === null) {
-    // Cancel is only offered when nothing is required — drop the optional keys.
-    for (const [key] of promptEntries) delete out[key];
-    return out;
-  }
-  for (const [key] of promptEntries) {
-    out[key] = { mapType: "direct_value", target: answers[key] ?? "" };
-  }
-  return out;
 }
 
 // =============================================================================
@@ -850,22 +674,18 @@ export const launchAgentExecution = createAsyncThunk<
               result.warnings,
             );
           }
-          if (Object.keys(result.variableValues).length > 0) {
-            dispatch(
-              setUserVariableValues({
-                conversationId,
-                values: result.variableValues,
-              }),
-            );
-          }
-          if (result.contextEntries.length > 0) {
-            dispatch(
-              setContextEntries({
-                conversationId,
-                entries: result.contextEntries,
-              }),
-            );
-          }
+          dispatch(
+            replaceSurfaceVariableValues({
+              conversationId,
+              values: result.variableValues,
+            }),
+          );
+          dispatch(
+            replaceSurfaceContextEntries({
+              conversationId,
+              entries: result.contextEntries,
+            }),
+          );
           if (result.pendingPrompts.length > 0) {
             // Should be empty — prompts were drained into direct_value
             // entries by prepareLaunchMappings. Loud if not.
