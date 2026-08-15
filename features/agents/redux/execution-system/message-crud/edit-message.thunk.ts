@@ -203,6 +203,50 @@ export const editMessage = createAsyncThunk<
     dispatch(markCacheBypass({ conversationId, conversation: true }));
     void dispatch(invalidateConversationCache({ conversationId }));
 
+    // ── 5. Corrected-output capture ─────────────────────────────────────
+    //
+    // A user rewriting an assistant message in-app is the single most
+    // valuable signal this platform produces: the model's output AND the
+    // human's correction of it, as a pair. It is the reference point the
+    // replay harness ranks candidate outputs against. Capture it on the ONE
+    // destination (`platform.output_feedback`); fire-and-forget, because a
+    // capture failure must never fail the edit the user asked for.
+    //
+    // Assistant messages only — editing your own prompt is not a correction.
+    if (prevRecord.role === "assistant") {
+      void (async () => {
+        try {
+          const [{ saveOutputFeedback }, { extractFlatText }] = await Promise.all([
+            import("@/lib/output-feedback/service"),
+            import("../messages/messages.selectors"),
+          ]);
+          const originalText = extractFlatText(prevRecord);
+          const correctedText = extractFlatText({
+            ...prevRecord,
+            content: newContent,
+          });
+          if (!correctedText || correctedText === originalText) return;
+          await saveOutputFeedback({
+            subjectType: "message",
+            subjectId: messageId,
+            requestId: prevRecord._streamRequestId ?? null,
+            surfaceName: "chat",
+            originalContent: originalText || null,
+            correctedContent: correctedText,
+            correctedRefType: "message",
+            correctedRefId: messageId,
+          });
+        } catch (error) {
+          // Loud: a silent miss here is a permanently lost training pair.
+          // eslint-disable-next-line no-console
+          console.error(
+            "[editMessage] corrected-output capture failed",
+            error,
+          );
+        }
+      })();
+    }
+
     return { conversationId, messageId };
   },
 );

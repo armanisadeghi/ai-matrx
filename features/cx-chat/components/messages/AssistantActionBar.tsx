@@ -27,6 +27,8 @@ import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils"
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { messageActionsActions } from "@/features/agents/redux/execution-system/message-actions/message-actions.slice";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { useOutputFeedback } from "@/lib/output-feedback/useOutputFeedback";
+import { toast } from "@/lib/toast";
 
 const ConversationMessageOptionsMenu = lazy(
   () => import("./MessageOptionsMenu"),
@@ -62,9 +64,20 @@ export function AssistantActionBar({
   const instanceId = useRef(`msg-action-${reactId}`).current;
 
   const [isCopied, setIsCopied] = useState(false);
-  const [isLiked, setIsLiked] = useState(false);
-  const [isDisliked, setIsDisliked] = useState(false);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
+
+  // Until 2026-08-15 these thumbs were local `useState` — they lit up and the
+  // signal died with the component. They now write the ONE destination,
+  // `platform.output_feedback`, exactly like the /chat bar does.
+  const { verdict, setVerdict } = useOutputFeedback({
+    subjectType: "message",
+    subjectId: messageId,
+    surfaceName: "cx-chat",
+    originalContent: content,
+  });
+  const handleVerdict = (clicked: "positive" | "negative") => {
+    void setVerdict(clicked).catch(() => toast.error("Failed to save feedback"));
+  };
   const moreOptionsButtonRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -155,27 +168,21 @@ export function AssistantActionBar({
     <>
       <TapTargetButtonGroup>
         <TapTargetButtonForGroup
-          onClick={() => {
-            setIsLiked(!isLiked);
-            if (isDisliked) setIsDisliked(false);
-          }}
+          onClick={() => handleVerdict("positive")}
           ariaLabel="Like message"
           icon={
             <ThumbsUp
-              className={`w-4 h-4 ${isLiked ? "text-green-500 dark:text-green-400" : "text-muted-foreground"}`}
+              className={`w-4 h-4 ${verdict === "positive" ? "text-green-500 dark:text-green-400" : "text-muted-foreground"}`}
             />
           }
         />
 
         <TapTargetButtonForGroup
-          onClick={() => {
-            setIsDisliked(!isDisliked);
-            if (isLiked) setIsLiked(false);
-          }}
+          onClick={() => handleVerdict("negative")}
           ariaLabel="Dislike message"
           icon={
             <ThumbsDown
-              className={`w-4 h-4 ${isDisliked ? "text-red-500 dark:text-red-400" : "text-muted-foreground"}`}
+              className={`w-4 h-4 ${verdict === "negative" ? "text-red-500 dark:text-red-400" : "text-muted-foreground"}`}
             />
           }
         />

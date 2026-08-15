@@ -188,9 +188,6 @@ export interface RichDocumentActionContextCallbacks {
   onFullPrint?: () => void;
   /** Open the host-owned destructive-vs-fork dialog (chat only today). */
   onRequestDelete?: () => void;
-  /** Local visual-only thumbs feedback (chat only today; no Redux). */
-  onThumbsUp?: () => void;
-  onThumbsDown?: () => void;
 }
 
 export interface RichDocumentActionContext {

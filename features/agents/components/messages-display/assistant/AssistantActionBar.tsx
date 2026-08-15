@@ -37,10 +37,7 @@ import { StreamingSpeakerButton } from "@/features/tts/components/StreamingSpeak
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { openAssistantMessageEditor } from "../message-options/openAssistantMessageEditor";
-import {
-  setMessageReaction,
-  reactionFromMetadata,
-} from "@/features/agents/redux/execution-system/message-crud/set-message-reaction.thunk";
+import { useOutputFeedback } from "@/lib/output-feedback/useOutputFeedback";
 import { toast } from "@/lib/toast";
 import {
   selectMessageById,
@@ -196,20 +193,20 @@ export function AssistantActionBar({
     [record?.metadata],
   );
 
-  // Persisted like/dislike — read from metadata.user_reaction, written via
-  // the cx_message_set_reaction RPC (optimistic, with rollback). Clicking the
-  // active reaction again clears it.
-  const reaction = reactionFromMetadata(record?.metadata);
-  const handleReaction = (clicked: "like" | "dislike") => {
-    dispatch(
-      setMessageReaction({
-        conversationId,
-        messageId,
-        reaction: reaction === clicked ? null : clicked,
-      }),
-    )
-      .unwrap()
-      .catch(() => toast.error("Failed to save reaction"));
+  // Persisted verdict — the ONE destination is `platform.output_feedback`
+  // (subject `message`). Optimistic with rollback; clicking the active verdict
+  // retracts it. `originalContent` rides along so the frozen model output is
+  // captured the first time anyone judges this message — a later in-app edit
+  // then has something to be a correction *of*.
+  const { verdict, setVerdict } = useOutputFeedback({
+    subjectType: "message",
+    subjectId: messageId,
+    requestId: record?._streamRequestId ?? null,
+    surfaceName: surfaceKey ?? null,
+    originalContent: content,
+  });
+  const handleVerdict = (clicked: "positive" | "negative") => {
+    void setVerdict(clicked).catch(() => toast.error("Failed to save feedback"));
   };
 
   // For multi-iteration agentic turns, the surrounding AssistantTurnGroup
@@ -372,10 +369,10 @@ export function AssistantActionBar({
         <TapTargetButtonGroup>
           <ThumbsUpTapButton
             variant="group"
-            onClick={() => handleReaction("like")}
+            onClick={() => handleVerdict("positive")}
             ariaLabel="Like message"
             className={
-              reaction === "like"
+              verdict === "positive"
                 ? "text-green-500 dark:text-green-400"
                 : "text-muted-foreground"
             }
@@ -383,10 +380,10 @@ export function AssistantActionBar({
 
           <ThumbsDownTapButton
             variant="group"
-            onClick={() => handleReaction("dislike")}
+            onClick={() => handleVerdict("negative")}
             ariaLabel="Dislike message"
             className={
-              reaction === "dislike"
+              verdict === "negative"
                 ? "text-red-500 dark:text-red-400"
                 : "text-muted-foreground"
             }

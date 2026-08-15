@@ -7350,6 +7350,8 @@ export type Database = {
           metadata: Json
           model: string | null
           organization_id: string
+          pin_reason: string | null
+          pinned_at: string | null
           provider: string
           request_payload: Json
           response_message_id: string | null
@@ -7372,6 +7374,8 @@ export type Database = {
           metadata?: Json
           model?: string | null
           organization_id: string
+          pin_reason?: string | null
+          pinned_at?: string | null
           provider: string
           request_payload: Json
           response_message_id?: string | null
@@ -7394,6 +7398,8 @@ export type Database = {
           metadata?: Json
           model?: string | null
           organization_id?: string
+          pin_reason?: string | null
+          pinned_at?: string | null
           provider?: string
           request_payload?: Json
           response_message_id?: string | null
@@ -9384,6 +9390,24 @@ export type Database = {
           provider: string
           provider_account_id: string
           to_number: string
+        }[]
+      }
+      claim_recoverable_sms_command_turns: {
+        Args: {
+          p_lease_seconds?: number
+          p_limit?: number
+          p_worker_id: string
+        }
+        Returns: {
+          agent_id: string
+          agent_version_id: string
+          chat_conversation_id: string
+          chat_conversation_is_new: boolean
+          inbound_message_id: string
+          organization_id: string
+          sms_conversation_id: string
+          text: string
+          user_id: string
         }[]
       }
       configure_my_sms_assistant: {
@@ -26664,6 +26688,7 @@ export type Database = {
           finding_id: string | null
           id: string
           judge: Json | null
+          lease_expires_at: string | null
           metadata: Json
           metrics: Json
           organization_id: string
@@ -26695,6 +26720,7 @@ export type Database = {
           finding_id?: string | null
           id?: string
           judge?: Json | null
+          lease_expires_at?: string | null
           metadata?: Json
           metrics?: Json
           organization_id: string
@@ -26726,6 +26752,7 @@ export type Database = {
           finding_id?: string | null
           id?: string
           judge?: Json | null
+          lease_expires_at?: string | null
           metadata?: Json
           metrics?: Json
           organization_id?: string
@@ -32184,6 +32211,93 @@ export type Database = {
           },
         ]
       }
+      output_feedback: {
+        Row: {
+          corrected_at: string | null
+          corrected_content: string | null
+          corrected_ref_id: string | null
+          corrected_ref_type: string | null
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          original_content: string | null
+          prose: string | null
+          request_id: string | null
+          subject_id: string
+          subject_type: string
+          surface_name: string | null
+          updated_at: string
+          updated_by: string | null
+          verdict: string
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          corrected_at?: string | null
+          corrected_content?: string | null
+          corrected_ref_id?: string | null
+          corrected_ref_type?: string | null
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          original_content?: string | null
+          prose?: string | null
+          request_id?: string | null
+          subject_id: string
+          subject_type: string
+          surface_name?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          verdict: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          corrected_at?: string | null
+          corrected_content?: string | null
+          corrected_ref_id?: string | null
+          corrected_ref_type?: string | null
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          original_content?: string | null
+          prose?: string | null
+          request_id?: string | null
+          subject_id?: string
+          subject_type?: string
+          surface_name?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          verdict?: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "output_feedback_corrected_ref_type_fkey"
+            columns: ["corrected_ref_type"]
+            isOneToOne: false
+            referencedRelation: "entity_types"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "output_feedback_subject_type_fkey"
+            columns: ["subject_type"]
+            isOneToOne: false
+            referencedRelation: "entity_types"
+            referencedColumns: ["token"]
+          },
+        ]
+      }
       reachability: {
         Row: {
           container_id: string
@@ -32526,6 +32640,10 @@ export type Database = {
       }
     }
     Functions: {
+      clear_output_feedback: {
+        Args: { p_subject_id: string; p_subject_type: string }
+        Returns: boolean
+      }
       create_entity_table:
         | {
             Args: {
@@ -32680,6 +32798,50 @@ export type Database = {
           detail: string
           token: string
         }[]
+      }
+      upsert_output_feedback: {
+        Args: {
+          p_corrected_content?: string
+          p_corrected_ref_id?: string
+          p_corrected_ref_type?: string
+          p_organization_id?: string
+          p_original_content?: string
+          p_prose?: string
+          p_request_id?: string
+          p_subject_id: string
+          p_subject_type: string
+          p_surface_name?: string
+          p_verdict?: string
+        }
+        Returns: {
+          corrected_at: string | null
+          corrected_content: string | null
+          corrected_ref_id: string | null
+          corrected_ref_type: string | null
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          original_content: string | null
+          prose: string | null
+          request_id: string | null
+          subject_id: string
+          subject_type: string
+          surface_name: string | null
+          updated_at: string
+          updated_by: string | null
+          verdict: string
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "output_feedback"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
     }
     Enums: {
@@ -37791,10 +37953,6 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
-      }
-      cx_message_set_reaction: {
-        Args: { p_message_id: string; p_reaction: string }
-        Returns: Json
       }
       cx_message_soft_delete: {
         Args: { p_message_id: string }
