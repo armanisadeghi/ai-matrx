@@ -300,9 +300,27 @@ run through it (above). Note this in the FEATURE.md when it is built.
 A sending identity is a first-class record, not a config field: *which mailbox may speak for this
 org, how fast, and is it healthy right now.*
 
-1. **Connection.** OAuth for Google Workspace and Microsoft 365 (the two that matter); SMTP/IMAP as
-   the fallback that covers everyone else. We already have the Google half
-   (`send_reviewed_gmail`) — extend it, don't fork it.
+> ✅ **Deliverability research DONE 2026-08-14 — read before building any of this.**
+> **`/Users/armanisadeghi/code/common-docs/systems/outreach-compliance/DELIVERABILITY_AND_WARMUP.md`**
+> — what Instantly/Smartlead/lemlist/Mailreach mechanically do, what actually moves inbox
+> placement, the safe/grey/reckless risk ledger, and the ship/optional/refuse ranking. It changes
+> items 1, 4, 5 and 6 below.
+
+1. **Connection — and connection method is a CAPABILITY KEY, not a detail.** OAuth for Google
+   Workspace and Microsoft 365 (the two that matter); SMTP/IMAP as the fallback that covers
+   everyone else. We already have the Google half (`send_reviewed_gmail`) — extend it, don't fork
+   it. **Store the method on the identity and gate capability on it in the DATA:** Google's live
+   developer policy bans apps that use *"multiple accounts to abuse Google policies, bypass Gmail
+   account limitations, circumvent filters and spam"*, and Google enforced exactly that against
+   this feature category in 2023 (GMass, Woodpecker, lemlist, Saleshandy all lost or shut down
+   Gmail-API warmup). **An OAuth-connected identity must be structurally ineligible for any
+   pool-style capability, forever** — that is the only thing standing between a future warmup
+   feature and the suspension of the shared OAuth app §5.3 names as our one uncontained blast
+   radius. Costs nothing now; cannot be retrofitted safely.
+
+   **Also model the DOMAIN as the reputation-bearing unit** (org → domain → mailboxes). The
+   category rotates domains on ~90-day cycles and pulls a whole domain above 2% bounce; health,
+   the circuit breaker and the trust ladder all key more naturally on the domain than the mailbox.
 2. **Domain ownership proof — gate before ANY outreach send.** DNS TXT challenge on the sending
    domain. A customer who cannot prove they own the domain does not get to send from it. This one
    gate removes most casual abuse, and every serious platform requires it.
@@ -310,16 +328,28 @@ org, how fast, and is it healthy right now.*
    domain before enabling sends, and re-check periodically. Since the Google/Yahoo bulk-sender
    rules (Feb 2024), unauthenticated mail is simply discarded at volume — a customer sending
    without DMARC is buying nothing but a damaged domain.
-4. **Warmup as a state machine.** Arman is right that this is standard practice: a new sending
+4. **Warmup as a state machine — and it is GOOGLE'S instruction, not our caution.** A new sending
    identity starts at a low daily volume and ramps over ~3–4 weeks before full use. Model it as
    real state on the record (`warming` → `ready`), with a ramp schedule the runner obeys. **A
    mailbox in warmup cannot be used for a campaign** — the system enforces it rather than trusting
-   the user to know.
-5. **Caps, throttle, and human pacing.** Per-identity daily cap, per-hour cap, randomized intervals,
-   quiet hours in the *recipient's* timezone. Cold-outreach practice is far below provider limits —
-   tens per mailbox per day, not hundreds. Multiple connected mailboxes is how volume scales, not a
-   bigger number on one mailbox.
-6. **Live health.** Bounce rate, complaint rate, reply rate per identity, on a rolling window.
+   the user to know. **Say this in the UI with Google's own sentence quoted** (*"Start with a low
+   sending volume to engaged users, and slowly increase the volume over time"*) — the research
+   found no evidence pool warmup beats it, and quoting the provider converts our position from
+   "we're stricter than the competition" (a §5.5b failure) into "we do what Gmail tells you to do."
+5. **Caps, throttle, and human pacing — at INDUSTRY-NORMAL numbers, not conservative ones.**
+   Per-identity daily cap, per-hour cap, randomized intervals, quiet hours in the *recipient's*
+   timezone. Verified 2026 operator consensus: **10–15/day for a new inbox, 20–40/day once warmed**,
+   with typical infrastructure of 10–25 inboxes across 5–10 domains. Multiple connected mailboxes
+   is how volume scales, not a bigger number on one mailbox — **confirmed as exactly what the
+   category does**, and provider caps (Google allows ~2,000 msgs/day) are irrelevant because the
+   binding constraint is reputation, not the published limit. §5.5b applies directly: capping below
+   these numbers is as much a defect as capping above them.
+6. **Live health — and it CANNOT depend on Google Postmaster Tools.** Bounce rate, complaint rate,
+   reply rate per identity, on a rolling window. GPT needs hundreds of Gmail recipients/day for
+   intermittent signal and low thousands for full dashboards, so a Lane B mailbox at 30/day **will
+   never populate it**. Wire it for orgs whose aggregate crosses the threshold; never promise it,
+   and never build a health surface that is empty without it. Seed-list placement testing is the
+   only placement visibility a cold sender can actually get — ship it (see §8 item 3).
 7. **Circuit breaker — automatic, not advisory.** Thresholds pause the identity and its campaigns
    and alarm loudly (hard-bounce and complaint rates are the two that matter; Google/Yahoo treat
    ~0.3% complaints as the red line, so our internal trip must sit well below it). **The system
@@ -427,6 +457,10 @@ the Google/Yahoo/Microsoft bulk-sender regime, RFC 8058, and the eight vendor po
 - `ENGINEERING_GAPS.md` — the buildable work.
 - `ATTORNEY_BRIEF.md` — **for Arman.** 18 questions for counsel; Q3 (the per-country EEA table)
   is the one that changes the build.
+- `DELIVERABILITY_AND_WARMUP.md` — **added 2026-08-14.** The competitive/technical half: what the
+  warmup vendors mechanically do, what actually moves inbox placement, the safe/grey/reckless risk
+  ledger (including the 2023 Gmail-API enforcement wave), and the ship/optional/refuse ranking.
+  Read with §5.2 and §8 item 3.
 
 **What the research changed in this plan — four Tier-0 gaps block Phase 4's first send:**
 
@@ -739,7 +773,53 @@ EARNED-TRUST LADDER) before acting on any of these — it is the lens they were 
    a part of our required system, but it's something that's definitely planned to be built."*
    So: gradual ramp ships as the default and the recommended path; **alternative warmup methods
    (including pool-style networks) are researched and documented now, and planned as buildable
-   optional capability** — not dismissed on principle. Chip fired 2026-08-14.
+   optional capability** — not dismissed on principle.
+
+   ### ✅ Research pass DONE 2026-08-14 — the answer, in full, with sources
+
+   **`/Users/armanisadeghi/code/common-docs/systems/outreach-compliance/DELIVERABILITY_AND_WARMUP.md`**
+   — read it before building warmup, caps, health, or the sending-identity schema. Headlines:
+
+   - **The decision is settled by precedent, not principle.** Google's 2022-11-18 notice ordered
+     Gmail API developers to *"disable the email warming feature by February 13, 2023"* or lose
+     access — GMass, Woodpecker and lemlist named; Saleshandy published its own shutdown. The
+     clause is still live policy. **A warmup pool through OUR OAuth client is not a risk to weigh,
+     it is the known cause of the exact outcome §5.3 exists to prevent.**
+   - **The category survived by moving warmup off the Gmail API onto SMTP/IMAP.** So the buildable
+     optional version, if it is ever built, is confined to `smtp_imap` identities and is
+     architecturally unreachable from OAuth — which is why §5.2 item 1 now makes connection method
+     a capability key **today**, before any of it exists.
+   - **All four vendors run the same machine** (reciprocal pool, auto-open, auto-reply,
+     auto-rescue-from-spam). *"Real inboxes, no bots"* is a claim about who owns the mailbox, not
+     about whether the engagement is genuine. No independent evidence that any of it beats an
+     honest ramp; it optimizes the two signals (opens, synthetic replies) filters discount most.
+   - **We are NOT handicapped by the default.** Gradual ramp is Google's own published
+     instruction. What we were missing was not a pool — it was *industry-normal caps* (§5.2 item 5)
+     and *placement visibility* (below).
+
+   **What ships as default:** the ramp, at industry-normal caps · domain-as-reputation-unit ·
+   connection method as capability key · **seed-list inbox-placement testing**, which is safe,
+   valuable, and the only placement visibility a cold sender can get at all since Postmaster Tools
+   is blind at these volumes (state its directional limits in the UI — a tool reporting "94%
+   inbox" as truth is lying).
+
+   **The fast follow — this is the real answer to "everyone else offers warmup":** *managed
+   pre-warmed domain + mailbox provisioning.* Instantly's own top recommendation is buying
+   pre-warmed accounts usable day 1. Strip the synthetic engagement out and what remains is
+   domains and mailboxes provisioned early with a genuine low ramp started before the customer
+   needs them — it sells exactly what warmup is bought for (**elapsed time**), is safe under every
+   policy, is a paid capability rather than a cost center, and fits the §5.3b doctrine that we do
+   it for them. **Second, near-free:** don't break a customer's own third-party warmup on an
+   SMTP/IMAP mailbox, and account for its traffic so our health metrics stay honest.
+
+   **What we refuse, with the reasoning recorded so nobody relitigates it blind:** pools,
+   automated spam-folder rescue, and cap-evasion mailboxes through our OAuth apps; bot mailboxes
+   we operate; any inbox-placement guarantee. Each is refused because it risks the one asset whose
+   loss is not contained to the customer who caused it — not on squeamishness.
+
+   **Left open for counsel** (sharpens ATTORNEY_BRIEF Q9): the policy's bulk-mail carve-out reads
+   *"approved as long as the user consented to receive emails"* — whether Lane B itself sits
+   comfortably inside Gmail restricted scopes is arguable both ways and an agent may not settle it.
 4. **Media/journalist data — crawl-only for NOW, but actively acquire.** Arman: *"I'm okay with
    crawl only for now. However… we need to document, that we need to look into all of those
    things… if there are lists that maybe we can crawl for once, then let's get that crawl task
