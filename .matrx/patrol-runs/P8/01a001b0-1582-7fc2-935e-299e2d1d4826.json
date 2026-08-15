@@ -81,6 +81,26 @@
       },
       "previousEventHash": "80f340cf33750a52226fe0efa85ff6201ea1a7db5399eeb07895a1112f7ef9a4",
       "eventHash": "9f6529ff13471f5abe9cc7993c641c51e479d00c1117c508a2fa5ebc5b67c4e1"
+    },
+    {
+      "sequence": 6,
+      "state": "delivered",
+      "at": "2026-08-15T18:33:16.700Z",
+      "actor": "fleet-health-controller",
+      "summary": "DELIVERED: the independently certified Real Loading States cleanup is on origin/main and shipped in v0.4.603.",
+      "evidence": [
+        "Certified worker candidate and integrated commit have the same stable patch id ff79fc57c945dbbd8812739a406674dd2a8254b4.",
+        "Integrated commit: 2476168b39a35d6ee9a7ed0daf1c0e1e46066687.",
+        "Release commit: df792b77227a4a012e5427ce419519d096b478f5 (v0.4.603); Vercel targets succeeded."
+      ],
+      "delivery": {
+        "candidateSha": "40fe1be4a5fea20971065bb3a35f675e5896d016",
+        "preservedRef": "refs/heads/patrol-runs/P8/01a001b0-1582-7fc2-935e-299e2d1d4826",
+        "integratedSha": "2476168b39a35d6ee9a7ed0daf1c0e1e46066687",
+        "release": "v0.4.603"
+      },
+      "previousEventHash": "9f6529ff13471f5abe9cc7993c641c51e479d00c1117c508a2fa5ebc5b67c4e1",
+      "eventHash": "1578473f74808701a5da0e5cde00d10c2da3c2b61b8a2fe0282f5f0b547a30b3"
     }
   ]
 }
