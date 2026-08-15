@@ -364,6 +364,57 @@ Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) 
 
 ## Change log
 
+- 2026-08-15 — Claude: **D193 (`context_item` half) — the registry declared a column that does not
+  exist, on an entity that is not independently shareable.** `context_item` carried
+  `is_public_column = 'visibility'`, but `context.context_items` has **no `visibility` column**
+  (41 columns, verified live) — D117's exact class, where a non-null `is_public_column` means "this
+  table has a legacy BOOLEAN public flag" and routes `makePublic` through `make_resource_public`
+  instead of the canonical `setVisibilityColumn` enum path.
+  - **The fix is NULL, permanently — not a new column.** A context item is a **component of its
+    scope type** (it is the *column* of a dimension; the cells live in `context.context_item_values`
+    per scope). Four measurements agree: it has **no `organization_id`** (its org is reachable only
+    through `context.scope_types`); **all four RLS policies key on the parent** (`SELECT` = scope
+    type in `iam.my_orgs()`, `INSERT/UPDATE/DELETE` = `iam.has_org_admin(parent org)`) and **none
+    calls `has_permission`**, so an `iam.permissions` grant on a context item conveys **nothing**;
+    `iam.permissions` has **zero** `context_item` rows across 203 live items; and the row's own note
+    admitted it was auto-registered "from the Relationship Manager drift report" — a naming-
+    convention guess, never a sharing decision. Arman's 2026-08-15 ruling is already satisfied *by
+    the parent*: every member of the owning org sees every context item on that org's scope types.
+    Adding a per-item `visibility` enum would create a **second access authority no policy reads**
+    and contradict THE COMPONENT OWNERSHIP LAW (on a component the owner is the parent).
+  - **"Non-independently-shareable" is the three flags together**, and now all three agree:
+    `is_public_column = null` + `is_link_shareable = false` + `rls_uses_has_permission = false`.
+    The row stays `is_active = true` on purpose — deactivating it makes
+    `get_share_capabilities('context_item')` **raise** "Unknown shareable resource token" and forces
+    the row out of the TS mirror that resolves the token to `context.context_items` for label and
+    detail lookups. That is a louder break than the bug.
+  - **Honest scope: this was a LATENT contract lie, not a live breakage.** `get_share_capabilities`
+    verifies the column physically against `information_schema` (hardened in `e7dabb6f8`), so the
+    runtime already returned `supports_public: false`; the only consumer that reads
+    `entry.isPublicColumn` straight from the mirror is `loadPublicResource`, and `context_item` is
+    not in `PUBLIC_LANE_TYPES`. The damage the fix prevents is the next author "making the registry
+    true" by adding the column.
+  - **Proven live** as `admin@admin.com` through the real client path: `get_share_capabilities` →
+    `supports_public:false / public_state_column:null`; `select visibility from
+    context.context_items` → **`42703: column context_items.visibility does not exist`** (the lie,
+    demonstrated); `make_resource_public('context_item', …)` → refused,
+    *"does not support public visibility"*. No row lost access — the migration writes ONE row of
+    `platform.shareable_resource_registry` and touches neither `context.context_items` (203 rows,
+    0 soft-deleted, newest row update still 2026-07-27) nor any of its 4 policies; 97 items remain
+    visible to that user under RLS.
+  - **`url_path_template` stays `''`, and that is correct, not an oversight.** The only
+    id-addressable route is
+    `app/(core)/organizations/[orgId]/scopes/[typeId]/context-items/[itemId]` — it needs **three**
+    ids, and a `{id}`-only template cannot build it; `/context-items` is an un-parameterized hub
+    with no focus param. Per D138 an empty template is "no signed-in destination" and the surfaces
+    render no link rather than a 404. `entityRegistry` carries no `hrefFor` for `context_item` for
+    the same reason. **The door a user actually gets is the generic detail window**
+    (`features/item-presentation`, `open: { kind: "context_item" }`). No route was invented.
+    *Open gap, spun off:* there is still no single-id door to a context item; closing it means a
+    focus param on `/context-items` plus an `hrefFor`, which is a separate change.
+  - Migration `migrations/sharing_registry_context_item_conveyed_d193.sql`, applied live + ledgered
+    (`source='matrx-frontend'`); TS mirror + snapshot moved in the same commit; parity (139 tests)
+    and `pnpm check:shareable-registry` green.
 - 2026-08-14 — Claude: **`code_folder` and `code_repository` now have real destinations — the last
   two code dead ends are closed.** Both had empty `url_path_template`s and no `hrefFor` (emptied by
   `sharing_registry_route_truth_d138.sql` because their invented paths `/code/folders/{id}` and
