@@ -173,12 +173,17 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     // reads. Do not "fix" this back to a column name.
     isPublicColumn: null,
     displayLabel: "Context Item",
-    // Intentionally empty (D138). The only id-addressable route needs THREE ids
-    // (/organizations/[orgId]/scopes/[typeId]/context-items/[itemId]); a
-    // {id}-only template cannot build it, so the sharing surfaces render no
-    // link rather than a 404. entityRegistry carries no hrefFor for the same
-    // reason; the real door is the item-presentation detail window.
-    urlPathTemplate: "",
+    // The only id-addressable route needs THREE ids
+    // (/organizations/[orgId]/scopes/[typeId]/context-items/[itemId]), which a
+    // {id}-only template cannot build. Rather than invent a single-id route for
+    // a COMPONENT of a scope type, the door is the all-orgs hub focused on the
+    // item (`?item=` — features/scope-system/components/ContextItemsHub.tsx),
+    // which resolves it, scrolls to it and highlights it, and renders the
+    // access gate when the caller cannot reach it. This was `''` under D138
+    // until the focus param existed (2026-08-15). `entityRegistry.hrefFor`
+    // carries the same destination and is the half `getResourceSharePath`
+    // actually reads for this token — move both or neither.
+    urlPathTemplate: "/context-items?item={id}",
     rlsUsesHasPermission: false,
   },
   code_file: {

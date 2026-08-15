@@ -116,7 +116,7 @@
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Context Item",
-    "url_path_template": "",
+    "url_path_template": "/context-items?item={id}",
     "rls_uses_has_permission": false,
     "is_active": true
   },

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowUpDown,
@@ -57,6 +57,7 @@ import {
   selectItemsLoadedForType,
   type ContextItem,
 } from "@/features/scope-system/redux/contextItemsSlice";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { ContextItemAddForm } from "./ContextItemAddForm";
 import { EditContextItemSheet } from "./EditContextItemSheet";
 import { useOpenContextItemsWindow } from "@/features/overlays/openers/contextItemsWindow";
@@ -107,11 +108,22 @@ const PERSONAL_PROJECTS_ORG_ID = "00000000-0000-0000-0000-000000000001";
  * All context items across every organization the user belongs to, grouped
  * org → scope type → items. Same `ScopeTypeItemsSection` building block as the
  * org/type levels — the only difference is iterating the user's orgs.
+ *
+ * `?item={id}` is the single-id DOOR to a context item (entityRegistry.hrefFor
+ * + the sharing registry's url_path_template both point here). A context item's
+ * only id-addressable route needs THREE ids
+ * (/organizations/[orgId]/scopes/[typeId]/context-items/[itemId]), which a
+ * {id}-only template cannot build — so the destination is this hub with the
+ * owning section resolved, the row scrolled to and highlighted. When the id
+ * isn't reachable from any of the caller's orgs we say so through the platform
+ * access gate instead of rendering a list that looks like the link worked.
  */
 export function AllContextItemsHub() {
   const dispatch = useAppDispatch();
   const orgs = useAppSelector(selectFullContextOrganizations);
   const status = useAppSelector(selectFullContextStatus);
+  const searchParams = useSearchParams();
+  const focusItemId = searchParams?.get("item") ?? null;
 
   useEffect(() => {
     dispatch(fetchFullContext());
@@ -119,6 +131,28 @@ export function AllContextItemsHub() {
 
   const realOrgs = (orgs ?? []).filter(
     (o) => o.id !== PERSONAL_PROJECTS_ORG_ID,
+  );
+
+  // Resolution of `?item=`. Every org's scope types and every type's items load
+  // lazily and independently, so "not in the list" is only the truth once ALL
+  // of them have landed — declaring `missing` any earlier is the race that
+  // makes a working link look broken.
+  const focusResolution = useAppSelector(
+    (s): "idle" | "pending" | "found" | "missing" => {
+      if (!focusItemId) return "idle";
+      if (status === "idle" || status === "loading") return "pending";
+      const typeIds: string[] = [];
+      for (const org of realOrgs) {
+        if (!selectScopeTypesLoadedForOrg(s, org.id)) return "pending";
+        for (const t of selectScopeTypesByOrg(s, org.id)) typeIds.push(t.id);
+      }
+      const knownTypeIds = new Set(typeIds);
+      const hit = selectAllContextItems(s).find((i) => i.id === focusItemId);
+      if (hit && knownTypeIds.has(hit.scope_type_id)) return "found";
+      if (typeIds.some((id) => !selectItemsLoadedForType(s, id)))
+        return "pending";
+      return "missing";
+    },
   );
 
   // ── Surface emitter (`matrx-user/context-items`) ───────────────────────
@@ -236,21 +270,41 @@ export function AllContextItemsHub() {
         type.
       </p>
 
-      {status === "loading" && realOrgs.length === 0 ? (
+      {focusResolution === "missing" && focusItemId ? (
+        <AccessGate
+          token="context_item"
+          id={focusItemId}
+          fallbackHref="/context-items"
+          fallbackLabel="All context items"
+        />
+      ) : status === "loading" && realOrgs.length === 0 ? (
         <CenteredSpinner />
       ) : realOrgs.length === 0 ? (
         <Card className="p-8 text-center text-sm text-muted-foreground">
           No organizations.
         </Card>
       ) : (
-        realOrgs.map((org) => <OrgContextItemsBlock key={org.id} org={org} />)
+        realOrgs.map((org) => (
+          <OrgContextItemsBlock
+            key={org.id}
+            org={org}
+            focusItemId={focusResolution === "found" ? focusItemId : null}
+          />
+        ))
       )}
     </div>
     </SurfaceRuntimeProvider>
   );
 }
 
-function OrgContextItemsBlock({ org }: { org: NavOrganization }) {
+function OrgContextItemsBlock({
+  org,
+  focusItemId = null,
+}: {
+  org: NavOrganization;
+  /** `?item=` target, already resolved to a real item the caller can see. */
+  focusItemId?: string | null;
+}) {
   const dispatch = useAppDispatch();
   const types = useAppSelector((s) => selectScopeTypesByOrg(s, org.id));
   const canManage = canManageSettings(org.role as OrgRole);
@@ -285,6 +339,7 @@ function OrgContextItemsBlock({ org }: { org: NavOrganization }) {
             orgSlugOrId={org.slug}
             canManage={canManage}
             onEditItem={setEditingItemId}
+            focusItemId={focusItemId}
           />
         ))}
       </div>
@@ -559,11 +614,14 @@ function ScopeTypeItemsSection({
   orgSlugOrId,
   canManage,
   onEditItem,
+  focusItemId = null,
 }: {
   type: ScopeType;
   orgSlugOrId: string;
   canManage: boolean;
   onEditItem: (id: string) => void;
+  /** `?item=` deep-link target — highlighted and scrolled to when in this type. */
+  focusItemId?: string | null;
 }) {
   const dispatch = useAppDispatch();
   const items = useAppSelector((s) => selectItemsByType(s, type.id));
@@ -612,6 +670,7 @@ function ScopeTypeItemsSection({
                 href={contextItemHref(orgSlugOrId, type, item)}
                 canManage={canManage}
                 onEdit={() => onEditItem(item.id)}
+                focused={item.id === focusItemId}
               />
             ))}
           </div>
@@ -628,14 +687,32 @@ function ContextItemListRow({
   href,
   canManage,
   onEdit,
+  focused = false,
 }: {
   item: ContextItem;
   href: string;
   canManage: boolean;
   onEdit: () => void;
+  /** This row is the `?item=` deep-link target. */
+  focused?: boolean;
 }) {
+  const rowRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (focused) {
+      rowRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
+  }, [focused]);
+
   return (
-    <div className="flex items-start gap-3 px-4 py-3 hover:bg-accent/30 transition-colors group">
+    <div
+      ref={rowRef}
+      className={`flex items-start gap-3 px-4 py-3 transition-colors group ${
+        focused
+          ? "bg-accent ring-1 ring-inset ring-primary/40"
+          : "hover:bg-accent/30"
+      }`}
+    >
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <Link
