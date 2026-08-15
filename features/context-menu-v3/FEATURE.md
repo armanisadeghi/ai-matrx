@@ -76,6 +76,7 @@ became visible when the canonical list shell started wrapping every `<tr>`.
    the next reader that re-gating deserves a real look rather than a reflex.
    Verified by temporarily reinstating the gate: 2 of 4 tests fail, and pass
    again once removed.
+
 2. **Never steal a live text field's native menu.** A read-only menu
    (`isEditable === false`) offers Copy and AI actions and no Paste, Undo,
    spellcheck or autofill — exactly what a user right-clicks a text field FOR,
@@ -264,6 +265,12 @@ v3 is the only UNIVERSAL menu, but these independent right-click implementations
 
 ## Change Log
 
+- `2026-08-14` — **Visual Maps adopted v3 as its node-aware right-click seam.**
+  The single wrapper surrounds the XYFlow workspace with
+  `surfaceName="matrx-user/maps"` and its live full-document scope; per-open node
+  resolution updates the selected box/section before bound agents launch, while
+  Duplicate and Add connected box arrive through `extraSections`. The renderer
+  did not add a bespoke context menu.
 - `2026-08-09` — **Adversarial-review corrections to the same-day fix below.** (1) The mount gate is deleted from `components/ui/context-menu/context-menu.tsx` — its "Radix generates dynamic aria ids" justification was false (the closed Trigger renders only `data-state`/`data-disabled`, verified against 2.3.1), and the shell's `if (!isMounted) return <>{children}</>` workaround was itself a defect: swapping the element type at that position makes React destroy and recreate every wrapped subtree after first paint (Monaco re-instantiated; 50 rows = 50 remounts, every row effect twice). The zero-consumer duplicate `components/ui/context-menu.tsx`, which carried the CORRECT reasoning all along, is deleted; one copy remains. (2) The native-menu guard now covers the mobile long-press too.
 - `2026-08-09` — **The shell no longer harms the surface it wraps** (see the section above). (1) `ContextMenuV3` renders its children bare until mounted instead of inheriting the ui wrapper's `null` — a wrapped list row used to vanish from the server render and the first client render. (2) A read-only menu yields to the browser's own menu inside a live text field (`yieldsToNativeTextMenu`, capture phase on the desktop trigger + the mobile `onContextMenu` + the mousedown capture path, which would otherwise leave `selectionLocked` stuck on for a menu that never opens). Both surfaced by the canonical list shell's new row-level right-click.
 - `2026-07-27` — **Registered entities are attachable without curated-union casts.** `ContextMenuEntityRef` and the context-assignment write path now consume the generated `EntityTypeToken` contract instead of the older hand-curated `EntityType` subset. Scopeable registered entities such as `web_site` can therefore light up Attach To alongside Share through the standard `entity` prop; association reads/writes still flow through the existing scopes/associations chokepoints.

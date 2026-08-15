@@ -95,7 +95,7 @@ export interface DiagramData {
   layout?: {
     direction?: "TB" | "LR" | "BT" | "RL";
     spacing?: number;
-    algorithm?: "dagre" | "radial" | "pedigree";
+    algorithm?: "dagre" | "grid" | "radial" | "pedigree";
   };
   // Optional render hints — diagram-level toggles
   renderHints?: {

@@ -7,16 +7,25 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Check, Loader2, TriangleAlert } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  CopyPlus,
+  GitBranch,
+  Loader2,
+  TriangleAlert,
+} from "lucide-react";
 import { toast } from "@/lib/toast";
 import {
   parseDiagramJSON,
+  materializeDiagramDefaults,
   validateDiagram,
   type DiagramData,
 } from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   MAPS_SURFACE_NAME,
@@ -41,6 +50,8 @@ export function MapEditor({ mapId }: { mapId: string }) {
 
   // The live document, read by the debounced save without re-arming it.
   const latest = useRef<DiagramData | null>(null);
+  const latestSelection = useRef<MapSurfaceSelection>({ kind: null, id: null });
+  const contextNodeId = useRef<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveStateRef = useRef<SaveState>("idle");
 
@@ -113,6 +124,11 @@ export function MapEditor({ mapId }: { mapId: string }) {
     handleChange({ ...latest.current, title });
   };
 
+  const handleSelectionChange = useCallback((next: MapSurfaceSelection) => {
+    latestSelection.current = next;
+    setSelection(next);
+  }, []);
+
   const getApplicationScope = () => {
     const doc = latest.current;
     if (!doc)
@@ -121,10 +137,11 @@ export function MapEditor({ mapId }: { mapId: string }) {
       );
     const boxes = doc.nodes.filter((item) => !item.isGroup);
     const sections = doc.nodes.filter((item) => item.isGroup);
-    const selectedItem = selection.id
-      ? selection.kind === "arrow"
-        ? doc.edges.find((item) => item.id === selection.id)
-        : doc.nodes.find((item) => item.id === selection.id)
+    const currentSelection = latestSelection.current;
+    const selectedItem = currentSelection.id
+      ? currentSelection.kind === "arrow"
+        ? doc.edges.find((item) => item.id === currentSelection.id)
+        : doc.nodes.find((item) => item.id === currentSelection.id)
       : undefined;
 
     return createMapsScope({
@@ -145,16 +162,107 @@ export function MapEditor({ mapId }: { mapId: string }) {
       box_count: boxes.length,
       section_count: sections.length,
       arrow_count: doc.edges.length,
-      selected_item_kind: selection.kind ?? undefined,
-      selected_item_id: selection.id ?? undefined,
+      selected_item_kind: currentSelection.kind ?? undefined,
+      selected_item_id: currentSelection.id ?? undefined,
       selected_item: selectedItem,
       content: JSON.stringify(doc),
       context: {
         purpose: "Non-executable visual thinking map",
-        selection,
+        selection: currentSelection,
       },
     });
   };
+
+  const resolveMapContextOnOpen = useCallback((target: HTMLElement | null) => {
+    const nodeElement = target?.closest<HTMLElement>(
+      ".react-flow__node[data-id]",
+    );
+    const id = nodeElement?.dataset.id ?? null;
+    contextNodeId.current = id;
+    const item = id
+      ? latest.current?.nodes.find((node) => node.id === id)
+      : null;
+    if (!item) {
+      const emptySelection: MapSurfaceSelection = { kind: null, id: null };
+      latestSelection.current = emptySelection;
+      setSelection(emptySelection);
+      return null;
+    }
+
+    const nextSelection: MapSurfaceSelection = {
+      kind: item.isGroup ? "section" : "box",
+      id: item.id,
+    };
+    latestSelection.current = nextSelection;
+    setSelection(nextSelection);
+    return {
+      selected_item_kind: nextSelection.kind,
+      selected_item_id: item.id,
+      selected_item: item,
+    };
+  }, []);
+
+  const duplicateContextItem = useCallback(() => {
+    const doc = latest.current;
+    const source = doc?.nodes.find((node) => node.id === contextNodeId.current);
+    if (!doc || !source) return;
+
+    const copy = {
+      ...source,
+      id: `${source.isGroup ? "g" : "n"}-${crypto.randomUUID().slice(0, 8)}`,
+      label: `${source.label} copy`,
+      position: {
+        x: (source.position?.x ?? 0) + 36,
+        y: (source.position?.y ?? 0) + 36,
+      },
+    };
+    handleChange(
+      materializeDiagramDefaults({
+        ...doc,
+        nodes: source.isGroup ? [copy, ...doc.nodes] : [...doc.nodes, copy],
+      }),
+    );
+  }, [handleChange]);
+
+  const addConnectedContextBox = useCallback(() => {
+    const doc = latest.current;
+    const source = doc?.nodes.find((node) => node.id === contextNodeId.current);
+    if (!doc || !source || source.isGroup) return;
+
+    const id = `n-${crypto.randomUUID().slice(0, 8)}`;
+    const position = source.parentId
+      ? {
+          x: (source.position?.x ?? 0) + 36,
+          y: (source.position?.y ?? 0) + 110,
+        }
+      : {
+          x: (source.position?.x ?? 0) + 260,
+          y: source.position?.y ?? 0,
+        };
+    handleChange(
+      materializeDiagramDefaults({
+        ...doc,
+        nodes: [
+          ...doc.nodes,
+          {
+            id,
+            label: "New connected box",
+            nodeType: "default",
+            parentId: source.parentId,
+            position,
+          },
+        ],
+        edges: [
+          ...doc.edges,
+          {
+            id: `e-${crypto.randomUUID().slice(0, 8)}`,
+            source: source.id,
+            target: id,
+          },
+        ],
+      }),
+    );
+  }, [handleChange]);
 
   const replaceMapFromSurface = async (value: unknown) => {
     if (!value || typeof value !== "object" || Array.isArray(value))
@@ -180,7 +288,7 @@ export function MapEditor({ mapId }: { mapId: string }) {
     }
     latest.current = next;
     setDiagram(next);
-    setSelection({ kind: null, id: null });
+    handleSelectionChange({ kind: null, id: null });
     setSaveState("saved");
   };
 
@@ -258,19 +366,53 @@ export function MapEditor({ mapId }: { mapId: string }) {
       getWriteHandlers={getSurfaceWriteHandlers}
     >
       {header}
-      <div
-        className="h-full overflow-hidden"
-        style={{ paddingTop: "var(--shell-header-h)" }}
-        data-surface-value="map_json"
+      <NonEditableContextMenu
+        sourceFeature="canvas"
+        surfaceName={MAPS_SURFACE_NAME}
+        menuVersion={1}
+        getApplicationScope={getApplicationScope}
+        resolveContextOnOpen={resolveMapContextOnOpen}
+        enableFloatingIcon={false}
+        extraSections={[
+          {
+            id: "map-item-actions",
+            label: "Map item",
+            anchor: "after-clipboard",
+            items: [
+              {
+                kind: "item",
+                id: "duplicate-map-item",
+                label: "Duplicate box or section",
+                icon: CopyPlus,
+                onSelect: duplicateContextItem,
+                disabled: !selection.id || selection.kind === "arrow",
+              },
+              {
+                kind: "item",
+                id: "add-connected-map-box",
+                label: "Add connected box",
+                icon: GitBranch,
+                onSelect: addConnectedContextBox,
+                disabled: selection.kind !== "box",
+              },
+            ],
+          },
+        ]}
       >
-        <MapCanvas
-          diagram={diagram}
-          defaultEditing
-          presentation="workspace"
-          onDiagramChange={handleChange}
-          onSelectionChange={setSelection}
-        />
-      </div>
+        <div
+          className="h-full overflow-hidden"
+          style={{ paddingTop: "var(--shell-header-h)" }}
+          data-surface-value="map_json"
+        >
+          <MapCanvas
+            diagram={diagram}
+            defaultEditing
+            presentation="workspace"
+            onDiagramChange={handleChange}
+            onSelectionChange={handleSelectionChange}
+          />
+        </div>
+      </NonEditableContextMenu>
     </SurfaceRuntimeProvider>
   );
 }

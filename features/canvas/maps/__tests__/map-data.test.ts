@@ -4,6 +4,7 @@ import {
   validateDiagram,
 } from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
 import { diagramFromCanvasContent, draftMapFromLines } from "../types";
+import { getGridLayout } from "@/components/mardown-display/blocks/diagram/layout-utils";
 
 describe("visual map document", () => {
   it("preserves XYFlow sections and rich arrow options", () => {
@@ -137,5 +138,33 @@ describe("visual map document", () => {
       title: "Legacy agent map",
       nodes: [{ id: "one", label: "One", color: "gray", icon: "square" }],
     });
+  });
+
+  it("uses measured box sizes in a grid and preserves section-relative boxes", () => {
+    const nodes: Parameters<typeof getGridLayout>[0] = [
+      {
+        id: "wide-a",
+        position: { x: 0, y: 0 },
+        data: {},
+        measured: { width: 360, height: 80 },
+      },
+      {
+        id: "wide-b",
+        position: { x: 0, y: 0 },
+        data: {},
+        measured: { width: 340, height: 90 },
+      },
+      {
+        id: "inside-section",
+        parentId: "wide-a",
+        position: { x: 24, y: 64 },
+        data: {},
+      },
+    ];
+
+    const result = getGridLayout(nodes, []);
+
+    expect(result.nodes[1].position.x - result.nodes[0].position.x).toBe(440);
+    expect(result.nodes[2].position).toEqual({ x: 24, y: 64 });
   });
 });

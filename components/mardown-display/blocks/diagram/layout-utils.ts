@@ -38,7 +38,10 @@ export const getLayoutedElements = (
   });
 
   nodes.forEach((node) => {
-    dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
+    dagreGraph.setNode(node.id, {
+      width: node.measured?.width ?? node.width ?? nodeWidth,
+      height: node.measured?.height ?? node.height ?? nodeHeight,
+    });
   });
 
   edges.forEach((edge) => {
@@ -49,13 +52,15 @@ export const getLayoutedElements = (
 
   const layoutedNodes = nodes.map((node) => {
     const nodeWithPosition = dagreGraph.node(node.id);
+    const width = node.measured?.width ?? node.width ?? nodeWidth;
+    const height = node.measured?.height ?? node.height ?? nodeHeight;
     return {
       ...node,
       targetPosition: getTargetPosition(direction),
       sourcePosition: getSourcePosition(direction),
       position: {
-        x: nodeWithPosition.x - nodeWidth / 2,
-        y: nodeWithPosition.y - nodeHeight / 2,
+        x: nodeWithPosition.x - width / 2,
+        y: nodeWithPosition.y - height / 2,
       },
       data: { ...node.data },
     };
@@ -234,6 +239,48 @@ export const getRadialLayout = (
   return { nodes: layoutedNodes, edges };
 };
 
+/**
+ * Compact grid layout for brainstorming maps.
+ *
+ * Only root nodes participate in the grid. Boxes inside a visual section keep
+ * their section-relative positions; flattening them into the root grid would
+ * silently break the section the user deliberately created.
+ */
+export const getGridLayout = (
+  nodes: Node[],
+  edges: Edge[],
+): { nodes: Node[]; edges: Edge[] } => {
+  if (nodes.length === 0) return { nodes, edges };
+
+  const rootNodes = nodes.filter((node) => !node.parentId);
+  const columns = Math.max(1, Math.ceil(Math.sqrt(rootNodes.length)));
+  const widestRoot = Math.max(
+    ...rootNodes.map((node) => node.measured?.width ?? node.width ?? 220),
+  );
+  const tallestRoot = Math.max(
+    ...rootNodes.map((node) => node.measured?.height ?? node.height ?? 120),
+  );
+  const columnWidth = widestRoot + 80;
+  const rowHeight = tallestRoot + 80;
+  const rootPosition = new Map(
+    rootNodes.map((node, index) => [
+      node.id,
+      {
+        x: (index % columns) * columnWidth + 40,
+        y: Math.floor(index / columns) * rowHeight + 40,
+      },
+    ]),
+  );
+
+  return {
+    nodes: nodes.map((node) => ({
+      ...node,
+      position: rootPosition.get(node.id) ?? node.position,
+    })),
+    edges,
+  };
+};
+
 const findCenterNode = (nodes: Node[], edges: Edge[]): Node | undefined => {
   const connectionCounts = new Map<string, number>();
   nodes.forEach((node) => connectionCounts.set(node.id, 0));
@@ -288,7 +335,10 @@ export const getOrgChartLayout = (
   });
 
   nodes.forEach((node) =>
-    dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight }),
+    dagreGraph.setNode(node.id, {
+      width: node.measured?.width ?? node.width ?? nodeWidth,
+      height: node.measured?.height ?? node.height ?? nodeHeight,
+    }),
   );
   edges.forEach((edge) => dagreGraph.setEdge(edge.source, edge.target));
 
@@ -296,13 +346,15 @@ export const getOrgChartLayout = (
 
   const layoutedNodes = nodes.map((node) => {
     const nodeWithPosition = dagreGraph.node(node.id);
+    const width = node.measured?.width ?? node.width ?? nodeWidth;
+    const height = node.measured?.height ?? node.height ?? nodeHeight;
     return {
       ...node,
-      targetPosition: Position.Top,
-      sourcePosition: Position.Bottom,
+      targetPosition: getTargetPosition(direction),
+      sourcePosition: getSourcePosition(direction),
       position: {
-        x: nodeWithPosition.x - nodeWidth / 2,
-        y: nodeWithPosition.y - nodeHeight / 2,
+        x: nodeWithPosition.x - width / 2,
+        y: nodeWithPosition.y - height / 2,
       },
       data: { ...node.data, diagramType: "orgchart" },
     };

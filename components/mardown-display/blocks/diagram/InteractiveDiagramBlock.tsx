@@ -64,18 +64,24 @@ import {
   Clock,
   Table,
   ArrowRight,
+  ArrowDown,
+  ArrowLeft,
+  ArrowUp,
   Plus,
   Trash2,
   Pencil,
   Check,
   Boxes,
   Magnet,
+  LayoutGrid,
+  ChevronDown,
 } from "lucide-react";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import IconButton from "@/components/official/IconButton";
 import {
   getLayoutedElements,
   getLayoutOptionsForDiagramType,
+  getGridLayout,
   getRadialLayout,
   getOrgChartLayout,
   getPedigreeLayout,
@@ -106,6 +112,14 @@ import {
   usePrintOptions,
 } from "@/lib/block-print/PrintOptionsDialog";
 import { createDiagramPrinter } from "./diagram-printer";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tailwind CSS 4 uses modern CSS color functions (oklch, lab, color(display-p3))
@@ -892,7 +906,11 @@ const DiagramFlow: React.FC<{
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
 
   const commit = useCallback(
-    (rfNodes: Node[], rfEdges: Edge[]) => {
+    (
+      rfNodes: Node[],
+      rfEdges: Edge[],
+      layoutOverride?: DiagramData["layout"],
+    ) => {
       if (!onDiagramChange) return;
       const priorNodes = new Map(diagram.nodes.map((n) => [n.id, n]));
       const priorEdges = new Map(diagram.edges.map((e) => [e.id, e]));
@@ -983,7 +1001,16 @@ const DiagramFlow: React.FC<{
         };
       });
 
-      onDiagramChange(materializeDiagramDefaults({ ...diagram, nodes, edges }));
+      onDiagramChange(
+        materializeDiagramDefaults({
+          ...diagram,
+          nodes,
+          edges,
+          layout: layoutOverride
+            ? { ...diagram.layout, ...layoutOverride }
+            : diagram.layout,
+        }),
+      );
     },
     [diagram, onDiagramChange],
   );
@@ -1313,6 +1340,18 @@ const DiagramFlow: React.FC<{
     [onSelectionChange],
   );
 
+  const handleEditNodeContextMenu = useCallback(
+    (_e: React.MouseEvent, node: Node) => {
+      setSelectedEdgeId(null);
+      setSelectedNodeId(node.id);
+      onSelectionChange?.({
+        kind: node.data.isGroup === true ? "section" : "box",
+        id: node.id,
+      });
+    },
+    [onSelectionChange],
+  );
+
   const handleEditEdgeClick = useCallback(
     (_e: React.MouseEvent, edge: Edge) => {
       setSelectedNodeId(null);
@@ -1525,57 +1564,92 @@ const DiagramFlow: React.FC<{
   }, [fitView, workspace]);
 
   // ── Layout helpers ──
-  const applyAutoLayout = useCallback(() => {
-    const currentNodes = getNodes();
+  const applyDirectedLayout = useCallback(
+    (direction: "TB" | "LR" | "BT" | "RL") => {
+      const currentNodes = getNodes();
+      const currentEdges = getEdges();
+      if (currentNodes.length === 0) return;
+
+      let result: { nodes: Node[]; edges?: Edge[] };
+
+      if (diagram.type === "pedigree" && direction === "TB") {
+        result = getPedigreeLayout(currentNodes, currentEdges);
+      } else if (diagram.type === "orgchart") {
+        const opts = getLayoutOptionsForDiagramType(
+          diagram.type,
+          diagram.nodes.length,
+          direction,
+        );
+        result = getOrgChartLayout(currentNodes, currentEdges, opts);
+        if (result.edges) setEdges(result.edges);
+      } else {
+        const opts = getLayoutOptionsForDiagramType(
+          diagram.type,
+          diagram.nodes.length,
+          direction,
+        );
+        result = getLayoutedElements(currentNodes, currentEdges, opts);
+      }
+
+      setNodes(result.nodes);
+      // Authoring: the tidy-up IS an edit, so it becomes part of the document
+      // rather than a view-only rearrangement that vanishes on reload.
+      commit(result.nodes, result.edges ?? currentEdges, {
+        algorithm:
+          diagram.type === "pedigree" && direction === "TB"
+            ? "pedigree"
+            : "dagre",
+        direction,
+      });
+      fitViewAfterLayout();
+      hasAutoLayoutApplied.current = true;
+    },
+    [
+      commit,
+      getNodes,
+      getEdges,
+      diagram.type,
+      diagram.nodes.length,
+      setNodes,
+      setEdges,
+      fitViewAfterLayout,
+    ],
+  );
+
+  const applyGridLayout = useCallback(() => {
     const currentEdges = getEdges();
-    if (currentNodes.length === 0) return;
-
-    let result: { nodes: Node[]; edges?: Edge[] };
-
-    if (diagram.type === "pedigree") {
-      result = getPedigreeLayout(currentNodes, currentEdges);
-    } else if (diagram.type === "orgchart") {
-      const opts = getLayoutOptionsForDiagramType(
-        diagram.type,
-        diagram.nodes.length,
-        diagram.layout?.direction,
-      );
-      result = getOrgChartLayout(currentNodes, currentEdges, opts);
-      if (result.edges) setEdges(result.edges);
-    } else {
-      const opts = getLayoutOptionsForDiagramType(
-        diagram.type,
-        diagram.nodes.length,
-        diagram.layout?.direction,
-      );
-      result = getLayoutedElements(currentNodes, currentEdges, opts);
-    }
-
-    setNodes(result.nodes);
-    // Authoring: the tidy-up IS an edit, so it becomes part of the document
-    // rather than a view-only rearrangement that vanishes on reload.
-    commit(result.nodes, result.edges ?? currentEdges);
+    const { nodes: laid } = getGridLayout(getNodes(), currentEdges);
+    setNodes(laid);
+    commit(laid, currentEdges, { algorithm: "grid" });
     fitViewAfterLayout();
     hasAutoLayoutApplied.current = true;
-  }, [
-    commit,
-    getNodes,
-    getEdges,
-    diagram.type,
-    diagram.nodes.length,
-    diagram.layout?.direction,
-    setNodes,
-    setEdges,
-    fitViewAfterLayout,
-  ]);
+  }, [getNodes, getEdges, setNodes, commit, fitViewAfterLayout]);
 
   const applyRadialLayout = useCallback(() => {
     const { nodes: laid } = getRadialLayout(getNodes(), getEdges());
     setNodes(laid);
-    commit(laid, getEdges());
+    commit(laid, getEdges(), { algorithm: "radial" });
     fitViewAfterLayout();
     hasAutoLayoutApplied.current = true;
   }, [getNodes, getEdges, setNodes, commit, fitViewAfterLayout]);
+
+  const applyAutoLayout = useCallback(() => {
+    if (diagram.layout?.algorithm === "radial") {
+      applyRadialLayout();
+      return;
+    }
+    if (diagram.layout?.algorithm === "grid") {
+      applyGridLayout();
+      return;
+    }
+    applyDirectedLayout(diagram.layout?.direction ?? "TB");
+  }, [
+    applyDirectedLayout,
+    applyGridLayout,
+    applyRadialLayout,
+    diagram.layout?.algorithm,
+    diagram.layout?.direction,
+  ]);
 
   const resetLayout = useCallback(() => {
     setNodes(buildReactFlowNodes(diagram, editing));
@@ -1663,6 +1737,7 @@ const DiagramFlow: React.FC<{
             ? handleNodeClick
             : undefined
       }
+      onNodeContextMenu={editing ? handleEditNodeContextMenu : undefined}
       onEdgeClick={editing ? handleEditEdgeClick : undefined}
       onPaneClick={editing ? handlePaneClick : undefined}
       onNodeDragStop={editing ? handleNodeDragStop : undefined}
@@ -2285,7 +2360,8 @@ const DiagramFlow: React.FC<{
               </button>
             </div>
             <p className="text-[10px] leading-snug text-muted-foreground">
-              Flow direction is used the next time you choose tidy layout.
+              Flow direction is used the next time you choose a directional
+              layout.
             </p>
           </div>
         </Panel>
@@ -2296,26 +2372,47 @@ const DiagramFlow: React.FC<{
         className={`${workspace ? "m-3" : ""} rounded-xl border border-border/70 bg-card/90 p-1.5 shadow-lg backdrop-blur-xl`}
       >
         <div className="flex flex-col gap-2">
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={applyAutoLayout}
-              aria-label="Tidy into rows"
-              className="p-2 hover:bg-blue-100 dark:hover:bg-blue-900/30 bg-blue-50 dark:bg-blue-950/20 rounded-lg transition-colors border border-blue-200 dark:border-blue-800"
-              title="Auto Layout"
-            >
-              <Shuffle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-            </button>
-            <button
-              type="button"
-              onClick={applyRadialLayout}
-              aria-label="Arrange in a circle"
-              className="p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 bg-purple-50 dark:bg-purple-950/20 rounded-lg transition-colors border border-purple-200 dark:border-purple-800"
-              title="Radial Layout"
-            >
-              <Circle className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-            </button>
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                aria-label="Arrange map"
+                className="flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 p-2 text-blue-600 transition-colors hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950/20 dark:text-blue-400 dark:hover:bg-blue-900/30"
+                title="Arrange map"
+              >
+                <Shuffle className="h-4 w-4" />
+                <ChevronDown className="h-3 w-3" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-52">
+              <DropdownMenuLabel>Arrange map</DropdownMenuLabel>
+              <DropdownMenuItem onSelect={() => applyDirectedLayout("TB")}>
+                <ArrowDown className="mr-2 h-4 w-4" />
+                Top to bottom
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => applyDirectedLayout("LR")}>
+                <ArrowRight className="mr-2 h-4 w-4" />
+                Left to right
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => applyDirectedLayout("BT")}>
+                <ArrowUp className="mr-2 h-4 w-4" />
+                Bottom to top
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => applyDirectedLayout("RL")}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Right to left
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={applyGridLayout}>
+                <LayoutGrid className="mr-2 h-4 w-4" />
+                Balanced grid
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={applyRadialLayout}>
+                <Circle className="mr-2 h-4 w-4" />
+                Around a center
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <div className="flex gap-2">
             <button
               type="button"
