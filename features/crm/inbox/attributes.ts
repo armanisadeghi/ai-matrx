@@ -10,9 +10,22 @@
 // one-line change HERE and a one-line change THERE — never a grep across the
 // inbox, the Chasebox, the timeline and the record page.
 //
-// ASSUMED PATHS (report them, don't hide them):
-//   attributes.inbound_classification = { label, evidence }   ← primary
-//   attributes.classification         = { label, evidence }   ← accepted alias
+// PATHS — the first one is now CONFIRMED against the writer, not assumed:
+//   attributes.outreach_inbound = { label, evidence, bounce_type, matched_phrase,
+//       ooo_return_at, member_status, sequence_branch, identity_id,
+//       matched_send_provider_message_id, sending_event_id, ingested_at }
+//     ← THE REAL PATH. Written by aidream
+//       `aidream/services/outreach_inbound/service.py` when it inserts the
+//       inbound crm.interaction row. Verified against that source 2026-08-15.
+//   attributes.inbound_classification = { label, evidence }   ← never written; kept only as a tolerant alias
+//   attributes.classification         = { label, evidence }   ← never written; ditto
+//
+// 🚨 This mismatch actually happened: the client was built against
+// `inbound_classification` while the server shipped `outreach_inbound`, and the
+// failure was SILENT — every real reply would have rendered "Unclassified" and
+// the label facets would have been permanently empty, with no error anywhere.
+// If you rename on the server, change it HERE and in the two SQL twins in the
+// same commit.
 //   attributes.outreach_single_send   = { member_id, medium_id, identity_id,
 //       template_id, reputation_case_id, backlink_id, variables,
 //       render_fingerprint, drafted_at, approved_at, approved_by, sent_at,
@@ -80,6 +93,7 @@ export function readInboundClassification(attributes: unknown): {
   evidence: string | null;
 } {
   const block =
+    readObject(attributes, "outreach_inbound") ??
     readObject(attributes, "inbound_classification") ??
     readObject(attributes, "classification");
   const rawLabel = readString(block, "label");
