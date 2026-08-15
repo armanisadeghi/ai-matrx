@@ -21,7 +21,7 @@ The single user-facing surface for every preference in the app — a VS Code-sty
 - `app/(authenticated)/settings-primitives/page.tsx` — primitive gallery (every control, every state).
 - `app/(authenticated)/settings-tree-demo/page.tsx` — tree + drawer-nav demo with a fake 20-node tree.
 - `app/(authenticated)/settings-hooks-demo/page.tsx` — `useSetting` across 3 slices.
-- `/user-settings/communication/messaging` — production SMS enrollment and opt-out, composed into the existing Messaging tab.
+- `/user-settings/communication/messaging` — production SMS enrollment, opt-out, and personal text-assistant binding.
 
 **Overlay ids** (dispatched via `openOverlay(...)`)
 
@@ -162,6 +162,20 @@ Path:
 
 Exit: The verified number renders as enabled, or the user returns to the unenrolled state after opt-out.
 
+### 7. Personal text-assistant binding
+
+Trigger: A signed-in user opens **Communication → Messaging → Text assistant**.
+
+Path:
+
+- `SmsAssistantSettingsSection` reads the selected program through `communication.get_my_sms_assistant_program` using the authenticated browser Supabase client.
+- The canonical `AgentListDropdown` selects an accessible saved agent; `fetchAgentVersionHistory` supplies optional pinned-version choices. Selecting does not enable replies.
+- Program-scoped SECURITY DEFINER RPCs change only the caller's preference: configure latest, configure pinned version, pause while preserving selection, or disconnect and clear it.
+- The destination-wide assistant switch is displayed as read-only health. The user switch is `sms_notification_preferences.ai_agent_messages`; SMS notification enrollment remains separate.
+- Safe test queues a harmless message through the durable production outbox only when the server reports the binding ready.
+
+Exit: The surface shows the verified phone, sender/program health, consent, selected agent/version, canonical chat door, block reasons, and one server-derived readiness verdict.
+
 ---
 
 ## Invariants & gotchas
@@ -178,6 +192,8 @@ Exit: The verified number renders as enabled, or the user returns to the unenrol
 - **The legacy `userPreferences` modal overlay id still resolves to the new shell.** Kept so nothing downstream has to change. Remove the modal registry entry once every caller has migrated to `userPreferencesWindow`.
 - **Do NOT regress on `components/user-preferences/AiModelsPreferences.tsx`.** It's kept on purpose — it's the only remaining legacy `*Preferences.tsx` still referenced (by `AiModelsTab`). Deleting it breaks the shell.
 - **Category tabs (e.g. `id: "general"`, `id: "ai"`) have `component: Placeholder`.** The tree's folder nodes only expand/collapse, they don't activate. The placeholder is never rendered for them; it's still required to satisfy the type.
+- **SMS assistant preferences use direct authenticated RPCs.** Never add a Next.js API route between the Messaging tab and `communication.get/configure/disconnect/enqueue_my_sms_assistant_*`.
+- **The shared sender kill switch is not a user preference.** Messaging renders `sms_phone_numbers.assistant_enabled` as read-only health; only an operator can change it.
 
 ---
 
@@ -215,6 +231,7 @@ Phase 1–8 shipped. Phase 9 (this doc + skill) closes the original project.
 
 ## Change log
 
+- `2026-08-15` — Added the personal Text assistant section to production Messaging: verified binding and consent visibility, canonical agent/version picker, per-user enable/pause/disconnect, canonical chat door, read-only global health, and a durable safe-test action through direct authenticated RPCs.
 - `2026-08-15` — **Exact setting doors are a platform primitive.** `SettingDoor`
   targets a user setting by tab + control and preserves the existing
   window/drawer presentation on an ordinary click; `SettingAnchor` receives the
