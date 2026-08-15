@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P10",
   "runId": "2026-08-15T191639Z",
-  "state": "infrastructure_blocked",
-  "updatedAt": "2026-08-15T19:29:56Z",
-  "summary": "Independent certification found no static regression but exact-worktree live interaction proof is blocked by a foreign preview lease.",
+  "state": "escaped_delivery",
+  "updatedAt": "2026-08-15T20:16:22.246Z",
+  "summary": "Recorded the uncertified P10 candidate that entered main before the delivery controller; v0.4.703 will be its first release.",
   "source": "2026-08-15T191639Z.json",
-  "eventHash": "9cdbdce6a31920755524e5ae547cc679e52ca77f41112907abeeacf9e7d7c183"
+  "eventHash": "05ba22bd3bd4c457874b6dfd519b41a4c76f1ed4a084fe9cbf67361ce521a5ce"
 }

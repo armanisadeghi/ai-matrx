@@ -67,6 +67,26 @@
       },
       "previousEventHash": "6fe83589159a910dfb609beaef9e38e36bc3cd5f81740207871ae6ee7a4058cb",
       "eventHash": "9cdbdce6a31920755524e5ae547cc679e52ca77f41112907abeeacf9e7d7c183"
+    },
+    {
+      "sequence": 5,
+      "state": "escaped_delivery",
+      "at": "2026-08-15T20:16:22.246Z",
+      "actor": "codex-d74-release-controller",
+      "summary": "Recorded the uncertified P10 candidate that entered main before the delivery controller; v0.4.703 will be its first release.",
+      "evidence": [
+        "merge:ce600b6536c900aefae521f24d69c2d4ea7a6d97",
+        "no existing release tag contains candidate a4a7c03e",
+        "interaction certification remains incomplete"
+      ],
+      "escape": {
+        "candidateSha": "a4a7c03ea2db9311ee926433eb0f6f25774e03a6",
+        "integratedSha": "ce600b6536c900aefae521f24d69c2d4ea7a6d97",
+        "release": "v0.4.703",
+        "reason": "The candidate entered origin/main through merge ce600b653 before independent interaction certification and before a controller-owned delivery queue existed."
+      },
+      "previousEventHash": "9cdbdce6a31920755524e5ae547cc679e52ca77f41112907abeeacf9e7d7c183",
+      "eventHash": "05ba22bd3bd4c457874b6dfd519b41a4c76f1ed4a084fe9cbf67361ce521a5ce"
     }
   ]
 }
