@@ -32,18 +32,6 @@ export interface MarketingSubView {
 
 export type MarketingSubViewHrefStyle = "query" | "path";
 
-/**
- * How a section's sub-views are wired TODAY, while the header migration runs.
- * Delete the field from an entry the moment that section is migrated —
- * when every entry has lost it, delete the field from this interface too.
- */
-export type LegacySubViewMechanism =
-  | "view-param"
-  | "tab-param"
-  | "radix-tabs"
-  | "local-state"
-  | "sub-route";
-
 export interface MarketingSectionSubViews {
   /** A `slug` from `MARKETING_SITE_SECTIONS`. */
   section: string;
@@ -51,13 +39,6 @@ export interface MarketingSectionSubViews {
   views: readonly MarketingSubView[];
   /** Query params by default; path sections render children as `/[view]`. */
   hrefStyle?: MarketingSubViewHrefStyle;
-  legacyMechanism?: LegacySubViewMechanism;
-  /**
-   * The view is not in the URL today, so it cannot be linked, shared, restored
-   * on reload, or reached by an agent — a dead end under THE DOOR LAW. Closing
-   * this is part of migrating the section, not a follow-up.
-   */
-  legacyNotLinkable?: true;
 }
 
 export const AI_VISIBILITY_SUBVIEWS = [
@@ -163,8 +144,8 @@ export const MARKETING_SITE_SUBVIEWS = [
 
 /**
  * The same registry at its declared width. `as const satisfies` narrows each
- * entry to its literal shape, so the optional legacy fields vanish from the
- * union — reading them needs the interface type, not the inferred one.
+ * entry to its literal shape, so an optional field like `hrefStyle` vanishes
+ * from the union — reading it needs the interface type, not the inferred one.
  */
 const ENTRIES: readonly MarketingSectionSubViews[] = MARKETING_SITE_SUBVIEWS;
 
@@ -173,20 +154,6 @@ export function listMarketingSubViews(
   section: string,
 ): readonly MarketingSubView[] {
   return ENTRIES.find((entry) => entry.section === section)?.views ?? [];
-}
-
-/**
- * True once a section reads its view from the URL and has dropped its own tab
- * bar — i.e. once the SITE HEADER is allowed to render its sub-views.
- *
- * This is what makes the rollout safe one section at a time: an unmigrated
- * section still draws its own switcher, so the header must stay out of its way
- * or the user sees the same tabs twice. When the last `legacyMechanism` is
- * gone, this function and the field go with it.
- */
-export function isMarketingSubNavMigrated(section: string): boolean {
-  const entry = ENTRIES.find((item) => item.section === section);
-  return !!entry && !entry.legacyMechanism;
 }
 
 /** The view rendered at the bare section URL. */
@@ -203,7 +170,9 @@ export function isMarketingSubView(section: string, value: string): boolean {
 export function marketingSubViewHrefStyle(
   section: string,
 ): MarketingSubViewHrefStyle {
-  return ENTRIES.find((entry) => entry.section === section)?.hrefStyle ?? "query";
+  return (
+    ENTRIES.find((entry) => entry.section === section)?.hrefStyle ?? "query"
+  );
 }
 
 /**
@@ -227,12 +196,5 @@ export function countMarketingSiteDestinations(sectionCount: number): number {
   return (
     sectionCount +
     ENTRIES.reduce((total, entry) => total + entry.views.length, 0)
-  );
-}
-
-/** Sections whose sub-view still has no URL — the door-law repair list. */
-export function listUnlinkableMarketingSections(): readonly string[] {
-  return ENTRIES.filter((entry) => entry.legacyNotLinkable).map(
-    (entry) => entry.section,
   );
 }

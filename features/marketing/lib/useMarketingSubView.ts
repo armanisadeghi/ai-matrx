@@ -18,7 +18,6 @@ import type { LucideIcon } from "lucide-react";
 
 import {
   defaultMarketingSubView,
-  isMarketingSubNavMigrated,
   isMarketingSubView,
   listMarketingSubViews,
   marketingSubViewHref,
@@ -94,14 +93,11 @@ export function buildMarketingSubNav(
   const sectionHref = active?.href ?? sitePath;
   const pathView =
     marketingSubViewHrefStyle(section) === "path"
-      ? pathname.slice(sectionHref.length).split("/").filter(Boolean)[0] ?? null
+      ? (pathname.slice(sectionHref.length).split("/").filter(Boolean)[0] ??
+        null)
       : null;
   const view = resolveMarketingSubView(section, pathView ?? rawViewParam);
-  // Only a migrated section hands its sub-nav to the header; one that still
-  // draws its own switcher would otherwise show the same tabs twice.
-  const views = isMarketingSubNavMigrated(section)
-    ? listMarketingSubViews(section)
-    : [];
+  const views = listMarketingSubViews(section);
   return {
     section,
     modes: views.map((subView) => ({

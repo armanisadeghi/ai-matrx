@@ -5,7 +5,6 @@ import {
   defaultMarketingSubView,
   isMarketingSubView,
   listMarketingSubViews,
-  listUnlinkableMarketingSections,
   marketingSubViewHref,
 } from "./site-subviews";
 
@@ -108,21 +107,4 @@ describe("marketing site sub-view registry", () => {
       66,
     );
   });
-
-  /**
-   * The migration ledger, enforced. Each section listed here still keeps its
-   * active sub-view in component state, so the view cannot be linked, shared,
-   * restored on reload, or opened by an agent — a dead end under THE DOOR LAW.
-   *
-   * Migrating one means: consume the registry, move the view into `?view=`,
-   * drop `legacyMechanism` + `legacyNotLinkable` from its entry, and remove it
-   * from this list. The list only ever shrinks.
-   */
-  it("has closed every URL-less sub-view", () => {
-    // Every section now reads its view from the URL, so each one can be linked,
-    // shared, restored on reload, and opened by an agent. This list only ever
-    // shrinks — a new entry means a section regressed to component state.
-    expect(listUnlinkableMarketingSections()).toEqual([]);
-  });
-
 });
