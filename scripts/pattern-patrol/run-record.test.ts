@@ -1,0 +1,91 @@
+import {
+  appendPatrolRunEvent,
+  canQueuePatrolDelivery,
+  createPatrolRunRecord,
+  validatePatrolRunRecord,
+} from "./run-record";
+
+const CREATED = "2026-08-14T12:00:00.000Z";
+const CANDIDATE = "a".repeat(40);
+
+function run() {
+  return createPatrolRunRecord({
+    patrolId: "P9",
+    runId: "run-1",
+    baseSha: "b".repeat(40),
+    createdAt: CREATED,
+    actor: "patrol-worker",
+    summary: "Coming Soon scan started",
+  });
+}
+
+function certifiedRun() {
+  const fixing = appendPatrolRunEvent(run(), {
+    state: "fixing",
+    at: "2026-08-14T12:01:00.000Z",
+    actor: "patrol-worker",
+    summary: "Repairing verified promises",
+  });
+  const certifying = appendPatrolRunEvent(fixing, {
+    state: "certifying",
+    at: "2026-08-14T12:02:00.000Z",
+    actor: "patrol-worker",
+    summary: "Independent review started",
+  });
+  return appendPatrolRunEvent(certifying, {
+    state: "certified",
+    at: "2026-08-14T12:03:00.000Z",
+    actor: "certifier-task",
+    summary: "No batch-caused defect found",
+    certification: {
+      verdict: "CERTIFIED",
+      certifierTaskId: "certifier-task",
+      candidateSha: CANDIDATE,
+      checks: ["focused tests", "representative browser proof"],
+    },
+  });
+}
+
+describe("Pattern Patrol permanent run record", () => {
+  it("builds a hash-chained valid history", () => {
+    const record = certifiedRun();
+    expect(validatePatrolRunRecord(record)).toEqual([]);
+    expect(record.events).toHaveLength(4);
+    expect(record.events[3].previousEventHash).toBe(record.events[2].eventHash);
+  });
+
+  it("detects rewritten history", () => {
+    const record = certifiedRun();
+    const tampered = structuredClone(record);
+    tampered.events[1].summary = "quietly changed later";
+    expect(validatePatrolRunRecord(tampered)).toContain("event 2: hash mismatch");
+  });
+
+  it("forbids delivery without independent certification", () => {
+    expect(canQueuePatrolDelivery(run(), CANDIDATE)).toEqual({
+      allowed: false,
+      reason: "run is discovered, not ready for delivery",
+    });
+  });
+
+  it("permits only the exact certified candidate", () => {
+    const record = certifiedRun();
+    expect(canQueuePatrolDelivery(record, CANDIDATE)).toEqual({ allowed: true });
+    expect(canQueuePatrolDelivery(record, "c".repeat(40))).toEqual({
+      allowed: false,
+      reason: `candidate ${"c".repeat(40)} has not been certified`,
+    });
+  });
+
+  it("requires a durable ref before queueing delivery", () => {
+    expect(() =>
+      appendPatrolRunEvent(certifiedRun(), {
+        state: "delivery_queued",
+        at: "2026-08-14T12:04:00.000Z",
+        actor: "delivery-controller",
+        summary: "Queued",
+        delivery: { candidateSha: CANDIDATE },
+      }),
+    ).toThrow("durable preservedRef");
+  });
+});

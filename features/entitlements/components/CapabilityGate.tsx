@@ -20,6 +20,10 @@ import { useState } from "react";
 import { Lock, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { UpgradeModal } from "@/features/pricing/components/UpgradeModal";
+import {
+  SETTINGS_BASE,
+  tabIdToHref,
+} from "@/features/settings/route-shell/routing";
 import { cn } from "@/lib/utils";
 import { useOrgEntitlement } from "../hooks";
 import type { Capability } from "../registry";
@@ -88,16 +92,32 @@ export function CapabilityGate({
     );
   }
 
-  // Anything other than an explicit tier lock renders the action. A cap-hit, a
-  // resolver error, an un-enforced capability — none of those are this
-  // component's business, and swallowing them here would hide a real state.
-  if (entitlement.allowed || entitlement.reason !== "tier_locked") {
+  // Two ways to be stopped, and they are NOT the same message:
+  //   tier_locked — your plan never included this   -> "upgrade to get it"
+  //   cap_reached — your plan includes it, you used it all -> "it comes back on
+  //                 the 1st, or upgrade for more"
+  // Telling someone to upgrade when they simply need to wait until Tuesday is
+  // the exact hostage-taking the TRUST mandate bans. A resolver error or an
+  // un-enforced capability is not this component's business — pass it through
+  // rather than hiding a real state behind a paywall.
+  const stopped =
+    !entitlement.allowed &&
+    (entitlement.reason === "tier_locked" || entitlement.reason === "cap_reached");
+  if (!stopped) {
     return <>{children}</>;
   }
 
+  const capReached = entitlement.reason === "cap_reached";
   const required = entitlement.requiredTier ?? entitlement.definition.minTier;
   const requiredLabel = TIER_LABEL[required] ?? "a paid";
   const heldLabel = TIER_LABEL[entitlement.tier] ?? "Free";
+  const resetsAt = entitlement.windows[0]?.resetsAt ?? null;
+  const resetsLabel = resetsAt
+    ? new Date(resetsAt).toLocaleDateString(undefined, {
+        month: "long",
+        day: "numeric",
+      })
+    : null;
 
   const upgrade = (
     <UpgradeModal
@@ -119,7 +139,9 @@ export function CapabilityGate({
           onClick={() => setUpgradeOpen(true)}
         >
           <Lock className="h-3.5 w-3.5" aria-hidden />
-          {entitlement.definition.label} needs {requiredLabel}
+          {capReached
+            ? `${entitlement.definition.label} — none left`
+            : `${entitlement.definition.label} needs ${requiredLabel}`}
         </Button>
         {upgrade}
       </>
@@ -140,25 +162,44 @@ export function CapabilityGate({
           </span>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-foreground">
-              {entitlement.definition.label} isn&apos;t part of your{" "}
-              {heldLabel} plan
+              {capReached
+                ? `You've used all the ${entitlement.definition.label.toLowerCase()} your plan includes`
+                : `${entitlement.definition.label} isn't part of your ${heldLabel} plan`}
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
               {entitlement.definition.upgradeMessage}
             </p>
-            {/* Never a bare "upgrade": say which tier, so the choice is real. */}
-            <p className="mt-2 text-xs text-muted-foreground">
-              This organization is on {heldLabel}. {requiredLabel} unlocks it.
-            </p>
-            <Button
-              type="button"
-              size="sm"
-              className="mt-3"
-              onClick={() => setUpgradeOpen(true)}
-            >
-              See {requiredLabel} plans
-              <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-            </Button>
+            {/* Running out is TEMPORARY — lead with when it comes back, so
+                upgrading stays a choice rather than the only way out. */}
+            {capReached ? (
+              <p className="mt-2 text-xs text-muted-foreground">
+                {entitlement.limit != null
+                  ? `${entitlement.used.toLocaleString()} of ${entitlement.limit.toLocaleString()} used. `
+                  : ""}
+                {resetsLabel
+                  ? `This resets on ${resetsLabel} — you don't have to do anything.`
+                  : "This resets at the start of the next period."}
+              </p>
+            ) : (
+              // Never a bare "upgrade": say which tier, so the choice is real.
+              <p className="mt-2 text-xs text-muted-foreground">
+                This organization is on {heldLabel}. {requiredLabel} unlocks it.
+              </p>
+            )}
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <Button type="button" size="sm" onClick={() => setUpgradeOpen(true)}>
+                {capReached ? "Get more now" : `See ${requiredLabel} plans`}
+                <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+              </Button>
+              {/* A cap always has a second door: see exactly where you stand. */}
+              {capReached ? (
+                <Button type="button" size="sm" variant="ghost" asChild>
+                  {/* Built with the settings router's own helper — a hand-typed
+                      settings URL is how a "see my usage" link quietly 404s. */}
+                  <a href={tabIdToHref(SETTINGS_BASE, "plan")}>See my usage</a>
+                </Button>
+              ) : null}
+            </div>
           </div>
         </div>
       </div>

@@ -65,7 +65,6 @@ import { extractErrorMessage } from "@/utils/errors";
 
 import { planKeys } from "../../data/hooks";
 import { marketingKeys } from "@/features/marketing/data/hooks";
-import { slugify } from "../archetypes";
 import { fetchFreshSite } from "../draft";
 import {
   bridgeFillCancel,
@@ -76,6 +75,7 @@ import {
   bridgeRealize,
   bridgeReconcile,
   bridgeStarterKit,
+  createAndLinkCmsSite,
   recordCmsLink,
   type BridgeAlignResult,
   type BridgePublishResult,
@@ -98,7 +98,7 @@ import {
   WRITE_STAGES,
   type RunStage,
 } from "../../hooks/useRunStage";
-import { normalizeDomain, type CmsFacts } from "../readiness";
+import type { CmsFacts } from "../readiness";
 import { SetupSection } from "./SetupSection";
 
 type BridgeAction =
@@ -329,46 +329,30 @@ export function SetupBridgeSection({
   const handleLink = async () => {
     startBusy("link");
     try {
-      let cmsSiteId: string;
       let cmsSlug: string;
       if (linkChoice === "__create__") {
-        const slug =
-          slugify(normalizeDomain(site.domain).replace(/\./g, "-")) ||
-          slugify(site.name);
-        if (!slug) throw new Error("Could not derive a CMS slug from this site.");
-        const created = await CmsSiteService.createSite({
-          name: site.name,
-          slug,
-          domain: normalizeDomain(site.domain) || undefined,
-          // The rungs below (starter kit, realize) write through aidream's
-          // guarded seams, where an unset agent_write_policy means BLOCKED.
-          // Seed `full` exactly like aidream's site_service.create does for a
-          // site the creator intends to author immediately.
-          settings: { agent_write_policy: "full" },
-        });
-        cmsSiteId = created.id;
-        cmsSlug = created.slug;
+        // ONE implementation, shared with the guided setup checklist's
+        // "Set it up for me" step — see bridge.ts#createAndLinkCmsSite.
+        cmsSlug = (await createAndLinkCmsSite(dispatch, site)).cmsSlug;
       } else {
         const chosen = (candidates.data ?? []).find((row) => row.id === linkChoice);
         if (!chosen) throw new Error("Pick a CMS site to link.");
-        cmsSiteId = chosen.id;
+        // Plan side first (settings.cms), then the bridge pairing — the first
+        // reconcile with cms_site writes client_sites.web_site_id.
+        // FRESH row, not the query cache's copy: Setup's draft autosaves bump
+        // `version` continuously, so the cached version is deterministically
+        // stale and the guarded write would match zero rows.
+        const freshSite = await fetchFreshSite(site.id);
+        await recordCmsLink({
+          siteId: site.id,
+          expectedVersion: freshSite.version,
+          currentSettings: freshSite.settings,
+          cmsSiteId: chosen.id,
+          cmsSlug: chosen.slug,
+        });
+        setReport(await bridgeReconcile(dispatch, site.id, { cmsSite: chosen.id }));
         cmsSlug = chosen.slug;
       }
-      // Plan side first (settings.cms), then the bridge pairing — the first
-      // reconcile with cms_site writes client_sites.web_site_id.
-      // FRESH row, not the query cache's copy: Setup's draft autosaves bump
-      // `version` continuously, so the cached version is deterministically
-      // stale and the guarded write would match zero rows.
-      const freshSite = await fetchFreshSite(site.id);
-      await recordCmsLink({
-        siteId: site.id,
-        expectedVersion: freshSite.version,
-        currentSettings: freshSite.settings,
-        cmsSiteId,
-        cmsSlug,
-      });
-      const first = await bridgeReconcile(dispatch, site.id, { cmsSite: cmsSiteId });
-      setReport(first);
       await invalidateCms();
       toast.success(`Linked CMS site "${cmsSlug}" — both sides recorded.`);
     } catch (error) {

@@ -21,6 +21,50 @@ export interface ConnectAccountRow {
   onboardedAt: string | null;
 }
 
+/**
+ * What Stripe still wants from a connected account, straight off the account
+ * object. These lists are NOT mirrored in billing.connect_account and cannot
+ * be — they change without a webhook of their own (an ID expires, a threshold
+ * is crossed), so the truth is only ever the live account.
+ *
+ * The codes are Stripe's own developer strings (`individual.verification.document`,
+ * `external_account`). They must never reach a screen as-is — translate them
+ * with `describeStripeRequirement` in lib/stripe/connect-requirements.ts.
+ */
+export interface ConnectRequirements {
+  /** Needed now — payouts/charges stop if these are not supplied. */
+  currentlyDue: string[];
+  /** Needed eventually, no deadline yet. */
+  eventuallyDue: string[];
+  /** The deadline passed. Stripe has already restricted the account. */
+  pastDue: string[];
+  /** Supplied, Stripe is reviewing. Nothing for the user to do. */
+  pendingVerification: string[];
+  /** Stripe's machine reason payouts/charges are off, e.g. `requirements.past_due`. */
+  disabledReason: string | null;
+  /** Unix seconds by which `currentlyDue` must be satisfied, when Stripe set one. */
+  currentDeadline: number | null;
+}
+
+/** The mirrored row plus the live requirement list it cannot hold. */
+export interface ConnectAccountStatus {
+  row: ConnectAccountRow;
+  /** Null when we could not reach Stripe — NOT the same as "nothing is due". */
+  requirements: ConnectRequirements | null;
+}
+
+function readRequirements(account: Stripe.Account): ConnectRequirements {
+  const r = account.requirements;
+  return {
+    currentlyDue: r?.currently_due ?? [],
+    eventuallyDue: r?.eventually_due ?? [],
+    pastDue: r?.past_due ?? [],
+    pendingVerification: r?.pending_verification ?? [],
+    disabledReason: r?.disabled_reason ?? null,
+    currentDeadline: r?.current_deadline ?? null,
+  };
+}
+
 /** The caller's connect_account row (admin read), or null if never connected. */
 export async function getConnectAccountByUser(
   userId: string,
@@ -122,16 +166,23 @@ export async function upsertConnectAccount(
 /**
  * Refresh a creator's Connect status from Stripe (retrieve → upsert mirror).
  * Called by the status route so the dashboard reflects live onboarding progress
- * without waiting on the account.updated webhook. Returns the fresh row.
+ * without waiting on the account.updated webhook.
+ *
+ * Returns the fresh row AND the requirement lists off the retrieved account —
+ * the whole point of paying for the round trip. Without them the surface can
+ * only say "payouts are off"; with them it can name the one document Stripe is
+ * waiting for, which is the difference between a dead end and a next step.
  */
 export async function refreshConnectAccount(
   userId: string,
-): Promise<ConnectAccountRow | null> {
+): Promise<ConnectAccountStatus | null> {
   const row = await getConnectAccountByUser(userId);
   if (!row) return null;
   const account = await getStripe().accounts.retrieve(row.stripeAccountId);
   await upsertConnectAccount(userId, account);
-  return getConnectAccountByUser(userId);
+  const fresh = await getConnectAccountByUser(userId);
+  if (!fresh) return null;
+  return { row: fresh, requirements: readRequirements(account) };
 }
 
 // ─── Paid-class purchases (the sales ledger) ────────────────────────────────────

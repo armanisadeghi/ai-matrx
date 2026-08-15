@@ -38,7 +38,13 @@ import type { EntitlementPeriod, EntitlementTier } from "./types";
 
 /** All metered/gated capabilities. Extend this union by adding a registry entry. */
 export type Capability =
+  | "platform.points"
+  | "platform.messages"
+  | "platform.active_agents"
+  | "platform.storage_bytes"
   | "outreach.send"
+  | "outreach.send_volume"
+  | "marketing.automation_run"
   | "education.generate_cards"
   | "education.card_enrichment"
   | "education.tutor_message"
@@ -95,6 +101,95 @@ export interface CapabilityDefinition {
 const def = (d: CapabilityDefinition): CapabilityDefinition => d;
 
 export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
+  // ── PLAN DIMENSIONS ───────────────────────────────────────────────────────
+  //
+  // These are the things a PLAN includes (billing.plan_limit). The numbers live
+  // in the database, not here — this registry supplies only the human words: a
+  // label, a description, and what to say when someone runs out.
+  //
+  // All four ship `enforced: false`: real users are spending these today, and
+  // the no-regression rule says a live capability is not switched off on an
+  // agent's authority. They are VISIBLE now (users can see exactly where they
+  // stand), and enforcing one later is a single DB row flip:
+  //   update billing.capability set enforced = true where capability = '…';
+  "platform.points": def({
+    id: "platform.points",
+    label: "AI points",
+    description:
+      "The platform's unit of AI cost. Every model has a points price (points = $ per million tokens x 20,000, so 20,000 points = $1 of model spend) — which means one budget covers every model instead of a separate allowance per model.",
+    period: "month",
+    defaultFreeLimit: null,
+    minTier: "free",
+    scope: "org",
+    enforced: false,
+    upgradeMessage:
+      "You've used this month's AI points. They reset at the start of next month — or upgrade for a bigger monthly budget.",
+  }),
+  "platform.messages": def({
+    id: "platform.messages",
+    label: "Messages",
+    description: "Messages sent to an agent this month.",
+    period: "month",
+    defaultFreeLimit: null,
+    minTier: "free",
+    scope: "org",
+    enforced: false,
+    upgradeMessage:
+      "You've used this month's messages. They reset next month — or upgrade for more.",
+  }),
+  "platform.active_agents": def({
+    id: "platform.active_agents",
+    label: "Active agents",
+    description:
+      "How many agents can be live at once. A standing quota, not a monthly meter — counted by the agent system itself, not by billing.",
+    period: null,
+    defaultFreeLimit: null,
+    minTier: "free",
+    scope: "org",
+    enforced: false,
+    upgradeMessage:
+      "You've reached the number of active agents your plan includes. Upgrade to run more at once.",
+  }),
+  "platform.storage_bytes": def({
+    id: "platform.storage_bytes",
+    label: "Storage",
+    description:
+      "Total file storage. A standing quota, measured by the file system itself — billing reports the limit, not the usage.",
+    period: null,
+    defaultFreeLimit: null,
+    minTier: "free",
+    scope: "org",
+    enforced: false,
+    upgradeMessage:
+      "You've filled the storage your plan includes. Upgrade for more space, or add storage on its own.",
+  }),
+  "outreach.send_volume": def({
+    id: "outreach.send_volume",
+    label: "Outreach emails",
+    description:
+      "Outreach messages sent this month, across every connected mailbox. Enforced — outreach volume is what gets a sending domain blocklisted, so it is capped by plan on purpose.",
+    period: "month",
+    defaultFreeLimit: null,
+    minTier: "trial",
+    scope: "org",
+    enforced: true,
+    upgradeMessage:
+      "You've sent this month's outreach for your plan. It resets next month — or upgrade to reach more people.",
+  }),
+  "marketing.automation_run": def({
+    id: "marketing.automation_run",
+    label: "Marketing automations",
+    description:
+      "Runs of an automated marketing pipeline (crawls, audits, content generation). These are the expensive multi-step jobs, so they are capped by plan.",
+    period: "month",
+    defaultFreeLimit: null,
+    minTier: "free",
+    scope: "org",
+    enforced: true,
+    upgradeMessage:
+      "You've used this month's marketing automations. They reset next month — or upgrade to run more.",
+  }),
+
   // THE FIRST GATED CAPABILITY IN THE PLATFORM (Arman, 2026-08-14 —
   // docs/handoffs/outreach-system.md §5.6). Everything above ships
   // `enforced: false`; this one ships `true`, and it is the only one.

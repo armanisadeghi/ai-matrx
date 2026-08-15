@@ -10,14 +10,15 @@ import {
   setSelectedTaskId,
 } from "@/features/tasks/redux/taskUiSlice";
 import { selectTaskById } from "@/features/agent-context/redux/tasksSlice";
+import { selectProjectById } from "@/features/agent-context/redux/projectsSlice";
 import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
 import TaskEditor from "@/features/tasks/components/TaskEditor";
 import { TaskCopyForAiButton } from "@/features/tasks/components/TaskCopyForAiButton";
 import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
-import { ArrowLeft, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ChevronRight, Loader2 } from "lucide-react";
 
 /**
  * Single-task focus route. Mirrors the agents builder pattern:
@@ -36,6 +37,11 @@ export default function TaskPage() {
 
   const selectedId = useAppSelector(selectSelectedTaskId);
   const task = useAppSelector((s) => selectTaskById(s, taskId));
+  const project = useAppSelector((s) =>
+    task?.project_id && task.project_id !== "__unassigned__"
+      ? selectProjectById(s, task.project_id)
+      : undefined,
+  );
   const loading = useAppSelector(selectTasksLoading);
 
   useEffect(() => {
@@ -53,7 +59,27 @@ export default function TaskPage() {
             variant="transparent"
             ariaLabel="Back to tasks"
           />
-          <h1 className="ml-2 text-sm font-medium text-foreground truncate">
+          {/* Project breadcrumb — a DOOR, not a label. The unreachable
+              TaskDetailPage showed the project name as dead text; naming it
+              here without a way to reach it would be the same dead end. */}
+          {project ? (
+            <>
+              <Link
+                href={`/projects/${project.id}`}
+                className="ml-2 shrink-0 max-w-[10rem] truncate text-sm text-muted-foreground transition-colors hover:text-foreground"
+                title={project.name}
+              >
+                {project.name}
+              </Link>
+              <ChevronRight
+                size={14}
+                className="mx-1 shrink-0 text-muted-foreground/50"
+              />
+            </>
+          ) : null}
+          <h1
+            className={`text-sm font-medium text-foreground truncate ${project ? "" : "ml-2"}`}
+          >
             {task?.title ?? "Task"}
           </h1>
           {task ? (
@@ -85,24 +111,15 @@ export default function TaskPage() {
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
         ) : !task ? (
-          <div className="flex flex-col items-center justify-center h-full gap-4 p-8 text-center">
-            <h2 className="text-lg font-semibold text-foreground">
-              Task not found
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              The task{" "}
-              <code className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">
-                {taskId}
-              </code>{" "}
-              could not be found.
-            </p>
-            <Button asChild variant="outline">
-              <Link href="/tasks">
-                <ArrowLeft size={16} className="mr-2" />
-                Back to Tasks
-              </Link>
-            </Button>
-          </div>
+          // An empty single-task read has four different causes (denied,
+          // trashed, missing, signed out) — the gate resolves the true one and
+          // offers the way forward instead of asserting "not found".
+          <AccessGate
+            token="task"
+            id={taskId}
+            fallbackHref="/tasks"
+            fallbackLabel="Back to Tasks"
+          />
         ) : (
           <TaskEditor />
         )}

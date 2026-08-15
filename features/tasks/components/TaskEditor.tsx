@@ -273,6 +273,7 @@ function TaskEditorInner({
                 resourceName={effective.title || "Task"}
                 variant="ghost"
                 size="icon"
+                className="h-7 w-7"
               />
               {isDirty && (
                 <>

@@ -84,9 +84,9 @@ const PORT_CANDIDATES = [
       "Added to the mobile dock’s Folder sheet (MobileNoteToolbar) — reuses the desktop CreateFolderDialog + createFolder, then moves the current note into the new folder.",
   },
   {
-    title: "Declarative single/split frame (RSC idea) — not pursued",
+    title: "Declarative single/split frame — CAPABILITY SHIPPED (verified 2026-08-14)",
     detail:
-      "shell/NoteViewShell expressed single-vs-split layout as a tiny declarative frame. Left as a future direction only; not resurrected.",
+      "The RSC shell/NoteViewShell file was never resurrected, but the capability it framed is live and richer: NotesView renders single vs. side-by-side from one per-instance splitNoteId (with a labeled close-split header), NoteEditorCore carries the in-editor MatrxSplit, SplitNotePicker chooses the second note, and split is the persisted default editor mode at ≥900px. Nothing is missing — only the RSC expression of it.",
   },
 ];
 
@@ -182,18 +182,22 @@ export default function NotesSalvageDemoPage() {
           <div className="flex items-center gap-2">
             <Info className="h-4 w-4 text-amber-600 dark:text-amber-400" />
             <h2 className="text-sm font-semibold text-amber-800 dark:text-amber-200">
-              Still parallel: two notes UIs
+              Legacy shell: zero mounters, superset claim verified
             </h2>
           </div>
           <p className="mt-1 text-xs text-amber-800/90 dark:text-amber-200/90">
-            <code>NotesView</code> (live <code>/notes</code> + Notes window) and a
-            legacy stack (<code>NotesLayout</code> / <code>NoteEditor</code> /{" "}
-            <code>NoteTabs</code> / <code>NotesSidebar</code>) still coexist —
-            the legacy one is reached only through the Utilities and Quick-Notes
-            overlays. The canonical editor is a strict superset (find/replace,
-            undo/redo, conflict handling, full action menu). Migrating those
-            overlays onto <code>NotesView</code>/<code>NoteContentEditor</code>{" "}
-            would retire the whole legacy stack — a separate decision.
+            The legacy stack (<code>NotesLayout</code> → <code>NotesSidebar</code>{" "}
+            / <code>NoteTabs</code> / <code>NoteEditor</code>, plus{" "}
+            <code>NotesHeaderPortal</code>, <code>useAutoSave</code>,{" "}
+            <code>phantomNote</code>, and <code>NotesTreeView</code>) no longer
+            renders anywhere: the Utilities and Quick-Notes overlays moved to{" "}
+            <code>NotesView</code> on 2026-07-10, and this page only describes it.
+            The &ldquo;strict superset&rdquo; claim was re-verified item by item on
+            2026-08-14 — all four salvage targets are landed, and the canonical
+            stack also wins on keyboard shortcuts, tab drag-reorder, sidebar
+            drag-to-folder, search, and the empty state. No surviving unique
+            capability was found. Retiring the shell is Arman&rsquo;s call, not an
+            agent&rsquo;s — see <code>features/notes/FEATURE.md</code>.
           </p>
         </section>
       </div>

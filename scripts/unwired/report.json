@@ -1,24 +1,24 @@
 {
-  "generatedAt": "2026-08-15T06:13:14.466Z",
-  "commit": "27d1f58a520dc1951700653c05c69d55451657a6",
-  "aidreamCommit": "47e3cb512354223814d604d9ab00ebfd8ec19dfb",
+  "generatedAt": "2026-08-15T06:16:18.378Z",
+  "commit": "52993abd75491a00f572a2c4be302c11c6d35864",
+  "aidreamCommit": "6c8901892b1f742b27dd37913c2f01692d15afb3",
   "totals": {
-    "findings": 988,
-    "lines": 41911,
-    "filesWithFindings": 688,
-    "filesScanned": 13534,
+    "findings": 985,
+    "lines": 41286,
+    "filesWithFindings": 686,
+    "filesScanned": 13535,
     "suppressed": 5,
     "byDetector": {
       "react-component-unmounted": 367,
-      "export-unimported": 610,
+      "export-unimported": 608,
       "router-unmounted": 2,
       "host-installer-unset": 1,
       "scheduler-handler-unregistered": 0,
-      "python-module-unreached": 8
+      "python-module-unreached": 7
     },
     "byRepository": {
-      "matrx-frontend": 719,
-      "aidream": 269
+      "matrx-frontend": 718,
+      "aidream": 267
     }
   },
   "partial": [],
@@ -27,11 +27,6 @@
       "key": "matrx-frontend:features/tasks/components/TaskDetailPage.tsx",
       "findings": 1,
       "lines": 778
-    },
-    {
-      "key": "aidream:aidream/services/crm/kind_resolution.py",
-      "findings": 5,
-      "lines": 682
     },
     {
       "key": "matrx-frontend:features/code/terminal/TerminalTab.tsx",
@@ -272,6 +267,11 @@
       "key": "aidream:aidream/services/context_catalog.py",
       "findings": 3,
       "lines": 181
+    },
+    {
+      "key": "matrx-frontend:components/matrx/navigation/ModuleHeader.tsx",
+      "findings": 1,
+      "lines": 178
     }
   ],
   "findings": [
@@ -302,20 +302,6 @@
       "intent": "an exported component with 625 implementation line(s)",
       "remains": "mount it from the page, panel, overlay, or parent surface it was built for, then exercise that user path",
       "feature": "features/code"
-    },
-    {
-      "repository": "aidream",
-      "detector": "python-module-unreached",
-      "file": "aidream/services/crm/kind_resolution.py",
-      "line": 1,
-      "column": 1,
-      "symbol": "aidream/services/crm/kind_resolution.py",
-      "lines": 617,
-      "title": "aidream/services/crm/kind_resolution.py — a whole service module nothing in the repo ever loads (5 public function(s))",
-      "evidence": "no chain of imports reaches it from any server entry point (aidream/api/app.py, app_init.py, run.py, initialize_systems.py) or from any of the 465 operator entry points (top-level scripts/*.py, plus every module with its own __main__) — every line in it is unreachable in production",
-      "intent": "its own docstring: \"Settle the ``possible_person`` review queue with the platform's own AI.\"",
-      "remains": "wire its entry point: import and call it from the router, sweeper, graph node or service that was meant to drive it (its own docstring usually names the seam), then prove one real request reaches it",
-      "feature": "aidream/services/crm"
     },
     {
       "repository": "matrx-frontend",
@@ -3401,11 +3387,11 @@
       "repository": "aidream",
       "detector": "export-unimported",
       "file": "aidream/services/crm/kind_resolution.py",
-      "line": 533,
+      "line": 535,
       "column": 1,
       "symbol": "handle_kind_resolution_result",
       "lines": 48,
-      "title": "aidream/services/crm/kind_resolution.py:533 `handle_kind_resolution_result` has no runtime caller",
+      "title": "aidream/services/crm/kind_resolution.py:535 `handle_kind_resolution_result` has no runtime caller",
       "evidence": "no module outside its own package names it",
       "intent": "its own docstring: \"matrx-batch result handler: batch output → slot honesty core → the ONE\"",
       "remains": "wire the caller its module was written for — a router endpoint, a sweeper/scheduler registration, a graph node, or the service that should invoke it — then prove it runs end to end. If it is a seam meant for a consumer that does not exist yet, say so in scripts/unwired_allowlist.json with a reason",
@@ -10163,11 +10149,11 @@
       "repository": "aidream",
       "detector": "export-unimported",
       "file": "aidream/services/crm/kind_resolution.py",
-      "line": 420,
+      "line": 422,
       "column": 1,
       "symbol": "apply_kind_verdict",
       "lines": 9,
-      "title": "aidream/services/crm/kind_resolution.py:420 `apply_kind_verdict` has no runtime caller",
+      "title": "aidream/services/crm/kind_resolution.py:422 `apply_kind_verdict` has no runtime caller",
       "evidence": "no module outside its own package names it",
       "intent": "its own docstring: \"Write ONE verdict onto the party that already exists.\"",
       "remains": "wire the caller its module was written for — a router endpoint, a sweeper/scheduler registration, a graph node, or the service that should invoke it — then prove it runs end to end. If it is a seam meant for a consumer that does not exist yet, say so in scripts/unwired_allowlist.json with a reason",
@@ -11926,20 +11912,6 @@
     {
       "repository": "matrx-frontend",
       "detector": "export-unimported",
-      "file": "features/education/creators/service.ts",
-      "line": 203,
-      "column": 1,
-      "symbol": "ensureConnectAccount",
-      "lines": 6,
-      "title": "ensureConnectAccount appears unfinished — it is built but has no runtime consumer",
-      "evidence": "no runtime import resolves to this exported hook, service, or producer; tests and re-export barrels do not count",
-      "intent": "an exported service with 6 implementation line(s)",
-      "remains": "wire the runtime consumer it was built for, then prove a real page, action, producer, or workflow reaches it",
-      "feature": "features/education"
-    },
-    {
-      "repository": "matrx-frontend",
-      "detector": "export-unimported",
       "file": "features/files/handler/hooks/useFileMediaBlock.ts",
       "line": 15,
       "column": 1,
@@ -12739,11 +12711,11 @@
       "repository": "aidream",
       "detector": "export-unimported",
       "file": "aidream/services/crm/kind_resolution.py",
-      "line": 202,
+      "line": 204,
       "column": 1,
       "symbol": "pending_parties",
       "lines": 4,
-      "title": "aidream/services/crm/kind_resolution.py:202 `pending_parties` has no runtime caller",
+      "title": "aidream/services/crm/kind_resolution.py:204 `pending_parties` has no runtime caller",
       "evidence": "no module outside its own package names it",
       "intent": "its own docstring: \"Every party still sitting in the ``possible_person`` review queue.\"",
       "remains": "wire the caller its module was written for — a router endpoint, a sweeper/scheduler registration, a graph node, or the service that should invoke it — then prove it runs end to end. If it is a seam meant for a consumer that does not exist yet, say so in scripts/unwired_allowlist.json with a reason",
@@ -12753,11 +12725,11 @@
       "repository": "aidream",
       "detector": "export-unimported",
       "file": "aidream/services/crm/kind_resolution.py",
-      "line": 295,
+      "line": 297,
       "column": 1,
       "symbol": "submit_kind_resolutions",
       "lines": 4,
-      "title": "aidream/services/crm/kind_resolution.py:295 `submit_kind_resolutions` has no runtime caller",
+      "title": "aidream/services/crm/kind_resolution.py:297 `submit_kind_resolutions` has no runtime caller",
       "evidence": "no module outside its own package names it",
       "intent": "its own docstring: \"Enqueue a batch judgement for every party in the review queue.\"",
       "remains": "wire the caller its module was written for — a router endpoint, a sweeper/scheduler registration, a graph node, or the service that should invoke it — then prove it runs end to end. If it is a seam meant for a consumer that does not exist yet, say so in scripts/unwired_allowlist.json with a reason",
@@ -13852,20 +13824,6 @@
       "title": "aidream/services/seo/finding_fix.py:138 `build_finding_fix_context` has no runtime caller",
       "evidence": "no module outside its own package names it",
       "intent": "its own docstring: \"Assemble the fixer's input from canonical rows only.\"",
-      "remains": "wire the caller its module was written for — a router endpoint, a sweeper/scheduler registration, a graph node, or the service that should invoke it — then prove it runs end to end. If it is a seam meant for a consumer that does not exist yet, say so in scripts/unwired_allowlist.json with a reason",
-      "feature": "aidream/services/seo"
-    },
-    {
-      "repository": "aidream",
-      "detector": "export-unimported",
-      "file": "aidream/services/seo/rank_tracking.py",
-      "line": 175,
-      "column": 1,
-      "symbol": "canonical_location_name",
-      "lines": 2,
-      "title": "aidream/services/seo/rank_tracking.py:175 `canonical_location_name` has no runtime caller",
-      "evidence": "no module outside its own package names it; only non-runtime paths do (aidream/services/seo/test_rank_tracking.py, scripts/check_rank_target_locations.py)",
-      "intent": "named in aidream/services/seo/FEATURE.md",
       "remains": "wire the caller its module was written for — a router endpoint, a sweeper/scheduler registration, a graph node, or the service that should invoke it — then prove it runs end to end. If it is a seam meant for a consumer that does not exist yet, say so in scripts/unwired_allowlist.json with a reason",
       "feature": "aidream/services/seo"
     },

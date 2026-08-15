@@ -2,27 +2,40 @@
 
 // features/education/creators/components/CreatorPayoutsPanel.tsx
 //
-// The creator EARNINGS surface on the dashboard. Shows Stripe Connect status and
-// the right next action: connect / finish onboarding / open the Stripe Express
-// dashboard (Stripe HOSTS the payout + earnings UI — we link, we don't rebuild).
-// Reads status via /api/stripe/connect/status; refreshes when the creator returns
-// from the hosted onboarding flow (?connect=return). All money movement is server-
-// side; this island only kicks off the hosted redirects.
+// The creator EARNINGS surface on the dashboard. Payout SETUP is the declared
+// `billing.creator_payouts` checklist on lib/guided-setup/ — it names each thing
+// Stripe is actually waiting for instead of the old four-state block, whose
+// failure case said "Finish your Stripe onboarding" whether you were missing a
+// bank account, a passport photo, or had been declined outright.
+//
+// What stays here is what is NOT a setup step: the revenue split, and the link
+// into the Stripe Express dashboard where Stripe HOSTS balances and payout
+// history (we link, we never rebuild it). No control on this surface moves
+// money — everything here either reads status or opens a Stripe-hosted page.
+//
+// The panel owns the ONE fetch. Every checklist step's check calls `refresh()`,
+// which dedupes concurrent callers onto a single in-flight request, so a round
+// of checks costs exactly one call to Stripe and every step sees the same
+// answer.
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import {
-  BadgeDollarSign,
-  CheckCircle2,
-  ExternalLink,
-  Loader2,
-  AlertCircle,
-} from "lucide-react";
+import { BadgeDollarSign, ExternalLink, Loader2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useAppSelector } from "@/lib/redux/hooks";
+import {
+  selectEffectiveOrganizationId,
+  selectPersonalOrganizationId,
+} from "@/lib/redux/slices/appContextSlice";
+import { GuidedChecklist } from "@/lib/guided-setup/components/GuidedChecklist";
 import { SPLIT_LABEL } from "@/lib/stripe/connect";
 import {
+  creatorPayoutsChecklist,
+  type CreatorPayoutsContext,
+} from "../payoutsChecklist";
+import {
+  ensureConnectAccount,
   getConnectStatus,
   openConnectDashboard,
   startConnectOnboarding,
@@ -32,51 +45,70 @@ import {
 export function CreatorPayoutsPanel() {
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<ConnectStatus | null>(null);
-  const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const inFlight = useRef<Promise<ConnectStatus> | null>(null);
 
-  // Imperative refresh for event handlers (button clicks). Effects inline the
-  // promise chain instead (setState lands only in a .then, never synchronously).
-  const load = useCallback(() => {
-    getConnectStatus()
-      .then(setStatus)
-      .catch(() => setStatus({ connected: false, configured: true }))
-      .finally(() => setLoading(false));
+  /**
+   * Fetch live status, deduped. Five checks fire at once on every round; they
+   * all need the same one request, and they must all see the SAME answer or
+   * the rows can disagree with each other on screen.
+   */
+  const refresh = useCallback((): Promise<ConnectStatus> => {
+    const existing = inFlight.current;
+    if (existing) return existing;
+    const request = getConnectStatus()
+      .then((fresh) => {
+        setStatus(fresh);
+        return fresh;
+      })
+      .finally(() => {
+        inFlight.current = null;
+      });
+    inFlight.current = request;
+    return request;
   }, []);
 
-  // Load once on mount.
-  useEffect(() => {
-    getConnectStatus()
-      .then(setStatus)
-      .catch(() => setStatus({ connected: false, configured: true }))
-      .finally(() => setLoading(false));
-  }, []);
-
-  // Returned from hosted onboarding — refresh + toast once.
+  // Returned from Stripe's hosted onboarding — say so once. The checklist
+  // re-checks on its own; this is only the acknowledgement.
   const connectParam = searchParams.get("connect");
   useEffect(() => {
     if (connectParam !== "return") return;
-    toast.success("Thanks — we'll confirm your payout setup.");
-    getConnectStatus()
-      .then(setStatus)
-      .catch(() => setStatus({ connected: false, configured: true }));
+    toast.success("Thanks — we're checking with Stripe now.");
   }, [connectParam]);
 
-  async function onConnect() {
-    setBusy(true);
-    try {
-      const r = await startConnectOnboarding();
-      if (r.url) {
-        window.location.assign(r.url);
-        return;
-      }
-      toast.error(r.connectDisabled ? "Payouts aren't switched on yet" : "Could not start onboarding", {
-        description: r.error,
-      });
-    } finally {
-      setBusy(false);
+  const createAccount = useCallback(async () => {
+    await ensureConnectAccount();
+    await refresh();
+  }, [refresh]);
+
+  /** Send the creator into Stripe's hosted form. Navigates away on success. */
+  const openStripe = useCallback(async () => {
+    const result = await startConnectOnboarding();
+    if (result.url) {
+      window.location.assign(result.url);
+      return;
     }
-  }
+    toast.error(
+      result.connectDisabled
+        ? "Payouts aren't switched on yet"
+        : "Could not open your Stripe details",
+      { description: result.error },
+    );
+  }, []);
+
+  const checklistContext = useMemo<CreatorPayoutsContext>(
+    () => ({ status, refresh, createAccount, openStripe }),
+    [status, refresh, createAccount, openStripe],
+  );
+
+  /**
+   * A creator's payout account is THEIRS, not their current workspace's, so the
+   * run is anchored to their personal org — switching the active org must not
+   * hand them a different setup state for the same Stripe account.
+   */
+  const personalOrgId = useAppSelector(selectPersonalOrganizationId);
+  const effectiveOrgId = useAppSelector(selectEffectiveOrganizationId);
+  const organizationId = personalOrgId ?? effectiveOrgId;
 
   async function onOpenDashboard() {
     setBusy(true);
@@ -93,65 +125,38 @@ export function CreatorPayoutsPanel() {
   }
 
   return (
-    <section className="space-y-4 rounded-xl border border-border bg-card p-5">
+    <section className="space-y-3 rounded-xl border border-border bg-card p-5">
       <div className="flex items-center gap-2">
         <BadgeDollarSign className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
         <h2 className="text-sm font-semibold text-foreground">Earnings &amp; payouts</h2>
       </div>
 
-      {loading ? (
-        <Skeleton className="h-20 w-full" />
-      ) : !status?.configured ? (
-        <p className="text-sm text-muted-foreground">
-          Payouts aren&apos;t configured on this environment yet.
-        </p>
-      ) : !status.connected ? (
-        <div className="space-y-3">
-          <p className="text-sm text-muted-foreground">
-            Connect a Stripe account to sell paid classes and get paid. You keep{" "}
-            <span className="font-medium text-foreground">80%</span> of every
-            enrolment; the platform fee is 20%. Stripe handles payouts, tax forms,
-            and identity — you just connect once.
-          </p>
-          <Button disabled={busy} onClick={onConnect}>
-            {busy ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <BadgeDollarSign className="mr-1.5 h-4 w-4" />}
-            Connect Stripe to get paid
-          </Button>
-        </div>
-      ) : status.chargesEnabled ? (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 text-sm">
-            <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-            <span className="text-foreground">
-              Payouts active — you&apos;re ready to sell paid classes.
-            </span>
-          </div>
+      <GuidedChecklist
+        definition={creatorPayoutsChecklist}
+        context={checklistContext}
+        scope={organizationId ? { organizationId } : null}
+        completeSlot={
           <div className="flex flex-wrap items-center gap-3">
             <Button variant="outline" size="sm" disabled={busy} onClick={onOpenDashboard}>
-              {busy ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <ExternalLink className="mr-1.5 h-4 w-4" />}
-              Open Stripe payout dashboard
+              {busy ? (
+                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+              ) : (
+                <ExternalLink className="mr-1.5 h-4 w-4" />
+              )}
+              Open my Stripe dashboard
             </Button>
             <span className="text-xs text-muted-foreground">
-              Revenue split: {SPLIT_LABEL}
+              Your balance, your payout history and your tax forms live there.
             </span>
           </div>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-sm">
-            <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-            <span className="text-foreground">
-              {status.detailsSubmitted
-                ? "Stripe is reviewing your details — payouts activate shortly."
-                : "Finish your Stripe onboarding to start receiving payouts."}
-            </span>
-          </div>
-          <Button disabled={busy} onClick={onConnect}>
-            {busy ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <BadgeDollarSign className="mr-1.5 h-4 w-4" />}
-            Finish onboarding
-          </Button>
-        </div>
-      )}
+        }
+      />
+
+      <p className="text-xs text-muted-foreground">
+        You keep <span className="font-medium text-foreground">80%</span> of every
+        enrolment; the platform fee is 20% ({SPLIT_LABEL}). Stripe handles payouts,
+        tax forms and identity checks.
+      </p>
     </section>
   );
 }

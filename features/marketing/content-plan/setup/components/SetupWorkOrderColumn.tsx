@@ -31,17 +31,10 @@ import { cn } from "@/lib/utils";
 
 import { humanizeKey, slugify, type ExpandedArchetype } from "../archetypes";
 import type { Concept, ResolvedConcept } from "../concepts";
-import type { ChecklistItem, ItemState, Readiness } from "../readiness";
+import type { Readiness } from "../readiness";
 import { SetupSection, Stat } from "./SetupSection";
 
 const MAX_COUNT = 500;
-
-const STATE_DOT: Record<ItemState, string> = {
-  met: "bg-success",
-  partial: "bg-primary",
-  unmet: "bg-muted-foreground/40",
-  unknown: "bg-warning",
-};
 
 export function SetupWorkOrderColumn({
   expanded,
@@ -59,6 +52,7 @@ export function SetupWorkOrderColumn({
   pageTypeName,
   newCount,
   bridgeSlot,
+  checklistSlot,
   lintSlot,
   aiReady = false,
   aiNamingKey = null,
@@ -99,6 +93,15 @@ export function SetupWorkOrderColumn({
    * checklist diagnoses, the rungs act on the same facts.
    */
   bridgeSlot?: React.ReactNode;
+  /**
+   * The guided setup checklist (`marketing.content_plan_setup`) — the PASS/FAIL
+   * half of what this column used to render as "Foundation this shape demands".
+   * It is a slot for the same reason `bridgeSlot` is: the checklist needs the
+   * site, dispatch and query invalidation, which live in SetupView. Everything
+   * still rendered above and below it is COVERAGE (how much of the plan exists),
+   * which is a meter and deliberately not a checklist.
+   */
+  checklistSlot?: React.ReactNode;
   /** Plan lint card (PlanLintSection) — diagnoses BEFORE the rungs act. */
   lintSlot?: React.ReactNode;
   /** A research report is loaded — the per-family AI naming can run. */
@@ -132,12 +135,6 @@ export function SetupWorkOrderColumn({
   const [namingOpen, setNamingOpen] = useState<string | null>(null);
 
   const coreItem = readiness.items.find((item) => item.key === "core");
-  const foundationItems = readiness.items.filter(
-    (item) => item.group === "foundation",
-  );
-  const unknownFoundation = foundationItems.filter(
-    (item) => item.state === "unknown",
-  ).length;
 
   return (
     <div className="flex flex-col gap-5 p-4 md:h-full md:min-h-0 md:overflow-y-auto">
@@ -477,26 +474,7 @@ export function SetupWorkOrderColumn({
         </SetupSection>
       ) : null}
 
-      <SetupSection title="Foundation this shape demands">
-        {foundationItems.length === 0 ? (
-          <p className="text-xs text-muted-foreground">
-            This shape declares no foundation requirements.
-          </p>
-        ) : (
-          <ul className="divide-y divide-border overflow-hidden rounded-md border border-border">
-            {foundationItems.map((item) => (
-              <FoundationRow key={item.key} item={item} />
-            ))}
-          </ul>
-        )}
-        <p className="text-[11px] leading-relaxed text-muted-foreground">
-          Counts propagate — {humanizeKey("service_icon")} follows the Services
-          count.{" "}
-          {unknownFoundation > 0
-            ? `${unknownFoundation} item(s) could not be measured: what satisfies them lives in the CMS database, and this site has no CMS counterpart we could read. Nothing is marked done from a guess.`
-            : "Measured against the linked CMS site — tokens, components, navigation, and assets are real counts, not assumptions."}
-        </p>
-      </SetupSection>
+      {checklistSlot}
 
       {lintSlot}
 
@@ -788,34 +766,6 @@ function CountOnlyTopics({
         </ul>
       ) : null}
     </div>
-  );
-}
-
-function FoundationRow({ item }: { item: ChecklistItem }) {
-  return (
-    <li className="flex items-center gap-2 bg-card px-2.5 py-1.5" title={item.detail}>
-      <span
-        className={cn("h-2 w-2 shrink-0 rounded-full", STATE_DOT[item.state])}
-        aria-hidden
-      />
-      <span className="min-w-0 flex-1 truncate text-sm text-foreground">
-        {item.label}
-      </span>
-      <span className="shrink-0 font-mono text-[11px] tabular-nums text-muted-foreground">
-        {item.state === "unknown" ? "—" : item.actual} / {item.required}
-      </span>
-      <span
-        className={cn(
-          "w-16 shrink-0 rounded px-1.5 py-0.5 text-center text-[11px] font-medium leading-none",
-          item.state === "met" && "bg-success/15 text-success",
-          item.state === "partial" && "bg-primary/15 text-primary",
-          item.state === "unmet" && "bg-muted text-muted-foreground",
-          item.state === "unknown" && "bg-warning/15 text-warning",
-        )}
-      >
-        {item.state === "unknown" ? "not checked" : item.state}
-      </span>
-    </li>
   );
 }
 

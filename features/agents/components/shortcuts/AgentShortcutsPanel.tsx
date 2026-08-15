@@ -8,11 +8,14 @@
  * standalone shortcut editor route at `/agents/[id]/shortcuts/[shortcutId]`.
  *
  * Data: hydrates both `global` and `user` scopes via `useAgentShortcuts`, then
- * filters via `selectShortcutsByAgentId`. No writes happen on this page —
- * creation routes to `/agents/[id]/shortcuts/new`.
+ * filters via `selectShortcutsByAgentId`. The only write on this page is
+ * "Link shortcut" (`LinkAgentToShortcutModal`) — the fast path that either
+ * mints a shortcut already pointing at this agent or adopts an existing
+ * unlinked one. Full authoring still routes to `.../shortcuts/new`.
  */
 
 import type { ComponentProps } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -21,6 +24,7 @@ import {
   Layers,
   Loader2,
   MonitorSmartphone,
+  Link2,
   Plus,
   Stars,
   UserRound,
@@ -34,6 +38,8 @@ import { cn } from "@/lib/utils";
 import IconResolver from "@/components/official/icons/IconResolver";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useAgentShortcuts } from "@/features/agent-shortcuts/hooks/useAgentShortcuts";
+import { LinkAgentToShortcutModal } from "@/features/agent-shortcuts/components/LinkAgentToShortcutModal";
+import type { AgentScope } from "@/features/agent-shortcuts/constants";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectShortcutsByAgentId } from "@/features/agents/redux/agent-shortcuts/selectors";
@@ -59,14 +65,28 @@ interface AgentShortcutsPanelProps {
   /** Base path for shortcut edit/new routes. Defaults to `/agents` (user route).
    *  Admin usage passes `/administration/agents/system-agents/agents`. */
   basePath?: string;
+  /** Passed straight through to the link modal so a newly-minted shortcut
+   *  inherits the agent's own description instead of an empty one. */
+  agentDescription?: string | null;
+  /** The agent's declared variables — what `ScopeMappingEditor` inside the link
+   *  modal offers to map onto scope keys. Empty is valid (no variables). */
+  agentVariableDefinitions?: { name: string }[];
+  /** Which shortcut scope the link modal writes into. `user` on the (core)
+   *  route (my shortcuts); the system-agents admin route passes `global`.
+   *  Never inferred from the URL — the callsite owns it. */
+  linkScope?: AgentScope;
 }
 
 export function AgentShortcutsPanel({
   agentId,
   agentName,
   basePath = "/agents",
+  agentDescription = null,
+  agentVariableDefinitions,
+  linkScope = "user",
 }: AgentShortcutsPanelProps) {
   const router = useRouter();
+  const [linkOpen, setLinkOpen] = useState(false);
 
   // Hydrate both global and user scopes into the slice. The selector below
   // filters across everything the current user can see.
@@ -258,6 +278,13 @@ export function AgentShortcutsPanel({
                 Batch
               </Button>
             </Link>
+            {/* The fast path: mint a shortcut already pointing at this agent,
+                or adopt an existing unlinked one. `/shortcuts/new` is the full
+                authoring form and stays the primary action. */}
+            <Button size="sm" variant="outline" onClick={() => setLinkOpen(true)}>
+              <Link2 className="h-4 w-4 mr-1.5" />
+              Link shortcut
+            </Button>
             <Link href={`${basePath}/${agentId}/shortcuts/new`}>
               <Button size="sm">
                 <Plus className="h-4 w-4 mr-1.5" />
@@ -336,7 +363,11 @@ export function AgentShortcutsPanel({
               Loading shortcuts…
             </Card>
           ) : shortcuts.length === 0 ? (
-            <EmptyState agentId={agentId} basePath={basePath} />
+            <EmptyState
+              agentId={agentId}
+              basePath={basePath}
+              onLink={() => setLinkOpen(true)}
+            />
           ) : (
             <div className="space-y-2">
               {shortcuts.map((shortcut, index) => (
@@ -355,6 +386,29 @@ export function AgentShortcutsPanel({
           )}
         </section>
       </div>
+
+      <LinkAgentToShortcutModal
+        scope={linkScope}
+        isOpen={linkOpen}
+        onClose={() => setLinkOpen(false)}
+        agent={{
+          id: agentId,
+          name: agentName,
+          description: agentDescription,
+          variableDefinitions: agentVariableDefinitions ?? [],
+          // No pinned version row is loaded here, so "always use latest" is the
+          // only honest default — pinning to a version happens in the editor.
+          useLatest: true,
+          currentVersionId: null,
+        }}
+        onSuccess={(shortcutId) => {
+          // The slice is scope-keyed; the new row lands in whichever scope the
+          // modal wrote to, so refetch both this panel reads.
+          globalQuery.refetch();
+          userQuery.refetch();
+          router.push(`${basePath}/${agentId}/shortcuts/${shortcutId}`);
+        }}
+      />
     </div>
   );
 }
@@ -587,9 +641,11 @@ function ShortcutRow({
 function EmptyState({
   agentId,
   basePath,
+  onLink,
 }: {
   agentId: string;
   basePath: string;
+  onLink: () => void;
 }) {
   return (
     <Card className="p-6 flex flex-col items-center text-center gap-3">
@@ -605,12 +661,18 @@ function EmptyState({
           context menus, and other surfaces across the app.
         </p>
       </div>
-      <Link href={`${basePath}/${agentId}/shortcuts/new`}>
-        <Button size="sm" variant="outline">
-          <Plus className="h-4 w-4 mr-1.5" />
-          Create the first one
+      <div className="flex items-center gap-2 flex-wrap justify-center">
+        <Button size="sm" onClick={onLink}>
+          <Link2 className="h-4 w-4 mr-1.5" />
+          Link this agent to a shortcut
         </Button>
-      </Link>
+        <Link href={`${basePath}/${agentId}/shortcuts/new`}>
+          <Button size="sm" variant="outline">
+            <Plus className="h-4 w-4 mr-1.5" />
+            Create the first one
+          </Button>
+        </Link>
+      </div>
     </Card>
   );
 }

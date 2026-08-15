@@ -30,6 +30,11 @@ export default async function AdminSystemAgentShortcutsPage({
           agentId={id}
           agentName={agent.name}
           basePath={ADMIN_BASE_PATH}
+          agentDescription={agent.description}
+          agentVariableDefinitions={agent.variableDefinitions ?? []}
+          // System agents get system shortcuts — the admin surface writes
+          // global, not into the acting admin's personal scope.
+          linkScope="global"
         />
       </div>
     </>

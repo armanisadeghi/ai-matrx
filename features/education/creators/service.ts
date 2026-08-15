@@ -118,6 +118,21 @@ export async function setCreatorPublic(isPublic: boolean): Promise<CreatorProfil
 // CLAUDE.md, so these — unlike the DIRECT-RPC calls above — go through the
 // /api/stripe/connect/* routes (the server holds the Stripe secret + service_role).
 
+/**
+ * What Stripe still wants from the account. Mirrors `ConnectRequirements` on the
+ * server (features/entitlements/stripe/connect.ts) — the codes are Stripe's own
+ * developer strings and are translated for display by
+ * `describeStripeRequirement` (lib/stripe/connect-requirements.ts).
+ */
+export interface ConnectRequirements {
+  currentlyDue: string[];
+  eventuallyDue: string[];
+  pastDue: string[];
+  pendingVerification: string[];
+  disabledReason: string | null;
+  currentDeadline: number | null;
+}
+
 /** The creator's live Connect payout status, for the earnings panel. */
 export interface ConnectStatus {
   connected: boolean;
@@ -128,22 +143,68 @@ export interface ConnectStatus {
   onboardedAt?: string | null;
   country?: string | null;
   defaultCurrency?: string | null;
+  /**
+   * NULL means we could not ask Stripe — NOT "nothing is outstanding". Anything
+   * reading this must render the difference; treating null as an empty list
+   * would tell a blocked creator that everything is fine.
+   */
+  requirements?: ConnectRequirements | null;
 }
 
-/** Fetch the caller's Connect status (refreshes from Stripe server-side). */
+function coerceStringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((v): v is string => typeof v === "string") : [];
+}
+
+function coerceRequirements(value: unknown): ConnectRequirements | null {
+  if (!value || typeof value !== "object") return null;
+  const o = value as Record<string, unknown>;
+  return {
+    currentlyDue: coerceStringArray(o.currentlyDue),
+    eventuallyDue: coerceStringArray(o.eventuallyDue),
+    pastDue: coerceStringArray(o.pastDue),
+    pendingVerification: coerceStringArray(o.pendingVerification),
+    disabledReason: typeof o.disabledReason === "string" ? o.disabledReason : null,
+    currentDeadline: typeof o.currentDeadline === "number" ? o.currentDeadline : null,
+  };
+}
+
+/**
+ * Fetch the caller's Connect status (refreshes from Stripe server-side).
+ * THROWS on a transport/500 failure rather than reporting a healthy-looking
+ * disconnected state — "we couldn't ask" and "you haven't connected" are
+ * different answers and only one of them is the creator's to act on.
+ */
 export async function getConnectStatus(): Promise<ConnectStatus> {
   const res = await fetch("/api/stripe/connect/status", { method: "GET" });
-  const json = (await res.json().catch(() => ({}))) as Partial<ConnectStatus>;
+  const json = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+  if (!res.ok) {
+    throw new Error(
+      typeof json.error === "string" ? json.error : "Could not load your payout status.",
+    );
+  }
   return {
     connected: json.connected === true,
     configured: json.configured !== false,
-    chargesEnabled: json.chargesEnabled,
-    payoutsEnabled: json.payoutsEnabled,
-    detailsSubmitted: json.detailsSubmitted,
-    onboardedAt: json.onboardedAt ?? null,
-    country: json.country ?? null,
-    defaultCurrency: json.defaultCurrency ?? null,
+    chargesEnabled: json.chargesEnabled === true,
+    payoutsEnabled: json.payoutsEnabled === true,
+    detailsSubmitted: json.detailsSubmitted === true,
+    onboardedAt: typeof json.onboardedAt === "string" ? json.onboardedAt : null,
+    country: typeof json.country === "string" ? json.country : null,
+    defaultCurrency: typeof json.defaultCurrency === "string" ? json.defaultCurrency : null,
+    requirements: coerceRequirements(json.requirements),
   };
+}
+
+/**
+ * Create the connected account if the creator hasn't got one — no redirect, no
+ * hosted link. This is the ONE thing in payout setup we can genuinely do on
+ * their behalf, so it is the checklist's `auto` step. Idempotent server-side.
+ */
+export async function ensureConnectAccount(): Promise<void> {
+  const res = await fetch("/api/stripe/connect/account", { method: "POST" });
+  if (res.ok) return;
+  const json = (await res.json().catch(() => ({}))) as { error?: string };
+  throw new Error(json.error ?? "Could not set up your payouts account.");
 }
 
 /** Start (or resume) Connect Express onboarding — returns a hosted onboarding URL. */

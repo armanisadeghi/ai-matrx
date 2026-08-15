@@ -37,10 +37,12 @@ import {
   ShieldAlert,
   Briefcase,
   FileSpreadsheet,
+  Gauge,
 } from "lucide-react";
 import { Chrome } from "@/components/icons/brand-icons";
 import Placeholder from "./tabs/PlaceholderTab";
 import MessagingTab from "./tabs/MessagingTab";
+import PlanUsageTab from "./tabs/PlanUsageTab";
 import AppearanceTab from "./tabs/AppearanceTab";
 import VoiceTab from "./tabs/VoiceTab";
 import TextToSpeechTab from "./tabs/TextToSpeechTab";
@@ -571,6 +573,33 @@ export const settingsRegistry: SettingsTabDef[] = [
       "People to reach if something goes wrong. Visible only to you.",
     searchKeywords: ["emergency", "contact", "next of kin", "icoe", "ice"],
     component: ProfileEmergencyTab,
+    persistence: "synced",
+  },
+
+  // ── Plan & usage ──────────────────────────────────────────────────────────
+  // "Where am I at right now" (Arman, 2026-08-14). Lives beside the account
+  // rather than under Organizations, because a person looking for their limits
+  // looks for their plan, not for an org admin screen.
+  {
+    id: "plan",
+    label: "Plan & usage",
+    icon: Gauge,
+    description:
+      "What your plan includes, how much you've used, and what the next plan up gives.",
+    searchKeywords: [
+      "plan",
+      "usage",
+      "limits",
+      "quota",
+      "billing",
+      "upgrade",
+      "points",
+      "storage",
+      "messages",
+      "subscription",
+      "tier",
+    ],
+    component: PlanUsageTab,
     persistence: "synced",
   },
 

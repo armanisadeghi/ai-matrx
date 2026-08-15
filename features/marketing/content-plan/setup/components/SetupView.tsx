@@ -40,6 +40,7 @@ import {
   SurfaceRuntimeProvider,
   type SurfaceWriteHandlers,
 } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useAppDispatch } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 
@@ -97,7 +98,7 @@ import {
   type SetupDraft,
 } from "../draft";
 import { useSetupPasses } from "../../hooks/useSetupPasses";
-import { useArchetypeLibrary, useCmsFacts } from "../hooks";
+import { setupKeys, useArchetypeLibrary, useCmsFacts } from "../hooks";
 import {
   readEntityAttachProposal,
   readKeywordStrategyProposal,
@@ -105,6 +106,8 @@ import {
 } from "../proposals";
 import { buildPreview } from "../preview";
 import { buildReadiness, normalizeDomain } from "../readiness";
+import { contentPlanSetupChecklist } from "../contentPlanSetupChecklist";
+import { GuidedChecklist } from "@/lib/guided-setup/components/GuidedChecklist";
 import {
   applyFamilyTopics,
   commitArchetype,
@@ -220,6 +223,10 @@ function namesFromPlan(
 export function SetupView() {
   const { siteId, setSiteId, setView } = usePlanWorkspaceParams();
   const queryClient = useQueryClient();
+  // The guided setup checklist performs real server work on the user's behalf
+  // (create the website, build its starter design) through the same `callApi`
+  // seam the "Make it real" rungs use.
+  const dispatch = useAppDispatch();
 
   const { sites, orgSites } = useContentPlanSites();
   // Resolve against EVERYTHING visible, not just the org-scoped picker list — a
@@ -2026,6 +2033,43 @@ export function SetupView() {
                 newCount={preview.counts.new}
                 pageTypeName={(slug) =>
                   slug ? (pageTypeNameBySlug.get(slug) ?? slug) : "No page type"
+                }
+                checklistSlot={
+                  site ? (
+                    <GuidedChecklist
+                      definition={contentPlanSetupChecklist}
+                      context={{
+                        site,
+                        foundation: readiness.items.filter(
+                          (item) => item.group === "foundation",
+                        ),
+                        cms: cms.data ?? null,
+                        cmsError: cms.isError
+                          ? extractErrorMessage(cms.error)
+                          : null,
+                        cmsLoading: cms.isLoading,
+                        dispatch,
+                        onChanged: async () => {
+                          await Promise.all([
+                            queryClient.invalidateQueries({
+                              queryKey: setupKeys.cms(site.id),
+                            }),
+                            queryClient.invalidateQueries({
+                              queryKey: marketingKeys.siteOptions(),
+                            }),
+                          ]);
+                        },
+                      }}
+                      scope={{
+                        organizationId: site.organization_id,
+                        targetKey: site.id,
+                      }}
+                      // Held until the CMS read settles: checking first would
+                      // report "no website" for a site that has one, then flip
+                      // — which reads as breakage, not as loading.
+                      ready={!cms.isLoading}
+                    />
+                  ) : null
                 }
                 lintSlot={
                   <>

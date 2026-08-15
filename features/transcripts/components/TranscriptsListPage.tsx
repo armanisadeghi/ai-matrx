@@ -17,6 +17,7 @@ import PageHeader from "@/features/shell/components/header/PageHeader";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import { transcriptListConfig } from "../browse/listConfig";
 import { TranscriptsListHeader } from "./TranscriptsListHeader";
+import { TranscriptsSurfaceGuide } from "./TranscriptsSurfaceGuide";
 
 export function TranscriptsListPage() {
   const newButton = (
@@ -28,6 +29,15 @@ export function TranscriptsListPage() {
     </Button>
   );
 
+  // The empty state is the ONE place the surface wayfinding renders — it never
+  // sits above the list, so a user with transcripts sees zero page shift.
+  const emptyAction = (
+    <>
+      {newButton}
+      <TranscriptsSurfaceGuide />
+    </>
+  );
+
   return (
     <>
       <PageHeader>
@@ -36,7 +46,7 @@ export function TranscriptsListPage() {
       <EntityListPage
         config={transcriptListConfig}
         headerActions={newButton}
-        emptyAction={newButton}
+        emptyAction={emptyAction}
       />
     </>
   );

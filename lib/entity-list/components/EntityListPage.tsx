@@ -214,6 +214,12 @@ export function EntityListPage<TRow>({
               list.setPage(next.page);
             }}
           />
+        ) : list.rows.length === 0 && !list.isLoading ? (
+          // Cards/rows views used to render literally nothing on an empty list —
+          // the empty state (and its emptyAction door) existed only in the table
+          // branch, so a user whose saved view style was "cards" met a blank
+          // page with no title, no explanation, and no way forward.
+          <EntityListEmpty config={config} action={emptyAction} />
         ) : view === "cards" && cardsView ? (
           cardsView(altViewProps)
         ) : rowsView ? (
@@ -232,6 +238,27 @@ export function EntityListPage<TRow>({
       </div>
 
       {modals}
+    </div>
+  );
+}
+
+/** Empty state for the non-table views — same copy + action slot the table uses. */
+function EntityListEmpty<TRow>({
+  config,
+  action,
+}: {
+  config: EntityListConfig<TRow>;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-2 px-4 py-12 text-center">
+      <p className="text-sm font-medium text-foreground">
+        {config.emptyState.title}
+      </p>
+      <p className="text-xs text-muted-foreground">
+        {config.emptyState.description}
+      </p>
+      {action}
     </div>
   );
 }
