@@ -189,6 +189,8 @@
     "patrol:delivery:queue": "tsx scripts/pattern-patrol/queue-delivery.ts",
     "patrol:delivery:check": "tsx scripts/pattern-patrol/check-delivery.ts",
     "patrol:delivery:status": "bash scripts/pattern-patrol/delivery-lease.sh status",
+    "patrol:manifest": "tsx scripts/pattern-patrol/check-manifest.ts --automation-json",
+    "check:patrol-contracts": "tsx scripts/pattern-patrol/check-manifest.ts",
     "fix:tsconfig": "tsx scripts/check-tsconfig-hygiene.ts --fix",
     "lab:graph": "tsx scripts/build-lab/graph-report.ts",
     "lab:run": "bash scripts/build-lab/run.sh"

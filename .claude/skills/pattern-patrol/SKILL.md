@@ -48,9 +48,11 @@ system doc). The repo-specific facts it needs:
   touch generated files, or change how a component enters a chunk (THE
   FRAGMENTATION LAW — `code-splitting` skill before ANY such change); fixing
   one side must not move the other (mobile↔desktop, dark↔light);
-  `pnpm type-check` before any done-claim. A patrol worker never moves
-  `origin/main` and never deploys; it preserves its candidate and hands the
-  exact SHA to the delivery controller.
+  `pnpm type-check` before any done-claim. Commit every coherent batch
+  immediately and push it to a remote ref within 15 minutes. After independent
+  certification names the exact candidate SHA, integrate it through the normal
+  fast `origin/main` workflow within 45 minutes. Only deployment/release stays
+  serialized.
 - **Isolation:** scheduled patrols run in an isolated Codex worktree. If this
   run is in the shared checkout or sees unrelated dirty files, stop before
   mutation and repair the execution environment; do not treat concurrent work
@@ -63,9 +65,9 @@ system doc). The repo-specific facts it needs:
   owned by this exact checkout. If another worktree owns the machine-wide slot,
   the command fails and this patrol queues; never certify against the other
   worktree's URL. `pnpm preview:status` reports the global owner, and only that
-  checkout may stop it. Read the machine-profile RSS cap from launcher status
-  (the current 256 GB host uses 96 GB); the five-minute startup-progress cap
-  remains fixed. The launcher never restarts automatically.
+  checkout may stop it. Read the machine-profile RSS cap from launcher status;
+  the five-minute startup-progress cap remains fixed. The launcher never
+  restarts automatically.
 - **Certification (Tier M):** a second adversarial agent ("assume this batch
   broke something; find it") compares pre-edit and post-edit type/gate
   diagnostics. New batch-caused failures reject; unchanged baseline debt is
@@ -78,12 +80,12 @@ system doc). The repo-specific facts it needs:
   is never proof that product code broke. Only one managed preview runs
   machine-wide; concurrent patrols queue and never reuse a different
   worktree's build. No independent verdict → invalid run.
-- **Serialized delivery lane:** push only a durable preservation ref. After an
-  independent certifier records `CERTIFIED` for the exact candidate SHA, the
-  controller may run `pnpm patrol:delivery:queue`. Only the controller claims
-  the machine-wide release lane and runs `./scripts/release.sh`; its hard gate
-  refuses uncertified or unqueued patrol commits. If the candidate is already
-  in a newer release, record that version instead of creating another bump.
+- **Fast integration, serialized release:** push the candidate immediately.
+  After an independent certifier records `CERTIFIED` for the exact candidate
+  SHA, integrate it into `origin/main` through the normal shared workflow;
+  preserve that commit as an ancestor. The machine-wide lease applies only to
+  `./scripts/release.sh`. If a newer release already contains the candidate,
+  record that version instead of creating another bump.
 - **Scoping:** structural novelty (new `app/**/page.tsx` leaves, new
   `features/*` dirs, new files matching the patrol's surface signature) + the
   ledger + a full pass every Nth run. NEVER scope by raw git churn.
@@ -133,8 +135,8 @@ patterns.
 - Giving a polished normal-looking summary for a degraded or incomplete run.
 - Rejecting or reverting valid work because an unrelated baseline gate or the
   preview harness failed.
-- Reusing a preview from another worktree or moving `origin/main` while another
-  patrol owns the delivery lane.
+- Reusing a preview from another worktree, leaving owned work uncommitted or
+  unpushed, or delaying certified work behind a fictitious integration gate.
 - Treating a Markdown report or automation memory as more authoritative than
   the permanent run record, or rewriting an earlier lifecycle event.
 - Stopping after detection because no finding was auto-approved instead of
