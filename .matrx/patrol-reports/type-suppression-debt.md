@@ -23,16 +23,18 @@
 | active `eslint-disable*` | 483 in 356 files | 482 in 355 files | -1 occurrence / -1 file |
 | full type-check | 16 errors in `features/marketing/competitors/landscapeBrief.ts` | same 16 errors | unchanged baseline |
 | scoped ESLint | 1 unused-disable warning | clean | fixed |
-| `pnpm check:patrol-contracts` | PASS | pending final rerun | — |
+| `pnpm check:patrol-contracts` | PASS | PASS | unchanged |
 
 - The whole-repo hatch ratchet remains red on the unchanged four growth categories; reductions never offset those breaches.
-- Candidate certification: **PENDING**. Exact candidate SHA and adversarial verdict will replace this line after the batch is committed and pushed.
+- Candidate `a4a7c03ea2db9311ee926433eb0f6f25774e03a6` is preserved at `origin/codex/p10-20260815`.
+- Independent verdict: **INFRASTRUCTURE BLOCKED**. Certifier `/root/p10_certifier` found no static, type, detector, or focused-render regression and verified the exact candidate, but `pnpm preview:status` reported port 3001 owned by `/Users/armanisadeghi/code/matrx-frontend` (93.4 GB RSS). The certifier correctly refused to reuse or stop that foreign preview, so exact-worktree live microphone-state interaction proof remains pending. The candidate is preserved for retry and is neither rejected nor integrated.
 
 ### Current explicit-suppression inventory
 
 - Executable `as any`: **81**; `@ts-ignore`: **20**; `@ts-nocheck`: **2**; production `@ts-expect-error`: **1**; active `eslint-disable*`: **482**. Combined explicit total: **586**.
 - Active ESLint suppressions now occupy **355 eligible files**, down from 363 in the prior P10 report. The detector's compile-time contract-test exclusion is now built in, so intentional negative assertions no longer inflate this patrol.
 - Cadence remains unchanged. This is the second full P10 cycle, not a month of clean runs, and no repeated rejection exists.
+- Recursive learning: rank finite-union casts at component boundaries separately; this batch proved that a cast can hide a real missing lookup (`xs` entering a child map with only `sm | md | lg`), not merely a compiler mismatch.
 
 ---
 

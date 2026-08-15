@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P10",
   "runId": "2026-08-15T191639Z",
-  "state": "certifying",
-  "updatedAt": "2026-08-15T19:22:43Z",
-  "summary": "Finished the bounded microphone suppression repair and entered exact-candidate certification.",
+  "state": "infrastructure_blocked",
+  "updatedAt": "2026-08-15T19:29:56Z",
+  "summary": "Independent certification found no static regression but exact-worktree live interaction proof is blocked by a foreign preview lease.",
   "source": "2026-08-15T191639Z.json",
-  "eventHash": "6fe83589159a910dfb609beaef9e38e36bc3cd5f81740207871ae6ee7a4058cb"
+  "eventHash": "9cdbdce6a31920755524e5ae547cc679e52ca77f41112907abeeacf9e7d7c183"
 }
