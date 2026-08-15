@@ -100,22 +100,6 @@ Until both clear, `Convert → Save as contact` opens, parses, and reviews corre
 "The agent failed before returning a result" — the failure is surfaced, never silent, and nothing
 is written.
 
-### D190 — PostgREST's 1000-row cap is read as "absence" wherever a list is fetched unpaginated (2026-08-14)
-
-`scripts/check-migrations.ts` fetched the whole `_schema_migrations` ledger in ONE unpaginated
-request. PostgREST caps at `db-max-rows` (1000) and says so — `206` + `Content-Range: 0-999/1005` —
-but the script ignored the status and read the truncated list as fact, so the **5 newest migrations
-were reported UNAPPLIED to a release that had just applied them**. Under `--strict` (what
-`scripts/release.sh` gates on) that is a hard release-blocker with no bad migration anywhere.
-**Fixed there** (paged with `Range` + stable `order=filename.asc`; a short read returns null and
-skips the check loudly rather than reporting confidently-wrong absence).
-
-**The class is open.** Any unpaginated `select` whose result is used to decide whether something
-EXISTS has this bug the moment the table passes 1000 rows, and it fails silently — the list just
-gets shorter. Same shape as the `information_schema` privilege-filtering trap in aidream's pooler
-defect: a partial answer wearing the costume of a complete one. Worth a sweep for `select=` /
-`.from(...).select(...)` calls that feed an existence/diff check with no `.range()`/`limit`, and a
-lint or helper that refuses an unbounded list read.
 
 ### D189 — dataset Strict Validation + Authenticated Access have NO live UI (2026-08-14)
 
@@ -435,21 +419,9 @@ On a 325-page site the audit tab replaces the whole surface with a generic retry
 
 (1) No `presentation` prop — `EntityListPage.tsx:120` hardcodes route-header padding, unusable in a `WindowPanel` (CRM already solves this bespoke; small fix once a second consumer needs it, not speculatively). (2) No surfaces-runtime slot — converting CRM would drop its `SurfaceRuntimeProvider` integration. (3) No segmented-control axis (CRM's People/Companies). Also: shell `archived` ≠ CRM `active|trash`. **2 and 3 are Arman's call** (shell grows them vs those surfaces stay bespoke).
 
-### D139 — CRM scope counts fire `3 + N_orgs` round trips per keystroke (2026-08-09)
-
-`fetchPartyScopeCounts` (`features/crm/service.ts:224`) + 200ms debounce in `usePartyList.ts:94`. Fix = one `crm_list_scope_counts` RPC (exemplars: `agx_list_scope_counts` / `trx_list_scope_counts`); falls out of the entity-list conversion (`docs/handoffs/inventory-law-sweep.md` § Wave 4) but is a live cost today.
-
-### D138 — the sharing registry is a SECOND route authority, and it disagrees with itself (2026-08-09)
-
-`platform.shareable_resource_registry.url_path_template` (mirrored in `utils/permissions/registry.ts`) contradicts `entityRegistry.hrefFor` and itself: `/quizzes/{id}` vs `/education/quizzes/{id}`, `/apps/{id}` (real: `/agent-apps/[id]`), `/canvas/{id}` (no route — D137), `/code/files/{id}`. Load-bearing: `shareLinks.ts`, `useOrgSharedItems.ts`, `OrgShareReviewCard`, `OrgResourceDetail` build user-facing links from it → live broken links. Fix: audit templates against `app/`, correct the DB rows, make sharing surfaces resolve via `entityRegistry`, retire `url_path_template` as a route source.
-
 ### D137 — `/canvas/{id}` has no route: four callsites link there, including email notifications (2026-08-09)
 
 `app/(public)/canvas/` has only `discover/` and `shared/[token]/` — `/canvas` and `/canvas/{id}` 404. Callers: `ShareModalWindow.tsx:57,65`, `CanvasPeek.tsx:51`, `lib/email/notificationService.ts:229` (mailed to users). **Decide the canonical canvas record route** (Arman), then build the page or repoint all four. `canvas_item` deliberately has no `hrefFor` until then.
-
-### D136 — `pnpm check:hatches` is red on main: baseline drifted, ratchet no longer ratchets (2026-08-08)
-
-~1,200 hatches landed unfrozen (five categories above baseline, others far below), so every run fails regardless of the change. Audit the growth (or burn it down), then re-freeze with `pnpm check:hatches --update` as its own change.
 
 ### D135 — RESOLVED 2026-08-14: soft delete now TOMBSTONES association edges and restore revives them
 
@@ -497,7 +469,7 @@ The canonical thunk (`execute-builtin-with-extraction.thunks.ts`) has ONE consum
 
 ### D122 (residuals) — partition exhaustion class guards (2026-08-04)
 
-The 4-day platform freeze is fixed (`history_row_versions_partition_autoprovision.sql`: provisioner + 18-month runway + catch-all + pg_cron + alarm). Open: (1) a "time-bounded DDL about to expire" check in the release gates — nothing compares partition runway to `now()` (decides: anyone); (2) `public.agent_run`/`agent_run_stage` stale empty duplicates of `chat.*` — graveyard them (**chip fired 2026-08-12**); (3) a write-rate watchdog — four days of zero writes to 121 tables produced no alert (**decides: Arman**, ops scope).
+The 4-day platform freeze is fixed, and the runway guard shipped 2026-08-15 (`pnpm check:partition-runway`, advisory in both gate lists — catches exhausted runway, a catch-all partition that has started taking rows, and stalled/failed pg_cron). Open: (1) `public.agent_run`/`agent_run_stage` stale empty duplicates of `chat.*` — graveyard them (**chip fired 2026-08-12**); (2) a write-rate watchdog — four days of zero writes to 121 tables produced no alert (**decides: Arman**, ops scope).
 
 ### D121 — website-factory audit: 12 content-plan/CMS defects on a dispatch board (2026-07-30)
 
@@ -636,7 +608,7 @@ aidream never writes it; lists/RSS can't show runtimes. Fix at publish time in a
 
 ### D67 (remainder) — doctrine says "banned", ESLint says `warn` (2026-07-18)
 
-Browser dialogs DONE 2026-08-12 (repo swept, `no-alert`/`no-restricted-globals`/`no-restricted-properties` promoted to error, proven-zero scan). Remaining: barrel files (488 warnings), banned lucide brand icons (runtime-missing → 500s; `warn` is the wrong severity). Each: finish cleanup + promote, or soften the doc.
+Browser dialogs DONE 2026-08-12; banned lucide brand icons DONE 2026-08-15 (zero violations verified, promoted to `error` — they 500 the page, so `warn` was wrong for a crash). **Remaining: barrel files only** (488 warnings). `warn` is arguably correct there — CLAUDE.md's rule is "no NEW ones, replace opportunistically" — so this closes by either finishing the cleanup and promoting, or stating in the doc that barrels are a deliberate warn-level ratchet.
 
 ### D60 — chat draft transfer never lands for VARIABLE-INPUT agents (2026-07-17)
 
@@ -696,6 +668,14 @@ One line per fix — title, date, pointer. History lives in git. Entries older t
 - **D172** — `acceptPageUrlInput` scheme check made case-insensitive to match the scraper's `_normalise_url` (`5bdf85834`). 2026-08-12.
 - **D166** — kind-activation guard + `set_kind_activation` genuinely exempt the service role; `activate-kinds.ts --apply` goes through the canonical RPC (`content_ir_activation_service_role_fix.sql`, `4f2804efa`). 2026-08-12.
 - **D120** — `chart.tsx` typed against recharts 3.9, `@ts-nocheck` deleted (`409a98d2b`). 2026-08-12.
+- **D-harness** — the shared preview server could NEVER start: an 8 GB RSS watchdog on a 256 GB host killed it compiling its first route, every time, so browser verification was impossible fleet-wide. Measured to 58.6 GB, cap → 96 GB, `MATRX_PROFILE=core` pinned (bare default is `full`, the profile production itself cannot build), and `browser-testing.md`'s false "this machine has 16GB" corrected (`81c03829e`). 2026-08-15.
+- **D190** — PostgREST's silent 1000-row truncation fixed at the root: `lib/supabase/readAllRows.ts` (verified paging) + 17 call sites; 3 tables already broken (up to 4185 rows), one feeding a DELETE and one inventing 138 false gate findings; advisory `pnpm check:unbounded-reads` (`96e9a3c63`). 2026-08-15.
+- **D138** — 24 of 73 sharing-registry route templates 404'd real users: 6 repointed, 19 honestly emptied, sharing surfaces moved onto `entityRegistry` as the single route authority, plus a test that walks `app/**` so a fabricated route can't ship (`d806393c8`). Canvas stays route-less per D137. 2026-08-15.
+- **D139** — CRM scope counts 7 requests → 1 via `crm_list_scope_counts`, counts proven identical end-to-end (`crm_list_scope_counts.sql`). 2026-08-15.
+- **D136** — escape-hatch ratchet green again: 1,476 unfrozen hatches audited (~80% legitimate idiom), 6 real fixes incl. a stale-closure bug and an unvalidated stream envelope, 2 escalated, baseline re-frozen, gate wired into `run-release-gates.sh` as advisory-but-loud. 2026-08-15.
+- **D67 (lucide)** — banned brand icons promoted warn → error at zero violations (`95a1a7822`). 2026-08-15.
+- **D167 (class sweep)** — 17 more SECURITY INVOKER functions stopped calling an access denial "not found"; 4 raise sites correctly left alone; a caller matching by message text fixed to match the code (`8cffe1c54`). 2026-08-15.
+- **D164** — verdict: identical from birth, proven by `history.row_versions` (both v1 INSERTs already byte-identical, 32ms apart, neither ever renamed); no user-facing surface renders the wrong component. Which slug survives is Arman's (`140b1998a`). 2026-08-15.
 - **D108** — the 7 "permanently dead" feedback screenshots were never dead (only the share LINK died; all 7 files live + public, CDN 200): healed in place, and the real defect closed — a revocable `/share/<token>/download` URL no longer classifies as durable in either the DB or `lib/media` twin (`feedback_screenshots_heal_and_share_url_not_durable.sql`, `d630b6f73`). 2026-08-15.
 - **D94** — forbidden project FK dropped from `docproc.page_extraction_jobs` (32 rows, zero non-null, no reader) + all FE refs + aidream model regen (`docproc_page_extraction_jobs_drop_project_fk.sql`, `c08ab7047` / aidream `58a3c13f6`). 2026-08-15.
 - **D167 (research saves)** — access half fixed by the RLS reorg (proven live: an entitled org member's `rs_topic_append_output` succeeds). The remaining lie is gone too: the RPC no longer asserts "not found" for an access denial — it raises an honest ambiguous message under errcode `P0002` (RLS stays the sole authority; no definer probe added) and `appendTopicOutput` routes it to `<AccessGate token="research_topic"/>`. Also hardened: a zero-row write now raises instead of reporting success on a paid run. `migrations/rs_topic_append_output_honest_access_error.sql`, applied + ledgered. Class sweep of the other 18 invoker functions → chip. 2026-08-14.
