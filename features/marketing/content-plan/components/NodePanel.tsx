@@ -1164,6 +1164,13 @@ export function NodePanel({
             <PanelSection title="Brief">
               <BriefEditor
                 lines={current.brief ?? []}
+                savedLines={node.brief ?? []}
+                node={{
+                  id: node.id,
+                  label: node.label,
+                  route: node.route,
+                }}
+                planKpiLine={pageKpis ? contentPlanKpiLine(pageKpis) : null}
                 onChange={(next) => stage({ brief: next })}
                 draft={briefDraft}
                 draftPending={draftPending}
