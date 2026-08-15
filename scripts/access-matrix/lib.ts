@@ -156,6 +156,83 @@ export interface WriteProbe {
   error?: string;
 }
 
+export interface WriteRows<T> extends WriteProbe {
+  /** Returned row representations, when PostgREST accepted the write. */
+  data: T[];
+}
+
+async function rlsWrite<T>(
+  env: Env,
+  jwt: string,
+  schema: string,
+  table: string,
+  method: "POST" | "PATCH" | "DELETE",
+  query: string,
+  body?: Record<string, unknown>,
+): Promise<WriteRows<T>> {
+  const res = await fetch(`${env.url}/rest/v1/${table}?${query}`, {
+    method,
+    headers: {
+      apikey: env.publishableKey,
+      Authorization: `Bearer ${jwt}`,
+      "Content-Profile": schema,
+      "Accept-Profile": schema,
+      "Content-Type": "application/json",
+      Prefer: "return=representation",
+    },
+    ...(body ? { body: JSON.stringify(body) } : {}),
+  });
+  const text = await res.text();
+  if (!res.ok) {
+    let message = text.slice(0, 300);
+    try {
+      const parsed = JSON.parse(text) as { message?: string };
+      if (parsed.message) message = parsed.message;
+    } catch {
+      // non-JSON body — keep the raw text
+    }
+    return { status: res.status, rows: 0, data: [], error: message };
+  }
+  try {
+    const parsed = JSON.parse(text) as unknown;
+    const data = Array.isArray(parsed) ? (parsed as T[]) : [];
+    return { status: res.status, rows: data.length, data };
+  } catch {
+    return { status: res.status, rows: 0, data: [] };
+  }
+}
+
+/** TRUE-RLS insert as a signed-in user, returning the inserted row. */
+export function rlsInsert<T>(
+  env: Env,
+  jwt: string,
+  schema: string,
+  table: string,
+  row: Record<string, unknown>,
+  select = "id",
+): Promise<WriteRows<T>> {
+  return rlsWrite<T>(env, jwt, schema, table, "POST", `select=${select}`, row);
+}
+
+/** TRUE-RLS delete as a signed-in user, returning the deleted row. */
+export function rlsDelete<T>(
+  env: Env,
+  jwt: string,
+  schema: string,
+  table: string,
+  filter: string,
+  select = "id",
+): Promise<WriteRows<T>> {
+  return rlsWrite<T>(
+    env,
+    jwt,
+    schema,
+    table,
+    "DELETE",
+    `${filter}&select=${select}`,
+  );
+}
+
 /**
  * TRUE-RLS write over PostgREST as a specific user — the exact path a sharee
  * would use to walk around a UI-only check (this is how D119 was proven).
@@ -170,37 +247,15 @@ export async function rlsPatch(
   filter: string,
   patch: Record<string, unknown>,
 ): Promise<WriteProbe> {
-  const res = await fetch(`${env.url}/rest/v1/${table}?${filter}&select=id`, {
-    method: "PATCH",
-    headers: {
-      apikey: env.publishableKey,
-      Authorization: `Bearer ${jwt}`,
-      "Content-Profile": schema,
-      "Accept-Profile": schema,
-      "Content-Type": "application/json",
-      Prefer: "return=representation",
-    },
-    body: JSON.stringify(patch),
-  });
-  const text = await res.text();
-  if (!res.ok) {
-    let message = text.slice(0, 300);
-    try {
-      const parsed = JSON.parse(text) as { message?: string };
-      if (parsed.message) message = parsed.message;
-    } catch {
-      // non-JSON body — keep the raw text
-    }
-    return { status: res.status, rows: 0, error: message };
-  }
-  let rows = 0;
-  try {
-    const parsed = JSON.parse(text) as unknown;
-    if (Array.isArray(parsed)) rows = parsed.length;
-  } catch {
-    rows = 0;
-  }
-  return { status: res.status, rows };
+  return rlsWrite(
+    env,
+    jwt,
+    schema,
+    table,
+    "PATCH",
+    `${filter}&select=id`,
+    patch,
+  );
 }
 
 /** Service-key (RLS-bypassing) baseline count — "how many rows exist at all". */
