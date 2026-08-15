@@ -23,6 +23,10 @@ import {
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectActiveTabId } from "../../redux/tabsSlice";
 import {
+  clearLibraryFolderFocus,
+  selectFocusedFolderId,
+} from "../../redux/codeWorkspaceSlice";
+import {
   useOpenLibraryFile,
   libraryTabId,
 } from "../../hooks/useOpenLibraryFile";
@@ -62,6 +66,10 @@ export const LibraryTree: React.FC<LibraryTreeProps> = ({
   const activeTabId = useAppSelector(selectActiveTabId);
   const openFile = useOpenLibraryFile();
   const { focusedLibrarySourceId } = useCodeWorkspace();
+  // `?folder=<id>` targets a folder inside "My Files", so that root has to be
+  // open for the highlighted row to be reachable — even when the host focused
+  // the tree on a library source, and even if focus arrives after mount.
+  const focusedFolderId = useAppSelector(selectFocusedFolderId);
 
   // Auto-load only on the `idle` transition. We deliberately do NOT
   // auto-retry on `error` here — without that guard, the slice's
@@ -131,6 +139,7 @@ export const LibraryTree: React.FC<LibraryTreeProps> = ({
         activeTabId={activeTabId ?? null}
         openFile={openFile}
         defaultExpanded={!focusedLibrarySourceId}
+        forceExpanded={Boolean(focusedFolderId)}
         onCreateFile={onCreateFile}
       />
 
@@ -164,6 +173,8 @@ interface MyFilesRootProps {
   activeTabId: string | null;
   openFile: (codeFileId: string) => void;
   defaultExpanded?: boolean;
+  /** Held open by a `?folder=` deep link, regardless of the local toggle. */
+  forceExpanded?: boolean;
   onCreateFile: (folderId: string | null, label: string) => void;
 }
 
@@ -175,10 +186,18 @@ const MyFilesRoot: React.FC<MyFilesRootProps> = ({
   activeTabId,
   openFile,
   defaultExpanded = true,
+  forceExpanded = false,
   onCreateFile,
 }) => {
-  const [expanded, setExpanded] = useState(defaultExpanded);
-  const toggle = () => setExpanded((e) => !e);
+  const dispatch = useAppDispatch();
+  const [locallyExpanded, setLocallyExpanded] = useState(defaultExpanded);
+  const expanded = locallyExpanded || forceExpanded;
+  const toggle = () => {
+    setLocallyExpanded(!expanded);
+    // Collapsing the root hides the deep-linked folder, so give up the focus
+    // rather than letting `forceExpanded` pin this root open forever.
+    if (expanded && forceExpanded) dispatch(clearLibraryFolderFocus());
+  };
   const rootMenuSections: ContextMenuExtraSection[] = [
     {
       id: "library-root-actions",

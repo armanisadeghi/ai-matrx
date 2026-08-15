@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { setActiveView } from "../redux/codeWorkspaceSlice";
+import { revealView } from "../redux/codeWorkspaceSlice";
 import { useOpenLibraryFile } from "./useOpenLibraryFile";
 
 /**
@@ -13,7 +13,10 @@ import { useOpenLibraryFile } from "./useOpenLibraryFile";
  * directly to a specific saved file.
  *
  * Also flips the side panel to the Library view so the user can see where
- * the file lives after it opens.
+ * the file lives after it opens. That uses `revealView`, NOT `setActiveView`:
+ * `setActiveView` treats "the view you asked for is already active" as a
+ * request to collapse the panel, and `"library"` is the default view — so a
+ * fresh `?open=` load was hiding the Library panel it meant to reveal.
  */
 export function useOpenCodeFileFromUrl(): void {
   const params = useSearchParams();
@@ -28,7 +31,7 @@ export function useOpenCodeFileFromUrl(): void {
     openLibraryFile(open)
       .then(() => {
         if (!cancelled) {
-          dispatch(setActiveView("library"));
+          dispatch(revealView("library"));
         }
       })
       .catch((err) => {

@@ -315,10 +315,19 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   code_folder: {
     Icon: FolderGit2,
     labelPlural: "Code Folders",
+    // The workspace has no sub-routes, so a folder's destination is the
+    // Library tree with that folder expanded, highlighted, and scrolled to
+    // (features/code/hooks/useFocusCodeFolderFromUrl.ts). There is no
+    // `/code/folders/{id}` and there must never be one.
+    hrefFor: (id) => `/code?folder=${encodeURIComponent(id)}`,
   },
   code_repository: {
     Icon: GitBranch,
     labelPlural: "Code Repositories",
+    // `/rag/repositories` is the ONLY surface over code.code_repositories —
+    // /code's Source Control view is git-on-the-sandbox, a different thing.
+    // `?repo=` highlights the row and scrolls it into view.
+    hrefFor: (id) => `/rag/repositories?repo=${encodeURIComponent(id)}`,
   },
 
   // ─── Outputs ────────────────────────────────────────────────────────────--

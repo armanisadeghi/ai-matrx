@@ -12,8 +12,9 @@
  * genuine background work.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   Code2,
   Database,
@@ -68,6 +69,13 @@ interface RpcReposResponse {
 
 export function RepositoriesPage() {
   const userId = useAppSelector(selectUserId);
+  // `?repo=<id>` is THE deep link to one code.code_repositories row — what
+  // `entityRegistry.code_repository.hrefFor` emits. This page is the only
+  // surface over that table, so "open this repository" means "land on this
+  // page with its row highlighted and scrolled into view".
+  const searchParams = useSearchParams();
+  const focusRepoId = searchParams?.get("repo") ?? null;
+  const focusRowRef = useRef<HTMLTableRowElement | null>(null);
   const [repos, setRepos] = useState<ApiRepo[]>([]);
   const [unattached, setUnattached] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -102,6 +110,22 @@ export function RepositoriesPage() {
       cancelled = true;
     };
   }, [userId, refreshKey]);
+
+  useEffect(() => {
+    if (focusRepoId && focusRowRef.current) {
+      focusRowRef.current.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
+  }, [focusRepoId, repos]);
+
+  // A deep-linked repository that isn't in the list is the honest failure
+  // case: `fn_list_repositories` is scoped to the caller, so the row was
+  // deleted or belongs to someone else. Say so instead of silently showing an
+  // unhighlighted list that looks like the link worked.
+  const focusMissing =
+    Boolean(focusRepoId) &&
+    !loading &&
+    !error &&
+    !repos.some((r) => r.repository_id === focusRepoId);
 
   const indexRepo = async (id: string, force = false) => {
     setIndexingId(id);
@@ -146,6 +170,19 @@ export function RepositoriesPage() {
         }
       />
       <div className="flex flex-col h-full overflow-hidden bg-background pt-[var(--shell-header-h)]">
+        {focusMissing && (
+          <div className="mx-6 mb-2 shrink-0 rounded-md border border-warning/50 bg-warning/5 p-3 text-sm">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+              <span className="text-muted-foreground">
+                The repository you followed a link to isn&apos;t in your list —
+                it may have been deleted, or it belongs to someone who
+                hasn&apos;t shared it with you.
+              </span>
+            </div>
+          </div>
+        )}
+
         {unattached > 0 && (
           <div className="px-6 pb-2 text-xs text-muted-foreground shrink-0">
             <Badge variant="warning" className="mr-2">
@@ -189,8 +226,17 @@ export function RepositoriesPage() {
                 const partial =
                   r.indexed_file_count > 0 &&
                   r.indexed_file_count < r.file_count;
+                const focused =
+                  focusRepoId !== null && r.repository_id === focusRepoId;
                 return (
-                  <TableRow key={r.repository_id ?? r.name}>
+                  <TableRow
+                    key={r.repository_id ?? r.name}
+                    ref={focused ? focusRowRef : undefined}
+                    aria-current={focused ? "true" : undefined}
+                    className={
+                      focused ? "bg-accent ring-1 ring-inset ring-primary/40" : undefined
+                    }
+                  >
                     <TableCell>
                       <div className="font-medium">{r.name}</div>
                       {r.git_url && (

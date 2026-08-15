@@ -40,11 +40,14 @@ So the entire defense is: **the row must outlive every mounted viewer.**
      Viewers keyed by conversation rather than request use the sibling
      `useRetainLatestRequestForViewer(conversationId, label)`, which follows the conversation's
      newest request across re-runs. A long-lived `store.getState()` **poll** on a row is a viewer
-     too: retain/release around it with the slice actions (exemplar: `useImageStudio`'s
-     `waitForExtraction`).
-   - The shared headless-JSON seam `useHeadlessAgentJson` retains for every consumer that reads
-     its `activeRequestId` (flashcards, quiz generation, `useKindRequest`, content-plan setup),
-     the same way `StreamAwareChatMarkdown` covers every `MarkdownStream`.
+     too: retain/release around it with the slice actions (exemplar: the shared `waitForExtraction`
+     inside `run-headless-agent-json.ts`, which retains for BOTH `runHeadlessAgentJson` and the
+     adopted-run entry `adoptHeadlessAgentJson` — so every headless-JSON consumer, thunk-level or
+     hook-level, is covered).
+   - The shared headless-JSON seam `useHeadlessAgentJson` additionally retains for every consumer
+     that reads its `activeRequestId` (flashcards, quiz generation, `useKindRequest`, content-plan
+     setup) beyond the poll's own lifetime, the same way `StreamAwareChatMarkdown` covers every
+     `MarkdownStream`.
 2. **Non-destructive `createRequest`** — creating a request under an **existing** id keeps the
    row (and cancels any deferred removal); it never resets streamed state. A rejoin or a second
    surface adopting the same server-side pipeline run (same `X-Request-ID`) continues into the
@@ -134,6 +137,11 @@ Redux devtools before touching retention seams.
 
 ## Change Log
 
+- 2026-08-14 — Retention moved INTO the canonical headless-JSON primitive: the shared
+  `waitForExtraction` in `run-headless-agent-json.ts` now retains/releases around its poll, and
+  the new `adoptHeadlessAgentJson` entry (already-executed runs, e.g. shortcut-trigger +
+  attached-resources launches) inherits it. `useImageStudio`'s hand-retained local poll (the
+  former exemplar) was deleted in the same change — it now adopts the primitive.
 - 2026-08-14 — Swept every surface that renders a live run WITHOUT the canonical viewers and
   gave each one retention: the shared `useHeadlessAgentJson` seam (covers flashcards create,
   quiz generation, `useKindRequest`, content-plan setup AI), `AgentGenerator`, both agent-app

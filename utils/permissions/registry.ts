@@ -183,7 +183,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     ownerColumn: "created_by",
     isPublicColumn: null,
     displayLabel: "Code Folder",
-    urlPathTemplate: "",
+    urlPathTemplate: "/code?folder={id}",
     rlsUsesHasPermission: true,
   },
   code_repository: {
@@ -194,7 +194,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     ownerColumn: "created_by",
     isPublicColumn: null,
     displayLabel: "Code Repository",
-    urlPathTemplate: "",
+    urlPathTemplate: "/rag/repositories?repo={id}",
     rlsUsesHasPermission: true,
   },
   message_template: {

@@ -49,6 +49,10 @@ import {
   selectLatestAnswerText,
   selectLatestRequestId,
 } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+import {
+  releaseRequestForViewer,
+  retainRequestForViewer,
+} from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
 import { setUserInputMessageParts } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { launchAgentExecution } from "./launch-agent-execution.thunk";
 import { executeInstance } from "./execute-instance.thunk";
@@ -234,12 +238,16 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
  * never alters the run's own outcome.
  */
 async function deliverResult(
-  opts: HeadlessAgentJsonOptions,
+  seam: {
+    onResult?: HeadlessAgentJsonOptions["onResult"];
+    surfaceKey: string;
+    agentRef: string;
+  },
   result: HeadlessAgentJsonResult,
 ): Promise<void> {
-  if (!opts.onResult) return;
+  if (!seam.onResult) return;
   try {
-    await opts.onResult(result);
+    await seam.onResult(result);
   } catch (err: unknown) {
     captureError({
       source: "agent-json-result",
@@ -249,8 +257,8 @@ async function deliverResult(
       requestId: result.requestId,
       conversationId: result.conversationId,
       raw: {
-        surfaceKey: opts.surfaceKey,
-        agent: opts.agentId ?? opts.slotKey ?? "unknown",
+        surfaceKey: seam.surfaceKey,
+        agent: seam.agentRef,
         success: result.success,
       },
     });
@@ -263,7 +271,112 @@ export async function runHeadlessAgentJson(
   opts: HeadlessAgentJsonOptions,
 ): Promise<HeadlessAgentJsonResult> {
   const result = await launchAndWait(dispatch, getState, opts);
-  await deliverResult(opts, result);
+  await deliverResult(
+    {
+      onResult: opts.onResult,
+      surfaceKey: opts.surfaceKey,
+      agentRef: opts.agentId ?? opts.slotKey ?? "unknown",
+    },
+    result,
+  );
+  return result;
+}
+
+/**
+ * Options for adopting a run that was ALREADY launched and executed outside
+ * this primitive — a shortcut trigger that had to attach instance resources
+ * before `executeInstance` (the one launch shape `launchAgentExecution` cannot
+ * yet express; same blocked-on-launcher-attach-support gap as `messageParts`,
+ * centralized here rather than per call site).
+ */
+export interface AdoptedAgentJsonOptions {
+  /** The executed run to wait on. */
+  requestId: string;
+  /** The conversation that owns it (fallback text source + cleanup target). */
+  conversationId: string;
+  /** Stable surface key for telemetry. */
+  surfaceKey: string;
+  /** Agent/shortcut reference for telemetry. */
+  agentRef?: string;
+  /** Overall ceiling for extraction. Default 120s. */
+  timeoutMs?: number;
+  /** Poll cadence (floored to 100ms). Default 250ms. */
+  pollIntervalMs?: number;
+  /** Bounded settle window after a terminal stream state. Default 6s. */
+  settleMs?: number;
+  /**
+   * Keep the conversation/instance alive after the run. Default false — the
+   * instance is destroyed on settle, matching the launched path. A caller
+   * whose own lifecycle owns teardown (it created the conversation and must
+   * clean up pre-execute failure paths too) passes true.
+   */
+  keepInstance?: boolean;
+  /** THE PERSISTENCE SEAM — same contract as `HeadlessAgentJsonOptions.onResult`. */
+  onResult?: HeadlessAgentJsonOptions["onResult"];
+  /** Stop waiting and harvest — same contract as `HeadlessAgentJsonOptions.signal`. */
+  signal?: AbortSignal;
+  /** Per-feature user-facing failure copy. */
+  failureMessages?: HeadlessAgentJsonOptions["failureMessages"];
+}
+
+/**
+ * adoptHeadlessAgentJson — the sibling entry point for a run this primitive
+ * did not launch. Hand it an already-executed `requestId` + `conversationId`
+ * and it reuses THE machinery: viewer-retained polling, fast-fail on stream
+ * error, the bounded settle window, `resolveRunData`'s one result-resolution
+ * rule, loud no-result reporting, instance cleanup, and the persistence seam.
+ *
+ * Do NOT re-implement the wait loop at a call site that launches through a
+ * path this primitive doesn't support — adopt the run here instead. Never
+ * throws; resolves a structured result, exactly like `runHeadlessAgentJson`.
+ */
+export async function adoptHeadlessAgentJson(
+  dispatch: AppDispatch,
+  getState: () => RootState,
+  opts: AdoptedAgentJsonOptions,
+): Promise<HeadlessAgentJsonResult> {
+  const agentRef = opts.agentRef ?? "adopted-run";
+  const msgs = { ...DEFAULT_MESSAGES, ...opts.failureMessages };
+  let result: HeadlessAgentJsonResult;
+  try {
+    result = await waitForExtraction(dispatch, getState, {
+      conversationId: opts.conversationId,
+      requestId: opts.requestId,
+      timeoutMs: opts.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+      pollMs: Math.max(opts.pollIntervalMs ?? DEFAULT_POLL_MS, 100),
+      settleMs: opts.settleMs ?? DEFAULT_SETTLE_MS,
+      surfaceKey: opts.surfaceKey,
+      agentRef,
+      msgs,
+      ...(opts.signal ? { signal: opts.signal } : {}),
+    });
+  } catch (err: unknown) {
+    const detail =
+      err instanceof Error ? err.message : "Unknown error awaiting the agent";
+    captureError({
+      source: "agent-json-result",
+      message: `Adopted headless agent wait threw before producing a result: ${detail}`,
+      requestId: opts.requestId,
+      conversationId: opts.conversationId,
+      raw: { surfaceKey: opts.surfaceKey, agent: agentRef, detail },
+    });
+    result = {
+      success: false,
+      data: null,
+      fullResponse: selectLatestAnswerText(opts.conversationId)(getState()),
+      error: msgs.streamError,
+      requestId: opts.requestId,
+      conversationId: opts.conversationId,
+    };
+  } finally {
+    if (!opts.keepInstance) {
+      dispatch(destroyInstanceIfAllowed(opts.conversationId));
+    }
+  }
+  await deliverResult(
+    { onResult: opts.onResult, surfaceKey: opts.surfaceKey, agentRef },
+    result,
+  );
   return result;
 }
 
@@ -362,7 +475,7 @@ async function launchAndWait(
     }
     opts.onRequestId?.(requestId);
 
-    return await waitForExtraction(getState, {
+    return await waitForExtraction(dispatch, getState, {
       conversationId,
       requestId,
       timeoutMs,
@@ -492,6 +605,7 @@ function reportNoResult(
 }
 
 async function waitForExtraction(
+  dispatch: AppDispatch,
   getState: () => RootState,
   args: {
     conversationId: string;
@@ -509,6 +623,14 @@ async function waitForExtraction(
   const { conversationId, requestId, msgs } = args;
   const start = Date.now();
   let terminalAt: number | null = null;
+
+  // This poll IS a viewer of the request row for as long as it runs: an owner
+  // reap landing mid-run makes the extraction it is waiting for unreachable,
+  // and the wait silently times out into a no-result. Hold the row for the
+  // poll, release it in `finally`.
+  // Doctrine: features/agents/docs/LIVE_RUN_RETENTION.md.
+  const viewerId = `runHeadlessAgentJson:${args.surfaceKey}:${requestId}`;
+  dispatch(retainRequestForViewer({ requestId, viewerId }));
 
   const base = () => ({
     requestId,
@@ -538,51 +660,55 @@ async function waitForExtraction(
     return { success: false, data: null, error: message, ...base() };
   };
 
-  while (Date.now() - start < args.timeoutMs) {
-    // Abort HARVESTS, never discards: settle from whatever the run has already
-    // produced (which `settle` still persists through `onResult`). A partial
-    // object already in Redux is a paid answer, not a cancellation.
-    if (args.signal?.aborted) {
-      return settle("aborted", msgs.noJson);
-    }
-
-    const state = getState();
-
-    if (selectJsonExtractionComplete(requestId)(state)) {
-      return settle("extraction-complete", msgs.noJson);
-    }
-
-    const status = selectRequestStatus(requestId)(state);
-
-    if (status === "error") {
-      // Fast-fail — but surface any PARTIAL value extracted before the
-      // failure so soft consumers (hints, tips) can still use it.
-      const reqError = selectRequestError(requestId)(state);
-      const { data } = resolveRunData(getState, requestId, conversationId);
-      return {
-        success: false,
-        data,
-        error: reqError?.user_message ?? reqError?.message ?? msgs.streamError,
-        ...base(),
-      };
-    }
-
-    // Stream over, extraction never finalized: give Redux a bounded settle
-    // window, then resolve from whatever the run actually produced instead of
-    // burning the full timeout.
-    if (status !== undefined && TERMINAL_STATUSES.has(status)) {
-      terminalAt ??= Date.now();
-      if (Date.now() - terminalAt > args.settleMs) {
-        return settle("stream-ended", msgs.noJson);
+  try {
+    while (Date.now() - start < args.timeoutMs) {
+      // Abort HARVESTS, never discards: settle from whatever the run has
+      // already produced (which `settle` still persists through `onResult`).
+      // A partial object already in Redux is a paid answer, not a cancellation.
+      if (args.signal?.aborted) {
+        return settle("aborted", msgs.noJson);
       }
+
+      const state = getState();
+
+      if (selectJsonExtractionComplete(requestId)(state)) {
+        return settle("extraction-complete", msgs.noJson);
+      }
+
+      const status = selectRequestStatus(requestId)(state);
+
+      if (status === "error") {
+        // Fast-fail — but surface any PARTIAL value extracted before the
+        // failure so soft consumers (hints, tips) can still use it.
+        const reqError = selectRequestError(requestId)(state);
+        const { data } = resolveRunData(getState, requestId, conversationId);
+        return {
+          success: false,
+          data,
+          error: reqError?.user_message ?? reqError?.message ?? msgs.streamError,
+          ...base(),
+        };
+      }
+
+      // Stream over, extraction never finalized: give Redux a bounded settle
+      // window, then resolve from whatever the run actually produced instead
+      // of burning the full timeout.
+      if (status !== undefined && TERMINAL_STATUSES.has(status)) {
+        terminalAt ??= Date.now();
+        if (Date.now() - terminalAt > args.settleMs) {
+          return settle("stream-ended", msgs.noJson);
+        }
+      }
+
+      await sleep(args.pollMs);
     }
 
-    await sleep(args.pollMs);
+    // Ceiling elapsed — a slow run that already produced its object is a
+    // SUCCESS, not a timeout. Only report the timeout when nothing landed.
+    return settle("timeout", msgs.timeout);
+  } finally {
+    dispatch(releaseRequestForViewer({ requestId, viewerId }));
   }
-
-  // Ceiling elapsed — a slow run that already produced its object is a
-  // SUCCESS, not a timeout. Only report the timeout when nothing landed.
-  return settle("timeout", msgs.timeout);
 }
 
 function fuzzyFallback(fullResponse: string): unknown | null {

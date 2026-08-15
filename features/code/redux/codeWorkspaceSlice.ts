@@ -58,6 +58,22 @@ export interface CodeWorkspaceState {
   /** Bumped when the user explicitly starts a new chat (+). Drives launcher
    *  reminting on fresh routes even when the URL stays on `/code?agentId=…`. */
   freshSessionNonce: number;
+  /**
+   * The `code_folders` row the Library tree should highlight, set by the
+   * `?folder=<id>` deep link. Lives in Redux rather than tree-local state
+   * because `SidePanelRouter` remounts each view on switch — local state
+   * would be destroyed the moment the user visited another view and came
+   * back. `null` when nothing is focused.
+   */
+  focusedFolderId: string | null;
+  /**
+   * Folder ids the tree must render expanded regardless of the node's own
+   * local toggle — the ancestor chain of `focusedFolderId` plus the folder
+   * itself. A map (not an array) so each node selects a stable primitive
+   * boolean instead of re-rendering on every array identity change.
+   * Entries are removed when the user collapses that folder by hand.
+   */
+  forcedExpandedFolderIds: Record<string, true>;
 }
 
 const initialState: CodeWorkspaceState = {
@@ -73,6 +89,8 @@ const initialState: CodeWorkspaceState = {
   activeFilesystemRoot: null,
   editorMode: "mock",
   freshSessionNonce: 0,
+  focusedFolderId: null,
+  forcedExpandedFolderIds: {},
 };
 
 const slice = createSlice({
@@ -89,8 +107,49 @@ const slice = createSlice({
         state.sideOpen = true;
       }
     },
+    /**
+     * Show a view — the non-toggling twin of `setActiveView`.
+     *
+     * `setActiveView` deliberately collapses the side panel when you dispatch
+     * the view that is ALREADY active (that is what makes the activity-bar
+     * icons work as toggles). A URL deep link must never inherit that: the
+     * default `activeView` is already `"library"`, so a `?open=` / `?folder=`
+     * link landing on a fresh workspace was hitting the toggle branch and
+     * HIDING the panel it exists to reveal. Deep links use this instead.
+     */
+    revealView(state, action: PayloadAction<ActivityViewId>) {
+      state.activeView = action.payload;
+      state.sideOpen = true;
+    },
     setSideOpen(state, action: PayloadAction<boolean>) {
       state.sideOpen = action.payload;
+    },
+    /**
+     * Focus one `code_folders` row in the Library tree — highlight it and
+     * force its whole ancestor chain open. Driven by `?folder=<id>`.
+     */
+    focusLibraryFolder(
+      state,
+      action: PayloadAction<{ folderId: string; ancestorIds: readonly string[] }>,
+    ) {
+      const { folderId, ancestorIds } = action.payload;
+      state.focusedFolderId = folderId;
+      for (const id of ancestorIds) {
+        state.forcedExpandedFolderIds[id] = true;
+      }
+      state.forcedExpandedFolderIds[folderId] = true;
+    },
+    /**
+     * The user collapsed a folder by hand — drop the forced-open flag so the
+     * node goes back to obeying its own toggle. Without this the deep link
+     * would pin the branch open and the chevron would appear broken.
+     */
+    collapseLibraryFolder(state, action: PayloadAction<string>) {
+      delete state.forcedExpandedFolderIds[action.payload];
+    },
+    clearLibraryFolderFocus(state) {
+      state.focusedFolderId = null;
+      state.forcedExpandedFolderIds = {};
     },
     setRightOpen(state, action: PayloadAction<boolean>) {
       state.rightOpen = action.payload;
@@ -145,6 +204,10 @@ const slice = createSlice({
 
 export const {
   setActiveView,
+  revealView,
+  focusLibraryFolder,
+  collapseLibraryFolder,
+  clearLibraryFolderFocus,
   setSideOpen,
   setRightOpen,
   setFarRightOpen,
@@ -189,6 +252,14 @@ export const selectActiveFilesystemLabel = (state: WithCodeWorkspace) =>
 export const selectCodeWorkspaceFreshSessionNonce = (
   state: WithCodeWorkspace,
 ) => selectCodeWorkspace(state).freshSessionNonce;
+export const selectFocusedFolderId = (state: WithCodeWorkspace) =>
+  selectCodeWorkspace(state).focusedFolderId;
+/** True when this folder is forced open by the `?folder=` deep link. Returns a
+ *  primitive so every tree node can subscribe without identity churn. */
+export const selectFolderForcedExpanded = (
+  state: WithCodeWorkspace,
+  folderId: string,
+): boolean => selectCodeWorkspace(state).forcedExpandedFolderIds[folderId] === true;
 
 /**
  * Derive an `EditorMode` from a filesystem adapter id. Lives here (not

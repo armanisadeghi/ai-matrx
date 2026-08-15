@@ -417,6 +417,10 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
   "table": "workflow.definition",
   "title_column": "name"
  },
+ "workflow_plan": {
+  "table": "workflow.plan",
+  "title_column": "name"
+ },
  "workflow_template": {
   "table": "workflow.template",
   "title_column": "name"

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronRight, FilePlus, Folder, FolderOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
@@ -10,7 +10,12 @@ import {
   makeSelectFilesInFolder,
 } from "@/features/code-files/redux/selectors";
 import { type CodeFolder } from "@/features/code-files/redux/code-files.types";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import {
+  collapseLibraryFolder,
+  selectFocusedFolderId,
+  selectFolderForcedExpanded,
+} from "../../redux/codeWorkspaceSlice";
 import { FileIcon } from "../../styles/file-icon";
 import {
   ACTIVE_ROW,
@@ -40,7 +45,25 @@ export const LibraryTreeNode: React.FC<LibraryTreeNodeProps> = ({
   activeTabId,
   onCreateFile,
 }) => {
-  const [expanded, setExpanded] = useState(depth === 0);
+  const dispatch = useAppDispatch();
+  const [locallyExpanded, setLocallyExpanded] = useState(depth === 0);
+
+  // `?folder=<id>` forces this node's whole ancestor chain open and highlights
+  // the target row. The forced flag wins over the node's own toggle until the
+  // user collapses it by hand, which drops the flag (see `toggle` below) so
+  // the chevron never feels stuck.
+  const forcedExpanded = useAppSelector((state) =>
+    selectFolderForcedExpanded(state, folder.id),
+  );
+  const focused = useAppSelector(selectFocusedFolderId) === folder.id;
+  const expanded = locallyExpanded || forcedExpanded;
+  const rowRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (focused) {
+      rowRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
+  }, [focused]);
 
   const selectChildFolders = useMemo(
     () => makeSelectChildFolders(folder.id),
@@ -55,7 +78,16 @@ export const LibraryTreeNode: React.FC<LibraryTreeNodeProps> = ({
 
   const hasChildren = childFolders.length > 0 || files.length > 0;
 
-  const toggle = useCallback(() => setExpanded((e) => !e), []);
+  const toggle = useCallback(() => {
+    if (expanded) {
+      setLocallyExpanded(false);
+      // Drop the deep link's forced-open flag too, or the branch would refuse
+      // to collapse and the chevron would look broken.
+      if (forcedExpanded) dispatch(collapseLibraryFolder(folder.id));
+    } else {
+      setLocallyExpanded(true);
+    }
+  }, [expanded, forcedExpanded, dispatch, folder.id]);
   const folderMenuSections: ContextMenuExtraSection[] = [
     {
       id: "library-folder-actions",
@@ -81,9 +113,10 @@ export const LibraryTreeNode: React.FC<LibraryTreeNodeProps> = ({
         enableFloatingIcon={false}
       >
         <div
+          ref={rowRef}
           role="treeitem"
           aria-expanded={expanded}
-          aria-selected={false}
+          aria-selected={focused}
           tabIndex={0}
           onClick={toggle}
           onKeyDown={(e) => {
@@ -97,6 +130,7 @@ export const LibraryTreeNode: React.FC<LibraryTreeNodeProps> = ({
             ROW_HEIGHT,
             TEXT_BODY,
             HOVER_ROW,
+            focused && ACTIVE_ROW,
           )}
           style={{ paddingLeft: 8 + depth * 12 }}
           title={folder.description ?? folder.name}

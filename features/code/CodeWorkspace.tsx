@@ -19,6 +19,7 @@ import {
   type MobileShellPanel,
 } from "@/features/shell/components/header/templates/MobilePanelShell";
 import { useOpenCodeFileFromUrl } from "./hooks/useOpenCodeFileFromUrl";
+import { useFocusCodeFolderFromUrl } from "./hooks/useFocusCodeFolderFromUrl";
 import { useTabRealtimeWatcher } from "./hooks/useTabRealtimeWatcher";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectActiveSandboxId } from "./redux/codeWorkspaceSlice";
@@ -80,6 +81,7 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
       focusedLibrarySourceId={focusedLibrarySourceId}
     >
       <UrlOpenFileBridge />
+      <UrlFocusFolderBridge />
       <SandboxHeartbeatBridge />
       <TabRealtimeBridge />
       <div className={cn("flex h-full w-full min-h-0", className)}>
@@ -167,6 +169,13 @@ export default CodeWorkspace;
  *  `CodeWorkspaceProvider` being mounted. */
 const UrlOpenFileBridge: React.FC = () => {
   useOpenCodeFileFromUrl();
+  return null;
+};
+
+/** Zero-render bridge that watches `?folder=<codeFolderId>` and focuses that
+ *  folder in the Library tree (expand ancestors + highlight + scroll to). */
+const UrlFocusFolderBridge: React.FC = () => {
+  useFocusCodeFolderFromUrl();
   return null;
 };
 

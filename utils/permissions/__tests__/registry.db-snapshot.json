@@ -83,7 +83,7 @@
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Code Folder",
-    "url_path_template": "",
+    "url_path_template": "/code?folder={id}",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -94,7 +94,7 @@
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Code Repository",
-    "url_path_template": "",
+    "url_path_template": "/rag/repositories?repo={id}",
     "rls_uses_has_permission": true,
     "is_active": true
   },

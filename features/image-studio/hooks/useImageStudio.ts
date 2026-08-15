@@ -53,14 +53,7 @@ import {
   addResource,
   setResourcePreview,
 } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
-import {
-  selectFirstExtractedObject,
-  selectJsonExtractionComplete,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import {
-  releaseRequestForViewer,
-  retainRequestForViewer,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
+import { adoptHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 
 /**
  * Folder-segment sanitizer. Cloud-files folder names tolerate spaces, but
@@ -968,61 +961,8 @@ export function useImageStudio(
     [],
   );
 
-  const pollForExtraction = useCallback(
-    async (
-      requestId: string,
-      timeoutMs: number,
-      intervalMs: number,
-    ): Promise<ImageMetadata | null> => {
-      const start = Date.now();
-      while (Date.now() - start < timeoutMs) {
-        const state = store.getState();
-        const complete = selectJsonExtractionComplete(requestId)(state);
-        if (complete) {
-          const snapshot = selectFirstExtractedObject(requestId)(state);
-          if (!snapshot || snapshot.type !== "object") return null;
-          // The agent's response is wrapped in { image_metadata: { ... } }
-          // — accept either shape so future prompt tweaks stay compatible.
-          const value = snapshot.value as Record<string, unknown>;
-          const candidate =
-            (value.image_metadata as Record<string, unknown> | undefined) ??
-            value;
-          return coerceImageMetadata(candidate);
-        }
-        await new Promise((r) => setTimeout(r, intervalMs));
-      }
-      return null;
-    },
-    [store],
-  );
-
-  /** Wait until the active-requests slice flips `jsonExtractionComplete` true. */
-  const waitForExtraction = useCallback(
-    async (
-      requestId: string,
-      timeoutMs = 120_000,
-      intervalMs = 200,
-    ): Promise<ImageMetadata | null> => {
-      // This poll IS a viewer of the request row for as long as it runs: an
-      // owner reap landing mid-run makes the extraction it is waiting for
-      // unreachable, and the wait silently times out into `null`. Hold the row
-      // for the poll, release it in `finally`.
-      // Doctrine: features/agents/docs/LIVE_RUN_RETENTION.md.
-      const viewerId = `useImageStudio:waitForExtraction:${requestId}`;
-      dispatch(retainRequestForViewer({ requestId, viewerId }));
-      try {
-        return await pollForExtraction(requestId, timeoutMs, intervalMs);
-      } finally {
-        dispatch(releaseRequestForViewer({ requestId, viewerId }));
-      }
-    },
-    [dispatch, pollForExtraction],
-  );
-
   const describeFile = useCallback(
     async (fileId: string, contextHint?: string) => {
-      const file = store.getState() as never;
-      void file;
       // Re-read the file from React state because closures may be stale.
       let snapshot: StudioSourceFile | undefined;
       setFiles((prev) => {
@@ -1177,8 +1117,33 @@ export function useImageStudio(
           throw new Error("Describe agent did not return a request id");
         }
 
-        // 6. Wait for the JSON extractor to finalize, then fold metadata in.
-        const metadata = await waitForExtraction(requestId);
+        // 6. Adopt the run into the canonical headless-JSON primitive — its
+        //    viewer-retained wait/settle/result-resolution machinery replaces
+        //    the hand-rolled poll this file used to carry (D126's last copy).
+        //    keepInstance: this hook created the conversation and its own
+        //    `finally` below owns teardown for EVERY path, including failures
+        //    before the run existed.
+        const result = await adoptHeadlessAgentJson(dispatch, store.getState, {
+          requestId,
+          conversationId,
+          surfaceKey: "image-studio:describe",
+          agentRef: DESCRIBE.id,
+          keepInstance: true,
+        });
+        if (!result.success || result.data == null) {
+          throw new Error(
+            result.error ?? "Describe agent did not return structured JSON",
+          );
+        }
+        // The agent's response is wrapped in { image_metadata: { ... } } —
+        // accept either shape so future prompt tweaks stay compatible.
+        const value = result.data as Record<string, unknown>;
+        const candidate =
+          typeof value === "object" && value !== null
+            ? ((value.image_metadata as Record<string, unknown> | undefined) ??
+              value)
+            : value;
+        const metadata = coerceImageMetadata(candidate);
         if (!metadata) {
           throw new Error("Describe agent did not return structured JSON");
         }
@@ -1226,7 +1191,6 @@ export function useImageStudio(
       describingFileIds,
       setMetadataState,
       trigger,
-      waitForExtraction,
       buildSurfaceScope,
     ],
   );
