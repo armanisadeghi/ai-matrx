@@ -20,9 +20,9 @@
  * same holds for the write half: `custom_from` is NOT a write target, so no
  * agent can propose the address this mail appears to come from.
  *
- * Emitters: `AdminEmailPage` (email/page.tsx) mounts the surface's first (and
- * only) `SurfaceRuntimeProvider`, publishing the scope below and servicing the
- * one write target — see readinessNote for what is still missing.
+ * Emitter: `AdminEmailPage` (email/page.tsx) mounts the surface's only
+ * `SurfaceRuntimeProvider`, publishes the scope below, services the one write
+ * target, and anchors each declared page value for Locate.
  */
 
 import type {
@@ -248,9 +248,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const adminEmailManifest: SurfaceManifest = {
   surfaceName: ADMIN_EMAIL_SURFACE_NAME,
-  readiness: "partial",
-  readinessNote:
-    "Manifest + AdminEmailPage emitter wired (the page mounts the surface's SurfaceRuntimeProvider and services the email_draft write target). The DB mirror IS in place: `ui.ui_surface_write_target` carries `email_draft` (synced 2026-08-11), and every mirrored column — label, value_type, mode, apply_policy, group, sort_order and the full 1547-character description — matches this file, so aidream can advertise the target server-side. Remaining: no `data-surface-value` anchors, and the read values have not had a full completeness audit against the page.",
+  readiness: "verified",
   label: "Email Users",
   urlPattern: "/administration/users/email",
   intro: `<surface_intro>

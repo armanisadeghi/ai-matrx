@@ -267,7 +267,7 @@ export default function AdminEmailPage() {
             </div>
             <div className="p-6 space-y-4">
               {/* Recipient Mode Tabs */}
-              <div className="flex gap-2">
+              <div className="flex gap-2" data-surface-value="recipient_mode">
                 {[
                   { mode: "custom" as const, label: "Custom Emails" },
                   { mode: "selected" as const, label: "Selected Users" },
@@ -290,6 +290,7 @@ export default function AdminEmailPage() {
                     Email Addresses
                   </label>
                   <textarea
+                    data-surface-value="custom_emails_raw"
                     value={customEmails}
                     onChange={(e) => setCustomEmails(e.target.value)}
                     placeholder="Enter email addresses (one per line or comma-separated)"
@@ -304,7 +305,7 @@ export default function AdminEmailPage() {
 
               {/* User Selection */}
               {recipientMode === "selected" && (
-                <div>
+                <div data-surface-value="selected_user_ids">
                   <label className="block text-sm font-medium mb-1.5">
                     Select Users ({selectedUserIds.length} selected)
                   </label>
@@ -378,6 +379,7 @@ export default function AdminEmailPage() {
                   Subject
                 </label>
                 <input
+                  data-surface-value="subject"
                   type="text"
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
@@ -390,6 +392,7 @@ export default function AdminEmailPage() {
                   Message
                 </label>
                 <textarea
+                  data-surface-value="message_body"
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder="Enter your message..."
@@ -421,6 +424,7 @@ export default function AdminEmailPage() {
                     From Address (optional)
                   </label>
                   <input
+                    data-surface-value="custom_from"
                     type="text"
                     value={customFrom}
                     onChange={(e) => setCustomFrom(e.target.value)}
@@ -449,6 +453,7 @@ export default function AdminEmailPage() {
               {/* Result Message */}
               {result && (
                 <div
+                  data-surface-value="last_send_result"
                   className={`flex items-center gap-2 px-4 py-3 rounded-lg ${
                     result.success
                       ? "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-300"
@@ -466,6 +471,7 @@ export default function AdminEmailPage() {
 
               {/* Send Button */}
               <Button
+                data-surface-value="is_sending"
                 onClick={handleSend}
                 disabled={loading || !subject.trim() || !message.trim()}
                 className="w-full"
@@ -488,7 +494,10 @@ export default function AdminEmailPage() {
 
         {/* Templates Sidebar */}
         <div className="space-y-6">
-          <div className="bg-card rounded-lg border shadow-sm overflow-hidden">
+          <div
+            className="bg-card rounded-lg border shadow-sm overflow-hidden"
+            data-surface-value="available_templates"
+          >
             <div className="px-6 py-4 border-b flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
                 <FileText className="w-4 h-4 text-primary" />

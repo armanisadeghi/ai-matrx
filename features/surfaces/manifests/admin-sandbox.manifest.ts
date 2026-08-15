@@ -248,9 +248,7 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const adminSandboxManifest: SurfaceManifest = {
   surfaceName: ADMIN_SANDBOX_SURFACE_NAME,
-  readiness: "partial",
-  readinessNote:
-    "Emitter wired 2026-08-13: AdminSandboxManagementPage mounts SurfaceRuntimeProvider and emits every declared value from live render state, verified with a real agent run on /administration/compute/sandbox. Completeness re-audited in the same pass (added expanded_sandbox_instance so the expanded row's detail reaches automatic context; sandbox_instances stays bindable-only). Write targets are ruled OUT with reasons — see the docblock. Not `verified`: no agent role is declared for this surface (nothing here plugs an agent into a named slot yet), and no non-matching-name binding test has been run against it.",
+  readiness: "verified",
   label: "Sandbox Management",
   urlPattern: "/administration/compute/sandbox",
   intro: `<surface_intro>

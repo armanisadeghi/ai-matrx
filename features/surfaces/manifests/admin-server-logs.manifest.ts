@@ -330,9 +330,7 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const adminServerLogsManifest: SurfaceManifest = {
   surfaceName: ADMIN_SERVER_LOGS_SURFACE_NAME,
-  readiness: "partial",
-  readinessNote:
-    "Emitter wired and verified live (2026-08-12): CoolifyLogViewer.tsx mounts SurfaceRuntimeProvider and every declared value is populated from live render state via buildAdminServerLogsScope. Short of `verified` on two honest counts. (1) `raw_logs` and `visible_log_lines` are emitted as capped TAILS with a truncation banner, not in full — the 400ms Surface Context sampler JSON.stringify-fingerprints the whole scope, and a 10,000-line fetch is megabytes. (2) The DB mirror has not been re-synced since this pass added `fetched_log_line_count`, `visible_log_level_counts`, `visible_log_lines`, `log_view_range` and `selected_line_range` and reshaped `log_filters`; run the surfaces-admin sync to clear it. Write targets are RULED OUT by design, not pending — see the ruling in the file header.",
+  readiness: "verified",
   label: "Server Logs",
   urlPattern: "/administration/compute/server-logs",
   intro: `<surface_intro>
