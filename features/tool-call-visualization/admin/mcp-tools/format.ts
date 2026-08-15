@@ -241,6 +241,8 @@ export function toolEditorHuman(view: ToolEditorView): string {
       "",
       `JSON ERRORS SHOWN (${jsonErrorLines.length}):`,
       ...jsonErrorLines.map((line) => `• ${line}`),
+      "  (These boxes do not parse — the values listed below for those fields",
+      "   are the last ones that parsed, not the text currently on screen.)",
     );
   }
   if (blockers.length > 0) {
@@ -313,6 +315,12 @@ export function toolEditorAgentPayload(
       json_errors: Object.entries(view.jsonErrors).map(([field, message]) => ({
         field,
         rendered_text: `JSON Error: ${message}`,
+        // `setJsonField` only commits to the draft on a SUCCESSFUL parse, so
+        // while this error stands the value reported for `field` below is the
+        // last one that parsed — NOT the unparseable text on screen. Say so
+        // rather than let the agent read a stale object as current.
+        caveat:
+          "The text in this box does not parse. The value shown for this field is the last successfully parsed one, not what is currently typed.",
       })),
       save_blocked: blockers.length > 0,
       save_blockers: blockers,

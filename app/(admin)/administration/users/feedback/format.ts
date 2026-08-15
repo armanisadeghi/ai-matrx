@@ -238,6 +238,13 @@ export interface FeedbackComposerDrafts {
 export interface FeedbackDetailView {
   /** The record as last fetched — the baseline the diff is taken against. */
   item: UserFeedback;
+  /**
+   * The category name for the SAVED `item.category_id`, which is what the
+   * header chip renders. Deliberately separate from `form.categoryName`: the
+   * chip must not silently adopt an unsaved category pick, or the "verbatim
+   * header strip" stops being verbatim.
+   */
+  headerCategoryName: string | null;
   activeTab: string;
   isSaving: boolean;
   form: FeedbackDecisionForm;
@@ -333,7 +340,7 @@ export function feedbackDraftLines(drafts: FeedbackComposerDrafts): string[] {
 
 export function feedbackDetailHuman(view: FeedbackDetailView): string {
   const { item, form } = view;
-  const chips = feedbackHeaderChips(item, form.categoryName);
+  const chips = feedbackHeaderChips(item, view.headerCategoryName);
   const unsaved = feedbackDetailUnsavedChanges(view);
   const draftLines = feedbackDraftLines(view.drafts);
 
@@ -394,7 +401,7 @@ export function feedbackDetailAgentPayload(
   view: FeedbackDetailView,
 ): AgentPayloadInput {
   const { item, form } = view;
-  const chips = feedbackHeaderChips(item, form.categoryName);
+  const chips = feedbackHeaderChips(item, view.headerCategoryName);
   const unsaved = feedbackDetailUnsavedChanges(view);
   const draftLines = feedbackDraftLines(view.drafts);
 
