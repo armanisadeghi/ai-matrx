@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 357 active entity tokens. A token here is FK-valid for
+// 358 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -194,6 +194,7 @@ export type EntityTypeToken =
   | "kg_value_match"
   | "league_membership"
   | "learn_doc"
+  | "marketing_initiative"
   | "membership"
   | "message"
   | "message_template"
@@ -444,6 +445,7 @@ export type ReferencePickableEntityToken =
   | "heatmap_save"
   | "league_membership"
   | "learn_doc"
+  | "marketing_initiative"
   | "message_template"
   | "note"
   | "note_folder"
@@ -797,6 +799,7 @@ export type ScopeableEntityToken =
   | "kg_value_match"
   | "league_membership"
   | "learn_doc"
+  | "marketing_initiative"
   | "membership"
   | "message"
   | "message_template"
@@ -1022,6 +1025,7 @@ export type ListedEntityToken =
   | "expertise_pack"
   | "growth_loop_run"
   | "learn_doc"
+  | "marketing_initiative"
   | "party"
   | "plan_entity"
   | "plan_node"
@@ -1192,6 +1196,7 @@ export const ENTITY_TYPE_METADATA = {
   "kg_value_match": { token: "kg_value_match", schema: "rag", table: "kg_value_matches", label: "KG Value Match", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "league_membership": { token: "league_membership", schema: "education", table: "league_membership", label: "League Membership", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "display_name", contentRole: null, referenceCategory: null },
   "learn_doc": { token: "learn_doc", schema: "education", table: "learn_doc", label: "Study Guide", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "title", contentRole: null, referenceCategory: null },
+  "marketing_initiative": { token: "marketing_initiative", schema: "marketing", table: "initiative", label: "Initiative", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: "container", referenceCategory: null },
   "membership": { token: "membership", schema: "iam", table: "memberships", label: "Membership", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "message": { token: "message", schema: "chat", table: "message", label: "Message", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "message_template": { token: "message_template", schema: "agent", table: "message_template", label: "Message Template", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "label", contentRole: "utility", referenceCategory: null },
@@ -1553,6 +1558,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "kg_value_match",
   "league_membership",
   "learn_doc",
+  "marketing_initiative",
   "membership",
   "message",
   "message_template",
