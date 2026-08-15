@@ -11,11 +11,13 @@
  *
  * The interaction is deliberately NOT a form and NOT a quiz:
  *
- *   - **Highest confidence first.** *"run one or two quick analyses, return the
- *     handful of results the agent is most confident about, and ask did we get
- *     these right or wrong?"* Leading with the machine's best work is what makes
- *     the first click cost a second instead of a minute, and disagreement on a
- *     high-confidence row is worth ten times a shrug on a low-confidence one.
+ *   - **The real judgment calls first.** *"run one or two quick analyses, return
+ *     the handful of results the agent is most confident about, and ask did we
+ *     get these right or wrong?"* — but a registry row is certain by
+ *     construction and teaches us nothing, so `teachingValue` puts the confident
+ *     AI calls about real companies at the top and the deterministic furniture
+ *     at the bottom. Disagreement on a confident judgment is the single most
+ *     informative thing this surface can collect.
  *   - **Two buttons.** Right, or Wrong. Everything else is optional.
  *   - **No abstract taxonomy questions, ever.** The reader sees a real domain
  *     from their own search results and a plain sentence about it. They never
@@ -53,6 +55,30 @@ function confidenceOf(row: CompetitorRow): number {
   return typeof classification?.confidence === "number"
     ? classification.confidence
     : 0;
+}
+
+function layerOf(row: CompetitorRow): string {
+  const classification = (
+    row.latest_autopsy as { classification?: { layer?: unknown } } | null
+  )?.classification;
+  return typeof classification?.layer === "string" ? classification.layer : "";
+}
+
+/**
+ * How much a ruling on this row would TEACH us — which is not the same as how
+ * confident the machine is.
+ *
+ * A registry row ("wikipedia.org is a reference site") is certain by
+ * construction, and confirming it teaches us almost nothing. A judgment about a
+ * real company at 95% is the thing we have zero labels for, and either answer —
+ * agreement or correction — is worth having. So judgment calls come first,
+ * confident ones before shaky ones, and the deterministic furniture goes last
+ * where it is a fast, satisfying tail rather than six clicks of tedium standing
+ * between the reader and the real question.
+ */
+function teachingValue(row: CompetitorRow): number {
+  const base = confidenceOf(row);
+  return layerOf(row) === "deterministic" ? base - 1000 : base;
 }
 
 /** The one-line case for this row, in the machine's own words. */
@@ -225,10 +251,7 @@ export function GroundTruthQueue({
     () =>
       competitors
         .filter((row) => row.classification_status !== "confirmed")
-        // Most-confident first: leading with our best work is what makes the
-        // first ruling cost a second, and a correction here is the most
-        // informative signal in the system.
-        .sort((left, right) => confidenceOf(right) - confidenceOf(left)),
+        .sort((left, right) => teachingValue(right) - teachingValue(left)),
     [competitors],
   );
   const ruled = competitors.length - pending.length;
@@ -238,9 +261,9 @@ export function GroundTruthQueue({
       <CardHeader className="pb-3">
         <CardTitle className="text-sm">Did we get these right?</CardTitle>
         <p className="text-xs text-muted-foreground">
-          These came out of your own search results. Our most confident calls are
-          first. {ruled} ruled, {pending.length} to go — every answer sharpens
-          every run after it.
+          These came out of your own search results. The real judgment calls are
+          first; the obvious ones are at the bottom. {ruled} ruled,{" "}
+          {pending.length} to go — every answer sharpens every run after it.
         </p>
       </CardHeader>
       <CardContent className="space-y-2">

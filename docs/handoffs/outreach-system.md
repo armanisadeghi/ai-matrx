@@ -193,15 +193,17 @@ not paper over that with guessed bounces.
 
 ### G6 — Inbound: replies, bounces, complaints. *The hard gap, and the one most likely to be skipped.*
 Today outreach is write-only. Without inbound we cannot stop on reply (G4), cannot suppress on hard
-bounce, cannot honor an unsubscribe, and cannot measure anything. **This is not optional polish —
-it is what separates outreach from spam,** and it is legally load-bearing (§5).
+bounce, and cannot measure anything. **The reply-opt-out seam is already waiting:** provider adapters
+emit one `InboundReply`; the shared detector immediately writes permanent suppression through
+`crm.honor_reply_opt_out()`. G6 must deliver replies into that seam, not duplicate it. **This is not
+optional polish — it is what separates outreach from spam,** and it is legally load-bearing (§5).
 Needs: provider webhooks (delivered/bounced/complained), reply ingestion, and threading so a reply
 lands on the party's `crm.interaction` timeline as a real conversation.
 
 ### G7 — Compliance, built into the send primitive. *Arman's ruling: "follow the law."*
 Commercial email carries obligations (CAN-SPAM/CASL/GDPR-class): a working one-click unsubscribe,
 a physical postal address, honest headers and subject, prompt opt-out honoring, and a lawful basis
-where GDPR applies. **US first, non-US documented but not built (§5.4)** — while storing consent
+where GDPR applies. **US first, with non-US blocking policy live but not attorney-ratified (§5.4)** — while storing consent
 basis, source and timestamp per contact from day one, because retrofitting those means
 re-contacting everyone. Rules differ by jurisdiction, so **a qualified legal/compliance review is
 required before the first customer send — not trivia an agent infers from memory.**
@@ -471,39 +473,54 @@ Every commercial send, from the first one, carries: a working one-click unsubscr
 and subject, and immediate opt-out honoring (the law allows days; we do it instantly because the
 suppression authority already exists).
 
-Non-US is documented, not built: the EU/UK (GDPR + ePrivacy — cold B2B may rest on legitimate
-interest, with documentation, and some member states are far stricter) and Canada (CASL — consent-
-based, with real penalties and no US-style opt-out carve-out) each change *what we build*, not just
-the footer. **Before the first customer send, a qualified compliance/legal review is required —
-this is not something an agent should infer from memory, and the AUP and ToS must be written by
-someone qualified.** That is the one piece of this section that cannot be closed in code.
+Non-US guardrails are built but not legally ratified: the EU/UK (GDPR + ePrivacy — cold B2B may
+rest on legitimate interest, with documentation, and some member states are far stricter) and
+Canada (CASL — consent-based, with real penalties and no US-style opt-out carve-out) change the
+eligibility verdict, not just the footer. Unknown and unratified markets remain closed. **Before
+the first customer send, a qualified compliance/legal review is required — this is not something
+an agent should infer from memory, and the AUP and ToS must be written by someone qualified.** That
+is the one piece of this section that cannot be closed in code.
 
-### ✅ BUILT AND LIVE 2026-08-15 — the compliance layer is done; only ratification remains
+### ✅ BUILT AND LIVE 2026-08-15 — the engineering floor is closed; ratification remains
 
-`migrations/crm_06_compliance.sql` (applied + ledger-recorded) · `features/crm/compliance/`
+`migrations/crm_06_compliance.sql` + `crm_07_compliance_floor.sql` (applied + ledger-recorded) · `features/crm/compliance/`
 ([FEATURE.md](../../features/crm/compliance/FEATURE.md)) · `app/(public)/unsubscribe/[token]/`
-· `app/api/unsubscribe/[token]/` · shipped in **v0.4.649**.
+· `app/api/unsubscribe/[token]/` · `aidream/services/sending_identity/`.
 
 🚨 **THE ONE SEND AUTHORITY is `crm.check_send_eligibility()`** — a DB function, so a caller in
 another repo or language cannot route around it. It returns a verdict where **every block carries
 a `fix`**. Ask it before any send; never reimplement one of its checks elsewhere.
 
 Live and proven against production, not asserted:
+
 - **Unsubscribe** — permanent opaque token, RFC 8058 one-click POST, anonymous human page.
   Verified end-to-end on `www.aimatrx.com`: GET renders with a **masked** address, the one-click
   POST returns `{"ok":true}`, a retry stays 200, the recipient becomes non-contactable, and the
   gate then blocks with `unsubscribed`. Anon **cannot** enumerate the token table (401).
 - **Jurisdiction policy** — 35 countries, **30 of which block**. Germany and Austria are hard
-  blocks; the unresearched EEA blocks by default; a generic TLD resolves to *nothing*, never a
+  blocks; the unresearched EEA blocks by default; a generic TLD resolves to _nothing_, never a
   default country.
 - **Circuit breaker** — trips at 0.10% complaints / 3.00% bounces (min 50 sends), pauses the
   identity **and its campaigns**, `paused_by_kind='system'`, human-only resume.
 - **Consent provenance** on `crm.contact_medium` — the thing §5.4 warned could not be retrofitted.
+- **Address verification** — syntax + live MX/null-MX + maintained disposable-domain data are
+  performed server-side, persisted on the existing medium, expire after 30 days, and are refused
+  by the one authority when missing, stale, disposable, or invalid.
+- **Purchased-list protection in both lanes** — declared source plus high-confidence provenance,
+  role-address, and uniform-pattern signals are evaluated before the lane branch. Every refusal
+  returns the evidence and the concrete repair.
+- **RFC 8058 last mile** — the only send primitive mints the permanent token and owns the headers,
+  footer, postal address, and art. 14 disclosure. An external production delivery showed DKIM
+  `PASS`, with both unsubscribe headers in the real signature's `h=` list. Only Google Workspace
+  is eligible until another provider passes the same proof.
+- **Reply opt-out seam** — quoted-reply-safe detection plus an atomic, idempotent suppression/event
+  write are complete. G6 only needs to deliver provider replies into `InboundReply`.
 
-**What is left is not engineering.** Every jurisdiction row is `ratified_by='agent-research'`,
+**The first-send legal blocker is not engineering.** Every jurisdiction row is `ratified_by='agent-research'`,
 which is not ratification. Counsel's answers replace them one at a time, and each ratified row is
-a market opening. Still-open engineering (MX verification, DKIM-signing the headers, reply-based
-opt-out, purchased-list detection) is named with reasons in `ENGINEERING_GAPS.md` § "Still open".
+a market opening. Remaining engineering is honestly narrower: provider delivery for G6, the G2
+anti-harvesting-notice check, and prohibited-content classification. None of those reopens or
+bypasses the four floor items closed above; see `ENGINEERING_GAPS.md` § "Still open".
 
 ### ✅ Research pass DONE 2026-08-14 — read it before writing any send code
 
@@ -523,22 +540,20 @@ the Google/Yahoo/Microsoft bulk-sender regime, RFC 8058, and the eight vendor po
   ledger (including the 2023 Gmail-API enforcement wave), and the ship/optional/refuse ranking.
   Read with §5.2 and §8 item 3.
 
-**What the research changed in this plan — four Tier-0 gaps block Phase 4's first send:**
+**What the research changed in this plan — the four original Tier-0 gaps, now closed in code:**
 
-1. **No unsubscribe machinery exists at all** — no token, no public route, no body link, no
-   RFC 8058 `List-Unsubscribe` headers. Required by every regime. Yahoo's **2 days** is the
-   tightest honoring deadline, so instant (our stated posture) is correct.
-2. **No postal address for the sending org anywhere in the schema.** `iam.organizations` has none
-   and `crm.address` is the *recipient's*. Every commercial message legally requires it.
-3. **`crm.contact_medium` has no consent columns** — no basis, source, source URL, timestamp,
-   expiry, jurisdiction, or subscriber kind. §5.4 already warned this cannot be retrofitted;
-   it is still not built, and it is what gates **all of Lane A**.
-4. **"The EU" is not one place, and treating it as one is the biggest legal risk in the plan.**
+1. **Unsubscribe machinery** — permanent token, anonymous human route, one-click POST, body link,
+   reply seam, and DKIM-covered RFC 8058 headers now ship structurally in the send primitive.
+2. **Postal identity** — org policy plus per-mailbox override are stored and hard-gated.
+3. **Consent provenance** — basis, source, source URL, timestamps, expiry, jurisdiction, subscriber
+   kind, and evidence now live on `crm.contact_medium` and gate all of Lane A.
+4. **"The EU" is not one place.** The per-country blocking mechanism now exists; Germany and
+   Austria block, unknown rows block, and counsel—not engineering—ratifies each market.
+   The original risk remains the reason the table exists:
    Germany (§7 UWG) prohibits cold advertising email without prior express consent — **no B2B
    carve-out, and competitors have standing to sue.** France permits it on legitimate interest
-   *if the message relates to the recipient's role*. The UK permits it to corporate subscribers
-   but not sole traders. Most of the EEA is unresearched. Build a **per-country policy table that
-   blocks `unknown` by default**; counsel fills the rows.
+   _if the message relates to the recipient's role_. The UK permits it to corporate subscribers
+   but not sole traders. Most of the EEA is unresearched; counsel fills those rows.
 
 Plus two the plan did not have: **GDPR Article 14** obliges us to tell every discovered contact
 where we got their details, at first contact — the obligation this whole category ignores, and one
@@ -595,6 +610,10 @@ The ladder governs **volume and automation only**. It never touches:
 - suppression and unsubscribe honoring — no trust level buys past an opt-out;
 - Lane A consent — no trust level permits sending to someone who never consented;
 - domain-ownership verification and authentication;
+- current recipient verification with a real MX and no disposable-domain result;
+- purchased-list/bulk-scrape detection in **both** lanes;
+- a working unsubscribe path whose RFC 8058 headers are covered by the provider's DKIM signature,
+  plus immediate link honoring and a reply seam that honors the opt-out the moment G6 delivers it;
 - spam-trap hits and complaint-rate circuit breakers — these pause the highest-trust org too.
 
 **A capability that can be earned is on the ladder. A rule that protects a third party is on the
