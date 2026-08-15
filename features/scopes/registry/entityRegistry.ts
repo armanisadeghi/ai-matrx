@@ -307,7 +307,10 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   code_file: {
     Icon: FileCode2,
     labelPlural: "Code Files",
-    hrefFor: (id) => `/code?tab=${encodeURIComponent(`code-file:${id}`)}`,
+    // `?open=` is the param the code workspace actually reads
+    // (features/code/hooks/useOpenCodeFileFromUrl.ts). An earlier `?tab=code-file:{id}`
+    // shape was never implemented, so every Open door landed on the bare workspace.
+    hrefFor: (id) => `/code?open=${encodeURIComponent(id)}`,
   },
   code_folder: {
     Icon: FolderGit2,
@@ -462,6 +465,13 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     Icon: FileText,
     labelPlural: "Web Snapshots",
     hrefFor: (id) => `/marketing/snapshots/${id}`,
+  },
+  web_crawl_session: {
+    Icon: RefreshCw,
+    labelPlural: "Crawls",
+    // No flat resolver route: a crawl is only meaningful inside its site, and
+    // the surfaces that name one are already standing in that site. They pass
+    // `href={`${sitePath}/crawls/${id}`}` — see `MarketingRefs.CrawlSessionRef`.
   },
   web_screenshot: {
     Icon: Frame,

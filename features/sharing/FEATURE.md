@@ -364,6 +364,19 @@ Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) 
 
 ## Change log
 
+- 2026-08-14 — Claude: **The `code_file` Open door now actually opens the file.** D138's spin-off,
+  closed. Both route authorities claimed `/code?tab=code-file:{id}`; the code workspace has never
+  read `?tab=`, so every Open door (EntityRef, peeks, org sharing surfaces, share links) landed the
+  user on the bare workspace with the requested file NOT open. **The route-scan test could not see
+  this** — it validates the PATH, `/code` is real, and the defect lived entirely in the QUERY
+  STRING. No new URL shape was invented: the workspace has honored `?open=<code_file_id>` since it
+  was built (`useOpenCodeFileFromUrl` → `useOpenLibraryFile` → opens the `code.code_files` row as a
+  Monaco tab and flips the side panel to Library), so both registries were pointed at the shape that
+  works — `entityRegistry.code_file.hrefFor`, the TS mirror, the live DB row (migration
+  `sharing_registry_code_file_open_param.sql`, applied + ledgered) and the snapshot, in one commit.
+  **Browser-verified** this time, against two distinct file ids on the running preview server.
+  `code_folder` / `code_repository` keep their empty templates: the workspace has no per-folder or
+  per-repository deep link, and an honest absence beats an invented URL.
 - 2026-08-14 — Claude: **D138 retired — `url_path_template` is no longer a route authority, and
   every remaining destination is a real route.** The column was a second, DB-owned route table
   independent of `entityRegistry.hrefFor`, and it had drifted: audited against the live `app/`
@@ -401,7 +414,8 @@ Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) 
   - Two adjacent defects found and spun off, NOT fixed here: `code_file`'s entity-registry href
     `/code?tab=code-file:{id}` is aspirational (the code workspace never reads `?tab=`, so the
     Open door lands on the workspace without the file); and root `CLAUDE.md` still claims `.md`
-    links route through `/admin/docs/<path>`, which resolves nowhere. *(The second was closed
+    links route through `/admin/docs/<path>`, which resolves nowhere. *(The first was closed
+    2026-08-14 — see the entry below. The second was closed
     2026-08-14: `/admin/docs` was the pre-2026-06-29 viewer, deleted in `fd132b06a` when the
     DB-backed feature-docs viewer replaced it; `CLAUDE.md` now names the real route and
     `featureDocViewHref`. The emptied `feature_doc` registry row stays empty — that viewer is

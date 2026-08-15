@@ -172,7 +172,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     ownerColumn: "created_by",
     isPublicColumn: null,
     displayLabel: "Code File",
-    urlPathTemplate: "/code?tab=code-file:{id}",
+    urlPathTemplate: "/code?open={id}",
     rlsUsesHasPermission: true,
   },
   code_folder: {

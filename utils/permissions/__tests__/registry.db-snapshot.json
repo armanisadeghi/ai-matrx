@@ -72,7 +72,7 @@
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Code File",
-    "url_path_template": "/code?tab=code-file:{id}",
+    "url_path_template": "/code?open={id}",
     "rls_uses_has_permission": true,
     "is_active": true
   },
