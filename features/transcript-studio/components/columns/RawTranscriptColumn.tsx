@@ -5,6 +5,12 @@ import { FileAudio, Mic, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import {
+  shortenStudioSegments,
+  studioLocation,
+  studioSegmentData,
+} from "@/features/transcript-studio/format";
 import { COLUMN_IDS } from "../../constants";
 import type { RawSegment } from "../../types";
 import {
@@ -101,6 +107,157 @@ export function RawTranscriptColumn({
     <>
       {importButton}
       {pasteButton}
+      {/*
+       * Copy-for-AI for the raw stream. A live session's chunk list grows
+       * without bound, so this is the "massive" size class and gets the
+       * composer. The ContentActionBar below is a different affordance (plain
+       * text copy / export of the rendered column) and stays.
+       */}
+      {segments.length > 0 && (
+        <CopyButtons
+          size="xs"
+          label={`Raw transcript — ${sessionTitle ?? "session"}`}
+          human={() => shortenStudioSegments(segments).text}
+          json={() => segments.map(studioSegmentData)}
+          agent={() => ({
+            kind: "studio-raw-column",
+            location: studioLocation("Studio — Raw column"),
+            description:
+              "Every raw transcription chunk in this studio session, in order.",
+            data: {
+              session_id: sessionId,
+              session_title: sessionTitle ?? null,
+              is_recording: isRecording,
+              chunks: segments.map(studioSegmentData),
+            },
+            summary: shortenStudioSegments(segments).text,
+            attributes: {
+              session_id: sessionId,
+              chunks: segments.length,
+              recording: isRecording,
+              detail: "everything",
+            },
+          })}
+          agentVariant={{
+            id: "raw-everything",
+            label: "All chunks",
+            hint: `Every chunk in this session (${segments.length})`,
+            position: "first",
+          }}
+          aiVariants={[
+            {
+              id: "raw-tail",
+              label: "Last 25 chunks",
+              hint: "The most recent audio, with an omission stub",
+              build: () => {
+                const short = shortenStudioSegments(segments, { lastN: 25 });
+                return {
+                  kind: "studio-raw-column",
+                  location: studioLocation("Studio — Raw column"),
+                  description:
+                    "The tail of this session's raw stream. Earlier chunks are stubbed, not silently dropped.",
+                  data: {
+                    session_id: sessionId,
+                    session_title: sessionTitle ?? null,
+                    transcript: short.text,
+                  },
+                  summary: short.text,
+                  attributes: {
+                    session_id: sessionId,
+                    detail: "last-25",
+                    segments_included: short.segments_included,
+                    segments_omitted: short.segments_omitted,
+                  },
+                };
+              },
+            },
+          ]}
+          aiCustom={{
+            label: "Open custom view…",
+            hint: "Pick how much of the raw stream to send",
+            dialogTitle: "Custom raw-transcript copy",
+            dialogDescription:
+              "Shorten by chunk count, drop timestamps or speaker labels, and cap long chunks. Omitted chunks are always stated, never silently dropped.",
+            options: [
+              {
+                kind: "number",
+                key: "lastN",
+                label: "Chunks (from the end)",
+                hint: "0 = the whole session",
+                min: 0,
+                step: 5,
+                presets: [
+                  { label: "All", value: 0 },
+                  { label: "10", value: 10 },
+                  { label: "25", value: 25 },
+                  { label: "50", value: 50 },
+                ],
+                default: 0,
+              },
+              {
+                kind: "toggle",
+                key: "timestamps",
+                label: "Include timestamps",
+                default: true,
+              },
+              {
+                kind: "toggle",
+                key: "speakers",
+                label: "Include speaker labels",
+                default: true,
+              },
+              {
+                kind: "number",
+                key: "charCap",
+                label: "Max characters per chunk",
+                hint: "0 = unlimited",
+                min: 0,
+                step: 50,
+                presets: [
+                  { label: "Unlimited", value: 0 },
+                  { label: "200", value: 200 },
+                  { label: "500", value: 500 },
+                ],
+                default: 0,
+              },
+            ],
+            build: (opts) => {
+              const short = shortenStudioSegments(segments, {
+                lastN: Number(opts.lastN) || 0,
+                timestamps: opts.timestamps !== false,
+                speakers: opts.speakers !== false,
+                charCap: Number(opts.charCap) || 0,
+              });
+              return {
+                text: short.text,
+                meta: {
+                  segments_included: short.segments_included,
+                  segments_total: short.segments_total,
+                  segments_omitted: short.segments_omitted,
+                  truncated_segments: short.truncated_segments,
+                },
+              };
+            },
+            wrap: (text, opts, meta) => ({
+              kind: "studio-raw-column",
+              location: studioLocation("Studio — Raw column"),
+              description:
+                "This session's raw stream, shortened to the options the user chose in the custom composer.",
+              data: {
+                session_id: sessionId,
+                session_title: sessionTitle ?? null,
+                options: opts,
+                transcript: text,
+              },
+              attributes: {
+                session_id: sessionId,
+                detail: "custom",
+                ...meta,
+              },
+            }),
+          }}
+        />
+      )}
       {segments.length > 0 && (
         <ContentActionBar
           content={exportText}

@@ -3,6 +3,19 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronsLeft, Loader2, Mic, Pencil, Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
+import { keyFieldsAiVariant } from "@/features/marketing/lib/copy-payloads";
+import {
+  sessionData,
+  sessionDisplayTitle,
+  sessionKeyFields,
+  sessionSummary,
+  sessionsCsvRows,
+  sessionsListSummary,
+  studioLocation,
+} from "@/features/transcript-studio/format";
 import { useMobilePanelClose } from "@/features/shell/components/header/templates/MobilePanelShell";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -102,6 +115,47 @@ export function StudioSidebar({
           Sessions
         </div>
         <div className="flex shrink-0 items-center gap-1">
+          {sessions.length > 0 && (
+            <>
+              <CopyButtons
+                size="xs"
+                label="Studio sessions"
+                human={() =>
+                  sessionsListSummary(sessions, { surface: "Studio sidebar" })
+                }
+                json={() => sessions.map(sessionData)}
+                agent={() => ({
+                  kind: "studio-session-list",
+                  location: studioLocation("Studio — session sidebar"),
+                  description:
+                    "The studio sessions listed in the sidebar. Metadata only — no transcript segments.",
+                  data: { sessions: sessions.map(sessionData) },
+                  summary: sessionsListSummary(sessions, {
+                    surface: "Studio sidebar",
+                  }),
+                  attributes: { rows: sessions.length },
+                })}
+                aiVariants={[
+                  keyFieldsAiVariant({
+                    kind: "studio-session-list",
+                    location: studioLocation("Studio — session sidebar"),
+                    description:
+                      "Studio sessions projected to title / status / source / duration.",
+                    visible: sessions,
+                    project: sessionKeyFields,
+                    attributes: { rows: sessions.length },
+                  }),
+                ]}
+              />
+              <ExportMenu
+                label="Studio sessions"
+                items={[
+                  jsonExportItem(() => sessions.map(sessionData)),
+                  csvExportItem(() => sessionsCsvRows(sessions)),
+                ]}
+              />
+            </>
+          )}
           <button
             type="button"
             onClick={handleCreate}
@@ -272,7 +326,30 @@ function SidebarItem({
             <span className="line-clamp-1 min-w-0 flex-1 text-xs font-medium">
               {session.title}
             </span>
-            <div className="flex w-11 shrink-0 items-center justify-end gap-0.5">
+            {/* w-11 was sized for exactly two icon buttons; the copy pair
+                needs room, so the row lets this cluster size itself. */}
+            <div className="flex shrink-0 items-center justify-end gap-0.5">
+              <CopyButtons
+                size="xs"
+                label={`Session "${sessionDisplayTitle(session)}"`}
+                className="opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100"
+                human={() => sessionSummary(session)}
+                json={() => sessionData(session)}
+                agent={() => ({
+                  kind: "studio-session",
+                  location: studioLocation("Studio — session sidebar"),
+                  description:
+                    "One studio session as listed in the sidebar. Metadata only — no transcript segments.",
+                  data: sessionData(session),
+                  summary: sessionSummary(session),
+                  attributes: {
+                    id: session.id,
+                    title: sessionDisplayTitle(session),
+                    status: session.status,
+                    source: session.source,
+                  },
+                })}
+              />
               <button
                 type="button"
                 onClick={(e) => {
