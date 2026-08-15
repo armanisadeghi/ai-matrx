@@ -380,6 +380,8 @@ Built a demo page, new route, or reviewable UI surface Arman didn't watch you ma
 
 `docs/handoffs/` holds forward-looking work orders (shared system with aidream — one doc per piece of work). **Invoke the `handoffs` skill** before writing one, taking one over, or ending any turn that progressed work a handoff covers — completed tasks collapse to one bullet, finished handoffs get deleted. Rot backstop: `/handoff-cleanup`.
 
+🚨 **[`docs/handoffs/UNASSIGNED.md`](./docs/handoffs/UNASSIGNED.md) is the ONE list of handoffs with no owner** (both repos), and it is how Arman decides what to staff next. **Taking a handoff over → DELETE its row first, before you read the doc.** **Writing a new handoff, or leaving remaining work nobody is continuing → ADD its row in the same commit.** A row's existence is the status — statuses, notes, and history are banned in that file.
+
 ---
 
 ## Feature Documentation

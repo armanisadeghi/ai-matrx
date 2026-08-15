@@ -37,6 +37,19 @@ One Explore agent per doc (batch 3–4 docs per agent when they're small). Each 
 2. **Decisions for Arman** — numbered, each self-contained: **Situation** (2–3 plain sentences) → **Decide** (the concrete choice). No doc-internal references, no jargon. Say "none" if none.
 3. **Unverifiable** — anything you couldn't confirm (e.g. needs a deploy or a live run), flagged, never guessed.
 
+## Orphan-list reconciliation
+
+`matrx-frontend/docs/handoffs/UNASSIGNED.md` lists every handoff with no owner (both repos).
+The sweep is its ONLY automated maintainer, and it may do exactly two things:
+
+- **Remove a row whose handoff file no longer exists** (including ones you deleted this sweep).
+- **Fix a broken link/path** in an existing row.
+
+**Never add a row, and never remove one because the work looks stale or someone might be on it** —
+ownership is not knowable from the files, and a wrongly-removed row silently loses the work.
+Report any handoff you suspect is orphaned-but-unlisted as a decision line instead. Statuses,
+notes, and extra columns are banned in that file; strip them if an agent added any.
+
 ## Mirror check
 
 Finish by diffing the aidream pointer stubs (`/Users/armanisadeghi/code/aidream/.claude/skills/handoffs/SKILL.md`, `.../handoff-cleanup/SKILL.md`) against the canonical skills here; re-sync stubs if drifted.
