@@ -58,7 +58,13 @@ else was missing, and nothing that ever re-checked.
    the user never asked for.
 6. **A checklist is DECLARED, never hand-built.** Register a `ChecklistDefinition`
    and mount `<GuidedChecklist>`. A surface that assembles its own step list is
-   the defect.
+   the defect. `steps` may be a **pure factory over the context** when the step
+   LIST itself comes from the outside world (`billing.creator_payouts`: Stripe's
+   requirement codes are an open list, and a fixed array can only name the ones
+   somebody thought of — anything else would have no row at all). The factory is
+   still part of the declaration, and its ids must be STABLE for a given world
+   state, because step ids are persistence keys. Read steps through
+   `checklistSteps(definition, ctx)`, never `definition.steps`.
 7. **A completed checklist does not vanish.** It stays reachable so the user can
    re-check, see what is set up, and change the answer only they can give.
    `hideWhenComplete` exists for gate surfaces **only** when another surface keeps
@@ -74,7 +80,7 @@ else was missing, and nothing that ever re-checked.
 | Persistence | `service.ts` | Direct Supabase on `platform.guided_checklist_run`; version-guarded writes that **re-apply on conflict** so a teammate's tick is never clobbered |
 | Hook | `useGuidedChecklist.ts` | The I/O: load-or-create, run every check, re-verify on return, hold writes until the row lands, serialize saves, run auto steps |
 | UI | `components/GuidedChecklist.tsx` | The one surface. Progress bar, per-step rows, copy rows, how-to, fix buttons, regression banner |
-| Tests | `__tests__/engine.test.ts` | 11 tests locking the laws above |
+| Tests | `__tests__/engine.test.ts` | 16 tests locking the laws above |
 
 ## Writing a checklist
 
@@ -130,8 +136,8 @@ milestone, never read back as the status — the verdict is always derived live.
 |---|---|---|
 | **Search Console / site setup** | **MIGRATED 2026-08-14.** Was two dead-end gate blocks at the top of `features/marketing/search-console/intake/SiteIntakeWizard.tsx` | `marketing.site_setup` (`features/marketing/search-console/setup/siteSetupChecklist.tsx`): brand / address / connection = **verified**; history import = **auto** (Google deletes history past ~16 months, so waiting for a click loses days permanently); "is this the right property" = **confirmed** (only the owner knows) |
 | **Sending identity (outreach)** | **EXTRACTED 2026-08-14.** A parallel session landed `/crm/sending-identities` mid-build; it had hand-rolled three hard-coded "Gate" cards (domain → authentication → warm-up) in gate order | `outreach.sending_identity` (`features/crm/sending-identities/sendingIdentityChecklist.tsx`): publish the TXT record = **confirmed** (we generate the exact values with Copy buttons; we cannot log into their registrar); domain ownership = **auto** (`autoRun: false` — a network lookup the user triggers); SPF / DKIM / DMARC = **verified, one step EACH** (a single "authentication" step that fails tells the user nothing they can act on, and the server's tri-state `null` maps to `unknown`, so a resolver timeout never reads as a broken domain); warm-up = **auto with `autoRun: false` on purpose** — it begins sending real mail from the customer's real domain, which is exactly what that escape hatch is for. Their `DnsRecordCard` and warm-up bar are HOSTED inside their steps via `extra`, not replaced; `IssueList` is filtered to runtime refusals only (pacing, quiet hours, org disabled) because it was otherwise restating every setup gate a second time. **Live-verified 2026-08-14** against a temporary seeded draft identity (`connection_id` is nullable, so a row renders without an OAuth mailbox); probe deleted afterwards. Still unverified: everything downstream of a real mailbox — the domain check actually resolving, warm-up actually starting |
-| **CMS / content-plan site launch** | `features/marketing/content-plan/setup/readiness.ts` — already has `met/partial/unmet/unknown` with reasons, and already refuses to call an unreadable CMS "unmet". **Its item model is the closest thing to this primitive that existed.** | Every `ChecklistItem` becomes a **verified** step: `required`/`actual`/`detail` collapse into `CheckResult.detail`, `state: "unknown"` is already exactly rule 3, and each item gains the `fix` it currently lacks (the brand gate's fix is "open Marketing → Sites"). What it gains: persistence, re-verification on return, and the foundation items becoming **auto** where we can generate the missing component ourselves. **Not migrated in this pass** — its coverage-counting half (families, `plannedCount` vs `targetCount`) is a genuine meter, not a checklist, and splitting the two is its own change |
-| **Payment / creator payouts (Stripe Connect)** | `features/entitlements/stripe/connect.ts` + `features/education/creators/components/CreatorPayoutsPanel.tsx` | Stripe hands us `charges_enabled`, `payouts_enabled`, `details_submitted` and a `requirements.currently_due` list — that is a **verified** step per requirement, each with `fix.href` = the Stripe onboarding link we already mint. Creating the connected account is **auto** (`ensureConnectAccount` is already idempotent). Nothing here is `confirmed` — Stripe is the authority on all of it |
+| **CMS / content-plan site launch** | **MIGRATED 2026-08-15.** Was `features/marketing/content-plan/setup/readiness.ts` rendering its own `met/partial/unmet/unknown` rows in `SetupWorkOrderColumn` | `marketing.content_plan_setup` (`features/marketing/content-plan/setup/contentPlanSetupChecklist.tsx`), mounted on `?view=setup` scoped to the site. **THE SPLIT is the point:** `readiness.ts` survives untouched as the pure MEASUREMENT layer, its coverage half (`families` plannedCount vs targetCount, `corePages`, `nodesWithout*`) stays a METER beside the checklist — "17 of 30 service pages planned" is a number that climbs over weeks, and a tick box for it is a step that is never done and always nagging. Steps: brand = **verified** (fix → Marketing → Sites); a website to build into = **auto, `autoRun: false`** (creating a real website record unasked, for someone who meant to point at one they already have, is exactly what that escape hatch is for — `bridge.ts#createAndLinkCmsSite` is ONE implementation shared with the "Make it real" rung that also offers linking an existing site); look and feel = **auto, `autoRun: false`** (aidream's starter kit writes styles + header + footer in one guarded call, `force: false` so an existing design can never be overwritten by a checklist button); menu and pictures = **verified**. **What groups a step is the ACTION that finishes it, not the requirement it measures** — step ids are persistence keys and must be static while foundation requirements are dynamic (`asset:service_icon` exists only for shapes declaring it), so each step names every piece it covers by state in its `detail`. **Live-verified 2026-08-15** on datadestruction.com: the auto step really did build the colours, header and footer (3 rows flipping to "ready"), the coming-soon fix opened, and the progress count excluded the optional step. Two findings from that render, both fixed: the MENU cannot live in the design step (the starter kit seeds navigation from show-in-nav pages, so on a site with no pages it leaves the menu empty forever behind a button that would then refuse "the site is not empty" — a dead end wearing a fix's clothes), and PICTURES had to become `optional` because the asset library has no UI a site owner can reach (Coming Soon `cms.site-images`). Still unverified: the `unknown` path on a site with no CMS counterpart, and the "Set it up for me" website step end to end — the shared dev server OOM-died repeatedly under other sessions before that pass finished |
+| **Payment / creator payouts (Stripe Connect)** | **MIGRATED 2026-08-14.** Was a four-state block in `CreatorPayoutsPanel` whose failure case said "Finish your Stripe onboarding" whether you were missing a bank account, a passport photo, or had been declined outright | `billing.creator_payouts` (`features/education/creators/payoutsChecklist.tsx`): the connected account = **auto** (`ensureConnectAccount` is idempotent; `autoRun: false` because the panel renders for every creator who opens their dashboard and an account is a real KYC-able entity created at a third party in their name); **one verified step per entry in `requirements.currently_due`**, titled with what Stripe actually asked for; `charges_enabled` and `payouts_enabled` = **verified**, with Stripe's `disabled_reason` as the sentence when off. **Nothing is `confirmed`** — Stripe is the authority on every line, so nothing here is self-reported. Three things this needed: the server read now returns `requirements` + `disabled_reason` off the live account (`refreshConnectAccount` → `ConnectAccountStatus`, surfaced by `/api/stripe/connect/status`; the mirror row cannot hold them — they change with no webhook); `POST /api/stripe/connect/account` creates the account with **no** hosted link, because an auto step must not burn a single-use onboarding link per page visit; and Stripe's developer strings are translated by `lib/stripe/connect-requirements.ts`, whose fallback guarantees a code we have never seen still produces a usable sentence. Fixes are `fix.run`, not `fix.href` — an account link is single-use and expires in minutes, so it is minted at the click. **Requirement steps BLOCK the two verdict steps**, or a creator missing their ID sees three rows each offering the same "Open my Stripe details". `eventually_due` is returned by the server but deliberately not rendered as steps: it is not actionable, and Stripe moves an item into `currently_due` the moment it becomes so. **Verification limit: Connect is not enabled on the platform Stripe account** (test keys are configured; `accounts.create` answers 409 "sign up for Connect"), so the empty/not-connected path and the 409 path are live-verified and **the requirement steps have never been exercised against a real account** |
 | **Org onboarding** | Scattered: `features/scope-system/components/ScopeOnboarding.tsx`, `utils/onboarding.ts`, empty states | Members invited / first scope created / industry chosen = **verified**; the personal-org and default-scope creation we already do at signup = **auto**; "who else should be in here" = **confirmed** |
 
 ## Known limits
@@ -166,11 +172,41 @@ you believe it.
    different labels. Two descriptions of one thing read as two things.
 5. **An `auto` step printed its action twice** — once as its own run button and
    once as the check result's `fix`.
-6. **Blocked steps offered a fix button** under "Waiting on: X" — telling the
+6. **A step's own action could not finish it.** The content-plan `design` step
+   bundled the menu with styles/header/footer because one starter-kit call
+   writes all four — except it seeds the menu FROM the site's pages, which do
+   not exist yet, so the step sat red offering a button that would refuse on
+   the second press. **Group a step by the action that FINISHES it**, not by
+   the API call that touches it.
+7. **Blocked steps offered a fix button** under "Waiting on: X" — telling the
    user to do two contradictory things at once. Fixed in the primitive
    (`GuidedChecklist`) and locked by an engine test, so no consumer can hit it.
+8. **An auto step claimed it was working while it was only CHECKING.** Both
+   read as `busy` and the UI printed `runningLabel` for either, so the payouts
+   checklist's very first paint said "Setting up your payouts account…" before
+   anything had been set up — and the same bug had been live on the history
+   import step ("Bringing in your history…") since day one. `ResolvedStep.running`
+   now means *this step's `run` is in flight* and nothing else; locked by a test.
+9. **A failed auto action left no trace on screen.** The hook re-checks the
+   moment a run settles, which immediately overwrote the failure with the
+   still-true "you don't have a payouts account yet" — so pressing the button
+   with Stripe Connect disabled looked like pressing a dead button. A consumer
+   whose `run` can fail for a reason its own check cannot see must say so
+   itself (`CreatorPayoutsPanel` toasts and rethrows).
 
 ## Change log
+
+- 2026-08-14 — Fourth consumer: `billing.creator_payouts` on the creator
+  dashboard (see the migration map row). The primitive gained a **step factory**
+  (`steps` may be a pure function of the context) so an open-ended third-party
+  requirement list gets one row each rather than one "finish onboarding" row for
+  everything, and `ResolvedStep.running` so "we are doing it" stops reading the
+  same as "we are looking". Defects 8 and 9 above both came out of rendering it.
+
+- 2026-08-15 — Third consumer: `marketing.content_plan_setup` on the content-plan
+  Setup view, and with it the rule that a checklist and a coverage meter are
+  different surfaces (see the migration map row). One new law learned from the
+  live render: group a step by the action that FINISHES it.
 
 - 2026-08-14 — Created. Primitive + `platform.guided_checklist_run` + the
   `marketing.site_setup` consumer on two surfaces. Live-verified on
