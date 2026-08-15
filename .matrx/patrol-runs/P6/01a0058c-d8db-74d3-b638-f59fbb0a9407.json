@@ -87,6 +87,31 @@
       ],
       "previousEventHash": "34aec6000fb489521bccda6150f77cd4de5e7f37002b4d1ae1865e7db3a2ed7a",
       "eventHash": "b80da9c65e854b8f973d79b5f0567a0e101f4a40a1cc180ade04aefaa0b7aff6"
+    },
+    {
+      "sequence": 7,
+      "state": "certified",
+      "at": "2026-08-15T13:35:47.648Z",
+      "actor": "p6-adversarial-certifier",
+      "summary": "CERTIFIED exact candidate 441071746eb918349cfc33029a215be0e1fbf837; no concrete batch-caused defect.",
+      "evidence": [
+        "Exact commit is current HEAD with clean worktree and valid ancestry at certifier review.",
+        "Prior rejection of 3df1bd89b is recorded and corrected; report and ledger in the candidate truthfully state certification pending."
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "441071746eb918349cfc33029a215be0e1fbf837",
+        "certifierTaskId": "/root/p6_adversarial_certifier",
+        "checks": [
+          "Touched-file detector: 0 matches; full detector: 174 lines in 96 files.",
+          "pnpm type-check PASS before and after.",
+          "git diff --check and exact-commit diff-check PASS.",
+          "pnpm check:doctrine PASS; UI gate has only 20 unrelated baseline warnings.",
+          "Focused rendered-markup checks PASS for WelcomeEmail, FixedInputPage, and IconResolverDisplay; foreign preview was not used."
+        ]
+      },
+      "previousEventHash": "b80da9c65e854b8f973d79b5f0567a0e101f4a40a1cc180ade04aefaa0b7aff6",
+      "eventHash": "44a5cfea2c75ce34f6ca64ac4121fd7de6fde6175eed93bf8eccf02976f31755"
     }
   ]
 }
