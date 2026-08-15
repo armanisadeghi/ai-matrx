@@ -2,7 +2,7 @@
 
 import twilio from "twilio";
 
-import { POST } from "./route";
+import { GET, POST } from "./route";
 
 const URL = "https://www.aimatrx.com/api/webhooks/twilio/voice";
 const AUTH_TOKEN = "voice-route-test-auth-token";
@@ -87,5 +87,37 @@ describe("POST /api/webhooks/twilio/voice", () => {
 
     expect(response.status).toBe(400);
     expect(await response.text()).toBe("Bad Request");
+  });
+
+  test("reports recording as disabled until every ownership gate passes", async () => {
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.recording).toMatchObject({
+      enabled: false,
+      mode: "blocked_until_all_gates_pass",
+      readiness: {
+        ready: false,
+        passedGateCount: 0,
+        totalGateCount: 9,
+      },
+    });
+    expect(body.recording.readiness.gates).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          key: "disclosure_and_consent_verified",
+          passed: false,
+        }),
+        expect.objectContaining({
+          key: "dedicated_storage_identity_ready",
+          passed: false,
+        }),
+        expect.objectContaining({
+          key: "lifecycle_persistence_ready",
+          passed: false,
+        }),
+      ]),
+    );
   });
 });

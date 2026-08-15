@@ -3,9 +3,12 @@
 import {
   parseTwilioInboundVoiceRequest,
   parseTwilioVoiceLifecycleEvent,
+  parseTwilioVoiceRecordingLifecycleEvent,
 } from "@/lib/communications/providers/twilio/voice";
 import { buildStaticVoiceTestTwiml } from "@/lib/communications/providers/twilio/voice-twiml";
 import { shouldApplyCallLifecycleEvent } from "@/lib/communications/voice/lifecycle";
+import { shouldApplyCallRecordingLifecycleEvent } from "@/lib/communications/voice/recording-lifecycle";
+import { evaluateVoiceRecordingReadiness } from "@/lib/communications/voice/recording-readiness";
 
 describe("Twilio Voice provider adapter", () => {
   test("validates the minimum signed inbound call identity", () => {
@@ -141,6 +144,134 @@ describe("Twilio Voice provider adapter", () => {
     ).toEqual({
       ok: false,
       error: "Invalid Twilio Voice SequenceNumber",
+    });
+  });
+
+  test("normalizes recording callbacks without promoting the provider URL", () => {
+    expect(
+      parseTwilioVoiceRecordingLifecycleEvent({
+        AccountSid: "AC123",
+        CallSid: "CA123",
+        RecordingSid: "RE123",
+        RecordingStatus: "completed",
+        RecordingDuration: "42",
+        RecordingChannels: "2",
+        RecordingStartTime: "Sat, 15 Aug 2026 20:00:00 +0000",
+        RecordingSource: "StartCallRecordingAPI",
+        RecordingTrack: "both",
+        RecordingUrl: "https://api.twilio.com/recordings/RE123",
+      }),
+    ).toEqual({
+      ok: true,
+      value: {
+        provider: "twilio",
+        providerAccountId: "AC123",
+        providerCallId: "CA123",
+        providerRecordingId: "RE123",
+        providerEventKey: "twilio:voice-recording:AC123:RE123:completed",
+        status: "completed",
+        occurredAt: "Sat, 15 Aug 2026 20:00:00 +0000",
+        durationSeconds: 42,
+        channels: 2,
+        source: "StartCallRecordingAPI",
+        track: "both",
+        providerMediaUrl: "https://api.twilio.com/recordings/RE123",
+      },
+    });
+  });
+
+  test("rejects malformed recording callback fields", () => {
+    expect(
+      parseTwilioVoiceRecordingLifecycleEvent({
+        AccountSid: "AC123",
+        CallSid: "CA123",
+        RecordingSid: "RE123",
+        RecordingStatus: "completed",
+        RecordingChannels: "3",
+      }),
+    ).toEqual({
+      ok: false,
+      error: "Invalid Twilio Voice RecordingChannels",
+    });
+    expect(
+      parseTwilioVoiceRecordingLifecycleEvent({
+        AccountSid: "AC123",
+        CallSid: "CA123",
+        RecordingSid: "RE123",
+        RecordingStatus: "unknown",
+      }),
+    ).toEqual({
+      ok: false,
+      error: "Unsupported Twilio Voice RecordingStatus: unknown",
+    });
+  });
+
+  test("keeps recording lifecycle monotonic and terminal", () => {
+    const inProgress = parseTwilioVoiceRecordingLifecycleEvent({
+      AccountSid: "AC123",
+      CallSid: "CA123",
+      RecordingSid: "RE123",
+      RecordingStatus: "in-progress",
+    });
+    const completed = parseTwilioVoiceRecordingLifecycleEvent({
+      AccountSid: "AC123",
+      CallSid: "CA123",
+      RecordingSid: "RE123",
+      RecordingStatus: "completed",
+    });
+    const failed = parseTwilioVoiceRecordingLifecycleEvent({
+      AccountSid: "AC123",
+      CallSid: "CA123",
+      RecordingSid: "RE123",
+      RecordingStatus: "failed",
+    });
+    if (!inProgress.ok || !completed.ok || !failed.ok) {
+      throw new Error("test fixtures must parse");
+    }
+
+    expect(shouldApplyCallRecordingLifecycleEvent(null, inProgress.value)).toBe(true);
+    expect(
+      shouldApplyCallRecordingLifecycleEvent(inProgress.value, inProgress.value),
+    ).toBe(false);
+    expect(
+      shouldApplyCallRecordingLifecycleEvent(inProgress.value, completed.value),
+    ).toBe(true);
+    expect(
+      shouldApplyCallRecordingLifecycleEvent(completed.value, failed.value),
+    ).toBe(false);
+  });
+
+  test("fails recording readiness closed until every gate passes", () => {
+    const blocked = evaluateVoiceRecordingReadiness({
+      owner_only_program_bound: true,
+      disclosure_and_consent_verified: true,
+      provider_email_verification_current: true,
+      dedicated_storage_identity_ready: false,
+      external_storage_configured: false,
+      external_storage_canary_passed: false,
+      lifecycle_persistence_ready: false,
+      canonical_file_ingest_ready: false,
+      retention_access_deletion_ready: false,
+    });
+    expect(blocked.ready).toBe(false);
+    expect(blocked.blockedReasons).toHaveLength(6);
+
+    const ready = evaluateVoiceRecordingReadiness({
+      owner_only_program_bound: true,
+      disclosure_and_consent_verified: true,
+      provider_email_verification_current: true,
+      dedicated_storage_identity_ready: true,
+      external_storage_configured: true,
+      external_storage_canary_passed: true,
+      lifecycle_persistence_ready: true,
+      canonical_file_ingest_ready: true,
+      retention_access_deletion_ready: true,
+    });
+    expect(ready).toMatchObject({
+      ready: true,
+      passedGateCount: 9,
+      totalGateCount: 9,
+      blockedReasons: [],
     });
   });
 });
