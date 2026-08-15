@@ -133,7 +133,6 @@ export function SiteOverview() {
   const [showProgress, setShowProgress] = useState(false);
   const [identityEditing, setIdentityEditing] = useState(false);
   const autoInitStarted = useRef(false);
-  const brandId = site.brand_id;
 
   const runInitialize = useCallback(async () => {
     setInitPhase("connecting");
