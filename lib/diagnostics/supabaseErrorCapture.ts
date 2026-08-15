@@ -56,6 +56,20 @@ interface PostgrestLikeResult {
   statusText?: string;
 }
 
+/** Preserve the HTTP fact when PostgREST supplies no useful error sentence. */
+export function postgrestResultErrorMessage(
+  result: PostgrestLikeResult,
+): string {
+  const message = result.error?.message?.trim();
+  if (message) return message;
+
+  const status =
+    typeof result.status === "number" ? `HTTP ${result.status}` : "an error";
+  const statusText = result.statusText?.trim();
+  const statusLabel = statusText ? `${status} (${statusText})` : status;
+  return `Supabase request failed with ${statusLabel}; PostgREST returned no error message`;
+}
+
 /**
  * A cancelled request is NOT a failure — it's expected control flow (navigation,
  * unmount, a superseding fetch calling `controller.abort()`). postgrest-js does
@@ -138,7 +152,7 @@ function captureResult(
     schema: ctx.schema,
     relation: ctx.relation,
     code: typeof e.code === "string" ? e.code : undefined,
-    message: e.message || "Supabase returned an error",
+    message: postgrestResultErrorMessage(res),
     details: typeof e.details === "string" ? e.details : undefined,
     hint: typeof e.hint === "string" ? e.hint : undefined,
     status: typeof res.status === "number" ? res.status : undefined,

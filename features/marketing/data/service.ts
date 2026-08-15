@@ -64,6 +64,7 @@ import { extractErrorMessage, operationFailed } from "@/utils/errors";
 import type { Database, Json } from "@/types/database.types";
 import { parseSnapshotHeadTags } from "@/features/marketing/lib/head-tags";
 import { applyPageOnlyFilters } from "@/features/marketing/lib/page-content-class";
+import { parseSiteCoverageMatrix } from "@/features/marketing/lib/coverage";
 import {
   parseSnapshotImages,
   parseSnapshotResources,
@@ -1216,140 +1217,10 @@ export async function getCoverageMatrix(
   signal?: AbortSignal,
 ): Promise<SiteCoverageMatrix> {
   const db = await authenticatedWebDb(supabase);
-  const abortSignal = signal ?? new AbortController().signal;
-
-  const confirmedPages = () =>
-    db
-      .from("v_page_list")
-      .select("page_id", { count: "exact", head: true })
-      .eq("site_id", siteId)
-      .eq("is_canonical", true)
-      .eq("is_resource", false)
-      .eq("has_page_evidence", true);
-  const membershipPages = () =>
-    db
-      .from("v_page_list")
-      .select("page_id", { count: "exact", head: true })
-      .eq("site_id", siteId)
-      .eq("is_canonical", true)
-      .eq("is_resource", false)
-      .eq("has_page_evidence", true)
-      .gt("sitemap_count", 0);
-  const antiMembershipPages = () =>
-    db
-      .from("v_page_list")
-      .select("page_id", { count: "exact", head: true })
-      .eq("site_id", siteId)
-      .eq("is_canonical", true)
-      .eq("is_resource", false)
-      .eq("has_page_evidence", true)
-      .eq("sitemap_count", 0);
-
-  const gscPages = () =>
-    db
-      .from("v_page_list")
-      .select("page_id", { count: "exact", head: true })
-      .eq("site_id", siteId)
-      .eq("is_canonical", true)
-      .eq("is_resource", false)
-      .eq("has_page_evidence", true)
-      .eq("in_gsc", true);
-
-  const [
-    total,
-    knownPageUrls,
-    unconfirmedCandidates,
-    resourceUrls,
-    inSitemaps,
-    crawled,
-    neverCrawled,
-    sitemapNotCrawled,
-    crawledNoSitemap,
-    inGsc,
-    gscNoSitemap,
-    sitemapNoGsc,
-    ...provenanceCounts
-  ] = await Promise.all([
-    confirmedPages().abortSignal(abortSignal),
-    db
-      .from("v_page_list")
-      .select("page_id", { count: "exact", head: true })
-      .eq("site_id", siteId)
-      .eq("is_canonical", true)
-      .eq("is_resource", false)
-      .abortSignal(abortSignal),
-    db
-      .from("v_page_list")
-      .select("page_id", { count: "exact", head: true })
-      .eq("site_id", siteId)
-      .eq("is_canonical", true)
-      .eq("is_resource", false)
-      .eq("has_page_evidence", false)
-      .abortSignal(abortSignal),
-    db
-      .from("v_page_list")
-      .select("page_id", { count: "exact", head: true })
-      .eq("site_id", siteId)
-      .eq("is_canonical", true)
-      .eq("is_resource", true)
-      .abortSignal(abortSignal),
-    membershipPages().abortSignal(abortSignal),
-    confirmedPages().not("latest_snapshot_id", "is", null).abortSignal(abortSignal),
-    confirmedPages().is("latest_snapshot_id", null).abortSignal(abortSignal),
-    membershipPages().is("latest_snapshot_id", null).abortSignal(abortSignal),
-    antiMembershipPages()
-      .not("latest_snapshot_id", "is", null)
-      .abortSignal(abortSignal),
-    gscPages().abortSignal(abortSignal),
-    gscPages()
-      .eq("sitemap_count", 0)
-      .abortSignal(abortSignal),
-    membershipPages()
-      .eq("in_gsc", false)
-      .abortSignal(abortSignal),
-    ...PAGE_PROVENANCES.map((provenance) =>
-      confirmedPages().eq("provenance", provenance).abortSignal(abortSignal),
-    ),
-  ]);
-
-  for (const response of [
-    total,
-    knownPageUrls,
-    unconfirmedCandidates,
-    resourceUrls,
-    inSitemaps,
-    crawled,
-    neverCrawled,
-    sitemapNotCrawled,
-    crawledNoSitemap,
-    inGsc,
-    gscNoSitemap,
-    sitemapNoGsc,
-    ...provenanceCounts,
-  ]) {
-    if (response.error) throw response.error;
-  }
-
-  const byProvenance = {} as Record<PageProvenance, number>;
-  PAGE_PROVENANCES.forEach((provenance, index) => {
-    byProvenance[provenance] = provenanceCounts[index]?.count ?? 0;
-  });
-
-  return {
-    totalPages: total.count ?? 0,
-    knownPageUrls: knownPageUrls.count ?? 0,
-    unconfirmedCandidates: unconfirmedCandidates.count ?? 0,
-    resourceUrls: resourceUrls.count ?? 0,
-    inSitemaps: inSitemaps.count ?? 0,
-    crawled: crawled.count ?? 0,
-    neverCrawled: neverCrawled.count ?? 0,
-    sitemapNotCrawled: sitemapNotCrawled.count ?? 0,
-    crawledNoSitemap: crawledNoSitemap.count ?? 0,
-    inGsc: inGsc.count ?? 0,
-    gscNoSitemap: gscNoSitemap.count ?? 0,
-    sitemapNoGsc: sitemapNoGsc.count ?? 0,
-    byProvenance,
-  };
+  const response = await db
+    .rpc("site_page_coverage", { p_site_id: siteId })
+    .abortSignal(signal ?? new AbortController().signal);
+  return parseSiteCoverageMatrix(assertData(response.data, response.error));
 }
 
 export async function getPageWorkspace(
