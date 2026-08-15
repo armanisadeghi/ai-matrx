@@ -277,6 +277,19 @@ COMMENT ON FUNCTION public.is_resource_owner(text, uuid) IS
 --    breakage). Until it is fixed, an UNFILTERED `select * from files.pages`
 --    remains over the 8 s cap for non-owners. Every real surface reads pages
 --    filtered by file, which is served fine.
+--
+--    ✅ THAT WORK WAS DONE, 2026-08-15, in
+--    migrations/iam_access_kernel_plpgsql_plan_cache_d146_followup.sql — read
+--    it before touching the resolver. It found TWO causes, neither of them the
+--    access model: (1) planner statistics that had NEVER been collected on most
+--    kernel tables, which mis-planned `_edu_can_read_via_assignment` and
+--    accounted for 66% of all buffer traffic; (2) a `LANGUAGE sql` function
+--    nested inside a `LANGUAGE sql` body re-acquiring its callee's plan on
+--    every call (same body as plpgsql: 1,678 ms -> 187 ms). The policies on
+--    this table were NOT changed. Filtered reads are now ~100 ms (was
+--    281-377 ms); the unfiltered scan is ~35% faster and passes for some
+--    identities but STILL exceeds 8 s (8.4-8.7 s) for an identity admitted few
+--    rows. That file records exactly what remains and why.
 -- =====================================================================
 
 DROP POLICY IF EXISTS file_pages_select ON files.pages;
