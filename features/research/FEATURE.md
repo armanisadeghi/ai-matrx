@@ -299,6 +299,30 @@ find yourself writing code to add an output, something above is wrong.
 
 ## Change log
 
+- 2026-08-15 — **Copy-for-AI lands on the pipeline (`agent-copy` rollout).** New
+  [`copy.ts`](./copy.ts) is the feature's single source of human/agent copy
+  flavors — `format.ts` next door stays the number formatter. `researchKpis()`
+  mirrors the `LastRunSummary` receipt and the `buildHeroMetrics` stat rail
+  verbatim (same tokens × 4 characters derivation), and every payload built
+  here carries those numbers in its envelope, so an agent never recomputes what
+  the user is already looking at. Cost-derived KPIs resolve to `null`, never
+  `0`, on surfaces that don't load a cost summary — a fabricated "$0 spent" is
+  worse than an absent field. Wired so far: the **topic overview** (hover `xs`
+  pair per metric tile, a rail-level pair, `ExportMenu`, a page-level quick pair
+  and an `AgentCopyGroomerLauncher` whose ONE section list — receipt · stat rail
+  · ranked sources · media · cost — feeds both the Groomer window and the
+  Balanced/Minimal variants through the shared `groomerPresetVariants` /
+  `buildGroomerPresetPayload` helpers) and the **synthesis** surface (per-record
+  pair carrying the FULL result text rather than the 20k display clip, graded
+  list variants, and an `aiCustom` composer whose lever is chars-per-synthesis).
+  Copy and export always cover every row in scope, never the `TopSourcesGrid`
+  visible slice. The Groomer lives in `LastRunSummary` rather than the
+  `PipelineOrchestra` control strip because that component already owns the
+  sources and media the payload needs, and `useServiceQuery` has no shared
+  cache — hoisting the fetch would have doubled it on every topic load.
+  Remaining surfaces are tabled in
+  [`docs/handoffs/agent-copy-data-knowledge-cluster.md`](../../docs/handoffs/agent-copy-data-knowledge-cluster.md),
+  including the `TopicExperts` `evidence.slice(0, 2)` show-all defect.
 - 2026-08-14 — **Experts leave the JSONB and become records.** Every analyzed
   page already carried the promotion signals (`NotableQuote.speaker`,
   `expert_opinion` findings, `EntitiesMentioned.people`, author credentials)

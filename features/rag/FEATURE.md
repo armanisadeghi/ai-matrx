@@ -164,6 +164,28 @@ Migrations: [`library_store_file_reachability_cascade.sql`](../../migrations/lib
 
 ## Change log
 
+- **2026-08-15 — chunk lists became copyable, and stopped hiding their tail
+  (`agent-copy` rollout).** New [`chunk-copy.ts`](./chunk-copy.ts) holds pure
+  `(data, options)` builders with no React: `chunkBrief` with a chars cap, an
+  index-only projection, the composer schema, and `chunkCoverage()`. `ChunkCard`
+  gained a hover-reveal `xs` pair carrying the chunk's full text plus its
+  provenance scope (document / derivative / page), and both loaders share a new
+  `ChunkListControls` toolbar — graded variants (Previews / Index only /
+  Everything), an `aiCustom` composer whose primary lever is **chars per
+  chunk** (plus embedded-only and index-only toggles), and `ExportMenu` (JSON +
+  CSV). Scope and coverage are identical across every variant, so shortening is
+  lossy in DATA only and never in ambient context; a clipped chunk states
+  exactly how many chars it dropped. **Fixes a show-all defect:** `ChunksOnPage`
+  and `DerivativeChunkList` both hard-capped at 50 rows and only printed
+  "Showing first N of M" with no way to reach the rest — both now expose "Show
+  all", which raises the fetch cap so a whole-list copy or export genuinely
+  covers every row. Until it is used, the payload carries an explicit coverage
+  note rather than presenting a slice as the whole set. Remaining RAG surfaces
+  (data stores, library, search, hit card) are tabled in
+  [`docs/handoffs/agent-copy-data-knowledge-cluster.md`](../../docs/handoffs/agent-copy-data-knowledge-cluster.md),
+  along with three more show-all defects in `RagPageReferences`,
+  `RagSearchExperience` and `RagHitCard`.
+
 - **2026-08-12 (the Knowledge Library is agent-WRITABLE)** — `/rag/library` + `/rag/library-catalog` gained the write half of `matrx-user/rag-library`: 4 ask-policy targets serving one flow — find a document in a corpus nobody can eyeball, open it, and give it a findable name. `library_filters` / `catalog_filters` are composite `ui` objects landing through the same setters the search boxes and status buttons dispatch; `selected_document_id` opens a row, validated against the LIVE visible list read at call time; `selected_document_name` is the one `entity` target — the document rename, registered from `LibraryDocDetailSheet` (the component that owns the canonical write) rather than from the page. `handleRename` was split into a shared `renameDocumentTo(name)` that THROWS instead of toasting, so the Rename dialog and the agent go through ONE write path and each caller decides how to surface a failure. `STATUS_FILTERS` moved out of `LibraryPage.tsx` into the React-free [`constants/libraryStatusFilters.ts`](./constants/libraryStatusFilters.ts) so the rendered buttons, the model-facing enum in the manifest, and the handler's validation are one array — deliberately NOT `DocStatus`, which also carries `chunking` / `unknown` that render no button and would strand the user in a view with no control to leave it. **Ingest, re-embed, re-process and delete stay human: an embedding run spends real money, so the user's own click is the spending gate** — and every count is derived and unwritable by construction. Live-verified with real agent runs (apply, decline, undeclared-target refusal, two forced-invalid throws, and a rename that persisted and was then restored through the sheet's own dialog). See [`features/surfaces/FEATURE.md`](../surfaces/FEATURE.md) and the `surface-write-targets` skill. **A pre-existing fault surfaced while verifying and is NOT fixed here:** opening any document's detail sheet fires `GET /rag/library/<id>/derivations`, which returns `500 internal_error: ValidationError` — reproducible by a plain user click with no agent involved, so it is a backend lead rather than a write-path defect.
 - **2026-08-11 — RAG stopped guessing why a read failed (access gate).** `DataStoresPage` renders `<AccessGate token="data_store"/>` instead of "Data store not found", and `LibraryDocDetailSheet` renders `<AccessGate token="processed_document"/>` instead of a red error string — both browser-verified (a fabricated store id resolves to the honest `missing` state with an "All data stores" door; a real store is unaffected). `useDataStoreDetail` / `useLibraryDoc` no longer fabricate a "not found": a zero-row read reports the record as absent with **no** error and exposes `readError` for the gate, because deleted / denied / stale-id / signed-out are indistinguishable from here. Every `throw new Error(rpcError.message)` across the library pages, trash sheet, fork, grants, and hooks is now a sentence we wrote — the raw PostgREST text still reaches the Error Inspector via the client-wide capture proxy. `pnpm check:access-errors` for `features/rag/`: 18 → 0.
 

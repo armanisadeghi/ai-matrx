@@ -397,6 +397,20 @@ UI-complete here but only take effect once P1's service layer reads them.
 
 ## Change log
 
+- `2026-08-15` — **The site list became copyable (`agent-copy` rollout).** New
+  [`copy.ts`](./copy.ts) holds the CMS human/agent copy formatters. The site
+  list at `/cms` gained a list-level Copy / Copy-for-AI pair and an
+  `ExportMenu` (JSON + CSV) covering every site, with `siteCounts()` as the
+  payload's KPI envelope. Builders take `ClientSiteSummary` — never a refetched
+  full `ClientSite` — precisely because the summary shape carries
+  `has_data_api_key` and never `data_api_key` itself; the masked-key card on
+  the collections tab keeps its own reveal/rotate affordances and nothing here
+  widens them. Payloads project through an explicit allowlist (`siteBrief`)
+  rather than spreading a row. Pages, collections, collection items, components
+  and the `/cms/admin` panels are still unwired — tabled in
+  [`docs/handoffs/agent-copy-data-knowledge-cluster.md`](../../docs/handoffs/agent-copy-data-knowledge-cluster.md),
+  where the `PageEditor` record pair is specifically noted as needing LIVE
+  editor state plus an `unsaved_changes` diff rather than the saved row.
 - `2026-08-14` — **W2 Measure tab: the page editor no longer forgets where the page GOES.**
   `PageEditor` gains a lazy **Measure** tab that renders the canonical marketing
   `PageWorkspace` for the measured page named by `client_pages.web_page_id` — the whole
