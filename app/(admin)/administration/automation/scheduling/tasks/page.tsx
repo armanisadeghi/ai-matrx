@@ -200,7 +200,7 @@ export default function AdminTasksPage() {
           void refetchDuplicates();
         }}
       />
-      <div className="min-h-0 flex-1">
+      <div className="min-h-0 flex-1" data-surface-value="task_row_count">
         <MatrxDataTable
           urlState={{ id: "scheduling-tasks" }}
           data={rows}
