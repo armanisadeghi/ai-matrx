@@ -21,7 +21,10 @@ the platform was missing and did not know it was missing.
 
 > ## Status 2026-08-15 — phases 1–3 are live; phase 4 is implemented and awaiting production proof
 >
-> **Shipped and live:** domain→party (G1) · crawl-backed contact discovery (G2) · **the sending identity** (G5 — DNS proof, SPF/DKIM/
+> **Shipped and live:** domain→party (G1, both halves — the frontend fold button + mode control
+> landed 2026-08-15) · **the outreach doors (G9)** — "Start outreach" from a reputation case and
+> a backlink prospect into the existing `/crm/outreach-lists` workspace, with every reputation
+> verdict wired to the action it implies · crawl-backed contact discovery (G2) · **the sending identity** (G5 — DNS proof, SPF/DKIM/
 > DMARC, warm-up ramp, health, circuit breaker, kill switch) · **the compliance layer**
 > (`crm.check_send_eligibility()` as THE one send authority, unsubscribe proven on production,
 > 35-country jurisdiction policy) · tiers + entitlements · the guided-checklist primitive · and
@@ -153,9 +156,14 @@ the CRM list defaults to contacts with a one-click **Record** facet. Live before
 1,181 platform rows against 6 real contacts. Foundation only — the full classification
 system is `docs/handoffs/crm-record-classification.md`.
 
-**Remaining (frontend, belongs with G9):** a "Find these domains in my CRM" button and the
-mode control on the backlink-prospect and reputation-case surfaces, and the provenance edge
-rendered on the party record page.
+**Frontend half DONE 2026-08-15 (with G9).** `CrmFoldControl`
+(`features/crm/components/outreach-start/`) is the "Find these domains in my CRM" button
+plus the `auto|manual|off` mode control, mounted on the site-settings surface AND beside
+the referring-domain and reputation-case lists — one record, two renders. `off` refuses
+with the reason; every run reports what it SKIPPED and why, with doors to what it created.
+`PartyProvenanceCard` renders the provenance edge on `/crm/[partyId]`. 🚨 The mounted
+paths are **`/seo/sites/{site_id}/crm/...`** (bare prefixes) — the `/api/seo/...` form
+above is unreachable at runtime; the client is bound to the generated OpenAPI types.
 
 **The prospect list we actually want is still missing:** who links to our COMPETITORS —
 `docs/handoffs/competitor-link-gap.md`.
@@ -244,12 +252,24 @@ Link a send back to the `reputation_case` / `backlink` that motivated it, then l
 close the loop. Generic shape worth building deliberately: *campaign → intended world-change →
 observed world-change*. Reputation, SEO, growth-loop and sales all want it.
 
-### G9 — Surfaces.
-Outreach must start where the opportunity is found — a "Start outreach" action on a backlink
-prospect and on a reputation case — landing in the existing `/crm/outreach-lists` workspace rather
-than a new console. **A separate outreach app that doesn't know about the CRM is the failure mode
-to avoid.** Reputation cases need their verdicts (`pitch`, `request_update`, …) wired to real
-actions; today the verdict is a dead end.
+### G9 — Surfaces. ✅ **DONE 2026-08-15 (frontend)**
+Outreach starts where the opportunity is found and lands in the EXISTING
+`/crm/outreach-lists` workspace — no second console. "Start outreach" is on a reputation
+case (`pitch` / `request_update` / `correct` / `respond`) and on a referring-domain
+prospect (a `toxic` domain refuses with the reason, matching the G1 skip rules); the
+outlet is resolved through the live G1 fold, enrolled through the existing enrollment
+service, and the motivating record is stamped on the member so `SingleSendDialog` opens
+already bound to it (attribution, G8). **The verdict is no longer a dead end:** each
+non-outreach verdict is wired to the action it actually implies (`strengthen` → the page
+workspace, `investigate` → recheck the evidence) or is honestly inert
+(`monitor` / `leave_alone`) — a button that pretends is worse than none. Contracts and
+the earned traps: `features/crm/FEATURE.md` § "Starting outreach where the opportunity
+was found" + `features/marketing/components/reputation/FEATURE.md` § "The verdict is the
+action".
+
+**Still open on this gap:** a "Start outreach" door from the competitor link-gap prospect
+list (`seo.link_gap_domain`, role `link_gap`) — the fold producer and the provenance
+renderer already handle it; only the button is missing.
 
 ---
 
