@@ -364,6 +364,27 @@ Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) 
 
 ## Change log
 
+- 2026-08-14 — Claude: **`code_folder` and `code_repository` now have real destinations — the last
+  two code dead ends are closed.** Both had empty `url_path_template`s and no `hrefFor` (emptied by
+  `sharing_registry_route_truth_d138.sql` because their invented paths `/code/folders/{id}` and
+  `/code/repos/{id}` resolved to nothing). Honest, but still a NO DEAD ENDS gap: the UI named a
+  record the user could not reach. **No new route was invented for either** — the destinations were
+  built out of what already existed. `code_folder` → `/code?folder={id}`, mirroring `?open=`: the
+  workspace has no sub-routes, so a folder's destination is the Library tree with its ancestor
+  chain expanded and the row highlighted (new `useFocusCodeFolderFromUrl`; focus lives in Redux
+  because the side panel remounts each view). `code_repository` → `/rag/repositories?repo={id}` —
+  `/code`'s Source Control view is git-on-the-sandbox and has never read `code.code_repositories`,
+  so that page is the only surface over the table; the row is highlighted and scrolled to, and a
+  repository that isn't in the caller's list says so instead of rendering a list that looks like
+  the link worked. All four authorities moved in one commit (`entityRegistry.hrefFor`, the TS
+  mirror, the live DB row via `sharing_registry_code_folder_repo_routes.sql` applied + ledgered,
+  and the regenerated snapshot); parity + route tests green.
+  **Browser-verified on the running preview server, not from the route-scan test** — which still
+  only validates the PATH and is blind to every one of these query params.
+  Building it surfaced a one-day-old bug in the `?open=` fix below: it flipped the panel with
+  `setActiveView("library")`, and that reducer *collapses* the panel when the requested view is
+  already active — which `"library"` is by default. So `?open=` opened the file and hid the Library
+  panel it meant to reveal. Both deep links now use a new non-toggling `revealView`.
 - 2026-08-14 — Claude: **The `code_file` Open door now actually opens the file.** D138's spin-off,
   closed. Both route authorities claimed `/code?tab=code-file:{id}`; the code workspace has never
   read `?tab=`, so every Open door (EntityRef, peeks, org sharing surfaces, share links) landed the
@@ -376,7 +397,9 @@ Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) 
   `sharing_registry_code_file_open_param.sql`, applied + ledgered) and the snapshot, in one commit.
   **Browser-verified** this time, against two distinct file ids on the running preview server.
   `code_folder` / `code_repository` keep their empty templates: the workspace has no per-folder or
-  per-repository deep link, and an honest absence beats an invented URL.
+  per-repository deep link, and an honest absence beats an invented URL. — **Superseded the next
+  day** by the entry above: both were given real destinations built from surfaces that already
+  existed. The "give them real routes before giving them templates" bar was met, not waived.
 - 2026-08-14 — Claude: **D138 retired — `url_path_template` is no longer a route authority, and
   every remaining destination is a real route.** The column was a second, DB-owned route table
   independent of `entityRegistry.hrefFor`, and it had drifted: audited against the live `app/`
