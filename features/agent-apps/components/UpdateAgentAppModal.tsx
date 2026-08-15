@@ -30,6 +30,15 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import {
+  agentAppAdminKpis,
+  agentAppMetadataFormAgentPayload,
+  agentAppMetadataFormHuman,
+  type AgentAppFieldDraft,
+  type AgentAppKpis,
+  type AgentAppMetadataFormView,
+} from "@/features/agent-apps/format";
 import type { AgentApp, AppStatus, UpdateAgentAppInput } from "../types";
 
 interface UpdateAgentAppModalProps {
@@ -37,6 +46,12 @@ interface UpdateAgentAppModalProps {
   onOpenChange: (open: boolean) => void;
   app: AgentApp;
   onSubmit: (id: string, input: UpdateAgentAppInput) => Promise<void>;
+  /**
+   * The KPI strip of the page this dialog opened on top of, so the copied
+   * payload carries the same leading numbers the user can see behind it.
+   * Defaults to the admin Analytics-card formatting (its only caller today).
+   */
+  kpis?: AgentAppKpis;
 }
 
 export function UpdateAgentAppModal({
@@ -44,6 +59,7 @@ export function UpdateAgentAppModal({
   onOpenChange,
   app,
   onSubmit,
+  kpis,
 }: UpdateAgentAppModalProps) {
   const isMobile = useIsMobile();
 
@@ -118,8 +134,49 @@ export function UpdateAgentAppModal({
     </div>
   );
 
+  // The dialog IS the payload: these four inputs are the only place this app's
+  // metadata is being edited, and `error` is the red sentence rendered under
+  // them. Resolved at click time so the copy is the live draft, never `app`.
+  const buildFormView = (): AgentAppMetadataFormView => {
+    const drafts: AgentAppFieldDraft[] = [
+      { field: "name", label: "Name", live: name, saved: app.name },
+      {
+        field: "tagline",
+        label: "Tagline",
+        live: tagline,
+        saved: app.tagline ?? "",
+      },
+      {
+        field: "description",
+        label: "Description",
+        live: description,
+        saved: app.description ?? "",
+      },
+      { field: "status", label: "Status", live: status, saved: app.status },
+    ];
+    return {
+      app,
+      drafts,
+      saving,
+      error,
+      kpis: kpis ?? agentAppAdminKpis(app),
+    };
+  };
+
   const footer = (
     <>
+      <CopyButtons
+        size="sm"
+        className="mr-auto"
+        label={`${app.name} metadata form`}
+        human={() => agentAppMetadataFormHuman(buildFormView())}
+        agent={() => agentAppMetadataFormAgentPayload(buildFormView())}
+        agentVariant={{
+          label: "This form",
+          hint: "Live dialog values, unsaved diff, and any error shown",
+          position: "first",
+        }}
+      />
       <Button variant="outline" onClick={() => onOpenChange(false)}>
         Cancel
       </Button>

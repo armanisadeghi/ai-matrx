@@ -36,6 +36,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import {
+  agentAppAdminKpis,
+  agentAppRateLimitAgentPayload,
+  agentAppRateLimitHuman,
+  type AgentAppFieldDraft,
+  type AgentAppRateLimitFormView,
+} from "@/features/agent-apps/format";
 import type { AgentAppAdminView } from "@/lib/services/agent-apps-admin-service";
 
 export type AgentAppAdminActionPatch = {
@@ -121,6 +129,43 @@ export function AgentAppAdminActions({
   const handleSuspend = async () => {
     setConfirmSuspend(false);
     await handleChangeStatus("suspended");
+  };
+
+  // Live rate-limit state. While the editor is open these three inputs are a
+  // draft layer over the saved row — copying `app.rate_limit_*` then would
+  // hand the agent numbers the user has already typed over. Note the editor
+  // pre-fills defaults (20/24/100) when the row stores null, so an untouched
+  // open editor genuinely does carry pending changes; the diff says so.
+  const buildRateLimitView = (): AgentAppRateLimitFormView => {
+    const drafts: AgentAppFieldDraft[] = [
+      {
+        field: "rate_limit_per_ip",
+        label: "Per IP",
+        live: String(rlIp),
+        saved: String(app.rate_limit_per_ip ?? ""),
+      },
+      {
+        field: "rate_limit_window_hours",
+        label: "Window (hrs)",
+        live: String(rlWindow),
+        saved: String(app.rate_limit_window_hours ?? ""),
+      },
+      {
+        field: "rate_limit_authenticated",
+        label: "Per User",
+        live: String(rlAuth),
+        saved: String(app.rate_limit_authenticated ?? ""),
+      },
+    ];
+    return {
+      app,
+      editing: rlEditing,
+      // Closed editor: the badges show the SAVED values, so report those.
+      drafts: rlEditing
+        ? drafts
+        : drafts.map((draft) => ({ ...draft, live: draft.saved })),
+      kpis: agentAppAdminKpis(app),
+    };
   };
 
   const containerCls =
@@ -220,16 +265,26 @@ export function AgentAppAdminActions({
               <Shield className="w-3.5 h-3.5" />
               Rate Limit Overrides
             </Label>
-            {!rlEditing && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setRlEditing(true)}
-                className="h-6 text-xs"
-              >
-                Edit
-              </Button>
-            )}
+            <div className="flex items-center gap-1">
+              <CopyButtons
+                size="xs"
+                label={`${app.name} rate limits`}
+                human={() => agentAppRateLimitHuman(buildRateLimitView())}
+                agent={() =>
+                  agentAppRateLimitAgentPayload(buildRateLimitView())
+                }
+              />
+              {!rlEditing && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setRlEditing(true)}
+                  className="h-6 text-xs"
+                >
+                  Edit
+                </Button>
+              )}
+            </div>
           </div>
           {rlEditing ? (
             <div className="grid grid-cols-3 gap-2">
