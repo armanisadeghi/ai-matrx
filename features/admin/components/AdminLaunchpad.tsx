@@ -194,7 +194,7 @@ export default function AdminLaunchpad() {
 
       <main className="p-3">
         {visibleDomains.length > 0 ? (
-          <div style={{ columnWidth: "22rem", columnGap: "0.75rem" }}>
+          <div className="columns-1 gap-3 md:columns-2 xl:columns-3 2xl:columns-4 min-[1900px]:columns-5 min-[2250px]:columns-6 min-[2500px]:columns-7">
             {visibleDomains.map((domain) => (
               <section
                 key={domain.slug}
