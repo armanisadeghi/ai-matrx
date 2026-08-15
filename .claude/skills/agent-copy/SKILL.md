@@ -224,9 +224,30 @@ first and emit the gap list; only then wire, batch by batch:
   Shared `features/agent-apps/format.ts` (also de-duped formatNumber/
   formatDateTime).
 
-**Remaining high-value feature components** (each its own batch — trace the
-component, wire row + toolbar, typecheck, commit): none queued — pick the
-next module via the route tree and repeat the audit → classify → wire loop.
+**Remaining — the uncovered two-thirds of the app.** Marketing, agents,
+agent-apps, agent-shortcuts, tool-registry, feedback, ai-models, and the
+sandbox/admin pages are done. These features had ZERO copy files as of
+2026-08-15 — verify before starting (`grep -rl "agent-copy/CopyButtons"
+features/<name>`), then run the module-audit protocol on one cluster per
+batch:
+
+- **Knowledge/content:** notes · transcripts (+ transcript-studio,
+  transcription-cleanup) · dictionary
+- **Data pipeline:** research (richest AI-handoff surface in the app —
+  deserves a page Groomer) · rag · api-integrations/MCP (sanitize: never
+  emit endpoints/OAuth ids) · cms
+- **Marketing's one gap:** `features/marketing/content-plan` (tree editor,
+  node panel, pillar map) — the rest of marketing is fully wired
+- **Work management:** tasks + projects · scheduling · organizations ·
+  war-room
+- **Media:** files (partial) · image-manager · podcasts · audio · pdf —
+  here the SKIP call matters most (a viewer/player/editor has no record;
+  its LISTS and METADATA do), and a payload must carry `file_id` + durable
+  URL, **never a signed URL** (it dies in days and is useless to an agent).
+
+Then sweep whatever the route tree still shows uncovered. Scopes, artifacts,
+and code-editor are mostly non-record tools — audit them, expect to skip
+most of their surfaces, and say so rather than forcing buttons on.
 
 ---
 
