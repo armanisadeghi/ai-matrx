@@ -98,7 +98,9 @@ export async function GET(request: NextRequest) {
         .select("source_id")
         .eq("source_type", "agent_shortcut")
         .eq("target_type", scope)
-        .eq("target_id", scopeId);
+        .eq("target_id", scopeId)
+        // Tombstoned edges (an endpoint entity was trashed) do not scope — D135.
+        .is("deleted_at", null);
       if (edgeError) {
         return NextResponse.json(
           { error: "Failed to resolve shortcut scoping", details: edgeError.message },

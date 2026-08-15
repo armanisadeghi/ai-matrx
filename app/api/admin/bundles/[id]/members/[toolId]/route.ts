@@ -50,6 +50,8 @@ export async function PATCH(
       .eq("target_type", "tool_bundle")
       .eq("target_id", bundleId)
       .eq("role", "member")
+      // Tombstoned edges (an endpoint entity was trashed) are not members — D135.
+      .is("deleted_at", null)
       .maybeSingle();
     if (existing.error) {
       return NextResponse.json(
@@ -74,7 +76,8 @@ export async function PATCH(
       .eq("source_id", toolId)
       .eq("target_type", "tool_bundle")
       .eq("target_id", bundleId)
-      .eq("role", "member");
+      .eq("role", "member")
+      .is("deleted_at", null);
 
     if (error) {
       return NextResponse.json(
