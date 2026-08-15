@@ -365,7 +365,10 @@ export const TransformableCard: React.FC<TransformableCardProps> = ({
   // Render the card in pill form if in a container
   if (isPill) {
     return (
-      <div ref={containerRef} className="relative z-20">
+      // Zero-size anchor pinned to the consumer container's origin — see the
+      // note on the full-card wrapper below. `initialPosition` is a coordinate
+      // in the consumer's container, not in this wrapper.
+      <div ref={containerRef} className="absolute top-0 left-0" style={{ zIndex: isDragging ? 50 : 20 }}>
         <motion.div
           ref={cardRef}
           drag={true}
@@ -412,7 +415,18 @@ export const TransformableCard: React.FC<TransformableCardProps> = ({
 
   // Render the card in full form
   return (
-    <div ref={containerRef} className={cn("[perspective:3000px] z-20 relative")}>
+    // THE POSITIONING CONTRACT: this wrapper is a ZERO-SIZE anchor pinned to the
+    // consumer container's origin, so the absolutely-positioned motion layer
+    // below resolves against THAT container and `initialPosition` is a true
+    // container coordinate — N cards land where the consumer put them.
+    // It must never be `relative` (or carry any size): a positioned wrapper
+    // holding only an absolute child collapses to zero height and becomes its
+    // own containing block, which stacked every card on the same origin and
+    // made `initialPosition` inert (D195). The 3D perspective therefore lives
+    // on the motion element as `transformPerspective`, not as a CSS
+    // `perspective` here — a 0x0 box would put its perspective-origin in the
+    // corner and skew the tilt.
+    <div ref={containerRef} className="absolute top-0 left-0" style={{ zIndex: isDragging ? 50 : 20 }}>
       <motion.div
         ref={cardRef}
         drag={true}
@@ -434,6 +448,9 @@ export const TransformableCard: React.FC<TransformableCardProps> = ({
           scale,
           rotateX: isReturningToCard ? 0 : rotateX,
           rotateY: isReturningToCard ? 0 : rotateY,
+          // Per-element perspective: keeps the tilt's vanishing point at the
+          // card's own center now that the wrapper is a zero-size anchor.
+          transformPerspective: 3000,
           willChange: "transform",
           position: "absolute",
           top: 0,

@@ -16,10 +16,9 @@
  *  1. Each card OWNS its chrome and its size — `min-h-80 w-80 p-6` plus its own
  *     background, border and shadow. Passing a `className` with more padding,
  *     another background or another border fights it; the card renders bare.
- *  2. Each card's wrapper contains ONLY an absolutely-positioned motion layer,
- *     so the wrapper has ZERO height and collapses out of flow. Flex/grid
- *     layout can never separate two cards — they all pile onto the same origin
- *     and spill over whatever follows them on the page. The consumer MUST give
+ *  2. Each card renders as an absolutely-positioned motion layer anchored to
+ *     the consumer's container origin, so it occupies no space in normal flow
+ *     and flex/grid layout can never separate two cards. The consumer MUST give
  *     them a `relative` container with an explicit height and place each card
  *     with `initialPosition`, which is a coordinate in that container.
  *  3. A card is 320px wide and 320–384px tall before content, so the container
@@ -114,15 +113,6 @@ export default function DraggableCardsDemoPage() {
               title="TransformableCard"
               note="drag to reposition; click the pill to collapse and restore"
             />
-            <p className="text-xs text-amber-600 dark:text-amber-500">
-              One card only, deliberately. Unlike its sibling,{" "}
-              <code>TransformableCard</code> wraps its motion layer in a{" "}
-              <code>relative</code> div, so each card anchors to its own
-              zero-height wrapper instead of this container and{" "}
-              <code>initialPosition</code> cannot separate two of them — they
-              stack on the same origin. Mounting a second one here would
-              misrepresent the primitive.
-            </p>
             <TransformableCardContainer className="h-[460px] overflow-hidden rounded-md border border-border bg-card">
               <div className="absolute inset-0">
                 <TransformableCard
@@ -139,6 +129,17 @@ export default function DraggableCardsDemoPage() {
                   />
                 </TransformableCard>
 
+                <TransformableCard
+                  id="transformable-notes"
+                  initialPosition={{ x: 420, y: 96 }}
+                  onPositionChange={trackPosition("transformable-notes")}
+                  pillView={<span className="px-2 text-sm">Session notes</span>}
+                >
+                  <CardFace
+                    title="Session notes"
+                    body="A second card, placed by initialPosition as a coordinate in this container. Drag either one; each keeps its own position, tilt and pill state."
+                  />
+                </TransformableCard>
               </div>
             </TransformableCardContainer>
           </section>
