@@ -16,6 +16,11 @@ at `/chat/voice` and the fully-configurable **Voice Playground** at
 `/chat/voice/gemini`. Shared capture/playback mechanics do not make the two
 provider wire protocols interchangeable.
 
+This feature is browser realtime voice. It does not implement PSTN calls, Twilio Voice/TwiML,
+ConversationRelay, Media Streams, `CallSid` lifecycle, or phone handoff.
+
+Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/communications-platform/FEATURE.md — read it before touching this feature in ANY repo.
+
 ---
 
 ## Entry points
@@ -224,6 +229,7 @@ Implementation tracked in
 
 ## Change log
 
+- `2026-08-15` — Clarified the browser-voice boundary and linked the cross-repo communications system record; PSTN/telephony is a separate transport over shared agent, conversation, tool, and transcript primitives, not an implemented part of this feature.
 - `2026-08-15` — **Gemini Live became a first-class realtime surface.** Added
   `/chat/voice/gemini`, a dedicated catalog model/settings surface,
   authenticated reconnecting aidream transport, 16 kHz capture, 24 kHz
