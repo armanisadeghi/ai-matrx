@@ -15,6 +15,7 @@
  */
 
 import {
+  ADMIN_LAUNCHPAD_PATH,
   adminCategoriesData,
   type AdminToolLink,
 } from "@/features/admin/constants/admin-categories";
@@ -63,6 +64,19 @@ function destination(
 }
 
 export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
+  {
+    name: "Launchpad",
+    slug: "launchpad",
+    iconName: "Rocket",
+    iconColor: "text-sky-600",
+    sections: [
+      {
+        name: "Overview",
+        iconName: "LayoutGrid",
+        destinations: [destination(ADMIN_LAUNCHPAD_PATH)],
+      },
+    ],
+  },
   {
     name: "AI",
     slug: "ai",

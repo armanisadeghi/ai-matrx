@@ -8,7 +8,7 @@
 
 ## Purpose
 
-The desktop app-shell sidebar renders the global navigation and lets Large Routes replace it with route-owned navigation without building a second shell.
+The desktop app-shell sidebar renders the global navigation and lets Large Routes replace it with route-owned navigation without building a second shell. Admin users also receive a persistent footer section whose Admin Launchpad door remains directly reachable from normal and route-owned menus.
 
 ## Entry points
 
@@ -18,6 +18,7 @@ The desktop app-shell sidebar renders the global navigation and lets Large Route
 - `../../constants/route-menu-registry.ts` — ordered route-family registrations.
 - `../../constants/route-menu-style.ts` — canonical route-menu row class and icon metrics.
 - `../../../../styles/shell.css` — expansion, collapse, animation, mode-control, and collapsed-tooltip behavior.
+- `admin-menu/AdminSidebarSection.tsx` — admin-only footer controls and the direct new-tab Admin Launchpad door.
 
 ## Key flows
 
@@ -34,6 +35,12 @@ The desktop app-shell sidebar renders the global navigation and lets Large Route
 2. Activating it records a manual choice scoped to the current route family.
 3. Expanded sidebars show the destination inline; collapsed sidebars expose `Switch to …` through the styled rail tooltip and `aria-label`.
 
+### Launch administration work
+
+1. `AdminSidebarSection` hydrates the existing `selectIsAdmin` gate.
+2. Admins receive a visually distinct Admin Launchpad anchor before the Administration cascade and operational toggles.
+3. The anchor opens `/administration/launchpad` in a new tab so the current product workspace is never displaced.
+
 ## Invariants & gotchas
 
 - **Register Large Routes only in `route-menu-registry.ts`.** Keep more-specific pathname patterns before broader patterns.
@@ -41,6 +48,7 @@ The desktop app-shell sidebar renders the global navigation and lets Large Route
 - **Keep the mode control distinct from navigation rows.** Its bordered glass pill communicates a reversible mode change, not a destination.
 - **Never depend on animation events for the view flip.** Hidden pages may not emit them.
 - **Do not force every route menu into one row component.** Consumers use different elements, state, groupings, and specialized rows; share the visual contract unless behavior also becomes identical.
+- **Keep Admin Launchpad directly reachable.** It is a real new-tab anchor in the admin-only footer, not another level inside the Administration cascade.
 
 ## Related features
 
@@ -52,7 +60,7 @@ The desktop app-shell sidebar renders the global navigation and lets Large Route
 **Primitives reused**
 
 - Components: `ShellIcon`, Next.js `Link`, and the shared shell nav CSS contract.
-- Hooks: `useSidebarExpanded`, `usePathname`.
+- Hooks: `useSidebarExpanded`, `usePathname`, and the existing `useIsMounted` hydration gate.
 
 **Primitives introduced**
 
@@ -61,4 +69,5 @@ The desktop app-shell sidebar renders the global navigation and lets Large Route
 
 ## Change log
 
+- `2026-08-15` — Codex: added the prominent admin-only new-tab Launchpad door to the persistent sidebar footer.
 - `2026-08-15` — Codex: Preserved mode-switch meaning in the collapsed rail and centralized the route-menu row visual contract.

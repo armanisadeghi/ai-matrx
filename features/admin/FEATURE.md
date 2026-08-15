@@ -2,7 +2,7 @@
 
 **Status:** `stable`
 **Tier:** `1`
-**Last updated:** `2026-07-23`
+**Last updated:** `2026-08-15`
 
 ---
 
@@ -12,6 +12,12 @@ Administration navigation organizes every existing `/administration` page into
 one maintained hierarchy: **domain → section → destination**. The same registry
 drives the Administration dashboard, injected AppShell menu, desktop/mobile
 entry menus, route directory, and release-time completeness audit.
+
+The Admin Launchpad is the dense, desktop-first rendering of that same
+registry. It is designed to remain open as an administration command surface:
+every destination opens beside it in a new browser tab, and a single hourly
+timer refreshes the page only while it is visible (or when a stale hidden tab
+becomes visible again).
 
 Every domain owns a real static route at `/administration/<domain-slug>`, and
 every administration destination is physically nested below that root. The
@@ -29,6 +35,8 @@ product feature that does not already have one.
 
 - `app/(admin)/administration/page.tsx` — Administration dashboard.
 - `app/(admin)/administration/AdminDashboardClient.tsx` — direct destination directory, destination search, and filesystem route search.
+- `app/(admin)/administration/launchpad/page.tsx` — always-open Admin Launchpad route.
+- `features/admin/components/AdminLaunchpad.tsx` — dense registry renderer, search, new-tab launch contract, and visibility-aware hourly refresh.
 - `features/admin/components/AdminDomainDirectory.tsx` — compact domain renderer shared by the dashboard and every static domain landing page.
 - `app/(admin)/administration/_nav/AdminNavTreeMenu.tsx` — compact header tree over the same hierarchy.
 - `app/(admin)/administration/utilities/all-routes/page.tsx` — filesystem route directory grouped by its declared registry location.
@@ -47,6 +55,7 @@ product feature that does not already have one.
 - `features/shell/components/mobile-sheet/MobileRouteMenuSlot.tsx` — shared mobile injection and Main Menu switcher.
 - `features/shell/components/sidebar/admin-menu/AdminMenu.tsx` — Administration entry menu shown while the main menu is active.
 - `features/shell/components/sidebar/admin-menu/AdminMobileMenu.tsx` — equivalent main-menu entry on mobile.
+- `features/shell/components/sidebar/admin-menu/AdminSidebarSection.tsx` — prominent admin-only Launchpad door in the normal desktop sidebar footer.
 
 **Release audit**
 
@@ -77,6 +86,13 @@ No database tables, API endpoints, or Redux state are owned by this feature.
 3. The dashboard exposes every destination directly. The user may also open a real domain root such as `/administration/compute` for a focused view.
 4. Sidebar, header, desktop flyout, and mobile menu expose the same domain roots and canonical nested destinations.
 5. The shared switcher restores the Main Menu; its Administration switch restores the route menu without navigation.
+
+### Keep the Launchpad open
+
+1. An admin opens `/administration/launchpad` from the Administration dashboard, the admin route menu, or the admin-only normal sidebar footer.
+2. `AdminLaunchpad` renders every non-Launchpad domain, section, and destination directly from `adminNavigationRegistry`; it owns no parallel route list.
+3. Domain and destination anchors always use a real new-tab link with `noopener noreferrer`, so the Launchpad remains intact while work opens beside it.
+4. One one-shot timer becomes due after an hour. A hidden page waits until visible; a focused form control gets a five-minute grace period; then the browser performs one full reload and the new page owns the next timer. There is no polling loop or accumulating subscription.
 
 ### Add or move an admin route
 
@@ -116,6 +132,9 @@ No database tables, API endpoints, or Redux state are owned by this feature.
 - AI, Agents, and Chat are separate domains. Knowledge owns existing CMS, podcast, research, knowledge-graph, and future RAG admin destinations.
 - Specific route-menu matches must precede the generic Administration matcher. This preserves the Agent Run menu on `/administration/agents/system-agents/agents/[id]/run`.
 - Navigation gaps are loud but non-blocking during a normal release. Do not change the advisory release path into a silent skip or a hard release failure.
+- Launchpad navigation is new-tab-only. Never add a same-tab destination, intercepted router navigation, overlay launch, or window-panel replacement to that page.
+- Launchpad freshness uses one visibility-aware full-page reload per hour. Never replace it with frequent polling, repeated intervals, background reloads, or a second refresh mechanism.
+- The Launchpad is intentionally desktop-first and information-dense, but its single responsive grid must remain usable at narrow widths; do not fork a second mobile catalog.
 
 ---
 
@@ -131,8 +150,8 @@ No database tables, API endpoints, or Redux state are owned by this feature.
 
 **Primitives reused**
 
-- Components: the existing `RouteMenuSlot`, `MobileRouteMenuSlot`, AppShell nav classes, shadcn dropdown primitives, and `IconResolver`.
-- Utilities: existing filesystem route discovery and search-scoring utilities.
+- Components: the existing `RouteMenuSlot`, `MobileRouteMenuSlot`, AppShell nav classes and `shell-hide-sidebar` sentinel, shadcn dropdown primitives, and `IconResolver`.
+- Utilities: existing filesystem route discovery, `matchesSearch`, and native anchor new-tab behavior.
 - State: the existing shell menu state; no parallel navigation state or Redux slice was introduced.
 
 **Primitives introduced**
@@ -140,6 +159,12 @@ No database tables, API endpoints, or Redux state are owned by this feature.
 - `AdminNavigationDomain` / `AdminNavigationSection` / `AdminNavigationDestination` and `adminNavigationRegistry` — one generic hierarchy was required to replace multiple competing two-level category renderings and to give the release audit exact route ownership.
 - `AdminRouteSidebarMenu` — a thin registry renderer matching the existing route-menu component contract; route switching and persistence remain owned by the shared shell primitive.
 - `AdminDomainDirectory` — one compact direct-link renderer shared by the dashboard and static domain roots; it replaces the parameter-driven animated-card view.
+- `AdminLaunchpad` — a second presentation of the canonical registry for an always-open operator workflow; it introduces no navigation data, persistence, API, or global state.
+
+**We Are Our Own Customer exception:** the Launchpad organizes private platform
+administration destinations. The customer product has no equivalent surface
+for launching internal operator consoles, so this is an explicit operational
+exception; it does not duplicate any customer-facing capability or data path.
 
 ---
 
@@ -159,6 +184,8 @@ that existing editor; private keys and client secrets remain outside
 ---
 
 ## Change log
+
+- `2026-08-15` — Codex: added the registry-backed Admin Launchpad, prominent dashboard and admin-only sidebar doors, mandatory new-tab launches, and a single visibility-aware hourly reload.
 
 - `2026-08-13` — Claude: made the Official Components registry
   (`/administration/ui/official-components`) agent-readable. Both routes now

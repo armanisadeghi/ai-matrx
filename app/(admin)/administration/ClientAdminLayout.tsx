@@ -15,14 +15,17 @@ import { filteredPages, MODULE_HOME, MODULE_NAME } from "./config";
 const SYSTEM_AGENT_LIST = "/administration/agents/system-agents/agents";
 
 function isFullscreenRoute(pathname: string): boolean {
+  // The Launchpad owns a compact sticky command bar. Keeping the generic
+  // module breadcrumb above it spends permanent space on a page intended to
+  // stay open all day.
+  if (pathname === "/administration/launchpad") return true;
+
   // System agent detail routes: /administration/agents/system-agents/agents/<id>[/...]
   // — every path DEEPER than the list is fullscreen (builder, runner,
   // shortcuts, apps, edit). Those pages render the agent shell with its own
   // full navigation, so the admin breadcrumb bar just double-stacks. The list
   // itself keeps the module header.
-  if (
-    new RegExp(`^${SYSTEM_AGENT_LIST}/[^/]+(?:/.*)?$`).test(pathname)
-  ) {
+  if (new RegExp(`^${SYSTEM_AGENT_LIST}/[^/]+(?:/.*)?$`).test(pathname)) {
     return pathname !== SYSTEM_AGENT_LIST;
   }
   return false;

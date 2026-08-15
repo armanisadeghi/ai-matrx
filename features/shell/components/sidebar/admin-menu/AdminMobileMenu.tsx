@@ -10,6 +10,7 @@
 
 import Link from "next/link";
 import IconResolver from "@/components/official/icons/IconResolver";
+import { ADMIN_LAUNCHPAD_PATH } from "@/features/admin/constants/admin-categories";
 import {
   adminDomainHref,
   adminNavigationRegistry,
@@ -37,6 +38,20 @@ export default function AdminMobileMenu() {
           <IconResolver iconName="ShieldCheck" className="h-5 w-5" />
         </span>
         <span>Admin Dashboard</span>
+      </Link>
+
+      <Link
+        href={ADMIN_LAUNCHPAD_PATH}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="shell-mobile-nav-item bg-sky-500/10 text-sky-700 dark:text-sky-300"
+        onClick={closeShellMobileMenu}
+      >
+        <span className="shell-nav-icon">
+          <IconResolver iconName="Rocket" className="h-5 w-5" />
+        </span>
+        <span className="flex-1 font-medium">Admin Launchpad</span>
+        <IconResolver iconName="ArrowUpRight" className="h-4 w-4" />
       </Link>
 
       <button
@@ -72,67 +87,72 @@ export default function AdminMobileMenu() {
         />
       </a>
 
-      {adminNavigationRegistry.map((domain) => (
-        <details key={domain.name} className="shell-mobile-nav-group">
-          <summary className="shell-mobile-nav-item list-none [&::-webkit-details-marker]:hidden">
-            <span className="shell-nav-icon">
-              <IconResolver iconName={domain.iconName} className="h-5 w-5" />
-            </span>
-            <span className="flex-1">{domain.name}</span>
-            <span className="text-xs text-muted-foreground">
-              {domain.sections.reduce(
-                (count, section) => count + section.destinations.length,
-                0,
-              )}
-            </span>
-            <IconResolver
-              iconName="ChevronDown"
-              className="shell-mobile-admin-caret ml-1 h-4 w-4 transition-transform"
-            />
-          </summary>
-          <div className="shell-mobile-nav-children">
-            <Link
-              href={adminDomainHref(domain)}
-              data-nav-href={adminDomainHref(domain)}
-              className="shell-mobile-nav-item shell-mobile-nav-child font-medium"
-              onClick={closeShellMobileMenu}
-            >
+      {adminNavigationRegistry
+        .filter((domain) => domain.slug !== "launchpad")
+        .map((domain) => (
+          <details key={domain.name} className="shell-mobile-nav-group">
+            <summary className="shell-mobile-nav-item list-none [&::-webkit-details-marker]:hidden">
               <span className="shell-nav-icon">
-                <IconResolver
-                  iconName={domain.iconName}
-                  className="h-[18px] w-[18px]"
-                />
+                <IconResolver iconName={domain.iconName} className="h-5 w-5" />
               </span>
-              <span>{domain.name} overview</span>
-            </Link>
-            {domain.sections.map((section) => (
-              <div key={section.name}>
-                <div className="flex items-center gap-2 px-4 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  <IconResolver iconName={section.iconName} className="h-3 w-3" />
-                  <span>{section.name}</span>
+              <span className="flex-1">{domain.name}</span>
+              <span className="text-xs text-muted-foreground">
+                {domain.sections.reduce(
+                  (count, section) => count + section.destinations.length,
+                  0,
+                )}
+              </span>
+              <IconResolver
+                iconName="ChevronDown"
+                className="shell-mobile-admin-caret ml-1 h-4 w-4 transition-transform"
+              />
+            </summary>
+            <div className="shell-mobile-nav-children">
+              <Link
+                href={adminDomainHref(domain)}
+                data-nav-href={adminDomainHref(domain)}
+                className="shell-mobile-nav-item shell-mobile-nav-child font-medium"
+                onClick={closeShellMobileMenu}
+              >
+                <span className="shell-nav-icon">
+                  <IconResolver
+                    iconName={domain.iconName}
+                    className="h-[18px] w-[18px]"
+                  />
+                </span>
+                <span>{domain.name} overview</span>
+              </Link>
+              {domain.sections.map((section) => (
+                <div key={section.name}>
+                  <div className="flex items-center gap-2 px-4 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    <IconResolver
+                      iconName={section.iconName}
+                      className="h-3 w-3"
+                    />
+                    <span>{section.name}</span>
+                  </div>
+                  {section.destinations.map((item) => (
+                    <Link
+                      key={item.link}
+                      href={item.link}
+                      data-nav-href={item.link}
+                      className="shell-mobile-nav-item shell-mobile-nav-child"
+                      onClick={closeShellMobileMenu}
+                    >
+                      <span className="shell-nav-icon">
+                        <IconResolver
+                          iconName={item.iconName}
+                          className="h-[18px] w-[18px]"
+                        />
+                      </span>
+                      <span>{item.title}</span>
+                    </Link>
+                  ))}
                 </div>
-                {section.destinations.map((item) => (
-                  <Link
-                    key={item.link}
-                    href={item.link}
-                    data-nav-href={item.link}
-                    className="shell-mobile-nav-item shell-mobile-nav-child"
-                    onClick={closeShellMobileMenu}
-                  >
-                    <span className="shell-nav-icon">
-                      <IconResolver
-                        iconName={item.iconName}
-                        className="h-[18px] w-[18px]"
-                      />
-                    </span>
-                    <span>{item.title}</span>
-                  </Link>
-                ))}
-              </div>
-            ))}
-          </div>
-        </details>
-      ))}
+              ))}
+            </div>
+          </details>
+        ))}
     </>
   );
 }

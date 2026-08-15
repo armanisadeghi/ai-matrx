@@ -102,70 +102,74 @@ export default function AdminMenu() {
         </DropdownMenuItem>
         <DropdownMenuSeparator />
 
-        {adminNavigationRegistry.map((domain) => (
-          <DropdownMenuSub key={domain.name}>
-            <DropdownMenuSubTrigger className="gap-2">
-              <span className={iconSlot}>
-                <IconResolver iconName={domain.iconName} />
-              </span>
-              <span className="flex-1 truncate">{domain.name}</span>
-              <span className="text-xs text-muted-foreground">
-                {domain.sections.reduce(
-                  (count, section) => count + section.destinations.length,
-                  0,
-                )}
-              </span>
-            </DropdownMenuSubTrigger>
-            <DropdownMenuPortal>
-              <DropdownMenuSubContent className="max-h-[80dvh] w-72 overflow-y-auto">
-                <DropdownMenuItem asChild className="gap-2 font-medium">
-                  <Link href={adminDomainHref(domain)}>
-                    <span className={iconSlot}>
-                      <IconResolver iconName={domain.iconName} />
-                    </span>
-                    <span className="flex-1 truncate">
-                      {domain.name} overview
-                    </span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                {domain.sections.map((section, sectionIndex) => (
-                  <div key={section.name}>
-                    {sectionIndex > 0 && <DropdownMenuSeparator />}
-                    <DropdownMenuLabel className="flex items-center gap-2 text-[10px] uppercase tracking-wide text-muted-foreground">
+        {adminNavigationRegistry
+          .filter((domain) => domain.slug !== "launchpad")
+          .map((domain) => (
+            <DropdownMenuSub key={domain.name}>
+              <DropdownMenuSubTrigger className="gap-2">
+                <span className={iconSlot}>
+                  <IconResolver iconName={domain.iconName} />
+                </span>
+                <span className="flex-1 truncate">{domain.name}</span>
+                <span className="text-xs text-muted-foreground">
+                  {domain.sections.reduce(
+                    (count, section) => count + section.destinations.length,
+                    0,
+                  )}
+                </span>
+              </DropdownMenuSubTrigger>
+              <DropdownMenuPortal>
+                <DropdownMenuSubContent className="max-h-[80dvh] w-72 overflow-y-auto">
+                  <DropdownMenuItem asChild className="gap-2 font-medium">
+                    <Link href={adminDomainHref(domain)}>
                       <span className={iconSlot}>
-                        <IconResolver iconName={section.iconName} />
+                        <IconResolver iconName={domain.iconName} />
                       </span>
-                      {section.name}
-                    </DropdownMenuLabel>
-                    {section.destinations.map((item) => {
-                      const active = destinationOwnsPathname(item, pathname);
-                      return (
-                        <DropdownMenuItem
-                          key={item.link}
-                          asChild
-                          className={cn("gap-2", active && "bg-accent/60")}
-                        >
-                          <Link href={item.link}>
-                            <span className={iconSlot}>
-                              <IconResolver iconName={item.iconName} />
-                            </span>
-                            <span className="flex-1 truncate">{item.title}</span>
-                            {item.isNew && (
-                              <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
-                                New
+                      <span className="flex-1 truncate">
+                        {domain.name} overview
+                      </span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  {domain.sections.map((section, sectionIndex) => (
+                    <div key={section.name}>
+                      {sectionIndex > 0 && <DropdownMenuSeparator />}
+                      <DropdownMenuLabel className="flex items-center gap-2 text-[10px] uppercase tracking-wide text-muted-foreground">
+                        <span className={iconSlot}>
+                          <IconResolver iconName={section.iconName} />
+                        </span>
+                        {section.name}
+                      </DropdownMenuLabel>
+                      {section.destinations.map((item) => {
+                        const active = destinationOwnsPathname(item, pathname);
+                        return (
+                          <DropdownMenuItem
+                            key={item.link}
+                            asChild
+                            className={cn("gap-2", active && "bg-accent/60")}
+                          >
+                            <Link href={item.link}>
+                              <span className={iconSlot}>
+                                <IconResolver iconName={item.iconName} />
                               </span>
-                            )}
-                          </Link>
-                        </DropdownMenuItem>
-                      );
-                    })}
-                  </div>
-                ))}
-              </DropdownMenuSubContent>
-            </DropdownMenuPortal>
-          </DropdownMenuSub>
-        ))}
+                              <span className="flex-1 truncate">
+                                {item.title}
+                              </span>
+                              {item.isNew && (
+                                <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
+                                  New
+                                </span>
+                              )}
+                            </Link>
+                          </DropdownMenuItem>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </DropdownMenuSubContent>
+              </DropdownMenuPortal>
+            </DropdownMenuSub>
+          ))}
       </DropdownMenuContent>
     </DropdownMenu>
   );

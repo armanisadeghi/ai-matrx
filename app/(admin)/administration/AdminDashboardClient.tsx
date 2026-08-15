@@ -1,10 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { IconList, IconSearch } from "@tabler/icons-react";
+import {
+  IconExternalLink,
+  IconList,
+  IconRocket,
+  IconSearch,
+} from "@tabler/icons-react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { AdminDomainSection } from "@/features/admin/components/AdminDomainDirectory";
+import { ADMIN_LAUNCHPAD_PATH } from "@/features/admin/constants/admin-categories";
 import {
   adminNavigationRegistry,
   type AdminNavigationDestination,
@@ -112,13 +118,25 @@ export default function AdminDashboardClient({
             />
           </div>
 
-          <Link
-            href="/administration/utilities/all-routes"
-            className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-sm text-muted-foreground transition-colors hover:text-primary"
-          >
-            <IconList className="h-4 w-4" />
-            <span>All Routes</span>
-          </Link>
+          <div className="flex shrink-0 items-center gap-3">
+            <Link
+              href={ADMIN_LAUNCHPAD_PATH}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 whitespace-nowrap rounded-md bg-sky-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:bg-sky-500 dark:text-slate-950 dark:hover:bg-sky-400"
+            >
+              <IconRocket className="h-4 w-4" />
+              <span>Launchpad</span>
+              <IconExternalLink className="h-3.5 w-3.5 opacity-75" />
+            </Link>
+            <Link
+              href="/administration/utilities/all-routes"
+              className="flex items-center gap-1.5 whitespace-nowrap text-sm text-muted-foreground transition-colors hover:text-primary"
+            >
+              <IconList className="h-4 w-4" />
+              <span>All Routes</span>
+            </Link>
+          </div>
         </div>
 
         {normalizedQuery ? (
@@ -133,6 +151,16 @@ export default function AdminDashboardClient({
                     <Link
                       key={item.link}
                       href={item.link}
+                      target={
+                        item.link === ADMIN_LAUNCHPAD_PATH
+                          ? "_blank"
+                          : undefined
+                      }
+                      rel={
+                        item.link === ADMIN_LAUNCHPAD_PATH
+                          ? "noopener noreferrer"
+                          : undefined
+                      }
                       className="flex items-baseline gap-3 px-3 py-1.5 hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
                     >
                       <span className="min-w-0 shrink-0 text-sm font-medium text-foreground">
@@ -186,9 +214,11 @@ export default function AdminDashboardClient({
           </div>
         ) : (
           <div className="overflow-hidden rounded-lg border border-border bg-background shadow-sm">
-            {adminNavigationRegistry.map((domain) => (
-              <AdminDomainSection key={domain.slug} domain={domain} />
-            ))}
+            {adminNavigationRegistry
+              .filter((domain) => domain.slug !== "launchpad")
+              .map((domain) => (
+                <AdminDomainSection key={domain.slug} domain={domain} />
+              ))}
           </div>
         )}
       </div>

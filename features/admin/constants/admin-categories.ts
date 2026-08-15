@@ -35,6 +35,8 @@ export interface AdminCategory {
   features: AdminToolLink[];
 }
 
+export const ADMIN_LAUNCHPAD_PATH = "/administration/launchpad";
+
 export function getAdminCategoryLandingPath(
   category: Pick<AdminCategory, "name" | "landingPath">,
 ): string {
@@ -45,6 +47,22 @@ export function getAdminCategoryLandingPath(
 }
 
 export const adminCategoriesData: AdminCategory[] = [
+  {
+    name: "Administration",
+    landingPath: ADMIN_LAUNCHPAD_PATH,
+    iconName: "Rocket",
+    iconColor: "text-sky-600",
+    features: [
+      {
+        title: "Admin Launchpad",
+        description:
+          "A dense, always-open command surface for launching every administration destination in a new tab.",
+        iconName: "Rocket",
+        link: ADMIN_LAUNCHPAD_PATH,
+        isNew: true,
+      },
+    ],
+  },
   {
     name: "CX Conversations",
     landingPath: "/administration/chat/cx-dashboard",
