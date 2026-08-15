@@ -460,6 +460,66 @@ party and every contact is org-scoped) and it means an agency connects one ident
 org — which is also the correct deliverability answer, since a client's mail should come from the
 client's own domain.
 
+## 5.5b THE EARNED-TRUST LADDER — being stricter than the competition is ALSO a failure (Arman, 2026-08-14)
+
+> *"We cannot lose customers because we're being more cautious than the competitors. We need to be
+> realistic… sensible restrictions that start more strict and get more loose as a user or
+> organization proves that they're legitimate and that they're not gonna do stupid things. And then
+> we need to have things that hard catch issues at every level… But if we get overly cautious and
+> we force the user to do things that are just stupid or that nobody else does or that is just not
+> realistic within the industry, then we're just setting ourselves up for failure."*
+
+**Two failure modes, both fatal, and only one of them is obvious.** Too loose and a spammer
+destroys our deliverability. Too strict and we lose customers to tools that don't make them jump
+through hoops nobody else requires — and the ones who stay work around us, which is how the real
+holes get made. This is the SECURITY PHILOSOPHY from `docs/official/db-rules.md` §6 applied to
+sending: **over-tightening is a defect, exactly as serious as the hole.**
+
+So capability is **earned, not flat.**
+
+### What scales with trust (the ladder)
+
+Daily send volume · how much AI-generated cold email may go out without per-message human approval
+· number of connected mailboxes · sequence length and aggressiveness. A brand-new org starts
+conservative; a proven org operates at full industry-normal capability.
+
+**Raises trust:** verified domain + verified business identity · payment history and tenure ·
+sustained low bounce and complaint rates · **replies received** (real engagement is the best
+legitimacy signal there is) · manual review on request.
+**Lowers it, fast:** complaint or bounce spikes · spam-trap hits · sudden volume changes ·
+unsubscribe-rate spikes · list-quality failures.
+
+**Trust falls faster than it climbs. That asymmetry is deliberate** — the cost of being slow to
+promote is a mildly annoyed legitimate customer; the cost of being slow to demote is our domain
+reputation and every other customer's deliverability.
+
+### What NEVER relaxes (the floor)
+
+The ladder governs **volume and automation only**. It never touches:
+
+- suppression and unsubscribe honoring — no trust level buys past an opt-out;
+- Lane A consent — no trust level permits sending to someone who never consented;
+- domain-ownership verification and authentication;
+- spam-trap hits and complaint-rate circuit breakers — these pause the highest-trust org too.
+
+**A capability that can be earned is on the ladder. A rule that protects a third party is on the
+floor. Never move one to the other.**
+
+### Trust is NOT the same thing as tier — one gate, two inputs
+
+**Tier = what they pay for. Trust = what they have proven.** A paying customer on day one is
+entitled to outreach and still starts low on the ladder; a long-proven org on a small plan is
+trusted but capped by its plan. **Do not build two gating systems** — the §5.6 entitlement
+authority answers "may this org do X, at what volume?" by consulting both.
+
+### Hard catches at every level
+
+Earned trust only works if the catches are real, so build them as first-class detection, not as
+hopeful thresholds: complaint and bounce monitoring per identity AND per org, spam-trap and
+blocklist monitoring, volume-anomaly detection, list-quality scoring at import, content signals,
+and a fast internal review queue with a one-click org-wide stop. **The ladder is the reward for a
+system that catches abuse quickly — not a substitute for one.**
+
 ## 5.6 Tier gating — outreach is the platform's FIRST gated feature (Arman, 2026-08-14)
 
 **Outreach volume sits behind a paid tier. The free tier does not include it.** Not as monetization
@@ -589,33 +649,39 @@ by design, and collapsing them is the trap (§7).
 
 ---
 
-# 8. Open decisions — Arman only (raised 2026-08-14, not yet ruled)
+# 8. The five decisions — RULED 2026-08-14 (Arman), under the earned-trust caveat
 
-These are genuinely his: each is a product/ethics/money call an agent must not make alone. Each
-carries a recommendation so it can be answered with a yes.
+Arman took all five recommendations **with one overriding caveat that modifies several of them**:
+*we cannot lose customers by being more cautious than our competitors.* Read §5.5b (THE
+EARNED-TRUST LADDER) before acting on any of these — it is the lens they were ruled through.
 
-1. **Reply ingestion — how much of the customer's mailbox may we read?** *(Blocks Phase 5. The
-   biggest one.)* Stop-on-reply is the single most important behavior in the system, and it
-   requires knowing a human replied. Instantly/Smartlead take full IMAP access to the customer's
-   mailbox. That is a large trust ask for a mailbox containing everything else in their business.
-   **Recommendation: request the narrowest scope that works — read only threads we sent** (Gmail
-   API can scope to the thread ids we created), and say so plainly in the connect flow. Broader
-   access only if a customer opts in explicitly for a stated reason.
-2. **AI-generated cold email at volume — human approval required, or not?** We can generate 500
-   personalized pitches in a minute. That capability, unchecked, makes us the tool flooding
-   inboxes — the exact behavior Google's bulk-sender rules and every spam filter now target, and
-   the fastest route to our OAuth app being flagged (§5.3). **Recommendation: for Lane B, a human
-   approves every message before its first send** — consistent with THE INTENTIONAL-ACTION LAW in
-   the assists doctrine, and it is also what actually gets replies. Revisit only with evidence.
-3. **Warmup pools — build one or not?** Instantly/Smartlead run networks where customer mailboxes
-   email each other to manufacture sending reputation. It is industry standard, it works, and it is
-   ethically grey (it exists to fool spam filters, and providers dislike it). **Recommendation:
-   no pool for v1** — do honest gradual volume ramp (§5.2.4), which is safe and sufficient at
-   backlink/media volumes. Reconsider only as a deliberate, documented decision.
-4. **Media database — crawl-only, or license one?** Muck Rack/Cision own large proprietary
-   journalist databases and charge accordingly. **Recommendation: crawl-only to start** — we
-   already extract bylines and credentialed authors (G2), and our own attribution loop (§1) is the
-   differentiator, not database size. Revisit if media outreach becomes a headline product.
-5. **Outreach pricing shape** — per connected mailbox, per seat, per send, or per campaign?
-   Competitors mostly price per mailbox/seat. Ties directly into the tier work (§5.6), so answering
-   it early keeps that build from guessing.
+1. **Reply ingestion — narrowest scope that works, as the DEFAULT.** Read only the threads we
+   sent, and say so plainly in the connect flow. **Caveat applied:** if research shows broader
+   access is genuinely table stakes for reply detection at parity with Instantly/Smartlead, offer
+   the broader scope as an explicit, explained opt-in — do not simply lose the capability. Verify
+   what competitors actually require before finalizing.
+2. **AI-generated cold email — governed by the LADDER, not a flat rule.** A new org has a human
+   approve messages before sending; a proven org sends at industry-normal volume with sampling and
+   spot-checks instead of per-message approval. Arman: *"allow users or organizations to earn the
+   right to do more and more of them… but we also have to be careful that our system is not built
+   around some ridiculous limitation that just is not gonna work in the long term."* **Design the
+   volume/automation ceiling as a ladder input from day one** — a hardcoded cap is the trap.
+3. **Warmup — honest ramp is the DEFAULT, but do not concede the category.** Arman: *"if everyone
+   else is doing other things, we can't compete… we need to consider if other methods need to be
+   developed even if it means that we document it and develop it on the side, and we don't make it
+   a part of our required system, but it's something that's definitely planned to be built."*
+   So: gradual ramp ships as the default and the recommended path; **alternative warmup methods
+   (including pool-style networks) are researched and documented now, and planned as buildable
+   optional capability** — not dismissed on principle. Chip fired 2026-08-14.
+4. **Media/journalist data — crawl-only for NOW, but actively acquire.** Arman: *"I'm okay with
+   crawl only for now. However… we need to document, that we need to look into all of those
+   things… if there are lists that maybe we can crawl for once, then let's get that crawl task
+   going today or tomorrow. We're not gonna wait."* Chip fired 2026-08-14. His mental model for
+   data sources, which generalizes beyond media:
+   - **Hostile APIs** (SEMrush, Ahrefs class) — priced and shaped so you don't use them. Skip.
+   - **Purpose-built APIs** (DataForSEO class) — made to be consumed. Evaluate seriously.
+   - **Community/open goldmines** (the OpenStreetMap class — "incredible data at nothing or next
+     to nothing"). **Hunt for these first;** analogous troves exist for legal/cases and elsewhere.
+   **Never treat "we'll crawl it ourselves" as the end of the conversation.**
+5. **Outreach pricing — per connected mailbox, aligned with the category**, resolved inside the
+   §5.6 tier work; volume rides the ladder on top of the plan.
