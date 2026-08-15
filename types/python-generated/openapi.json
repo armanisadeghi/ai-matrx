@@ -3531,6 +3531,130 @@
         }
       }
     },
+    "/ai/google/embeddings": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Create Embeddings",
+        "operationId": "create_embeddings_ai_google_embeddings_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmbeddingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmbeddingResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/google/background-interactions": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Create Background Interaction",
+        "operationId": "create_background_interaction_ai_google_background_interactions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackgroundInteractionStart"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackgroundInteractionView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/google/background-interactions/{execution_id}": {
+      "get": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Get Background Interaction",
+        "operationId": "get_background_interaction_ai_google_background_interactions__execution_id__get",
+        "parameters": [
+          {
+            "name": "execution_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Execution Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackgroundInteractionView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v2/ai/manual": {
       "post": {
         "tags": [
@@ -11467,6 +11591,66 @@
         }
       }
     },
+    "/seo/sites/{site_id}/pages/{page_id}/link-gap": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Collect Page Link Gap",
+        "description": "Collect referring pages shared by accepted competitor-page proposals\nbut absent from our canonical page. The package service rechecks human\nacceptance, competitor confirmation, and taxonomy eligibility before any\npaid provider request.",
+        "operationId": "collect_page_link_gap_seo_sites__site_id__pages__page_id__link_gap_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          },
+          {
+            "name": "page_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Page Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PageLinkGapBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/seo/sites/{site_id}/gsc/search-performance/sync": {
       "post": {
         "tags": [
@@ -17425,7 +17609,7 @@
               "maximum": 2160,
               "exclusiveMinimum": 0,
               "description": "window size, hours",
-              "default": 24.0,
+              "default": 24,
               "title": "Hours"
             },
             "description": "window size, hours"
@@ -17473,7 +17657,7 @@
               "maximum": 2160,
               "exclusiveMinimum": 0,
               "description": "window size, hours",
-              "default": 24.0,
+              "default": 24,
               "title": "Hours"
             },
             "description": "window size, hours"
@@ -17521,7 +17705,7 @@
               "maximum": 2160,
               "exclusiveMinimum": 0,
               "description": "window size, hours",
-              "default": 24.0,
+              "default": 24,
               "title": "Hours"
             },
             "description": "window size, hours"
@@ -17620,7 +17804,7 @@
               "type": "number",
               "maximum": 21600,
               "exclusiveMinimum": 0,
-              "default": 300.0,
+              "default": 300,
               "title": "Lease Seconds"
             }
           }
@@ -19974,6 +20158,152 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SendingIdentityDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/outreach/single/drafts": {
+      "post": {
+        "tags": [
+          "Outreach / Single Send"
+        ],
+        "summary": "Create Message Draft",
+        "description": "Render a real target and persist the exact preview as a planned interaction.",
+        "operationId": "create_message_draft_outreach_single_drafts_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDraftRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/outreach/single/drafts/{draft_id}/approve": {
+      "post": {
+        "tags": [
+          "Outreach / Single Send"
+        ],
+        "summary": "Approve Message Draft",
+        "operationId": "approve_message_draft_outreach_single_drafts__draft_id__approve_post",
+        "parameters": [
+          {
+            "name": "draft_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Draft Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftActionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/outreach/single/drafts/{draft_id}/send": {
+      "post": {
+        "tags": [
+          "Outreach / Single Send"
+        ],
+        "summary": "Send Message Draft",
+        "operationId": "send_message_draft_outreach_single_drafts__draft_id__send_post",
+        "parameters": [
+          {
+            "name": "draft_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Draft Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftActionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SendResponse"
                 }
               }
             }
@@ -46537,8 +46867,8 @@
           }
         },
         "responses": {
-          "201": {
-            "description": "Successful Response",
+          "200": {
+            "description": "An identical live schedule already existed; it is returned unchanged with `deduplicated: true` and nothing was created.",
             "content": {
               "application/json": {
                 "schema": {
@@ -46547,8 +46877,8 @@
               }
             }
           },
-          "200": {
-            "description": "An identical live schedule already existed; it is returned unchanged with `deduplicated: true` and nothing was created.",
+          "201": {
+            "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
@@ -50396,15 +50726,15 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Limit",
             "default": 10
           },
           "multi_query": {
             "type": "integer",
-            "maximum": 5.0,
-            "minimum": 1.0,
+            "maximum": 5,
+            "minimum": 1,
             "title": "Multi Query",
             "default": 1
           },
@@ -50678,32 +51008,32 @@
           },
           "max_attempts": {
             "type": "integer",
-            "maximum": 20.0,
-            "minimum": 1.0,
+            "maximum": 20,
+            "minimum": 1,
             "title": "Max Attempts",
             "description": "Maximum execution attempts allowed for each item.",
             "default": 3
           },
           "lease_seconds": {
             "type": "integer",
-            "maximum": 86400.0,
-            "minimum": 30.0,
+            "maximum": 86400,
+            "minimum": 30,
             "title": "Lease Seconds",
             "description": "Seconds an item claim remains valid without renewal.",
             "default": 900
           },
           "max_concurrency": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Max Concurrency",
             "description": "Maximum assignment items executed concurrently by this run.",
             "default": 5
           },
           "retry_delay_seconds": {
             "type": "integer",
-            "maximum": 86400.0,
-            "minimum": 0.0,
+            "maximum": 86400,
+            "minimum": 0,
             "title": "Retry Delay Seconds",
             "description": "Delay before a retryable item becomes claimable again.",
             "default": 0
@@ -52224,16 +52554,16 @@
           },
           "max_iterations": {
             "type": "integer",
-            "maximum": 500.0,
-            "minimum": 1.0,
+            "maximum": 500,
+            "minimum": 1,
             "title": "Max Iterations",
             "description": "Maximum agent reasoning/tool-loop iterations.",
             "default": 100
           },
           "max_retries_per_iteration": {
             "type": "integer",
-            "maximum": 10.0,
-            "minimum": 0.0,
+            "maximum": 10,
+            "minimum": 0,
             "title": "Max Retries Per Iteration",
             "description": "Maximum provider retries allowed within one agent iteration.",
             "default": 2
@@ -52344,15 +52674,15 @@
           },
           "max_runtime_seconds": {
             "type": "integer",
-            "maximum": 86400.0,
-            "minimum": 1.0,
+            "maximum": 86400,
+            "minimum": 1,
             "title": "Max Runtime Seconds",
             "default": 600
           },
           "max_concurrent": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Max Concurrent",
             "default": 1
           }
@@ -52895,8 +53225,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Limit",
             "default": 10
           },
@@ -52927,8 +53257,8 @@
           },
           "multi_query": {
             "type": "integer",
-            "maximum": 5.0,
-            "minimum": 1.0,
+            "maximum": 5,
+            "minimum": 1,
             "title": "Multi Query",
             "default": 1
           },
@@ -54127,8 +54457,8 @@
           },
           "window_days": {
             "type": "integer",
-            "maximum": 90.0,
-            "minimum": 1.0,
+            "maximum": 90,
+            "minimum": 1,
             "title": "Window Days",
             "default": 28
           },
@@ -54364,7 +54694,7 @@
         "properties": {
           "page_number": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Page Number"
           },
           "bbox": {
@@ -54742,7 +55072,7 @@
         "properties": {
           "input_tokens": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Input Tokens"
           }
         },
@@ -55365,6 +55695,52 @@
         ],
         "title": "ApplyWorkflowPatchResult"
       },
+      "ApprovalDecision": {
+        "properties": {
+          "trust_stage": {
+            "type": "integer",
+            "maximum": 3,
+            "minimum": 0,
+            "title": "Trust Stage"
+          },
+          "requirement": {
+            "type": "string",
+            "enum": [
+              "every_message",
+              "sampled",
+              "none"
+            ],
+            "title": "Requirement"
+          },
+          "required_for_this_message": {
+            "type": "boolean",
+            "title": "Required For This Message"
+          },
+          "sample_percent": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 0,
+            "title": "Sample Percent"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "organization_policy",
+              "safe_default"
+            ],
+            "title": "Source"
+          }
+        },
+        "type": "object",
+        "required": [
+          "trust_stage",
+          "requirement",
+          "required_for_this_message",
+          "sample_percent",
+          "source"
+        ],
+        "title": "ApprovalDecision"
+      },
       "ArchiveOut": {
         "properties": {
           "status": {
@@ -55823,7 +56199,7 @@
           },
           "max_inline_bytes": {
             "type": "integer",
-            "minimum": 1024.0,
+            "minimum": 1024,
             "title": "Max Inline Bytes",
             "description": "Renders below this size return as base64 data_url; larger renders return a 5-minute ephemeral signed_url.",
             "default": 262144
@@ -56444,37 +56820,37 @@
           },
           "total_items": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Total Items",
             "description": "Total materialized items in the session."
           },
           "pending_items": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Pending Items",
             "description": "Items still waiting to be claimed."
           },
           "running_items": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Running Items",
             "description": "Items currently leased or executing."
           },
           "completed_items": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Completed Items",
             "description": "Items that completed successfully."
           },
           "failed_items": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Failed Items",
             "description": "Items that reached terminal failure."
           },
           "cancelled_items": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Cancelled Items",
             "description": "Items cancelled without execution completion."
           },
@@ -56534,8 +56910,8 @@
         "properties": {
           "signed_ttl": {
             "type": "integer",
-            "maximum": 604800.0,
-            "minimum": 60.0,
+            "maximum": 604800,
+            "minimum": 60,
             "title": "Signed Ttl",
             "default": 3600
           }
@@ -57253,7 +57629,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 1.0
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -57273,7 +57649,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 1.0
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -57286,6 +57662,170 @@
         "type": "object",
         "title": "AutoTagPassRequest",
         "description": "Trigger the WHOLE auto-tag pass on demand (the \"Run now\" button).\n\n`max_calls` overrides how many included+scraped sources the pass tags this\nrun. When omitted, the topic's `rs_topic.max_auto_tag_calls` is used; if\nthat is 0 (the auto-pipeline default = OFF), the on-demand pass instead\ntags ALL eligible sources — the user explicitly asked for it, so it must\nnever silently no-op."
+      },
+      "BackgroundInteractionStart": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "input": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/JsonValue"
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Input"
+          },
+          "previous_interaction_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Interaction Id"
+          },
+          "idempotency_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Idempotency Key"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "model",
+          "input"
+        ],
+        "title": "BackgroundInteractionStart"
+      },
+      "BackgroundInteractionView": {
+        "properties": {
+          "execution_id": {
+            "type": "string",
+            "title": "Execution Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "interaction_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interaction Id"
+          },
+          "provider_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Status"
+          },
+          "steps": {
+            "items": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Steps"
+          },
+          "outputs": {
+            "items": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Outputs"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "execution_id",
+          "status"
+        ],
+        "title": "BackgroundInteractionView"
       },
       "BacklinkEnrichmentBody": {
         "properties": {
@@ -57327,8 +57867,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Limit",
             "default": 25
           },
@@ -57528,8 +58068,8 @@
           },
           "detail_limit": {
             "type": "integer",
-            "maximum": 1000.0,
-            "minimum": 1.0,
+            "maximum": 1000,
+            "minimum": 1,
             "title": "Detail Limit",
             "default": 1000
           },
@@ -57562,8 +58102,8 @@
           },
           "enrichment_limit": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Enrichment Limit",
             "default": 25
           }
@@ -58119,22 +58659,22 @@
           },
           "window_days": {
             "type": "integer",
-            "maximum": 90.0,
-            "minimum": 1.0,
+            "maximum": 90,
+            "minimum": 1,
             "title": "Window Days",
             "default": 28
           },
           "max_query_fanout": {
             "type": "integer",
-            "maximum": 200.0,
-            "minimum": 1.0,
+            "maximum": 200,
+            "minimum": 1,
             "title": "Max Query Fanout",
             "default": 50
           },
           "max_calls": {
             "type": "integer",
-            "maximum": 500.0,
-            "minimum": 1.0,
+            "maximum": 500,
+            "minimum": 1,
             "title": "Max Calls",
             "default": 100
           },
@@ -58404,8 +58944,8 @@
           },
           "level": {
             "type": "integer",
-            "maximum": 5.0,
-            "minimum": 1.0,
+            "maximum": 5,
+            "minimum": 1,
             "title": "Level",
             "default": 3
           },
@@ -58422,7 +58962,7 @@
           },
           "max_inline_bytes": {
             "type": "integer",
-            "minimum": 1024.0,
+            "minimum": 1024,
             "title": "Max Inline Bytes",
             "default": 262144
           }
@@ -58447,7 +58987,7 @@
           },
           "max_inline_bytes": {
             "type": "integer",
-            "minimum": 1024.0,
+            "minimum": 1024,
             "title": "Max Inline Bytes",
             "default": 262144
           }
@@ -58654,8 +59194,8 @@
           },
           "signed_url_ttl": {
             "type": "integer",
-            "maximum": 604800.0,
-            "minimum": 60.0,
+            "maximum": 604800,
+            "minimum": 60,
             "title": "Signed Url Ttl",
             "default": 3600
           },
@@ -59266,7 +59806,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -60013,19 +60553,19 @@
           },
           "transcript_bytes": {
             "type": "integer",
-            "maximum": 268435456.0,
-            "minimum": 0.0,
+            "maximum": 268435456,
+            "minimum": 0,
             "title": "Transcript Bytes"
           },
           "transcript_entry_count": {
             "type": "integer",
-            "maximum": 1000000.0,
-            "minimum": 0.0,
+            "maximum": 1000000,
+            "minimum": 0,
             "title": "Transcript Entry Count"
           },
           "transcript_mtime_ns": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Transcript Mtime Ns"
           },
           "source_complete": {
@@ -60034,8 +60574,8 @@
           },
           "corrupt_line_count": {
             "type": "integer",
-            "maximum": 1000000.0,
-            "minimum": 0.0,
+            "maximum": 1000000,
+            "minimum": 0,
             "title": "Corrupt Line Count",
             "default": 0
           }
@@ -60249,8 +60789,8 @@
           },
           "timeout_ms": {
             "type": "integer",
-            "maximum": 30000.0,
-            "minimum": 1000.0,
+            "maximum": 30000,
+            "minimum": 1000,
             "title": "Timeout Ms",
             "default": 25000
           },
@@ -60336,8 +60876,8 @@
           },
           "timeout_ms": {
             "type": "integer",
-            "maximum": 30000.0,
-            "minimum": 1000.0,
+            "maximum": 30000,
+            "minimum": 1000,
             "title": "Timeout Ms",
             "default": 25000
           },
@@ -61932,8 +62472,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 100000.0,
-                "minimum": 1.0
+                "maximum": 100000,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -62978,6 +63518,34 @@
           "store": {
             "type": "boolean",
             "title": "Store"
+          },
+          "previous_interaction_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Interaction Id"
+          },
+          "task": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "text_to_video",
+                  "image_to_video",
+                  "reference_to_video",
+                  "edit"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task"
           },
           "verbosity": {
             "anyOf": [
@@ -65271,8 +65839,8 @@
           },
           "max_turns": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Max Turns",
             "default": 20
           },
@@ -65280,8 +65848,8 @@
             "anyOf": [
               {
                 "type": "number",
-                "maximum": 1000.0,
-                "exclusiveMinimum": 0.0
+                "maximum": 1000,
+                "exclusiveMinimum": 0
               },
               {
                 "type": "null"
@@ -67761,14 +68329,19 @@
             "title": "Maptype",
             "default": "code_value"
           },
-          "source": {
+          "target": {
             "type": "string",
-            "title": "Source"
+            "title": "Target"
+          },
+          "required": {
+            "type": "boolean",
+            "title": "Required",
+            "default": false
           }
         },
         "type": "object",
         "required": [
-          "source"
+          "target"
         ],
         "title": "CodeValueMapping"
       },
@@ -67892,8 +68465,8 @@
           },
           "writer_lease_seconds": {
             "type": "integer",
-            "maximum": 3600.0,
-            "minimum": 30.0,
+            "maximum": 3600,
+            "minimum": 30,
             "title": "Writer Lease Seconds",
             "default": 300
           },
@@ -67901,7 +68474,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -67911,8 +68484,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 1000.0,
-            "minimum": 1.0,
+            "maximum": 1000,
+            "minimum": 1,
             "title": "Limit",
             "default": 250
           },
@@ -68747,8 +69320,8 @@
           },
           "relevance_score": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Relevance Score"
           },
           "threat_level": {
@@ -68856,15 +69429,15 @@
           },
           "max_competitors": {
             "type": "integer",
-            "maximum": 15.0,
-            "minimum": 1.0,
+            "maximum": 15,
+            "minimum": 1,
             "title": "Max Competitors",
             "default": 5
           },
           "pages_per_competitor": {
             "type": "integer",
-            "maximum": 10.0,
-            "minimum": 1.0,
+            "maximum": 10,
+            "minimum": 1,
             "title": "Pages Per Competitor",
             "default": 3
           },
@@ -69078,8 +69651,8 @@
           },
           "already_have_percentage": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Already Have Percentage"
           },
           "upgrade_page_ids": {
@@ -69223,8 +69796,8 @@
           },
           "variant_count": {
             "type": "integer",
-            "maximum": 8.0,
-            "minimum": 2.0,
+            "maximum": 8,
+            "minimum": 2,
             "title": "Variant Count",
             "default": 5
           }
@@ -71289,7 +71862,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 1.0
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -71440,7 +72013,7 @@
           "estimated_cost_usd": {
             "type": "number",
             "title": "Estimated Cost Usd",
-            "default": 0.0
+            "default": 0
           }
         },
         "type": "object",
@@ -71588,6 +72161,98 @@
           "name"
         ],
         "title": "CreateArgs"
+      },
+      "CreateDraftRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "outreach_list_id": {
+            "type": "string",
+            "title": "Outreach List Id"
+          },
+          "member_id": {
+            "type": "string",
+            "title": "Member Id"
+          },
+          "template_id": {
+            "type": "string",
+            "title": "Template Id"
+          },
+          "contact_point_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Point Id"
+          },
+          "reputation_case_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reputation Case Id"
+          },
+          "backlink_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Backlink Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "outreach_list_id",
+          "member_id",
+          "template_id"
+        ],
+        "title": "CreateDraftRequest"
       },
       "CreateFolderRequest": {
         "properties": {
@@ -71948,8 +72613,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Max Steps",
             "default": 1000
           },
@@ -74166,8 +74831,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 1000.0,
-            "minimum": 1.0,
+            "maximum": 1000,
+            "minimum": 1,
             "title": "Limit",
             "default": 50
           }
@@ -75364,15 +76029,15 @@
           },
           "min_pages_ratio": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Min Pages Ratio",
             "default": 0.3333333333333333
           },
           "min_confidence": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Min Confidence",
             "default": 0.5
           }
@@ -75450,8 +76115,8 @@
           },
           "ttl_seconds": {
             "type": "integer",
-            "maximum": 86400.0,
-            "minimum": 60.0,
+            "maximum": 86400,
+            "minimum": 60,
             "title": "Ttl Seconds",
             "description": "JWT expiry. Default 2h, min 60s, max 24h.",
             "default": 7200
@@ -75633,15 +76298,15 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Limit",
             "default": 20
           },
           "multi_query": {
             "type": "integer",
-            "maximum": 5.0,
-            "minimum": 1.0,
+            "maximum": 5,
+            "minimum": 1,
             "title": "Multi Query",
             "default": 1
           },
@@ -76029,13 +76694,13 @@
             "title": "Maptype",
             "default": "direct_value"
           },
-          "value": {
+          "target": {
             "$ref": "#/components/schemas/JsonValue"
           }
         },
         "type": "object",
         "required": [
-          "value"
+          "target"
         ],
         "title": "DirectValueMapping"
       },
@@ -76321,7 +76986,7 @@
           "cost_usd": {
             "type": "number",
             "title": "Cost Usd",
-            "default": 0.0
+            "default": 0
           },
           "status": {
             "type": "string",
@@ -76486,8 +77151,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 20000.0,
-            "minimum": 1.0,
+            "maximum": 20000,
+            "minimum": 1,
             "title": "Limit",
             "default": 2000
           }
@@ -77366,6 +78031,49 @@
         ],
         "title": "DomainUpsertRequest"
       },
+      "DraftActionRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          }
+        },
+        "type": "object",
+        "title": "DraftActionRequest",
+        "description": "Typed empty body for approve/send actions in the generated contract."
+      },
       "DraftBriefBody": {
         "properties": {
           "organization_id": {
@@ -77416,12 +78124,152 @@
         "type": "object",
         "title": "DraftBriefBody"
       },
+      "DraftResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "outreach_list_id": {
+            "type": "string",
+            "title": "Outreach List Id"
+          },
+          "member_id": {
+            "type": "string",
+            "title": "Member Id"
+          },
+          "party_id": {
+            "type": "string",
+            "title": "Party Id"
+          },
+          "party_name": {
+            "type": "string",
+            "title": "Party Name"
+          },
+          "contact_point_id": {
+            "type": "string",
+            "title": "Contact Point Id"
+          },
+          "medium_id": {
+            "type": "string",
+            "title": "Medium Id"
+          },
+          "recipient": {
+            "type": "string",
+            "title": "Recipient"
+          },
+          "identity_id": {
+            "type": "string",
+            "title": "Identity Id"
+          },
+          "from_address": {
+            "type": "string",
+            "title": "From Address"
+          },
+          "template_id": {
+            "type": "string",
+            "title": "Template Id"
+          },
+          "subject": {
+            "type": "string",
+            "title": "Subject"
+          },
+          "body": {
+            "type": "string",
+            "title": "Body"
+          },
+          "variables": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Variables"
+          },
+          "eligibility": {
+            "$ref": "#/components/schemas/EligibilityVerdict"
+          },
+          "approval": {
+            "$ref": "#/components/schemas/ApprovalDecision"
+          },
+          "approved_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved At"
+          },
+          "approved_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved By"
+          },
+          "sent_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sent At"
+          },
+          "provider_message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Message Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "outreach_list_id",
+          "member_id",
+          "party_id",
+          "party_name",
+          "contact_point_id",
+          "medium_id",
+          "recipient",
+          "identity_id",
+          "from_address",
+          "template_id",
+          "subject",
+          "body",
+          "variables",
+          "eligibility",
+          "approval"
+        ],
+        "title": "DraftResponse"
+      },
       "DrainRequest": {
         "properties": {
           "limit": {
             "type": "integer",
-            "maximum": 500.0,
-            "minimum": 1.0,
+            "maximum": 500,
+            "minimum": 1,
             "title": "Limit",
             "default": 50
           }
@@ -77894,8 +78742,8 @@
           },
           "count": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Count",
             "default": 1
           }
@@ -78209,6 +79057,293 @@
         "title": "EditWorkflowProposal",
         "description": "A typed graph edit (config / structure / variables). Applied with one\nclick via ``apply_workflow_patch`` (POST /recovery/workflows/{id}/apply-patch)\n— validated through the full gate stack before any row is written."
       },
+      "EligibilityBlock": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "fix": {
+            "type": "string",
+            "title": "Fix"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "fix"
+        ],
+        "title": "EligibilityBlock"
+      },
+      "EligibilityNotice": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "fix": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fix"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "EligibilityNotice"
+      },
+      "EligibilityVerdict": {
+        "properties": {
+          "allowed": {
+            "type": "boolean",
+            "title": "Allowed"
+          },
+          "lane": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lane"
+          },
+          "blocks": {
+            "items": {
+              "$ref": "#/components/schemas/EligibilityBlock"
+            },
+            "type": "array",
+            "title": "Blocks"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/EligibilityNotice"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "resolved": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Resolved"
+          }
+        },
+        "type": "object",
+        "required": [
+          "allowed"
+        ],
+        "title": "EligibilityVerdict"
+      },
+      "EmbeddingPart": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "text",
+              "uri",
+              "inline"
+            ],
+            "title": "Type"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          },
+          "uri": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uri"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data",
+            "description": "Base64 encoded bytes"
+          },
+          "mime_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mime Type"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "EmbeddingPart"
+      },
+      "EmbeddingRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "inputs": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "items": {
+                    "$ref": "#/components/schemas/EmbeddingPart"
+                  },
+                  "type": "array"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Inputs"
+          },
+          "output_dimensionality": {
+            "type": "integer",
+            "maximum": 3072,
+            "minimum": 128,
+            "title": "Output Dimensionality",
+            "default": 1536
+          },
+          "task_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Type"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "model",
+          "inputs"
+        ],
+        "title": "EmbeddingRequest"
+      },
+      "EmbeddingResponse": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "dimensions": {
+            "type": "integer",
+            "title": "Dimensions"
+          },
+          "vectors": {
+            "items": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "title": "Vectors"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "dimensions",
+          "vectors"
+        ],
+        "title": "EmbeddingResponse"
+      },
       "EnrichDirective": {
         "properties": {
           "goal": {
@@ -78375,15 +79510,15 @@
           },
           "review_every_n": {
             "type": "integer",
-            "maximum": 500.0,
-            "minimum": 1.0,
+            "maximum": 500,
+            "minimum": 1,
             "title": "Review Every N",
             "default": 10
           },
           "max_examples_per_review": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Max Examples Per Review",
             "default": 25
           },
@@ -78405,8 +79540,8 @@
           },
           "backfill_days": {
             "type": "integer",
-            "maximum": 365.0,
-            "minimum": 0.0,
+            "maximum": 365,
+            "minimum": 0,
             "title": "Backfill Days",
             "default": 14
           }
@@ -78430,17 +79565,17 @@
           "review_cost": {
             "type": "number",
             "title": "Review Cost",
-            "default": 0.0
+            "default": 0
           },
           "replay_cost": {
             "type": "number",
             "title": "Replay Cost",
-            "default": 0.0
+            "default": 0
           },
           "total_cost": {
             "type": "number",
             "title": "Total Cost",
-            "default": 0.0
+            "default": 0
           }
         },
         "additionalProperties": false,
@@ -78625,17 +79760,17 @@
           "review_cost": {
             "type": "number",
             "title": "Review Cost",
-            "default": 0.0
+            "default": 0
           },
           "replay_cost": {
             "type": "number",
             "title": "Replay Cost",
-            "default": 0.0
+            "default": 0
           },
           "total_cost": {
             "type": "number",
             "title": "Total Cost",
-            "default": 0.0
+            "default": 0
           },
           "review_count": {
             "type": "integer",
@@ -78716,8 +79851,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 500.0,
-                "minimum": 1.0
+                "maximum": 500,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -78729,8 +79864,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 100.0,
-                "minimum": 1.0
+                "maximum": 100,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -79886,8 +81021,8 @@
           },
           "multi_query": {
             "type": "integer",
-            "maximum": 5.0,
-            "minimum": 1.0,
+            "maximum": 5,
+            "minimum": 1,
             "title": "Multi Query",
             "default": 3
           },
@@ -80893,7 +82028,7 @@
         "properties": {
           "page_number": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Page Number"
           },
           "bbox": {
@@ -83178,7 +84313,7 @@
           },
           "attempt_count": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Attempt Count",
             "default": 0
           },
@@ -83216,7 +84351,7 @@
           },
           "chunk_count": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Chunk Count",
             "default": 0
           },
@@ -83891,8 +85026,8 @@
           },
           "max_hits_per_page": {
             "type": "integer",
-            "maximum": 50.0,
-            "minimum": 1.0,
+            "maximum": 50,
+            "minimum": 1,
             "title": "Max Hits Per Page",
             "default": 5
           }
@@ -84468,15 +85603,15 @@
         "properties": {
           "x": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "X",
             "description": "0=left, 1=right"
           },
           "y": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Y",
             "description": "0=top, 1=bottom"
           }
@@ -84529,8 +85664,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 1000.0,
-            "minimum": 1.0,
+            "maximum": 1000,
+            "minimum": 1,
             "title": "Limit",
             "default": 250
           },
@@ -85271,8 +86406,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Max Steps",
             "default": 1000
           }
@@ -85521,8 +86656,8 @@
           },
           "count": {
             "type": "integer",
-            "maximum": 4.0,
-            "minimum": 1.0,
+            "maximum": 4,
+            "minimum": 1,
             "title": "Count",
             "description": "Number of images to generate.",
             "default": 1
@@ -85585,8 +86720,8 @@
           },
           "max_nodes": {
             "type": "integer",
-            "maximum": 150.0,
-            "minimum": 10.0,
+            "maximum": 150,
+            "minimum": 10,
             "title": "Max Nodes",
             "default": 40
           },
@@ -86264,8 +87399,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 90.0,
-                "minimum": 1.0
+                "maximum": 90,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -86429,17 +87564,17 @@
           "review_cost": {
             "type": "number",
             "title": "Review Cost",
-            "default": 0.0
+            "default": 0
           },
           "replay_cost": {
             "type": "number",
             "title": "Replay Cost",
-            "default": 0.0
+            "default": 0
           },
           "total_cost": {
             "type": "number",
             "title": "Total Cost",
-            "default": 0.0
+            "default": 0
           },
           "review_count": {
             "type": "integer",
@@ -86672,17 +87807,17 @@
           "hard_bounce_rate": {
             "type": "number",
             "title": "Hard Bounce Rate",
-            "default": 0.0
+            "default": 0
           },
           "complaint_rate": {
             "type": "number",
             "title": "Complaint Rate",
-            "default": 0.0
+            "default": 0
           },
           "reply_rate": {
             "type": "number",
             "title": "Reply Rate",
-            "default": 0.0
+            "default": 0
           },
           "computed_at": {
             "type": "string",
@@ -86814,8 +87949,8 @@
           },
           "quality": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Quality",
             "description": "Encoder quality from 1 to 100 for lossy output formats.",
             "default": 90
@@ -87475,8 +88610,8 @@
           },
           "count": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Count",
             "description": "Number of random assignments to materialize."
           },
@@ -87685,8 +88820,8 @@
           },
           "chunk_words": {
             "type": "integer",
-            "maximum": 8000.0,
-            "minimum": 500.0,
+            "maximum": 8000,
+            "minimum": 500,
             "title": "Chunk Words",
             "description": "Words per extraction chunk.",
             "default": 2500
@@ -89585,8 +90720,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 200.0,
-            "minimum": 1.0,
+            "maximum": 200,
+            "minimum": 1,
             "title": "Limit",
             "default": 200
           }
@@ -90737,6 +91872,34 @@
             ],
             "title": "Store"
           },
+          "previous_interaction_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Interaction Id"
+          },
+          "task": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "text_to_video",
+                  "image_to_video",
+                  "reference_to_video",
+                  "edit"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task"
+          },
           "verbosity": {
             "anyOf": [
               {
@@ -91715,8 +92878,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 200.0,
-            "minimum": 1.0,
+            "maximum": 200,
+            "minimum": 1,
             "title": "Limit",
             "default": 20
           },
@@ -92942,8 +94105,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 50.0,
-            "minimum": 1.0,
+            "maximum": 50,
+            "minimum": 1,
             "title": "Limit",
             "default": 10
           }
@@ -94432,7 +95595,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -94443,8 +95606,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Max Steps",
             "default": 1000
           }
@@ -95009,7 +96172,7 @@
           "cost": {
             "type": "number",
             "title": "Cost",
-            "default": 0.0
+            "default": 0
           },
           "input_tokens": {
             "type": "integer",
@@ -95537,29 +96700,29 @@
         "properties": {
           "chunk_count": {
             "type": "integer",
-            "maximum": 10000.0,
-            "minimum": 1.0,
+            "maximum": 10000,
+            "minimum": 1,
             "title": "Chunk Count",
             "default": 10
           },
           "chunk_delay_ms": {
             "type": "integer",
-            "maximum": 60000.0,
-            "minimum": 0.0,
+            "maximum": 60000,
+            "minimum": 0,
             "title": "Chunk Delay Ms",
             "default": 200
           },
           "heartbeat_interval_ms": {
             "type": "integer",
-            "maximum": 60000.0,
-            "minimum": 1000.0,
+            "maximum": 60000,
+            "minimum": 1000,
             "title": "Heartbeat Interval Ms",
             "default": 10000
           },
           "max_lifetime_ms": {
             "type": "integer",
-            "maximum": 600000.0,
-            "minimum": 1000.0,
+            "maximum": 600000,
+            "minimum": 1000,
             "title": "Max Lifetime Ms",
             "default": 120000
           },
@@ -97964,6 +99127,17 @@
             "type": "string",
             "title": "Execution Id"
           },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          },
           "type": {
             "type": "string",
             "title": "Type"
@@ -98078,6 +99252,7 @@
         "type": "object",
         "required": [
           "execution_id",
+          "request_id",
           "type",
           "status",
           "is_terminal",
@@ -98220,8 +99395,8 @@
           },
           "priority": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Priority"
           },
           "impact": {
@@ -98244,8 +99419,8 @@
           },
           "confidence": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Confidence"
           },
           "evidence": {
@@ -99002,16 +100177,16 @@
           },
           "fill_opacity": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Fill Opacity",
             "default": 0.18
           },
           "stroke_width": {
             "type": "number",
-            "exclusiveMinimum": 0.0,
+            "exclusiveMinimum": 0,
             "title": "Stroke Width",
-            "default": 2.0
+            "default": 2
           },
           "label": {
             "anyOf": [
@@ -99026,9 +100201,9 @@
           },
           "font_size": {
             "type": "number",
-            "exclusiveMinimum": 0.0,
+            "exclusiveMinimum": 0,
             "title": "Font Size",
-            "default": 10.0
+            "default": 10
           }
         },
         "type": "object",
@@ -99883,6 +101058,91 @@
         ],
         "title": "PageKeywordMapResult"
       },
+      "PageLinkGapBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "opportunity_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 2,
+            "title": "Opportunity Ids"
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 1000,
+            "minimum": 1,
+            "title": "Limit",
+            "default": 1000
+          },
+          "max_spam_score": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 0,
+            "title": "Max Spam Score",
+            "default": 30
+          },
+          "force_refresh": {
+            "type": "boolean",
+            "title": "Force Refresh",
+            "default": true
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "opportunity_ids"
+        ],
+        "title": "PageLinkGapBody"
+      },
       "PagePerformanceConfig": {
         "properties": {
           "psi_has_key": {
@@ -100652,7 +101912,7 @@
           },
           "use_ocr_threshold": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Use Ocr Threshold",
             "default": 100
           }
@@ -100757,12 +102017,12 @@
         "properties": {
           "output_page": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Output Page"
           },
           "source_page": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Source Page"
           }
         },
@@ -100777,12 +102037,12 @@
         "properties": {
           "start": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Start"
           },
           "end": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "End"
           }
         },
@@ -100825,8 +102085,8 @@
           },
           "signed_ttl": {
             "type": "integer",
-            "maximum": 604800.0,
-            "minimum": 60.0,
+            "maximum": 604800,
+            "minimum": 60,
             "title": "Signed Ttl",
             "default": 3600
           }
@@ -100858,14 +102118,14 @@
           },
           "source_page_count": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Source Page Count"
           },
           "source_size_bytes": {
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -100875,7 +102135,7 @@
           },
           "source_bytes_fetched": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Source Bytes Fetched",
             "default": 0
           },
@@ -102326,7 +103586,7 @@
           "total_cost": {
             "type": "number",
             "title": "Total Cost",
-            "default": 0.0
+            "default": 0
           },
           "request": {
             "additionalProperties": {
@@ -102442,7 +103702,7 @@
           "total_cost": {
             "type": "number",
             "title": "Total Cost",
-            "default": 0.0
+            "default": 0
           },
           "error": {
             "type": "string",
@@ -103142,8 +104402,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 10.0,
-                "minimum": 1.0
+                "maximum": 10,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -103235,7 +104495,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -103248,7 +104508,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -103604,7 +104864,7 @@
             "type": "number",
             "title": "Total Cost Usd",
             "description": "What this run has cost in total.",
-            "default": 0.0
+            "default": 0
           },
           "progress": {
             "$ref": "#/components/schemas/RunProgress",
@@ -103726,7 +104986,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -104021,8 +105281,8 @@
           },
           "n": {
             "type": "integer",
-            "maximum": 50.0,
-            "minimum": 1.0,
+            "maximum": 50,
+            "minimum": 1,
             "title": "N",
             "default": 5
           }
@@ -104101,12 +105361,12 @@
           },
           "width": {
             "type": "integer",
-            "exclusiveMinimum": 0.0,
+            "exclusiveMinimum": 0,
             "title": "Width"
           },
           "height": {
             "type": "integer",
-            "exclusiveMinimum": 0.0,
+            "exclusiveMinimum": 0,
             "title": "Height"
           },
           "format": {
@@ -104122,8 +105382,8 @@
           },
           "quality": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Quality",
             "description": "Ignored for png",
             "default": 85
@@ -104354,7 +105614,7 @@
           "heartbeat_interval_s": {
             "type": "number",
             "title": "Heartbeat Interval S",
-            "default": 15.0
+            "default": 15
           },
           "debug": {
             "type": "boolean",
@@ -105041,6 +106301,26 @@
             "const": "prompt_user",
             "title": "Maptype",
             "default": "prompt_user"
+          },
+          "prompt": {
+            "type": "string",
+            "title": "Prompt",
+            "default": ""
+          },
+          "defaultValue": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "required": {
+            "type": "boolean",
+            "title": "Required",
+            "default": false
           }
         },
         "type": "object",
@@ -105640,8 +106920,8 @@
           },
           "confidence": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Confidence"
           },
           "evidence_refs": {
@@ -105927,8 +107207,8 @@
         "properties": {
           "overall_confidence": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Overall Confidence"
           },
           "accepted_cases": {
@@ -106054,8 +107334,8 @@
           },
           "anchor_size": {
             "type": "integer",
-            "maximum": 1000.0,
-            "minimum": 10.0,
+            "maximum": 1000,
+            "minimum": 10,
             "title": "Anchor Size",
             "default": 100
           },
@@ -106407,8 +107687,8 @@
           },
           "cadence_days": {
             "type": "integer",
-            "maximum": 90.0,
-            "minimum": 1.0,
+            "maximum": 90,
+            "minimum": 1,
             "title": "Cadence Days",
             "default": 7
           },
@@ -106604,8 +107884,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 90.0,
-                "minimum": 1.0
+                "maximum": 90,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -107217,8 +108497,8 @@
           },
           "confidence": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Confidence"
           },
           "run_id": {
@@ -107558,15 +108838,15 @@
           },
           "min_pages_ratio": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Min Pages Ratio",
             "default": 0.3333333333333333
           },
           "min_confidence": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Min Confidence",
             "default": 0.5
           },
@@ -107586,7 +108866,7 @@
         "properties": {
           "page_number": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Page Number"
           },
           "x0": {
@@ -107649,7 +108929,7 @@
           },
           "page_number": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Page Number"
           },
           "bbox": {
@@ -107941,7 +109221,7 @@
         "properties": {
           "page_number": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Page Number"
           },
           "bbox": {
@@ -108502,8 +109782,8 @@
           },
           "dpi": {
             "type": "integer",
-            "maximum": 300.0,
-            "minimum": 8.0,
+            "maximum": 300,
+            "minimum": 8,
             "title": "Dpi",
             "default": 150
           },
@@ -108521,8 +109801,8 @@
           },
           "jpeg_quality": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Jpeg Quality",
             "default": 85
           },
@@ -108592,14 +109872,14 @@
           },
           "page": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Page",
             "default": 1
           },
           "dpi": {
             "type": "integer",
-            "maximum": 600.0,
-            "minimum": 8.0,
+            "maximum": 600,
+            "minimum": 8,
             "title": "Dpi",
             "default": 150
           },
@@ -108617,8 +109897,8 @@
           },
           "jpeg_quality": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Jpeg Quality",
             "default": 85
           },
@@ -108670,8 +109950,8 @@
           },
           "dpi": {
             "type": "integer",
-            "maximum": 400.0,
-            "minimum": 36.0,
+            "maximum": 400,
+            "minimum": 36,
             "title": "Dpi",
             "default": 144
           },
@@ -108781,14 +110061,14 @@
           },
           "page": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Page",
             "default": 1
           },
           "max_side": {
             "type": "integer",
-            "maximum": 2048.0,
-            "minimum": 16.0,
+            "maximum": 2048,
+            "minimum": 16,
             "title": "Max Side",
             "default": 256
           },
@@ -108805,8 +110085,8 @@
           },
           "jpeg_quality": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Jpeg Quality",
             "default": 80
           }
@@ -109101,8 +110381,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 2000.0,
-            "minimum": 1.0,
+            "maximum": 2000,
+            "minimum": 1,
             "title": "Limit",
             "default": 100
           },
@@ -109697,32 +110977,32 @@
           },
           "priority": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Priority"
           },
           "confidence": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Confidence"
           },
           "evidence_quality": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Evidence Quality"
           },
           "risk_score": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Risk Score"
           },
           "opportunity_score": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Opportunity Score"
           },
           "recommended_action": {
@@ -109978,8 +111258,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Max Steps",
             "default": 1000
           }
@@ -110461,8 +111741,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 20000.0,
-            "minimum": 1.0,
+            "maximum": 20000,
+            "minimum": 1,
             "title": "Limit",
             "default": 2000
           }
@@ -110791,8 +112071,8 @@
           },
           "max_chars": {
             "type": "integer",
-            "maximum": 10000.0,
-            "minimum": 1.0,
+            "maximum": 10000,
+            "minimum": 1,
             "title": "Max Chars",
             "default": 5000
           }
@@ -111099,8 +112379,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Max Steps",
             "default": 1000
           },
@@ -111219,7 +112499,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -111230,8 +112510,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Max Steps",
             "default": 1000
           }
@@ -111535,7 +112815,7 @@
           "cost_usd": {
             "type": "number",
             "title": "Cost Usd",
-            "default": 0.0
+            "default": 0
           }
         },
         "type": "object",
@@ -112153,7 +113433,7 @@
           "total_cost_usd": {
             "type": "number",
             "title": "Total Cost Usd",
-            "default": 0.0
+            "default": 0
           },
           "total_input_tokens": {
             "type": "integer",
@@ -112397,8 +113677,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 50.0,
-                "minimum": 1.0
+                "maximum": 50,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -112410,8 +113690,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 20.0,
-                "minimum": 1.0
+                "maximum": 20,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -113195,8 +114475,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Max Steps",
             "default": 1000
           },
@@ -113204,8 +114484,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 256.0,
-                "minimum": 1.0
+                "maximum": 256,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -113254,7 +114534,7 @@
           "lease_seconds": {
             "type": "number",
             "title": "Lease Seconds",
-            "default": 1800.0
+            "default": 1800
           }
         },
         "type": "object",
@@ -113329,7 +114609,7 @@
           "lease_seconds": {
             "type": "number",
             "title": "Lease Seconds",
-            "default": 1800.0
+            "default": 1800
           },
           "idempotency_key": {
             "anyOf": [
@@ -114300,8 +115580,8 @@
           },
           "anchor_size": {
             "type": "integer",
-            "maximum": 1000.0,
-            "minimum": 10.0,
+            "maximum": 1000,
+            "minimum": 10,
             "title": "Anchor Size",
             "default": 100
           },
@@ -114316,8 +115596,8 @@
           },
           "max_page_read": {
             "type": "integer",
-            "maximum": 20.0,
-            "minimum": 1.0,
+            "maximum": 20,
+            "minimum": 1,
             "title": "Max Page Read",
             "default": 10
           },
@@ -114397,8 +115677,8 @@
           },
           "anchor_size": {
             "type": "integer",
-            "maximum": 1000.0,
-            "minimum": 10.0,
+            "maximum": 1000,
+            "minimum": 10,
             "title": "Anchor Size",
             "default": 100
           },
@@ -114416,8 +115696,8 @@
           },
           "total_results_per_keyword": {
             "type": "integer",
-            "maximum": 30.0,
-            "minimum": 10.0,
+            "maximum": 30,
+            "minimum": 10,
             "title": "Total Results Per Keyword",
             "default": 10
           },
@@ -114506,8 +115786,8 @@
           },
           "total_results_per_keyword": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Total Results Per Keyword",
             "default": 5
           },
@@ -114641,6 +115921,28 @@
           "web_view_link"
         ],
         "title": "SelectedFileResponse"
+      },
+      "SendResponse": {
+        "properties": {
+          "draft": {
+            "$ref": "#/components/schemas/DraftResponse"
+          },
+          "interaction_id": {
+            "type": "string",
+            "title": "Interaction Id"
+          },
+          "provider_message_id": {
+            "type": "string",
+            "title": "Provider Message Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "draft",
+          "interaction_id",
+          "provider_message_id"
+        ],
+        "title": "SendResponse"
       },
       "SendingEventRecord": {
         "properties": {
@@ -116661,8 +117963,8 @@
           },
           "event_spacing_ms": {
             "type": "integer",
-            "maximum": 5000.0,
-            "minimum": 0.0,
+            "maximum": 5000,
+            "minimum": 0,
             "title": "Event Spacing Ms",
             "description": "Milliseconds to wait between simulated events.",
             "default": 250
@@ -118165,7 +119467,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -118176,8 +119478,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Max Steps",
             "default": 1000
           }
@@ -119352,7 +120654,7 @@
         "properties": {
           "page_number": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Page Number"
           },
           "bbox": {
@@ -119360,10 +120662,10 @@
           },
           "expand_pad_pt": {
             "type": "number",
-            "maximum": 20.0,
-            "minimum": 0.0,
+            "maximum": 20,
+            "minimum": 0,
             "title": "Expand Pad Pt",
-            "default": 1.0
+            "default": 1
           }
         },
         "type": "object",
@@ -120085,7 +121387,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 1.0
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -121142,7 +122444,7 @@
           "confidence": {
             "type": "number",
             "title": "Confidence",
-            "default": 0.0
+            "default": 0
           },
           "reason": {
             "type": "string",
@@ -121312,15 +122614,15 @@
           },
           "min_pages_ratio": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Min Pages Ratio",
             "default": 0.3333333333333333
           },
           "min_confidence": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Min Confidence",
             "default": 0.5
           }
@@ -125552,8 +126854,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 200.0,
-            "minimum": 1.0,
+            "maximum": 200,
+            "minimum": 1,
             "title": "Limit",
             "default": 50
           }
@@ -125621,7 +126923,7 @@
           "total_estimated_cost_usd": {
             "type": "number",
             "title": "Total Estimated Cost Usd",
-            "default": 0.0
+            "default": 0
           },
           "page_analyses": {
             "$ref": "#/components/schemas/CostBreakdownItem"
@@ -128456,8 +129758,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 500.0,
-                "minimum": 1.0
+                "maximum": 500,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -128469,8 +129771,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 200.0,
-                "minimum": 1.0
+                "maximum": 200,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -128482,8 +129784,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 86400.0,
-                "minimum": 0.0
+                "maximum": 86400,
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -128495,8 +129797,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 86400.0,
-                "minimum": 0.0
+                "maximum": 86400,
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -128508,8 +129810,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 23.0,
-                "minimum": 0.0
+                "maximum": 23,
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -128521,8 +129823,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 23.0,
-                "minimum": 0.0
+                "maximum": 23,
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -130353,8 +131655,8 @@
           },
           "next_n": {
             "type": "integer",
-            "maximum": 50.0,
-            "minimum": 1.0,
+            "maximum": 50,
+            "minimum": 1,
             "title": "Next N",
             "default": 5
           }
@@ -133044,15 +134346,15 @@
           },
           "max_urls": {
             "type": "integer",
-            "maximum": 20000.0,
-            "minimum": 1.0,
+            "maximum": 20000,
+            "minimum": 1,
             "title": "Max Urls",
             "default": 2000
           },
           "concurrency": {
             "type": "integer",
-            "maximum": 32.0,
-            "minimum": 1.0,
+            "maximum": 32,
+            "minimum": 1,
             "title": "Concurrency",
             "default": 8
           }
@@ -133095,18 +134397,18 @@
           "x": {
             "type": "number",
             "title": "X",
-            "default": 0.0
+            "default": 0
           },
           "y": {
             "type": "number",
             "title": "Y",
-            "default": 0.0
+            "default": 0
           },
           "zoom": {
             "type": "number",
-            "exclusiveMinimum": 0.0,
+            "exclusiveMinimum": 0,
             "title": "Zoom",
-            "default": 1.0
+            "default": 1
           }
         },
         "type": "object",
@@ -134951,12 +136253,12 @@
           "total_cost_usd": {
             "type": "number",
             "title": "Total Cost Usd",
-            "default": 0.0
+            "default": 0
           },
           "avg_run_cost_usd": {
             "type": "number",
             "title": "Avg Run Cost Usd",
-            "default": 0.0
+            "default": 0
           },
           "runs_per_day": {
             "items": {
@@ -135109,8 +136411,8 @@
           },
           "max_results": {
             "type": "integer",
-            "maximum": 50.0,
-            "minimum": 1.0,
+            "maximum": 50,
+            "minimum": 1,
             "title": "Max Results",
             "default": 25
           },
@@ -135169,8 +136471,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 50.0,
-                "minimum": 1.0
+                "maximum": 50,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -135182,8 +136484,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 1440.0,
-                "minimum": 1.0
+                "maximum": 1440,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -136062,8 +137364,8 @@
           },
           "max_hits": {
             "type": "integer",
-            "maximum": 2000.0,
-            "minimum": 1.0,
+            "maximum": 2000,
+            "minimum": 1,
             "title": "Max Hits",
             "default": 200
           },
@@ -136209,8 +137511,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Limit",
             "default": 20
           },
@@ -136274,8 +137576,8 @@
           },
           "multi_query": {
             "type": "integer",
-            "maximum": 5.0,
-            "minimum": 1.0,
+            "maximum": 5,
+            "minimum": 1,
             "title": "Multi Query",
             "description": "If >1, the query is rewritten into N paraphrases via gpt-4o-mini and each one contributes a separate vector ranking that gets fused via RRF. Boosts recall on awkward phrasings.",
             "default": 1

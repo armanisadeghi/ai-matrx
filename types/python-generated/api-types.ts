@@ -1585,6 +1585,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ai/google/embeddings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Embeddings */
+        post: operations["create_embeddings_ai_google_embeddings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/google/background-interactions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Background Interaction */
+        post: operations["create_background_interaction_ai_google_background_interactions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/google/background-interactions/{execution_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Background Interaction */
+        get: operations["get_background_interaction_ai_google_background_interactions__execution_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v2/ai/manual": {
         parameters: {
             query?: never;
@@ -4458,6 +4509,29 @@ export interface paths {
          *     ending with ``seo.backlink_refresh_completed``.
          */
         post: operations["refresh_site_backlinks_seo_sites__site_id__backlinks_refresh_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/pages/{page_id}/link-gap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Collect Page Link Gap
+         * @description Collect referring pages shared by accepted competitor-page proposals
+         *     but absent from our canonical page. The package service rechecks human
+         *     acceptance, competitor confirmation, and taxonomy eligibility before any
+         *     paid provider request.
+         */
+        post: operations["collect_page_link_gap_seo_sites__site_id__pages__page_id__link_gap_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7763,6 +7837,60 @@ export interface paths {
          *     breaker runs on the fresh numbers); it can never un-pause one.
          */
         post: operations["refresh_identity_health_sending_identities__identity_id__refresh_health_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/outreach/single/drafts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Message Draft
+         * @description Render a real target and persist the exact preview as a planned interaction.
+         */
+        post: operations["create_message_draft_outreach_single_drafts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/outreach/single/drafts/{draft_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve Message Draft */
+        post: operations["approve_message_draft_outreach_single_drafts__draft_id__approve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/outreach/single/drafts/{draft_id}/send": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send Message Draft */
+        post: operations["send_message_draft_outreach_single_drafts__draft_id__send_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -20526,6 +20654,25 @@ export interface components {
             /** Updated At */
             updated_at?: string | null;
         };
+        /** ApprovalDecision */
+        ApprovalDecision: {
+            /** Trust Stage */
+            trust_stage: number;
+            /**
+             * Requirement
+             * @enum {string}
+             */
+            requirement: "every_message" | "sampled" | "none";
+            /** Required For This Message */
+            required_for_this_message: boolean;
+            /** Sample Percent */
+            sample_percent: number;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "organization_policy" | "safe_default";
+        };
         /** ArchiveOut */
         ArchiveOut: {
             /** Status */
@@ -21418,6 +21565,57 @@ export interface components {
              * @description Cap the sources tagged this run; defaults to the topic setting.
              */
             max_calls?: number | null;
+        };
+        /** BackgroundInteractionStart */
+        BackgroundInteractionStart: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Model */
+            model: string;
+            /** Input */
+            input: string | {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
+            /** Previous Interaction Id */
+            previous_interaction_id?: string | null;
+            /** Idempotency Key */
+            idempotency_key?: string | null;
+        };
+        /** BackgroundInteractionView */
+        BackgroundInteractionView: {
+            /** Execution Id */
+            execution_id: string;
+            /** Status */
+            status: string;
+            /** Interaction Id */
+            interaction_id?: string | null;
+            /** Provider Status */
+            provider_status?: string | null;
+            /** Steps */
+            steps?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
+            /** Outputs */
+            outputs?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
+            /** Error */
+            error?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
         };
         /** BacklinkEnrichmentBody */
         BacklinkEnrichmentBody: {
@@ -23648,6 +23846,10 @@ export interface components {
             stream?: boolean;
             /** Store */
             store: boolean;
+            /** Previous Interaction Id */
+            previous_interaction_id?: string | null;
+            /** Task */
+            task?: ("text_to_video" | "image_to_video" | "reference_to_video" | "edit") | null;
             /** Verbosity */
             verbosity?: ("low" | "medium" | "high") | null;
             /** Internal Web Search */
@@ -25202,8 +25404,13 @@ export interface components {
              * @enum {string}
              */
             mapType: "code_value";
-            /** Source */
-            source: string;
+            /** Target */
+            target: string;
+            /**
+             * Required
+             * @default false
+             */
+            required?: boolean;
         };
         /** CodingSessionBridgeRestRequest */
         CodingSessionBridgeRestRequest: {
@@ -26676,6 +26883,36 @@ export interface components {
             name: string;
             /** Content */
             content?: string | null;
+        };
+        /** CreateDraftRequest */
+        CreateDraftRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Outreach List Id */
+            outreach_list_id: string;
+            /** Member Id */
+            member_id: string;
+            /** Template Id */
+            template_id: string;
+            /** Contact Point Id */
+            contact_point_id?: string | null;
+            /** Reputation Case Id */
+            reputation_case_id?: string | null;
+            /** Backlink Id */
+            backlink_id?: string | null;
         };
         /** CreateFolderRequest */
         CreateFolderRequest: {
@@ -28287,7 +28524,7 @@ export interface components {
              * @enum {string}
              */
             mapType: "direct_value";
-            value: components["schemas"]["JsonValue"];
+            target: components["schemas"]["JsonValue"];
         };
         /** DirectiveConfirmRequest */
         DirectiveConfirmRequest: {
@@ -28867,6 +29104,27 @@ export interface components {
              */
             proxy_type?: string;
         };
+        /**
+         * DraftActionRequest
+         * @description Typed empty body for approve/send actions in the generated contract.
+         */
+        DraftActionRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+        };
         /** DraftBriefBody */
         DraftBriefBody: {
             /** Organization Id */
@@ -28885,6 +29143,49 @@ export interface components {
              * @default false
              */
             accept?: boolean;
+        };
+        /** DraftResponse */
+        DraftResponse: {
+            /** Id */
+            id: string;
+            /** Status */
+            status: string;
+            /** Outreach List Id */
+            outreach_list_id: string;
+            /** Member Id */
+            member_id: string;
+            /** Party Id */
+            party_id: string;
+            /** Party Name */
+            party_name: string;
+            /** Contact Point Id */
+            contact_point_id: string;
+            /** Medium Id */
+            medium_id: string;
+            /** Recipient */
+            recipient: string;
+            /** Identity Id */
+            identity_id: string;
+            /** From Address */
+            from_address: string;
+            /** Template Id */
+            template_id: string;
+            /** Subject */
+            subject: string;
+            /** Body */
+            body: string;
+            /** Variables */
+            variables: string[];
+            eligibility: components["schemas"]["EligibilityVerdict"];
+            approval: components["schemas"]["ApprovalDecision"];
+            /** Approved At */
+            approved_at?: string | null;
+            /** Approved By */
+            approved_by?: string | null;
+            /** Sent At */
+            sent_at?: string | null;
+            /** Provider Message Id */
+            provider_message_id?: string | null;
         };
         /** DrainRequest */
         DrainRequest: {
@@ -29221,6 +29522,98 @@ export interface components {
             patch: components["schemas"]["DefinitionPatch-Output"];
             /** Rationale */
             rationale: string;
+        };
+        /** EligibilityBlock */
+        EligibilityBlock: {
+            /** Code */
+            code: string;
+            /** Message */
+            message: string;
+            /** Fix */
+            fix: string;
+        };
+        /** EligibilityNotice */
+        EligibilityNotice: {
+            /** Code */
+            code: string;
+            /** Message */
+            message: string;
+            /** Fix */
+            fix?: string | null;
+        };
+        /** EligibilityVerdict */
+        EligibilityVerdict: {
+            /** Allowed */
+            allowed: boolean;
+            /** Lane */
+            lane?: string | null;
+            /** Blocks */
+            blocks?: components["schemas"]["EligibilityBlock"][];
+            /** Warnings */
+            warnings?: components["schemas"]["EligibilityNotice"][];
+            /** Resolved */
+            resolved?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+        };
+        /** EmbeddingPart */
+        EmbeddingPart: {
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "text" | "uri" | "inline";
+            /** Text */
+            text?: string | null;
+            /** Uri */
+            uri?: string | null;
+            /**
+             * Data
+             * @description Base64 encoded bytes
+             */
+            data?: string | null;
+            /** Mime Type */
+            mime_type?: string | null;
+        };
+        /** EmbeddingRequest */
+        EmbeddingRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Model */
+            model: string;
+            /** Inputs */
+            inputs: (string | components["schemas"]["EmbeddingPart"][])[];
+            /**
+             * Output Dimensionality
+             * @default 1536
+             */
+            output_dimensionality?: number;
+            /** Task Type */
+            task_type?: string | null;
+            /** Title */
+            title?: string | null;
+        };
+        /** EmbeddingResponse */
+        EmbeddingResponse: {
+            /** Model */
+            model: string;
+            /** Dimensions */
+            dimensions: number;
+            /** Vectors */
+            vectors: number[][];
         };
         /**
          * EnrichDirective
@@ -34181,6 +34574,10 @@ export interface components {
             stream?: boolean | null;
             /** Store */
             store?: boolean | null;
+            /** Previous Interaction Id */
+            previous_interaction_id?: string | null;
+            /** Task */
+            task?: ("text_to_video" | "image_to_video" | "reference_to_video" | "edit") | null;
             /** Verbosity */
             verbosity?: ("low" | "medium" | "high") | null;
             /** Internal Web Search */
@@ -36955,6 +37352,8 @@ export interface components {
         OperationView: {
             /** Execution Id */
             execution_id: string;
+            /** Request Id */
+            request_id: string | null;
             /** Type */
             type: string;
             status: components["schemas"]["ExecutionStatus"];
@@ -37635,6 +38034,43 @@ export interface components {
             summary?: {
                 [key: string]: unknown;
             };
+        };
+        /** PageLinkGapBody */
+        PageLinkGapBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Opportunity Ids */
+            opportunity_ids: string[];
+            /**
+             * Limit
+             * @default 1000
+             */
+            limit?: number;
+            /**
+             * Max Spam Score
+             * @default 30
+             */
+            max_spam_score?: number;
+            /**
+             * Force Refresh
+             * @default true
+             */
+            force_refresh?: boolean;
+            /** Request Id */
+            request_id?: string | null;
         };
         /**
          * PagePerformanceConfig
@@ -39810,6 +40246,17 @@ export interface components {
              * @enum {string}
              */
             mapType: "prompt_user";
+            /**
+             * Prompt
+             * @default
+             */
+            prompt?: string;
+            defaultValue?: components["schemas"]["JsonValue"] | null;
+            /**
+             * Required
+             * @default false
+             */
+            required?: boolean;
         };
         /** PromptWarmRequest */
         PromptWarmRequest: {
@@ -43659,6 +44106,14 @@ export interface components {
             mime_type: string;
             /** Web View Link */
             web_view_link: string | null;
+        };
+        /** SendResponse */
+        SendResponse: {
+            draft: components["schemas"]["DraftResponse"];
+            /** Interaction Id */
+            interaction_id: string;
+            /** Provider Message Id */
+            provider_message_id: string;
         };
         /**
          * SendingEventRecord
@@ -54645,6 +55100,103 @@ export interface operations {
             };
         };
     };
+    create_embeddings_ai_google_embeddings_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmbeddingRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmbeddingResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_background_interaction_ai_google_background_interactions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BackgroundInteractionStart"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackgroundInteractionView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_background_interaction_ai_google_background_interactions__execution_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                execution_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackgroundInteractionView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     chat_v2_v2_ai_manual_post: {
         parameters: {
             query?: never;
@@ -60057,6 +60609,42 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["BacklinkRefreshBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    collect_page_link_gap_seo_sites__site_id__pages__page_id__link_gap_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+                page_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PageLinkGapBody"];
             };
         };
         responses: {
@@ -65775,6 +66363,109 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SendingIdentityDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_message_draft_outreach_single_drafts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateDraftRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DraftResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    approve_message_draft_outreach_single_drafts__draft_id__approve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                draft_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DraftActionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DraftResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    send_message_draft_outreach_single_drafts__draft_id__send_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                draft_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DraftActionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SendResponse"];
                 };
             };
             /** @description Validation Error */

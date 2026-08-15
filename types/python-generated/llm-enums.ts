@@ -25,6 +25,8 @@ export const REASONING_SUMMARY_OPTIONS = ['concise', 'detailed', 'never', 'auto'
 
 export const THINKING_LEVEL_OPTIONS = ['minimal', 'low', 'medium', 'high'] as const satisfies readonly NonNullable<LLMParams['thinking_level']>[];
 
+export const TASK_OPTIONS = ['text_to_video', 'image_to_video', 'reference_to_video', 'edit'] as const satisfies readonly NonNullable<LLMParams['task']>[];
+
 export const VERBOSITY_OPTIONS = ['low', 'medium', 'high'] as const satisfies readonly NonNullable<LLMParams['verbosity']>[];
 
 export const ASPECT_RATIO_OPTIONS = ['1:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9'] as const satisfies readonly NonNullable<LLMParams['aspect_ratio']>[];
@@ -75,6 +77,8 @@ export const LLM_PARAMS_KEYS = [
     'stop_sequences',
     'stream',
     'store',
+    'previous_interaction_id',
+    'task',
     'verbosity',
     'internal_web_search',
     'internal_url_context',
