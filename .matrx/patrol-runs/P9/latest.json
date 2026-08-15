@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P9",
+  "runId": "019ff9f6-6062-78f0-a8d2-e96ec520f635",
+  "state": "escaped_delivery",
+  "updatedAt": "2026-08-15T06:39:40.465Z",
+  "summary": "Recorded the pre-controller P9 integration as an escaped delivery; certification remains incomplete.",
+  "source": "019ff9f6-6062-78f0-a8d2-e96ec520f635.json",
+  "eventHash": "02a03d932cfe99defb68c523659d6a4e5b75823401bc57d4a2c0280d6493392b"
+}
