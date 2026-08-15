@@ -953,6 +953,28 @@ export const primaryNavItems: ShellNavItem[] = [
         action: "create-crm-company",
         guestHidden: true,
       },
+      {
+        label: "Outreach Lists",
+        href: "/crm/outreach-lists",
+        iconName: "Megaphone",
+        description:
+          "Build calling and outreach lists over your CRM records and work them from a queue",
+        color: "teal",
+        profileMenu: true,
+        dashboard: true,
+        guestHidden: true,
+      },
+      {
+        label: "Sending Mailboxes",
+        href: "/crm/sending-identities",
+        iconName: "Send",
+        description:
+          "Connect the mailbox your outreach is sent from, prove you own its domain, and watch its delivery health",
+        color: "teal",
+        profileMenu: true,
+        dashboard: true,
+        guestHidden: true,
+      },
     ],
   },
   {

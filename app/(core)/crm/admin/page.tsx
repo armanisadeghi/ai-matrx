@@ -66,6 +66,22 @@ const CRM_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
+      url: "/crm/sending-identities",
+      label: "Sending mailboxes",
+      description:
+        "THE RIGHT TO SEND: the mailboxes this org may send outreach from. Connect a mailbox, prove domain ownership by DNS, verify SPF/DKIM/DMARC, warm up, watch health. Backed by aidream /sending-identities (server-side DNS + OAuth mailbox work the browser cannot do). Includes the per-org emergency stop.",
+      filePath: "app/(core)/crm/sending-identities/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/crm/sending-identities/[identityId]",
+      label: "Sending mailbox detail",
+      description:
+        "One mailbox: every blocking problem beside its one-click fix, the copy-and-paste DNS proof record, SPF/DKIM/DMARC verdicts, the 28-day warm-up ramp, rolling deliverability health, sending limits, and the full send/bounce/complaint audit trail.",
+      filePath: "app/(core)/crm/sending-identities/[identityId]/page.tsx",
+      status: "Live",
+    },
+    {
       url: "/crm/admin",
       label: "CRM feature map",
       description:

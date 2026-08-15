@@ -55,6 +55,7 @@ import {
   LayoutTemplate,
   ListChecks,
   ListOrdered,
+  MailCheck,
   Megaphone,
   ListTodo,
   MessagesSquare,
@@ -420,6 +421,11 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     Icon: Megaphone,
     labelPlural: "Outreach Lists",
     hrefFor: (id) => `/crm/outreach-lists/${id}`,
+  },
+  crm_sending_identity: {
+    Icon: MailCheck,
+    labelPlural: "Sending Mailboxes",
+    hrefFor: (id) => `/crm/sending-identities/${id}`,
   },
 
   // ─── Web (canonical Marketing access-tree doors) ─────────────────────────

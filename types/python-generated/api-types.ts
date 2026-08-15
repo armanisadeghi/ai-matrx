@@ -5070,6 +5070,55 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/seo/sites/{site_id}/crm/referring-domains": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Fold Referring Domains Endpoint
+         * @description Resolve this site's backlink referring domains into `crm.party` orgs.
+         *
+         *     The outreach bridge: a referring domain stops being a string in `seo.*` and
+         *     becomes an organization someone can be contacted at, through the ONE party
+         *     resolver (domain is already one of its natural keys). Idempotent — a domain
+         *     already in the CRM is enriched, never duplicated — and every folded row
+         *     carries a provenance edge back to the profile that produced it.
+         */
+        post: operations["fold_referring_domains_endpoint_seo_sites__site_id__crm_referring_domains_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/crm/reputation-outlets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Fold Reputation Outlets Endpoint
+         * @description Resolve the outlets behind this site's actionable reputation cases.
+         *
+         *     Only cases whose verdict means "write to them" are folded; watch-list
+         *     verdicts are reported as skipped with the reason, never silently dropped.
+         */
+        post: operations["fold_reputation_outlets_endpoint_seo_sites__site_id__crm_reputation_outlets_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/seo/endpoint-families/apply": {
         parameters: {
             query?: never;
@@ -7221,6 +7270,242 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sending-identities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Sending Identities */
+        get: operations["list_sending_identities_sending_identities_get"];
+        put?: never;
+        /** Create Sending Identity */
+        post: operations["create_sending_identity_sending_identities_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sending-identities/connectable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Connectable
+         * @description Mailboxes this user could turn into a sending identity — including the
+         *     ones they cannot, with the reason and the fix.
+         */
+        get: operations["list_connectable_sending_identities_connectable_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sending-identities/policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Sending Policy */
+        get: operations["get_sending_policy_sending_identities_policy_get"];
+        put?: never;
+        /**
+         * Set Sending Policy
+         * @description The per-org kill switch. Takes effect at the gate immediately.
+         */
+        post: operations["set_sending_policy_sending_identities_policy_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sending-identities/{identity_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Sending Identity */
+        get: operations["get_sending_identity_sending_identities__identity_id__get"];
+        put?: never;
+        post?: never;
+        /** Disable Sending Identity */
+        delete: operations["disable_sending_identity_sending_identities__identity_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Sending Identity */
+        patch: operations["update_sending_identity_sending_identities__identity_id__patch"];
+        trace?: never;
+    };
+    "/sending-identities/{identity_id}/check-domain": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check Domain
+         * @description Resolve the DNS TXT challenge. The only path to a verified domain.
+         */
+        post: operations["check_domain_sending_identities__identity_id__check_domain_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sending-identities/{identity_id}/check-authentication": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check Authentication
+         * @description Measure SPF, DKIM and DMARC against live DNS.
+         */
+        post: operations["check_authentication_sending_identities__identity_id__check_authentication_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sending-identities/{identity_id}/start-warmup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start Identity Warmup */
+        post: operations["start_identity_warmup_sending_identities__identity_id__start_warmup_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sending-identities/{identity_id}/pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Pause Sending Identity */
+        post: operations["pause_sending_identity_sending_identities__identity_id__pause_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sending-identities/{identity_id}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resume Sending Identity
+         * @description A person lifting a pause — including one the breaker applied. The system
+         *     never resumes an identity, by design.
+         */
+        post: operations["resume_sending_identity_sending_identities__identity_id__resume_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sending-identities/{identity_id}/readiness": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Readiness
+         * @description "May a campaign use this mailbox right now?" — never throws, always
+         *     answers, and names the fix when the answer is no.
+         */
+        get: operations["get_readiness_sending_identities__identity_id__readiness_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sending-identities/{identity_id}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Sending Events
+         * @description The audit trail — who sent what to whom, plus every bounce and complaint.
+         */
+        get: operations["list_sending_events_sending_identities__identity_id__events_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sending-identities/{identity_id}/refresh-health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refresh Identity Health
+         * @description Recompute the rolling window now. Can only ever PAUSE the identity (the
+         *     breaker runs on the fresh numbers); it can never un-pause one.
+         */
+        post: operations["refresh_identity_health_sending_identities__identity_id__refresh_health_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/agent-factory/build": {
         parameters: {
             query?: never;
@@ -8317,6 +8602,57 @@ export interface paths {
          *     quotas untouched — route through here.
          */
         post: operations["adopt_topic_intent_research_topics__topic_id__intent_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/research/topics/{topic_id}/experts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Extract Topic Experts
+         * @description Rank the people this topic's analyzed pages name. **Writes nothing.**
+         *
+         *     Deterministic: the page-analysis agent already produced the structure
+         *     (quote speakers, expert-opinion findings, author credentials, entity
+         *     mentions), so this reads that structure and scores confidence from it —
+         *     there is no second model call to pay for.
+         */
+        get: operations["extract_topic_experts_research_topics__topic_id__experts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/research/topics/{topic_id}/experts/promote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Promote Topic Experts
+         * @description Write accepted expert candidates into `crm.party` — the governed path.
+         *
+         *     Every write goes through the party resolver (find-or-create, source-stamped,
+         *     merge-lineage aware) and lands `expert_status='registered'` plus the
+         *     `expert_for` topic edge and one `party_observation` edge per evidencing
+         *     page. A key the current extraction does not produce is refused, so a client
+         *     can never promote a person the evidence does not support.
+         */
+        post: operations["promote_topic_experts_research_topics__topic_id__experts_promote_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -23176,6 +23512,37 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** CheckRecord */
+        CheckRecord: {
+            /** Id */
+            id: string;
+            /** Check Kind */
+            check_kind: string;
+            /** Passed */
+            passed: boolean;
+            /** Message */
+            message?: string | null;
+            /**
+             * Checked At
+             * Format: date-time
+             */
+            checked_at: string;
+            /** Observed */
+            observed?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+        };
+        /**
+         * CheckReport
+         * @description The result of running the checks, as the surface renders it.
+         */
+        CheckReport: {
+            identity: components["schemas"]["SendingIdentityDetail"];
+            /** Checks */
+            checks: components["schemas"]["CheckRecord"][];
+            /** Changed Status To */
+            changed_status_to?: ("draft" | "verifying" | "warming" | "ready" | "paused" | "disabled") | null;
+        };
         /**
          * CheckpointPreview
          * @description Snapshot used by the studio's time-travel preview mode.
@@ -23972,6 +24339,16 @@ export interface components {
             plan_excluded_at?: string | null;
             /** Web Page Id */
             web_page_id?: string | null;
+            /**
+             * Research Topic Ids
+             * @default []
+             */
+            research_topic_ids?: string[];
+            /**
+             * Research Tag Ids
+             * @default []
+             */
+            research_tag_ids?: string[];
         };
         /** CmsPublishBody */
         CmsPublishBody: {
@@ -24430,6 +24807,34 @@ export interface components {
              * @description Optional associated task selected by the caller.
              */
             task_id?: string | null;
+        };
+        /** CodingSessionIdentity */
+        CodingSessionIdentity: {
+            /** Provider Session Id */
+            provider_session_id: string;
+            /** Provider Project Key */
+            provider_project_key?: string | null;
+            /** Conversation Id */
+            conversation_id: string;
+            /** Fidelity */
+            fidelity: string;
+            /**
+             * Last Seen At
+             * Format: date-time
+             */
+            last_seen_at: string;
+        };
+        /** CodingSessionIdentityList */
+        CodingSessionIdentityList: {
+            /**
+             * Schema Version
+             * @default 1
+             */
+            schema_version?: number;
+            /** Provider */
+            provider: string;
+            /** Sessions */
+            sessions: components["schemas"]["CodingSessionIdentity"][];
         };
         /** CollectionReceipt */
         CollectionReceipt: {
@@ -25014,6 +25419,32 @@ export interface components {
          * @enum {string}
          */
         ConformanceState: "full" | "dynamic" | "partial" | "non_conformant";
+        /**
+         * ConnectableMailbox
+         * @description A mailbox the signed-in user could turn into a sending identity.
+         */
+        ConnectableMailbox: {
+            /** Connection Id */
+            connection_id: string;
+            /**
+             * Provider
+             * @enum {string}
+             */
+            provider: "google_workspace" | "microsoft_365" | "smtp";
+            /** Account Email */
+            account_email: string;
+            /** Account Name */
+            account_name?: string | null;
+            /** Can Send */
+            can_send: boolean;
+            /** Blocked Reason */
+            blocked_reason?: string | null;
+            /**
+             * Already Used
+             * @default false
+             */
+            already_used?: boolean;
+        };
         /**
          * ConnectionSummary
          * @description Non-secret connection state — what the FE reads after any operation.
@@ -25807,6 +26238,40 @@ export interface components {
             intent?: string;
             /** Parent Plan Id */
             parent_plan_id?: string | null;
+        };
+        /** CreateSendingIdentityRequest */
+        CreateSendingIdentityRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Provider
+             * @default google_workspace
+             * @enum {string}
+             */
+            provider?: "google_workspace" | "microsoft_365" | "smtp";
+            /** Connection Id */
+            connection_id?: string | null;
+            /** From Address */
+            from_address: string;
+            /** From Name */
+            from_name?: string | null;
+            /** Reply To */
+            reply_to?: string | null;
+            /** Display Name */
+            display_name?: string | null;
         };
         /**
          * CreateShareLinkRequest
@@ -26768,7 +27233,7 @@ export interface components {
              */
             summary?: string;
             /** Ops */
-            ops: (components["schemas"]["UpdateNodeDataOp"] | components["schemas"]["AddNodeOp-Input"] | components["schemas"]["RemoveNodeOp"] | components["schemas"]["AddEdgeOp"] | components["schemas"]["RemoveEdgeOp"] | components["schemas"]["SetVariableOp"] | components["schemas"]["RemoveVariableOp"])[];
+            ops: (components["schemas"]["UpdateNodeDataOp"] | components["schemas"]["UpdateNodeTypeOp"] | components["schemas"]["AddNodeOp-Input"] | components["schemas"]["RemoveNodeOp"] | components["schemas"]["AddEdgeOp"] | components["schemas"]["RemoveEdgeOp"] | components["schemas"]["SetVariableOp"] | components["schemas"]["RemoveVariableOp"])[];
         };
         /**
          * DefinitionPatch
@@ -26788,7 +27253,7 @@ export interface components {
              */
             summary?: string;
             /** Ops */
-            ops: (components["schemas"]["UpdateNodeDataOp"] | components["schemas"]["AddNodeOp-Output"] | components["schemas"]["RemoveNodeOp"] | components["schemas"]["AddEdgeOp"] | components["schemas"]["RemoveEdgeOp"] | components["schemas"]["SetVariableOp"] | components["schemas"]["RemoveVariableOp"])[];
+            ops: (components["schemas"]["UpdateNodeDataOp"] | components["schemas"]["UpdateNodeTypeOp"] | components["schemas"]["AddNodeOp-Output"] | components["schemas"]["RemoveNodeOp"] | components["schemas"]["AddEdgeOp"] | components["schemas"]["RemoveEdgeOp"] | components["schemas"]["SetVariableOp"] | components["schemas"]["RemoveVariableOp"])[];
         };
         /**
          * DefinitionRecord
@@ -27576,6 +28041,22 @@ export interface components {
             count: number;
         };
         /**
+         * DnsRecordSpec
+         * @description Exactly what to paste into a DNS provider. Never prose.
+         */
+        DnsRecordSpec: {
+            /** Type */
+            type: string;
+            /** Host */
+            host: string;
+            /** Name */
+            name: string;
+            /** Value */
+            value: string;
+            /** Ttl */
+            ttl: string;
+        };
+        /**
          * DocBlock
          * @description One block of a generated Word document.
          */
@@ -27773,6 +28254,44 @@ export interface components {
              * @description Ordered content blocks (headings, paragraphs, lists, tables, quotes, page breaks) rendered top to bottom.
              */
             blocks?: components["schemas"]["DocBlock"][];
+        };
+        /** DomainFoldReport */
+        DomainFoldReport: {
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "backlink" | "reputation";
+            /** Site Id */
+            site_id: string;
+            /** Organization Id */
+            organization_id: string;
+            /**
+             * Scanned
+             * @default 0
+             */
+            scanned?: number;
+            /**
+             * Already Linked
+             * @default 0
+             */
+            already_linked?: number;
+            /**
+             * Created
+             * @default 0
+             */
+            created?: number;
+            /**
+             * Matched
+             * @default 0
+             */
+            matched?: number;
+            /** Folded */
+            folded?: components["schemas"]["FoldedDomain"][];
+            /** Skipped */
+            skipped?: components["schemas"]["SkippedRow"][];
+            /** Errors */
+            errors?: string[];
         };
         /** DomainUpsertRequest */
         DomainUpsertRequest: {
@@ -28776,6 +29295,91 @@ export interface components {
             query_vector_preview?: number[];
             /** Elapsed Ms */
             elapsed_ms: number;
+        };
+        /**
+         * ExpertCandidate
+         * @description A person the research names, with the confidence the evidence supports.
+         */
+        ExpertCandidate: {
+            /** Key */
+            key: string;
+            /** Display Name */
+            display_name: string;
+            /** Confidence */
+            confidence: number;
+            /**
+             * Tier
+             * @enum {string}
+             */
+            tier: "strong" | "probable" | "weak";
+            /** Credentials */
+            credentials?: string[];
+            /** Headline */
+            headline?: string | null;
+            /** Affiliation Hints */
+            affiliation_hints?: string[];
+            /** Source Ids */
+            source_ids?: string[];
+            /** Evidence */
+            evidence?: components["schemas"]["ExpertEvidence"][];
+            /** Existing Party Id */
+            existing_party_id?: string | null;
+            /** Existing Expert Status */
+            existing_expert_status?: string | null;
+            /** Why */
+            why?: string[];
+        };
+        /**
+         * ExpertEvidence
+         * @description One reason a candidate is on the list — always traceable to a page.
+         */
+        ExpertEvidence: {
+            /** Source Id */
+            source_id: string;
+            /** Url */
+            url: string;
+            /** Title */
+            title?: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "quote" | "expert_opinion" | "authored" | "mention";
+            /**
+             * Detail
+             * @default
+             */
+            detail?: string;
+        };
+        /** ExpertExtraction */
+        ExpertExtraction: {
+            /** Topic Id */
+            topic_id: string;
+            /** Organization Id */
+            organization_id: string;
+            /** Sources Analyzed */
+            sources_analyzed: number;
+            /** Sources With Signals */
+            sources_with_signals: number;
+            /** Candidates */
+            candidates: components["schemas"]["ExpertCandidate"][];
+            /** Rejected */
+            rejected?: {
+                [key: string]: string;
+            }[];
+        };
+        /** ExpertPromotionResult */
+        ExpertPromotionResult: {
+            /** Topic Id */
+            topic_id: string;
+            /** Organization Id */
+            organization_id: string;
+            /** Promoted */
+            promoted?: components["schemas"]["PromotedExpert"][];
+            /** Skipped */
+            skipped?: {
+                [key: string]: string;
+            }[];
         };
         /** ExtensionContentResponse */
         ExtensionContentResponse: {
@@ -30343,6 +30947,62 @@ export interface components {
              */
             y: number;
         };
+        /**
+         * FoldDomainsRequest
+         * @description How much of this site's opportunity data to bridge into the CRM.
+         *
+         *     The org comes from the SITE (canonical editor authorization), never from the
+         *     body — an injected ``organization_id`` is accepted and ignored.
+         */
+        FoldDomainsRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Limit
+             * @default 250
+             */
+            limit?: number;
+            /**
+             * Include Toxic
+             * @default false
+             */
+            include_toxic?: boolean;
+            /**
+             * Refold
+             * @default false
+             */
+            refold?: boolean;
+            /** Verdicts */
+            verdicts?: string[];
+        };
+        /** FoldedDomain */
+        FoldedDomain: {
+            /** Domain */
+            domain: string;
+            /** Party Id */
+            party_id: string;
+            /** Display Name */
+            display_name: string;
+            /** Created */
+            created: boolean;
+            /** Matched By */
+            matched_by: string;
+            /** Provenance Edge */
+            provenance_edge: boolean;
+        };
         /** FolderRecord */
         FolderRecord: {
             /** Id */
@@ -31182,6 +31842,85 @@ export interface components {
             name: string;
             /** Folders */
             folders: string[];
+        };
+        /**
+         * IdentityHealth
+         * @description The rolling picture. Rates are fractions (0.03 == 3%), never percentages —
+         *     one unit, decided once, so nothing downstream has to guess.
+         */
+        IdentityHealth: {
+            /**
+             * Window Days
+             * @default 7
+             */
+            window_days?: number;
+            /**
+             * Sent
+             * @default 0
+             */
+            sent?: number;
+            /**
+             * Delivered
+             * @default 0
+             */
+            delivered?: number;
+            /**
+             * Hard Bounced
+             * @default 0
+             */
+            hard_bounced?: number;
+            /**
+             * Soft Bounced
+             * @default 0
+             */
+            soft_bounced?: number;
+            /**
+             * Complained
+             * @default 0
+             */
+            complained?: number;
+            /**
+             * Replied
+             * @default 0
+             */
+            replied?: number;
+            /**
+             * Unsubscribed
+             * @default 0
+             */
+            unsubscribed?: number;
+            /**
+             * Failed
+             * @default 0
+             */
+            failed?: number;
+            /**
+             * Failure Streak
+             * @default 0
+             */
+            failure_streak?: number;
+            /**
+             * Hard Bounce Rate
+             * @default 0
+             */
+            hard_bounce_rate?: number;
+            /**
+             * Complaint Rate
+             * @default 0
+             */
+            complaint_rate?: number;
+            /**
+             * Reply Rate
+             * @default 0
+             */
+            reply_rate?: number;
+            /**
+             * Computed At
+             * Format: date-time
+             */
+            computed_at?: string;
+            /** Breaches */
+            breaches?: string[];
         };
         /** ImageBgRemoveRequest */
         ImageBgRemoveRequest: {
@@ -33717,7 +34456,7 @@ export interface components {
          * @description The loop's own narrative vocabulary — NOT a mirror of workflow events.
          * @enum {string}
          */
-        LoopEventType: "loop_started" | "stage_entered" | "stage_blocked" | "stage_unblocked" | "stage_escalated" | "stage_completed" | "stage_failed" | "stage_skipped" | "cycle_advanced" | "loop_paused" | "loop_resumed" | "loop_completed" | "loop_cancelled" | "wf_run_attached" | "wf_run_detached" | "supervisor_decision";
+        LoopEventType: "loop_started" | "stage_entered" | "stage_blocked" | "stage_unblocked" | "stage_escalated" | "stage_completed" | "stage_failed" | "stage_skipped" | "cycle_advanced" | "loop_paused" | "loop_resumed" | "loop_completed" | "loop_cancelled" | "wf_run_attached" | "wf_run_detached" | "supervisor_decision" | "supervisor_quarantined" | "supervisor_recovered";
         /** LoopEventView */
         LoopEventView: {
             /** Id */
@@ -33853,7 +34592,7 @@ export interface components {
             description?: string;
             /** Input Schema */
             input_schema?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
             /**
              * Mode
@@ -36457,6 +37196,26 @@ export interface components {
                 [key: string]: unknown;
             } | null;
         };
+        /** PauseRequest */
+        PauseRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Reason */
+            reason: string;
+        };
         /** PauseRunResponse */
         PauseRunResponse: {
             /** Run Id */
@@ -38266,10 +39025,63 @@ export interface components {
          * @enum {string}
          */
         ProjectionStatus: "pending" | "projected" | "skipped" | "error";
+        /**
+         * PromoteExpertsRequest
+         * @description The candidate keys a human accepted, from the CURRENT extraction.
+         */
+        PromoteExpertsRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Keys */
+            keys?: string[];
+            /**
+             * Accept Weak
+             * @default false
+             */
+            accept_weak?: boolean;
+        };
         /** PromotePlanResponse */
         PromotePlanResponse: {
             /** Definition Id */
             definition_id: string;
+        };
+        /** PromotedExpert */
+        PromotedExpert: {
+            /** Key */
+            key: string;
+            /** Display Name */
+            display_name: string;
+            /** Party Id */
+            party_id: string;
+            /** Created */
+            created: boolean;
+            /** Matched By */
+            matched_by: string;
+            /** Expert Status */
+            expert_status?: string | null;
+            /**
+             * Topic Edge
+             * @default false
+             */
+            topic_edge?: boolean;
+            /**
+             * Source Edges
+             * @default 0
+             */
+            source_edges?: number;
         };
         /** PromptStartRequest */
         PromptStartRequest: {
@@ -38945,6 +39757,28 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /**
+         * ReadinessResponse
+         * @description Answer to "may a campaign use this mailbox right now?" — the campaign-side
+         *     contract Phase 5's runner consumes.
+         */
+        ReadinessResponse: {
+            /** Identity Id */
+            identity_id: string;
+            /** Ready */
+            ready: boolean;
+            refusal?: components["schemas"]["SendingRefusal"] | null;
+            /**
+             * Remaining Today
+             * @default 0
+             */
+            remaining_today?: number;
+            /**
+             * Remaining This Hour
+             * @default 0
+             */
+            remaining_this_hour?: number;
         };
         /**
          * RealtimeTool
@@ -40616,91 +41450,6 @@ export interface components {
             /** Text */
             text: string;
         };
-        /** ResumeRequest */
-        ResumeRequest: {
-            /**
-             * Organization Id
-             * @description Organization context for the request; omitted to use the authenticated context.
-             */
-            organization_id?: string | null;
-            /**
-             * Project Id
-             * @description Optional associated project selected by the caller.
-             */
-            project_id?: string | null;
-            /**
-             * Task Id
-             * @description Optional associated task selected by the caller.
-             */
-            task_id?: string | null;
-            /**
-             * Scope Ids
-             * @description Active context-scope ids selected by the caller and membership-validated server-side.
-             */
-            scope_ids?: string[] | null;
-            /** @description Durable resource identity from which authoritative organization and task context is reloaded. */
-            context_anchor?: components["schemas"]["ContextAnchor"] | null;
-            /**
-             * Source App
-             * @description Stable application slug that initiated the request.
-             */
-            source_app?: string | null;
-            /**
-             * Source Feature
-             * @description Stable feature slug within the source application.
-             */
-            source_feature?: string | null;
-            /**
-             * Initiation
-             * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
-             */
-            initiation?: ("user" | "auto") | null;
-            /**
-             * Store
-             * @description Persist request outputs when true; run ephemerally when false.
-             * @default true
-             */
-            store?: boolean;
-            /**
-             * Target Instance Id
-             * @description Specific connected desktop instance allowed to claim delegated local tools.
-             */
-            target_instance_id?: string | null;
-            /** User Request Id */
-            user_request_id?: string | null;
-            config_overrides?: components["schemas"]["LLMParams"] | null;
-            /**
-             * Debug
-             * @default false
-             */
-            debug?: boolean;
-            /**
-             * Tools
-             * @default []
-             */
-            tools?: (components["schemas"]["RegisteredToolSpec"] | components["schemas"]["InlineToolSpec"] | components["schemas"]["AgentToolSpec"])[];
-            /** Tools Replace */
-            tools_replace?: (components["schemas"]["RegisteredToolSpec"] | components["schemas"]["InlineToolSpec"] | components["schemas"]["AgentToolSpec"])[] | null;
-            client?: components["schemas"]["ClientContext"] | null;
-            user?: components["schemas"]["UserOverrides"] | null;
-            /**
-             * Context
-             * @default {}
-             */
-            context?: {
-                [key: string]: unknown;
-            };
-            /**
-             * Writable Variables
-             * @default []
-             */
-            writable_variables?: string[];
-            /**
-             * Allow Context Create
-             * @default false
-             */
-            allow_context_create?: boolean;
-        };
         /** ResumeRunRequest */
         ResumeRunRequest: {
             /** Checkpoint Id */
@@ -42269,6 +43018,242 @@ export interface components {
             web_view_link: string | null;
         };
         /**
+         * SendingEventRecord
+         * @description One line of the audit trail: who sent what to whom, and what happened.
+         */
+        SendingEventRecord: {
+            /** Id */
+            id: string;
+            /** Event Kind */
+            event_kind: string;
+            /** To Address Key */
+            to_address_key: string;
+            /** Subject */
+            subject?: string | null;
+            /** Party Id */
+            party_id?: string | null;
+            /** Outreach List Id */
+            outreach_list_id?: string | null;
+            /** Provider Message Id */
+            provider_message_id?: string | null;
+            /** Bounce Type */
+            bounce_type?: string | null;
+            /** Error Message */
+            error_message?: string | null;
+            /** Actor Kind */
+            actor_kind: string;
+            /** Actor User Id */
+            actor_user_id?: string | null;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+        };
+        /** SendingIdentityDetail */
+        SendingIdentityDetail: {
+            /** Id */
+            id: string;
+            /** Display Name */
+            display_name: string;
+            /**
+             * Provider
+             * @enum {string}
+             */
+            provider: "google_workspace" | "microsoft_365" | "smtp";
+            /** From Address */
+            from_address: string;
+            /** From Name */
+            from_name?: string | null;
+            /** Sending Domain */
+            sending_domain: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "draft" | "verifying" | "warming" | "ready" | "paused" | "disabled";
+            /** Domain Verified */
+            domain_verified: boolean;
+            /** Spf Pass */
+            spf_pass?: boolean | null;
+            /** Dkim Pass */
+            dkim_pass?: boolean | null;
+            /** Dmarc Pass */
+            dmarc_pass?: boolean | null;
+            warmup?: components["schemas"]["WarmupProgress"] | null;
+            health?: components["schemas"]["IdentityHealth"] | null;
+            /** Paused By Kind */
+            paused_by_kind?: ("system" | "human") | null;
+            /** Pause Reason */
+            pause_reason?: string | null;
+            /** Last Send At */
+            last_send_at?: string | null;
+            /**
+             * Can Run Campaign
+             * @default false
+             */
+            can_run_campaign?: boolean;
+            /** Issues */
+            issues?: components["schemas"]["SendingRefusal"][];
+            /** Organization Id */
+            organization_id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Connection Id */
+            connection_id?: string | null;
+            /** Provider Account */
+            provider_account?: string | null;
+            /** Reply To */
+            reply_to?: string | null;
+            dns_record: components["schemas"]["DnsRecordSpec"];
+            /** Daily Cap */
+            daily_cap: number;
+            /** Hourly Cap */
+            hourly_cap: number;
+            /** Min Interval Seconds */
+            min_interval_seconds: number;
+            /** Max Interval Seconds */
+            max_interval_seconds: number;
+            /** Quiet Hours Start */
+            quiet_hours_start: number;
+            /** Quiet Hours End */
+            quiet_hours_end: number;
+            /** Send Weekends */
+            send_weekends: boolean;
+            /** Default Recipient Timezone */
+            default_recipient_timezone: string;
+            /** Effective Daily Cap */
+            effective_daily_cap: number;
+            /** Sends Today */
+            sends_today: number;
+            /** Remaining Today */
+            remaining_today: number;
+            /** Domain Checked At */
+            domain_checked_at?: string | null;
+            /** Auth Checked At */
+            auth_checked_at?: string | null;
+            /** Recent Checks */
+            recent_checks?: components["schemas"]["CheckRecord"][];
+        };
+        /**
+         * SendingIdentityView
+         * @description The list row — enough to see at a glance which mailbox needs attention.
+         */
+        SendingIdentityView: {
+            /** Id */
+            id: string;
+            /** Display Name */
+            display_name: string;
+            /**
+             * Provider
+             * @enum {string}
+             */
+            provider: "google_workspace" | "microsoft_365" | "smtp";
+            /** From Address */
+            from_address: string;
+            /** From Name */
+            from_name?: string | null;
+            /** Sending Domain */
+            sending_domain: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "draft" | "verifying" | "warming" | "ready" | "paused" | "disabled";
+            /** Domain Verified */
+            domain_verified: boolean;
+            /** Spf Pass */
+            spf_pass?: boolean | null;
+            /** Dkim Pass */
+            dkim_pass?: boolean | null;
+            /** Dmarc Pass */
+            dmarc_pass?: boolean | null;
+            warmup?: components["schemas"]["WarmupProgress"] | null;
+            health?: components["schemas"]["IdentityHealth"] | null;
+            /** Paused By Kind */
+            paused_by_kind?: ("system" | "human") | null;
+            /** Pause Reason */
+            pause_reason?: string | null;
+            /** Last Send At */
+            last_send_at?: string | null;
+            /**
+             * Can Run Campaign
+             * @default false
+             */
+            can_run_campaign?: boolean;
+            /** Issues */
+            issues?: components["schemas"]["SendingRefusal"][];
+            /** Organization Id */
+            organization_id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** SendingPolicyView */
+        SendingPolicyView: {
+            /** Organization Id */
+            organization_id: string;
+            /** Outreach Enabled */
+            outreach_enabled: boolean;
+            /** Disabled At */
+            disabled_at?: string | null;
+            /** Disabled Reason */
+            disabled_reason?: string | null;
+            /** Disabled By Kind */
+            disabled_by_kind?: ("system" | "human") | null;
+            /** Notes */
+            notes?: string | null;
+            /**
+             * Identity Count
+             * @default 0
+             */
+            identity_count?: number;
+            /**
+             * Ready Identity Count
+             * @default 0
+             */
+            ready_identity_count?: number;
+        };
+        /**
+         * SendingRefusal
+         * @description One machine-readable reason a send was refused, with its fix.
+         */
+        SendingRefusal: {
+            /** Code */
+            code: string;
+            /** Message */
+            message: string;
+            /**
+             * Fix Action
+             * @enum {string}
+             */
+            fix_action: "connect_mailbox" | "publish_dns_record" | "check_domain" | "check_authentication" | "start_warmup" | "wait_for_warmup" | "wait_for_pacing" | "wait_for_quiet_hours" | "review_and_resume" | "enable_org_outreach" | "verify_recipient_address" | "choose_another_identity" | "reconnect_mailbox" | "none";
+            /** Fix Detail */
+            fix_detail?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /**
+             * Transient
+             * @default false
+             */
+            transient?: boolean;
+        };
+        /**
          * SeoCapability
          * @enum {string}
          */
@@ -42446,6 +43431,28 @@ export interface components {
             canonical_clean_id?: string | null;
             /** Reason */
             reason: string;
+        };
+        /** SetPolicyRequest */
+        SetPolicyRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Outreach Enabled */
+            outreach_enabled: boolean;
+            /** Reason */
+            reason?: string | null;
         };
         /** SetSampleRequest */
         SetSampleRequest: {
@@ -43243,6 +44250,18 @@ export interface components {
             output?: {
                 [key: string]: unknown;
             } | null;
+        };
+        /**
+         * SkippedRow
+         * @description An opportunity row we deliberately did NOT fold, in the words a user reads.
+         */
+        SkippedRow: {
+            /** Domain */
+            domain: string;
+            /** Row Id */
+            row_id: string;
+            /** Reason */
+            reason: string;
         };
         /**
          * SlideSpec
@@ -46913,6 +47932,26 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /**
+         * UpdateNodeTypeOp
+         * @description Replace an existing node's top-level React Flow renderer type.
+         *
+         *     The executable spec remains ``data.spec_type``. Callers changing a node's
+         *     concrete identity generally pair this operation with
+         *     :class:`UpdateNodeDataOp` in the same :class:`DefinitionPatch` so the
+         *     renderer category and executable spec persist atomically.
+         */
+        UpdateNodeTypeOp: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            op: "update_node_type";
+            /** Node Id */
+            node_id: string;
+            /** Type */
+            type: string;
+        };
         /** UpdatePlanRequest */
         UpdatePlanRequest: {
             /**
@@ -46953,6 +47992,55 @@ export interface components {
             data: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
+        };
+        /**
+         * UpdateSendingIdentityRequest
+         * @description Pacing and presentation only.
+         *
+         *     Deliberately CANNOT set `status`, warmup dates, or any verification flag: a
+         *     client that could write `status='ready'` would be an override, and the whole
+         *     design rests on there being none.
+         */
+        UpdateSendingIdentityRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Display Name */
+            display_name?: string | null;
+            /** From Name */
+            from_name?: string | null;
+            /** Reply To */
+            reply_to?: string | null;
+            /** Daily Cap */
+            daily_cap?: number | null;
+            /** Hourly Cap */
+            hourly_cap?: number | null;
+            /** Min Interval Seconds */
+            min_interval_seconds?: number | null;
+            /** Max Interval Seconds */
+            max_interval_seconds?: number | null;
+            /** Quiet Hours Start */
+            quiet_hours_start?: number | null;
+            /** Quiet Hours End */
+            quiet_hours_end?: number | null;
+            /** Send Weekends */
+            send_weekends?: boolean | null;
+            /** Default Recipient Timezone */
+            default_recipient_timezone?: string | null;
+            /** Dkim Selector */
+            dkim_selector?: string | null;
         };
         /** UpdateTriggerActiveRequest */
         UpdateTriggerActiveRequest: {
@@ -48927,6 +50015,21 @@ export interface components {
                 [key: string]: string;
             };
         };
+        /** WarmupProgress */
+        WarmupProgress: {
+            /** Day */
+            day: number;
+            /** Total Days */
+            total_days: number;
+            /** Daily Allowance */
+            daily_allowance: number;
+            /** Percent Complete */
+            percent_complete: number;
+            /** Started At */
+            started_at?: string | null;
+            /** Completed At */
+            completed_at?: string | null;
+        };
         /** WatchdogStatusResponse */
         WatchdogStatusResponse: {
             /** Tables */
@@ -49899,6 +51002,91 @@ export interface components {
             /** Compaction Group Id */
             compaction_group_id: string;
         };
+        /** ResumeRequest */
+        aidream__services__conversation_context__continue_conversation__ResumeRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Scope Ids
+             * @description Active context-scope ids selected by the caller and membership-validated server-side.
+             */
+            scope_ids?: string[] | null;
+            /** @description Durable resource identity from which authoritative organization and task context is reloaded. */
+            context_anchor?: components["schemas"]["ContextAnchor"] | null;
+            /**
+             * Source App
+             * @description Stable application slug that initiated the request.
+             */
+            source_app?: string | null;
+            /**
+             * Source Feature
+             * @description Stable feature slug within the source application.
+             */
+            source_feature?: string | null;
+            /**
+             * Initiation
+             * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
+             */
+            initiation?: ("user" | "auto") | null;
+            /**
+             * Store
+             * @description Persist request outputs when true; run ephemerally when false.
+             * @default true
+             */
+            store?: boolean;
+            /**
+             * Target Instance Id
+             * @description Specific connected desktop instance allowed to claim delegated local tools.
+             */
+            target_instance_id?: string | null;
+            /** User Request Id */
+            user_request_id?: string | null;
+            config_overrides?: components["schemas"]["LLMParams"] | null;
+            /**
+             * Debug
+             * @default false
+             */
+            debug?: boolean;
+            /**
+             * Tools
+             * @default []
+             */
+            tools?: (components["schemas"]["RegisteredToolSpec"] | components["schemas"]["InlineToolSpec"] | components["schemas"]["AgentToolSpec"])[];
+            /** Tools Replace */
+            tools_replace?: (components["schemas"]["RegisteredToolSpec"] | components["schemas"]["InlineToolSpec"] | components["schemas"]["AgentToolSpec"])[] | null;
+            client?: components["schemas"]["ClientContext"] | null;
+            user?: components["schemas"]["UserOverrides"] | null;
+            /**
+             * Context
+             * @default {}
+             */
+            context?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Writable Variables
+             * @default []
+             */
+            writable_variables?: string[];
+            /**
+             * Allow Context Create
+             * @default false
+             */
+            allow_context_create?: boolean;
+        };
         /** MentionRow */
         aidream__services__knowledge_graph__graph__MentionRow: {
             /**
@@ -49969,6 +51157,28 @@ export interface components {
              * @default false
              */
             run_enrich?: boolean;
+        };
+        /**
+         * ResumeRequest
+         * @description No fields. Resuming is a human act with no parameters — in particular
+         *     there is no "resume and skip the checks".
+         */
+        aidream__services__sending_identity__models__ResumeRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
         };
         /** EvidenceCoverage */
         aidream__services__seo__competitor_autopsy__EvidenceCoverage: {
@@ -52045,7 +53255,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ResumeRequest"];
+                "application/json": components["schemas"]["aidream__services__conversation_context__continue_conversation__ResumeRequest"];
             };
         };
         responses: {
@@ -52080,7 +53290,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ResumeRequest"];
+                "application/json": components["schemas"]["aidream__services__conversation_context__continue_conversation__ResumeRequest"];
             };
         };
         responses: {
@@ -54780,9 +55990,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["CodingSessionIdentityList"];
                 };
             };
             /** @description Validation Error */
@@ -58933,6 +60141,76 @@ export interface operations {
             };
         };
     };
+    fold_referring_domains_endpoint_seo_sites__site_id__crm_referring_domains_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FoldDomainsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DomainFoldReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fold_reputation_outlets_endpoint_seo_sites__site_id__crm_reputation_outlets_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FoldDomainsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DomainFoldReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     apply_family_seo_endpoint_families_apply_post: {
         parameters: {
             query?: never;
@@ -62764,6 +64042,518 @@ export interface operations {
             };
         };
     };
+    list_sending_identities_sending_identities_get: {
+        parameters: {
+            query?: {
+                organization_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SendingIdentityView"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_sending_identity_sending_identities_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSendingIdentityRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SendingIdentityDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_connectable_sending_identities_connectable_get: {
+        parameters: {
+            query?: {
+                organization_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectableMailbox"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_sending_policy_sending_identities_policy_get: {
+        parameters: {
+            query?: {
+                organization_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SendingPolicyView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_sending_policy_sending_identities_policy_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetPolicyRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SendingPolicyView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_sending_identity_sending_identities__identity_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                identity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SendingIdentityDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    disable_sending_identity_sending_identities__identity_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                identity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_sending_identity_sending_identities__identity_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                identity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateSendingIdentityRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SendingIdentityDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    check_domain_sending_identities__identity_id__check_domain_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                identity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    check_authentication_sending_identities__identity_id__check_authentication_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                identity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_identity_warmup_sending_identities__identity_id__start_warmup_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                identity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SendingIdentityDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pause_sending_identity_sending_identities__identity_id__pause_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                identity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PauseRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SendingIdentityDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resume_sending_identity_sending_identities__identity_id__resume_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                identity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["aidream__services__sending_identity__models__ResumeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SendingIdentityDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_readiness_sending_identities__identity_id__readiness_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                identity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadinessResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_sending_events_sending_identities__identity_id__events_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                identity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SendingEventRecord"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    refresh_identity_health_sending_identities__identity_id__refresh_health_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                identity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SendingIdentityDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     build_one_agent_factory_build_post: {
         parameters: {
             query?: never;
@@ -64753,6 +66543,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdoptIntentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    extract_topic_experts_research_topics__topic_id__experts_get: {
+        parameters: {
+            query?: {
+                include_weak?: boolean;
+            };
+            header?: never;
+            path: {
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExpertExtraction"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    promote_topic_experts_research_topics__topic_id__experts_promote_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PromoteExpertsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExpertPromotionResult"];
                 };
             };
             /** @description Validation Error */

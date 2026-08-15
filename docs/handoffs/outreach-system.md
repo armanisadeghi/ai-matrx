@@ -137,14 +137,25 @@ caps, and — most important — **stops the sequence the moment a human replies
 keeps sending after a reply is the fastest way to destroy a sender reputation and a relationship.
 Host it on the existing `system_task_runner`; do not build a second scheduler.
 
-### G5 — Sending identity + throttling. *Architecture DECIDED — build it: §5.*
-`send_reviewed_gmail` is 1:1 and human-reviewed. Campaign sending needs a first-class **sending
-identity**: which mailbox may speak for this org, proven to own its domain, authenticated
-(SPF/DKIM/DMARC), warmed over ~3–4 weeks, rate-capped, health-monitored, and auto-paused when
-bounce/complaint rates trip. **Customers send from their own mailboxes on their own domains; we
-never relay customer outreach through AI Matrx infrastructure** — that is what contains a bad
-actor's blast radius to their own domain instead of everyone's. Full model, including how we
-protect the platform from our own customers: §5.
+### G5 — Sending identity + throttling. ✅ **DONE 2026-08-14 — both repos deployed**
+The whole of §5.2 is built and live. Server: `aidream/aidream/services/sending_identity/`
+(contract + earned traps in its `FEATURE.md`) — Google Workspace over the canonical OAuth
+connection (extending `send_gmail_message`, not forking it; Microsoft 365 and SMTP are declared
+slots that refuse BY NAME), DNS TXT ownership proof as a hard gate, real SPF/DKIM/DMARC
+resolution, a 28-day warm-up ramp the gate counts against, per-day/per-hour caps + randomized
+pacing + quiet hours in the **recipient's** timezone, rolling health over `crm.sending_event`,
+a circuit breaker that auto-pauses the identity **and its campaigns**, a per-org kill switch,
+and the full audit trail. Tables `crm.sending_identity` / `sending_policy` /
+`sending_identity_check` / `sending_event` (migration `crm_05_sending_identity.sql`), hourly
+re-verification sweep (`crm_sending_identity_sweep`, migration `0352`), REST at
+`/api/sending-identities/*`. Frontend: `/crm/sending-identities` (+ `[identityId]`),
+`matrx-frontend/features/crm/sending-identities/FEATURE.md`.
+**The two invariants a future agent must not undo:** no gate takes a `force`/`skip`/`override`
+argument (guarded by `test_gate_has_no_override_argument`), and **the system pauses while only a
+human resumes**.
+**Known and honest:** bounce/complaint rates read 0 in production until G6 lands, because
+nothing reports them yet — the breaker is armed and correct, it simply has no inbound data. Do
+not paper over that with guessed bounces.
 
 ### G6 — Inbound: replies, bounces, complaints. *The hard gap, and the one most likely to be skipped.*
 Today outreach is write-only. Without inbound we cannot stop on reply (G4), cannot suppress on hard
@@ -425,12 +436,18 @@ is Phase 6 / G9 work.
 **Phase 2 — targets worth writing to.** G2 contact discovery from data we already crawl,
 suggestion-gated, through the same resolver the experts work uses.
 
-**Phase 3 — the right to send (G5, §5).** The sending-identity record: connect a mailbox, prove
-domain ownership by DNS, verify SPF/DKIM/DMARC, warm it, cap it, monitor its health, auto-pause it.
-**This comes BEFORE anything can send**, and it is where the platform's protection lives — a
-customer cannot reach a stranger's inbox until they have proven the domain is theirs and the
-mailbox is warm. Ship the warmup state machine here even though nothing consumes it yet; bolting
-warmup on after people are already sending is how you find out your customers burned their domains.
+**Phase 3 — the right to send (G5, §5).** ✅ **DONE 2026-08-14 — deployed both repos.**
+The sending-identity record is live end to end (see G5). Proven live against the real DB and
+real DNS with our own `info@aimatrx.com` mailbox (`aidream/scripts/_verify_sending_identity.py`,
+18/18): a real mailbox connects · an identity cannot claim an address its connection does not
+own · the TXT challenge really fails when unpublished and the unverified domain is refused ·
+SPF/DKIM/DMARC really resolve · a warming identity is refused a campaign · raising `daily_cap`
+does not raise the warm-up ramp · a 5% complaint rate auto-pauses the identity **and its
+campaign** · re-running health never un-pauses · a human can resume · the org kill switch stops
+everything at the gate.
+**The one step a human must do before the first real send:** publish the `_matrx-verify` TXT
+record for the sending domain (the surface shows the exact record) — an agent may not publish
+DNS on a production zone.
 
 **Phase 4 — the message and the first real send.** G3 template primitive + G7 compliance, with
 suppression and unsubscribe enforced *inside* the send primitive. Ship the single-send path
