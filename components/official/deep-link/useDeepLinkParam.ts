@@ -5,12 +5,14 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 export interface DeepLinkParam {
   /** The raw param value, or null when absent. */
   value: string | null;
+  /** Set or remove this param, preserving every other one. */
+  set: (value: string | null) => void;
   /** Remove this param from the URL, preserving every other one. */
   clear: () => void;
 }
 
 /**
- * Read a deep-link param and get a correct way to drop it.
+ * Read a deep-link param and get correct ways to set or drop it.
  *
  * Every "?user=…" / "?category=…" / "?block=…" surface needs the same two
  * things, and hand-rolling the second is where they diverge: the clear must
@@ -28,12 +30,13 @@ export function useDeepLinkParam(key: string): DeepLinkParam {
 
   const value = searchParams.get(key);
 
-  const clear = () => {
+  const set = (value: string | null) => {
     const params = new URLSearchParams(searchParams.toString());
-    params.delete(key);
+    if (value === null) params.delete(key);
+    else params.set(key, value);
     const query = params.toString();
     router.replace(query ? `${pathname}?${query}` : pathname);
   };
 
-  return { value, clear };
+  return { value, set, clear: () => set(null) };
 }

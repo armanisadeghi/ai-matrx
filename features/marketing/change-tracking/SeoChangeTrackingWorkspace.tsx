@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -24,6 +24,7 @@ import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import DataRowWindow from "@/components/official/matrx-data-table/DataRowWindow.dynamic";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { useDeepLinkParam } from "@/components/official/deep-link/useDeepLinkParam";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -137,6 +138,16 @@ const FIELD_KINDS = [
   ["http_status", "HTTP status"],
   ["manual", "Manual verification"],
 ] as const;
+
+const CHANGE_DETAIL_TABS = [
+  "overview",
+  "theories",
+  "implementation",
+  "results",
+  "assessments",
+  "timeline",
+] as const;
+type ChangeDetailTab = (typeof CHANGE_DETAIL_TABS)[number];
 
 const key = {
   changes: (siteId: string) => ["marketing", "seo-changes", siteId] as const,
@@ -1435,6 +1446,12 @@ function ChangeDetail({
   brandId: string;
 }) {
   const queryClient = useQueryClient();
+  const changeTab = useDeepLinkParam("changeTab");
+  const activeTab = CHANGE_DETAIL_TABS.includes(
+    changeTab.value as ChangeDetailTab,
+  )
+    ? (changeTab.value as ChangeDetailTab)
+    : "overview";
   const bundle = useQuery({
     queryKey: key.detail(changeId),
     queryFn: ({ signal }) => getSeoChangeBundle(changeId, signal),
@@ -1460,7 +1477,10 @@ function ChangeDetail({
     );
   return (
     <Tabs
-      defaultValue="overview"
+      value={activeTab}
+      onValueChange={(value) =>
+        changeTab.set(value === "overview" ? null : value)
+      }
       className="flex h-full min-h-0 flex-col overflow-hidden"
     >
       <div className="shrink-0 border-b px-4 py-2">
@@ -1688,13 +1708,26 @@ function UntrackedTable({
 export function SeoChangeTrackingWorkspace() {
   const { site } = useMarketingSite();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const router = useRouter();
   const queryClient = useQueryClient();
   // The tracked/untracked split is this section's second level; the SITE HEADER
   // renders it and owns navigation (`?view=untracked`). This file only reads.
   const view = useMarketingSubView("changes");
-  const [selectedId, setSelectedId] = useState<string | null>(
-    searchParams.get("change"),
-  );
+  const selectedId = searchParams.get("change");
+  const setSelectedId = (id: string | null) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (id === null) {
+      params.delete("change");
+      params.delete("changeTab");
+    } else {
+      params.set("change", id);
+    }
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, {
+      scroll: false,
+    });
+  };
   const [composerOpen, setComposerOpen] = useState(false);
   const [seed, setSeed] = useState<ComposerSeed>({});
   const changes = useQuery({

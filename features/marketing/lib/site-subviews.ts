@@ -109,9 +109,8 @@ export const MARKETING_SITE_SUBVIEWS = [
     // The six tabs BELOW these (Overview, Theories, Implementation, Live
     // results, Assessments, Timeline) belong to ONE selected change set — a
     // third level, and the only one in the site whose parent is a record rather
-    // than a section. They deliberately stay in the page. That record is still
-    // not linkable (`selectedId` seeds from `?change=` then diverges into local
-    // state) — tracked separately, not part of this level.
+    // than a section. They deliberately stay in the page and use `?changeTab=`
+    // because `?view=` belongs to this tracked/untracked level.
     section: "changes",
     views: [
       { id: "tracked", label: "Tracked" },

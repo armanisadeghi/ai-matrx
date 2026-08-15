@@ -13,7 +13,10 @@ must never be collapsed:
 The site route is
 `/marketing/brands/[brandId]/sites/[siteId]/changes`. The generic entity door
 `/marketing/changes/[changeId]` resolves an id to that canonical workspace and opens
-its row window with `?change=`.
+its row window with `?change=`. The URL is the source of truth for the selected
+record; its third-level detail tab uses `?changeTab=` while the section-level
+tracked/untracked navigation keeps `?view=`. The default Overview tab omits its
+redundant parameter.
 
 ## Data contract
 
@@ -68,6 +71,8 @@ schema. There is no Python database proxy. The canonical records are:
 
 ## Change log
 
+- 2026-08-15 — Made selected change sets linkable through `?change=` and all six
+  record tabs addressable through the non-colliding `?changeTab=` parameter.
 - 2026-08-12 — Added canonical row/view/window/field Copy, JSON, export, and
   Copy-for-AI controls to the untracked-change recovery queue through
   `MatrxDataTable.copy`.
