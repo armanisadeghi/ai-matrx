@@ -333,11 +333,11 @@ AI Visibility was reclassified after live use exposed its page-shifting block an
 stacked spinners: `useAiVisibility` now opens one stable `LiveRunWindow` before launch,
 and `AiVisibilityWorkspace` has no inline run block or loading icon.
 
-**Still open here, found while verifying:** `useKeywordResearch`'s unmount
-effect calls `removeRequest(adoptedRequestId)`, so a HOST REMOUNT (not just
-leaving the page) reaps the adopted row out from under anything still bound to
-it. The inline feed hid this behind its saved-artifact fallback; a floating
-window shows it as an empty box. Chip it with the class-D durability work.
+~~Still open here: `useKeywordResearch`'s unmount reap~~ — **RESOLVED 2026-08-13/14** by the
+retention seams (`LIVE_RUN_RETENTION.md`): owner reaps defer while any viewer holds the row,
+`createRequest` is non-destructive, every adopter aborts before reaping, and keyword research
+runs live in the `runSets` slice with an epoch guard so stale streams cannot stomp the active
+run. Guard tests: `request-viewer-retention.test.ts`, `run-sets.test.ts`.
 
 ### 7. Marketing miscellaneous — image runs + agent sets DONE 2026-08-11; 3 server-blocked
 
@@ -371,6 +371,17 @@ window shows it as an empty box. Chip it with the class-D durability work.
   the FE has nothing to bind — the work is server-side in aidream (stream the route, or
   emit phase/info milestones the way content_plan `_progress` does), then adopt with
   `adoptForeignStream`. Do NOT paper over it with invented client-side stages.
+
+### 7b. Run-set migration for multi-lane content-plan hooks — chipped 2026-08-15, M
+
+`features/marketing/content-plan/hooks/useContentPlanAi.ts`, `useSetupPasses.ts`, and
+`useBriefWriter.ts` each fire MANY adopted streams (one per lane/pass/node) and hold every
+requestId in component state. Viewer retention + abort-before-reap already stop the mid-run
+blanking, but a host remount still makes the surface FORGET lanes that are streaming — the
+exact "system gets confused with more than one call" class. Migrate them onto the `runSets`
+slice + `RunSetDisplay` (`features/agents/components/live-run/RunSetDisplay.tsx`);
+`useKeywordResearch` (`runSetKey` + epoch guard + `rejoinPhrase`) is the worked exemplar, and
+`LIVE_RUN_RETENTION.md` § Multi-run surfaces is the contract.
 
 ### 8. Refresh-fragility only (stage narration is present) — D, M each
 
