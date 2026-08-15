@@ -95,7 +95,7 @@ dm_messages
 
 A message can carry a generic **`action_data`** envelope `{ kind, version, payload }` that renders as deep-link chips below the bubble.
 
-- **Registry, not switch:** `actions/messageActionRegistry.tsx` maps `kind` → chip renderer. Unknown kinds render nothing (forward-compatible). Add a kind there; every bubble that carries it gets chips. `setting_access_request` delegates its nested operation to the generic setting-action registry and reuses the same decision component as the durable Access Requests inbox.
+- **Registry, not switch:** `actions/messageActionRegistry.tsx` maps `kind` → chip renderer. Unknown kinds render nothing (forward-compatible). Add a kind there; every bubble that carries it gets chips. `setting_access_request` delegates its nested operation to the generic setting-action registry and reuses the same decision component as the durable Access Requests inbox. Registered operations include organization-module values and CMS-site membership; the latter calls the canonical `membershipsService.add` only after the action component re-resolves the authorized durable request.
 - **Render:** `MessageBubble` mounts `<MessageActionChips>`; chips are cycle-safe (the registry imports opener hooks + the pure agents `severity.ts`, never agents components).
 - **Send:** `service/sendDirectActionMessage.ts` is the reusable "system notify a user" primitive — find/create a direct conversation + send with `actionData`. Pass `actionData` through `getMessagingService().sendMessage(..., { actionData })`. Domain copy for drift lives in `features/agents/.../driftMessageTemplate.ts` (kept in lockstep with the aidream Python template).
 
@@ -569,6 +569,14 @@ sequenceDiagram
 4. Console logs show correct count after fetch
 
 ## Change Log
+
+- **2026-08-15 — a CMS access ask can be completed inside the DM.** The
+  cross-project CMS Access Gate sends `setting_access_request` with the
+  registered `cms_site_access.add_member` action after its trusted server route
+  proves the CMS site's owning organization. An org owner/admin can add the
+  requester through the canonical membership service and complete the durable
+  request without hunting through another surface; the DM payload remains
+  presentation-only and is re-resolved from the authorized inbox before use.
 
 - **2026-08-15 — admin-gated settings became actionable DMs.**
   `setting_access_request` carries the exact setting URL, durable request id,

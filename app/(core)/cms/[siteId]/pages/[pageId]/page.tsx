@@ -4,8 +4,8 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { CmsPageService } from "@/features/cms/services/cmsService";
 import type { ClientPage } from "@/features/cms/types";
-import { Loader2, AlertCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import PageEditor from "../../../../../../features/cms/components/PageEditor";
 import { useSiteContext } from "../../SiteLayoutClient";
 
@@ -16,16 +16,18 @@ export default function EditPageRoute() {
   const [page, setPage] = useState<ClientPage | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [loadError, setLoadError] = useState<unknown>(null);
   const [error, setError] = useState<string | null>(null);
 
   const fetchPage = useCallback(async () => {
     setIsLoading(true);
+    setLoadError(null);
     setError(null);
     try {
       const data = await CmsPageService.getPage(pageId);
       setPage(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load page");
+    } catch (err: unknown) {
+      setLoadError(err);
     } finally {
       setIsLoading(false);
     }
@@ -128,23 +130,16 @@ export default function EditPageRoute() {
     );
   }
 
-  if (error && !page) {
+  if (loadError || !page) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="flex flex-col items-center gap-3 text-destructive">
-          <AlertCircle className="h-8 w-8" />
-          <p className="text-sm font-medium">Failed to load page</p>
-          <p className="text-xs text-muted-foreground">{error}</p>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleClose}>
-              ← Back
-            </Button>
-            <Button variant="outline" size="sm" onClick={fetchPage}>
-              Retry
-            </Button>
-          </div>
-        </div>
-      </div>
+      <AccessGate
+        token="client_page"
+        id={pageId}
+        error={loadError}
+        onRetry={() => void fetchPage()}
+        fallbackHref="/cms"
+        fallbackLabel="All Sites"
+      />
     );
   }
 

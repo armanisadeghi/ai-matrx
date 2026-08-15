@@ -19,7 +19,7 @@ import { lookup, resolveNs } from "node:dns/promises";
 import { isIP } from "node:net";
 import { createClient as createMainSupabaseClient } from "@/utils/supabase/server";
 import { requireSuperAdmin } from "@/utils/auth/adminUtils";
-import { getCmsClient } from "../_lib/cmsDb";
+import { getCmsClient, lookupCmsSiteAccess } from "../_lib/cmsDb";
 import {
   canAccessCmsSite,
   cmsAccessSource,
@@ -220,16 +220,51 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        const result = await loadAccessibleSite(siteId, "viewer");
-        if (!result.ok) {
+        const access = await lookupCmsSiteAccess(db, siteId, caller, "viewer");
+        if (access.status === "error") {
+          console.error("[cms/sites] get access lookup error:", access.error);
           return NextResponse.json(
-            { error: "Site not found or access denied" },
-            { status: result.status },
+            {
+              error: "We could not check this site just now.",
+              code: "transient",
+            },
+            { status: 500 },
+          );
+        }
+        if (access.status !== "ok") {
+          const denied = access.status === "denied";
+          return NextResponse.json(
+            {
+              error: denied
+                ? "You do not have access to this site."
+                : "Site not found.",
+              code: denied ? "denied" : "not_found",
+            },
+            { status: denied ? 403 : 404 },
+          );
+        }
+
+        const { data: site, error } = await db
+          .from("client_sites")
+          .select("*")
+          .eq("id", siteId)
+          .single();
+        if (error || !site) {
+          console.error("[cms/sites] get row load error:", error);
+          return NextResponse.json(
+            {
+              error: "We could not load this site just now.",
+              code: "transient",
+            },
+            { status: 500 },
           );
         }
 
         return NextResponse.json({
-          site: { ...result.site, access: cmsAccessSource(caller, result.site as never) },
+          site: {
+            ...site,
+            access: cmsAccessSource(caller, site),
+          },
         });
       }
 

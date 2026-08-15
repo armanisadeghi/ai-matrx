@@ -11,6 +11,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 import {
   canAccessCmsSite,
+  type CmsSiteAccessRow,
   type CmsAccessLevel,
   type CmsCaller,
 } from "./cmsAccess";
@@ -28,6 +29,77 @@ export function getCmsClient(): SupabaseClient {
   return createClient(HTML_SUPABASE_URL, HTML_SUPABASE_SECRET_KEY, {
     auth: { persistSession: false },
   });
+}
+
+export interface CmsSiteAccessRecord extends CmsSiteAccessRow {
+  id: string;
+  name: string | null;
+}
+
+export interface CmsPageAccessRecord {
+  id: string;
+  client_id: string;
+  title: string | null;
+}
+
+export type CmsSiteAccessLookup =
+  | { status: "ok" | "denied"; site: CmsSiteAccessRecord }
+  | { status: "not_found" }
+  | { status: "error"; error: unknown };
+
+export type CmsPageAccessLookup =
+  | {
+      status: "ok" | "denied";
+      page: CmsPageAccessRecord;
+      site: CmsSiteAccessRecord;
+    }
+  | { status: "not_found" }
+  | { status: "error"; error: unknown };
+
+/**
+ * Resolve existence and access separately for one CMS site.
+ *
+ * The service-role CMS client can see the row even when the caller cannot,
+ * so collapsing these two facts into a boolean throws away the exact truth the
+ * Access Gate needs. Mutation helpers may still consume the boolean wrapper
+ * below; single-record reads use this discriminated result.
+ */
+export async function lookupCmsSiteAccess(
+  db: SupabaseClient,
+  siteId: string,
+  caller: CmsCaller,
+  level: CmsAccessLevel = "editor",
+): Promise<CmsSiteAccessLookup> {
+  const { data, error } = await db
+    .from("client_sites")
+    .select("id, name, owner_user_id, organization_id, visibility")
+    .eq("id", siteId)
+    .maybeSingle();
+  if (error) return { status: "error", error };
+  if (!data) return { status: "not_found" };
+  return canAccessCmsSite(caller, data, level)
+    ? { status: "ok", site: data }
+    : { status: "denied", site: data };
+}
+
+/** Resolve a page first, then the access state of its owning site. */
+export async function lookupCmsPageAccess(
+  db: SupabaseClient,
+  pageId: string,
+  caller: CmsCaller,
+  level: CmsAccessLevel = "editor",
+): Promise<CmsPageAccessLookup> {
+  const { data: page, error } = await db
+    .from("client_pages")
+    .select("id, client_id, title")
+    .eq("id", pageId)
+    .maybeSingle();
+  if (error) return { status: "error", error };
+  if (!page) return { status: "not_found" };
+
+  const site = await lookupCmsSiteAccess(db, page.client_id, caller, level);
+  if (site.status === "error" || site.status === "not_found") return site;
+  return { status: site.status, page, site: site.site };
 }
 
 /**
@@ -52,13 +124,7 @@ export async function verifySiteOwnership(
   caller: CmsCaller,
   level: CmsAccessLevel = "editor",
 ): Promise<boolean> {
-  const { data } = await db
-    .from("client_sites")
-    .select("owner_user_id, organization_id, visibility")
-    .eq("id", siteId)
-    .single();
-  if (!data) return false;
-  return canAccessCmsSite(caller, data, level);
+  return (await lookupCmsSiteAccess(db, siteId, caller, level)).status === "ok";
 }
 
 /** Verify the caller may act on the site that a page belongs to. */
@@ -68,13 +134,7 @@ export async function verifyPageOwnership(
   caller: CmsCaller,
   level: CmsAccessLevel = "editor",
 ): Promise<boolean> {
-  const { data: page } = await db
-    .from("client_pages")
-    .select("client_id")
-    .eq("id", pageId)
-    .single();
-  if (!page) return false;
-  return verifySiteOwnership(db, page.client_id, caller, level);
+  return (await lookupCmsPageAccess(db, pageId, caller, level)).status === "ok";
 }
 
 /** Verify the caller may act on the site that a component belongs to. */

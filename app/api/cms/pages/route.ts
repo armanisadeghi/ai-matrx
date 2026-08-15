@@ -13,6 +13,7 @@ import { requireSuperAdmin } from "@/utils/auth/adminUtils";
 import { readAllRows } from "@/lib/supabase/readAllRows";
 import {
   getCmsClient,
+  lookupCmsPageAccess,
   verifySiteOwnership,
   verifyPageOwnership,
   verifyHtmlPageOwnership,
@@ -153,10 +154,27 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        if (!(await verifyPageOwnership(db, pageId, caller))) {
+        const access = await lookupCmsPageAccess(db, pageId, caller, "viewer");
+        if (access.status === "error") {
+          console.error("[cms/pages] get access lookup error:", access.error);
           return NextResponse.json(
-            { error: "Page not found or access denied" },
-            { status: 403 },
+            {
+              error: "We could not check this page just now.",
+              code: "transient",
+            },
+            { status: 500 },
+          );
+        }
+        if (access.status !== "ok") {
+          const denied = access.status === "denied";
+          return NextResponse.json(
+            {
+              error: denied
+                ? "You do not have access to this page."
+                : "Page not found.",
+              code: denied ? "denied" : "not_found",
+            },
+            { status: denied ? 403 : 404 },
           );
         }
 
@@ -168,7 +186,16 @@ export async function POST(request: NextRequest) {
 
         if (error) {
           console.error("[cms/pages] get error:", error);
-          return NextResponse.json({ error: error.message }, { status: 500 });
+          const missing = error.code === "PGRST116";
+          return NextResponse.json(
+            {
+              error: missing
+                ? "Page not found."
+                : "We could not load this page just now.",
+              code: missing ? "not_found" : "transient",
+            },
+            { status: missing ? 404 : 500 },
+          );
         }
 
         return NextResponse.json({ page: data });
