@@ -224,6 +224,69 @@ export function classifyUnprocessableError(
   return { prefix: "Request rejected", isToolError: false };
 }
 
+const DEPLOYMENT_DRAIN_MAX_WAIT_MS = 3 * 60_000;
+
+function waitForDrainRetry(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal.aborted) {
+      reject(new DOMException("Aborted", "AbortError"));
+      return;
+    }
+    const timer = setTimeout(() => {
+      signal.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+    const onAbort = () => {
+      clearTimeout(timer);
+      reject(new DOMException("Aborted", "AbortError"));
+    };
+    signal.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
+/**
+ * Retry only after the server explicitly rejected the POST before execution
+ * with `X-Matrx-Drain`. Once that proof exists, brief connection failures are
+ * part of the same container handoff and are safe to retry. An ordinary
+ * ambiguous network failure is never retried here (it may have been accepted).
+ */
+export async function fetchThroughDeploymentDrain(
+  url: string,
+  init: RequestInit,
+  signal: AbortSignal,
+): Promise<Response> {
+  const deadline = Date.now() + DEPLOYMENT_DRAIN_MAX_WAIT_MS;
+  let drainObserved = false;
+  let attempt = 0;
+  for (;;) {
+    let response: Response;
+    try {
+      response = await fetch(url, init);
+    } catch (error) {
+      if (!drainObserved || signal.aborted || Date.now() >= deadline) throw error;
+      attempt += 1;
+      await waitForDrainRetry(Math.min(1_000 * attempt, 5_000), signal);
+      continue;
+    }
+    const draining =
+      response.status === 503 && response.headers.get("X-Matrx-Drain") === "deployment";
+    if (!draining) return response;
+
+    drainObserved = true;
+    if (Date.now() >= deadline) return response;
+    const retrySeconds = Number(response.headers.get("Retry-After") ?? "3");
+    const retryMs = Number.isFinite(retrySeconds)
+      ? Math.max(1_000, Math.min(retrySeconds * 1_000, 15_000))
+      : 3_000;
+    console.warn(
+      `[runAiStream] server deployment drain — request was not started; retrying in ${retryMs / 1_000}s`,
+      { url },
+    );
+    await response.body?.cancel();
+    await waitForDrainRetry(retryMs, signal);
+  }
+}
+
 export async function runAiStream(
   args: RunAiStreamArgs,
 ): Promise<RunAiStreamResult> {
@@ -323,23 +386,23 @@ export async function runAiStream(
         conversationId,
       });
     };
-    try {
-      response = await fetch(url, fetchInit);
-    } catch (fetchError) {
-      const isAbort =
-        fetchError instanceof Error && fetchError.name === "AbortError";
-      if (!attemptV1Fallback || isAbort) throw fetchError;
-      logDowngrade(String(fetchError));
-      response = await fetch(toV1FallbackUrl(url), fetchInit);
-    }
+    response = await fetchThroughDeploymentDrain(
+      url,
+      fetchInit,
+      abortController.signal,
+    );
     if (
       attemptV1Fallback &&
+      response.headers.get("X-Matrx-Drain") !== "deployment" &&
       (response.status === 404 ||
-        response.status === 405 ||
-        response.status >= 500)
+        response.status === 405)
     ) {
       logDowngrade(`HTTP ${response.status}`, response.status);
-      response = await fetch(toV1FallbackUrl(url), fetchInit);
+      response = await fetchThroughDeploymentDrain(
+        toV1FallbackUrl(url),
+        fetchInit,
+        abortController.signal,
+      );
     }
 
     if (!response.ok) {
