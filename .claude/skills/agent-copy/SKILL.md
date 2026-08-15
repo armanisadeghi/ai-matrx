@@ -361,12 +361,58 @@ first and emit the gap list; only then wire, batch by batch:
   content blocks, lineage; shared `features/agents/format.ts` +
   `features/agent-shortcuts/format.ts`), `agent-apps/*` (grid, overview,
   versions, admin aiCustom, executions, rate-limits, analytics, categories,
-  dashboard; shared `features/agent-apps/format.ts`).
+  dashboard, settings form, admin edit form + its metadata dialog and
+  rate-limit editor; shared `features/agent-apps/format.ts`),
+  `tool-call-visualization/admin/mcp-tools` (view page + editor/create forms;
+  shared `mcp-tools/format.ts`).
 
-**Known debt:** surfaces wired BEFORE the MISSION section existed (most of the
-list above) carry raw-dump payloads that fail the what-I-see test — auditing
-them is step 4 of the module-audit protocol. Any you touch is boy-scout
-territory: upgrade the payload while you're there.
+**Law-compliant FORM surfaces (audited/wired 2026-08-15 — the form sweep):**
+These are verified against THE WHAT-I-SEE LAW: payload built inside the click
+handler from LIVE inputs, explicit `unsaved_changes` diff vs the saved record,
+rendered validation/error text captured verbatim, and the page's leading strip
+carried in the body AND envelope `attributes`.
+- `agent-apps/route/AgentAppSettingsContent` — six staged fields + dirty diff,
+  rate-limit validation verbatim, commit-on-change controls reported as saved,
+  tabs made controlled so the payload names the open tab.
+- `administration/agents/agent-apps/edit/[id]` — header pair carrying the
+  Analytics card KPIs verbatim; flags when a draft-holding dialog is open.
+- `agent-apps/components/UpdateAgentAppModal` — live drafts + the rendered
+  `text-destructive` error.
+- `agent-apps/components/AgentAppAdminActions` — rate-limit editor drafts.
+- `feedback/components/FeedbackDetailDialog` — **was the worst offender**: it
+  dumped the fetched `item` while nine live controls and four unsent composers
+  sat on screen. Now sends live form values, the unsaved diff (mirroring
+  `handleSaveDecision`'s own predicates), and the unsent drafts; the raw dump
+  is demoted to an "Everything" variant that states it excludes unsaved edits.
+  Header chips now ride on the per-comment/per-message section payloads too.
+- `tool-call-visualization/admin/mcp-tools` `ToolEditPage` / `ToolCreatePage` —
+  live draft, the red `JSON Error: …` text verbatim, and all three save
+  blockers with their toast copy.
+- Shared builders live in `features/agent-apps/format.ts`,
+  `administration/users/feedback/format.ts`, and the mcp-tools `format.ts` —
+  never at the callsites.
+
+Two things the 2026-08-15 pass found that the brief had wrong, worth knowing:
+the agent-apps edit page is under `app/(admin)/administration/agents/…`, not
+`app/(core)/…`; and in `tool-call-visualization/admin/mcp-tools` only
+`ToolViewPage` was ever wired — the two editors were unwired, not
+raw-dumping. (The rollout list's "mcp-tools" refers to the separate
+`features/tool-registry` tree.)
+
+**Known debt (still outstanding):** surfaces wired BEFORE the MISSION section
+existed carry raw-dump payloads that fail the what-I-see test — auditing them
+is step 4 of the module-audit protocol. Any you touch is boy-scout territory:
+upgrade the payload while you're there. The 2026-08-15 pass paid down the
+FORM surfaces only; **known remaining offenders**, all raw `data: record`
+dumps with no page KPIs in `attributes`:
+- `agent-apps/route/AgentAppOverviewContent` — `data: { app, agent, variables,
+  contextSlots }`; the page renders a six-chip stat strip that no payload
+  carries. Its per-variable and per-context-slot section pairs also lack
+  parent context.
+- `mcp-tools/ToolViewPage` — `data: tool` (read-only, so the record largely IS
+  the view, but it carries no chips in `attributes` and mixes the live
+  `isActive` toggle with saved `tool` fields in one payload).
+- The rest of the pre-2026-08-12 list above is unaudited.
 
 **Open per-item gaps on the version-diff page:** its two lists render in
 files outside that page — the History tab's rows in

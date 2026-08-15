@@ -22,6 +22,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import {
+  agentAppAdminEditAgentPayload,
+  agentAppAdminEditHuman,
+  agentAppAdminKpis,
+  type AgentAppAdminEditView,
+} from "@/features/agent-apps/format";
 import { AgentAppAdminActions } from "@/features/agent-apps/components/AgentAppAdminActions";
 import { AgentAppEditor } from "@/features/agent-apps/components/AgentAppEditor";
 import { UpdateAgentAppModal } from "@/features/agent-apps/components/UpdateAgentAppModal";
@@ -321,6 +328,48 @@ export default function AdminEditAgentAppPage({
     );
   }
 
+  // ── Copy-for-AI: this page as rendered ──────────────────────────────────
+  // Resolved at click time. The Metadata / Analytics / Timestamps cards read
+  // the fetched row directly — there is no page-level draft layer, so these
+  // values honestly ARE what is on screen. The two draft layers on this page
+  // (the metadata dialog and the inline rate-limit editor) own their own
+  // live-state copy controls; this payload records whether either is open so
+  // the agent is never told a stale number is the whole story.
+  const buildAdminEditView = (): AgentAppAdminEditView => ({
+    app,
+    activeTab,
+    metadataModalOpen: metadataOpen,
+    metadata: {
+      name: app.name,
+      slug: app.slug,
+      category: app.category ?? null,
+      creator: app.creator_email ?? null,
+      tagline: app.tagline ?? null,
+      description: app.description ?? null,
+      tags: app.tags ?? [],
+    },
+    moderation: {
+      status: app.status,
+      visibility: app.visibility,
+      is_featured: app.is_featured,
+      is_verified: app.is_verified,
+      rate_limit_per_ip: app.rate_limit_per_ip,
+      rate_limit_window_hours: app.rate_limit_window_hours,
+      rate_limit_authenticated: app.rate_limit_authenticated,
+    },
+    // Mirrors the Timestamps card's own toLocaleString rendering.
+    timestamps: {
+      created: new Date(app.created_at).toLocaleString(),
+      updated: new Date(app.updated_at).toLocaleString(),
+      published: app.published_at
+        ? new Date(app.published_at).toLocaleString()
+        : "—",
+      last_execution: app.last_execution_at
+        ? new Date(app.last_execution_at).toLocaleString()
+        : "—",
+    },
+  });
+
   return (
     <SurfaceRuntimeProvider
       surfaceName={ADMIN_AGENT_APPS_SURFACE_NAME}
@@ -387,6 +436,20 @@ export default function AdminEditAgentAppPage({
             /p/{app.slug}
             <ExternalLink className="h-3 w-3" />
           </a>
+        </div>
+        <div className="ml-auto flex-shrink-0">
+          <CopyButtons
+            size="sm"
+            label={`${app.name} (admin edit)`}
+            human={() => agentAppAdminEditHuman(buildAdminEditView())}
+            json={() => app}
+            agent={() => agentAppAdminEditAgentPayload(buildAdminEditView())}
+            agentVariant={{
+              label: "This page",
+              hint: "Metadata, moderation, analytics KPIs and timestamps as shown",
+              position: "first",
+            }}
+          />
         </div>
       </div>
 
@@ -550,6 +613,7 @@ export default function AdminEditAgentAppPage({
         onOpenChange={setMetadataOpen}
         app={toAgentApp(app)}
         onSubmit={handleSaveMetadata}
+        kpis={agentAppAdminKpis(app)}
       />
     </div>
     </SurfaceRuntimeProvider>

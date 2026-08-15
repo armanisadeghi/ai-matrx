@@ -96,9 +96,13 @@ import { toast } from "@/lib/toast";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import {
   feedbackBrief,
+  feedbackDetailAgentPayload,
+  feedbackDetailHuman,
+  feedbackHeaderChips,
   feedbackMarkdown,
   feedbackRowSummary,
   feedbackTypeLabels,
+  type FeedbackDetailView,
 } from "../format";
 import { cn } from "@/lib/utils";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
@@ -815,6 +819,60 @@ export default function FeedbackDetailDialog({
   const isUserReview = item.status === "user_review";
   const hasUserReviewHistory = isUserReview || userMessages.length > 0;
 
+  // The category as the header chip renders it (saved record, not the form).
+  const headerCategoryName = categories.find(
+    (c) => c.id === item.category_id,
+  )?.name;
+  // Every payload from this dialog — including the per-comment and
+  // per-message section pairs — carries the header chip strip, so a copied
+  // specific is never stranded without the record it belongs to.
+  const sectionChips = () => feedbackHeaderChips(item, headerCategoryName);
+
+  // ── Copy-for-AI: the dialog as it stands RIGHT NOW ──────────────────────
+  // Resolved inside the click handler so every control's CURRENT value is
+  // captured. Nine of these fields have a draft layer over the fetched row
+  // and four composers hold unsent prose; a payload built from `item` alone
+  // misses all of it. `format.ts` derives the unsaved diff from these using
+  // the same predicates `handleSaveDecision` uses to decide what to write.
+  const buildDetailView = (): FeedbackDetailView => {
+    const assignee = assignableAdmins.find((a) => a.user_id === assigneeId);
+    return {
+      item,
+      // The header chip shows the SAVED category, not the form's pick — the
+      // chip strip has to stay verbatim even when the form has moved on.
+      headerCategoryName: headerCategoryName ?? null,
+      activeTab,
+      isSaving,
+      form: {
+        decision,
+        direction,
+        workPriority,
+        adminNotes,
+        status: formStatus,
+        hasOpenIssues,
+        categoryId,
+        categoryName:
+          categories.find((c) => c.id === categoryId)?.name ?? null,
+        assigneeId,
+        assigneeName:
+          assignee?.display_name ?? assignee?.email ?? null,
+        parentId,
+      },
+      drafts: {
+        newComment,
+        userReplyText,
+        replyImages,
+        userReviewMessage,
+        composeImages,
+        showUserReviewCompose,
+        pendingTestResult,
+        testFeedbackText,
+      },
+      comments,
+      userMessages,
+    };
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden">
@@ -943,39 +1001,26 @@ export default function FeedbackDetailDialog({
                 <CopyButtons
                   size="icon"
                   label={`Feedback ${item.id.slice(0, 8)}`}
-                  human={() =>
-                    feedbackMarkdown(item, {
-                      comments,
-                      userMessages,
-                      categoryName: categories.find(
-                        (c) => c.id === item.category_id,
-                      )?.name,
-                    })
-                  }
+                  // The saved-record markdown dump is what the "Copy All"
+                  // button beside this already gives; this pair copies the
+                  // live view so the two are not duplicates of each other.
+                  human={() => feedbackDetailHuman(buildDetailView())}
                   json={() => ({
                     feedback: item,
                     comments,
                     user_messages: userMessages,
                   })}
-                  agent={() => ({
-                    kind: "feedback-item",
-                    location:
-                      "AI Matrx Admin — Feedback Management · detail dialog (/administration/users/feedback)",
-                    description:
-                      "One user-feedback record with its comments and user messages.",
-                    data: {
-                      feedback: item,
-                      comments,
-                      user_messages: userMessages,
-                    },
-                    summary: feedbackRowSummary(item),
-                    attributes: {
-                      id: item.id,
-                      type: item.feedback_type,
-                      status: item.status,
-                      priority: item.priority,
-                    },
-                  })}
+                  // DEFAULT = what the admin is looking at: live form values,
+                  // the unsaved diff, and any unsent drafts. The raw record
+                  // dump is demoted to the "Everything" variant below — it
+                  // used to be the default, which handed the agent the fetched
+                  // row while the admin's edits sat unrepresented on screen.
+                  agent={() => feedbackDetailAgentPayload(buildDetailView())}
+                  agentVariant={{
+                    label: "This dialog",
+                    hint: "Live form values, unsaved diff, unsent drafts",
+                    position: "first",
+                  }}
                   aiVariants={[
                     {
                       id: "brief",
@@ -989,7 +1034,34 @@ export default function FeedbackDetailDialog({
                           "Compact triage digest of one user-feedback record.",
                         data: feedbackBrief(item),
                         summary: feedbackRowSummary(item),
-                        attributes: { id: item.id, status: item.status },
+                        attributes: {
+                          ...sectionChips(),
+                          id: item.id,
+                        },
+                      }),
+                    },
+                    {
+                      id: "everything",
+                      label: "Everything (saved record + threads)",
+                      hint: "Full fetched row, comments and user messages",
+                      build: () => ({
+                        kind: "feedback-item",
+                        location:
+                          "AI Matrx Admin — Feedback Management · detail dialog (/administration/users/feedback)",
+                        description:
+                          "The full user-feedback record as SAVED, with its comments and user messages. Unsaved form edits are NOT included — use “This dialog” for those.",
+                        data: {
+                          feedback: item,
+                          comments,
+                          user_messages: userMessages,
+                        },
+                        summary: feedbackRowSummary(item),
+                        attributes: {
+                          ...sectionChips(),
+                          id: item.id,
+                          comments: comments.length,
+                          user_messages: userMessages.length,
+                        },
                       }),
                     },
                   ]}
@@ -2022,8 +2094,17 @@ export default function FeedbackDetailDialog({
                                     "AI Matrx Admin — Feedback Management · detail dialog (/administration/users/feedback)",
                                   description:
                                     "One internal comment on the open feedback record.",
-                                  data: comment,
+                                  data: {
+                                    comment,
+                                    // A section payload states what it belongs to.
+                                    on_feedback: {
+                                      id: item.id,
+                                      description: item.description,
+                                    },
+                                    page_kpis: sectionChips(),
+                                  },
                                   attributes: {
+                                    ...sectionChips(),
                                     feedback_id: comment.feedback_id,
                                     author: comment.author_type,
                                   },
@@ -2618,8 +2699,17 @@ export default function FeedbackDetailDialog({
                                     "AI Matrx Admin — Feedback Management · detail dialog (/administration/users/feedback)",
                                   description:
                                     "One admin↔user message on the open feedback record.",
-                                  data: msg,
+                                  data: {
+                                    message: msg,
+                                    // A section payload states what it belongs to.
+                                    on_feedback: {
+                                      id: item.id,
+                                      description: item.description,
+                                    },
+                                    page_kpis: sectionChips(),
+                                  },
                                   attributes: {
+                                    ...sectionChips(),
                                     feedback_id: msg.feedback_id,
                                     sender: msg.sender_type,
                                   },

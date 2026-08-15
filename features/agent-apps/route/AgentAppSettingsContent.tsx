@@ -32,6 +32,14 @@ import {
 } from "@/components/ui/tabs";
 import { toast } from "@/lib/toast-service";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import {
+  agentAppSettingsAgentPayload,
+  agentAppSettingsHuman,
+  type AgentAppFieldDraft,
+  type AgentAppSaveBlocker,
+  type AgentAppSettingsView,
+} from "@/features/agent-apps/format";
 import { siteConfig } from "@/config/extras/site";
 import { AgentAppCategoryPicker } from "@/features/agent-apps/components/inputs/AgentAppCategoryPicker";
 import { AgentAppTagsInput } from "@/features/agent-apps/components/inputs/AgentAppTagsInput";
@@ -114,6 +122,9 @@ export function AgentAppSettingsContent({
   const [description, setDescription] = useState(app?.description ?? "");
   const [savingField, setSavingField] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  // Controlled so the copy payload can state WHICH slice of the form the user
+  // is actually in — "what is the user doing here" is half the context.
+  const [activeTab, setActiveTab] = useState("identity");
 
   const [rateIp, setRateIp] = useState<string>(
     String(app?.rate_limit_per_ip ?? ""),
@@ -267,21 +278,142 @@ export function AgentAppSettingsContent({
 
   const publicUrl = `${siteConfig.url}/p/${app.slug}`;
 
+  // ── Copy-for-AI: the form as it stands RIGHT NOW ────────────────────────
+  // Built inside the click handler (CopyButtons resolves these lazily) so the
+  // payload is the LIVE inputs, never the fetched row. Copying `app.tagline`
+  // after the user retyped the tagline would hand the agent a value that is
+  // on nobody's screen. The three staged text fields and the three rate-limit
+  // fields have a draft layer; everything else on this page commits on change,
+  // so its rendered value IS the saved value (reported separately, as such).
+  const buildSettingsView = (): AgentAppSettingsView => {
+    // `saved` mirrors each FieldRow's own `dirty` predicate exactly, so the
+    // unsaved diff matches the Save buttons the user can see.
+    const drafts: AgentAppFieldDraft[] = [
+      { field: "name", label: "Name", live: name, saved: app.name },
+      {
+        field: "tagline",
+        label: "Tagline",
+        live: tagline ?? "",
+        saved: app.tagline ?? "",
+      },
+      {
+        field: "description",
+        label: "Description",
+        live: description ?? "",
+        saved: app.description ?? "",
+      },
+      {
+        field: "rate_limit_per_ip",
+        label: "Per-IP / window",
+        live: rateIp.trim(),
+        saved: String(app.rate_limit_per_ip ?? ""),
+      },
+      {
+        field: "rate_limit_window_hours",
+        label: "Window (hrs)",
+        live: rateWindow.trim(),
+        saved: String(app.rate_limit_window_hours ?? ""),
+      },
+      {
+        field: "rate_limit_authenticated",
+        label: "Authenticated / window",
+        live: rateAuth.trim(),
+        saved: String(app.rate_limit_authenticated ?? ""),
+      },
+    ];
+
+    // The only validation this page renders. The message is copied verbatim
+    // from the toast the Save handlers fire, so the agent reads the same
+    // sentence the user does.
+    const saveBlockers: AgentAppSaveBlocker[] = drafts
+      .filter((draft) => draft.field.startsWith("rate_limit_"))
+      .filter((draft) => {
+        if (draft.live === "") return false;
+        const n = Number(draft.live);
+        return !Number.isFinite(n) || n < 0;
+      })
+      .map((draft) => ({
+        field: draft.field,
+        label: draft.label,
+        message: "Must be a non-negative integer.",
+      }));
+
+    return {
+      app,
+      activeTab,
+      drafts,
+      savingField,
+      saveBlockers,
+      committed: {
+        category: app.category,
+        tags: Array.isArray(app.tags) ? app.tags : [],
+        agent: agent?.name ?? app.agent_id,
+        agent_version_id: app.agent_version_id,
+        use_latest: app.use_latest,
+        shell_kind: app.shell_kind,
+        favicon_url: app.favicon_url,
+        preview_image_url: app.preview_image_url,
+        status: app.status,
+        public: app.visibility === "public",
+        visibility: app.visibility,
+        organization_id: app.organization_id,
+        project_id: app.project_id,
+        task_id: app.task_id,
+      },
+      publicUrl,
+    };
+  };
+
   return (
     <div
       className="h-full overflow-y-auto"
       style={{ paddingTop: "var(--shell-header-h)" }}
     >
       <div className="max-w-3xl mx-auto px-4 pb-10 pt-4">
-        <Tabs defaultValue="identity" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="identity">Identity</TabsTrigger>
-            <TabsTrigger value="agent">Agent</TabsTrigger>
-            <TabsTrigger value="layout">Layout</TabsTrigger>
-            <TabsTrigger value="branding">Branding</TabsTrigger>
-            <TabsTrigger value="sharing">Sharing</TabsTrigger>
-            <TabsTrigger value="danger">Danger</TabsTrigger>
-          </TabsList>
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="space-y-4"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <TabsList>
+              <TabsTrigger value="identity">Identity</TabsTrigger>
+              <TabsTrigger value="agent">Agent</TabsTrigger>
+              <TabsTrigger value="layout">Layout</TabsTrigger>
+              <TabsTrigger value="branding">Branding</TabsTrigger>
+              <TabsTrigger value="sharing">Sharing</TabsTrigger>
+              <TabsTrigger value="danger">Danger</TabsTrigger>
+            </TabsList>
+            <CopyButtons
+              size="sm"
+              label={`${app.name} settings`}
+              human={() => agentAppSettingsHuman(buildSettingsView())}
+              json={() => app}
+              agent={() => agentAppSettingsAgentPayload(buildSettingsView())}
+              agentVariant={{
+                label: "This form",
+                hint: "Live input values, unsaved diff, and any blocked saves",
+                position: "first",
+              }}
+              aiVariants={[
+                {
+                  id: "unsaved",
+                  label: "Unsaved changes only",
+                  hint: "Just what differs from the saved record",
+                  build: () => {
+                    const view = buildSettingsView();
+                    const changed = view.drafts.filter(
+                      (draft) => draft.live !== draft.saved,
+                    );
+                    return agentAppSettingsAgentPayload({
+                      ...view,
+                      drafts: changed,
+                    });
+                  },
+                },
+              ]}
+            />
+          </div>
 
           {/* ── Identity ───────────────────────────────────────────────── */}
           <TabsContent value="identity" className="space-y-5">

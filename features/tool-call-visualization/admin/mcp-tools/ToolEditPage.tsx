@@ -20,6 +20,12 @@ import { useToast } from "@/components/ui/use-toast";
 import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation.dynamic";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { listServers, type McpServerRow } from "@/features/tool-registry/mcp-admin/services/mcpAdmin.service";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import {
+  toolEditorAgentPayload,
+  toolEditorHuman,
+  type ToolEditorView,
+} from "./format";
 import {
   TOOL_SOURCE_KIND_VALUES,
   sourceKindLabel,
@@ -128,6 +134,39 @@ export function ToolEditPage({ tool }: Props) {
       setIsSaving(false);
     }
   };
+
+  // ── Copy-for-AI: the editor as it stands RIGHT NOW ────────────────────────
+  // `editedTool` is the draft every input is bound to; `tool` is the row as
+  // fetched. Copying `tool` would hand the agent a definition the user has
+  // already edited past — and would omit both the red "JSON Error: …" text
+  // under the schema boxes and the reason Save is refusing, which are the two
+  // things someone on this page is most likely asking about.
+  const buildEditorView = (): ToolEditorView => ({
+    mode: "edit",
+    draft: editedTool as ToolEditorView["draft"],
+    saved: tool as ToolEditorView["saved"],
+    activeTab: isMobile ? "all sections (mobile)" : activeTab,
+    isSaving,
+    jsonErrors,
+    mcpServerName:
+      mcpServers.find((s) => s.id === editedTool.managed_by_server_id)?.name ??
+      null,
+  });
+
+  const copyPair = (
+    <CopyButtons
+      size="sm"
+      label={`${tool.name} editor`}
+      human={() => toolEditorHuman(buildEditorView())}
+      json={() => editedTool}
+      agent={() => toolEditorAgentPayload(buildEditorView())}
+      agentVariant={{
+        label: "This form",
+        hint: "Live draft, unsaved diff, JSON errors and save blockers",
+        position: "first",
+      }}
+    />
+  );
 
   // ── Field Sections ─────────────────────────────────────────────────────────
 
@@ -380,6 +419,7 @@ export function ToolEditPage({ tool }: Props) {
         </Button>
         <span className="text-sm font-medium text-muted-foreground">/</span>
         <span className="text-sm font-medium">Edit</span>
+        <div className="ml-auto">{copyPair}</div>
       </div>
 
       {/* Body */}
