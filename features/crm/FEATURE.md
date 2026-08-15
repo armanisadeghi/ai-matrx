@@ -27,6 +27,14 @@ first-class. "Company" here means **our users' clients**, never `iam.organizatio
 - **`crm.contact_medium`** — ONE row per normalized value per org. Owns everything
   intrinsic to the _value_: verification, MX, bounce type/count, complaint,
   unsubscribe, DNC state, suppression.
+  🚨 **It owns whether a message CAN arrive — not yet whether it MAY be sent.** There
+  are no consent columns (basis, source URL, timestamp, expiry, jurisdiction,
+  subscriber kind), which blocks Canada/EU/Australia sends and all of Lane A, and
+  which cannot be retrofitted without re-contacting everyone. **Before adding any
+  consent, unsubscribe, or send-eligibility field here, read
+  `/Users/armanisadeghi/code/common-docs/systems/outreach-compliance/` —**
+  `ENGINEERING_GAPS.md` GAP-4 specifies the exact columns, and the vocabulary must be
+  the one `communication.sms_consent` folds into. One authority, one vocabulary.
 - **`crm.party_contact_point`** — says _who_ uses that medium, _how_ (purpose),
   and _since when_.
 

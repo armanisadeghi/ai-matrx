@@ -391,6 +391,44 @@ the footer. **Before the first customer send, a qualified compliance/legal revie
 this is not something an agent should infer from memory, and the AUP and ToS must be written by
 someone qualified.** That is the one piece of this section that cannot be closed in code.
 
+### ✅ Research pass DONE 2026-08-14 — read it before writing any send code
+
+**System-of-record: `/Users/armanisadeghi/code/common-docs/systems/outreach-compliance/`**
+(cross-repo: the obligations land in this repo, in aidream, and in the shared DB). Full research
+against primary sources — CAN-SPAM §7704, CRTC/CASL, CNIL, §7 UWG, ICO/PECR, Australia's Spam Act,
+the Google/Yahoo/Microsoft bulk-sender regime, RFC 8058, and the eight vendor policies §5.1 names.
+
+- `REQUIREMENTS_MATRIX.md` — obligation → jurisdiction → lane → our design → **where it must be
+  enforced**, every gap flagged.
+- `ACCEPTABLE_USE_POLICY.md` · `USER_GUIDANCE.md` — drafts. **Neither is fit to publish.**
+- `ENGINEERING_GAPS.md` — the buildable work.
+- `ATTORNEY_BRIEF.md` — **for Arman.** 18 questions for counsel; Q3 (the per-country EEA table)
+  is the one that changes the build.
+
+**What the research changed in this plan — four Tier-0 gaps block Phase 4's first send:**
+
+1. **No unsubscribe machinery exists at all** — no token, no public route, no body link, no
+   RFC 8058 `List-Unsubscribe` headers. Required by every regime. Yahoo's **2 days** is the
+   tightest honoring deadline, so instant (our stated posture) is correct.
+2. **No postal address for the sending org anywhere in the schema.** `iam.organizations` has none
+   and `crm.address` is the *recipient's*. Every commercial message legally requires it.
+3. **`crm.contact_medium` has no consent columns** — no basis, source, source URL, timestamp,
+   expiry, jurisdiction, or subscriber kind. §5.4 already warned this cannot be retrofitted;
+   it is still not built, and it is what gates **all of Lane A**.
+4. **"The EU" is not one place, and treating it as one is the biggest legal risk in the plan.**
+   Germany (§7 UWG) prohibits cold advertising email without prior express consent — **no B2B
+   carve-out, and competitors have standing to sue.** France permits it on legitimate interest
+   *if the message relates to the recipient's role*. The UK permits it to corporate subscribers
+   but not sole traders. Most of the EEA is unresearched. Build a **per-country policy table that
+   blocks `unknown` by default**; counsel fills the rows.
+
+Plus two the plan did not have: **GDPR Article 14** obliges us to tell every discovered contact
+where we got their details, at first contact — the obligation this whole category ignores, and one
+we are unusually able to meet since G1 already captures the source URL. And **Google's developer
+policy** bars apps that "distribute spam or unsolicited commercial mail" from Gmail restricted
+scopes — a live question about our own shared OAuth client (§5.3's named platform risk), answered
+by attorney Q9, not by an agent.
+
 ## 5.5 Identity level — resolved
 
 Sending identity attaches to **an org**, with the connected mailbox owned by a user in that org,
