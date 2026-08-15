@@ -1,7 +1,7 @@
 ---
 status: active
-updated: 2026-08-13
-chips: [content_plan.rls_timeout.seo_search_performance_daily, content_plan.review_queue.mobile_headings_pass, content_plan.templates_library_unseeded]
+updated: 2026-08-15
+chips: [content_plan.review_queue.mobile_headings_pass, content_plan.templates_library_unseeded, content_plan.planned_topics_unread, content_plan.setup_ai_untested_coercers]
 repos: [matrx-frontend, aidream]
 vision:
   - /Users/armanisadeghi/code/common-docs/systems/content-planning/FEATURE.md
@@ -18,10 +18,13 @@ its P1/P2 research-artifact wiring converges with items 1 and 3 below; sync with
 when either lands. **This doc owns one thing they don't: the AI steps and their
 grounding in resources.**
 
-> **Everything in Done is LIVE.** Verified 2026-08-13: matrx-frontend `main` = v0.4.547
-> (aimatrx.com serves it), aidream `/health/version` = `044f77c8` = `origin/main` (v0.2.56).
-> There is no unshipped content-plan work. The gap between "built" and "accepted" is the
-> review queue, not deployment — see Remaining work #1.
+> **Everything in Done is LIVE.** Re-verified 2026-08-15 against `main` (matrx-frontend
+> v0.4.623, aidream v0.2.83). There is no unshipped content-plan work. The gap between
+> "built" and "accepted" is the review queue, not deployment — see Remaining work #1.
+>
+> **Do not re-audit this feature against THE FLOATING LAW.** `live-run-streaming-sweep.md`
+> lists "Content-plan surfaces" under *Verified compliant — do not re-audit*. The one live
+> exception is the in-tab run lifetime, which is item #6 below, not a spinner finding.
 
 ## Vision — Arman's words
 
@@ -114,31 +117,17 @@ research linking: start with the final report (the "Document"), user picks the t
 
 ## Remaining work
 
-> The top three are live assist chips in Arman's dock (`platform.assists`,
-> dedupe keys in the frontmatter) — each opens its own evidence. Delete the chip
-> when you finish the item.
+> Four items are live assist chips in Arman's dock (`platform.assists`, dedupe
+> keys in the frontmatter) — each opens its own evidence. Delete the chip when
+> you finish the item.
 
-0. **🚨 BROKEN IN PRODUCTION RIGHT NOW — Keyword Intelligence 500s for every
-   signed-in user.** `seo.search_performance_daily` (13.2M rows) has an RLS
-   policy that materializes an array of EVERY accessible row id — 13,183,309
-   for a normal org member, **44.6s just to count**, against an 8s statement
-   timeout. Every `authenticated` read of that table, and of any
-   `security_invoker` view over it (`v_site_keyword_performance`, the only
-   caller being `listSitePerformanceForKeyword`,
-   `features/marketing/seo/keyword/data.ts:613`), times out — on every site,
-   including ones with no rows. The view is innocent: as `postgres` the same
-   query plans at cost 5.72 with `site_id` pushed into `idx_seo_sperf_site_date`.
-   **It is a CLASS**, not a table: the array-materializing kernel
-   (`iam.accessible_entity_ids`) is fine for ordinary entity tables and
-   catastrophic for any high-volume table registered in `platform.entity_types`.
-   **Deliberately not fixed by an agent** — CLAUDE.md forbids changing a
-   security layer on our own authority. Full evidence + both candidate fixes:
-   `FOUND_DEFECTS.md` D182. See also the Decisions section.
-
-1. **THE BLOCKER — 18 review-queue rows for this feature, 0 approved (12
-   `changes_requested`, 6 `pending`), and the 12 rejections are mostly ONE defect repeated.**
-   Counted 2026-08-13 across all 12: **no semantic page heading (9)**, **mobile controls under
-   40–44px (7)**, **390px clipping / no mobile drill-down (7)**. Verified in code, not inferred:
+1. **THE BLOCKER — 21 review-queue rows for this feature, 0 approved (12
+   `changes_requested`, 9 `pending`), and the 12 rejections are mostly ONE defect repeated.**
+   Counts re-read from `agent.review_queue` on 2026-08-15; the queue has grown by three
+   `pending` rows since 2026-08-13 and still has no approval on it. Across the 12 rejections:
+   **no semantic page heading (9)**, **mobile controls under
+   40–44px (7)**, **390px clipping / no mobile drill-down (7)**. Verified in code, not inferred
+   (re-run 2026-08-15, both counts unchanged):
    the entire `features/marketing/content-plan/` tree contains **zero `<h1>`** (and the shell's
    `PageHeader` supplies none — consumers pass their own, per
    `features/shell/components/header/variants/USAGE.md`), and exactly **one** file in the whole
@@ -154,7 +143,8 @@ research linking: start with the final report (the "Document"), user picks the t
 2. **The page-template system shipped but is INERT in production** — built, paid for, and
    switched off: no `plan.profile` row carries a `templates` key and nothing seeds one, so
    realize still writes empty page bodies. Evidence + the seed-then-verify fix, plus its missing
-   docs and tests: `FOUND_DEFECTS.md` D183.
+   docs and tests: `FOUND_DEFECTS.md` **D194** (renumbered from D183 after an ID collision —
+   the entry now numbered D183 is a different, unrelated SEO defect). Live chip.
 3. **Generalize the grounding strip beyond research.** Still missing as grounding inputs:
    **competitor URLs**, **pasted content/notes**, **free-text guidance**. Persist each in
    `setup_draft` (`setup/draft.ts`), resolve to text at the call site (research-bundle pattern),
@@ -166,15 +156,20 @@ research linking: start with the final report (the "Document"), user picks the t
    note as the child node's `brief` seed so it persists on commit. Keep coercion
    backward-tolerant (plain strings still accepted).
 5. **Nothing downstream READS `attributes.planned_topics` / `attributes.keyword_strategy`.**
-   Re-verified 2026-08-13: the frontend writes both (`setup/service.ts`,
+   Re-verified 2026-08-15: the frontend writes both (`setup/service.ts`,
    `setup/keyword-strategy.ts`); a full-repo search of aidream returns **zero** matches for
-   `planned_topics` in any file. Wiring them into the cms-fill / writer stage is the payoff step.
+   `planned_topics` in any Python file. The AI already decided what each page should be about
+   and the answer is sitting in the database — wiring these into the cms-fill / writer stage is
+   the payoff step for the whole Setup chain. Live chip.
 6. **Web-search fallback grounding** for the "no research, no website" case — arm the
    shape/namer agents with web search via `agent_author`. See the open decision below first.
-7. **Harden the quick-research chain.** `useCompanyQuickResearch` drains the run stream in the
-   tab; navigating away mid-run leaves the pipeline finished but Document assembly unfired.
-   Either resume-detect on return (topic linked + syntheses > 0 + no document → offer "Assemble
-   report") or add a server-side run-then-document endpoint.
+7. **Harden the quick-research chain — the one live FLOATING-LAW remainder here.**
+   `useCompanyQuickResearch` drains the run stream in the tab; navigating away mid-run leaves the
+   pipeline finished but Document assembly unfired. That is class D ("dies on refresh") in
+   `live-run-streaming-sweep.md`, not a spinner finding — the progress feed itself is real and
+   already audited compliant. Either resume-detect on return (topic linked + syntheses > 0 + no
+   document → offer "Assemble report") or add a server-side run-then-document endpoint;
+   `useSiteCommandRun` is the primitive to copy.
 8. **Reviewer output contract** (`REVIEWER_OUTPUT_CONTRACT`) must ride every reviewer call until
    the stored prompt is fixed at the source — then delete the constant, never keep both.
 9. **Deepen has no per-run research picker** — add `research_topic_id` to the deepen body like
@@ -186,8 +181,9 @@ research linking: start with the final report (the "Document"), user picks the t
     `readiness`, `entity-write-targets`, `page-reality`, `tree-view`, `pillar-map/layouts`) —
     none covers `setup/ai.ts`'s coercers, `keyword-strategy.ts`, `entity-attach.ts`,
     `proposals.ts`, or `drift.ts`. The coercers are the one thing standing between a drifting
-    agent schema and the database; aidream's `test_setup_agents.py` proves the pattern for its
-    three server twins.
+    agent schema and the database — if a prompt changes shape upstream nothing fails loudly;
+    malformed output is simply shaped into something wrong. aidream's `test_setup_agents.py`
+    proves the pattern for its three server twins. Live chip.
 
 ## Done
 
@@ -201,7 +197,14 @@ research linking: start with the final report (the "Document"), user picks the t
 - Three of them (keyword strategy, entity attach, review) plus brief writing moved SERVER-side
   with durable proposals — `aidream/services/content_plan/setup_agents.py` + `brief_writer.py`.
 - Live streaming everywhere in this feature (`useLiveAgentRun` + `<LiveRunDisplay>`); no spinners.
-  Platform rollout continues in `docs/handoffs/live-stream-everywhere.md`.
+  Content-plan surfaces are listed *Verified compliant — do not re-audit* in
+  `live-run-streaming-sweep.md`. Platform rollout continues in `live-stream-everywhere.md`.
+- **Keyword Intelligence no longer 500s.** This was item 0 and the top decision on this doc:
+  `seo.search_performance_daily` (13.2M rows) had an RLS policy that materialized an array of
+  every accessible row id, timing out every `authenticated` read and every `security_invoker`
+  view over it. Fixed by re-shaping the predicate — verified live 2026-08-15, `std_select` now
+  resolves through `run_id` / `page_id` / `site_id` against their own entity tokens (~16.5s →
+  200ms, equivalent visibility). Its assist chip is resolved.
 - Research creatable FROM Setup (`useCompanyQuickResearch`), auto-linked to the site.
 - "Build with AI" guided intake — `setup/components/BuildWithAiDialog.tsx`.
 - Save-at-every-step draft persistence with unmount/commit flush — `setup/draft.ts`.
@@ -217,28 +220,16 @@ research linking: start with the final report (the "Document"), user picks the t
   stream warning lands orange, and the assists dedupe race — which `features/assists/service.ts`
   already treats as success — lands yellow. Non-recoverable warnings and the statement timeout
   stay RED, pinned by `lib/diagnostics/errorTierRules.test.ts`.
-- **Two orphaned agents to delete or leave dormant** (superseded, referenced by nothing):
-  Keyword Binder `8ffb091c-dccf-4550-a14f-95807fd96b95`, Brief Writer
-  `f9789816-91b9-4e64-a38d-aa4d2a8127be`.
+- **Two agents with no runtime consumer, surfaced for a human ruling** — Keyword Binder
+  `8ffb091c-dccf-4550-a14f-95807fd96b95`, Brief Writer `f9789816-91b9-4e64-a38d-aa4d2a8127be`.
+  Both were superseded by the slot-bound step agents above and are referenced by nothing.
+  **Do not delete them on your own authority**: per the unfinished-work alarm
+  (`common-docs/policies/unfinished-work-alarm.md`), a purpose-built artifact with no consumers
+  is unfinished work until Arman names it dead in writing. Leaving them dormant costs nothing.
 
 ## Decisions needed
 
-**The Keyword Intelligence window is dead for every signed-in user, and the fix
-is a security-policy change somebody has to own.**
-Situation: opening a keyword from a plan node returns HTTP 500 every time.
-`seo.search_performance_daily` has 13.2 million rows, and its row-level security
-policy answers "which rows may this user see?" by building a list of *every*
-matching row id — 13,183,309 of them. Just counting that list takes 44.6
-seconds; the database gives a page 8 seconds before it gives up. So the query
-never had a chance, on any site, including sites with no data at all. The same
-pattern will hit any other large table registered the same way.
-Decide: who makes the policy change (it is the platform's shared access kernel,
-and CLAUDE.md forbids an agent changing a security layer on its own authority),
-and whether the correction is scoped to this table or made in the kernel for
-every large table at once. Full evidence: `FOUND_DEFECTS.md` D182.
-
-
-**The review queue is 18 rows deep with nothing approved. Do you want a single mobile +
+**The review queue is 21 rows deep with nothing approved. Do you want a single mobile +
 headings pass across the whole Content Plan feature before anything else?**
 Situation: every rejection you wrote names the same handful of problems — no page heading,
 controls too small to tap, content clipping at phone width. The features themselves are built and

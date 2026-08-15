@@ -588,6 +588,16 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
 
+- 2026-08-15 — **Setup AI work order groomed to live truth; no code change.**
+  Re-verified against `main`: the Keyword Intelligence 500 is **fixed** (the
+  `seo.search_performance_daily` `std_select` policy now resolves through
+  `run_id` / `page_id` / `site_id` instead of materializing every accessible row
+  id), so that item and its top-of-doc decision are retired. Still true and
+  re-measured: zero `<h1>` in this feature, exactly one `useIsMobile()` caller
+  (`ContentPlanWorkbench`), zero aidream readers of `attributes.planned_topics`,
+  and a review queue at 21 rows / 0 approvals. Assist chips: the RLS chip is
+  resolved; two new ones opened for the unread `planned_topics` and the untested
+  Setup coercers. Details: `docs/handoffs/content-plan-ai-steps.md`.
 - 2026-08-14 — **THE DOOR LAW on the WF-11 CMS badges.** The tree badge (`page` /
   `published`) and the table's Page column (`Draft` / `Published`) named a CMS page without
   opening it. Both are now links to `/cms/{siteId}/pages/{pageId}` in a new tab, built with
