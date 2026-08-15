@@ -13,6 +13,11 @@ import reducer, {
   setUserInputText,
 } from "../instance-user-input.slice";
 import { createInstanceFull } from "../../create-instance-full";
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+
+jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
+  captureError: jest.fn(),
+}));
 
 const CID = "11111111-1111-4111-8111-111111111111";
 
@@ -22,6 +27,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   jest.restoreAllMocks();
+  (captureError as jest.Mock).mockClear();
 });
 
 describe("pre-init keystroke capture", () => {
@@ -33,6 +39,20 @@ describe("pre-init keystroke capture", () => {
     expect(state.byConversationId[CID]?.text).toBe("hel");
     expect(state.byConversationId[CID]?.submissionPhase).toBe("idle");
     expect(console.warn).toHaveBeenCalledTimes(1);
+  });
+
+  it("the scream reaches the Error Inspector, not just the console", () => {
+    // A console line nobody has open is how the original silent `return`
+    // stayed invisible for months (D60). The recovery must be findable.
+    reducer(undefined, setUserInputText({ conversationId: CID, text: "hel" }));
+    expect(captureError).toHaveBeenCalledTimes(1);
+    expect(captureError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source: "unsaved-work",
+        code: "smart-input-pre-init-capture",
+        conversationId: CID,
+      }),
+    );
   });
 
   it("createInstanceFull preserves a pre-init draft (no userInput.text)", () => {
@@ -99,5 +119,6 @@ describe("pre-init keystroke capture", () => {
     );
     expect(state.byConversationId[CID]?.text).toBe("hi");
     expect(console.warn).not.toHaveBeenCalled();
+    expect(captureError).not.toHaveBeenCalled();
   });
 });

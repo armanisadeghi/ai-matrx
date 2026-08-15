@@ -13,6 +13,7 @@ import { AgentListDropdown } from "@/features/agents/components/agent-listings/A
 import { ActiveContextLensChip } from "@/features/scopes/components/active-context/ActiveContextLensChip";
 import { ChatCanvasButton } from "./ChatCanvasButton";
 import { stashChatDraftTransfer } from "./chat-draft-transfer";
+import { chatRouteSurfaceKey } from "./begin-fresh-chat";
 
 interface ChatRunHeaderProps {
   /**
@@ -50,7 +51,7 @@ export function ChatRunHeader({
     // consumeChatDraftTransfer in ChatRoomClient.
     if (activeAgentId) {
       const state = store.getState();
-      const sourceSurfaceKey = `chat-route:${activeAgentId}`;
+      const sourceSurfaceKey = chatRouteSurfaceKey(activeAgentId);
       const sourceConversationId =
         state.conversationFocus.bySurface[sourceSurfaceKey]?.input ??
         state.conversationFocus.bySurface[sourceSurfaceKey]?.display ??
