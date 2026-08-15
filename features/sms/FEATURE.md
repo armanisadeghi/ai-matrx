@@ -28,7 +28,8 @@ Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/commu
 - `app/api/sms/send/route.ts` — authenticated outbound send path.
 - `app/api/webhooks/twilio/sms/route.ts` — inbound messages and keyword handling.
 - `app/api/webhooks/twilio/status/route.ts` — delivery-state updates.
-- `lib/sms/` — Twilio client, send/receive, verification, number management, validation, and notification services.
+- `lib/sms/` — Twilio messaging client, send/receive, verification, number management, and notification services.
+- `lib/communications/providers/twilio/webhook-validation.ts` — shared Messaging/Voice signature validation.
 
 ---
 
@@ -97,6 +98,8 @@ All SMS tables live in the `communication` schema. The enrollment contract prima
 
 ## Change log
 
+- `2026-08-15` — Moved the canonical Twilio signature validator to the shared communications
+  provider adapter and removed the former SMS-only implementation after migrating every consumer.
 - `2026-08-15` — Linked the cross-repo communications record and corrected the feature truth after a live/source audit: documented the transitional consent authority, Twilio-before-ledger ordering, broken START path, pending messages without a worker, incomplete identity resolution, unenforced daily cap, broad system bypass, and unlinked notification receipts.
 - `2026-08-12` — Rendered the newest SMS history page in chronological chat order while preserving newest-first pagination.
 - `2026-08-11` — Aligned the public SMS program and site policies to the registered legal operator, versioned the revised consent, and branded every outbound body before send and logging.

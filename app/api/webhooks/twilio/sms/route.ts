@@ -8,7 +8,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import twilio from 'twilio';
-import { validateTwilioWebhook } from '@/lib/sms/validate';
+import { validateTwilioWebhook } from '@/lib/communications/providers/twilio/webhook-validation';
 import { processInboundSms, isPhoneNumberOptedOut } from '@/lib/sms/receive';
 import type { InboundSmsPayload } from '@/lib/sms/types';
 

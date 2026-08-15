@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { validateTwilioWebhook } from "@/lib/sms/validate";
+import { validateTwilioWebhook } from "@/lib/communications/providers/twilio/webhook-validation";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import type { StatusCallbackPayload } from "@/lib/sms/types";
 import type { TablesUpdate } from "@/types/database.types";

@@ -6,6 +6,10 @@
  */
 
 import Twilio from 'twilio';
+import {
+  getApplicationBaseUrl,
+  getTwilioAuthToken,
+} from '@/lib/communications/providers/twilio/config';
 
 let twilioClient: ReturnType<typeof Twilio> | null = null;
 
@@ -43,13 +47,9 @@ export function getVerifyServiceSid(): string {
 }
 
 export function getAuthToken(): string {
-  const token = process.env.TWILIO_AUTH_TOKEN;
-  if (!token) {
-    throw new Error('TWILIO_AUTH_TOKEN environment variable is not set');
-  }
-  return token;
+  return getTwilioAuthToken();
 }
 
 export function getAppBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://aimatrx.com';
+  return getApplicationBaseUrl();
 }
