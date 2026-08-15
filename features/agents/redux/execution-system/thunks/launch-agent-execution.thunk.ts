@@ -428,7 +428,19 @@ export const launchAgentExecution = createAsyncThunk<
   const userInput = runtime?.userInput;
   const originalText = runtime?.originalText;
   const widgetHandleId = runtime?.widgetHandleId;
-  const variables = runtime?.variables;
+  // Two caller channels reach the SAME injection point: `runtime.variables`
+  // (per-invocation) and `config.defaultVariables` (the ad-hoc launch's twin of
+  // a persisted shortcut's defaults). Only the first was ever read, so every
+  // caller that used the second silently launched with NO variables at all and
+  // the agent ran on its own defaults — measured 2026-08-15 on
+  // /agent-apps/new, where the whole `prompt_object` (the source agent the app
+  // is built from) was dropped and the generator invented an app out of the
+  // ambient org context instead (FOUND_DEFECTS D152). Merge both; runtime wins.
+  const configDefaultVariables = config?.defaultVariables ?? undefined;
+  const variables =
+    runtime?.variables || configDefaultVariables
+      ? { ...(configDefaultVariables ?? {}), ...(runtime?.variables ?? {}) }
+      : undefined;
   const runtimeContext = runtime?.context;
 
   const displayModeOverride = config?.displayMode;

@@ -110,6 +110,10 @@ export interface AgentValueDefaults {
   /**
    * Override the agent's variable defaultValues for this shortcut/app.
    * Keyed by variable NAME. scopeMappings + user edits still override.
+   *
+   * On a PERSISTED shortcut these apply inside `createInstanceFromShortcut`.
+   * On an ad-hoc `launchAgentExecution` call they are merged with (and beaten
+   * by) `runtime.variables` — see the merge in launch-agent-execution.thunk.ts.
    */
   defaultVariables: Record<string, unknown> | null;
   /**
