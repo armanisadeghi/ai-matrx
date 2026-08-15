@@ -134,12 +134,12 @@ export function useOrgEntitlement(
   );
 
   return useMemo(() => {
-    const cached = status?.capabilities[capability];
-    if (cached) {
+    const cached = status ? status.capabilities[capability] : undefined;
+    if (status && cached) {
       return {
         ...cached,
         isLoading: false,
-        orgTier: status!.orgTier,
+        orgTier: status.orgTier,
         check,
         definition,
         refresh,
