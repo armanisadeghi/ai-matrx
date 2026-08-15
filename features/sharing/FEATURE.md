@@ -319,6 +319,8 @@ and token landing, `acquisition` flag for conversion chrome). Charter + plan:
 - **Ownership has THREE states, not two: resolving / owner / not-owner — plus "couldn't determine".** `useIsOwner` returns `{ isOwner, loading, error }`; gating on `!isOwner` alone renders the non-owner UI during the async check and after any failure. `resolveResourceOwnership()` is the underlying resolver and returns `{ isOwner, error }` — `isOwner: false` with a non-null `error` means **unknown**, never a denial, and must never be shown to the user as one.
 - **A share surface that can't act must say why.** Empty space where controls belong reads as a broken dialog. Non-owner gets "Only the owner can change sharing"; unresolvable ownership gets a loud error with the underlying message; an unregistered resource type or missing id refuses to render controls at all and logs.
 - **RLS is the security boundary.** `useIsOwner` / `useCanEdit` / etc. are UX only. A bypassed client check must not be a privilege escalation.
+- 🚨 **The Public tab has TWO shapes, and enum types get a THREE-state picker — never the switch as well.** For a type whose `get_share_capabilities` reports `kind: "enum"`, `PublicAccessTab` renders Only me / My organization / Anyone and writes through `setResourceVisibility()`. Legacy `kind: "boolean"` types keep the original two-state switch. **A type never renders both** — the switch is a strict subset of the picker, and two controls over one column is how they drift. `setResourceVisibility()` **refuses** a boolean-backed type rather than mapping `internal` onto "not public": that mapping would tell a user their team can open something when nobody but them can. Reason this shipped (2026-08-15): `internal` — the entire org-sharing state — was **unreachable from the UI on every enum-backed type**, so a row could carry an `organization_id` and still have no way to be shared with that org.
+- **A bare-table-name in a `has_permission()` RLS predicate is an OUTAGE, not a silent no-op.** `has_permission_for` RAISES on an unknown token, and a raise inside a row predicate takes down the **whole query** — so the table returns zero rows to *everyone, including each row's own author*, not just to would-be grantees. `workbench.udt_workbooks` and `udt_documents` sat like this until 2026-08-15 (measured: 0 of 17 workbooks and 0 of 24 documents readable by any of the 18 identities that own data there). Always pass the entity **token**; `iam.apply_rls` reads it from `platform.entity_types` so generated policies cannot get this wrong. Hand-written policies can, and did.
 - **Public state lives on the resource row, not `permissions`.**
   `get_share_capabilities()` names the verified enum or boolean column;
   `getResourceVisibility()` / `useSharingStatus()` consume that answer. A null
@@ -364,6 +366,26 @@ Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) 
 
 ## Change log
 
+- 2026-08-15 — Claude: **the four workbench UDT entities canonicalized, and a live outage on two
+  of them fixed.** `workbook` / `udt_document` / `dataset` / `structured_list` were the last
+  registered shareable entities on the legacy `is_public` + `user_id` model; they each already had
+  `organization_id` but no `visibility`, so "share this with my org" was unexpressible.
+  - Migrations `workbench_udt_canonical_step1..3`: added `visibility` (backfilled `is_public=true`
+    → `public` / org present → `internal` / else `personal`, i.e. 9 / 192 / 8 rows), `created_by`
+    NOT NULL, `iam.apply_rls(...,'entity')`, and registry rows → `created_by` + `is_public_column
+    NULL`. 181 of the 192 `internal` rows sit in personal or single-member orgs where `internal`
+    reaches only the owner — **11 rows** genuinely widened, into real multi-member orgs, which was
+    the intent.
+  - **The outage:** both `udt_workbooks` and `udt_documents` called `has_permission()` with the
+    physical table name; the raise inside the row predicate meant `/workbooks` and `/documents`
+    returned nothing to anyone. See the invariant above.
+  - **`PublicAccessTab` gained the three-state picker** (`setResourceVisibility`), which closes the
+    platform-wide gap where `internal` could not be chosen on any enum-backed type.
+  - Verified by impersonating real RLS per user before/after: **0 rows lost**, 73 gained, 0 errors;
+    stranger and anon reach exactly the 9 public rows. Legacy columns remain behind the declared
+    `workbench._bridge_legacy_owner` bridge until the ~30 RPCs, aidream's picklists router and ~15
+    frontend files are converted — tracked in
+    [`docs/handoffs/workbench-udt-canonicalization.md`](../../docs/handoffs/workbench-udt-canonicalization.md).
 - 2026-08-15 — Claude: **D193 (`context_item` half) — the registry declared a column that does not
   exist, on an entity that is not independently shareable.** `context_item` carried
   `is_public_column = 'visibility'`, but `context.context_items` has **no `visibility` column**
