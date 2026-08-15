@@ -23,7 +23,9 @@ Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/commu
 - `app/(public)/terms-and-conditions/page.tsx` — SMS program terms.
 - `features/settings/tabs/MessagingTab.tsx` — production enrollment, opt-out, and personal text-assistant binding.
 - `features/sms/components/SmsAssistantSettingsSection.tsx` — saved-agent selection, per-user pause/disconnect, readiness, and safe-test controls.
+- `features/sms/components/SmsNotificationPreferencesSettingsSection.tsx` — explicit notification-family choices, starting with Task reminders.
 - `features/sms/hooks/useSmsAssistantProgram.ts` — direct authenticated RPC adapter for the selected assistant program.
+- `features/sms/hooks/useSmsTaskNotifications.ts` — direct authenticated RPC state for the task-reminder family.
 - `features/sms/task-reminder.ts` — typed direct-RPC adapter for one policy-gated task reminder.
 - `app/(dev)/demos/tests/sms/` — internal testing and diagnostics.
 - `app/api/sms/verify/route.ts` — Twilio Verify plus verified-consent persistence.
@@ -79,6 +81,13 @@ All SMS tables live in the `communication` schema. The enrollment contract prima
 5. Aidream runs the canonical agent against the reserved canonical chat conversation with tools disabled, atomically enqueues the reply, and delivers it through the durable outbound worker.
 6. Pause preserves the binding. Disconnect clears it. Both leave ordinary SMS-notification enrollment unchanged.
 
+### Notification-family preferences
+
+1. After verified SMS enrollment, the Messaging surface loads the caller's task-reminder choice through `communication.get_my_sms_task_notification_preference`.
+2. The checkbox is an explicit opt-in and never infers permission from global SMS consent or from the text-assistant switch.
+3. `communication.configure_my_sms_task_notifications` changes only `task_notifications`, is gated by `auth.uid()`, and refuses enablement without the existing verified, opted-in program binding.
+4. A blocked task-reminder action opens the exact Task reminders control through the canonical setting-door deep link, rather than dropping the user at the top of Messaging.
+
 ### Actionable task reminder
 
 1. From the canonical task editor, the user confirms **Text reminder**.
@@ -100,6 +109,7 @@ All SMS tables live in the `communication` schema. The enrollment contract prima
 - STOP, HELP, and START take precedence over agent execution and are durably recorded before opt-out enforcement.
 - **Phone number alone is not authorization.** Assistant execution requires the exact verified user/program binding returned by the canonical resolver; ambiguous or missing identity executes nothing.
 - **Global and user stops are distinct.** `sms_phone_numbers.assistant_enabled` is read-only health on user surfaces; `sms_notification_preferences.ai_agent_messages` is the user's pause/resume switch.
+- **Consent, notification families, and assistant replies are independent controls.** Overall verified SMS consent is the delivery prerequisite; `task_notifications` is an explicit family opt-in; `ai_agent_messages` governs only assistant replies.
 - **Consequential tools stay disabled in the owner beta.** The SMS worker invokes the canonical agent with an empty replacement tool set.
 - **A word is never authority.** `DONE` executes only through one exact durable offer; zero, malformed, or ambiguous offers never enter the worker queue.
 - A worker crash must not mint a second chat turn or Twilio send. Expired processing/sending claims become explicit stuck/uncertain work for repair, never automatic retries.
@@ -119,6 +129,7 @@ All SMS tables live in the `communication` schema. The enrollment contract prima
 
 ## Change log
 
+- `2026-08-15` — Added the production Task reminders preference: a direct authenticated getter/setter pair that can change only the caller's task-notification family, a novice-facing checkbox on Messaging, and an exact setting-door recovery from a blocked task reminder.
 - `2026-08-15` — Added the first canonical actionable notification: the task editor queues a branded, consent/quiet-hours/rate-limited non-recurring task reminder through a direct authenticated RPC, with exact `DONE` offer correlation, command-first no-agent admission, crash recovery, and fail-closed zero/malformed/ambiguous handling.
 - `2026-08-15` — Aligned the inbound webhook test with the canonical `www.aimatrx.com` signing host and current processor result contract; the route now accepts the standard `Request` surface it actually consumes.
 - `2026-08-15` — Added the production personal text-assistant binding to Messaging settings using direct authenticated, program-scoped RPCs; added durable provider-event claims, exact identity/conversation resolution, policy-keyword precedence, canonical agent execution with tools disabled, durable agent/outbound workers, crash fences, early status-callback correlation, and separate global/user kill switches.

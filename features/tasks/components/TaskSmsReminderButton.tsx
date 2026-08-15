@@ -9,8 +9,14 @@ import {
   enqueueMyTaskSmsReminder,
   taskSmsReminderBlockedCopy,
 } from "@/features/sms/task-reminder";
+import { SMS_TASK_REMINDERS_SETTING_ID } from "@/features/sms/notification-preferences";
+import { settingDoorHref } from "@/features/settings/doors/settingDoorTarget";
 
-const MESSAGING_SETTINGS_HREF = "/user-settings/communication/messaging";
+const TASK_REMINDERS_SETTING_HREF = settingDoorHref({
+  scope: "user",
+  tabId: "communication.messaging",
+  controlId: SMS_TASK_REMINDERS_SETTING_ID,
+});
 
 export function TaskSmsReminderButton({ taskId }: { taskId: string }) {
   const router = useRouter();
@@ -42,7 +48,7 @@ export function TaskSmsReminderButton({ taskId }: { taskId: string }) {
         action: blocked.openMessagingSettings
           ? {
               label: "Open settings",
-              onClick: () => router.push(MESSAGING_SETTINGS_HREF),
+              onClick: () => router.push(TASK_REMINDERS_SETTING_HREF),
             }
           : undefined,
       });

@@ -16,6 +16,7 @@ import {
   getNotificationPermission,
 } from "@/features/messaging/utils/notificationSound";
 import { SmsEnrollmentSettingsSection } from "@/features/sms/components/SmsEnrollmentSettingsSection";
+import { SmsNotificationPreferencesSettingsSection } from "@/features/sms/components/SmsNotificationPreferencesSettingsSection";
 import { SmsAssistantSettingsSection } from "@/features/sms/components/SmsAssistantSettingsSection";
 import { useIsMounted } from "@/hooks/use-is-mounted";
 
@@ -152,6 +153,7 @@ export default function MessagingTab() {
       )}
 
       <SmsEnrollmentSettingsSection />
+      <SmsNotificationPreferencesSettingsSection />
       <SmsAssistantSettingsSection />
     </>
   );

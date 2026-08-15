@@ -21,7 +21,7 @@ The single user-facing surface for every preference in the app — a VS Code-sty
 - `app/(authenticated)/settings-primitives/page.tsx` — primitive gallery (every control, every state).
 - `app/(authenticated)/settings-tree-demo/page.tsx` — tree + drawer-nav demo with a fake 20-node tree.
 - `app/(authenticated)/settings-hooks-demo/page.tsx` — `useSetting` across 3 slices.
-- `/user-settings/communication/messaging` — production SMS enrollment, opt-out, and personal text-assistant binding.
+- `/user-settings/communication/messaging` — production SMS enrollment, notification-family preferences, opt-out, and personal text-assistant binding.
 
 **Overlay ids** (dispatched via `openOverlay(...)`)
 
@@ -176,6 +176,19 @@ Path:
 
 Exit: The surface shows the verified phone, sender/program health, consent, selected agent/version, canonical chat door, block reasons, and one server-derived readiness verdict.
 
+### 8. SMS notification-family preference
+
+Trigger: A signed-in, SMS-enrolled user opens **Communication → Messaging → Text notifications**.
+
+Path:
+
+- `SmsNotificationPreferencesSettingsSection` composes the official checkbox, section, callout, and exact `SettingAnchor` primitives.
+- `useSmsTaskNotifications` reads and writes through the authenticated `communication.get_my_sms_task_notification_preference` and `configure_my_sms_task_notifications` RPCs.
+- Enabling Task reminders requires the existing verified, opted-in SMS program binding. Disabling remains available even if delivery health later changes.
+- The RPC changes only `task_notifications`; overall SMS enrollment and `ai_agent_messages` remain independent.
+
+Exit: The saved family choice is visible on the same Messaging surface, and a blocked Task editor action opens this exact control.
+
 ---
 
 ## Invariants & gotchas
@@ -193,6 +206,7 @@ Exit: The surface shows the verified phone, sender/program health, consent, sele
 - **Do NOT regress on `components/user-preferences/AiModelsPreferences.tsx`.** It's kept on purpose — it's the only remaining legacy `*Preferences.tsx` still referenced (by `AiModelsTab`). Deleting it breaks the shell.
 - **Category tabs (e.g. `id: "general"`, `id: "ai"`) have `component: Placeholder`.** The tree's folder nodes only expand/collapse, they don't activate. The placeholder is never rendered for them; it's still required to satisfy the type.
 - **SMS assistant preferences use direct authenticated RPCs.** Never add a Next.js API route between the Messaging tab and `communication.get/configure/disconnect/enqueue_my_sms_assistant_*`.
+- **SMS notification-family preferences use family-scoped authenticated RPCs.** A family checkbox never writes the broad preferences row through a Next.js API route and never changes consent or assistant state as a side effect.
 - **The shared sender kill switch is not a user preference.** Messaging renders `sms_phone_numbers.assistant_enabled` as read-only health; only an operator can change it.
 
 ---
@@ -231,6 +245,7 @@ Phase 1–8 shipped. Phase 9 (this doc + skill) closes the original project.
 
 ## Change log
 
+- `2026-08-15` — Added the explicit Task reminders SMS family preference to Messaging, backed by caller-scoped direct Supabase RPCs and targeted by the exact setting-door recovery from the Task editor.
 - `2026-08-15` — Added the personal Text assistant section to production Messaging: verified binding and consent visibility, canonical agent/version picker, per-user enable/pause/disconnect, canonical chat door, read-only global health, and a durable safe-test action through direct authenticated RPCs.
 - `2026-08-15` — **Exact setting doors are a platform primitive.** `SettingDoor`
   targets a user setting by tab + control and preserves the existing

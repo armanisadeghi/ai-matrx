@@ -9505,6 +9505,19 @@ export type Database = {
           verified_user_phone: string
         }[]
       }
+      configure_my_sms_task_notifications: {
+        Args: { p_enabled: boolean; p_program_key?: string }
+        Returns: {
+          blocked_reasons: string[]
+          can_enable: boolean
+          consent_status: string
+          destination_ready: boolean
+          masked_phone: string
+          program_key: string
+          sms_enabled: boolean
+          task_notifications: boolean
+        }[]
+      }
       disconnect_my_sms_assistant: {
         Args: { p_program_key: string }
         Returns: {
@@ -9601,6 +9614,19 @@ export type Database = {
           sms_enabled: boolean
           user_assistant_enabled: boolean
           verified_user_phone: string
+        }[]
+      }
+      get_my_sms_task_notification_preference: {
+        Args: { p_program_key?: string }
+        Returns: {
+          blocked_reasons: string[]
+          can_enable: boolean
+          consent_status: string
+          destination_ready: boolean
+          masked_phone: string
+          program_key: string
+          sms_enabled: boolean
+          task_notifications: boolean
         }[]
       }
       has_exact_sms_task_done_offer: {
