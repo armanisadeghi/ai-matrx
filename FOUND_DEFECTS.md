@@ -137,24 +137,6 @@ Their `shareable_resource_registry` rows say `is_public_column='is_public'`, `ow
 
 The other 51 `visibility`-less entities were reviewed and are legitimately non-shareable (user preferences, memberships, invitations, likes/views, system errors, job runs).
 
-### D193 — the shared `TabsContent` hardcodes `forceMount`: every tab panel in the app is always mounted (2026-08-15)
-
-`components/ui/tabs.tsx` (~line 69) carries `forceMount //<=======Add this line` plus
-`data-[state=inactive]:hidden`. Radix unmounts inactive panels by default; this override makes
-every hidden tab fully live across **122 consumer files** — its effects run, its fetches fire, its
-subscriptions open, and it registers whatever a mounted component registers.
-
-Not theoretical: on `/administration/agents/agent-apps/executions` both tab tables registered a
-`SurfaceRuntimeProvider` for the same surface at the same depth, so the Errors emitter won the
-tie-break and agents on the Executions tab saw error rows (fixed for that page only in `e8534c8d`
-— see D194 for the missing guard). Any hidden tab that opens a realtime channel or polls is doing
-it right now.
-
-**Fix:** restore Radix's default (unmount inactive) and make force-mounting opt-in via an explicit
-prop for panels that genuinely must preserve state (scroll position, in-flight editors). Whoever
-takes it greps the 122 consumers for effects/subscriptions that assume `mounted == visible`.
-Filed as AI Dream feedback `2295ffb3-8d1f-43e9-8dcf-f8262a6d3999`.
-
 ### D194 — two surface providers at the same depth silently pick a winner; no warning (2026-08-15)
 
 `features/surfaces/runtime/SurfaceRuntimeContext.tsx::getSurfaceRuntime()` resolves "deepest wins,
@@ -776,6 +758,7 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 
 One line per fix — title, date, pointer. History lives in git. Entries older than ~2 weeks get deleted.
 
+- **D193 (tabs)** — `TabsContent` unmounts inactive panels again; the hardcoded `forceMount` (added incidentally in an unrelated 2025-02-26 bulk commit, live for 18 months) is gone and force-mounting is opt-in per panel. Hidden tabs no longer run effects, fire fetches, open subscriptions, or register providers. Verified in-browser: on `/administration/agents/agent-apps/executions` the inactive panel now holds **0** children (it was a fully-live second table registering a competing `SurfaceRuntimeProvider` — the D194 trigger), on `/administration/database/enums` two of three heavy admin tables no longer mount, and switching tabs still mounts and renders correctly. Audited for state-loss before flipping: the 5 stream/Monaco panels all render from props; **zero** uncontrolled (`defaultValue`) inputs exist inside any panel repo-wide; and every live split-across-tabs form lifts its state above `<Tabs>` (checked the clearest case, `AgentAppSettingsContent`, plus the config/catalog/shape editors). The one component holding per-tab draft state, `tabbed-builder/TaskTab`, is inside `MainPromptBuilder`, which **nothing mounts** — unfinished scaffolding, left alone, and whoever finishes it lifts the state rather than reaching for `forceMount`. 2026-08-15.
 - **D189** — Strict Validation is reachable at last: the toggle moved into `TableConfigModal`'s Table Settings tab (the modal the gear actually opens), saving through `setValidationMode()`; the never-mounted `TableSettingsModal` is DELETED. Authenticated Access was deliberately not ported — `udt_datasets` has no `authenticated_read` column and `update_user_table_metadata` ignores `p_authenticated_read`, so that switch could never save anything. Browser-verified on `/data/…`: toggle on → toast → survives a hard reload as ON, and with strict armed the DB refuses both a missing required field and a non-numeric value (`udt_validate_row` P0001) (`aa49f1190`). 2026-08-15.
 - **D191** — the orphan-trigger retirement's kept-set assertion now names BOTH deliberate keeps (`platform.dead_relation_write()` + `workflow.plan_touch_row()`); `retire_orphan_updated_at_trigger_helpers.sql` applied live and the shared applier is unblocked. The assertion did its job — it refused to retire 19 functions while an un-triaged 20th orphan existed, and `workflow.plan_touch_row()` turned out to be matrx-graph's standalone-deployment fallback that must NOT be retired. 2026-08-14.
 - **D164 (the duplicate)** — `keyword_set` deactivated via the canonical `content_ir.set_kind_activation` gate (reversible, not deleted) after the investigation proved both kinds identical from birth; `keyword_variant_set` survives — it holds the only real component and the only bound agent, `keyword_set` had zero consumers. Verified live: **0** fingerprint collisions remain between active `user_authored` kinds. Arman's call, 2026-08-15. Mint-time guard → D164 remainder.

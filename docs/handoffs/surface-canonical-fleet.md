@@ -27,7 +27,7 @@ vision: []
 ## Emitter laws (learned the hard way)
 
 - **One live provider per surface, or the scope is a coin flip.** `getSurfaceRuntime()` resolves "deepest wins, ties broken by registration id". Real nesting is fine (an open window out-depths the page). SIBLINGS at the same depth are not: the registry silently drops one. Wiring an emitter into a tabbed/multi-pane page? Register it **only while that pane is active** — exemplar `SurfaceScopeWhenActive` in `app/(admin)/administration/agents/agent-apps/executions/page.tsx`. There is no warning today (FOUND_DEFECTS D194).
-- **`TabsContent` is force-mounted repo-wide** (`components/ui/tabs.tsx`), so "the other tab isn't rendered" is FALSE — every tab's component is live and registering. This is what made the rule above bite (FOUND_DEFECTS D193).
+- **`TabsContent` unmounts inactive panels again** (`components/ui/tabs.tsx`, restored 2026-08-15 — D193). It hardcoded `forceMount` for 18 months, so every tab's component was live and registering while hidden, which is what made the rule above bite. `forceMount` is now opt-in per panel. Two consequences: "the other tab isn't rendered" is TRUE again by default, and a panel that DOES opt in is back to being a sibling emitter — `SurfaceScopeWhenActive` is still the pattern, since a force-mounted pane registers exactly like the old repo-wide behavior did.
 - **Rows vs stats: say which one you mean.** When a grid filters client-side but stat tiles count the full fetch, emitting both without saying so lets an agent compute a rate from mismatched numerators. Either emit the matching pair or state the asymmetry in BOTH descriptions (exemplar: `admin-agent-apps.manifest.ts` `executions_rows` / `executions_stats`).
 
 ## Route-resolution laws (learned the hard way)
