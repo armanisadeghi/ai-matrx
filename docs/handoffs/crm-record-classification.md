@@ -187,30 +187,51 @@ and must be built ONCE, generically (not in CRM):
   Clay never lets found rows touch the CRM. **Nobody keeps a durable "was discovered" marker after
   promotion, and only Apollo has any reversion path** — both are open goals for us.
 
+## Ratified 2026-08-15 — both open decisions answered
+
+1. **The 933 channels** — *"for now, they go back to the research they came from, but we do need to
+   create a centralized way for all of the discovered YouTube channels all across our entire system
+   to be able to curate some and put them into lists that are shared by everyone."*
+2. **The grant spine** — *"yeah, I think we need to generalize it, so that it'll work for other
+   things other than the one that it's already working for now. So, yeah, go for it."*
+
+### What "back to the research" actually means — the fold never built the link
+
+The earlier plan (repoint the rows to their discovering org) is a **no-op**: the source
+`research.youtube_video` rows are themselves all in the system org
+(1,169 + 58 + 50 across three creators), so the system org already IS the discovering org and the
+fold behaved correctly per its own contract.
+
+The real defect is that **the 933 channel parties have ZERO edges.** Live edge census:
+`party → seo_referring_domain_profile` `link_prospect` 255 · `party → research_source` `authored`
+8 · `party → seo_reputation_case` `outreach_target` 5 · `party → research_topic` `expert_for` 4 ·
+`party → research_source` `appears_in` 3 / `mentioned_in` 3 · `plan_node → party` `reviewed_by` 2 ·
+`party → web_site` `writes_for` 1. **Nothing for YouTube.** The `channel_party_id` column that
+`common-docs/systems/crm/FEATURE.md` planned was never built, and `social_fold.py` writes no edge.
+
+So the work is to **create the missing link**, not to move rows: every channel party gets an edge
+back to the videos/research that produced it, which is what makes it reachable from the feature
+that owns it instead of orphaned in a CRM it was never meant to be in.
+
 ## Decisions needed from Arman
 
-**1. The 933 YouTube channels — repoint first, or publish first?**
-*Situation:* `common-docs/systems/crm/SHARED_CATALOG.md` (2026-08-14) says these are **raw
-discovery, not a catalog** — "vetted by no one" — and recommends repointing them to the org whose
-research run found them, with promotion into the Matrx Library as a separate curator-gated act. On
-2026-08-15 Arman said they "just need to be categorized properly… they're gonna be a system shared
-resource." Both can be true, but they are different first moves.
-*Decide:* repoint the 933 to their discovering org now and curate a vetted subset up later, or
-treat the whole set as the catalog and publish it from the Library org.
+**BLOCKED ON APPROVAL, not on a decision — the grant-spine migration.** It is written and ready;
+the permission classifier refused it because it contains `drop table rag.data_store_grants cascade`
+on a live system. That gate is correct — it needs a human yes.
 
-**2. The grant spine — generalize it or fork it?**
-*Situation:* sharing-by-industry works today, but `rag.data_store_grants` keys on `data_store_id`
-and every `library_*` function is typed to it. Publishing a list of channels needs one of two
-things. The brief recommends (A) and explicitly declined to build it without Arman's word.
-*Decide:* **(A)** promote grants to a platform-level table keyed by `(entity_type, entity_id)` so
-any registered entity — data store, outreach list, expertise pack, agent — can be published to an
-audience; or **(B)** fork a `crm.outreach_list_grants` twin, faster but the audit log, curator
-check and catalog RPC all fork with it.
+*What it does:* creates `platform.entity_grants` keyed by `(entity_type, entity_id)` with the same
+audience CHECK, the same three partial uniques, the same RLS predicate; carries the 2 live rows
+over as `entity_type='data_store'`; then **replaces `rag.data_store_grants` with a
+`security_invoker` view** over it plus INSTEAD OF insert/update/delete triggers — so all **15**
+dependent functions (`library_grant_publish|revoke|subscribe|unsubscribe`,
+`fn_list_library_catalog`, `rag_source_has_library_grant`, `user_can_read_data_store_via_grant`,
+`library_grant_provenance[_batch]`, `can_curate_library_document`, …) keep working byte-for-byte
+unchanged. One authority, no fork, nothing repointed in that migration.
 
-**3. Blocked on tooling, not on a decision:** seeding the `web_entity_type` rows was refused by the
-permission classifier, and the Supabase MCP is unauthenticated in a non-interactive session. The
-seed script is written and idempotent (checks for existing rows, inserts parents then children,
-verifies) — it needs either an approved run or an authorized MCP session.
+*The one real design cost, handled explicitly:* a generic `entity_id` cannot carry a foreign key,
+so the old `ON DELETE CASCADE` from `rag.data_stores` is re-created as an AFTER DELETE purge
+trigger. **Every future publishable entity type registers its own purge trigger** — that pattern is
+in the table comment so it cannot be forgotten.
 
 ## Remaining work
 
