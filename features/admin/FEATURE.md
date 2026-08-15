@@ -134,7 +134,7 @@ No database tables, API endpoints, or Redux state are owned by this feature.
 - Navigation gaps are loud but non-blocking during a normal release. Do not change the advisory release path into a silent skip or a hard release failure.
 - Launchpad navigation is new-tab-only. Never add a same-tab destination, intercepted router navigation, overlay launch, or window-panel replacement to that page.
 - Launchpad freshness uses one visibility-aware full-page reload per hour. Never replace it with frequent polling, repeated intervals, background reloads, or a second refresh mechanism.
-- The Launchpad is intentionally desktop-first and information-dense, but its single responsive grid must remain usable at narrow widths; do not fork a second mobile catalog.
+- The Launchpad is intentionally desktop-first and information-dense. Its packed responsive columns prevent tall domains from leaving dead space beneath short neighbors and collapse naturally at narrow widths; do not replace them with equal-height grid rows or fork a second mobile catalog.
 
 ---
 

@@ -194,11 +194,11 @@ export default function AdminLaunchpad() {
 
       <main className="p-3">
         {visibleDomains.length > 0 ? (
-          <div className="grid items-start gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 min-[2200px]:grid-cols-5">
+          <div style={{ columnWidth: "22rem", columnGap: "0.75rem" }}>
             {visibleDomains.map((domain) => (
               <section
                 key={domain.slug}
-                className="min-w-0 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900"
+                className="mb-3 inline-block w-full break-inside-avoid overflow-hidden rounded-lg border border-slate-200 bg-white align-top shadow-sm dark:border-slate-800 dark:bg-slate-900"
               >
                 <Link
                   href={adminDomainHref(domain)}
