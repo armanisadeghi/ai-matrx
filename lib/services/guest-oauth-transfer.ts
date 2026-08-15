@@ -11,13 +11,15 @@
 // `linkIdentity` needs the anon session, which is minted server-side by
 // Python and never reaches the browser. So for OAuth we TRANSFER ownership
 // instead: the `public.transfer_guest_data_to_user` SECURITY DEFINER RPC
-// (migrations/guest_oauth_data_transfer.sql) repoints every row owned by the
-// anon UUID — it discovers ALL FK columns referencing auth.users(id) at
-// runtime, so new tables are covered automatically — writes an audit row to
-// `public.guest_conversion_audit`, stamps `guest_executions.converted_to_user_id`,
-// and nulls `guest_executions.auth_user_id` so the Python guest registry
-// (aidream _guest_registry_impl.py) mints a fresh anon identity for future
-// guest activity on that device.
+// (`migrations/guest_oauth_data_transfer.sql`, hardened by
+// `migrations/guest_oauth_personal_org_merge.sql`) discovers FK-owned rows at
+// runtime and transfers them. Guest organization-scoped rows are first moved
+// into the permanent user's one personal org; the guest's personal org and
+// its owner membership stay with the guest identity. The RPC writes an audit
+// row, stamps `guest_executions.converted_to_user_id`, and nulls
+// `guest_executions.auth_user_id` so the Python guest registry (aidream
+// _guest_registry_impl.py) mints a fresh anon identity for future guest
+// activity on that device.
 //
 // Carrier: the OAuth server actions can't hand form fields to the provider
 // round-trip, so they stash the fingerprint in a short-lived httpOnly cookie

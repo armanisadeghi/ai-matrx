@@ -366,6 +366,7 @@ Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) 
 
 ## Change log
 
+- 2026-08-15 — **Canonical share links now have a real organization edge.** `platform.share_links.organization_id` was created as a bare UUID even though it stores `iam.organizations.id`. That made it the lone organization-scoped table missed by the FK-discovered guest→OAuth personal-workspace merge: two links moved to the permanent creator but retained the restored guest workspace id. `share_links_organization_fk_guest_repair.sql` re-homes every historical audited match and adds `share_links_organization_id_fkey`; future guest transfers now discover this table automatically.
 - 2026-08-15 — Claude: **the four workbench UDT entities canonicalized, and a live outage on two
   of them fixed.** `workbook` / `udt_document` / `dataset` / `structured_list` were the last
   registered shareable entities on the legacy `is_public` + `user_id` model; they each already had
