@@ -41,6 +41,15 @@ import { cn } from "@/lib/utils";
 import { NoteContextSection } from "./NoteContextSection";
 import { CreateFolderDialog } from "./CreateFolderDialog";
 import { createFolder } from "../service/notesService";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import {
+  noteDisplayLabel,
+  noteLocation,
+  noteRecordData,
+  noteRecordMetaData,
+  noteRecordSummary,
+  type NoteRecordView,
+} from "@/features/notes/format";
 
 interface NoteMetadataBarProps {
   noteId: string;
@@ -72,6 +81,28 @@ export function NoteMetadataBar({
   const noteOrgId = note?.organization_id ?? null;
   const noteProjId = note?.project_id ?? null;
   const noteTaskId = note?.task_id ?? null;
+
+  /**
+   * The record view for agent-copy, assembled at CLICK time (never memoized on
+   * the saved row): `_dirtyFields` is a Set, and `_error` is the exact sentence
+   * the save-failure banner renders. `content` is the store buffer, which the
+   * editor's debounced flush keeps current — a note the user is mid-keystroke
+   * on can trail by one debounce, and the payload says so via `unsaved_changes`
+   * rather than pretending the row is authoritative.
+   */
+  const buildRecordView = useCallback((): NoteRecordView => {
+    if (!note) {
+      throw new Error("buildRecordView called with no note loaded");
+    }
+    return {
+      note,
+      content: note.content ?? null,
+      dirtyFields: note._dirtyFields ? [...note._dirtyFields] : [],
+      error: note._error ?? null,
+      saving: !!note._saving,
+      consecutiveSaveFailures: note._consecutiveSaveFailures ?? 0,
+    };
+  }, [note]);
 
   const [folderOpen, setFolderOpen] = useState(false);
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
@@ -275,6 +306,71 @@ export function NoteMetadataBar({
             </button>
           )}
         </div>
+
+        {/*
+         * The note RECORD pair. A note's body is the highest-value AI capture
+         * in the app, so this is the one control that carries it. Built at
+         * click time from the LIVE store record — dirty fields and any save
+         * error the user is staring at come first in the payload, never a
+         * saved-row snapshot.
+         */}
+        {note && (
+          <CopyButtons
+            size="xs"
+            label={`Note "${noteDisplayLabel(note)}"`}
+            className="shrink-0"
+            human={() => noteRecordSummary(buildRecordView())}
+            json={() => noteRecordData(buildRecordView())}
+            agent={() => {
+              const view = buildRecordView();
+              return {
+                kind: "note-record",
+                location: noteLocation("Editor"),
+                description:
+                  "The note currently open in the editor — body, metadata, unsaved-change state and any save error.",
+                data: noteRecordData(view),
+                summary: noteRecordSummary(view),
+                attributes: {
+                  id: view.note.id,
+                  label: noteDisplayLabel(view.note),
+                  folder: view.note.folder_name ?? undefined,
+                  words: noteRecordData(view).word_count,
+                  unsaved: view.dirtyFields.length > 0,
+                  save_error: view.error ?? undefined,
+                },
+              };
+            }}
+            agentVariant={{
+              id: "note-full",
+              label: "Note (with body)",
+              hint: "Everything on screen, body included",
+              position: "first",
+            }}
+            aiVariants={[
+              {
+                id: "note-metadata",
+                label: "Metadata only",
+                hint: "Folder, tags, context and save state — no body",
+                build: () => {
+                  const view = buildRecordView();
+                  return {
+                    kind: "note-record",
+                    location: noteLocation("Editor"),
+                    description:
+                      "The open note's metadata and live save state, with the body deliberately omitted.",
+                    data: noteRecordMetaData(view),
+                    attributes: {
+                      id: view.note.id,
+                      label: noteDisplayLabel(view.note),
+                      detail: "metadata-only",
+                      unsaved: view.dirtyFields.length > 0,
+                    },
+                  };
+                },
+              },
+            ]}
+          />
+        )}
       </div>
 
       {folderOpen &&
