@@ -29,6 +29,12 @@ export interface TranscriptionSegment {
 
 export interface TranscriptionOptions {
   language?: string; // ISO-639-1 language code (e.g., 'en', 'es')
+  /**
+   * Server catalog model alias (e.g. "stt-default"). Resolved from the listen
+   * engine registry by `features/audio/service/transcribe.ts` — call sites
+   * should route through `transcribe()` rather than naming a model here.
+   */
+  model?: string;
 }
 
 export interface AudioRecordingState {

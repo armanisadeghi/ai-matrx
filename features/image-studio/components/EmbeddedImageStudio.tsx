@@ -177,6 +177,13 @@ export function EmbeddedImageStudio({
   className,
 }: EmbeddedImageStudioProps) {
   const effectiveLabel = hideTitle ? undefined : label;
+  // NOTE: deliberately does NOT mount a <SurfaceRuntimeProvider> for
+  // matrx-user/image-studio. This is a widget embedded inside OTHER surfaces
+  // (html-pages Save tab, Image Manager, the cloud Image Studio tab); a nested
+  // provider wins under deepest-wins and would shadow the host surface's scope
+  // with studio values. The full-page shell (ImageStudioShell) owns that
+  // surface. If a host ever wants studio values in its own scope, it should
+  // spread `studio.buildSurfaceScope()` into ITS builder, not nest a provider.
   const studio = useImageStudio({ defaultFolder: rootFolderSegment });
   const store = useAppStore();
   const [libraryPickerOpen, setLibraryPickerOpen] = useState(false);

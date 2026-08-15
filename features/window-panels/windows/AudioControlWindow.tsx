@@ -238,7 +238,7 @@ function PlaybackSurface() {
   return (
     <div className="space-y-3">
       <NowPlaying currentPlayback={currentPlayback} />
-      <SpeedControl />
+      <SpeedControl currentPlayback={currentPlayback} />
       {pending.length > 0 && <UpNextList pending={pending} />}
       {playbackHistory.length > 0 && (
         <HistoryList history={playbackHistory} label="History" />
@@ -311,11 +311,38 @@ function NowPlaying({
   );
 }
 
-function SpeedControl() {
-  const { rate, setRate } = useAudioPlayback();
+/**
+ * Speed of whatever is playing NOW.
+ *
+ * Two kinds of thing can be playing and they own their speed differently: a
+ * real media element (a video, a podcast) changes `playbackRate` live, while the
+ * synthesis queue bakes speed in at generation time and applies it to the NEXT
+ * utterance. This control targets the live element when there is one and falls
+ * back to the queue otherwise — so the user gets one Speed control that always
+ * does the obvious thing, instead of a control that silently applies to the
+ * wrong lane.
+ */
+function SpeedControl({
+  currentPlayback,
+}: {
+  currentPlayback: AudioSession | null;
+}) {
+  const { rate: queueRate, setRate: setQueueRate } = useAudioPlayback();
+  const { can, setSessionRate } = useAudioSessions();
+
+  const sessionId = currentPlayback?.id ?? null;
+  const sessionOwnsRate = !!sessionId && can(sessionId, "setRate");
+  const rate = sessionOwnsRate ? (currentPlayback?.rate ?? 1) : queueRate;
+  const setRate = (value: number) => {
+    if (sessionOwnsRate && sessionId) setSessionRate(sessionId, value);
+    else setQueueRate(value);
+  };
+
   return (
     <section className="space-y-1.5">
-      <SectionLabel>Speed</SectionLabel>
+      <SectionLabel>
+        {sessionOwnsRate ? "Speed (playing now)" : "Speed"}
+      </SectionLabel>
       <div className="inline-flex w-full overflow-hidden rounded-lg border border-border bg-muted/40">
         {SPEED_OPTIONS.map((value, idx) => {
           const active = Math.abs(rate - value) < 0.01;
@@ -761,8 +788,22 @@ function formatElapsed(totalSeconds: number): string {
 }
 
 /** Small chip marking a VIDEO session in the shared (audio-styled) lists. */
+/**
+ * Row chrome for a session's media kind. Video rows get the poster frame the
+ * element already loaded (what a browser's own media hub shows) and fall back to
+ * the Film glyph; audio rows stay unadorned so the list reads as one list.
+ */
 function MediumIcon({ session }: { session: AudioSession }) {
   if (session.medium !== "video") return null;
+  if (session.posterUrl) {
+    return (
+      <img
+        src={session.posterUrl}
+        alt=""
+        className="h-5 w-8 shrink-0 rounded-sm border border-border object-cover"
+      />
+    );
+  }
   return (
     <Film
       className="h-3 w-3 shrink-0 text-muted-foreground"

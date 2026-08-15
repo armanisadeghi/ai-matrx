@@ -12,6 +12,7 @@
  * creation routes to `/agents/[id]/shortcuts/new`.
  */
 
+import type { ComponentProps } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -36,9 +37,21 @@ import { useAgentShortcuts } from "@/features/agent-shortcuts/hooks/useAgentShor
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectShortcutsByAgentId } from "@/features/agents/redux/agent-shortcuts/selectors";
-import { selectCategoryById } from "@/features/agents/redux/agent-shortcut-categories/selectors";
+import { selectAllCategoriesMap } from "@/features/agents/redux/agent-shortcut-categories/selectors";
 import type { AgentShortcutRecord } from "@/features/agents/redux/agent-shortcuts/types";
 import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
+import {
+  agentShortcutPanelCsvRows,
+  agentShortcutPanelRowSummary,
+  agentShortcutsPanelKpis,
+  buildAgentShortcutPanelBriefs,
+  buildAgentShortcutPanelRow,
+  type AgentShortcutPanelRow,
+  type AgentShortcutsPanelKpis,
+} from "@/features/agent-shortcuts/format";
 
 interface AgentShortcutsPanelProps {
   agentId: string;
@@ -67,8 +80,15 @@ export function AgentShortcutsPanel({
   // Names for org-scoped shortcuts, so "Shared" rows can name AND open the org.
   const { organizations } = useUserOrganizations();
 
+  // Every category the slice knows about — the panel builds ALL row
+  // projections here (one shared shape for the row, the list copy, and the
+  // exports) instead of each row re-deriving its own.
+  const categoriesById = useAppSelector(selectAllCategoriesMap);
+
   const isLoading = globalQuery.isLoading || userQuery.isLoading;
   const error = globalQuery.error || userQuery.error;
+  /** The exact sentence the error banner renders. Captured verbatim. */
+  const errorText = error ? `Failed to load shortcuts: ${error}` : null;
 
   const userShortcuts = shortcuts.filter((s) => s.userId !== null);
   const globalShortcuts = shortcuts.filter(
@@ -87,6 +107,65 @@ export function AgentShortcutsPanel({
   const goToEditor = (shortcutId: string) => {
     router.push(`${basePath}/${agentId}/shortcuts/${shortcutId}`);
   };
+
+  // ── Copy / export ────────────────────────────────────────────────────
+  const location = `AI Matrx — Agent shortcuts (${basePath}/${agentId}/shortcuts)`;
+  const kpis = agentShortcutsPanelKpis({
+    user: userShortcuts,
+    global: globalShortcuts,
+    other: otherShortcuts,
+  });
+  const orgNameFor = (shortcut: AgentShortcutRecord) =>
+    shortcut.organizationId
+      ? (organizations.find((o) => o.id === shortcut.organizationId)?.name ??
+        null)
+      : null;
+  const panelRowFor = (shortcut: AgentShortcutRecord): AgentShortcutPanelRow =>
+    buildAgentShortcutPanelRow(shortcut, {
+      category: categoriesById[shortcut.categoryId] ?? null,
+      orgName: orgNameFor(shortcut),
+      editorHref: `${basePath}/${agentId}/shortcuts/${shortcut.id}`,
+    });
+  const panelRows = shortcuts.map(panelRowFor);
+
+  /** The page as data: its counts, its error, and its rendered rows. */
+  const pageView = () => ({
+    agent: { id: agentId, name: agentName },
+    kpis,
+    state: isLoading ? "loading" : errorText ? "error" : "loaded",
+    error_on_screen: errorText,
+    shortcuts: panelRows,
+  });
+
+  const pageHuman = () =>
+    [
+      `Shortcuts for agent: ${agentName}`,
+      `Agent ID: ${agentId}`,
+      `Your shortcuts: ${kpis.your_shortcuts} · Global shortcuts: ${kpis.global_shortcuts} · Other scopes: ${kpis.other_scope_shortcuts}`,
+      errorText ? `\nERROR ON SCREEN: ${errorText}` : null,
+      "",
+      panelRows.length
+        ? panelRows
+            .map((r) => `- ${agentShortcutPanelRowSummary(r)}`)
+            .join("\n")
+        : "No shortcuts for this agent yet.",
+    ]
+      .filter((line) => line !== null)
+      .join("\n");
+
+  const countCardCopy = (label: string, value: number, help?: string) => ({
+    label: `${label} (agent shortcuts)`,
+    human: () =>
+      `${label}: ${value} — shortcuts targeting ${agentName}${help ? ` (${help})` : ""}`,
+    agent: () => ({
+      kind: "agent-shortcuts-count",
+      location,
+      description: `The "${label}" count card on the shortcuts panel for ${agentName}.`,
+      data: { metric: label, value, detail: help ?? null },
+      attributes: { ...kpis, metric: label, agent_id: agentId },
+      context: { agent_name: agentName },
+    }),
+  });
 
   return (
     <div className="h-full overflow-y-auto pt-12">
@@ -108,6 +187,71 @@ export function AgentShortcutsPanel({
             />
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            <CopyButtons
+              size="icon"
+              label={`Shortcuts for ${agentName}`}
+              human={pageHuman}
+              json={pageView}
+              agent={() => ({
+                kind: "agent-shortcuts-panel",
+                location,
+                description: `The shortcuts panel for ${agentName} as rendered: its three counts, any error on screen, and every shortcut row (surface first, then scope, category and hotkey).`,
+                data: pageView(),
+                summary: pageHuman(),
+                attributes: { ...kpis, agent_id: agentId },
+                context: { agent_name: agentName, base_path: basePath },
+              })}
+              agentVariant={{
+                label: "This panel (what I see)",
+                hint: "Counts, error, and every rendered row",
+                position: "first",
+              }}
+              aiVariants={[
+                {
+                  id: "briefs",
+                  label: "Briefs only",
+                  hint: "Surface · scope · label · hotkey per shortcut",
+                  build: () => ({
+                    kind: "agent-shortcuts-panel-briefs",
+                    location,
+                    description: `Short briefs for all ${panelRows.length} shortcut(s) targeting ${agentName} — one line of identity each, no execution config.`,
+                    data: {
+                      agent: { id: agentId, name: agentName },
+                      kpis,
+                      error_on_screen: errorText,
+                      shortcuts: buildAgentShortcutPanelBriefs(panelRows),
+                    },
+                    attributes: { ...kpis, agent_id: agentId },
+                    context: { agent_name: agentName },
+                  }),
+                },
+                {
+                  id: "everything",
+                  label: "Everything (full records)",
+                  hint: "Rendered rows + the raw shortcut records",
+                  build: () => ({
+                    kind: "agent-shortcuts-panel-full",
+                    location,
+                    description: `Every shortcut targeting ${agentName}: the rendered rows plus the complete underlying records (execution config, mappings, variable definitions, context slots).`,
+                    data: { ...pageView(), records: shortcuts },
+                    summary: pageHuman(),
+                    attributes: { ...kpis, agent_id: agentId },
+                    context: { agent_name: agentName },
+                  }),
+                },
+              ]}
+            />
+            <ExportMenu
+              label={`agent-shortcuts-${agentName}`}
+              items={[
+                jsonExportItem(pageView, "JSON (panel data)"),
+                jsonExportItem(() => shortcuts, "JSON (full records)"),
+                csvExportItem(
+                  () => agentShortcutPanelCsvRows(panelRows),
+                  "CSV (all shortcuts)",
+                ),
+              ]}
+            />
             <Link href={`${basePath}/${agentId}/shortcuts/batch`}>
               <Button size="sm" variant="outline">
                 <Layers className="h-4 w-4 mr-1.5" />
@@ -131,6 +275,7 @@ export function AgentShortcutsPanel({
             icon={UserRound}
             tone="default"
             isLoading={isLoading}
+            copy={countCardCopy("Your shortcuts", userShortcuts.length)}
           />
           <CountCard
             label="Global shortcuts"
@@ -138,6 +283,7 @@ export function AgentShortcutsPanel({
             icon={Globe}
             tone="default"
             isLoading={isLoading}
+            copy={countCardCopy("Global shortcuts", globalShortcuts.length)}
           />
           <CountCard
             label="Other scopes"
@@ -146,13 +292,39 @@ export function AgentShortcutsPanel({
             tone="muted"
             isLoading={isLoading}
             help="Organization, project, or task scoped shortcuts you can see."
+            copy={countCardCopy(
+              "Other scopes",
+              otherShortcuts.length,
+              "Organization, project, or task scoped shortcuts you can see.",
+            )}
           />
         </section>
 
         {/* Error */}
-        {error && (
-          <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            Failed to load shortcuts: {error}
+        {errorText && (
+          <div className="group/error flex items-start justify-between gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            <span>{errorText}</span>
+            <span className="shrink-0 opacity-0 transition-opacity focus-within:opacity-100 group-hover/error:opacity-100">
+              <CopyButtons
+                size="xs"
+                label="Shortcuts load error"
+                human={() => `${errorText}\n\n${pageHuman()}`}
+                agent={() => ({
+                  kind: "agent-shortcuts-panel-error",
+                  location,
+                  description:
+                    "The error banner rendered on the agent shortcuts panel, with the page state it is blocking.",
+                  data: {
+                    error_on_screen: errorText,
+                    agent: { id: agentId, name: agentName },
+                    kpis,
+                    shortcuts_still_rendered: panelRows.length,
+                  },
+                  attributes: { ...kpis, agent_id: agentId, has_error: true },
+                  context: { agent_name: agentName },
+                })}
+              />
+            </span>
           </div>
         )}
 
@@ -167,17 +339,15 @@ export function AgentShortcutsPanel({
             <EmptyState agentId={agentId} basePath={basePath} />
           ) : (
             <div className="space-y-2">
-              {shortcuts.map((shortcut) => (
+              {shortcuts.map((shortcut, index) => (
                 <ShortcutRow
                   key={shortcut.id}
                   shortcut={shortcut}
+                  row={panelRows[index]}
                   editorHref={`${basePath}/${agentId}/shortcuts/${shortcut.id}`}
-                  orgName={
-                    shortcut.organizationId
-                      ? (organizations.find((o) => o.id === shortcut.organizationId)?.name ??
-                        null)
-                      : null
-                  }
+                  orgName={orgNameFor(shortcut)}
+                  kpis={kpis}
+                  location={location}
                   onOpen={() => goToEditor(shortcut.id)}
                 />
               ))}
@@ -198,6 +368,7 @@ function CountCard({
   tone,
   isLoading,
   help,
+  copy,
 }: {
   label: string;
   value: number;
@@ -205,11 +376,13 @@ function CountCard({
   tone: "default" | "muted";
   isLoading: boolean;
   help?: string;
+  /** Hover-revealed copy pair for this metric — a scalar, so no JSON flavor. */
+  copy: ComponentProps<typeof CopyButtons>;
 }) {
   return (
     <Card
       className={cn(
-        "p-4 flex items-start gap-3",
+        "group/card p-4 flex items-start gap-3",
         tone === "muted" && "bg-muted/30",
       )}
     >
@@ -217,8 +390,13 @@ function CountCard({
         <Icon className="h-4 w-4" />
       </div>
       <div className="min-w-0 flex-1">
-        <div className="text-xs text-muted-foreground uppercase tracking-wider">
-          {label}
+        <div className="flex items-start justify-between gap-2">
+          <div className="text-xs text-muted-foreground uppercase tracking-wider">
+            {label}
+          </div>
+          <span className="shrink-0 opacity-0 transition-opacity focus-within:opacity-100 group-hover/card:opacity-100">
+            <CopyButtons size="xs" {...copy} />
+          </span>
         </div>
         <div className="text-2xl font-semibold text-foreground leading-none mt-1">
           {isLoading ? (
@@ -239,21 +417,30 @@ function CountCard({
 
 function ShortcutRow({
   shortcut,
+  row,
   editorHref,
   orgName,
+  kpis,
+  location,
   onOpen,
 }: {
   shortcut: AgentShortcutRecord;
+  /** This row's rendered projection — built once by the panel and shared by
+   *  the row, the list copy, and the exports. */
+  row: AgentShortcutPanelRow;
   /** Canonical editor route for this shortcut (basePath-aware). */
   editorHref: string;
   /** Resolved org name for org-scoped shortcuts; null when not org-scoped
    *  (or the org isn't one of the viewer's). */
   orgName: string | null;
+  /** The panel's three count cards, mirrored into every row payload. */
+  kpis: AgentShortcutsPanelKpis;
+  location: string;
   onOpen: () => void;
 }) {
-  const category = useAppSelector((state) =>
-    selectCategoryById(state, shortcut.categoryId),
-  );
+  const category = row.category
+    ? { placementType: row.category_placement, label: row.category }
+    : null;
 
   const scopeBadge = getScopeBadge(shortcut);
   const surfaceLabel = shortcut.surfaceName
@@ -281,7 +468,7 @@ function ShortcutRow({
         }
       }}
       className={cn(
-        "w-full flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5 text-left transition-colors cursor-pointer",
+        "group/row w-full flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5 text-left transition-colors cursor-pointer",
         "hover:bg-accent hover:border-accent-foreground/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
       )}
     >
@@ -366,6 +553,31 @@ function ShortcutRow({
           )}
         </div>
       </div>
+
+      <span className="shrink-0 opacity-0 transition-opacity focus-within:opacity-100 group-hover/row:opacity-100">
+        <CopyButtons
+          size="xs"
+          label={row.label}
+          human={() => agentShortcutPanelRowSummary(row)}
+          json={() => row}
+          agent={() => ({
+            kind: "agent-shortcut-row",
+            location,
+            description:
+              "One shortcut row from the agent's shortcuts panel, as rendered: the surface it targets, its scope, category, hotkey and launch config.",
+            data: { rendered_row: row, record: shortcut },
+            summary: agentShortcutPanelRowSummary(row),
+            attributes: {
+              ...kpis,
+              shortcut_id: row.id,
+              scope: row.scope,
+              surface: row.surface_name,
+              is_active: row.is_active,
+            },
+            context: { organization: orgName, editor_href: editorHref },
+          })}
+        />
+      </span>
 
       <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
     </div>

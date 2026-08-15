@@ -83,6 +83,67 @@ export interface AssetEnvelope {
 export type EditResponse = AssetEnvelope;
 
 /**
+ * Ingress validation for the streamed `image_edit_complete` asset.
+ *
+ * The generated event types `asset` as an OPTIONAL `Record<string, unknown>`
+ * (types/python-generated/stream-events.ts) while every consumer treats it as a
+ * full AssetEnvelope — `Object.values(asset.variants)` in ImageStudioShell and
+ * useImageStudio both throw on `undefined`. Asserting the shape moved that
+ * failure to a render crash with no explanation; validating it here fails at
+ * the boundary with a message that names what the server actually sent.
+ */
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
+const nullableString = (v: unknown): string | null =>
+  typeof v === "string" ? v : null;
+const nullableNumber = (v: unknown): number | null =>
+  typeof v === "number" && Number.isFinite(v) ? v : null;
+
+function parseAssetVariant(v: Record<string, unknown>): AssetVariantUrl {
+  return {
+    url: nullableString(v.url),
+    cdn_url: nullableString(v.cdn_url),
+    signed_url: nullableString(v.signed_url),
+    download_url: nullableString(v.download_url),
+    width: nullableNumber(v.width),
+    height: nullableNumber(v.height),
+    size_bytes: nullableNumber(v.size_bytes),
+  };
+}
+
+function parseAssetEnvelope(value: unknown, path: string): AssetEnvelope {
+  if (!isRecord(value)) {
+    throw new Error(
+      `The image-edit stream (${path}) returned no asset envelope.`,
+    );
+  }
+  if (typeof value.file_id !== "string" || value.file_id.length === 0) {
+    throw new Error(
+      `The image-edit stream (${path}) returned an asset with no file_id.`,
+    );
+  }
+  if (value.variants != null && !isRecord(value.variants)) {
+    throw new Error(
+      `The image-edit stream (${path}) returned a malformed variants map.`,
+    );
+  }
+  const variants: Record<string, AssetVariantUrl> = {};
+  if (isRecord(value.variants)) {
+    for (const [key, v] of Object.entries(value.variants)) {
+      if (isRecord(v)) variants[key] = parseAssetVariant(v);
+    }
+  }
+  return {
+    file_id: value.file_id,
+    primary_url: nullableString(value.primary_url),
+    variants,
+    metadata: isRecord(value.metadata) ? value.metadata : undefined,
+  };
+}
+
+/**
  * 2026-07 stream conversion: /images/edit, /images/bg-remove and
  * /images/inpaint now speak NDJSON. Pre-stream HTTP failures (400
  * unknown_op, 503 backend_unavailable, auth) still throw BackendApiError
@@ -114,8 +175,9 @@ async function drainEditStream<B extends object>(
     // generated per-event interface after checking the discriminant.
     if (d.type === "image_edit_complete") {
       const p = d as ImageEditCompleteData;
-      // Server guarantee: `asset` is the unmodified legacy Asset envelope.
-      asset = p.asset as unknown as EditResponse;
+      // `asset` is generated as an OPTIONAL Record<string, unknown> — validate
+      // it into the envelope rather than asserting a shape we never checked.
+      asset = parseAssetEnvelope(p.asset, path);
     }
   }
   if (!asset) {

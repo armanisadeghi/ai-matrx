@@ -67,7 +67,6 @@ export interface PageExtractionJob {
   column_order: string[];
   owner_id: string;
   organization_id: string;
-  project_id: string | null;
   latest_run_id: string | null;
   created_at: string;
   updated_at: string;

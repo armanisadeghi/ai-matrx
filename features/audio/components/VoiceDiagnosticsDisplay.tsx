@@ -14,6 +14,14 @@ import { cn } from '@/lib/utils';
 import { runMicrophoneDiagnostics, getFixInstructions, canUserFixIssue, DiagnosticResult } from '../utils/microphone-diagnostics';
 import { acquireMicStream, releaseMicStream } from '../micStream';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { CopyButtons } from '@/components/agent-copy/CopyButtons';
+import {
+  diagnosticsAgentData,
+  diagnosticsHumanSummary,
+  diagnosticsKpis,
+  diagnosticsRepairPrompt,
+  type DiagnosticsCopyInput,
+} from '../utils/diagnostics-copy';
 
 export interface VoiceDiagnosticsDisplayProps {
   error?: string | null;
@@ -95,8 +103,64 @@ export function VoiceDiagnosticsDisplay({
   const canFix = canUserFixIssue(diagnostics);
   const fixInstructions = getFixInstructions(diagnostics);
 
+  // Built at click time so the payload carries LIVE panel state — the error
+  // box, the four status cards, and the current test result — not a stale
+  // render-time snapshot.
+  const copyInput = (): DiagnosticsCopyInput => ({
+    diagnostics,
+    error,
+    errorCode,
+    testResult,
+    canFix,
+    fixInstructions,
+  });
+
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-sm font-semibold text-foreground">
+          Microphone diagnostics
+        </h3>
+        <CopyButtons
+          size="sm"
+          label="Microphone diagnostics"
+          human={() => diagnosticsHumanSummary(copyInput())}
+          agent={() => {
+            const input = copyInput();
+            return {
+              kind: 'microphone-diagnostics',
+              location: 'AI Matrx — Voice — microphone diagnostics',
+              description:
+                'The microphone diagnostics panel as rendered: error text, system status, detected issues and fixes.',
+              data: diagnosticsAgentData(input),
+              summary: diagnosticsHumanSummary(input),
+              attributes: {
+                issues: diagnostics.issues.length,
+                errors: diagnostics.issues.filter((i) => i.severity === 'error')
+                  .length,
+                'user-fixable': canFix,
+                'microphone-test': testResult,
+                ...diagnosticsKpis(diagnostics),
+              },
+            };
+          }}
+          agentVariant={{
+            id: 'diagnostics',
+            label: 'Diagnostics',
+            hint: 'The panel as rendered — errors, status, issues',
+            position: 'first',
+          }}
+          aiVariants={[
+            {
+              id: 'diagnostics-with-prompt',
+              label: 'Diagnostics with repair prompt',
+              hint: 'Same payload, wrapped in a fix-my-microphone brief',
+              build: () => diagnosticsRepairPrompt(copyInput()),
+            },
+          ]}
+        />
+      </div>
+
       {/* Error Display */}
       {error && (
         <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">

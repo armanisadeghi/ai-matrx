@@ -22,6 +22,11 @@ import { MediaThumbnail } from "@/features/files/components/core/MediaThumbnail/
 import { formatAbsoluteDate, formatFileSize, formatRelativeTime } from "@/features/files/utils/format";
 import type { CloudFileRecord } from "@/features/files/types";
 import { toast } from "@/lib/toast";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import {
+  imageFileAgentData,
+  imageFileHumanSummary,
+} from "@/features/image-manager/lib/copy-format";
 
 export interface CloudFileMetadataSheetProps {
   file: CloudFileRecord | null;
@@ -46,6 +51,28 @@ export function CloudFileMetadataSheet({
     >
       {file ? (
         <>
+          <div className="mt-3 flex items-center justify-end">
+            <CopyButtons
+              size="sm"
+              label={file.fileName}
+              human={() => imageFileHumanSummary(file)}
+              agent={() => ({
+                kind: "image-file-metadata",
+                location: "AI Matrx — Images — file details sheet",
+                description:
+                  "Metadata for the single image shown in the details sheet.",
+                data: imageFileAgentData(file),
+                summary: imageFileHumanSummary(file),
+                attributes: {
+                  id: file.id,
+                  name: file.fileName,
+                  "mime-type": file.mimeType ?? "",
+                  visibility: file.visibility,
+                },
+              })}
+            />
+          </div>
+
           <div className="mt-4 aspect-square w-full overflow-hidden rounded-md bg-muted">
             <MediaThumbnail
               file={file}

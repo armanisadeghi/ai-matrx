@@ -44,6 +44,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import { tryReadAllRowsRest } from "../lib/supabase/readAllRows";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SOURCE = "matrx-frontend";
@@ -137,81 +138,37 @@ interface LedgerRow {
 }
 
 /**
- * Fetch EVERY ledger row for this source — paginated.
+ * Fetch EVERY ledger row for this source.
  *
- * PostgREST caps a response at `db-max-rows` (1000 here) and says so with a 206
- * plus `Content-Range: 0-999/1005`. A single unpaginated request therefore drops
- * the tail of the ledger, and this script reads every dropped row as "never
- * applied" — truncation wearing the costume of absence. Measured 2026-08-14: the
- * ledger held 1005 matrx-frontend rows, the check saw 1000, and the 5 newest
- * migrations were reported UNAPPLIED to a release that had just applied them.
- * `--strict` turns that into a hard release failure, so this is a release-blocker
- * on its own, independent of whether the applier ran.
+ * PostgREST caps a response at `db-max-rows` (1000 here) and says so only in a
+ * `Content-Range` header, so an unpaginated read drops the tail of the ledger and
+ * this script reads every dropped row as "never applied" — truncation wearing the
+ * costume of absence (measured 2026-08-14; `--strict` turned it into a hard
+ * release failure). `tryReadAllRowsRest` owns the paging + completeness proof;
+ * see lib/supabase/readAllRows.ts.
  *
- * A short read must never be silently accepted: we page until Content-Range says
- * we have them all, and an incomplete result returns null (check skipped, loud)
- * rather than a confidently wrong list.
- *
- * Returns null on fetch failure (caller decides whether that blocks).
+ * Returns null on fetch failure OR a provably-incomplete read (both are "check
+ * skipped, loudly" — never a confidently wrong list of unapplied migrations).
  */
-const LEDGER_PAGE_SIZE = 1000;
-
 async function fetchLedger(
   url: string,
   key: string,
 ): Promise<LedgerRow[] | null> {
-  const endpoint =
-    `${url.replace(/\/$/, "")}/rest/v1/_schema_migrations` +
-    // Order by the primary key so paging is stable — an unordered paginated read
-    // can repeat or skip rows between requests.
-    `?source=eq.${encodeURIComponent(SOURCE)}&select=filename,checksum&order=filename.asc`;
-
-  const rows: LedgerRow[] = [];
-  let total: number | null = null;
-
-  for (let offset = 0; ; offset += LEDGER_PAGE_SIZE) {
-    let res: Response;
-    try {
-      res = await fetch(endpoint, {
-        headers: {
-          apikey: key,
-          Authorization: `Bearer ${key}`,
-          Accept: "application/json",
-          // The proxy at db.matrxserver.com defaults to schema 'api'; this table is in 'public'.
-          "Accept-Profile": "public",
-          Range: `${offset}-${offset + LEDGER_PAGE_SIZE - 1}`,
-          "Range-Unit": "items",
-        },
-      });
-    } catch (err) {
-      console.error(
-        `${TAG.warn}Migrations: could not reach Supabase — ledger check skipped (${String(err)})`,
-      );
-      return null;
-    }
-    if (!res.ok && res.status !== 206) {
-      console.error(
-        `${TAG.warn}Migrations: Supabase fetch failed (${res.status}) — ledger check skipped`,
-      );
-      return null;
-    }
-
-    const page = (await res.json()) as LedgerRow[];
-    rows.push(...page);
-
-    // `Content-Range: 0-999/1005` — the number after the slash is the true total.
-    const totalPart = res.headers.get("content-range")?.split("/")[1];
-    if (totalPart && totalPart !== "*") total = Number(totalPart);
-
-    if (page.length === 0) break;
-    if (total !== null && rows.length >= total) break;
-    if (total === null && page.length < LEDGER_PAGE_SIZE) break;
-  }
-
-  if (total !== null && rows.length < total) {
+  const rows = await tryReadAllRowsRest<LedgerRow>({
+    url,
+    key,
+    // The proxy at db.matrxserver.com defaults to schema 'api'; this table is in 'public'.
+    schema: "public",
+    // Order by the primary key so paging is stable.
+    path:
+      `_schema_migrations?source=eq.${encodeURIComponent(SOURCE)}` +
+      `&select=filename,checksum&order=filename.asc`,
+    label: "public._schema_migrations",
+  });
+  if (rows === null) {
     console.error(
-      `${TAG.warn}Migrations: read only ${rows.length} of ${total} ledger rows — ` +
-        `ledger check skipped rather than reporting the missing rows as unapplied`,
+      `${TAG.warn}Migrations: ledger read failed or was incomplete — ledger check ` +
+        `skipped rather than reporting the missing rows as unapplied`,
     );
     return null;
   }

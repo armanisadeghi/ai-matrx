@@ -141,9 +141,19 @@ export interface ResourceVisibility {
 }
 
 /**
- * Direct write of a verified enum-visibility resource row. Owner-only writes
- * are enforced by RLS, so a non-owner UPDATE silently affects zero rows —
- * surfaced as an error by the callers below.
+ * Direct write of a verified enum-visibility resource row.
+ *
+ * `visibility` is a GOVERNANCE column: only the row's owner (`created_by`) or an
+ * admin-level holder may change it. That is NOT enforced by RLS — RLS is
+ * row-level and `std_update` gates the whole row at `editor`. It is enforced by
+ * the generated `_guard_governance` BEFORE UPDATE trigger that `iam.apply_rls`
+ * attaches to every entity-family table (migration
+ * `migrations/iam_governance_column_tier.sql`, FOUND_DEFECTS D119).
+ *
+ * So a refused write arrives as a real Postgres error (SQLSTATE 42501) carrying
+ * a user-facing message, NOT as a silent zero-row result. Both cases are handled
+ * below: the error path surfaces the DB's own wording, and the zero-row path
+ * still covers a genuinely invisible/deleted row.
  */
 async function setVisibilityColumn(
   resourceType: ResourceType,
@@ -164,12 +174,16 @@ async function setVisibilityColumn(
     .eq(entry.idColumn, resourceId)
     .select("id");
   if (error) {
+    // 42501 = the governance guard refused. Its message is already written for
+    // a human ("Changing "visibility" on this note requires owner or admin
+    // access — edit access is not enough."), so pass it through rather than
+    // replacing it with a guess about why.
     return { success: false, error: errMessage(error) };
   }
   if (!data || data.length === 0) {
     return {
       success: false,
-      error: "Not allowed — only the owner can change visibility.",
+      error: "Couldn't update this item — it may have been deleted or moved.",
     };
   }
   return { success: true };

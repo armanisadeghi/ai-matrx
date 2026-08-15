@@ -245,6 +245,10 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
       const { data, error } = await supabase.rpc("get_full_table", {
         ref: { table_id: ref.table_id },
       });
+      // A resolver's contract is "render the live value or nothing" — it has no
+      // surface to raise into, so an unreachable dataset (P0002) resolves to
+      // undefined exactly like any other failure. It is NOT rewritten into an
+      // absence claim, which is the whole point of the D167 class.
       if (error) return undefined;
       let meta: TableMetadata;
       try {

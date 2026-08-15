@@ -225,64 +225,51 @@ export async function fetchPartyPage(
  * True server totals for every scope tab (and per-org narrowing options),
  * honoring the current search + kind facet so the numbers describe what the
  * tab would actually show.
+ *
+ * ONE round trip (D139). This used to fan out into `3 + N_orgs` head-count
+ * queries — one per scope tab plus one per organization — re-fired on every
+ * 200ms search-debounce tick, so a user in 8 orgs paid 11 requests per
+ * keystroke. `public.crm_list_scope_counts` computes all of it in a single
+ * SECURITY DEFINER call, exactly like the agents (`agx_list_scope_counts`) and
+ * transcripts (`trx_list_scope_counts`) twins, and returns each org's LABEL
+ * with its count so no name lookup is needed either.
+ *
+ * The RPC restates crm.party's `std_select` RLS predicate internally, so the
+ * numbers are identical to the old RLS-filtered client reads — verified across
+ * every view × kind × search × org combination before the fan-out was deleted.
  */
 export async function fetchPartyScopeCounts(
   query: PartyListQuery,
-  ctx: CrmQueryContext,
 ): Promise<EntityScopeCounts> {
-  const countFor = async (
-    apply: (
-      q: ReturnType<ReturnType<typeof supabase.schema<"crm">>["from"]>,
-    ) => unknown,
-  ): Promise<number> => {
-    let q = supabase
-      .schema("crm")
-      .from("party")
-      .select("id", { count: "exact", head: true })
-      .is("canonical_id", null);
-    q =
-      query.view === "trash"
-        ? q.not("deleted_at", "is", null)
-        : q.is("deleted_at", null);
-    if (query.kind !== "all") q = q.eq("party_kind", query.kind);
-    const term = sanitizeSearch(query.search);
-    if (term) {
-      q = q.or(
-        [
-          `display_name.ilike.%${term}%`,
-          `legal_name.ilike.%${term}%`,
-          `primary_domain.ilike.%${term}%`,
-          `job_title.ilike.%${term}%`,
-        ].join(","),
-      );
+  const { data, error } = await supabase.rpc("crm_list_scope_counts", {
+    p_view: query.view,
+    p_kind: query.kind,
+    // Same sanitizer the page query uses, so a tab's number can never describe
+    // a different search term than the rows below it.
+    p_search: sanitizeSearch(query.search) || undefined,
+  });
+  if (error) throw pgError(error);
+
+  const counts: EntityScopeCounts = { byKind: {}, narrow: {} };
+  for (const row of data ?? []) {
+    const total = Number(row.total ?? 0);
+    const kind = row.scope;
+    if (kind !== "mine" && kind !== "orgs" && kind !== "public") continue;
+    // A narrow_id means "one org inside this scope"; no id is the scope's own
+    // blended total. Zero-count orgs stay out of the dropdown, as before.
+    if (row.narrow_id) {
+      if (total > 0) {
+        (counts.narrow[kind] ??= []).push({
+          id: row.narrow_id,
+          label: row.label ?? "Unnamed org",
+          count: total,
+        });
+      }
+      continue;
     }
-    const scoped = apply(q) as typeof q;
-    const { count, error } = await scoped;
-    if (error) throw pgError(error);
-    return count ?? 0;
-  };
-
-  const [mine, orgsBlended, pub, ...perOrg] = await Promise.all([
-    countFor((q) => q.eq("created_by", ctx.userId)),
-    countFor((q) => q.in("organization_id", ctx.orgIds)),
-    countFor((q) => q.eq("visibility", "public")),
-    ...ctx.orgIds.map((orgId) =>
-      countFor((q) => q.eq("organization_id", orgId)),
-    ),
-  ]);
-
-  const narrow = ctx.orgIds
-    .map((orgId, i) => ({
-      id: orgId,
-      label: ctx.orgNames[orgId] ?? "Unnamed org",
-      count: perOrg[i] ?? 0,
-    }))
-    .filter((o) => o.count > 0);
-
-  return {
-    byKind: { mine, orgs: orgsBlended, public: pub },
-    narrow: { orgs: narrow },
-  };
+    counts.byKind[kind] = total;
+  }
+  return counts;
 }
 
 // ── Party CRUD ──────────────────────────────────────────────────────────────

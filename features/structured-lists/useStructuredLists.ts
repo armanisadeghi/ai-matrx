@@ -88,11 +88,13 @@ export function useStructuredLists() {
   // ── Items load on active change ─────────────────────────────────────────
   useEffect(() => {
     if (!activeListId) return undefined;
-    if (itemsCache.current[activeListId]) {
-      setItemsByList((m) => ({
-        ...m,
-        [activeListId]: itemsCache.current[activeListId]!,
-      }));
+    // Read the cache ONCE, here — not inside the updater. The updater runs on a
+    // later tick, and `deleteList` does `delete itemsCache.current[listId]`, so
+    // re-reading the ref in there could hand back `undefined` under an
+    // assertion that claimed it could not.
+    const cached = itemsCache.current[activeListId];
+    if (cached) {
+      setItemsByList((m) => ({ ...m, [activeListId]: cached }));
       return undefined;
     }
     let cancelled = false;

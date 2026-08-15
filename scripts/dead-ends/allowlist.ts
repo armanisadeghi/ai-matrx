@@ -32,4 +32,30 @@ export const DEAD_END_ALLOWLIST: DeadEndAllowlistEntry[] = [
     addedBy: "no-dead-ends detector",
     addedOn: "2026-08-09",
   },
+  {
+    file: "features/agent-shortcuts/components/ShortcutList.tsx",
+    rule: "unlinked-entity-name",
+    reason:
+      "Doors ride ALONGSIDE the name, not on it, and that is deliberate: the " +
+      "card's click already means EDIT (a navigation on the user and org " +
+      "consoles), so making the name a second anchor would give one card two " +
+      "conflicting destinations. EntityDoorControls carries Open / new tab / " +
+      "peek at the same URL the click uses. The detector matches doors by " +
+      "ANCESTOR, so a sibling door is invisible to it.",
+    addedBy: "no-dead-ends detector",
+    addedOn: "2026-08-15",
+  },
+  {
+    file: "features/agents/components/usages/NotifyOwnerDialog.tsx",
+    rule: "bare-id-text",
+    reason:
+      "The truncated id is shown INSTEAD of a name on purpose — the name in " +
+      "scope belongs to the shortcut, not to the agent the id points at, and " +
+      "labelling the right link with the wrong name is worse than no name; " +
+      "peek supplies the identity. Sibling EntityDoorControls (not a linked " +
+      "name) because a same-tab navigation would discard the note the user is " +
+      "typing in this dialog.",
+    addedBy: "no-dead-ends detector",
+    addedOn: "2026-08-15",
+  },
 ];

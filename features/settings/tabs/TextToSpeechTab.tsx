@@ -6,19 +6,16 @@ import { SettingsSelect } from "@/components/official/settings/primitives/Settin
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
 import { useSetting } from "../hooks/useSetting";
-import type { GroqTtsVoice } from "@/lib/redux/preferences/userPreferencesSlice";
+import type { CatalogTtsVoice } from "@/lib/redux/preferences/userPreferencesSlice";
+import { CATALOG_VOICES } from "@/features/audio/service/engines";
 
-const groqVoices: GroqTtsVoice[] = [
-  "autumn", "diana", "hannah", "austin", "daniel", "troy",
-];
-
-const voiceOptions = groqVoices.map((v) => ({
+const voiceOptions = CATALOG_VOICES.map((v) => ({
   value: v,
   label: v.charAt(0).toUpperCase() + v.slice(1),
 }));
 
 export default function TextToSpeechTab() {
-  const [voice, setVoice] = useSetting<GroqTtsVoice>(
+  const [voice, setVoice] = useSetting<CatalogTtsVoice>(
     "userPreferences.textToSpeech.preferredVoice",
   );
   const [autoPlay, setAutoPlay] = useSetting<boolean>(
@@ -37,7 +34,7 @@ export default function TextToSpeechTab() {
       />
 
       <SettingsSection title="Playback">
-        <SettingsSelect<GroqTtsVoice>
+        <SettingsSelect<CatalogTtsVoice>
           label="Voice"
           description="Voice used by the catalog-selected speech model."
           value={voice}

@@ -13,7 +13,7 @@ import {
   Volume2TapButton,
   PauseTapButton,
 } from "@/components/icons/tap-buttons";
-import { useTtsSpeak } from "@/features/audio/playback/useTtsSpeak";
+import { useSpeech } from "@/features/audio/service/useSpeech";
 import type { SpeakerVariant } from "../types";
 
 export interface SpeakerButtonCoreProps {
@@ -33,7 +33,7 @@ export default function SpeakerButtonCore({
   className,
   disabled = false,
 }: SpeakerButtonCoreProps) {
-  const { speak, status, pause, resume } = useTtsSpeak({ processMarkdown });
+  const { speak, status, pause, resume } = useSpeech({ processMarkdown });
 
   const isPlaying = status === "playing";
   const isPaused = status === "paused";

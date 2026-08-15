@@ -4,20 +4,12 @@
  * Type definitions for TTS functionality
  */
 
-// Import and re-export from userPreferencesSlice for consistency
-import type { GroqTtsVoice } from '@/lib/redux/preferences/userPreferencesSlice';
+// The voice list has ONE declaration — CATALOG_VOICES in the AV engine registry
+// (features/audio/service/engines.ts). Import it from there; this module keeps
+// only the type alias, never a second copy of the values.
+import type { CatalogTtsVoice } from '@/lib/redux/preferences/userPreferencesSlice';
 
-export type EnglishVoice = GroqTtsVoice;
-
-// Voices attached to the catalog's default Groq Orpheus offering.
-export const ENGLISH_VOICES = [
-  'autumn', 'diana', 'hannah', 'austin', 'daniel', 'troy'
-] as const;
-
-export interface TTSOptions {
-  voice?: EnglishVoice;
-  processMarkdown?: boolean;
-}
+export type EnglishVoice = CatalogTtsVoice;
 
 export type SpeakerVariant = 'glass' | 'transparent' | 'solid' | 'group';
 

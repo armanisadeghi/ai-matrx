@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { sanitizeFieldName, validateFieldName } from "./field-name-sanitizer";
 import { parseTableMetadata } from "@/features/data-tables/types";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 
 // Valid data types according to the backend schema
 export const VALID_DATA_TYPES = [
@@ -333,8 +334,12 @@ export async function addColumn(
  * Every consumer of this reads `fields` only, so it goes through
  * `get_full_table` (metadata + a real COUNT(*), no rows) rather than
  * `get_user_table_complete`, which returns every row of the dataset with no
- * LIMIT. The RPC RAISES instead of returning a `{success:false}` envelope, so
- * a PostgREST error here means "no such dataset", never "no columns".
+ * LIMIT. The RPC RAISES instead of returning a `{success:false}` envelope.
+ *
+ * An error here does NOT mean "no such dataset" — `get_full_table` is SECURITY
+ * INVOKER, so its gate returns zero rows just as readily when RLS hid the row
+ * from this caller. That case arrives as errcode P0002 and is handed to
+ * AccessGate to resolve; it is never reported as absence.
  */
 export async function getTableDetails(
   supabase: SupabaseClient,
@@ -346,6 +351,18 @@ export async function getTableDetails(
     });
 
     if (error) {
+      if (error.code === "P0002") {
+        return {
+          success: false,
+          error: recordUnavailable({
+            entity: "dataset",
+            reason: "unknown",
+            recordId: tableId,
+            token: "dataset",
+            relation: "workbench.udt_datasets",
+          }).message,
+        };
+      }
       console.error("Supabase RPC error:", error);
       return { success: false, error: error.message };
     }

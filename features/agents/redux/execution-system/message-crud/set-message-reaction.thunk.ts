@@ -17,6 +17,7 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type { Json } from "@/types/database.types";
 import { updateMessageRecord } from "../messages/messages.slice";
 import { refetchSingleMessage } from "./refetch-single-message.thunk";
@@ -129,6 +130,21 @@ export const setMessageReaction = createAsyncThunk<
         }),
       );
       void dispatch(refetchSingleMessage({ conversationId, messageId }));
+      // P0002 is the RPC's honest "this message is not available to you" — the
+      // UPDATE matched zero rows because chat.message RLS hid it from this
+      // caller, which for a user clicking the thumb on a message they can SEE
+      // is an access answer, not a missing one. Let AccessGate resolve which.
+      if (error.code === "P0002") {
+        return rejectWithValue({
+          message: recordUnavailable({
+            entity: "message",
+            reason: "unknown",
+            recordId: messageId,
+            token: "message",
+            relation: "chat.message",
+          }).message,
+        });
+      }
       return rejectWithValue({
         message: error.message || "Failed to save reaction",
       });

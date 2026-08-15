@@ -12,9 +12,9 @@
  * knowledge libraries published to that industry) and a classification spine
  * (it seeds default scope templates). Org owners/admins can assign/unassign;
  * Matrx super-admins can too. Members see memberships read-only. The DB RPC
- * enforces the same gate. Self-serve joining is a settled decision (Decision 1,
- * docs/handoffs/shared-knowledge-access.md) — never make this read-only or
- * add an approval flow.
+ * enforces the same gate. Self-serve joining is a settled decision (Arman,
+ * 2026-07-23: any org admin may claim any industry; make it legible, never
+ * gated) — never make this read-only or add an approval flow.
  */
 
 import { useState } from "react";

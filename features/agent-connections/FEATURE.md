@@ -82,6 +82,8 @@ Cross-repo product plan: [`common-docs/projects/ai-work-hub/PLAN.md`](/Users/arm
 
 Placeholders (empty-state copy, no data source): `SubAgentsSection`, `ResourcesSection` (inert slice — see Resources above), `InstructionsSection`, `PromptsSection`, `CommandsSection`, `HooksSection`, `RegistriesSection`. Prompts as a concept is superseded by agents + shortcuts + agent-apps; treat that tab as a slot to repurpose or remove.
 
+**A placeholder that promises a feature is a registered promise, never bare copy.** `HooksSection` and `SubAgentsSection` render their heading + body from `lib/coming-soon/registry.ts` (`agent-connections.hooks`, `agent-connections.sub-agents`) — the entry IS the copy, so shipping the feature and deleting the entry cannot leave a stale promise on screen. Any new placeholder here does the same; never hand-write "coming soon" (CLAUDE.md § Coming Soon).
+
 **Hooks** (`hooks/`)
 
 - `useRenderBlocks` — fetches definitions + categories for the current view scope; returns tree + byCategoryId.
@@ -164,13 +166,14 @@ Fidelity is a verdict, never an inference: `event_mirror` says native resume is 
 1. **Render-block editor** — three-pane detail editor + live `BlockRenderer` preview (detail view is read-only today).
 2. **Per-agent view** — thread `agentId` so sections show one agent's attached set (flow c).
 3. **Coding platform installation** — publish the Claude marketplace package, then replace the honest “not published” distribution status with the verified install command; Codex/Cursor/VS Code adapters follow the shared contract.
-4. **Placeholder sections** — each needs a real data source or removal; Prompts is a repurpose-or-remove candidate.
+4. **Placeholder sections** — each needs a real data source or removal; Prompts is a repurpose-or-remove candidate. Two carry live promises in `lib/coming-soon/registry.ts`: **Hooks** (`planned`) and **Sub-agents** (`blocked` on the `agent_definition.kind` column — unblocking that column is what makes the section buildable). Delete each entry in the change that ships its feature.
 5. **Retire `hooks/useResources.ts`** + the slice's `resources` branch once no import remains.
 
 ---
 
 ## Change log
 
+- `2026-08-15` — Coming-soon compliance: the two bare "coming soon" strings in this feature (`HooksSection`, `SubAgentsSection`) became registered promises — `agent-connections.hooks` (planned) and `agent-connections.sub-agents` (blocked on `agent_definition.kind`) in `lib/coming-soon/registry.ts`, with both sections rendering heading + body FROM the registry so the entry and the copy cannot drift.
 - `2026-08-12` — `fetchCodingSessions` replaced its flat 100-row read with keyset pagination (`beforeLastSeenAt` cursor, `hasMore`, limit+1 probe); `useCodingSessions` exposes `loadOlder`/`loadingMore`, and `PluginsSection` swapped the static "latest 100" disclosure for a real "Load older sessions" control.
 - `2026-08-12` — AI Work stopped treating the capped technical `PluginsSection` as its product inbox. The canonical conversation-history store now owns the unified list/pagination; this feature added only a narrow selected-conversation binding projection. `/agent-connections/plugins` remains unchanged and compatible.
 - `2026-08-11` — Provider conversation doors now target the agentless-safe `/work/conversations/[conversationId]` transcript instead of runnable chat; `PluginsSection` gained opt-in conversation-to-task association for the AI Work inbox.

@@ -48,6 +48,7 @@ import {
   type KindDefProjection,
   type KindEdgeProjection,
 } from "@/features/content-ir/registry/schema-source-kind-tables";
+import { readAllRows } from "../../lib/supabase/readAllRows";
 
 config({ path: resolve(process.cwd(), ".env.local") });
 
@@ -140,27 +141,41 @@ async function main(): Promise<void> {
     db: { schema: "content_ir" },
   });
 
-  const { data: defs, error: defErr } = await sb
-    .from("kind_definition")
-    .select(
-      "id, kind, label, data, is_active, metadata, authoring_owner, emitted_block_schema, emitted_fingerprint",
-    )
-    .is("deleted_at", null);
-  if (defErr) throw new Error(`kind_definition read failed: ${defErr.message}`);
+  // Completeness reads: the registry reconstruction resolves nested children by
+  // id — a truncated definition or edge read silently emits a WRONG schema.
+  const rows = await readAllRows<DefRow>(
+    ({ from, to }) =>
+      sb
+        .from("kind_definition")
+        .select(
+          "id, kind, label, data, is_active, metadata, authoring_owner, emitted_block_schema, emitted_fingerprint",
+          { count: "exact" },
+        )
+        .is("deleted_at", null)
+        .order("id", { ascending: true })
+        .range(from, to),
+    { label: "content_ir.kind_definition" },
+  );
 
-  const { data: edges, error: edgeErr } = await sb
-    .from("kind_edge")
-    .select("parent_definition_id, field_name, child_definition_id, position")
-    .is("deleted_at", null);
-  if (edgeErr) throw new Error(`kind_edge read failed: ${edgeErr.message}`);
+  // kind_edge has no `id` — the unique triple gives the stable total order.
+  const edges = await readAllRows<KindEdgeProjection>(
+    ({ from, to }) =>
+      sb
+        .from("kind_edge")
+        .select("parent_definition_id, field_name, child_definition_id, position", {
+          count: "exact",
+        })
+        .is("deleted_at", null)
+        .order("parent_definition_id", { ascending: true })
+        .order("child_definition_id", { ascending: true })
+        .order("field_name", { ascending: true })
+        .range(from, to),
+    { label: "content_ir.kind_edge" },
+  );
 
-  const rows = (defs ?? []) as DefRow[];
   // The SAME reconstruction the client registry uses, so what we emit here is
   // what the frontend emits for the same row.
-  const { schemas } = reconstructKindRegistry(
-    rows as KindDefProjection[],
-    (edges ?? []) as KindEdgeProjection[],
-  );
+  const { schemas } = reconstructKindRegistry(rows as KindDefProjection[], edges);
   const resolveKind = (k: string): KindSchema | undefined => schemas[k];
 
   const eligible: { row: DefRow; schema: unknown; fingerprint: string }[] = [];

@@ -1,7 +1,11 @@
 /**
- * Audio Player Button Component
+ * AudioPlayerButton — play this text aloud.
  *
- * Simple button that generates and plays text-to-speech
+ * Speaks through the ONE AV service (`useSpeech`) on the catalog engine, so the
+ * utterance joins the single playback queue: it is visible and controllable in
+ * the Media panel, it cannot overlap another voice, and the engine can be
+ * swapped in one place. It used to drive its own `<audio>` element through a
+ * second speak path (`useTextToSpeech`, now deleted) that only this button used.
  */
 
 "use client";
@@ -10,16 +14,14 @@ import React, { useCallback } from "react";
 import { Volume2, VolumeX, Loader2, Pause } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useTextToSpeech } from "../hooks/useTextToSpeech";
+import { useSpeech } from "@/features/audio/service/useSpeech";
 import { useAppSelector } from "@/lib/redux/hooks";
 import type { EnglishVoice } from "../types";
-import { toast } from "@/lib/toast";
 
 export interface AudioPlayerButtonProps {
   text: string;
   voice?: EnglishVoice;
   processMarkdown?: boolean;
-  autoPlay?: boolean;
   size?: "default" | "sm" | "lg" | "icon";
   variant?:
     | "default"
@@ -37,7 +39,6 @@ export function AudioPlayerButton({
   text,
   voice,
   processMarkdown,
-  autoPlay = true,
   size = "sm",
   variant = "ghost",
   className,
@@ -57,38 +58,36 @@ export function AudioPlayerButton({
   const selectedVoice = voice || preferredVoice;
   const shouldProcess = processMarkdown ?? shouldProcessMarkdown;
 
-  const { isGenerating, isPlaying, isPaused, speak, pause, resume, stop } =
-    useTextToSpeech({
-      defaultVoice: selectedVoice,
-      autoPlay,
-      processMarkdown: shouldProcess,
-      onError: (error) => {
-        toast.error("Speech playback failed", {
-          description: error,
-        });
-      },
-    });
+  const { speak, status, itemId, pause, resume, remove } = useSpeech({
+    engine: "catalog",
+    voice: selectedVoice,
+    processMarkdown: shouldProcess,
+  });
 
-  const handleClick = useCallback(async () => {
-    if (isPlaying) {
-      if (isPaused) {
-        await resume();
-      } else {
-        pause();
-      }
-    } else if (isPaused) {
-      await resume();
-    } else {
-      await speak(text);
-    }
+  // The queue owns the truth: loading = synthesizing, playing/paused as named.
+  // Errors surface as the queue item's status (and in the Media panel), so this
+  // button no longer needs its own error toast.
+  //
+  // `queued` counts as busy — same as every sibling speaker. Something else is
+  // playing and our utterance is waiting its turn; treating that as idle lets a
+  // second click enqueue the SAME text twice, and the user hears it spoken
+  // twice in a row.
+  const isGenerating = status === "loading" || status === "queued";
+  const isPlaying = status === "playing";
+  const isPaused = status === "paused";
+
+  const handleClick = useCallback(() => {
+    if (isPlaying) pause();
+    else if (isPaused) resume();
+    else speak(text);
   }, [isPlaying, isPaused, text, speak, pause, resume]);
 
   const handleStop = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
-      stop();
+      if (itemId) remove(itemId);
     },
-    [stop],
+    [itemId, remove],
   );
 
   // Determine icon
@@ -110,7 +109,10 @@ export function AudioPlayerButton({
 
   const iconSize = iconSizeMap[size];
 
-  const tooltipText = isGenerating
+  const isQueued = status === "queued";
+  const tooltipText = isQueued
+    ? "Waiting for the current audio to finish"
+    : isGenerating
     ? "Generating speech..."
     : isPlaying
       ? "Pause"
@@ -132,7 +134,9 @@ export function AudioPlayerButton({
         <Icon className={cn(iconSize, isGenerating && "animate-spin")} />
         {!iconOnly && (
           <span className="ml-2">
-            {isGenerating
+            {isQueued
+              ? "Waiting..."
+              : isGenerating
               ? "Generating..."
               : isPlaying
                 ? "Pause"

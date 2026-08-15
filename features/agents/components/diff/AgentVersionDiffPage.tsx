@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -39,9 +39,29 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast-service";
-import { AgentDiffViewer } from "./AgentDiffViewer";
+import { AgentDiffViewer, buildAgentAdapterRegistry } from "./AgentDiffViewer";
 import { VersionHistoryTimeline } from "./VersionHistoryTimeline";
 import { VersionIdBadge } from "./VersionIdBadge";
+import { compareAgentDefinitions } from "./compare-agent-definitions";
+import { useDiffEnrichment } from "@/features/agents/hooks/useDiffEnrichment";
+import { DefaultFieldAdapter } from "@/components/diff/adapters/defaults";
+import { formatChangeType } from "@/components/diff/engine/diff-utils";
+import type { DiffNode, DiffResult } from "@/components/diff/engine/types";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
+import {
+  agentVersionDiffKpis,
+  agentVersionDiffReviewPrompt,
+  agentVersionDiffSummary,
+  agentVersionHistoryCsvRows,
+  agentVersionHistoryRowSummary,
+  buildAgentVersionDiffView,
+  buildAgentVersionHistoryRows,
+  type AgentDiffFieldRenderer,
+  type AgentVersionDiffSides,
+} from "@/features/agents/format";
+import { buildAgentPayload } from "@/components/agent-copy/buildAgentPayload";
 
 interface AgentVersionDiffPageProps {
   agentId: string;
@@ -234,6 +254,36 @@ export function AgentVersionDiffPage({
     setActiveTab("compare");
   };
 
+  // ── Copy-for-AI: the RENDERED DIFF as data ───────────────────────────
+  //
+  // A user copying this page is asking "what changed, and is it safe?". The
+  // payload is therefore the diff the viewer draws — same adapter labels,
+  // same per-field summary text, same stats strip — never two raw snapshots
+  // for the agent to re-diff. Everything below is computed from LIVE
+  // selection state and resolved inside the click handler.
+  const enrichment = useDiffEnrichment();
+  const adapters = useMemo(() => buildAgentAdapterRegistry(), []);
+  const diffResult: DiffResult | null = useMemo(
+    () =>
+      leftSnapshot && rightAgent
+        ? compareAgentDefinitions(leftSnapshot, rightAgent).diffResult
+        : null,
+    [leftSnapshot, rightAgent],
+  );
+  const fieldRenderer: AgentDiffFieldRenderer = useMemo(
+    () => ({
+      label: (node: DiffNode) =>
+        adapters.get(node.key)?.label ?? node.metadata?.label ?? node.key,
+      summaryText: (node: DiffNode) => {
+        const adapter = adapters.get(node.key) ?? DefaultFieldAdapter;
+        return adapter.toSummaryText
+          ? adapter.toSummaryText(node, enrichment)
+          : formatChangeType(node.changeType);
+      },
+    }),
+    [adapters, enrichment],
+  );
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full gap-2 text-muted-foreground">
@@ -245,8 +295,27 @@ export function AgentVersionDiffPage({
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-full text-destructive text-sm">
-        {error}
+      <div className="flex flex-col items-center justify-center h-full gap-2 text-destructive text-sm">
+        <span>{error}</span>
+        <CopyButtons
+          size="sm"
+          label="Version history error"
+          human={() =>
+            `Agent version diff failed to load.\nAgent ID: ${agentId}\nError on screen: ${error}`
+          }
+          agent={() => ({
+            kind: "agent-version-diff-error",
+            location: `AI Matrx — Agent version diff (${agentId})`,
+            description:
+              "The error rendered instead of the agent version-diff page — version history could not be loaded.",
+            data: {
+              error_on_screen: error,
+              agent_id: agentId,
+              requested_version: initialVersion ?? null,
+            },
+            attributes: { agent_id: agentId, has_error: true },
+          })}
+        />
       </div>
     );
   }
@@ -272,6 +341,102 @@ export function AgentVersionDiffPage({
       : `Version ${rightVersion}`;
 
   const isAnyLoading = snapshotLoading || rightSnapshotLoading;
+
+  const location = `AI Matrx — Agent version diff (${liveAgent?.name ?? agentId})`;
+  const promoteOffered =
+    liveAgent?.version != null &&
+    leftVersion != null &&
+    leftVersion !== liveAgent.version;
+
+  const sides = (): AgentVersionDiffSides => ({
+    left: {
+      label: leftLabel,
+      version: leftSnapshot?.version ?? leftVersion ?? null,
+      version_id: selectedVersionItem?.version_id ?? null,
+      changed_at: selectedVersionItem?.changed_at ?? null,
+      change_note: selectedVersionItem?.change_note || null,
+    },
+    right: {
+      label: rightLabel,
+      version: rightVersion,
+      is_live_current: rightVersion === "current",
+    },
+  });
+
+  /** The rendered diff as data. `includeValues` mirrors the page's own view
+   *  modes: true = the Changes tab, false = the Summary tab. */
+  const diffView = (includeValues: boolean) =>
+    diffResult
+      ? buildAgentVersionDiffView({
+          agentId,
+          agentName: liveAgent?.name ?? null,
+          liveVersion: liveAgent?.version ?? null,
+          sides: sides(),
+          diff: diffResult,
+          renderer: fieldRenderer,
+          activeTab,
+          promoteOffered: Boolean(promoteOffered),
+          versionsInHistory: versions.length,
+          includeValues,
+        })
+      : null;
+
+  const diffKpis = () =>
+    diffResult
+      ? agentVersionDiffKpis(diffResult)
+      : {
+          added: 0,
+          removed: 0,
+          modified: 0,
+          unchanged: 0,
+          fields_compared: 0,
+          changed_fields: 0,
+          has_changes: false,
+        };
+
+  const historyRows = () =>
+    buildAgentVersionHistoryRows(versions, liveAgent?.version ?? null);
+
+  /** Nothing is selected yet — say so rather than shipping an empty diff. */
+  const noSelectionData = () => ({
+    state: "no-diff-rendered",
+    message_on_screen: isAnyLoading
+      ? "Loading the selected snapshot…"
+      : "Select a version to see differences",
+    agent: { id: agentId, name: liveAgent?.name ?? null },
+    comparing: sides(),
+    versions_in_history: versions.length,
+  });
+
+  const copyHuman = () => {
+    const view = diffView(true);
+    return view
+      ? agentVersionDiffSummary(view)
+      : `Agent version diff: ${liveAgent?.name ?? agentId}\nComparing: ${leftLabel} → ${rightLabel}\n(no diff rendered yet — ${noSelectionData().message_on_screen})`;
+  };
+
+  const copyAttributes = () => ({
+    ...diffKpis(),
+    agent_id: agentId,
+    left_version: leftSnapshot?.version ?? leftVersion ?? null,
+    right_version: String(rightVersion),
+    active_tab: activeTab,
+    promote_offered: Boolean(promoteOffered),
+  });
+
+  const changesPayload = () => ({
+    kind: "agent-version-diff",
+    location,
+    description: `The rendered version diff for ${liveAgent?.name ?? agentId}: ${leftLabel} → ${rightLabel}, as the Changes view draws it — every changed field with its label, status and old/new values.`,
+    data: diffView(true) ?? noSelectionData(),
+    summary: copyHuman(),
+    attributes: copyAttributes(),
+    context: {
+      agent_name: liveAgent?.name ?? null,
+      live_version: liveAgent?.version ?? null,
+      versions_in_history: versions.length,
+    },
+  });
 
   return (
     <div
@@ -333,9 +498,128 @@ export function AgentVersionDiffPage({
                   <VersionIdBadge versionId={selectedVersionItem.version_id} />
                 </div>
               )}
+            </>
+          )}
 
-              <div className="flex-1" />
+          <div className="flex-1" />
 
+          {/* Copy + export live outside the Compare-only block: the History
+              tab shows real data too, and its payload carries the same
+              rendered-diff KPIs. */}
+          <CopyButtons
+            size="icon"
+            label={`Diff ${leftLabel} → ${rightLabel}`}
+            human={copyHuman}
+            json={() => diffView(true) ?? noSelectionData()}
+            agent={changesPayload}
+            agentVariant={{
+              label: "Changes (what I see)",
+              hint: "Every changed field with its old/new values",
+              position: "first",
+            }}
+            aiVariants={[
+              {
+                id: "review-prompt",
+                label: "Changes + review prompt",
+                hint: '"What changed and is it safe to promote?"',
+                build: () =>
+                  agentVersionDiffReviewPrompt(
+                    buildAgentPayload(changesPayload()),
+                  ),
+              },
+              {
+                id: "summary",
+                label: "Summary only",
+                hint: "Field · status · one-liner, no values",
+                build: () => ({
+                  kind: "agent-version-diff-summary",
+                  location,
+                  description: `The Summary view of the version diff for ${liveAgent?.name ?? agentId}: ${leftLabel} → ${rightLabel} — which fields changed and how, without the values.`,
+                  data: diffView(false) ?? noSelectionData(),
+                  summary: copyHuman(),
+                  attributes: copyAttributes(),
+                  context: {
+                    agent_name: liveAgent?.name ?? null,
+                    live_version: liveAgent?.version ?? null,
+                  },
+                }),
+              },
+              {
+                id: "history",
+                label: "Version history",
+                hint: `All ${versions.length} versions with change notes`,
+                build: () => ({
+                  kind: "agent-version-history",
+                  location,
+                  description: `All ${versions.length} stored versions of ${liveAgent?.name ?? agentId}, newest first, as the History tab lists them. Per-version diff enrichment is loaded lazily in that tab and is not included here.`,
+                  data: {
+                    agent: { id: agentId, name: liveAgent?.name ?? null },
+                    live_version: liveAgent?.version ?? null,
+                    rendered_diff_kpis: diffKpis(),
+                    versions: historyRows(),
+                  },
+                  summary: historyRows()
+                    .map((r) => `- ${agentVersionHistoryRowSummary(r)}`)
+                    .join("\n"),
+                  attributes: copyAttributes(),
+                }),
+              },
+              {
+                id: "everything",
+                label: "Everything (both snapshots)",
+                hint: "Rendered diff + both full version records",
+                build: () => ({
+                  kind: "agent-version-diff-full",
+                  location,
+                  description: `The rendered version diff for ${liveAgent?.name ?? agentId} PLUS the two complete agent definitions being compared (${leftLabel} and ${rightLabel}).`,
+                  data: {
+                    rendered_diff: diffView(true) ?? noSelectionData(),
+                    left_snapshot: leftSnapshot ?? null,
+                    right_snapshot: rightAgent ?? null,
+                    version_history: historyRows(),
+                  },
+                  summary: copyHuman(),
+                  attributes: copyAttributes(),
+                }),
+              },
+            ]}
+          />
+          <ExportMenu
+            label={`agent-version-diff-${liveAgent?.name ?? agentId}`}
+            items={[
+              jsonExportItem(
+                () => diffView(true) ?? noSelectionData(),
+                "JSON (rendered diff)",
+              ),
+              csvExportItem(
+                () =>
+                  (diffView(true)?.changed_fields ?? []).map((change) => ({
+                    field: change.field,
+                    label: change.label,
+                    change: change.change,
+                    summary: change.summary,
+                    nested_changes: (change.changed_children ?? [])
+                      .map((c) => c.path)
+                      .join(" "),
+                  })),
+                "CSV (changed fields)",
+              ),
+              csvExportItem(
+                () => agentVersionHistoryCsvRows(historyRows()),
+                "CSV (all versions)",
+              ),
+              jsonExportItem(
+                () => ({
+                  left_snapshot: leftSnapshot ?? null,
+                  right_snapshot: rightAgent ?? null,
+                }),
+                "JSON (both snapshots)",
+              ),
+            ]}
+          />
+
+          {activeTab === "compare" && (
+            <>
               {liveAgent?.version != null &&
                 leftVersion != null &&
                 leftVersion !== liveAgent.version && (

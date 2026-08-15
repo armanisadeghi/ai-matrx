@@ -147,6 +147,62 @@ export async function rlsCount(
   return Number(total);
 }
 
+export interface WriteProbe {
+  /** HTTP status PostgREST returned. */
+  status: number;
+  /** Rows actually affected (PostgREST returns the representation). */
+  rows: number;
+  /** DB error message, when the write was refused. */
+  error?: string;
+}
+
+/**
+ * TRUE-RLS write over PostgREST as a specific user — the exact path a sharee
+ * would use to walk around a UI-only check (this is how D119 was proven).
+ * Distinguishes REFUSED (a real DB error, e.g. the governance guard's 42501)
+ * from a silent zero-row no-op, because those mean very different things.
+ */
+export async function rlsPatch(
+  env: Env,
+  jwt: string,
+  schema: string,
+  table: string,
+  filter: string,
+  patch: Record<string, unknown>,
+): Promise<WriteProbe> {
+  const res = await fetch(`${env.url}/rest/v1/${table}?${filter}&select=id`, {
+    method: "PATCH",
+    headers: {
+      apikey: env.publishableKey,
+      Authorization: `Bearer ${jwt}`,
+      "Content-Profile": schema,
+      "Accept-Profile": schema,
+      "Content-Type": "application/json",
+      Prefer: "return=representation",
+    },
+    body: JSON.stringify(patch),
+  });
+  const text = await res.text();
+  if (!res.ok) {
+    let message = text.slice(0, 300);
+    try {
+      const parsed = JSON.parse(text) as { message?: string };
+      if (parsed.message) message = parsed.message;
+    } catch {
+      // non-JSON body — keep the raw text
+    }
+    return { status: res.status, rows: 0, error: message };
+  }
+  let rows = 0;
+  try {
+    const parsed = JSON.parse(text) as unknown;
+    if (Array.isArray(parsed)) rows = parsed.length;
+  } catch {
+    rows = 0;
+  }
+  return { status: res.status, rows };
+}
+
 /** Service-key (RLS-bypassing) baseline count — "how many rows exist at all". */
 export async function baselineCount(
   env: Env,

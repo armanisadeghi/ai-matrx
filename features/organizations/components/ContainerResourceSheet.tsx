@@ -13,7 +13,7 @@ import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamic
 import { Input } from "@/components/ui/input";
 import { idMatchesQuery } from "@/utils/search-scoring";
 import { supabase } from "@/utils/supabase/client";
-import { getShareableResource } from "@/utils/permissions/registry";
+import { getResourceSharePath } from "@/utils/permissions/registry";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import type { OrgResourceEntry } from "../resource-catalogue";
@@ -94,19 +94,24 @@ export function ContainerResourceSheet({
   if (!entry) return null;
   const Icon = entry.icon;
   const token = entry.token;
-  const shareable = entry.shareKey
-    ? getShareableResource(entry.shareKey)
-    : undefined;
   /**
-   * The entity registry is the canonical route source; the sharing registry's
-   * `urlPathTemplate` is a SECOND, DB-backed one that disagrees with it in
-   * places (`/quizzes/{id}` vs `/education/quizzes/{id}`, and the 404 route
-   * `/canvas/{id}` — FOUND_DEFECTS D137/D138). Prefer the registry, and fall
-   * back to the share template only where the registry has no route yet, so
-   * this surface's set of working doors is a strict superset of what it had.
+   * ONE route authority: the entity registry. `EntityRef` already resolves the
+   * token's route, so the only thing left for this surface is the case where the
+   * registry has no route for the token but the catalogue's `shareKey` names a
+   * different registered resource. That resolution goes through
+   * `getResourceSharePath`, which is itself registry-first and returns null
+   * rather than guessing.
+   *
+   * It must NOT substitute `urlPathTemplate` by hand: that was a second route
+   * authority, and 24 of its 73 rows pointed at routes that do not exist
+   * (FOUND_DEFECTS D138 — corrected 2026-08-14). A null here means the record
+   * genuinely has no destination, and EntityRef renders the name without an
+   * Open door instead of linking to a 404. `canvas_item` is exactly that case
+   * and stays that way until the canonical canvas route is decided (D137).
    */
   const shareHrefFor = (id: string): string | undefined =>
-    shareable ? shareable.urlPathTemplate.replace("{id}", id) : undefined;
+    (entry.shareKey ? getResourceSharePath(entry.shareKey, id) : null) ??
+    undefined;
   const registryHasRoute = Boolean(
     token && tryGetEntityInfo(token)?.hrefFor,
   );

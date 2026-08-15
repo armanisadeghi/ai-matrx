@@ -1,6 +1,6 @@
 {
   "name": "app-matrx",
-  "version": "0.4.617",
+  "version": "0.4.619",
   "private": true,
   "scripts": {
     "dev": "bash scripts/dev-cleanup.sh reap && NODE_OPTIONS='--max-old-space-size=3072 --dns-result-order=ipv4first' next dev",
@@ -72,6 +72,10 @@
     "check:ui-primitives:staged": "tsx scripts/check-ui-primitives.ts --staged",
     "check:ui-primitives:strict": "tsx scripts/check-ui-primitives.ts --strict",
     "check:migrations": "tsx scripts/check-migrations.ts",
+    "check:partition-runway": "tsx scripts/partition-runway/check-partition-runway.ts",
+    "check:partition-runway:strict": "tsx scripts/partition-runway/check-partition-runway.ts --strict",
+    "check:partition-runway:json": "tsx scripts/partition-runway/check-partition-runway.ts --json",
+    "check:unbounded-reads": "tsx scripts/check-unbounded-reads.ts",
     "check:collection-validator": "tsx scripts/check-collection-validator.ts",
     "check:archetype-expansion": "tsx scripts/check-archetype-expansion.ts",
     "check:archetype-expansion:strict": "tsx scripts/check-archetype-expansion.ts --strict",
@@ -168,6 +172,8 @@
     "check:access-matrix:strict": "tsx scripts/access-matrix/check-access-matrix.ts --strict",
     "check:access-drift": "tsx scripts/access-matrix/check-access-drift.ts",
     "check:access-drift:strict": "tsx scripts/access-matrix/check-access-drift.ts --strict",
+    "check:governance-tier": "tsx scripts/access-matrix/check-governance-tier.ts",
+    "check:governance-tier:strict": "tsx scripts/access-matrix/check-governance-tier.ts --strict",
     "clean:next": "bash -c 'shopt -s nullglob; removed=0; for d in .next-*; do rm -rf \"$d\"; removed=1; done; if [[ \"$removed\" -eq 1 ]]; then echo \"removed alternate NEXT_DISTDIR build dirs (.next left intact)\"; else echo \"no alternate .next-* dirs to remove\"; fi' && pnpm -s fix:tsconfig",
     "clean:next:all": "bash scripts/dev-cleanup.sh next",
     "dev:status": "bash scripts/dev-cleanup.sh status",

@@ -49,6 +49,7 @@ import { dirname, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
+import { readAllRowsRest } from "../lib/supabase/readAllRows";
 import {
   requestTakeoverArgsSchema,
   updatePlanArgsSchema,
@@ -107,21 +108,22 @@ function loadEnv(): { url: string; key: string } | null {
 
 async function fetchDbRows(url: string, key: string, names: string[]): Promise<DbToolRow[]> {
   const inList = names.map((n) => encodeURIComponent(n)).join(",");
-  // `tool.definition` lives in the `tool` schema; reach it via the tool profile.
-  const endpoint = `${url.replace(/\/$/, "")}/rest/v1/definition?name=in.(${inList})&select=name,parameters`;
-  const res = await fetch(endpoint, {
-    headers: {
-      apikey: key,
-      Authorization: `Bearer ${key}`,
-      Accept: "application/json",
-      "Accept-Profile": "tool",
-    },
-  });
-  if (!res.ok) {
-    console.error(`drift-check: Supabase fetch failed (${res.status}): ${await res.text()}`);
+  // Paged through readAllRowsRest: this set-diffs DB rows against the code Zod
+  // schemas, so a PostgREST 1000-row truncation would invent "MISSING in
+  // tool.definition" tools. See lib/supabase/readAllRows.ts.
+  try {
+    return await readAllRowsRest<DbToolRow>({
+      url,
+      key,
+      // `tool.definition` lives in the `tool` schema; reach it via the tool profile.
+      schema: "tool",
+      path: `definition?name=in.(${inList})&select=name,parameters&order=name.asc`,
+      label: "tool.definition",
+    });
+  } catch (err) {
+    console.error(`drift-check: Supabase fetch failed: ${err instanceof Error ? err.message : String(err)}`);
     process.exit(2);
   }
-  return (await res.json()) as DbToolRow[];
 }
 
 /** Serialize a Zod schema to a JSON-Schema object (Zod v4 native). */

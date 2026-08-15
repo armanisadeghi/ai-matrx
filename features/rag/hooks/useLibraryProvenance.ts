@@ -6,8 +6,8 @@
  * "Subscribed"). The ONE fetch layer for provenance on every surface
  * (catalog, hit cards, Source Inspector, data-store badges, viewers).
  *
- * Backed by the day-1 contract RPCs (README §2 of
- * docs/proposals/shared-knowledge-projects/):
+ * Backed by the settled contract RPCs (contract recorded in
+ * features/rag/FEATURE.md § Shared Knowledge Resources):
  *   - public.library_grant_provenance(p_store)         — single store
  *   - public.library_grant_provenance_batch(p_stores)  — N stores, one trip
  * Both return ONLY grants reaching auth.uid() — never the full grant list —

@@ -226,7 +226,7 @@ export const imageGenerateManifest: SurfaceManifest = {
   surfaceName: IMAGE_GENERATE_SURFACE_NAME,
   readiness: "partial",
   readinessNote:
-    "Manifest + GenerateShellClient emitter wired. Remaining: /images/ai-generate hero mounts no provider (placeholder page), no `data-surface-value` anchors, no live non-matching-name binding test.",
+    "READ half: GenerateShellClient emitter wired. WRITE half: `generation_request` target declared and handler wired. Remaining: no `data-surface-value` anchors, no live non-matching-name binding test. Known and accepted: /images/ai-generate mounts no provider — it is a coming-soon hero that loads nothing (never declare what nothing emits); it gains one when that page becomes real.",
   label: "Image Generate",
   urlPattern: "/images/generate",
   intro: `<surface_intro>

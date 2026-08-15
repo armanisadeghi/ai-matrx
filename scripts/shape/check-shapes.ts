@@ -53,6 +53,7 @@ import {
   type DetectorExtractFailure,
   type HostSurfaceExtraction,
 } from "../../features/content-ir/registry/shape-doctor-extract";
+import { readAllRows } from "../../lib/supabase/readAllRows";
 import { parseContractManifestSnapshot } from "./contract-manifest-format";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -272,70 +273,103 @@ async function fetchDbInputs(): Promise<DoctorDbInputs> {
   }
   const supabase = createClient(url, key);
 
-  const [kindsRes, examplesRes, componentsRes, surfacesRes, edgesRes, skillsRes, blocksRes] =
+  // Completeness reads: every one of these lists decides "does this kind have
+  // an X" for EVERY kind. A PostgREST-truncated read invents missing assets and
+  // drops whole kinds off the matrix, so each pages to the declared total or
+  // throws. (Measured 2026-08-14: kind_definition 1158, kind_example 1102 —
+  // both already past the 1000-row cap.)
+  const [kindRows, exampleRows, componentRows, surfaceRows, edgeRows, skillRows, blockRows] =
     await Promise.all([
-      supabase
-        .schema("content_ir")
-        .from("kind_definition")
-        .select("id,kind,label,is_active,emitted_json_schema,sample_data,updated_at,metadata")
-        .is("deleted_at", null),
-      supabase
-        .schema("content_ir")
-        .from("kind_example")
-        .select("id,kind_definition_id,is_canonical,data,updated_at")
-        .is("deleted_at", null),
-      supabase
-        .schema("content_ir")
-        .from("kind_component")
-        .select("id,kind_definition_id,platform,role,component_key")
-        .is("deleted_at", null),
-      supabase
-        .schema("content_ir")
-        .from("kind_surface")
-        .select("id,kind_definition_id,surface_type,token,is_active")
-        .is("deleted_at", null),
+      readAllRows<KindDefinitionRow>(
+        ({ from, to }) =>
+          supabase
+            .schema("content_ir")
+            .from("kind_definition")
+            .select(
+              "id,kind,label,is_active,emitted_json_schema,sample_data,updated_at,metadata",
+              { count: "exact" },
+            )
+            .is("deleted_at", null)
+            .order("id", { ascending: true })
+            .range(from, to),
+        { label: "content_ir.kind_definition" },
+      ),
+      readAllRows<KindExampleRow>(
+        ({ from, to }) =>
+          supabase
+            .schema("content_ir")
+            .from("kind_example")
+            .select("id,kind_definition_id,is_canonical,data,updated_at", { count: "exact" })
+            .is("deleted_at", null)
+            .order("id", { ascending: true })
+            .range(from, to),
+        { label: "content_ir.kind_example" },
+      ),
+      readAllRows<KindComponentRow>(
+        ({ from, to }) =>
+          supabase
+            .schema("content_ir")
+            .from("kind_component")
+            .select("id,kind_definition_id,platform,role,component_key", { count: "exact" })
+            .is("deleted_at", null)
+            .order("id", { ascending: true })
+            .range(from, to),
+        { label: "content_ir.kind_component" },
+      ),
+      readAllRows<KindSurfaceRow>(
+        ({ from, to }) =>
+          supabase
+            .schema("content_ir")
+            .from("kind_surface")
+            .select("id,kind_definition_id,surface_type,token,is_active", { count: "exact" })
+            .is("deleted_at", null)
+            .order("id", { ascending: true })
+            .range(from, to),
+        { label: "content_ir.kind_surface" },
+      ),
       // The nesting graph — required to tell a nested-only child kind (whose
       // component/surface/skill/block cells are structurally `n/a`) from a root
-      // with a real, closeable gap.
-      supabase
-        .schema("content_ir")
-        .from("kind_edge")
-        .select("parent_definition_id,child_definition_id,field_name")
-        .is("deleted_at", null),
-      supabase
-        .schema("skill")
-        .from("definition")
-        .select("skill_id,label,body")
-        .eq("skill_type", "render_block")
-        .is("deleted_at", null),
+      // with a real, closeable gap. No `id` column: the unique triple orders it.
+      readAllRows<KindEdgeRow>(
+        ({ from, to }) =>
+          supabase
+            .schema("content_ir")
+            .from("kind_edge")
+            .select("parent_definition_id,child_definition_id,field_name", { count: "exact" })
+            .is("deleted_at", null)
+            .order("parent_definition_id", { ascending: true })
+            .order("child_definition_id", { ascending: true })
+            .order("field_name", { ascending: true })
+            .range(from, to),
+        { label: "content_ir.kind_edge" },
+      ),
+      readAllRows<SkillRow>(
+        ({ from, to }) =>
+          supabase
+            .schema("skill")
+            .from("definition")
+            .select("skill_id,label,body", { count: "exact" })
+            .eq("skill_type", "render_block")
+            .is("deleted_at", null)
+            .order("skill_id", { ascending: true })
+            .range(from, to),
+        { label: "skill.definition" },
+      ),
       // Canonical: render/content blocks now live in skill.render_definition
       // (public.content_blocks retired). The shape doctor detects a kind's
       // teaching block by scanning template text either way.
-      supabase
-        .schema("skill")
-        .from("render_definition")
-        .select("id,template")
-        .is("deleted_at", null),
+      readAllRows<ContentBlockRow>(
+        ({ from, to }) =>
+          supabase
+            .schema("skill")
+            .from("render_definition")
+            .select("id,template", { count: "exact" })
+            .is("deleted_at", null)
+            .order("id", { ascending: true })
+            .range(from, to),
+        { label: "skill.render_definition" },
+      ),
     ]);
-
-  const fail = (what: string, error: { message: string } | null): never => {
-    throw new Error(`read ${what}: ${error?.message ?? "unknown error"}`);
-  };
-  if (kindsRes.error) fail("content_ir.kind_definition", kindsRes.error);
-  if (examplesRes.error) fail("content_ir.kind_example", examplesRes.error);
-  if (componentsRes.error) fail("content_ir.kind_component", componentsRes.error);
-  if (surfacesRes.error) fail("content_ir.kind_surface", surfacesRes.error);
-  if (edgesRes.error) fail("content_ir.kind_edge", edgesRes.error);
-  if (skillsRes.error) fail("skill.definition", skillsRes.error);
-  if (blocksRes.error) fail("skill.render_definition", blocksRes.error);
-
-  const kindRows = (kindsRes.data ?? []) as KindDefinitionRow[];
-  const exampleRows = (examplesRes.data ?? []) as KindExampleRow[];
-  const componentRows = (componentsRes.data ?? []) as KindComponentRow[];
-  const surfaceRows = (surfacesRes.data ?? []) as KindSurfaceRow[];
-  const edgeRows = (edgesRes.data ?? []) as KindEdgeRow[];
-  const skillRows = (skillsRes.data ?? []) as SkillRow[];
-  const blockRows = (blocksRes.data ?? []) as ContentBlockRow[];
 
   return {
     kinds: kindRows.map(

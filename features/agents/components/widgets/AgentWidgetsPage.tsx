@@ -32,20 +32,27 @@ import {
   getAllDisplayTypes,
   getDisplayMeta,
 } from "@/features/agents/utils/run-ui-utils";
-import type {
-  ManagedAgentOptions,
-  ResultDisplayMode,
-} from "@/features/agents/types/instance.types";
-import type { JsonExtractionConfig } from "@/features/agents/types/instance.types";
-import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
+import type { ResultDisplayMode } from "@/features/agents/types/instance.types";
 import type { VariablesPanelStyle } from "@/features/agents/components/inputs/variable-input-variations/variable-input-options";
 import type { ApiEndpointMode } from "@/features/agents/types/instance.types";
-import type { ApplicationScope } from "@/features/agents/utils/scope-mapping";
 import {
   TesterSettingsPanel,
   type TesterSettingsController,
 } from "@/features/agents/components/run-controls/TesterSettingsPanel";
 import { WidgetVariableInputs } from "./WidgetVariableInputs";
+import {
+  buildWidgetLaunchDraft,
+  sealWidgetLaunchOptions,
+  type WidgetLaunchState,
+} from "./build-widget-launch";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
+import {
+  agentWidgetTesterKpis,
+  agentWidgetTesterSummary,
+  buildAgentWidgetVariableRows,
+} from "@/features/agents/format";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -219,102 +226,56 @@ export function AgentWidgetsPage({
       };
     });
 
+  /** Live tester state, in the one shape the launch builder reads. */
+  const launchState: WidgetLaunchState = {
+    variableValues,
+    userInput,
+    autoRun,
+    showVariablePanel,
+    variablesPanelStyle,
+    showPreExecutionGate,
+    preExecutionMessage,
+    showDefinitionMessages,
+    showDefinitionMessageContent,
+    allowChat,
+    hideReasoning,
+    hideToolResults,
+    includeEditorContext,
+    editorSelection,
+    editorTextBefore,
+    editorTextAfter,
+    editorContent,
+    editorContext,
+    apiEndpointMode,
+    showAutoClearToggle,
+    autoClearConversation,
+    jsonExtractionEnabled,
+    jsonExtractionFuzzy,
+    jsonExtractionMaxResults,
+    overridesJson,
+    applicationScopeJson,
+  };
+
   const openWithDisplayType = async (displayMode: ResultDisplayMode) => {
     launchCounterRef.current += 1;
     const uniqueSurfaceKey = `${SURFACE_KEY_PREFIX}:${agentId}:${displayMode}:${launchCounterRef.current}:${Date.now()}`;
 
     setJsonError(null);
 
-    let overrides: Partial<FeLlmParams> | undefined;
-    if (overridesJson.trim()) {
-      try {
-        const parsed = JSON.parse(overridesJson);
-        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-          setJsonError("Overrides must be a JSON object");
-          return;
-        }
-        overrides = parsed;
-      } catch (e) {
-        setJsonError(
-          `Overrides JSON: ${e instanceof Error ? e.message : "invalid"}`,
-        );
-        return;
-      }
+    const build = buildWidgetLaunchDraft(launchState);
+    if (!build.ok) {
+      setJsonError(build.error);
+      return;
     }
-
-    const scope: Record<string, unknown> = {};
-    if (includeEditorContext) {
-      if (editorSelection) scope.selection = editorSelection;
-      if (editorTextBefore) scope.text_before = editorTextBefore;
-      if (editorTextAfter) scope.text_after = editorTextAfter;
-      if (editorContent) scope.content = editorContent;
-      if (editorContext) scope.context = editorContext;
-    }
-
-    if (applicationScopeJson.trim()) {
-      try {
-        const parsed = JSON.parse(applicationScopeJson);
-        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-          setJsonError("Application scope must be a JSON object");
-          return;
-        }
-        Object.assign(scope, parsed);
-      } catch (e) {
-        setJsonError(
-          `Scope JSON: ${e instanceof Error ? e.message : "invalid"}`,
-        );
-        return;
-      }
-    }
-    const applicationScope: ApplicationScope | undefined =
-      Object.keys(scope).length > 0 ? (scope as ApplicationScope) : undefined;
-
-    const maxResults = jsonExtractionMaxResults.trim()
-      ? Number(jsonExtractionMaxResults)
-      : NaN;
-
-    const jsonExtraction: JsonExtractionConfig | undefined =
-      jsonExtractionEnabled
-        ? {
-            enabled: true,
-            ...(jsonExtractionFuzzy ? { fuzzyOnFinalize: true } : {}),
-            ...(Number.isFinite(maxResults) ? { maxResults } : {}),
-          }
-        : undefined;
-
-    const options: ManagedAgentOptions = {
-      surfaceKey: uniqueSurfaceKey,
-      sourceFeature: "agents-other",
-      apiEndpointMode,
-      autoClearConversation,
-      showAutoClearToggle,
-      ...(jsonExtraction ? { jsonExtraction } : {}),
-      config: {
-        displayMode,
-        autoRun,
-        allowChat,
-        showPreExecutionGate,
-        variablesPanelStyle,
-        showVariablePanel,
-        showDefinitionMessages,
-        showDefinitionMessageContent,
-        hideReasoning,
-        hideToolResults,
-        defaultVariables: variableValues,
-        ...(preExecutionMessage ? { preExecutionMessage } : {}),
-        ...(overrides ? { llmOverrides: overrides } : {}),
-      },
-      runtime: {
-        ...(userInput ? { userInput } : {}),
-        ...(includeEditorContext && editorSelection
-          ? { originalText: editorSelection }
-          : {}),
-        ...(applicationScope ? { applicationScope } : {}),
-      },
-    };
 
     try {
-      await launchAgent(agentId, options);
+      await launchAgent(
+        agentId,
+        sealWidgetLaunchOptions(build.draft, {
+          surfaceKey: uniqueSurfaceKey,
+          displayMode,
+        }),
+      );
     } catch (error) {
       console.error("Widget launch failed:", error);
       setJsonError(
@@ -329,6 +290,104 @@ export function AgentWidgetsPage({
   }, [agentId]);
 
   const isLoading = !executionPayload.isReady;
+
+  // ── Copy / export ────────────────────────────────────────────────────
+  //
+  // LIVE state only. This page's whole point is that the form IS the payload:
+  // copying the fetched agent record after the user typed a variable value
+  // would hand the agent something that is not on screen. Every builder below
+  // runs inside the click handler and reads current state, including the red
+  // JSON error banner verbatim and the exact launch draft the Launch dropdown
+  // would ship.
+  const location = `AI Matrx — Agent widget tester (${basePath}/${agentId}/widgets)`;
+  const definitions = variableDefinitions ?? [];
+  const variableRows = () =>
+    buildAgentWidgetVariableRows(definitions, variableValues);
+  const kpis = () =>
+    agentWidgetTesterKpis({
+      definitions,
+      values: variableValues,
+      userInput,
+      includeEditorContext,
+      jsonError,
+    });
+  const displayModeNames = displayTypes.map((d) => d.name);
+
+  /** What the Launch dropdown would ship right now, or the blocker. */
+  const launchPreview = () => {
+    const build = buildWidgetLaunchDraft(launchState);
+    return build.ok
+      ? {
+          status: "ready" as const,
+          note: "surfaceKey and config.displayMode are assigned when a display mode is clicked; everything else below is exactly what ships to launchAgent.",
+          display_modes_available: displayModeNames,
+          draft: build.draft,
+        }
+      : {
+          status: "blocked" as const,
+          note: "Clicking a display mode right now would not launch — this error is what the tester shows instead.",
+          error: build.error,
+          display_modes_available: displayModeNames,
+        };
+  };
+
+  const testerView = () => ({
+    agent: { id: agentId, name: initialAgentName },
+    state: isLoading ? "loading agent definition" : "ready",
+    kpis: kpis(),
+    error_on_screen: jsonError,
+    variables: variableRows(),
+    user_input: userInput,
+    settings: {
+      auto_run: autoRun,
+      allow_chat: allowChat,
+      show_variable_panel: showVariablePanel,
+      variables_panel_style: variablesPanelStyle,
+      show_pre_execution_gate: showPreExecutionGate,
+      pre_execution_message: preExecutionMessage,
+      show_definition_messages: showDefinitionMessages,
+      show_definition_message_content: showDefinitionMessageContent,
+      hide_reasoning: hideReasoning,
+      hide_tool_results: hideToolResults,
+    },
+    editor_context: {
+      included: includeEditorContext,
+      selection: editorSelection,
+      text_before: editorTextBefore,
+      text_after: editorTextAfter,
+      content: editorContent,
+      context: editorContext,
+    },
+    advanced: {
+      api_endpoint_mode: apiEndpointMode,
+      show_auto_clear_toggle: showAutoClearToggle,
+      auto_clear_conversation: autoClearConversation,
+      json_extraction_enabled: jsonExtractionEnabled,
+      json_extraction_fuzzy: jsonExtractionFuzzy,
+      json_extraction_max_results: jsonExtractionMaxResults,
+      overrides_json: overridesJson,
+      application_scope_json: applicationScopeJson,
+    },
+    launch_preview: launchPreview(),
+  });
+
+  const testerHuman = () =>
+    agentWidgetTesterSummary({
+      agentId,
+      agentName: initialAgentName,
+      kpis: kpis(),
+      variables: variableRows(),
+      userInput,
+      jsonError,
+      isLoading,
+      displayModes: displayModeNames,
+    });
+
+  const testerAttributes = () => ({
+    ...kpis(),
+    agent_id: agentId,
+    launch_status: launchPreview().status,
+  });
 
   return (
     <div className="relative flex flex-col h-full overflow-hidden">
@@ -352,6 +411,90 @@ export function AgentWidgetsPage({
           />
         </div>
         <div className="flex items-center gap-1.5 pt-0.5 shrink-0">
+          <CopyButtons
+            size="icon"
+            label={`Widget tester — ${initialAgentName}`}
+            human={testerHuman}
+            json={testerView}
+            agent={() => ({
+              kind: "agent-widget-tester",
+              location,
+              description: `The agent widget tester for ${initialAgentName} exactly as configured on screen right now: live variable values, user input, every launch setting, and the launch options a display-mode click would ship.`,
+              data: testerView(),
+              summary: testerHuman(),
+              attributes: testerAttributes(),
+              context: { agent_name: initialAgentName, base_path: basePath },
+            })}
+            agentVariant={{
+              label: "This page (what I see)",
+              hint: "Live form state + the launch draft it produces",
+              position: "first",
+            }}
+            aiVariants={[
+              {
+                id: "launch-options",
+                label: "Launch options only",
+                hint: "Just what ships to launchAgent",
+                build: () => ({
+                  kind: "agent-widget-launch-options",
+                  location,
+                  description: `The launch options the widget tester would send for ${initialAgentName}, built by the same builder the Launch dropdown uses.`,
+                  data: {
+                    agent: { id: agentId, name: initialAgentName },
+                    kpis: kpis(),
+                    error_on_screen: jsonError,
+                    launch_preview: launchPreview(),
+                  },
+                  attributes: testerAttributes(),
+                }),
+              },
+              {
+                id: "variables",
+                label: "Variables + input",
+                hint: "Definitions, live values, and the user input",
+                build: () => ({
+                  kind: "agent-widget-variables",
+                  location,
+                  description: `The variable definitions for ${initialAgentName} with the values currently typed into the tester, plus the user input box.`,
+                  data: {
+                    agent: { id: agentId, name: initialAgentName },
+                    kpis: kpis(),
+                    error_on_screen: jsonError,
+                    variables: variableRows(),
+                    user_input: userInput,
+                  },
+                  attributes: testerAttributes(),
+                }),
+              },
+            ]}
+          />
+          <ExportMenu
+            label={`agent-widget-tester-${initialAgentName}`}
+            items={[
+              jsonExportItem(testerView, "JSON (page state)"),
+              jsonExportItem(launchPreview, "JSON (launch options)"),
+              csvExportItem(
+                () =>
+                  variableRows().map((row) => ({
+                    name: row.name,
+                    required: row.required,
+                    input_kind: row.input_kind,
+                    filled: row.filled,
+                    current_value:
+                      row.current_value === undefined
+                        ? ""
+                        : JSON.stringify(row.current_value),
+                    default_value:
+                      row.default_value === undefined
+                        ? ""
+                        : JSON.stringify(row.default_value),
+                    help_text: row.help_text ?? "",
+                    bound_to_context_item: row.bound_to_context_item ?? "",
+                  })),
+                "CSV (all variables)",
+              ),
+            ]}
+          />
           <AgentSaveStatus agentId={agentId} />
           <AgentOptionsMenu agentId={agentId} basePath={basePath} />
         </div>
@@ -421,29 +564,84 @@ export function AgentWidgetsPage({
               </div>
             ) : (
               <>
-                <section className="space-y-2">
-                  <div className="flex items-baseline justify-between">
+                <section className="group/vars space-y-2">
+                  <div className="flex items-baseline justify-between gap-2">
                     <Label className="text-xs font-semibold text-foreground uppercase tracking-wider">
                       Variables
                     </Label>
-                    <span className="text-[10px] text-muted-foreground">
-                      {variableDefinitions?.length ?? 0} defined
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] text-muted-foreground">
+                        {definitions.length} defined
+                      </span>
+                      <span className="opacity-0 transition-opacity focus-within:opacity-100 group-hover/vars:opacity-100">
+                        <CopyButtons
+                          size="xs"
+                          label="Widget tester variables"
+                          human={() =>
+                            variableRows().length
+                              ? variableRows()
+                                  .map(
+                                    (row) =>
+                                      `- ${row.name}${row.required ? " *" : ""}: ${
+                                        row.filled
+                                          ? JSON.stringify(row.current_value)
+                                          : "(empty)"
+                                      }`,
+                                  )
+                                  .join("\n")
+                              : "This agent has no variable definitions."
+                          }
+                          json={variableRows}
+                          agent={() => ({
+                            kind: "agent-widget-variables",
+                            location,
+                            description: `The Variables section of the widget tester for ${initialAgentName} — every definition with the value currently typed in.`,
+                            data: {
+                              agent: { id: agentId, name: initialAgentName },
+                              kpis: kpis(),
+                              error_on_screen: jsonError,
+                              variables: variableRows(),
+                            },
+                            attributes: testerAttributes(),
+                          })}
+                        />
+                      </span>
+                    </div>
                   </div>
                   <WidgetVariableInputs
-                    definitions={variableDefinitions ?? []}
+                    definitions={definitions}
                     values={variableValues}
                     onChange={setVariableValues}
                   />
                 </section>
 
-                <section className="space-y-1.5">
-                  <Label
-                    htmlFor="widgets-user-input"
-                    className="text-xs font-semibold text-foreground uppercase tracking-wider"
-                  >
-                    User Input
-                  </Label>
+                <section className="group/input space-y-1.5">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <Label
+                      htmlFor="widgets-user-input"
+                      className="text-xs font-semibold text-foreground uppercase tracking-wider"
+                    >
+                      User Input
+                    </Label>
+                    <span className="opacity-0 transition-opacity focus-within:opacity-100 group-hover/input:opacity-100">
+                      <CopyButtons
+                        size="xs"
+                        label="Widget tester user input"
+                        human={() => userInput || "(empty)"}
+                        agent={() => ({
+                          kind: "agent-widget-user-input",
+                          location,
+                          description: `The user-input text currently typed into the widget tester for ${initialAgentName} — the text that would ship as runtime.userInput.`,
+                          data: {
+                            agent: { id: agentId, name: initialAgentName },
+                            kpis: kpis(),
+                            user_input: userInput,
+                          },
+                          attributes: testerAttributes(),
+                        })}
+                      />
+                    </span>
+                  </div>
                   <textarea
                     id="widgets-user-input"
                     value={userInput}

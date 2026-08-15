@@ -56,10 +56,15 @@ export function fetchChunksForPage(
           },
         );
         if (rpcError) {
-          // The RPC raises "document not found" for a doc the caller can't
-          // see (the previous HTTP endpoint's 404-equivalent) — treat that
-          // the same way the old 404 branch did: an empty, non-error result.
-          if (rpcError.message?.includes("document not found")) {
+          // The RPC's zero-row gate is SECURITY INVOKER, so it fires both for a
+          // genuinely absent document AND for one RLS hid from this caller. It
+          // signals that ambiguity with errcode P0002 — match the CODE, never
+          // the message text (this branch used to string-match "document not
+          // found", which the honest-error migration rewrote out from under it).
+          // Behaviour is unchanged from the old 404 branch: an empty,
+          // non-error result, because this viewer renders per-page on demand
+          // and an unreachable doc simply has nothing to show here.
+          if (rpcError.code === "P0002") {
             dispatch(
               chunksFetchSuccess({ docId, pageNumber, rows: [], total: 0 }),
             );

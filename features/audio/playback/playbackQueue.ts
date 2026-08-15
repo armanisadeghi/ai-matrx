@@ -43,8 +43,8 @@ async function getAdapter(
     case "cartesia":
       adapter = (await import("./adapters/cartesiaAdapter")).cartesiaAdapter;
       break;
-    case "groq":
-      adapter = (await import("./adapters/groqAdapter")).groqAdapter;
+    case "catalog":
+      adapter = (await import("./adapters/catalogAdapter")).catalogAdapter;
       break;
     default:
       throw new Error(`Unknown playback provider: ${provider}`);

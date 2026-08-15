@@ -80,6 +80,14 @@ export interface AudioSession {
   endedAtMs?: number;
   /** True when the panel may offer a Replay action for this (terminal) session. */
   canReplay?: boolean;
+  /**
+   * Poster/thumbnail for a video row, read straight off the element — the panel
+   * shows the frame instead of a generic icon, the way a browser's own media hub
+   * does. Never persisted; a public/CDN or blob URL the element already loaded.
+   */
+  posterUrl?: string;
+  /** Current playback speed, when the session exposes a `setRate` control. */
+  rate?: number;
 }
 
 /**
@@ -100,11 +108,21 @@ export interface AudioSessionControls {
   replay?: () => void | Promise<void>;
   /** Remove from the queue / history list. */
   remove?: () => void | Promise<void>;
+  /**
+   * Change playback speed WHILE playing. Only sessions backed by a real media
+   * element (video, podcast player, durable audio file) can do this — a
+   * synthesis engine that bakes speed in at generation time cannot, so the
+   * panel hides the control rather than offering one that does nothing.
+   */
+  setRate?: (rate: number) => void;
 }
 
 /** Patch applied to an existing session. */
 export type AudioSessionPatch = Partial<
-  Pick<AudioSession, "label" | "text" | "status" | "error" | "canReplay">
+  Pick<
+    AudioSession,
+    "label" | "text" | "status" | "error" | "canReplay" | "posterUrl" | "rate"
+  >
 >;
 
 /** Snapshot pushed to subscribers (→ Redux mirror). */
@@ -121,6 +139,8 @@ export interface RegisterSessionInput {
   text?: string;
   status?: AudioSessionStatus;
   canReplay?: boolean;
+  posterUrl?: string;
+  rate?: number;
 }
 
 /** Handle returned by `beginPlaybackSession` — the atomic claim+register helper. */

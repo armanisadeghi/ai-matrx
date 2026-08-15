@@ -4,6 +4,12 @@ import React, { useState } from "react";
 import { CircuitBoard } from "lucide-react";
 import { SectionToolbar } from "../SectionToolbar";
 import { SectionFooter } from "../SectionFooter";
+import { getComingSoon } from "@/lib/coming-soon/registry";
+
+// The promise is READ from the registry, and rendering is FAIL-CLOSED: no
+// entry means no promise on screen, so deleting the entry when sub-agents ship
+// cannot leave a stale "coming soon" behind (CLAUDE.md § Coming Soon).
+const COMING_SOON = getComingSoon("agent-connections.sub-agents");
 
 /**
  * Sub-agents are agent_definition rows where `kind = 'subagent'` — invoked by
@@ -23,18 +29,20 @@ export function SubAgentsSection() {
       <div className="flex-1 overflow-y-auto scrollbar-thin flex items-center justify-center">
         <div className="flex flex-col items-center gap-2 text-center max-w-md px-8 py-12">
           <CircuitBoard className="h-10 w-10 text-muted-foreground/50" />
-          <h3 className="text-sm font-semibold text-foreground mt-2">
-            Sub-agents coming soon
-          </h3>
-          <p className="text-sm text-muted-foreground">
-            Specialist agents that another agent can hand work to — like a code
-            reviewer, performance optimizer, or migration helper. Once the
-            <code className="mx-1 px-1.5 py-0.5 rounded bg-muted text-xs">
-              agent_definition.kind
-            </code>
-            column lands, they&apos;ll show up here filtered out from the main
-            Agents list.
-          </p>
+          {COMING_SOON ? (
+            <>
+              <h3 className="text-sm font-semibold text-foreground mt-2">
+                {COMING_SOON.label} — coming soon
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                {COMING_SOON.promise}
+              </p>
+            </>
+          ) : (
+            <h3 className="text-sm font-semibold text-foreground mt-2">
+              No sub-agents yet
+            </h3>
+          )}
         </div>
       </div>
       <SectionFooter

@@ -10,7 +10,20 @@ density persistence, inline edit commit, and the error banner.
 **Consumers:** `/agents/all` (`features/agents/browse/listConfig.tsx` — the
 proving ground) · `/transcripts` (`features/transcripts/browse/listConfig.tsx`
 — the heterogeneous-rows test: five source shapes collapsed to one row type
-with a `kind` column). CRM consumes `EntityScopeTabs` directly.
+with a `kind` column) · `features/expertise/browse/` · marketing cross-site
+ranks · `features/canvas/maps/`. CRM consumes `EntityScopeTabs` directly.
+
+## Ratified decisions — do not re-litigate
+
+| Decision | Ruling |
+|---|---|
+| Extraction shape | Config-driven shell + escape hatches: `<EntityListPage config={...} />`; render props for the bespoke parts |
+| Scope vocabulary | Fixed five: mine · my orgs · shared · industry · public. A surface declares its subset, never a sixth |
+| Industry semantics | Opt-in both ends (`iam.industry_curators` publish / `iam.org_industries` attach); records attach by grant row, never a column or association edge. Documented, still unwired — the first feature that needs it builds the grant table per `lib/list-scope/FEATURE.md` |
+| Per-feature RPCs | Hand-written from the template in `lib/list-scope/FEATURE.md`, never generated |
+| Column policy | Every column sorts AND filters, server-side, no exceptions; finite sets get options with counts; dates + numerics get buckets |
+| Heterogeneous rows | ONE row type with a `kind` column (proven on transcripts); never special-cased inside the shell |
+| Default sort / page size | Favorites first, most recent; relevance overrides both while searching. 25/page |
 
 ## The split that runs through everything
 
@@ -45,8 +58,15 @@ with a `kind` column). CRM consumes `EntityScopeTabs` directly.
    built in, numeric bucket filters, UNION over heterogeneous sources).
 4. **Search is relevance-ranked from day one.** Port the scorer tiers
    (`agx_search_score` / `trx_search_score`), never ship a flat `ILIKE OR`
-   ordered by `updated_at` — that mistake is documented in
-   `docs/handoffs/canonical-entity-list-extraction.md` §0.
+   ordered by `updated_at`. **This is the mistake that cost this system its
+   worst week:** when `/agents/all` first moved to server-side paging its
+   search became an unranked `ILIKE OR` ordered by `updated_at`, so a passing
+   mention in a description outranked a name match and searching "image"
+   returned ten unrelated agents first. The proven scorer already existed
+   (`features/agents/search/score.ts` — *"One implementation, every surface.
+   Never fork this function."*), had been found during research and cited in
+   the notes, and was simply not ported. **When you move something to a new
+   layer, PORT the proven implementation first and improve it second.**
 5. **Bump `prefsVersion`** in the same change that adds/removes a column.
 6. Surfaces without an axis switch it off (`supportsArchived: false`, omit
    `favorite`/`deepSearch`/`views`) — the shell hides the affordance rather
@@ -62,8 +82,47 @@ with a `kind` column). CRM consumes `EntityScopeTabs` directly.
    name column's `entityToken` resolves and what the kebab's share action uses:
    one record, one identity, three entry points.
 
+## Parity contracts (break these and users notice, not CI)
+
+**Search scorer — three implementations, one behaviour.**
+`features/agents/search/score.ts` ↔ `public.agx_search_score` ↔
+`public.trx_search_score` share the same tiers. Server paging forces the SQL
+copies (ranking must happen before `LIMIT`). **Change one, change the others
+in the same commit.**
+- Fixture: `features/agents/search/__fixtures__/search-score-parity.json`
+- TS: `npx jest features/agents/search/score.parity.test.ts --no-coverage`
+- SQL: `scripts/search-parity/check-search-score-parity.sql` — every row `MATCH`
+
+**Prefs shape.** Bump the config's `prefsVersion` in the same change that adds
+or removes a column, or existing users keep their old `hiddenColumns` forever
+and every new column arrives switched ON for them.
+
+## Verifying a list surface
+
+```bash
+pnpm type-check
+npx jest features/agents/search/score.parity.test.ts --no-coverage
+pnpm check:migrations
+```
+Live DB (Supabase MCP, project `txzxabzwovsujtloxrus`), after setting the JWT
+claim to a real user:
+```sql
+select kind, count(*) from public.trx_list_scoped('mine',null,null,false,'updated','desc','{}'::jsonb,200,0) group by kind;
+select * from public.trx_list_scope_counts();   -- tab totals + org labels
+```
+
+**Known cost, not yet a problem:** `trx_list_scoped` evaluates the
+transcript-segments `ILIKE` inside the pre-scope `unified` CTE, so a *deep*
+search touches all users' transcripts before scoping narrows them. Counting
+calls skip per-row scoring (the `LIMIT <= 1` guard); the deep `ILIKE` still
+runs. Restructure if it ever shows up in timings.
+
 ## Change log
 
+- 2026-08-15 — Extraction CLOSED; its handoff doc deleted and the durable half
+  (ratified decisions, the relevance lesson, parity contracts, verification)
+  absorbed here. Remaining follow-ups are independent chips in
+  `.matrx/AGENT_TASKS.md` (`TASK-EL-*`).
 - 2026-08-09 — Rows carry a SURFACE to the right-click menu: `sourceFeature`
   (required) + optional `getRowEntity`. `ItemContextMenu` had hardcoded
   `sourceFeature="files"` for every consumer and never forwarded an `entity` at

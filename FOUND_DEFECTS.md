@@ -5,6 +5,7 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 **Rules**
 
 - File only defects you can't fully fix in the moment, and only UNRELATED findings — a bug related to your current task gets **fixed**, not filed. Enough context to act cold: what, where, the fix.
+- **Claim the next free ID by grepping `^### D` first.** Duplicate IDs have collided four times (two D138s, two D150s, two D167s, two D183s, two D184s) — an entry other docs cite by number must keep its number, so the LATER filing is the one that gets renumbered.
 - **When you fix one: collapse it to a one-line bullet in Resolved (title + date + commit/file pointer) — or delete it outright.** No histories, no verification narratives, no journeys. An entry earns lines only while it is open.
 - Keep open entries compressed to load-bearing facts: what's broken, exact paths, the fix, who decides. A partially-fixed entry keeps only the open remainder.
 - CLAUDE.md links here. Read both before touching files, media, or persistence.
@@ -12,6 +13,72 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 ---
 
 ## OPEN
+
+### D193 — the shared `TabsContent` hardcodes `forceMount`: every tab panel in the app is always mounted (2026-08-15)
+
+`components/ui/tabs.tsx` (~line 69) carries `forceMount //<=======Add this line` plus
+`data-[state=inactive]:hidden`. Radix unmounts inactive panels by default; this override makes
+every hidden tab fully live across **122 consumer files** — its effects run, its fetches fire, its
+subscriptions open, and it registers whatever a mounted component registers.
+
+Not theoretical: on `/administration/agents/agent-apps/executions` both tab tables registered a
+`SurfaceRuntimeProvider` for the same surface at the same depth, so the Errors emitter won the
+tie-break and agents on the Executions tab saw error rows (fixed for that page only in `e8534c8d`
+— see D194 for the missing guard). Any hidden tab that opens a realtime channel or polls is doing
+it right now.
+
+**Fix:** restore Radix's default (unmount inactive) and make force-mounting opt-in via an explicit
+prop for panels that genuinely must preserve state (scroll position, in-flight editors). Whoever
+takes it greps the 122 consumers for effects/subscriptions that assume `mounted == visible`.
+Filed as AI Dream feedback `2295ffb3-8d1f-43e9-8dcf-f8262a6d3999`.
+
+### D194 — two surface providers at the same depth silently pick a winner; no warning (2026-08-15)
+
+`features/surfaces/runtime/SurfaceRuntimeContext.tsx::getSurfaceRuntime()` resolves "deepest wins,
+ties broken by higher registration id". Depth is correct and load-bearing for real nesting (an open
+window out-depthing the page). The unguarded case is SIBLINGS: two components at the same depth
+registering the same `surfaceName` — the registry quietly drops one and the agent gets the wrong
+page's data. Nothing logs, nothing throws. This shipped and was caught by a review bot, not by us
+(D193).
+
+**Fix:** dev-mode `console.warn` inside `registerSurfaceRuntime` when a registration lands on a
+surfaceName that already has a live entry at the SAME depth, naming both call sites — the second
+independent layer the loud-recovery doctrine requires. Filed as AI Dream feedback
+`ebed27b8-8544-4a6a-92f3-3dabdebe2ad0`.
+
+### D195 — `append_rows_to_user_table`'s only caller is in matrx-extend and still reads the old error text (2026-08-15)
+
+The D167 honest-access-error sweep (`migrations/invoker_fns_honest_access_error.sql`, applied live
+2026-08-15) rewrote 17 SECURITY INVOKER functions to raise an honest ambiguous message under
+errcode **P0002**. Sixteen had their frontend callers rewired in the same commit. The seventeenth,
+`append_rows_to_user_table`, has **zero** callers in this repo — its only consumer is
+`matrx-extend/src/lib/supabase/user-tables.ts:257`, which this repo cannot edit.
+
+Nothing is broken today (that caller does not string-match the message), but the extension now
+receives an access answer it does not route. **Relay prompt for the matrx-extend agent:**
+
+> `append_rows_to_user_table` (public, SECURITY INVOKER) no longer raises `'table not found or not
+> owned by caller'`. Its zero-row gate is ambiguous under RLS, so it now raises an honest message
+> under errcode `P0002`. In `src/lib/supabase/user-tables.ts:257`, branch on `error.code ===
+> "P0002"` and surface it as an access-unresolved state (never as "not found" / "not yours"). Do
+> not match the message text.
+
+### D196 — two SECURITY DEFINER functions embed the access predicate in the lookup, then say "not found" (2026-08-15)
+
+The weak twin of D167, found during that sweep. A definer bypasses RLS, so its zero-row branch is
+normally genuine — but when the access test is written **inside** the lookup's `WHERE`, the branch
+conflates denial with absence again:
+
+- `public.edu_resolve_suggestion` — filters `(owner_id = v_uid or public.is_super_admin())` in the
+  lookup, then raises `'suggestion % not found or not yours'`. Text is honest; it carries **no
+  errcode**, so no client can route it.
+- `public.mbr_update_role` — `'membership container not found'` fires when `iam._container_authz()`
+  returns no row, which includes "the actor has no role in that container". Already P0002.
+
+**Fix:** split each into an explicit access check that raises its own denial (the pattern
+`version_snapshot` / `version_restore` already use — `iam.has_access(...)` → `'access denied'`),
+leaving the not-found branch to mean only absence. Spot-check scope: 12 of the 155 definers that
+raise "not found" were read (agx_/crm_/edu_/mbr_/version_); the other 143 are unaudited.
 
 ### D192 — CRM "Save as contact" cannot complete its save until aidream deploys (2026-08-14)
 
@@ -93,7 +160,7 @@ uses. Fixed 2026-08-13; each function is now checked under its own effective sea
 path, every finding carries a `severity`, and the actionable count is **0**. A `real`
 row today is a real runtime failure — treat it as one.
 
-### D184 — `growth.v_loop_state` is exposed to nobody, and would leak every org if it were (2026-08-13)
+### D193 (was a second D184) — `growth.v_loop_state` is exposed to nobody, and would leak every org if it were (2026-08-13)
 
 Found while building the growth loop's human pipe. Two halves, both must land together:
 
@@ -219,7 +286,7 @@ Remaining durability defects from that incident:
   and nothing dispatches a resume on it — against the repo's own
   `detach_on_disconnect` doctrine.
 
-### D183 — The page-template system shipped but is INERT in production (2026-08-13)
+### D194 (was a second D183) — The page-template system shipped but is INERT in production (2026-08-13)
 
 aidream `services/content_plan/templates.py` (916 lines) resolves a per-node HTML
 scaffold from `plan.profile.template_map.templates`, and `cms_reconciler`
@@ -268,6 +335,8 @@ Same `emitted_json_schema`, same fingerprint (`9q-183lvc51ku2s37`); `matchKindFo
 
 🚨 **ARMAN'S RULING 2026-08-14 — DELETING EITHER ONE IS FORBIDDEN** until documentation PROVES they were the same thing from birth and an agent merely made two copies. Duplicates like this are rarely accidental: usually two genuinely different intents got collapsed, and deleting one deepens the damage. Required work is investigation, not cleanup — compare every column and asset, compare all UI/consumers/bindings, then do a full documentation review for original intent (the names suggest "the keywords for a page" vs "variants of one keyword"). **Chip fired 2026-08-14.**
 
+✅ **INVESTIGATED 2026-08-14 — identical from birth; no second intent exists.** `history.row_versions` shows each row has exactly two versions (v1 `INSERT`, v2 = the `is_active` flip), and **both v1 rows already carry the same schema, fingerprint, and byte-identical `sample_data`** — neither was ever renamed or ever differed in shape, so nothing was collapsed. `INSERT`ed 32ms apart by the same actor via `created_via='kind_create'` in a batch of only these two; the consuming agent `Keyword Extractor` predates both by 13 minutes and emits `keyword_variant_set`. A full doc sweep found **no prose anywhere** stating either kind's purpose, while every deliberately-designed sibling has both a `kinds/*.ts`/migration and authored prose. `keyword_set` has **zero** consumers of any kind. Blast radius is smaller than stated above: the reverse lookup lives only in the agent Output Schema admin tab — render routing reads `__kind` off the payload, so no user-facing surface renders the wrong component. **No deletion needed:** `isKindBindable` requires `isActive === true`, so deactivating the loser resolves the collision reversibly. **OPEN — awaiting Arman: which slug survives** (schema semantics + all consumers favor `keyword_variant_set`; the generic name and the v2 card's own `keyword-set:add-to-page` event favor `keyword_set`). Full evidence with citations: [`features/content-ir/FEATURE.md`](features/content-ir/FEATURE.md) Change Log 2026-08-14.
+
 ### D163 — 12 stored `emitted_block_schema` rows are stale against the live emitter (2026-08-11)
 
 Found by `pnpm shape:reemit-discriminator`. 10 rows: `additionalDetails.additionalProperties` stored `false`, emitter now emits `true` — needs a ruling on which is intended before re-emitting. Plus `study_pack_set` (dangling `flashcard_set_beta` stub in `$defs`) and `video_transcript_research` (python-owned `claim_evidence` child unreconstructable — correctly refused). No runtime reader of the column today; drift-guard only.
@@ -275,6 +344,15 @@ Found by `pnpm shape:reemit-discriminator`. 10 rows: `additionalDetails.addition
 ### D159/D160 — An agent edit can fail to reach production because SOME WRITE PATH never fires cache invalidation (2026-08-11)
 
 Symptoms: (a) aidream `execution_definition.py` → `definition_manager.load_by_id(id)` reads a **process-global** record cache — grounding disabled in the DB, production kept grounding until restart. (b) matrx-ai `_agx_manager_impl.py:52,71` `to_config()` under `CachePolicy.SHORT_TERM` (10 min, staggered per worker) makes migration-applied agent edits FLAP; "verified live" within 10 min of an agent migration can be a false claim (unchanged `input_tokens` = still reading cache, not proof of no-op).
+
+✅ **ROOT CAUSE FIXED 2026-08-14 — the cache was never touched.** The defect was the *reach* of invalidation, in two layers, and the second is the one no writer inventory could have fixed:
+
+1. **Out-of-band writers.** Migrations (`migrations/agent_bind_*.sql`), psql, the Supabase SQL editor, `agx_*` RPCs, and every direct `supabase.from("definition").update(...)` write straight to Postgres. No application-level hook can fire for any of them.
+2. **Every other process.** `bust_agent_caches` evicts only the process that runs it, and aidream deploys one image as several (`MATRX_ROLE` = app_server | worker | sandbox). `POST /ai/agents/{id}/invalidate-cache` lands on one app_server; **the workflow worker, which also executes agents, was never invalidated by any writer, ever.**
+
+**The fix signals from where every writer already converges — the database.** aidream `db/migrations/0351_agent_definition_change_notify.sql` installs an AFTER trigger on `agent.definition` / `agent.definition_version` publishing `pg_notify('agent_definition_changed', …)`; `aidream/workers/agent_cache_listener.py` holds one idle LISTEN connection per process (ungated — it only drops its own in-memory entries) and calls the existing `bust_agent_caches` on receipt. **Hot-path cost is zero**: no per-run read, no watermark column, no extra round trip in agent execution. NOTIFY is transactional (delivered at COMMIT, never on rollback), and the listener runs the shared `probe_listener` self-probe so a deaf connection screams instead of silently reinstating this bug. Verified live against prod Postgres with a control arm: same out-of-band `UPDATE`, listener off → cached read stale; listener on → fresh in <1s, no restart, no bypass.
+
+Client-side, `agentSettings/saveAgentSettings` was found to be a **second agent-save path in a different slice**, writing `settings` (where model, reasoning effort, and **grounding** live) directly and never dispatching an `agentDefinition/*` action — so the cache-bust middleware never fired for exactly the field D159 was about. It is now in `WATCHED_ACTION_TYPES`. **Recommendation (Arman's call, not done): fold `saveAgentSettings`'s DB write into `agentDefinition/saveField` and delete the parallel writer.** Two writers of one row is the underlying defect; the middleware entry only makes the miss harmless.
 
 🚨 **ARMAN'S RULING 2026-08-14 — `use_cache=False` ON THE EXECUTION PATH IS FORBIDDEN.** Agent caching is deliberate, hard-won work; definitions are static 99.999% of the time; refetching per run adds ~0.5–1.5s to every chat and loses us the latency race. **Never disable, bypass, shorten, or TTL the agent cache to fix this.** The defect is a WRITER that mutates an agent without firing the invalidation we already built — most obviously the migration-applied edit path (`migrations/agent_bind_*.sql`), which writes straight to Postgres and cannot fire an app-level hook, and possibly an ad-hoc edit route someone added around the sanctioned path. Required work: inventory every writer of `agent.definition`/`definition_version` across all repos, record which fire invalidation and which don't, wire the misses, and design an out-of-band signal for the migration class that costs ZERO per-run round trips. **Chip fired 2026-08-14.**
 
@@ -373,11 +451,9 @@ On a 325-page site the audit tab replaces the whole surface with a generic retry
 
 ~1,200 hatches landed unfrozen (five categories above baseline, others far below), so every run fails regardless of the change. Audit the growth (or burn it down), then re-freeze with `pnpm check:hatches --update` as its own change.
 
-### D135 — soft-deleting a row HARD-deletes its association edges; "Dismiss" is not reversible (2026-08-08)
+### D135 — RESOLVED 2026-08-14: soft delete now TOMBSTONES association edges and restore revives them
 
-`platform._gc_entity_associations` fires on UPDATE-to-deleted and PERMANENTLY deletes every edge of the trashed row. So a restored item comes back stripped — its keywords, tasks, notes, and files are gone forever and nothing rebuilds them. On `web.page` this breaks the documented Dismiss/Restore + scraper-revive contract.
-
-🚨 **ARMAN'S RULING 2026-08-14 — the design is: a soft delete SOFT-removes everything, and restore brings it ALL back, easily.** So edges get tombstoned (rows kept, marked removed, stamped) and un-tombstoned on restore; permanent purge belongs only to a true hard DELETE. Not acceptable: leaving edges untouched and filtering in readers. Constraint: associations convey access, so a tombstoned edge must stop conveying the instant the item is trashed, and every reader (both repos + reachability + `iam.has_access`) must ignore tombstones — a missed reader is an access leak. **Chip fired 2026-08-14.**
+Per Arman's ruling, `platform._gc_entity_associations` tombstones (`deleted_at` + `deleted_via_*` stamp) instead of purging, restore un-tombstones exactly what that entity's trashing removed, and only a hard DELETE purges; conveyance is cut at `platform.containment_edges` and every reader reads `platform.associations_live`. Contract + live proof: `common-docs/systems/access-architecture/FEATURE.md` §2.4c. Edges destroyed before this migration are unrecoverable.
 
 ### D133 (remainder) — no product path to move a site between organizations (2026-08-08)
 
@@ -427,11 +503,46 @@ The 4-day platform freeze is fixed (`history_row_versions_partition_autoprovisio
 
 Board: [docs/handoffs/website-factory-bug-dispatch.md](docs/handoffs/website-factory-bug-dispatch.md) (WF-1…WF-12); vision gaps in `website-factory-vision.md`. Close when the board is empty. **Arman assigns; WF-1/2/3 are HIGH.**
 
-### D119 — any EDITOR can flip a canonical entity's `visibility` (incl. to `public`) at the DB layer (2026-07-29)
+### D119 — RESOLVED 2026-08-14: THE GOVERNANCE-COLUMN TIER (the tiered model's missing column axis)
 
-`std_update` gates at editor for ALL columns; only the ShareModal UI is owner-gated — an editor-sharee can `PATCH visibility='public'` via PostgREST. The comment in `utils/permissions/service.ts` claiming RLS enforces owner-only writes is FALSE for std-variant tables.
+**It was worse than filed.** With a real `editor` grant, the real `authenticated` role and a real
+minted JWT, an editor-sharee could not only flip `visibility` to `public` — they could **take
+ownership** (`created_by := self`) and **re-home the row into their own org**
+(`organization_id`). And those chain: stealing ownership makes `std_delete`'s owner arm true, so
+the follow-up hard DELETE succeeded, defeating the one tier that WAS built.
 
-🚨 **ARMAN'S RULING 2026-08-14 — DO NOT HARD-CODE A `visibility` GUARD.** The concept (owner/admin only — and "owner" here means `created_by`, not a column named owner) is right, but this is a symptom of something bigger: the original design had TIERED access — view / edit / **admin** — where an editor got certain privileges and deliberately not others, with defaults, and with the split allowed to differ per entity type. If that tiering has been lost, restoring it is the task and it is a much larger conversation than one column. Required work is archaeology FIRST (common-docs, db-rules, `iam.membership_grant`'s member_role→confers mapping, git history of `iam.apply_rls`/`iam.has_access`): what the model was, what it conferred, where it eroded — written up in `common-docs/systems/access-architecture/FEATURE.md` — and only then restored in the canonical RLS pipeline, never per table. If it turns out it was never fully built, STOP and report; that is Arman's call. **Chip fired 2026-08-14.**
+**Archaeology (Arman's ruling: restore the tiering, never a one-off guard).** The STATEMENT axis
+was built and is correct — `std_select` viewer / `std_update` editor / **`std_delete` admin**, the
+EDITOR-CAP RULING made concrete. The COLUMN axis was **never designed**: no migration creates the
+`permission_level` enum, the only tier enumeration (the vision-era `.arman` playbook) makes DELETE
+the entire editor↔admin difference, and `NEW.visibility IS DISTINCT FROM OLD.visibility` appears
+zero times in the corpus. Two one-off column guards exist (`content_ir.kind_definition.is_active`,
+`ctx_scope_types.is_system`), both keyed to owner/super-admin, never generalized. Meanwhile
+`access-architecture/FEATURE.md` §2 and `utils/permissions/service.ts` both asserted owner-only
+`visibility` writes as fact. Full account: `common-docs/systems/access-architecture/FEATURE.md` §2.6.
+
+**Fix — in the canonical pipeline, not per table.** RLS is row-level and cannot express a column
+tier, and column GRANTs are role-wide, so the axis is a generated BEFORE UPDATE trigger emitted by
+`iam.apply_rls` beside the policies: `iam._guard_governance_columns` + `iam.apply_governance_guard`
+/ `drop_governance_guard` + `iam.sweep_governance_guards()` (one short transaction per table —
+137 ACCESS EXCLUSIVE locks in one transaction deadlocks a live DB), with per-entity-type room on
+`platform.entity_types.governed_columns` (NULL = `{visibility, created_by, organization_id}`).
+Live on 137 entity-family tables; components/ledger/restricted deliberately excluded. Migration
+`migrations/iam_governance_column_tier.sql`. Guard: `pnpm check:governance-tier` (14/14 through
+real PostgREST). Not over-tightening: of 1,650 visibility changes in 120 days, 1,594 had a NULL
+actor (privileged writes, skipped) and 56 were the owner — **zero by a real non-owner**.
+
+**Still open — two product-semantics questions, Arman decides** (documented in §2.6):
+1. **`deleted_at` is not governed.** Soft-delete stays an editor action while the editor-cap
+   ruling put "deleting others' work" — naming `entity_soft_delete` — in the admin tier. Those
+   disagree: an editor cannot call the RPC but can write the column.
+2. **Plain org members on `internal` rows** are now refused a `visibility` change on org work
+   product they did not create. Consistent with "members work, owners/admins govern", but it
+   narrows what a member could do yesterday.
+
+**Also found, not changed (product semantics):** the **component** variant puts DELETE at `editor`
+on the parent while the entity variant puts it at `admin` — ~162 tables where `editor ≡ admin` for
+destruction. Defensible under THE COMPONENT OWNERSHIP LAW, never explicitly ruled.
 
 ### D118 — conveying `working_document → conversation` edges let an editor-sharee re-share and amplify access (2026-07-29)
 
@@ -445,9 +556,6 @@ Server announces the persisted invisible steering row via `record_reserved cx_me
 
 `Workers Builds: ai-matrx-admin` fails while Vercel is green; no Cloudflare config exists in the repo. **Decides: Arman** — retire the integration or configure it.
 
-### D108 — seven historic feedback screenshots are permanently dead (2026-07-27)
-
-`users.user_feedback.image_urls` has seven expired share-link pointers (404). Recover from backups if possible, else mark irrecoverable. New MCP writes already reject this URL class.
 
 ### D105b — file surfaces must separate MY files from ORG files (Arman ruling 2026-07-28)
 
@@ -477,9 +585,6 @@ Org-teammate agents invisible in `agx_get_list` — belongs with retiring `/agen
 
 Per-row SECURITY DEFINER policy functions over thousands of rows → denial-by-timeout. Hoist constant predicates to an initplan-friendly shape; optimize only against measured plans.
 
-### D94 — `docproc.page_extraction_jobs.project_id` is a forbidden project FK (2026-07-23)
-
-Nullable tagging variant, not load-bearing. Removing it end-to-end (column + FE + aidream model + backfill) is its own focused change.
 
 ### D88 — service-role RPCs accept raw p_user_id with no internal actor guard (2026-07-23)
 
@@ -591,6 +696,8 @@ One line per fix — title, date, pointer. History lives in git. Entries older t
 - **D172** — `acceptPageUrlInput` scheme check made case-insensitive to match the scraper's `_normalise_url` (`5bdf85834`). 2026-08-12.
 - **D166** — kind-activation guard + `set_kind_activation` genuinely exempt the service role; `activate-kinds.ts --apply` goes through the canonical RPC (`content_ir_activation_service_role_fix.sql`, `4f2804efa`). 2026-08-12.
 - **D120** — `chart.tsx` typed against recharts 3.9, `@ts-nocheck` deleted (`409a98d2b`). 2026-08-12.
+- **D108** — the 7 "permanently dead" feedback screenshots were never dead (only the share LINK died; all 7 files live + public, CDN 200): healed in place, and the real defect closed — a revocable `/share/<token>/download` URL no longer classifies as durable in either the DB or `lib/media` twin (`feedback_screenshots_heal_and_share_url_not_durable.sql`, `d630b6f73`). 2026-08-15.
+- **D94** — forbidden project FK dropped from `docproc.page_extraction_jobs` (32 rows, zero non-null, no reader) + all FE refs + aidream model regen (`docproc_page_extraction_jobs_drop_project_fk.sql`, `c08ab7047` / aidream `58a3c13f6`). 2026-08-15.
 - **D167 (research saves)** — access half fixed by the RLS reorg (proven live: an entitled org member's `rs_topic_append_output` succeeds). The remaining lie is gone too: the RPC no longer asserts "not found" for an access denial — it raises an honest ambiguous message under errcode `P0002` (RLS stays the sole authority; no definer probe added) and `appendTopicOutput` routes it to `<AccessGate token="research_topic"/>`. Also hardened: a zero-row write now raises instead of reporting success on a paid run. `migrations/rs_topic_append_output_honest_access_error.sql`, applied + ledgered. Class sweep of the other 18 invoker functions → chip. 2026-08-14.
 - **D181** — component-table `INSERT…RETURNING` 42501 platform-wide: component `std_select` leads with `created_by = (select auth.uid())`; 126 policies repaired (`iam_apply_rls_component_select_owner_arm.sql`). Remainder → D182. 2026-08-13.
 - **D173** — shortcut/template project/task scoping moved to `platform.associations` edges; 4 forbidden FK columns dropped; 7 RPCs + view rewritten (`agent_shortcut_scoping_to_associations.sql`). 2026-08-12.
@@ -611,7 +718,7 @@ One line per fix — title, date, pointer. History lives in git. Entries older t
 - **D125** — 13 stale entity_types rows repointed + `entity-registry-drift` guard. Graveyard-4 remainder → D125 open entry. 2026-08-04.
 - **D130** — headless image-gen promise always settles on terminal (terminal-settlement guard in `process-stream.ts`). Server remainder → D130 open entry. 2026-08-08.
 - **D64** — `ContainerResourceSheet` keyed derived-state refactor. 2026-08-09.
-- **D106 / D106b** — BudgetMeter verdict headline; honest "Only you" copy on 4 surfaces. 2026-08-09.
+- **D106 / D106b** — BudgetMeter verdict headline; honest "Only you" copy (ShapeOwnerEditor, VaultItemDetail, education FAQ). 2026-08-09. ✅ **The "Only you" COPY is now fixed everywhere it was tracked** — `CanvasShareSheet` and `StructuredListManagerV2` were repaired and their (by-then stale) allowlist entries deleted 2026-08-15. ⚠️ **What remains is the per-domain visibility DIALECTS, not copy** — `features/structured-lists/StructuredListManagerV2.tsx` (`private|authenticated|public`) and `features/user-lists/types.ts` (same values as an `as const`, needs a DB enum migration to retire). Both pinned in `scripts/visibility-vocab/allowlist.json`, which `pnpm check:visibility-vocab` enforces. That allowlist is the LIVE list — delete an entry in the same change that fixes its surface, and the checker now reports any entry that suppresses nothing as `[STALE]`. Unblocked (D105b ruled `internal` stays).
 - **D137-seo** — public /seo analyzers work signed-out via `/seo/public/page-audit`. 2026-08-09.
 - **D76 / D61** — `errorCaptureStore.emit()` deferred to a microtask (render-safety test pinned). 2026-08-09.
 - **D129 (tasks)** — `operatingTaskIds` set; `nowMinute` tick; month-end recurrence anchor (`utils/recurrence.ts`). 2026-08-09.

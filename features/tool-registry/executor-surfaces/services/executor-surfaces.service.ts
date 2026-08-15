@@ -23,6 +23,7 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
+import { readAllRows } from "@/lib/supabase/readAllRows";
 import type { Database } from "@/types/database.types";
 
 type Tables = Database["public"]["Tables"];
@@ -73,26 +74,45 @@ const sb = () => createClient();
  * List every `tool.executor` row plus aggregate counts of its bindings.
  *
  * Two parallel queries (executors + all-bindings), then group in-memory.
- * The `tool.binding` table is small (~300 rows) and this avoids needing an
- * RPC just for counts.
+ * The counts must cover EVERY binding: both reads page to completion via
+ * readAllRows, because PostgREST caps a plain `.select()` at 1000 rows and a
+ * truncated binding list would under-count every executor without erroring.
  */
 export async function listExecutorsWithStats(): Promise<ExecutorWithStats[]> {
-  const [execRes, bindRes] = await Promise.all([
-    sb().schema("tool").from("executor").select("*").order("name", { ascending: true }),
-    sb().schema("tool").from("binding").select("executor_name, is_active"),
+  const client = sb();
+  const [execRows, bindRows] = await Promise.all([
+    readAllRows(
+      ({ from, to }) =>
+        client
+          .schema("tool")
+          .from("executor")
+          .select("*", { count: "exact" })
+          .order("name", { ascending: true })
+          .range(from, to),
+      { label: "tool.executor" },
+    ),
+    readAllRows(
+      ({ from, to }) =>
+        client
+          .schema("tool")
+          .from("binding")
+          .select("executor_name, is_active", { count: "exact" })
+          .order("executor_name", { ascending: true })
+          .order("tool_id", { ascending: true })
+          .range(from, to),
+      { label: "tool.binding" },
+    ),
   ]);
-  if (execRes.error) throw execRes.error;
-  if (bindRes.error) throw bindRes.error;
 
   const stats = new Map<string, { bound: number; inactive: number }>();
-  for (const row of bindRes.data ?? []) {
+  for (const row of bindRows) {
     const s = stats.get(row.executor_name) ?? { bound: 0, inactive: 0 };
     s.bound += 1;
     if (!row.is_active) s.inactive += 1;
     stats.set(row.executor_name, s);
   }
 
-  return (execRes.data ?? []).map((e) => {
+  return execRows.map((e) => {
     const s = stats.get(e.name) ?? { bound: 0, inactive: 0 };
     return {
       ...e,
@@ -158,19 +178,39 @@ export async function listBindingsForExecutor(
 export async function listUnboundToolsForExecutor(
   executorName: string,
 ): Promise<UnboundToolRow[]> {
-  const [toolsRes, boundRes] = await Promise.all([
-    sb()
-      .schema("tool").from("definition")
-      .select("id, name, category, description, is_active, source_kind")
-      .order("category", { ascending: true })
-      .order("name", { ascending: true }),
-    sb().schema("tool").from("binding").select("tool_id").eq("executor_name", executorName),
+  // Set subtraction: "every tool NOT in boundIds is unbound". Both sides must be
+  // complete — a truncated tool list hides tools from the picker, and a
+  // truncated binding list offers to re-bind something already bound.
+  const client = sb();
+  const [toolRows, boundRows] = await Promise.all([
+    readAllRows(
+      ({ from, to }) =>
+        client
+          .schema("tool")
+          .from("definition")
+          .select("id, name, category, description, is_active, source_kind", {
+            count: "exact",
+          })
+          .order("category", { ascending: true })
+          .order("name", { ascending: true })
+          .range(from, to),
+      { label: "tool.definition" },
+    ),
+    readAllRows(
+      ({ from, to }) =>
+        client
+          .schema("tool")
+          .from("binding")
+          .select("tool_id", { count: "exact" })
+          .eq("executor_name", executorName)
+          .order("tool_id", { ascending: true })
+          .range(from, to),
+      { label: "tool.binding" },
+    ),
   ]);
-  if (toolsRes.error) throw toolsRes.error;
-  if (boundRes.error) throw boundRes.error;
 
-  const boundIds = new Set((boundRes.data ?? []).map((r) => r.tool_id));
-  return (toolsRes.data ?? []).filter((t) => !boundIds.has(t.id));
+  const boundIds = new Set(boundRows.map((r) => r.tool_id));
+  return toolRows.filter((t) => !boundIds.has(t.id));
 }
 
 // ─── Mutations ───────────────────────────────────────────────────────────────
