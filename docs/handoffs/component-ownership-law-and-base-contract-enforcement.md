@@ -97,10 +97,22 @@ On the newer findings (2026-08-14), verbatim:
 - **Defects:** `FOUND_DEFECTS.md` D182 (component RLS remainder), **D184** (6 RLS holes),
   D183 (accessible_entity_ids materialization class).
 - **DB access without the Supabase MCP** (it is often unauthenticated in agent sessions):
-  aidream's `.env` has `SUPABASE_MATRIX_*`; connect with asyncpg via the pooler and
-  **always issue `reset role;` first** — the shared pooler leaks a `SET ROLE authenticated`
-  from other connections and you will get spurious permission-denied errors.
-  `aidream/db/pooler_session.py` is the sanctioned helper.
+  aidream's `.env` has `SUPABASE_MATRIX_*`; connect via the pooler and use
+  `aidream/db/pooler_session.py` — `guarded(conn)` for your own work (it pins one
+  transaction, runs `RESET ROLE`, and PROVES `current_user = session_user` before
+  anything else; a bare `reset role;` on its own repairs only whichever server
+  connection happened to receive it, because routing is per-transaction).
+- 🚨 **Checking RLS as another role? Use `impersonate(conn, "authenticated")`, NEVER a bare
+  `SET ROLE`.** `SET ROLE` is unscoped: on the transaction pooler the server connection goes
+  back to the pool still wearing that role, and the next client — a scheduled job, a release,
+  another agent — runs as `authenticated` and dies on `permission denied`, or silently reads a
+  privilege-filtered `information_schema` and writes the shortfall down as fact. This is not
+  hypothetical: it is the *entire* source of the contamination defect (aidream `FOUND_DEFECTS`),
+  traced to ad-hoc verification SQL exactly like the kind this handoff asks you to run.
+  `impersonate()` uses `SET LOCAL ROLE` inside a transaction, which cannot outlive it.
+- **Deciding whether something EXISTS? Read `pg_catalog`, never `information_schema`** — the
+  latter is privilege-filtered, so it reports real objects as absent under an unexpected role.
+  See `aidream/packages/matrx-orm/matrx_orm/catalog_sql.py`.
 
 ## Remaining work
 
