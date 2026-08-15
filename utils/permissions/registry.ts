@@ -107,7 +107,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     ownerColumn: "created_by",
     isPublicColumn: null,
     displayLabel: "Agent Card",
-    urlPathTemplate: "/agents/card/{id}",
+    urlPathTemplate: "",
     rlsUsesHasPermission: true,
   },
   app: {
@@ -118,7 +118,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     ownerColumn: "created_by",
     isPublicColumn: null,
     displayLabel: "App",
-    urlPathTemplate: "/apps/{id}",
+    urlPathTemplate: "/agent-apps/{id}",
     rlsUsesHasPermission: true,
   },
   assessment: {
@@ -139,7 +139,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     ownerColumn: "user_id",
     isPublicColumn: null,
     displayLabel: "Auto-ingest Batch",
-    urlPathTemplate: "/administration/knowledge/kg-cost/batches/{id}",
+    urlPathTemplate: "",
     rlsUsesHasPermission: false,
   },
   canvas_item: {
@@ -150,7 +150,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     ownerColumn: "created_by",
     isPublicColumn: null,
     displayLabel: "Canvas Item",
-    urlPathTemplate: "/canvas/{id}",
+    urlPathTemplate: "",
     rlsUsesHasPermission: true,
   },
   context_item: {
@@ -172,7 +172,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     ownerColumn: "created_by",
     isPublicColumn: null,
     displayLabel: "Code File",
-    urlPathTemplate: "/code/files/{id}",
+    urlPathTemplate: "/code?tab=code-file:{id}",
     rlsUsesHasPermission: true,
   },
   code_folder: {
@@ -183,7 +183,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     ownerColumn: "created_by",
     isPublicColumn: null,
     displayLabel: "Code Folder",
-    urlPathTemplate: "/code/folders/{id}",
+    urlPathTemplate: "",
     rlsUsesHasPermission: true,
   },
   code_repository: {
@@ -194,7 +194,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     ownerColumn: "created_by",
     isPublicColumn: null,
     displayLabel: "Code Repository",
-    urlPathTemplate: "/code/repos/{id}",
+    urlPathTemplate: "",
     rlsUsesHasPermission: true,
   },
   message_template: {
@@ -229,7 +229,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     // non-null value here wrongly routes sharing through make_resource_public.
     isPublicColumn: null,
     displayLabel: "Data Store",
-    urlPathTemplate: "/rag/data-stores/{id}",
+    urlPathTemplate: "/rag/data-stores?store_id={id}",
     rlsUsesHasPermission: false,
   },
   dm_conversation: {
@@ -251,7 +251,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     ownerColumn: "created_by",
     isPublicColumn: null,
     displayLabel: "Flashcard",
-    urlPathTemplate: "/education/flashcards/card/{id}",
+    urlPathTemplate: "",
     rlsUsesHasPermission: true,
   },
   fc_set: {
@@ -273,7 +273,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     ownerColumn: "created_by",
     isPublicColumn: null,
     displayLabel: "Feature Doc",
-    urlPathTemplate: "/admin/docs/{slug}",
+    urlPathTemplate: "",
     rlsUsesHasPermission: true,
   },
   file: {
@@ -416,7 +416,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     ownerColumn: "created_by",
     isPublicColumn: null,
     displayLabel: "Quiz",
-    urlPathTemplate: "/quizzes/{id}",
+    urlPathTemplate: "",
     rlsUsesHasPermission: true,
   },
   redaction_mapping: {
@@ -438,7 +438,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     ownerColumn: "created_by",
     isPublicColumn: null,
     displayLabel: "Research Template",
-    urlPathTemplate: "/research/templates/{id}",
+    urlPathTemplate: "",
     rlsUsesHasPermission: true,
   },
   research_topic: {
@@ -470,7 +470,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     ownerColumn: "user_id",
     isPublicColumn: null,
     displayLabel: "Scope Suggestion",
-    urlPathTemplate: "/scopes/suggestions/{id}",
+    urlPathTemplate: "",
     rlsUsesHasPermission: false,
   },
   scope_item_value_suggestion: {
@@ -481,7 +481,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     ownerColumn: "user_id",
     isPublicColumn: null,
     displayLabel: "Scope Item Value Suggestion",
-    urlPathTemplate: "/scopes/item-suggestions/{id}",
+    urlPathTemplate: "",
     rlsUsesHasPermission: false,
   },
   shared_canvas_item: {
@@ -503,7 +503,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     ownerColumn: "created_by",
     isPublicColumn: null,
     displayLabel: "Skill",
-    urlPathTemplate: "/skills/{id}",
+    urlPathTemplate: "",
     rlsUsesHasPermission: true,
   },
   studio_session: {
@@ -558,7 +558,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     ownerColumn: "created_by",
     isPublicColumn: null,
     displayLabel: "Transcript",
-    urlPathTemplate: "/transcripts/{id}",
+    urlPathTemplate: "/transcripts/processor?focus={id}",
     rlsUsesHasPermission: true,
   },
   dataset: {
@@ -607,7 +607,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     // non-null value here wrongly routes sharing through make_resource_public.
     isPublicColumn: null,
     displayLabel: "Scope",
-    urlPathTemplate: "/scopes/{id}",
+    urlPathTemplate: "/scopes/s/{id}",
     rlsUsesHasPermission: false,
   },
   workbook: {
@@ -629,7 +629,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     ownerColumn: "user_id",
     isPublicColumn: null,
     displayLabel: "Analysis Preferences",
-    urlPathTemplate: "/settings/analysis",
+    urlPathTemplate: "",
     rlsUsesHasPermission: false,
   },
   web_site: {
@@ -706,7 +706,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     ownerColumn: "created_by",
     isPublicColumn: null,
     displayLabel: "WC Claim",
-    urlPathTemplate: "/legal/wc/{id}",
+    urlPathTemplate: "/legal/ca-wc/pd-ratings-calculator/{id}",
     rlsUsesHasPermission: true,
   },
   wf_node_data_slot: {
@@ -717,7 +717,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     ownerColumn: "created_by",
     isPublicColumn: null,
     displayLabel: "Workflow Node Data Slot",
-    urlPathTemplate: "/workflows/{id}",
+    urlPathTemplate: "",
     rlsUsesHasPermission: false,
   },
   workflow_run: {
@@ -728,7 +728,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     ownerColumn: "created_by",
     isPublicColumn: null,
     displayLabel: "Workflow Run",
-    urlPathTemplate: "/runs/{id}",
+    urlPathTemplate: "",
     rlsUsesHasPermission: true,
   },
   workflow_template: {
@@ -739,7 +739,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     ownerColumn: "created_by",
     isPublicColumn: null,
     displayLabel: "Workflow Template",
-    urlPathTemplate: "/workflows/templates/{id}",
+    urlPathTemplate: "",
     rlsUsesHasPermission: true,
   },
   workflow_trigger: {
@@ -750,7 +750,23 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     ownerColumn: "created_by",
     isPublicColumn: null,
     displayLabel: "Workflow Trigger",
-    urlPathTemplate: "/workflows/{id}/triggers/{id}",
+    urlPathTemplate: "",
+    rlsUsesHasPermission: true,
+  },
+  // Active DB registry row that predated this mirror and was never snapshotted
+  // — the exact blind spot registry.parity.test.ts documents (a live registry
+  // change nobody regenerated the snapshot for). Mirrored 2026-08-14.
+  workflow_plan: {
+    resourceType: "workflow_plan",
+    tableName: "plan",
+    schemaName: "workflow",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Workflow Plan",
+    // No signed-in destination: plans are shown inside workflow-studio, which
+    // is a separate client with no route in this app.
+    urlPathTemplate: "",
     rlsUsesHasPermission: true,
   },
   workflow: {
@@ -761,7 +777,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     ownerColumn: "created_by",
     isPublicColumn: null,
     displayLabel: "Workflow",
-    urlPathTemplate: "/workflows/{id}",
+    urlPathTemplate: "",
     rlsUsesHasPermission: true,
   },
   // Live DB registry rows that predate this mirror — surfaced by the
@@ -835,7 +851,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     ownerColumn: "created_by",
     isPublicColumn: null,
     displayLabel: "SEO Keyword",
-    urlPathTemplate: "/seo/keywords/{id}",
+    urlPathTemplate: "",
     rlsUsesHasPermission: false,
   },
   youtube_search: {
@@ -966,11 +982,18 @@ export function getResourceTypeLabel(resourceType: string): string {
  * THE DOOR LAW, and specifically the "one canonical path per operation" rule:
  * route truth is the ENTITY REGISTRY (`features/scopes/registry`), so that is
  * consulted first. `url_path_template` in `platform.shareable_resource_registry`
- * is a second, DB-side route authority that drifted badly — it still advertises
- * `/apps/{id}` (the real route is `/agent-apps/{id}`), `/skills/{id}`,
- * `/workflows/{id}`, `/quizzes/{id}`, `/flashcards/{id}`, `/code/files/{id}`,
- * `/runs/{id}` and `/scopes/{id}`, none of which exist. It is now the FALLBACK,
- * used only for resources the entity registry doesn't cover.
+ * is a second, DB-side route authority that had drifted badly — 24 of 73 active
+ * rows advertised routes that do not exist (`/apps/{id}` when the real route is
+ * `/agent-apps/{id}`; `/skills/{id}`, `/workflows/{id}`, `/quizzes/{id}`,
+ * `/canvas/{id}`, `/code/files/{id}`, `/runs/{id}`, `/scopes/{id}` …). Audited
+ * and corrected against the live `app/` tree on 2026-08-14
+ * (`migrations/sharing_registry_route_truth_d138.sql`): every row now either
+ * points at a real route or is EMPTY, and empty means "no signed-in destination"
+ * — this function returns null and the caller renders no link.
+ *
+ * It is now only the FALLBACK, used for tokens the entity registry doesn't
+ * cover. **Never add a plausible-looking path to a registry row to make a link
+ * appear**; that guesswork IS defect D138.
  *
  * Two guesses were removed, both of which produced 404s that reached other
  * people:

@@ -17,7 +17,7 @@
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Agent Card",
-    "url_path_template": "/agents/card/{id}",
+    "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -28,7 +28,7 @@
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "App",
-    "url_path_template": "/apps/{id}",
+    "url_path_template": "/agent-apps/{id}",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -50,7 +50,7 @@
     "owner_column": "user_id",
     "is_public_column": null,
     "display_label": "Auto-ingest Batch",
-    "url_path_template": "/administration/knowledge/kg-cost/batches/{id}",
+    "url_path_template": "",
     "rls_uses_has_permission": false,
     "is_active": true
   },
@@ -61,7 +61,7 @@
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Canvas Item",
-    "url_path_template": "/canvas/{id}",
+    "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -72,7 +72,7 @@
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Code File",
-    "url_path_template": "/code/files/{id}",
+    "url_path_template": "/code?tab=code-file:{id}",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -83,7 +83,7 @@
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Code Folder",
-    "url_path_template": "/code/folders/{id}",
+    "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -94,7 +94,7 @@
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Code Repository",
-    "url_path_template": "/code/repos/{id}",
+    "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -149,7 +149,7 @@
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Data Store",
-    "url_path_template": "/rag/data-stores/{id}",
+    "url_path_template": "/rag/data-stores?store_id={id}",
     "rls_uses_has_permission": false,
     "is_active": true
   },
@@ -193,7 +193,7 @@
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Flashcard",
-    "url_path_template": "/education/flashcards/card/{id}",
+    "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -215,7 +215,7 @@
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Feature Doc",
-    "url_path_template": "/admin/docs/{slug}",
+    "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -424,7 +424,7 @@
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Quiz",
-    "url_path_template": "/quizzes/{id}",
+    "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -446,7 +446,7 @@
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Research Template",
-    "url_path_template": "/research/templates/{id}",
+    "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -479,7 +479,7 @@
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Scope",
-    "url_path_template": "/scopes/{id}",
+    "url_path_template": "/scopes/s/{id}",
     "rls_uses_has_permission": false,
     "is_active": true
   },
@@ -490,7 +490,7 @@
     "owner_column": "user_id",
     "is_public_column": null,
     "display_label": "Scope Suggestion",
-    "url_path_template": "/scopes/suggestions/{id}",
+    "url_path_template": "",
     "rls_uses_has_permission": false,
     "is_active": true
   },
@@ -501,7 +501,7 @@
     "owner_column": "user_id",
     "is_public_column": null,
     "display_label": "Scope Item Value Suggestion",
-    "url_path_template": "/scopes/item-suggestions/{id}",
+    "url_path_template": "",
     "rls_uses_has_permission": false,
     "is_active": true
   },
@@ -534,7 +534,7 @@
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "SEO Keyword",
-    "url_path_template": "/seo/keywords/{id}",
+    "url_path_template": "",
     "rls_uses_has_permission": false,
     "is_active": true
   },
@@ -556,7 +556,7 @@
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Skill",
-    "url_path_template": "/skills/{id}",
+    "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -622,7 +622,7 @@
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Transcript",
-    "url_path_template": "/transcripts/{id}",
+    "url_path_template": "/transcripts/processor?focus={id}",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -644,7 +644,7 @@
     "owner_column": "user_id",
     "is_public_column": null,
     "display_label": "Analysis Preferences",
-    "url_path_template": "/settings/analysis",
+    "url_path_template": "",
     "rls_uses_has_permission": false,
     "is_active": true
   },
@@ -666,7 +666,7 @@
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "WC Claim",
-    "url_path_template": "/legal/wc/{id}",
+    "url_path_template": "/legal/ca-wc/pd-ratings-calculator/{id}",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -743,7 +743,7 @@
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Workflow Node Data Slot",
-    "url_path_template": "/workflows/{id}",
+    "url_path_template": "",
     "rls_uses_has_permission": false,
     "is_active": true
   },
@@ -765,7 +765,18 @@
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Workflow",
-    "url_path_template": "/workflows/{id}",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "workflow_plan",
+    "table_name": "plan",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Workflow Plan",
+    "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -776,7 +787,7 @@
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Workflow Run",
-    "url_path_template": "/runs/{id}",
+    "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -787,7 +798,7 @@
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Workflow Template",
-    "url_path_template": "/workflows/templates/{id}",
+    "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -798,7 +809,7 @@
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Workflow Trigger",
-    "url_path_template": "/workflows/{id}/triggers/{id}",
+    "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
   },

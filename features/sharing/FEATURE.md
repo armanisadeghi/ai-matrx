@@ -364,6 +364,44 @@ Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) 
 
 ## Change log
 
+- 2026-08-14 — Claude: **D138 retired — `url_path_template` is no longer a route authority, and
+  every remaining destination is a real route.** The column was a second, DB-owned route table
+  independent of `entityRegistry.hrefFor`, and it had drifted: audited against the live `app/`
+  tree (1,008 route leaves), **24 of 73 active rows pointed at routes that do not exist** —
+  `/apps/{id}` (real: `/agent-apps/{id}`), `/skills/{id}`, `/workflows/{id}`, `/runs/{id}`,
+  `/quizzes/{id}`, `/canvas/{id}`, `/code/files/{id}`, `/scopes/{id}`, `/legal/wc/{id}`,
+  `/transcripts/{id}`, `/rag/data-stores/{id}`, `/admin/docs/{slug}` and 12 more. Each was a
+  live 404 wherever a sharing surface rendered it.
+  - **Six repointed** at their real routes (`app`, `scope`, `transcript`, `wc_claim`,
+    `data_store`, `code_file`); **nineteen emptied** because no route exists. An EMPTY template
+    is the registry saying *this record has no signed-in destination*, so `getResourceSharePath`
+    returns null and the surface renders **no link** — a 404 is strictly worse than an honest
+    absence. `canvas_item` is deliberately emptied, not invented: `/canvas/{id}` has no route
+    and the canonical canvas route is Arman's call (D137).
+  - **`workflow_plan`** was an active DB row that had never been mirrored — exactly the
+    snapshot blind spot `registry.parity.test.ts` documents. Now mirrored.
+  - **Surfaces stopped treating the column as route truth.** `OrgResourceDetail` and
+    `ContainerResourceSheet` no longer substitute `{id}` into the template by hand; both resolve
+    through `getResourceSharePath`, which is registry-first and returns null rather than
+    guessing. `useOrgSharedItems` already carried no href; `OrgShareReviewCard` already used
+    `getResourceSharePath`. The column survives only as the fallback for tokens the entity
+    registry does not cover, and for the `resolve_share_token` payload.
+  - **New forcing function: `utils/permissions/__tests__/registry.routes.test.ts`** walks `app/**`
+    and fails if any non-empty template resolves to no route, or if `getResourceSharePath` ever
+    returns a path that matches nothing. Documentation could not have prevented this — nothing
+    connected the DB column to the filesystem; this test does. Proven to bite by reinjecting the
+    `/apps/{id}` regression. (It initially did **not** bite: the scan flattened `_`-prefixed
+    Next.js private folders instead of excluding them, turning `app/_flashcard/[category]/[id]`
+    into a root-level `/[category]/[id]` that matched almost anything. Fixed, with an explicit
+    assertion guarding that shape.)
+  - Migration `migrations/sharing_registry_route_truth_d138.sql` (applied + ledgered); TS mirror +
+    snapshot in sync; parity test green. **Not browser-verified**: the shared preview server
+    OOMs at ~9.9 GB against its 8 GB cap on first compile, so the guarantee here rests on the
+    route-scan test rather than on clicking the links.
+  - Two adjacent defects found and spun off, NOT fixed here: `code_file`'s entity-registry href
+    `/code?tab=code-file:{id}` is aspirational (the code workspace never reads `?tab=`, so the
+    Open door lands on the workspace without the file); and root `CLAUDE.md` still claims `.md`
+    links route through `/admin/docs/<path>`, which resolves nowhere.
 - 2026-08-13 — **D158 key shape hardened.** Sharing and organization-module RPCs now accept canonical entity tokens only; bare physical table aliases were removed. Unknown tokens raise. The frontend resolver and visibility service removed their table-name fallback, and module catalogue keys no longer fall back to a physical table name. Guard/queue identities use exact `schema.table` pairs.
 - 2026-08-13 — **No share page sends its recipient to an auth wall** (Arman ruling, above). New
   `lenses/source-surface.ts` resolves the per-share-type destination; consumed by the `/s/[token]`

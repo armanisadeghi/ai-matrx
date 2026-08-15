@@ -47,7 +47,7 @@ import {
   getOrganizationMembers,
 } from "@/features/organizations/service";
 import { revokeOrgShare } from "@/utils/permissions/orgModeration";
-import { getShareableResource } from "@/utils/permissions/registry";
+import { getResourceSharePath } from "@/utils/permissions/registry";
 import {
   resolveEntityToken,
   tryGetEntityInfo,
@@ -184,20 +184,25 @@ export function OrgResourceDetail() {
    */
   const token = entry.token ?? entry.key;
   /**
-   * The entity registry is the canonical route source; the sharing registry's
-   * `urlPathTemplate` is a SECOND, DB-backed one that disagrees with it in
-   * places (FOUND_DEFECTS D137/D138). Prefer the registry, and fall back to the
-   * share template only where the registry has no route yet, so this surface's
-   * set of working doors is a strict superset of what it had.
+   * ONE route authority: the entity registry. `EntityRef` already resolves the
+   * token's route, so the only thing left for this surface is the case where the
+   * registry has no route for the token but the catalogue's `shareKey` names a
+   * different registered resource. That resolution goes through
+   * `getResourceSharePath`, which is itself registry-first and returns null
+   * rather than guessing.
+   *
+   * It must NOT substitute `urlPathTemplate` by hand: that was a second route
+   * authority, and 24 of its 73 rows pointed at routes that do not exist
+   * (FOUND_DEFECTS D138 — corrected 2026-08-14). A null here means the record
+   * genuinely has no destination, and EntityRef renders the name without an
+   * Open door instead of linking to a 404. `canvas_item` is exactly that case
+   * and stays that way until the canonical canvas route is decided (D137).
    */
   const registryHasRoute = Boolean(tryGetEntityInfo(token)?.hrefFor);
-  const shareable = entry.shareKey
-    ? getShareableResource(entry.shareKey)
-    : undefined;
   const fallbackHref = (id: string): string | undefined =>
-    registryHasRoute || !shareable
+    registryHasRoute || !entry.shareKey
       ? undefined
-      : shareable.urlPathTemplate.replace("{id}", id);
+      : (getResourceSharePath(entry.shareKey, id) ?? undefined);
   const filteredMine = mine.items.filter(
     (it) =>
       it.title.toLowerCase().includes(query.toLowerCase()) ||
