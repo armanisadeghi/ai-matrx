@@ -12790,38 +12790,6 @@
        "default": null,
        "title": "Complaint At"
       },
-      "consent_basis": {
-       "default": "none",
-       "title": "Consent Basis"
-      },
-      "consent_evidence": {
-       "default": {},
-       "title": "Consent Evidence"
-      },
-      "consent_evidence_at": {
-       "default": null,
-       "title": "Consent Evidence At"
-      },
-      "consent_expires_at": {
-       "default": null,
-       "title": "Consent Expires At"
-      },
-      "consent_jurisdiction": {
-       "default": null,
-       "title": "Consent Jurisdiction"
-      },
-      "consent_recorded_at": {
-       "default": null,
-       "title": "Consent Recorded At"
-      },
-      "consent_source": {
-       "default": null,
-       "title": "Consent Source"
-      },
-      "consent_source_url": {
-       "default": null,
-       "title": "Consent Source Url"
-      },
       "details": {
        "default": {},
        "title": "Details"
@@ -12885,14 +12853,6 @@
       "profile_url": {
        "default": null,
        "title": "Profile Url"
-      },
-      "source_disclosed_at": {
-       "default": null,
-       "title": "Source Disclosed At"
-      },
-      "subscriber_kind": {
-       "default": "unknown",
-       "title": "Subscriber Kind"
       },
       "suppressed_at": {
        "default": null,
@@ -12970,38 +12930,6 @@
        "default": null,
        "title": "Complaint At"
       },
-      "consent_basis": {
-       "default": null,
-       "title": "Consent Basis"
-      },
-      "consent_evidence": {
-       "default": null,
-       "title": "Consent Evidence"
-      },
-      "consent_evidence_at": {
-       "default": null,
-       "title": "Consent Evidence At"
-      },
-      "consent_expires_at": {
-       "default": null,
-       "title": "Consent Expires At"
-      },
-      "consent_jurisdiction": {
-       "default": null,
-       "title": "Consent Jurisdiction"
-      },
-      "consent_recorded_at": {
-       "default": null,
-       "title": "Consent Recorded At"
-      },
-      "consent_source": {
-       "default": null,
-       "title": "Consent Source"
-      },
-      "consent_source_url": {
-       "default": null,
-       "title": "Consent Source Url"
-      },
       "details": {
        "default": null,
        "title": "Details"
@@ -13069,14 +12997,6 @@
       "profile_url": {
        "default": null,
        "title": "Profile Url"
-      },
-      "source_disclosed_at": {
-       "default": null,
-       "title": "Source Disclosed At"
-      },
-      "subscriber_kind": {
-       "default": null,
-       "title": "Subscriber Kind"
       },
       "suppressed_at": {
        "default": null,
@@ -14175,34 +14095,6 @@
        "default": null,
        "title": "Ended At"
       },
-      "lane": {
-       "default": "cold_outreach",
-       "title": "Lane"
-      },
-      "lawful_basis": {
-       "default": null,
-       "title": "Lawful Basis"
-      },
-      "lia_balancing": {
-       "default": null,
-       "title": "Lia Balancing"
-      },
-      "lia_completed_at": {
-       "default": null,
-       "title": "Lia Completed At"
-      },
-      "lia_completed_by": {
-       "default": null,
-       "title": "Lia Completed By"
-      },
-      "lia_interest": {
-       "default": null,
-       "title": "Lia Interest"
-      },
-      "lia_necessity": {
-       "default": null,
-       "title": "Lia Necessity"
-      },
       "list_kind": {
        "default": "list",
        "title": "List Kind"
@@ -14281,34 +14173,6 @@
       "id": {
        "title": "Id",
        "type": "string"
-      },
-      "lane": {
-       "default": null,
-       "title": "Lane"
-      },
-      "lawful_basis": {
-       "default": null,
-       "title": "Lawful Basis"
-      },
-      "lia_balancing": {
-       "default": null,
-       "title": "Lia Balancing"
-      },
-      "lia_completed_at": {
-       "default": null,
-       "title": "Lia Completed At"
-      },
-      "lia_completed_by": {
-       "default": null,
-       "title": "Lia Completed By"
-      },
-      "lia_interest": {
-       "default": null,
-       "title": "Lia Interest"
-      },
-      "lia_necessity": {
-       "default": null,
-       "title": "Lia Necessity"
       },
       "list_kind": {
        "default": null,
@@ -14544,10 +14408,6 @@
        "default": null,
        "title": "Dmarc Pass"
       },
-      "domain_age_checked_at": {
-       "default": null,
-       "title": "Domain Age Checked At"
-      },
       "domain_check_error": {
        "default": null,
        "title": "Domain Check Error"
@@ -14555,10 +14415,6 @@
       "domain_checked_at": {
        "default": null,
        "title": "Domain Checked At"
-      },
-      "domain_registered_at": {
-       "default": null,
-       "title": "Domain Registered At"
       },
       "domain_verification_token": {
        "title": "Domain Verification Token"
@@ -14624,34 +14480,6 @@
       "paused_by_kind": {
        "default": null,
        "title": "Paused By Kind"
-      },
-      "postal_city": {
-       "default": null,
-       "title": "Postal City"
-      },
-      "postal_code": {
-       "default": null,
-       "title": "Postal Code"
-      },
-      "postal_country": {
-       "default": null,
-       "title": "Postal Country"
-      },
-      "postal_line1": {
-       "default": null,
-       "title": "Postal Line1"
-      },
-      "postal_line2": {
-       "default": null,
-       "title": "Postal Line2"
-      },
-      "postal_name": {
-       "default": null,
-       "title": "Postal Name"
-      },
-      "postal_region": {
-       "default": null,
-       "title": "Postal Region"
       },
       "provider": {
        "title": "Provider"
@@ -14776,10 +14604,6 @@
        "default": null,
        "title": "Dmarc Pass"
       },
-      "domain_age_checked_at": {
-       "default": null,
-       "title": "Domain Age Checked At"
-      },
       "domain_check_error": {
        "default": null,
        "title": "Domain Check Error"
@@ -14787,10 +14611,6 @@
       "domain_checked_at": {
        "default": null,
        "title": "Domain Checked At"
-      },
-      "domain_registered_at": {
-       "default": null,
-       "title": "Domain Registered At"
       },
       "domain_verification_token": {
        "default": null,
@@ -14863,34 +14683,6 @@
       "paused_by_kind": {
        "default": null,
        "title": "Paused By Kind"
-      },
-      "postal_city": {
-       "default": null,
-       "title": "Postal City"
-      },
-      "postal_code": {
-       "default": null,
-       "title": "Postal Code"
-      },
-      "postal_country": {
-       "default": null,
-       "title": "Postal Country"
-      },
-      "postal_line1": {
-       "default": null,
-       "title": "Postal Line1"
-      },
-      "postal_line2": {
-       "default": null,
-       "title": "Postal Line2"
-      },
-      "postal_name": {
-       "default": null,
-       "title": "Postal Name"
-      },
-      "postal_region": {
-       "default": null,
-       "title": "Postal Region"
       },
       "provider": {
        "default": null,
@@ -15030,42 +14822,6 @@
       "outreach_enabled": {
        "default": true,
        "title": "Outreach Enabled"
-      },
-      "postal_city": {
-       "default": null,
-       "title": "Postal City"
-      },
-      "postal_code": {
-       "default": null,
-       "title": "Postal Code"
-      },
-      "postal_country": {
-       "default": null,
-       "title": "Postal Country"
-      },
-      "postal_line1": {
-       "default": null,
-       "title": "Postal Line1"
-      },
-      "postal_line2": {
-       "default": null,
-       "title": "Postal Line2"
-      },
-      "postal_name": {
-       "default": null,
-       "title": "Postal Name"
-      },
-      "postal_region": {
-       "default": null,
-       "title": "Postal Region"
-      },
-      "postal_verified_at": {
-       "default": null,
-       "title": "Postal Verified At"
-      },
-      "privacy_notice_url": {
-       "default": null,
-       "title": "Privacy Notice Url"
       }
      },
      "title": "CreateCrmSendingPolicyItem",
@@ -15131,42 +14887,6 @@
       "outreach_enabled": {
        "default": null,
        "title": "Outreach Enabled"
-      },
-      "postal_city": {
-       "default": null,
-       "title": "Postal City"
-      },
-      "postal_code": {
-       "default": null,
-       "title": "Postal Code"
-      },
-      "postal_country": {
-       "default": null,
-       "title": "Postal Country"
-      },
-      "postal_line1": {
-       "default": null,
-       "title": "Postal Line1"
-      },
-      "postal_line2": {
-       "default": null,
-       "title": "Postal Line2"
-      },
-      "postal_name": {
-       "default": null,
-       "title": "Postal Name"
-      },
-      "postal_region": {
-       "default": null,
-       "title": "Postal Region"
-      },
-      "postal_verified_at": {
-       "default": null,
-       "title": "Postal Verified At"
-      },
-      "privacy_notice_url": {
-       "default": null,
-       "title": "Privacy Notice Url"
       }
      },
      "required": [
@@ -19181,151 +18901,15 @@
    "create": "planned",
    "delete": "planned",
    "family": "Other",
-   "identity_fields": [
-    "id"
-   ],
+   "identity_fields": [],
    "label": "Initiative",
    "noun": "marketing_initiative",
-   "reference": "yes",
-   "schemas": {
-    "create": {
-     "additionalProperties": true,
-     "properties": {
-      "brand_id": {
-       "default": null,
-       "title": "Brand Id"
-      },
-      "budget_amount": {
-       "default": null,
-       "title": "Budget Amount"
-      },
-      "budget_currency": {
-       "default": "USD",
-       "title": "Budget Currency"
-      },
-      "description": {
-       "default": null,
-       "title": "Description"
-      },
-      "details": {
-       "default": {},
-       "title": "Details"
-      },
-      "ends_on": {
-       "default": null,
-       "title": "Ends On"
-      },
-      "goal": {
-       "default": null,
-       "title": "Goal"
-      },
-      "metadata": {
-       "default": {},
-       "title": "Metadata"
-      },
-      "name": {
-       "title": "Name"
-      },
-      "objective": {
-       "default": "other",
-       "title": "Objective"
-      },
-      "starts_on": {
-       "default": null,
-       "title": "Starts On"
-      },
-      "status": {
-       "default": "draft",
-       "title": "Status"
-      }
-     },
-     "required": [
-      "name"
-     ],
-     "title": "CreateMarketingInitiativeItem",
-     "type": "object"
-    },
-    "delete": {
-     "additionalProperties": true,
-     "properties": {
-      "id": {
-       "title": "Id",
-       "type": "string"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "DeleteMarketingInitiativeItem",
-     "type": "object"
-    },
-    "update": {
-     "additionalProperties": true,
-     "properties": {
-      "brand_id": {
-       "default": null,
-       "title": "Brand Id"
-      },
-      "budget_amount": {
-       "default": null,
-       "title": "Budget Amount"
-      },
-      "budget_currency": {
-       "default": null,
-       "title": "Budget Currency"
-      },
-      "description": {
-       "default": null,
-       "title": "Description"
-      },
-      "details": {
-       "default": null,
-       "title": "Details"
-      },
-      "ends_on": {
-       "default": null,
-       "title": "Ends On"
-      },
-      "goal": {
-       "default": null,
-       "title": "Goal"
-      },
-      "id": {
-       "title": "Id",
-       "type": "string"
-      },
-      "metadata": {
-       "default": null,
-       "title": "Metadata"
-      },
-      "name": {
-       "default": null,
-       "title": "Name"
-      },
-      "objective": {
-       "default": null,
-       "title": "Objective"
-      },
-      "starts_on": {
-       "default": null,
-       "title": "Starts On"
-      },
-      "status": {
-       "default": null,
-       "title": "Status"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "UpdateMarketingInitiativeItem",
-     "type": "object"
-    }
-   },
+   "reference": "planned",
+   "schemas": null,
    "table": "marketing.initiative",
    "title_column": "name",
    "update": "planned",
-   "view": "yes"
+   "view": "planned"
   },
   {
    "create": "planned",
