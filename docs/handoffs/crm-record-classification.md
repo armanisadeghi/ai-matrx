@@ -98,6 +98,54 @@ vocabulary undecidable:
 Arman's two-level ruling applies to the FIRST axis. `competitor` almost certainly belongs to the
 second and must not be a peer of `media outlet`. Confirm against a visual before building.
 
+## The vocabulary — DERIVED from the real 177 descriptors, not invented
+
+The free-text `headline` values on the 239 backlink parties are not one taxonomy. They encode
+**six** axes in one string — *"competitor ITAD company blog"*, *"regional daily newspaper"*,
+*"low-quality auto-generated content farm"*, *"government/public agency recycling directory"*.
+
+| Axis in the free text | Already has a home? |
+|---|---|
+| **Quality** — content farm, link farm, spun, thin, doorway | **YES** — `attributes.seo_domain.opinion_verdict` + `opinion_score` (0–100) |
+| **Relationship to me** — competitor, vendor, partner | **YES** — the `party_role` dimension, seeded `migrations/crm_02_core.sql:464-478`, and `Competitor` is live in `platform.categories` today (system org, public, `is_system`) |
+| **How we found it** | **YES** — `crm.party.source` |
+| **Topic** (environmental, tech) · **Geography** (local/regional/national) · **Who runs it** (personal, gov, nonprofit, university) | folded into the ONE new axis below |
+| **What kind of web entity it is** | **NO — this is the only thing to build** |
+
+In the raw data **"competitor" always appears as a modifier on a site type** ("competitor ITAD
+company *blog*"), never as a type itself. That is the evidence for the axis split, and it is why
+`competitor` must not become a peer of `media outlet`.
+
+**The one new axis — `web_entity_type`, two levels, matching Arman's category+class ruling:**
+
+`News & media` (national / regional / local outlet, broadcast, trade publication, magazine,
+student newspaper, press-release syndication) · `Blog` (personal, company, niche/hobbyist,
+lifestyle, expert) · `Directory & aggregator` (business, local, content, data/price, tool,
+general web) · `Company site` (product/service, ecommerce, agency) · `Institution` (government,
+nonprofit, university, trade association, union) · `Podcast` (show, network, database) ·
+`Reference` (wiki, how-to) · `Community` (forum, community blog).
+
+**It lives in `platform.categories` ROWS, never a TS union or a CHECK constraint** — so revising
+it is a data edit, not a migration plus a two-repo redeploy. That is Arman's "don't make it
+impossible to go back and fix" requirement satisfied structurally. `web.discovered_item` already
+carries an unenforced free-text `category` + `guessed_kind` pair and should consume the same
+dimension rather than fork a second one.
+
+### Two-level support — the platform answer
+
+The **DB already supports it**: `platform.categories.parent_id` with a live self-FK,
+`cat_create` accepts `p_parent_id`, `cat_list` returns it. What is missing sits above the column
+and must be built ONCE, generically (not in CRM):
+
+1. No `cat_update` / `cat_reparent` / `cat_delete` RPC — a category cannot be moved under a parent
+   after creation through the canonical path (`features/scopes/FEATURE.md:485`).
+2. `CategorySelect.tsx:56-60` and `CategoryTagPicker.tsx` both render a **flat** map and discard
+   `parent_id`; `CategoryTagPicker`'s inline create hard-forces every new category to root.
+3. Zero of the ~22 live dimensions use nesting, so there is no convention to follow.
+4. Precedent to copy: `iam.industries` (same `facet + parent_id` shape, and the parent-picker UI is
+   already built at `features/admin/shared-knowledge/components/IndustriesTab.tsx:522`).
+   The skills tree works but bypasses the canonical RPCs and is unbounded-depth.
+
 ## Verified current state (live DB, 2026-08-15)
 
 1,187 parties. **It is two piles, not one:**
@@ -138,6 +186,31 @@ second and must not be a peer of `media outlet`. Confirm against a visual before
   `Saved` counters. Attio marks provenance **per value** with user-writes-win and an export fence.
   Clay never lets found rows touch the CRM. **Nobody keeps a durable "was discovered" marker after
   promotion, and only Apollo has any reversion path** — both are open goals for us.
+
+## Decisions needed from Arman
+
+**1. The 933 YouTube channels — repoint first, or publish first?**
+*Situation:* `common-docs/systems/crm/SHARED_CATALOG.md` (2026-08-14) says these are **raw
+discovery, not a catalog** — "vetted by no one" — and recommends repointing them to the org whose
+research run found them, with promotion into the Matrx Library as a separate curator-gated act. On
+2026-08-15 Arman said they "just need to be categorized properly… they're gonna be a system shared
+resource." Both can be true, but they are different first moves.
+*Decide:* repoint the 933 to their discovering org now and curate a vetted subset up later, or
+treat the whole set as the catalog and publish it from the Library org.
+
+**2. The grant spine — generalize it or fork it?**
+*Situation:* sharing-by-industry works today, but `rag.data_store_grants` keys on `data_store_id`
+and every `library_*` function is typed to it. Publishing a list of channels needs one of two
+things. The brief recommends (A) and explicitly declined to build it without Arman's word.
+*Decide:* **(A)** promote grants to a platform-level table keyed by `(entity_type, entity_id)` so
+any registered entity — data store, outreach list, expertise pack, agent — can be published to an
+audience; or **(B)** fork a `crm.outreach_list_grants` twin, faster but the audit log, curator
+check and catalog RPC all fork with it.
+
+**3. Blocked on tooling, not on a decision:** seeding the `web_entity_type` rows was refused by the
+permission classifier, and the Supabase MCP is unauthenticated in a non-interactive session. The
+seed script is written and idempotent (checks for existing rows, inserts parents then children,
+verifies) — it needs either an approved run or an authorized MCP session.
 
 ## Remaining work
 
