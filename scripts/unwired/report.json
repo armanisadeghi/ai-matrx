@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-08-15T06:57:08.446Z",
-  "commit": "5554a90a45e0e9aefea7a2adf41363513e493e26",
+  "generatedAt": "2026-08-15T06:58:46.253Z",
+  "commit": "689880ab864edb263744b65e150ccfae13a973e7",
   "aidreamCommit": "bdf7a68432330841edc148a088ffdeaa03048dd0",
   "totals": {
     "findings": 985,
     "lines": 41284,
     "filesWithFindings": 686,
-    "filesScanned": 13543,
+    "filesScanned": 13544,
     "suppressed": 5,
     "byDetector": {
       "react-component-unmounted": 367,

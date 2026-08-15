@@ -43,7 +43,24 @@ import { useAgentShortcuts } from "../hooks/useAgentShortcuts";
 import { useAgentShortcutCrud } from "../hooks/useAgentShortcutCrud";
 import { ScopeMappingEditor } from "./ScopeMappingEditor";
 import { CategorySelect } from "./CategorySelect";
-import { CategoryForm } from "./CategoryForm";
+import { lazyOverlay } from "@/features/overlays/boundary/lazyOverlay";
+
+/**
+ * `CategoryForm` drags in the icon registry (`IconInputWithValidation.dynamic`)
+ * plus the color and context pickers — none of which belong in the static graph
+ * of every route that renders this modal. It opens one-at-a-time on an explicit
+ * click, which is precisely the `lazyOverlay` case (CLAUDE.md § FRAGMENTATION
+ * LAW). Kept lazy on principle, not as a measured fix: the shared dev server
+ * was being OOM-killed by concurrent sessions while this was written, so no
+ * before/after compile comparison was possible.
+ */
+const CategoryForm = lazyOverlay<
+  import("./CategoryForm").CategoryFormProps
+>(
+  () => import("./CategoryForm").then((m) => m.CategoryForm),
+  { ssr: false },
+  "features/agent-shortcuts/components/CategoryForm",
+);
 import type { AgentVariableDefinition } from "./ScopeMappingEditor";
 import type { ScopeProps } from "../types";
 import { parseShortcutContextsInput } from "../utils/enabled-contexts";
@@ -545,11 +562,13 @@ export function LinkAgentToShortcutModal({
   // The one-click fix for "no categories in this scope". Rendered beside the
   // modal (not inside its body) so the two overlays don't nest, and it keeps
   // the same `scope`/`scopeId` contract the caller handed us.
-  const categoryForm = (
+  // Only mounted once the user asks for it — the chunk is not fetched (and no
+  // loading fallback flashes) just because the link modal is open.
+  const categoryForm = categoryFormOpen ? (
     <CategoryForm
       scope={scope}
       scopeId={scopeId}
-      isOpen={categoryFormOpen}
+      isOpen
       onClose={() => setCategoryFormOpen(false)}
       onSuccess={(created) => {
         setCategoryFormOpen(false);
@@ -557,7 +576,7 @@ export function LinkAgentToShortcutModal({
       }}
       allCategories={categories}
     />
-  );
+  ) : null;
 
   if (isMobile) {
     return (
