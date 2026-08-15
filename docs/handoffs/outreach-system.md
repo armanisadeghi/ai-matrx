@@ -16,6 +16,12 @@ forces out a set of canonical primitives the platform is missing and did not kno
 > **Read `docs/handoffs/crm-system.md` first.** Outreach is not a new domain — it is the CRM's
 > reason to exist, pointed at two specific opportunity sources. Every target is a `crm.party`.
 > Do not build a parallel contact store, a parallel suppression list, or a parallel activity log.
+>
+> **And read §5 before writing a single line that sends an email.** The sending architecture is
+> decided and it is the safety design of the whole business: **our customers send from their own
+> verified, warmed mailboxes on their own domains — we never relay customer outreach through AI
+> Matrx infrastructure.** That is what keeps one careless customer from destroying deliverability
+> for everyone, including us.
 
 ---
 
@@ -129,9 +135,14 @@ caps, and — most important — **stops the sequence the moment a human replies
 keeps sending after a reply is the fastest way to destroy a sender reputation and a relationship.
 Host it on the existing `system_task_runner`; do not build a second scheduler.
 
-### G5 — Sending identity + throttling. *The decision that shapes everything else.* → §5
-`send_reviewed_gmail` is 1:1 and human-reviewed. Campaign sending needs to know which mailbox
-speaks, at what rate, with what warmup.
+### G5 — Sending identity + throttling. *Architecture DECIDED — build it: §5.*
+`send_reviewed_gmail` is 1:1 and human-reviewed. Campaign sending needs a first-class **sending
+identity**: which mailbox may speak for this org, proven to own its domain, authenticated
+(SPF/DKIM/DMARC), warmed over ~3–4 weeks, rate-capped, health-monitored, and auto-paused when
+bounce/complaint rates trip. **Customers send from their own mailboxes on their own domains; we
+never relay customer outreach through AI Matrx infrastructure** — that is what contains a bad
+actor's blast radius to their own domain instead of everyone's. Full model, including how we
+protect the platform from our own customers: §5.
 
 ### G6 — Inbound: replies, bounces, complaints. *The hard gap, and the one most likely to be skipped.*
 Today outreach is write-only. Without inbound we cannot stop on reply (G4), cannot suppress on hard
@@ -141,10 +152,12 @@ Needs: provider webhooks (delivered/bounced/complained), reply ingestion, and th
 lands on the party's `crm.interaction` timeline as a real conversation.
 
 ### G7 — Compliance, built into the send primitive. *Arman's ruling: "follow the law."*
-Commercial email carries obligations (CAN-SPAM/CASL/GDPR-class): a working unsubscribe, a physical
-postal address, honest headers and subject, prompt opt-out honoring, and a lawful basis where GDPR
-applies. Rules differ by jurisdiction, so **treat this as a real compliance review before first
-send, not as trivia an agent infers from memory.**
+Commercial email carries obligations (CAN-SPAM/CASL/GDPR-class): a working one-click unsubscribe,
+a physical postal address, honest headers and subject, prompt opt-out honoring, and a lawful basis
+where GDPR applies. **US first, non-US documented but not built (§5.4)** — while storing consent
+basis, source and timestamp per contact from day one, because retrofitting those means
+re-contacting everyone. Rules differ by jurisdiction, so **a qualified legal/compliance review is
+required before the first customer send — not trivia an agent infers from memory.**
 Architecturally the ruling is simple and already made (crm handoff §5.2): `crm.contact_medium` is
 the ONE suppression authority, and suppression + unsubscribe are enforced **inside** the send
 primitive so no caller can forget. A caller that *can* bypass suppression eventually will.
@@ -182,29 +195,132 @@ generic, and wanted by several features that are already built.
 
 ---
 
-# 5. Decisions needed (Arman) — blocking
+# 5. Sending identity + platform protection — DECIDED 2026-08-14
 
-1. **Sending identity strategy.** Arman ruled "whatever is our current/canonical", and our only
-   working path is the connected Gmail one. But the two jobs genuinely differ, and getting this
-   wrong is expensive in a way that is hard to undo:
-   - **Connected mailbox (Gmail/Workspace OAuth)** — real personal inbox, best deliverability and
-     reply rates, threads naturally. Right for 1:1 and warm outreach. **Wrong for volume:** cold
-     blasts from a real business mailbox risk that mailbox and that domain.
-   - **Dedicated bulk domain (Mailgun)** — throwaway sending domain, webhooks for bounce/complaint,
-     scales. Right for volume; worse reply rates; needs warmup and DNS (SPF/DKIM/DMARC).
-   **Recommendation: build the send primitive provider-agnostic and ship the connected-mailbox path
-   first** (it's real today, it's the higher-quality motion, and backlink/media outreach at *our*
-   volumes is closer to 1:1 than to bulk). Add Mailgun behind the same interface when volume
-   demands it. **Confirm, or name the other order.**
-2. **Cold outreach posture per jurisdiction.** Cold B2B email is treated very differently in the
-   US vs EU/UK vs Canada. This changes what we build (opt-in vs opt-out, what we may store, how we
-   prove basis) — not just what we write in the footer. Decide whether v1 targets US-only, or must
-   be lawful in the EU/UK/CA from day one. **A compliance review before first send is warranted;
-   do not have an agent infer this from memory.**
-3. **Whose mailbox sends on a client's behalf?** For an agency using AI Matrx for *their client's*
-   backlinks: does the agency send, or does the client connect their own mailbox? This decides
-   whether sending identity is per-user, per-org, or per-managed-client, and it is cheap now and
-   expensive later.
+Arman delegated this decision with one hard constraint: *"one client doing stupid spammy stuff
+must not destroy our entire app,"* and one instruction: *do it the way the best companies do it.*
+That constraint has exactly one architecture behind it, and it is the industry answer.
+
+## 5.1 THE LAW: our customers send from THEIR OWN mailboxes, on THEIR OWN domains. We never send customer outreach from our infrastructure.
+
+This is the single most load-bearing decision in this document. **Cold/prospecting outreach and
+bulk marketing email are two different industries with two different architectures, and we are in
+the first one:**
+
+| | Bulk marketing ESP (Klaviyo, Mailchimp, SendGrid) | **Cold outreach (Pitchbox, Instantly, Smartlead, Lemlist, Outreach.io) ← US** |
+|---|---|---|
+| Who sends | The platform, from platform IPs | **The customer's own mailbox**, via OAuth (Google/Microsoft) or SMTP/IMAP |
+| Whose reputation is at risk | **The platform's** | **The customer's own domain** |
+| Audience | Opt-in lists (existing customers) | Cold prospects — which is what link building and media pitching ARE |
+| Purchased/cold lists | Banned by the ESP's own terms | The core use case, so the guardrails must be structural |
+
+**Why this answers Arman's fear directly:** in the connected-mailbox model, a spammy customer burns
+*their own* domain and *their own* mailbox. The blast radius is contained **by architecture**, not
+by our vigilance. If we instead relayed everyone's cold email through shared AI Matrx
+infrastructure, one bad actor would poison deliverability for every other customer and for us —
+that is precisely the trap this decision avoids. This is why the entire cold-outreach category
+converged on BYO-mailbox; it is not an implementation detail, it is the business model's safety
+design.
+
+### The corollary that is easy to miss and expensive to get wrong
+
+**Transactional email and customer outreach NEVER share infrastructure, domain, IP, or provider
+account.**
+
+- **Our transactional mail** (password resets, invites, notifications, receipts) → our own domain,
+  a transactional provider (Mailgun is already declared), our reputation, our care.
+- **Customer outreach** → the customer's connected mailbox. Always.
+
+Blend them and a customer's spam complaints degrade the deliverability of our own password-reset
+emails — users stop being able to log in because someone else's campaign was aggressive. Keep them
+physically separate: different provider accounts, different domains, different code paths.
+
+### We are our own customer — with one declared exception
+
+Per `common-docs/policies/we-are-our-own-customer.md`, AI Matrx's own backlink and media outreach
+runs through this same system, from a connected mailbox on our own domain, using the same code
+every customer gets. **Declared exception:** our transactional mail is not outreach and does not
+run through it (above). Note this in the FEATURE.md when it is built.
+
+## 5.2 The sending-identity primitive (G5) — what to build
+
+A sending identity is a first-class record, not a config field: *which mailbox may speak for this
+org, how fast, and is it healthy right now.*
+
+1. **Connection.** OAuth for Google Workspace and Microsoft 365 (the two that matter); SMTP/IMAP as
+   the fallback that covers everyone else. We already have the Google half
+   (`send_reviewed_gmail`) — extend it, don't fork it.
+2. **Domain ownership proof — gate before ANY outreach send.** DNS TXT challenge on the sending
+   domain. A customer who cannot prove they own the domain does not get to send from it. This one
+   gate removes most casual abuse, and every serious platform requires it.
+3. **Authentication verified, not assumed.** Check SPF, DKIM and DMARC actually pass for that
+   domain before enabling sends, and re-check periodically. Since the Google/Yahoo bulk-sender
+   rules (Feb 2024), unauthenticated mail is simply discarded at volume — a customer sending
+   without DMARC is buying nothing but a damaged domain.
+4. **Warmup as a state machine.** Arman is right that this is standard practice: a new sending
+   identity starts at a low daily volume and ramps over ~3–4 weeks before full use. Model it as
+   real state on the record (`warming` → `ready`), with a ramp schedule the runner obeys. **A
+   mailbox in warmup cannot be used for a campaign** — the system enforces it rather than trusting
+   the user to know.
+5. **Caps, throttle, and human pacing.** Per-identity daily cap, per-hour cap, randomized intervals,
+   quiet hours in the *recipient's* timezone. Cold-outreach practice is far below provider limits —
+   tens per mailbox per day, not hundreds. Multiple connected mailboxes is how volume scales, not a
+   bigger number on one mailbox.
+6. **Live health.** Bounce rate, complaint rate, reply rate per identity, on a rolling window.
+7. **Circuit breaker — automatic, not advisory.** Thresholds pause the identity and its campaigns
+   and alarm loudly (hard-bounce and complaint rates are the two that matter; Google/Yahoo treat
+   ~0.3% complaints as the red line, so our internal trip must sit well below it). **The system
+   pauses; a human un-pauses.** Never the reverse.
+8. **Per-org kill switch** we can pull instantly, plus an audit trail of who sent what to whom.
+
+## 5.3 Protecting the platform from our own customers
+
+Arman's exact worry, addressed as a checklist. Structural isolation (5.1) does the heavy lifting;
+these close the rest:
+
+- **List-quality gates before send.** Verify addresses (syntax + MX + disposable-domain check)
+  and refuse the send if a list looks purchased or scraped-in-bulk. **Never send to an address we
+  have not verified** — hard bounces are the fastest route to a burned domain.
+- **Suppression is unbypassable** (crm-system §5.2): one authority, enforced *inside* the send
+  primitive, checked on every send including the first of a sequence.
+- **Volume behind payment.** Free tiers attract abuse; every serious platform in this category
+  gates outreach volume behind a paid, identified account. Cheapest abuse filter that exists.
+- **Acceptable Use Policy with teeth**, plus per-org abuse monitoring, an abuse@ intake, and a
+  documented suspension path we will actually use.
+- **Our OAuth app is a shared asset — protect it.** If enough customers abuse Gmail sending through
+  our Google Cloud OAuth client, Google can restrict or suspend *the app*, taking every customer's
+  Gmail connection down at once. This is the one place where the blast radius is NOT fully
+  contained, so it justifies the strictest gates above and a fast internal response to any abuse
+  report. Track it as a named platform risk.
+- **The 10DLC analogy is correct.** Arman's SMS instinct maps directly: identity verification
+  before throughput. Tier it — verified domain for basic sending, verified business identity for
+  higher volume. Build the tiers now even if only the first is enforced at launch.
+
+## 5.4 Compliance posture — US first, rest of world documented (Arman, 2026-08-14)
+
+Build for the US, but **do not design anything that makes non-US support a rewrite.** Concretely:
+store consent basis, source, and timestamp per contact from day one, and keep jurisdiction a field
+on the record — retrofitting those later means re-contacting everyone.
+
+Every commercial send, from the first one, carries: a working one-click unsubscribe
+(`List-Unsubscribe` header, now effectively mandatory), a physical postal address, honest headers
+and subject, and immediate opt-out honoring (the law allows days; we do it instantly because the
+suppression authority already exists).
+
+Non-US is documented, not built: the EU/UK (GDPR + ePrivacy — cold B2B may rest on legitimate
+interest, with documentation, and some member states are far stricter) and Canada (CASL — consent-
+based, with real penalties and no US-style opt-out carve-out) each change *what we build*, not just
+the footer. **Before the first customer send, a qualified compliance/legal review is required —
+this is not something an agent should infer from memory, and the AUP and ToS must be written by
+someone qualified.** That is the one piece of this section that cannot be closed in code.
+
+## 5.5 Identity level — resolved
+
+Sending identity attaches to **an org**, with the connected mailbox owned by a user in that org,
+and an agency's managed client is its own org. This falls straight out of the CRM model (every
+party and every contact is org-scoped) and it means an agency connects one identity per client
+org — which is also the correct deliverability answer, since a client's mail should come from the
+client's own domain.
 
 ---
 
@@ -219,22 +335,33 @@ is Phase 6 / G9 work.
 **Phase 2 — targets worth writing to.** G2 contact discovery from data we already crawl,
 suggestion-gated, through the same resolver the experts work uses.
 
-**Phase 3 — the message.** G3 template primitive + G7 compliance and suppression built *into* the
-send primitive. Ship the single-send path end-to-end (one case → one personalized, compliant,
-suppression-checked email → logged as `crm.interaction`) **before** any cadence exists. A working
-1:1 send is genuinely useful on its own, and it de-risks everything after it.
+**Phase 3 — the right to send (G5, §5).** The sending-identity record: connect a mailbox, prove
+domain ownership by DNS, verify SPF/DKIM/DMARC, warm it, cap it, monitor its health, auto-pause it.
+**This comes BEFORE anything can send**, and it is where the platform's protection lives — a
+customer cannot reach a stranger's inbox until they have proven the domain is theirs and the
+mailbox is warm. Ship the warmup state machine here even though nothing consumes it yet; bolting
+warmup on after people are already sending is how you find out your customers burned their domains.
 
-**Phase 4 — scale and listen, together.** G4 sequence runner + G6 inbound. **Do not ship the
-sequence runner without reply ingestion** — an unstoppable cadence is worse than no cadence.
+**Phase 4 — the message and the first real send.** G3 template primitive + G7 compliance, with
+suppression and unsubscribe enforced *inside* the send primitive. Ship the single-send path
+end-to-end — one case → one personalized, compliant, suppression-checked email from a verified
+warm identity → logged as `crm.interaction`. **A working, human-approved 1:1 send is genuinely
+useful on its own** (it is exactly how a careful link builder works today) and it de-risks
+everything after it.
 
-**Phase 5 — prove it.** G8 attribution: close the loop against our own crawl. This is the payoff.
+**Phase 5 — scale and listen, together.** G4 sequence runner + G6 inbound. **Do not ship the
+sequence runner without reply ingestion** — an unstoppable cadence is worse than no cadence, and
+stop-on-reply is the single most important behavior in the system.
 
-**Phase 6 — the surfaces.** G9 "Start outreach" from a backlink prospect and a reputation case,
-landing in the existing outreach workspace.
+**Phase 6 — prove it.** G8 attribution: close the loop against our own crawl. This is the payoff
+and the differentiator (§1).
 
-Phases 1–3 are independently valuable and shippable. Nothing before Phase 4 can send anything a
-human did not approve, which is the correct risk posture for a system whose failure mode is
-"we spammed people from a real mailbox."
+**Phase 7 — the surfaces.** G9 "Start outreach" from a backlink prospect and a reputation case,
+plus the Phase-1 frontend trigger, landing in the existing `/crm/outreach-lists` workspace.
+
+Phases 1–4 are independently valuable and shippable. **Nothing before Phase 5 sends anything a
+human did not approve** — the correct risk posture for a system whose failure mode is "we helped
+a customer spam strangers from their real mailbox."
 
 ---
 
@@ -251,3 +378,12 @@ human did not approve, which is the correct risk posture for a system whose fail
 - **Do not build a separate outreach console.** It belongs beside the records, in
   `/crm/outreach-lists`.
 - **Do not treat attribution as phase-2 garnish.** It is the differentiator (§1).
+- **Never relay customer outreach through AI Matrx infrastructure or a shared "from" pool.** That
+  single shortcut converts one customer's bad behavior into every customer's deliverability
+  problem, and ours. Customers send from their own verified domains (§5.1).
+- **Never let outreach share infrastructure with our transactional mail.** Different provider
+  account, different domain, different code path — or someone else's campaign takes down our
+  password-reset delivery.
+- **Never let a mailbox skip warmup or domain verification because a customer is in a hurry.** The
+  gates are the product, not friction to be waived. An override that exists will be used.
+- **Do not send to an unverified address.** Hard bounces are the fastest way to burn a domain.

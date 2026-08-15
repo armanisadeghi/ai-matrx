@@ -412,13 +412,14 @@ These are settled. Build to them; do not re-open.
    two authorities is not an option. `crm.contact_medium` becomes the ONE authority;
    `communication.sms_consent` writes through to it and stops being consulted independently.
    Suppression is checked inside the send/dial primitive, never by each caller.
-3. **Email provider — the canonical one.** Arman: *"Yes. whatever is our current/canonical."* Our
-   only path with a real consumer is `send_reviewed_gmail` (aidream
-   `services/google_workspace/service.py`, per-user OAuth); `MAILGUN_API_KEY` is declared with zero
-   consumers. **These serve different jobs and the distinction is load-bearing —** see
-   `docs/handoffs/outreach-system.md` §Sending identity: connected-mailbox for 1:1/warm outreach,
-   a dedicated bulk domain for volume. Sending cold volume through a user's Gmail gets their real
-   mailbox banned.
+3. **Email sending — RESOLVED IN FULL, `docs/handoffs/outreach-system.md` §5.** The question was
+   "which provider"; the real answer is an architecture. **Customers send from their OWN verified,
+   warmed mailboxes on their OWN domains (OAuth Google/Microsoft, SMTP/IMAP fallback); AI Matrx
+   never relays customer outreach through its own infrastructure.** That is how the whole
+   cold-outreach category (Pitchbox, Instantly, Smartlead, Lemlist) contains a bad actor to their
+   own domain instead of everyone's. `send_reviewed_gmail` is the seed of that path — extend it.
+   `MAILGUN_API_KEY` stays for OUR TRANSACTIONAL mail only (password resets, invites), on separate
+   infrastructure that outreach must never touch. Read §5 before writing any send code.
 4. **Component `created_by` — MATCH ENTITY.** Arman: *"Yes. Should be the same."* The component
    `std_insert` parent-editor arm must force `created_by = auth.uid()`, exactly as the entity
    variant does — a parent-editor may no longer stamp another user as creator (which silently
