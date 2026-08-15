@@ -7,9 +7,10 @@
 
 > **Status:** Day-1 contract shipped 2026-07-07 · backend + Stripe landing incrementally.
 > **Spec:** [`docs/proposals/education-projects/P8-entitlements-billing.md`](../../docs/proposals/education-projects/P8-entitlements-billing.md).
-> **The contract is live and permissive — but limits are VISIBLE and now DECREMENT.** Every
-> capability ships `enforced: false`, so nothing is capped until Arman approves the free-tier
-> matrix AND the backend limit + server re-check both exist. Since F1 (2026-07-10) the resolver
+> **The education contract is live and permissive — but limits are VISIBLE and now DECREMENT.** Every
+> `education.*` capability ships `enforced: false`, so nothing there is capped until Arman approves
+> the free-tier matrix AND the backend limit + server re-check both exist. Plan dimensions enforce
+> only as recorded in the canonical `PLAN_MODEL.md`. Since F1 (2026-07-10) the resolver
 > reports each capability's limits + windows regardless of enforcement, so meters render "X of
 > Y left" ahead of the cap; since F6 (2026-07-13) every metered action records real usage on
 > success, so that meter actually counts down (usage is captured even while enforcement stays
@@ -97,7 +98,7 @@ full snapshot refresh.
 | [`types.ts`](./types.ts) | The verdict shape (`EntitlementResult`), tiers, reasons. Stable contract. |
 | [`registry.ts`](./registry.ts) | Capability registry — the single source of truth for metered/gated actions. |
 | [`hooks.ts`](./hooks.ts) | `useEntitlement(capability)` (day-1 read hook) + `useEntitlementConsume(capability)` → `commit()` (consume-on-success primitive). |
-| [`service.ts`](./service.ts) | `checkEntitlement` (server-truth pre-action) + `consumeEntitlement` (records usage, never short-circuits on `enforced:false`) + `usageFromConsume` + `fetchEntitlementSnapshot` (boot). |
+| [`service.ts`](./service.ts) | `checkEntitlement` (server-truth pre-action) + `consumeEntitlement` (records usage, never short-circuits on `enforced:false`) + `usageFromConsume` + `fetchEntitlementSnapshot` (boot). SQL resolver: `migrations/billing_plan_system.sql`, hardened by `billing_resolve_capability_optional_plan_guard.sql`. |
 | [`state/entitlementsSlice.ts`](./state/entitlementsSlice.ts) | Session-boot state (tier + usage). Volatile, never persisted. `setCapabilityUsage` patches one capability after a consume so the meter re-renders. |
 | [`state/selectors.ts`](./state/selectors.ts) | Per-capability memoized verdict selectors. |
 | [`components/EntitlementMeter.tsx`](./components/EntitlementMeter.tsx) | "X of Y left" meter — the ONLY meter primitive. Drop beside any metered action. |
@@ -173,12 +174,13 @@ regressions across 6,660 users × 30 orgs.** A capability is restricted ONLY whe
 the restriction is 100% confirmed and written down; anything ambiguous stays
 open. Guest accounts are REAL accounts and carry a tier like everyone else.
 
-### `outreach.send` — the first and only ENFORCED capability
+### `outreach.send` — the first ENFORCED capability
 
-Every education capability ships `enforced: false`. `outreach.send` ships `true`
-because it takes nothing away: there is no send path in production yet and there
+Every education capability ships `enforced: false`. `outreach.send` shipped first
+because it took nothing away: there was no send path in production and there
 were zero sending identities. `minTier: "trial"` (not premium) — the abuse filter
-wants an *identified* account. Rationale:
+wants an *identified* account. The current enforced plan dimensions are recorded
+in `PLAN_MODEL.md`; this page does not keep a second list. Rationale:
 [`docs/handoffs/outreach-system.md`](../../docs/handoffs/outreach-system.md) §5.6.
 
 ## Metering model (Arman decisions, 2026-07-07)
@@ -280,6 +282,10 @@ webhook handlers in `app/api/stripe/webhook/route.ts`. FE consumers:
   (`useEntitlement` / `checkEntitlement`). One central resolver, modeled on `iam.has_access`.
 - **Server re-check is truth on every enforced action.** UI reads may fail open; the spend path
   fails closed (see `checkEntitlement`).
+- **User-only resolution is a first-class compatibility path.** The two-argument
+  resolver delegates with `org => NULL` and must reach tier windows without
+  reading plan-only state. An org plan with no row for a capability also falls
+  through to tier windows; it never means unlimited.
 - **Entitlement state hydrates ONCE at session boot** (like `adminLevel`), never persisted.
 - **Every metered action shows `remaining` BEFORE the cap.** The cap check happens before the
   action starts — mid-generation ambush is a defect (README §6). The mechanism: the snapshot /
@@ -393,6 +399,17 @@ real (F6, 2026-07-13).
 
 ## Change Log
 
+- **2026-08-15** — **Fixed SQLSTATE 55000 in the shared plan resolver.**
+  `billing_plan_system.sql` declared `v_lim record`, assigned it only for a
+  non-NULL org plan, then referenced `v_lim.limit_value` in the condition that
+  was supposed to keep user-only calls out of the plan branch. Authenticated
+  `entitlement_snapshot` therefore failed at boot; `entitlement_consume` could
+  also insert usage and then raise from the resolver, rolling the insert back.
+  `billing_resolve_capability_optional_plan_guard.sql` replaces the conditional
+  record with typed scalars and keeps every plan-only read inside the plan
+  branch. Regression SQL covers user-only resolution, an org plan that has no
+  opinion, a numeric plan limit, authenticated snapshot hydration, and retained
+  usage after consume.
 - **2026-08-14** — **The tier became a thing an ORG carries, and outreach became
   the platform's first gated capability.** Extended `billing` (never forked it):
   `billing.org_plan` (an org's tier + WHY: subscription / grant / internal /
