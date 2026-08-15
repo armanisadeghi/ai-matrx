@@ -87,6 +87,12 @@ if $STRICT; then
         # open item needs a publish decision from Arman, not a code fix, so
         # hard-failing would block every release on a question no agent may answer.
         "Media durability (mismatch class)|pnpm check:media-durability"
+        # TYPE-ESCAPE RATCHET stays ADVISORY even in strict mode (no --strict on
+        # the command), per Arman's standing rule: scream, never block the build.
+        # It is listed here because NOTHING else runs it — no CI, no pre-commit
+        # hook — which is exactly how ~1,200 hatches landed unfrozen between
+        # 2026-07-02 and 2026-08-14 and the ratchet stopped ratcheting (D136).
+        "Type-escape hatch ratchet|pnpm check:hatches"
     )
 else
     # Non-strict variants still print the full loud report; they exit 0.
@@ -131,6 +137,9 @@ else
         # above for why this is advisory. Fix = <AccessGate/>.
         "Access errors (surfaces that guess why a read failed)|pnpm exec tsx scripts/access-errors/check-access-errors.ts"
         "Media durability (mismatch class)|pnpm check:media-durability"
+        # New escape hatches vs the frozen baseline — advisory, loud. See the
+        # strict list above for why this gate exists here at all (D136).
+        "Type-escape hatch ratchet|pnpm check:hatches"
     )
 fi
 
@@ -211,7 +220,7 @@ run_gate() {
 
     # Heuristic: non-strict checkers still print SCHEMA TRUTH-CHECK / FAIL boxes
     # while exiting 0. Treat that as a loud advisory failure for the summary.
-    if $has_output && grep -qE 'ADMIN ROUTE REGISTRY GAP|SCHEMA TRUTH-CHECK|PROTOCOL MIRROR DRIFT|DEAD ENDS FOUND|LIVE PULL FAILED|COMMITTED SNAPSHOT IS STALE|Release gates failed|\[FAIL\]|error\(s\)' "$tmp" 2>/dev/null; then
+    if $has_output && grep -qE 'ADMIN ROUTE REGISTRY GAP|SCHEMA TRUTH-CHECK|PROTOCOL MIRROR DRIFT|DEAD ENDS FOUND|TYPE-ESCAPE HATCHES ABOVE BASELINE|LIVE PULL FAILED|COMMITTED SNAPSHOT IS STALE|Release gates failed|\[FAIL\]|error\(s\)' "$tmp" 2>/dev/null; then
         echo -e "${YELLOW}[WARN]${NC}  [$step/$total] ${label} (${elapsed}s) — findings below (advisory)"
         print_gate_details "$tmp"
         rm -f "$tmp"

@@ -25,6 +25,7 @@ import {
   creatorAmount,
   MIN_CLASS_PRICE_CENTS,
 } from "@/lib/stripe/connect";
+import { isJsonObject } from "@/types/json";
 
 /** Only accept an in-app relative return path (no open redirect). */
 function safePath(p: unknown, fallback: string): string {
@@ -70,7 +71,8 @@ export async function POST(request: NextRequest) {
     if (!scope || scope.deleted_at) {
       return NextResponse.json({ error: "Class not found" }, { status: 404 });
     }
-    const settings = (scope.settings ?? {}) as Record<string, unknown>;
+    // `settings` is a Json column — narrow it at ingress, don't assert it.
+    const settings = isJsonObject(scope.settings) ? scope.settings : {};
     const accessMode = String(settings.access_mode ?? "");
     const priceCents = Number(settings.price_cents ?? 0);
 

@@ -107,6 +107,12 @@ function listFiles(scope?: string): string[] {
     .filter((f) => !f.startsWith("scripts/"))
     .filter((f) => !f.includes("__tests__/"))
     .filter((f) => !/\.test\.tsx?$/.test(f))
+    // Compile-time contract tests (`*.contract-test.ts`) are tests too — they
+    // are type-checked, never executed, and their `@ts-expect-error` lines ARE
+    // the guarantee (each one MUST stay an error or the client stopped catching
+    // a wrong shape). Counting them as debt would pressure an agent into
+    // DELETING a proof. Same exclusion class as `*.test.ts`.
+    .filter((f) => !/\.contract-test\.tsx?$/.test(f))
     .filter((f) => f !== "types/database.types.ts")
     .filter((f) => !f.startsWith("types/python-generated/"))
     .filter((f) =>
@@ -263,6 +269,8 @@ function main(): void {
   console.log(`  ----------------------  -------  --------  ------`);
 
   let grew = false;
+  const grownCats: { label: string; cur: number; base: number; delta: number }[] =
+    [];
   for (const cat of CATEGORIES) {
     const cur = counts[cat.key];
     const base = baseline?.counts[cat.key] ?? cur;
@@ -273,7 +281,10 @@ function main(): void {
         : delta < 0
           ? `${C.green}${delta}${C.reset}`
           : `${C.dim}0${C.reset}`;
-    if (delta > 0) grew = true;
+    if (delta > 0) {
+      grew = true;
+      grownCats.push({ label: cat.label, cur, base, delta });
+    }
     console.log(
       `  ${cat.label.padEnd(22)}  ${String(cur).padStart(7)}  ${String(base).padStart(8)}  ${deltaStr}`,
     );
@@ -288,17 +299,38 @@ function main(): void {
 
   console.log("");
   if (grew) {
+    const over = grownCats.reduce((a, c) => a + c.delta, 0);
+    // This banner is the whole point of the gate — it is also the string
+    // run-release-gates.sh greps for to print this as a loud [WARN].
     console.log(
-      `${C.red}${C.bold}✗ A type-escape category GREW above baseline.${C.reset}`,
+      `${C.red}${C.bold}✗ TYPE-ESCAPE HATCHES ABOVE BASELINE${C.reset}`,
     );
     console.log(
-      `  New escape hatches aren't allowed — model the type, narrow honestly`,
+      `${C.red}${C.bold}  ${over} hatches above baseline across ${grownCats.length} categor${grownCats.length === 1 ? "y" : "ies"} — fix them or re-freeze deliberately.${C.reset}`,
+    );
+    console.log("");
+    for (const g of grownCats) {
+      console.log(
+        `    ${g.label.padEnd(22)} ${String(g.cur).padStart(5)} now vs ${String(g.base).padStart(5)} frozen  ${C.red}(+${g.delta})${C.reset}`,
+      );
+    }
+    console.log("");
+    console.log(`  ${C.bold}Two honest ways out — pick one, never neither:${C.reset}`);
+    console.log(
+      `    1. FIX them. \`pnpm check:hatches <path>\` lists every occurrence under a path.`,
     );
     console.log(
-      `  (see TYPESCRIPT_STANDARDS.md §3 / the type-safety skill / @/types/json).`,
+      `       Model the type, narrow honestly (TYPESCRIPT_STANDARDS.md §3 / the`,
+    );
+    console.log(`       type-safety skill / @/types/json guards).`);
+    console.log(
+      `    2. RE-FREEZE deliberately: \`pnpm check:hatches --update\`, and say so in the`,
     );
     console.log(
-      `  If a fix legitimately removed AND added in the same category, re-freeze with --update.`,
+      `       commit message. Re-freezing to silence a red gate you did not read is`,
+    );
+    console.log(
+      `       how ~1,200 hatches landed unfrozen and the ratchet stopped ratcheting (D136).`,
     );
     if (strict) process.exit(1);
   } else {

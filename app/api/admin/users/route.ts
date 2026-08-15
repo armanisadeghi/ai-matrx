@@ -14,6 +14,7 @@ import { createClient } from "@/utils/supabase/server";
 import { ONBOARDING_METADATA_KEY } from "@/utils/onboarding";
 import type { AdminUserRow } from "@/features/admin/users/types";
 import { loadAdminOrganizationDirectory } from "@/features/admin/users/server/organizationMembershipAdmin";
+import { isJsonObject } from "@/types/json";
 
 const PER_PAGE = 1000;
 const MAX_PAGES = 50; // hard ceiling: 50k users
@@ -121,13 +122,16 @@ export async function GET() {
   );
 
   const rows: AdminUserRow[] = authUsers.map((u) => {
-    const meta = (u.user_metadata ?? {}) as Record<string, unknown>;
-    const appMeta = (u.app_metadata ?? {}) as Record<string, unknown>;
+    // Supabase types both metadata bags as `UserMetadata` (an index signature
+    // over `any`) — narrow at ingress with the runtime guard instead of
+    // asserting a shape we have not checked.
+    const meta = isJsonObject(u.user_metadata) ? u.user_metadata : {};
+    const appMeta = isJsonObject(u.app_metadata) ? u.app_metadata : {};
     const profile = profileById.get(u.id);
     const providers = Array.isArray(appMeta.providers)
-      ? (appMeta.providers as string[])
+      ? appMeta.providers.filter((p): p is string => typeof p === "string")
       : typeof appMeta.provider === "string"
-        ? [appMeta.provider as string]
+        ? [appMeta.provider]
         : [];
     return {
       id: u.id,

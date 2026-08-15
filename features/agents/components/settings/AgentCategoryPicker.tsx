@@ -67,7 +67,11 @@ export function AgentCategoryPicker({
     setQuery("");
   };
 
-  const handleClear = (e: React.MouseEvent) => {
+  // SyntheticEvent, not MouseEvent: this fires from both onClick and onKeyDown,
+  // and it only needs preventDefault/stopPropagation. Typing it as a MouseEvent
+  // forced a KeyboardEvent -> MouseEvent cast at the keyboard callsite — a lie
+  // that would hand back `undefined` the day anyone read e.clientX/e.button.
+  const handleClear = (e: React.SyntheticEvent) => {
     e.preventDefault();
     e.stopPropagation();
     onChange("");
@@ -101,7 +105,7 @@ export function AgentCategoryPicker({
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
-                  handleClear(e as unknown as React.MouseEvent);
+                  handleClear(e);
                 }
               }}
               className="p-0.5 hover:bg-muted rounded text-muted-foreground hover:text-foreground"
