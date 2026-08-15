@@ -82,8 +82,10 @@ const { verdict, setVerdict, captureCorrection } = useOutputFeedback({
 ```
 
 - `setVerdict(v)` is optimistic with rollback; passing the active verdict retracts it.
-- `useHydrateOutputFeedback(subjectType, ids)` batch-loads a whole list in ONE
-  query — use it on any surface showing many subjects at once.
+- **Reads are coalesced automatically** (`batchLoader.ts`): every bar on the page
+  asks for its own subject, and the loader issues ONE `in (...)` query per tick.
+  A 200-message conversation is one read, not 200. `useHydrateOutputFeedback`
+  is the optional up-front form for a list that already knows all its ids.
 - State lives in a module-scoped store read through `useSyncExternalStore`
   (`store.ts`), not Redux: the subject is polymorphic so it belongs to no
   existing slice, and a parallel slice for a two-field cache is the sprawl the

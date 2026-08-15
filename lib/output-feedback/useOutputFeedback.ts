@@ -13,13 +13,12 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import {
   clearOutputFeedback,
-  fetchOutputFeedbackForSubjects,
   saveOutputFeedback,
   type SaveOutputFeedbackArgs,
 } from "./service";
+import { loadOutputFeedback, loadOutputFeedbackMany } from "./batchLoader";
 import {
   getOutputFeedbackRevision,
-  hydrateOutputFeedback,
   peekOutputFeedback,
   setOutputFeedbackRecord,
   subscribeOutputFeedback,
@@ -75,31 +74,18 @@ function useStoreRecord(
   return peekOutputFeedback({ subjectType, subjectId });
 }
 
-/** Batch-load feedback for many subjects at once (one query for a whole list). */
+/**
+ * Batch-load feedback for many subjects at once. Optional — the loader already
+ * coalesces per-bar requests into one query per tick — but calling this from a
+ * list that knows all its ids up front removes even the first-frame stagger.
+ */
 export function useHydrateOutputFeedback(
   subjectType: string,
   subjectIds: string[],
 ): void {
   const key = subjectIds.join(",");
   useEffect(() => {
-    const ids = key ? key.split(",") : [];
-    const missing = ids.filter(
-      (id) => peekOutputFeedback({ subjectType, subjectId: id }) === undefined,
-    );
-    if (missing.length === 0) return;
-    let cancelled = false;
-    void fetchOutputFeedbackForSubjects(subjectType, missing)
-      .then((found) => {
-        if (!cancelled) hydrateOutputFeedback(subjectType, missing, found);
-      })
-      .catch((error: unknown) => {
-        // Loud: a swallowed failure here renders every thumb as "no verdict".
-        // eslint-disable-next-line no-console
-        console.error("[useHydrateOutputFeedback] load failed", error);
-      });
-    return () => {
-      cancelled = true;
-    };
+    loadOutputFeedbackMany(subjectType, key ? key.split(",") : []);
   }, [subjectType, key]);
 }
 
@@ -125,21 +111,9 @@ export function useOutputFeedback(
 
   useEffect(() => {
     if (skipFetch) return;
-    if (peekOutputFeedback({ subjectType, subjectId }) !== undefined) return;
-    let cancelled = false;
-    void fetchOutputFeedbackForSubjects(subjectType, [subjectId])
-      .then((found) => {
-        if (!cancelled) {
-          hydrateOutputFeedback(subjectType, [subjectId], found);
-        }
-      })
-      .catch((error: unknown) => {
-        // eslint-disable-next-line no-console
-        console.error("[useOutputFeedback] load failed", error);
-      });
-    return () => {
-      cancelled = true;
-    };
+    // Coalesced: every bar on the page asks independently and the loader
+    // issues ONE `in (...)` read per tick.
+    loadOutputFeedback(subjectType, subjectId);
   }, [subjectType, subjectId, skipFetch]);
 
   const write = useCallback(
