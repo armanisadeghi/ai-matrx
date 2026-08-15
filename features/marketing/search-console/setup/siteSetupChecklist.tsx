@@ -177,7 +177,12 @@ export const siteSetupChecklist = registerChecklist<SiteSetupContext>({
       id: "right_property",
       title: "This is the right property",
       description:
-        "Google can hold several versions of the same website. Only you can tell us which one is the one you care about.",
+        // Deliberately not phrased "Only you can tell us…": the visibility-
+        // vocabulary guard flags "Only you" as an unprovable PRIVACY claim, and
+        // it is right to be blunt about that pattern even though this instance
+        // was about knowledge, not access. Loosening a privacy guard to save one
+        // sentence is the wrong trade.
+        "Google can hold several versions of the same website. You're the one who knows which of them matters to your business.",
       dependsOn: ["search_console"],
       confirmLabel: "Yes, that's the one",
       values: ({ site }) => {
