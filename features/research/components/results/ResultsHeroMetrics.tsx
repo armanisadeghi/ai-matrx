@@ -11,6 +11,19 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import {
+  csvExportItem,
+  jsonExportItem,
+} from "@/components/agent-copy/export";
+import { humanLines } from "@/features/marketing/lib/copy-payloads";
+import {
+  researchKpiAttributes,
+  researchKpiLines,
+  researchLocation,
+  type ResearchKpis,
+} from "@/features/research/copy";
 import {
   useCountUp,
   formatInt,
@@ -128,7 +141,36 @@ function MetricValue({
   return <span className="tabular-nums">{text}</span>;
 }
 
-function MetricTile({ metric, index }: { metric: HeroMetric; index: number }) {
+/**
+ * Envelope every payload from the stat rail carries. The rail IS the page's
+ * leading KPI strip, so a per-tile payload states the whole strip too — a
+ * single number out of context is not interpretable (the what-I-see law).
+ */
+export interface HeroMetricsCopyContext {
+  /** Surface name for the payload `location`, e.g. `Topic overview — Acme`. */
+  surface: string;
+  topicId: string;
+  kpis: ResearchKpis;
+}
+
+/** Readable value for a tile, in the same format the tile renders. */
+function metricText(metric: HeroMetric): string {
+  return metric.format === "usd"
+    ? formatUsd(metric.value)
+    : metric.format === "compact"
+      ? formatCompact(metric.value)
+      : formatInt(metric.value);
+}
+
+function MetricTile({
+  metric,
+  index,
+  copyContext,
+}: {
+  metric: HeroMetric;
+  index: number;
+  copyContext?: HeroMetricsCopyContext;
+}) {
   const Icon = metric.icon;
   return (
     <motion.div
@@ -157,6 +199,41 @@ function MetricTile({ metric, index }: { metric: HeroMetric; index: number }) {
         <span className="text-[11px] font-medium uppercase tracking-wide whitespace-nowrap">
           {metric.label}
         </span>
+        {copyContext && (
+          <CopyButtons
+            size="xs"
+            className="ml-auto opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100"
+            label={`${metric.label} (research)`}
+            human={() =>
+              humanLines([
+                [metric.label, metricText(metric)],
+                [metric.hint ? "Note" : "", metric.hint],
+              ])
+            }
+            agent={() => ({
+              kind: "research-topic-metric",
+              location: researchLocation(copyContext.surface),
+              description: `The "${metric.label}" tile from the research topic stat rail.`,
+              data: {
+                metric: {
+                  key: metric.key,
+                  label: metric.label,
+                  value: metric.value,
+                  rendered: metricText(metric),
+                  hint: metric.hint ?? null,
+                },
+                // A single tile is only meaningful beside the whole strip.
+                page_kpis: copyContext.kpis,
+              },
+              summary: researchKpiLines(copyContext.kpis),
+              attributes: {
+                ...researchKpiAttributes(copyContext.kpis),
+                metric: metric.key,
+                topic_id: copyContext.topicId,
+              },
+            })}
+          />
+        )}
       </div>
       <div
         className={cn(
@@ -181,12 +258,77 @@ function MetricTile({ metric, index }: { metric: HeroMetric; index: number }) {
   );
 }
 
-export function ResultsHeroMetrics({ metrics }: { metrics: HeroMetric[] }) {
+export function ResultsHeroMetrics({
+  metrics,
+  copyContext,
+}: {
+  metrics: HeroMetric[];
+  copyContext?: HeroMetricsCopyContext;
+}) {
+  /** Rows for the rail's own copy/export — ALL tiles, never a visible slice. */
+  const metricRows = () =>
+    metrics.map((m) => ({
+      key: m.key,
+      label: m.label,
+      value: m.value,
+      rendered: metricText(m),
+      hint: m.hint ?? null,
+    }));
+
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-6">
-      {metrics.map((m, i) => (
-        <MetricTile key={m.key} metric={m} index={i} />
-      ))}
+    <div className="space-y-2">
+      {copyContext && (
+        <div className="flex items-center justify-end gap-1">
+          <CopyButtons
+            size="sm"
+            label="Research stat rail"
+            human={() => researchKpiLines(copyContext.kpis)}
+            agent={() => ({
+              kind: "research-topic-metrics",
+              location: researchLocation(copyContext.surface),
+              description:
+                "The stat-square rail on the research topic page — every metric tile the user sees.",
+              data: {
+                tiles: metricRows(),
+                page_kpis: copyContext.kpis,
+              },
+              summary: researchKpiLines(copyContext.kpis),
+              attributes: {
+                ...researchKpiAttributes(copyContext.kpis),
+                tiles: metrics.length,
+                topic_id: copyContext.topicId,
+              },
+            })}
+            json={metricRows}
+          />
+          <ExportMenu
+            label="Research stat rail"
+            items={[
+              jsonExportItem(() => ({
+                tiles: metricRows(),
+                page_kpis: copyContext.kpis,
+              })),
+              csvExportItem(metricRows, "CSV (all tiles)", [
+                { key: "key", header: "Key" },
+                { key: "label", header: "Label" },
+                { key: "value", header: "Value" },
+                { key: "rendered", header: "Rendered" },
+                { key: "hint", header: "Hint" },
+              ]),
+            ]}
+          />
+        </div>
+      )}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-6">
+        {metrics.map((m, i) => (
+          <MetricTile
+            key={m.key}
+            metric={m}
+            index={i}
+            copyContext={copyContext}
+          />
+        ))}
+      </div>
     </div>
   );
 }
