@@ -359,10 +359,12 @@ proven live on the real 934-channel library with zero duplicate channel→party 
 from the existing party on every re-run, so a human's `party_kind` correction is never overwritten;
 name-shaped channels are typed `organization` and flagged
 `attributes.kind_inference.possible_person` rather than fabricating humans — **that flag is a
-ready-made FE review queue / assists chip, and nothing renders it yet.** The folded channels live
-in the **Matrx system org** (where the shared video library lives), so they are platform-curated
-records, not any tenant's contacts, and no surface renders them — a system-org CRM view or the
-Wave 5 expert directory is what makes them reachable (§5, needs Arman). **Wave 3** — outreach lists + claim-locked dialer, dedup automation + merge review.
+ready-made review queue — chip fired 2026-08-14: "Resolve the 368 possible_person CRM parties"
+(Batch-API classification pass over the flag, platform-agnostic, never creating a second party).**
+The folded channels live in the **Matrx system org** (where the shared video library lives), so
+they are platform-curated records, not any tenant's contacts, and no surface renders them — chip
+fired 2026-08-14: "Surface the 933 platform-curated CRM parties" (a system-org read view + a
+governed `resolve_contact` adoption path; may belong on the expert directory instead, item 1). **Wave 3** — outreach lists + claim-locked dialer, dedup automation + merge review.
 Details in §2 and in `features/crm/FEATURE.md`. The two entries below are kept in full because
 they record guards a future agent could undo without realising what they protect.
 
