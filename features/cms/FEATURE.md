@@ -407,6 +407,16 @@ UI-complete here but only take effect once P1's service layer reads them.
 
 ## Change log
 
+- `2026-08-14` — **`features/content-manager/` reconciled against this feature — nothing to port.** That
+  directory is the CMS feature under its original name: `31285ffe5` (2026-03-27) created it with
+  `types.ts`, `services/cmsService.ts` and the three `useCms*` hooks, and `b134d1b05` (2026-05-13) renamed
+  all of them here while re-adding a stray copy of `PageListView.tsx` at the old path. That copy is a strict
+  subset of `features/cms/components/PageListView.tsx` — its only unique code is the pre-`ItemMenu` inline
+  dropdown whose Edit / Preview / Delete are all superseded by `buildCmsPageMenu` (with a real `previewHref`
+  in place of its dead-end re-open). No code changed here. Filed D197: this component is still a bespoke
+  table rather than a `lib/entity-list/` config, so it has no persisted view style, no per-column
+  sort+filter, and no Mine/Shared/Public scopes.
+
 - `2026-08-14` — **CMS pages can now finish the plan instead of merely displaying it.** Empty pages
   show **Build with AI** in the editor and page-row menu; one shared readiness dialog checks the
   linked plan, keyword, brief, and inherited/direct research while leaving every warning skippable.
