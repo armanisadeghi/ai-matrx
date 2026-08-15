@@ -521,9 +521,6 @@ Org-teammate agents invisible in `agx_get_list` — belongs with retiring `/agen
 
 Per-row SECURITY DEFINER policy functions over thousands of rows → denial-by-timeout. Hoist constant predicates to an initplan-friendly shape; optimize only against measured plans.
 
-### D94 — `docproc.page_extraction_jobs.project_id` is a forbidden project FK (2026-07-23)
-
-Nullable tagging variant, not load-bearing. Removing it end-to-end (column + FE + aidream model + backfill) is its own focused change.
 
 ### D88 — service-role RPCs accept raw p_user_id with no internal actor guard (2026-07-23)
 
@@ -635,6 +632,7 @@ One line per fix — title, date, pointer. History lives in git. Entries older t
 - **D172** — `acceptPageUrlInput` scheme check made case-insensitive to match the scraper's `_normalise_url` (`5bdf85834`). 2026-08-12.
 - **D166** — kind-activation guard + `set_kind_activation` genuinely exempt the service role; `activate-kinds.ts --apply` goes through the canonical RPC (`content_ir_activation_service_role_fix.sql`, `4f2804efa`). 2026-08-12.
 - **D120** — `chart.tsx` typed against recharts 3.9, `@ts-nocheck` deleted (`409a98d2b`). 2026-08-12.
+- **D94** — forbidden project FK dropped from `docproc.page_extraction_jobs` (32 rows, zero non-null, no reader) + all FE refs + aidream model regen (`docproc_page_extraction_jobs_drop_project_fk.sql`, `c08ab7047` / aidream `58a3c13f6`). 2026-08-15.
 - **D167 (research saves)** — access half fixed by the RLS reorg (proven live: an entitled org member's `rs_topic_append_output` succeeds). The remaining lie is gone too: the RPC no longer asserts "not found" for an access denial — it raises an honest ambiguous message under errcode `P0002` (RLS stays the sole authority; no definer probe added) and `appendTopicOutput` routes it to `<AccessGate token="research_topic"/>`. Also hardened: a zero-row write now raises instead of reporting success on a paid run. `migrations/rs_topic_append_output_honest_access_error.sql`, applied + ledgered. Class sweep of the other 18 invoker functions → chip. 2026-08-14.
 - **D181** — component-table `INSERT…RETURNING` 42501 platform-wide: component `std_select` leads with `created_by = (select auth.uid())`; 126 policies repaired (`iam_apply_rls_component_select_owner_arm.sql`). Remainder → D182. 2026-08-13.
 - **D173** — shortcut/template project/task scoping moved to `platform.associations` edges; 4 forbidden FK columns dropped; 7 RPCs + view rewritten (`agent_shortcut_scoping_to_associations.sql`). 2026-08-12.
