@@ -1,17 +1,34 @@
 ---
 status: active
-updated: 2026-08-14
+updated: 2026-08-15
 repos: [matrx-frontend, aidream]
 ---
 
 # Outreach system — backlink outreach + media outreach
 
-**The one-sentence gap:** *we already find the opportunity, score it, and write the pitch — and
-then we have no way to reach a human being.*
+**The one-sentence gap this exists to close:** *we already find the opportunity, score it, and
+write the pitch — and then we have no way to reach a human being.*
 
-This document is the work order for closing that. It exists because Arman named backlink outreach
-and media outreach as the next things to build (2026-08-14), and because building them honestly
-forces out a set of canonical primitives the platform is missing and did not know it was missing.
+This document is the work order. Arman named backlink outreach and media outreach as the next
+things to build (2026-08-14), and building them honestly forced out a set of canonical primitives
+the platform was missing and did not know it was missing.
+
+> ## Status 2026-08-15 — the RIGHT to send is built; the ACT of sending is not
+>
+> **Shipped and live:** domain→party (G1) · **the sending identity** (G5 — DNS proof, SPF/DKIM/
+> DMARC, warm-up ramp, health, circuit breaker, kill switch) · **the compliance layer**
+> (`crm.check_send_eligibility()` as THE one send authority, unsubscribe proven on production,
+> 35-country jurisdiction policy) · tiers + entitlements · the guided-checklist primitive · and
+> every research pass (deliverability/warmup, media-data acquisition, the attorney brief).
+>
+> **Not yet built: an email has never left the building.** No template primitive, no send path,
+> no sequences, no reply ingestion, no attribution, and no "Start outreach" surface. Phase 4 is
+> the next move and is fully unblocked.
+>
+> **Two things only Arman can do:** publish the `_matrx-verify` TXT record for the sending domain
+> (an agent may not touch a production DNS zone), and take `ATTORNEY_BRIEF.md` to counsel — every
+> jurisdiction row is `ratified_by='agent-research'`, and each row counsel ratifies is a market
+> that opens.
 
 > **Read `docs/handoffs/crm-system.md` first.** Outreach is not a new domain — it is the CRM's
 > reason to exist, pointed at two specific opportunity sources. Every target is a `crm.party`.
@@ -735,6 +752,30 @@ plus the Phase-1 frontend trigger, landing in the existing `/crm/outreach-lists`
 Phases 1–4 are independently valuable and shippable. **Nothing before Phase 5 sends anything a
 human did not approve** — the correct risk posture for a system whose failure mode is "we helped
 a customer spam strangers from their real mailbox."
+
+## What is actually open, 2026-08-15 — chips fired for the first three
+
+1. **Phase 4 — the message + the first real send.** *(chip fired)* The template primitive
+   (unresolved variable = refuse to send) plus the human-approved single-send path through
+   `check_send_eligibility()`. **The next move, fully unblocked** — everything it needs is live.
+   Design the approval requirement as a §5.5b ladder input, never a hardcoded constant.
+2. **Phase 2 — contact discovery (G2).** *(chip fired)* We resolve the domain but still have no
+   human to write to. The bylines are already extracted and buried in `rs_source.page_analysis`;
+   promote them through the same resolver the experts work uses. **Suggestion-gated always.**
+3. **Compliance engineering gaps.** *(chip fired)* MX verification, DKIM-signed unsubscribe
+   headers, reply-based opt-out, purchased-list detection — named in
+   `common-docs/systems/outreach-compliance/ENGINEERING_GAPS.md` § "Still open". FLOOR items:
+   no tier and no trust level buys past them.
+4. **Phase 5 — sequences + inbound (G4 + G6).** The cadence schema already exists unused on
+   `crm.outreach_list_member`. 🚨 **Do not ship the runner without reply ingestion** — an
+   unstoppable cadence is worse than no cadence, and reply-based opt-out (item 3) depends on the
+   same seam.
+5. **Phase 6 — attribution (G8).** The differentiator (§1): our own crawl closes the loop and
+   proves the link appeared. Nobody else in the category can do this.
+6. **Phase 7 — surfaces (G9).** "Start outreach" from a backlink prospect and a reputation case,
+   plus Phase 1's frontend trigger. Today the reputation verdict is still a dead end.
+7. **Scaled media ingestion** — the research and first crawl landed; volume ingestion did not.
+8. **Lane A, entire** (below). Committed vision, deliberately sequenced after Lane B.
 
 ## Lane A (opt-in marketing) — a separate, later track. DO NOT LOSE IT.
 

@@ -9,11 +9,15 @@ repos: [matrx-frontend, aidream]
 **You need nothing outside this document to continue.** It carries the vision in Arman's own
 words, the verified current state, and a prioritized work order.
 
-> **Status 2026-08-14 — the core product is shipped and working; five items remain, each a fired
-> chip (§4).** A tenant can import contacts, work them from a list, dial a claim-locked queue,
-> log outcomes, and resolve duplicates. What is left is *reach* (the folds, the agent surface,
-> experts) and *depth* (Wave 4, decision-gated). **§1 is the vision — it is settled and must not
-> be re-litigated. §2 and §4 are the parts that go stale; update them, not §1.**
+> **Status 2026-08-15 — the CRM is a working product; three items remain (§4).** A tenant can
+> import contacts (CSV/TSV/Excel/vCard), work them from a list with saved smart views, dial a
+> claim-locked queue, log outcomes, resolve duplicates, see experts, and — once one live proof is
+> run — save a contact from any selection in the app. Sending identities, compliance and tiers
+> shipped alongside via `docs/handoffs/outreach-system.md`, which is now the ACTIVE front of this
+> work: **the CRM's reason to exist is outreach, and that is where the remaining momentum is.**
+>
+> What is left here is *reach* (three contact-table folds) and *hygiene* (D182), plus Wave 4
+> depth. **§1 is the vision — settled, do not re-litigate. §2 and §4 go stale; update those.**
 
 Read in order: this doc → **the cross-repo system-of-record**
 `/Users/armanisadeghi/code/common-docs/systems/crm/FEATURE.md` (verified 2026-08-06: the
@@ -311,13 +315,12 @@ per-item efforts in the cross-repo SoR.
    (`data_action(resolve_contact)` creates; the generic `data` tool registers `party`, alias
    `contact`, for query/get/count/update). The one uncovered piece — linking a party to another
    entity — belongs to the associations system, and a CRM-local tool for it would be the fork
-   this repo bans. **What remains is not frontend work** (D192 in `FOUND_DEFECTS.md`): aidream
-   commit `da0bcaba3` adds the `crm` source-feature to the allow-list and is pushed but
-   **undeployed** — `release.sh` refuses a dirty tree and another session has uncommitted work
-   in `db/models/workflow.py`; and newly-created agents currently fail every run (feedback
-   `3efd1f7c-f9ec-45e3-bb43-bceea595db3c`, critical). **Next agent: run aidream's `release.sh`
-   once its tree is clean, then re-run the live proof** — highlight a signature anywhere →
-   Convert → Save as contact → the record opens at `/crm/[id]`.
+   this repo bans. **The deploy blocker is CLEARED as of 2026-08-15** — `da0bcaba3` is an
+   ancestor of the deployed SHA (`/health/version` → `1adecedd5`), so D192 in `FOUND_DEFECTS.md`
+   is stale and should be collapsed once proven. **All that remains is the live proof, which
+   takes minutes:** highlight a signature anywhere → Convert → Save as contact → the record opens
+   at `/crm/[id]`. If it fails, check the separately-reported "newly-created agents fail every
+   run" issue (feedback `3efd1f7c-f9ec-45e3-bb43-bceea595db3c`) before assuming this feature.
 3. **D182 — the RLS component remainder.** *(chip: "Finish D182")* 33 component tables still
    can't serve an authed insert-with-returning (21 missing the actor-stamp trigger, 12 with no
    `created_by` at all). All service_role-written today, so nothing user-facing is known broken —
