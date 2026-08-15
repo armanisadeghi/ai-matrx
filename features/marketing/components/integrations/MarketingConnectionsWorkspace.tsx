@@ -132,12 +132,10 @@ function MarketingConnectionsContent() {
       ["Analytics properties", analyticsProperties?.length ?? 0],
       ["YouTube channels", youtubeChannels?.length ?? 0],
       ["PageSpeed-enabled sites", pageSpeedEnabledCount],
-      ...(availableGoogleAccounts ?? []).map(
-        (connection): [string, string] => [
-          connection.account_name || connection.account_email || "Google account",
-          `${connection.status} · ${connection.owner_type} · ${searchResourcesByConnection.get(connection.id) ?? 0} Search Console · ${analyticsResourcesByConnection.get(connection.id) ?? 0} Analytics · ${youtubeChannelsByConnection.get(connection.id)?.length ?? 0} YouTube`,
-        ],
-      ),
+      ...(availableGoogleAccounts ?? []).map((connection): [string, string] => [
+        connection.account_name || connection.account_email || "Google account",
+        `${connection.status} · ${connection.owner_type} · ${searchResourcesByConnection.get(connection.id) ?? 0} Search Console · ${analyticsResourcesByConnection.get(connection.id) ?? 0} Analytics · ${youtubeChannelsByConnection.get(connection.id)?.length ?? 0} YouTube`,
+      ]),
     ],
     attributes: { count: availableGoogleAccounts?.length ?? 0 },
   });
@@ -410,7 +408,11 @@ function MarketingConnectionsContent() {
               {selectedSite ? (
                 <Button asChild size="sm" className="h-8 gap-1.5">
                   <Link
-                    href={marketingRoutes.site(selectedSite.brand_id, selectedSite.id, "/integrations")}
+                    href={marketingRoutes.siteSettings(
+                      selectedSite.brand_id,
+                      selectedSite.id,
+                      "integrations",
+                    )}
                   >
                     Choose Search Console property for {selectedSite.name}{" "}
                     <ArrowRight className="h-3.5 w-3.5" />
@@ -456,7 +458,11 @@ function MarketingConnectionsContent() {
               {selectedSite ? (
                 <Button asChild size="sm" variant="outline" className="h-8">
                   <Link
-                    href={marketingRoutes.site(selectedSite.brand_id, selectedSite.id, "/integrations")}
+                    href={marketingRoutes.siteSettings(
+                      selectedSite.brand_id,
+                      selectedSite.id,
+                      "integrations",
+                    )}
                   >
                     Configure for {selectedSite.name}
                     <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
@@ -479,8 +485,8 @@ function MarketingConnectionsContent() {
                 <div>
                   <h2 className="text-sm font-semibold">Bing Webmaster</h2>
                   <p className="mt-0.5 text-[10px] text-muted-foreground">
-                    Connect an API key and bind a verified Bing property to
-                    each managed site on its own page.
+                    Connect an API key and bind a verified Bing property to each
+                    managed site on its own page.
                   </p>
                 </div>
               </div>
@@ -530,7 +536,11 @@ function ConnectionRow({
           </span>
           <Badge
             variant={
-              usable ? "success" : diagnosis.blocking ? "destructive" : "warning"
+              usable
+                ? "success"
+                : diagnosis.blocking
+                  ? "destructive"
+                  : "warning"
             }
           >
             {diagnosis.label}

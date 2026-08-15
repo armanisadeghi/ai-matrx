@@ -36,7 +36,7 @@ export default async function MarketingCollectionRunPage({
         token="seo_collection_run"
         id={runId}
         error={response.error}
-        fallbackHref="/marketing/ai-visibility"
+        fallbackHref="/marketing/sites"
         fallbackLabel="AI Visibility"
       />
     );

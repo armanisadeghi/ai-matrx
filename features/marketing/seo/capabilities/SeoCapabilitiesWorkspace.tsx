@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, Database, Gauge, Globe2, SearchCheck } from "lucide-react";
 
@@ -50,6 +51,7 @@ export function SeoCapabilitiesWorkspace() {
   const router = useRouter();
   const params = useSearchParams();
   const sites = useSiteOptions();
+  const [isNavigating, startTransition] = useTransition();
 
   if (sites.isPending) {
     return <LoadingSurface label="Loading SEO capabilities…" />;
@@ -98,9 +100,17 @@ export function SeoCapabilitiesWorkspace() {
         </p>
         <Select
           value={site.id}
-          onValueChange={(siteId) => router.replace(marketingRoutes.capabilities(siteId))}
+          onValueChange={(siteId) =>
+            startTransition(() =>
+              router.replace(marketingRoutes.capabilities(siteId)),
+            )
+          }
+          disabled={isNavigating}
         >
-          <SelectTrigger className="mt-3 h-8 w-full sm:w-80" aria-label="Website for evidence links">
+          <SelectTrigger
+            className="mt-3 h-8 w-full sm:w-80"
+            aria-label="Website for evidence links"
+          >
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -157,7 +167,6 @@ export function SeoCapabilitiesWorkspace() {
           </section>
         );
       })}
-
     </div>
   );
 }

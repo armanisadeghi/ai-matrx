@@ -138,8 +138,7 @@ export function SearchConsoleWorkspace() {
   );
 
   const siteOptions = useSiteOptions();
-  const site =
-    siteOptions.data?.find((s) => s.id === state.siteId) ?? null;
+  const site = siteOptions.data?.find((s) => s.id === state.siteId) ?? null;
   const siteName = site ? (site.name ?? site.domain) : null;
   // THREE states, not two. Collapsing them is what produced the original bug:
   //   bound / not bound   — the list loaded and we can see the answer.
@@ -277,8 +276,8 @@ export function SearchConsoleWorkspace() {
         toast.info(
           result.reachedLatest
             ? "Already up to date through " +
-              (result.coveredThrough ?? "the latest available day") +
-              ". To go further back, use Load older history."
+                (result.coveredThrough ?? "the latest available day") +
+                ". To go further back, use Load older history."
             : "No new rows for this window — everything Google returned was already stored.",
         );
       } else if (!result.reachedLatest) {
@@ -350,8 +349,13 @@ export function SearchConsoleWorkspace() {
                 kind?: unknown;
                 receipt?: unknown;
               };
-              if (typeof data.kind === "string" && data.kind !== "seo.receipt") {
-                const stage = data.kind.replace(/^seo\./, "").replace(/_/g, " ");
+              if (
+                typeof data.kind === "string" &&
+                data.kind !== "seo.receipt"
+              ) {
+                const stage = data.kind
+                  .replace(/^seo\./, "")
+                  .replace(/_/g, " ");
                 setHistoryNote(`Fetching older history — ${stage}…`);
               }
             },
@@ -368,7 +372,10 @@ export function SearchConsoleWorkspace() {
           );
           return;
         }
-        if (result.createdObservations === 0 && result.existingObservations === 0) {
+        if (
+          result.createdObservations === 0 &&
+          result.existingObservations === 0
+        ) {
           toast.info(
             "No older data came back for that window — Google may have nothing before " +
               (result.coveredThrough ?? "this point") +
@@ -500,7 +507,9 @@ export function SearchConsoleWorkspace() {
                 variant="outline"
                 className="h-7 gap-1 px-2 text-xs"
                 onClick={() => void runHistoryToHorizon()}
-                disabled={syncing || historyRunning || serverFetchActive || !gscBound}
+                disabled={
+                  syncing || historyRunning || serverFetchActive || !gscBound
+                }
                 title="Fetch OLDER data — walks backward until Google's full ~16-month history is stored"
               >
                 {historyRunning ? (
@@ -636,8 +645,8 @@ export function SearchConsoleWorkspace() {
                   ) : null}
                   <span className="text-muted-foreground">
                     This is a one-time import — once retrieved, the data is
-                    stored permanently and stays even after Google deletes
-                    its copy.
+                    stored permanently and stays even after Google deletes its
+                    copy.
                   </span>
                 </p>
               </div>
@@ -656,8 +665,8 @@ export function SearchConsoleWorkspace() {
                         86_400_000,
                     ),
                   )}{" "}
-                  earlier days in this view have not been imported from
-                  Google yet. History also imports automatically overnight.
+                  earlier days in this view have not been imported from Google
+                  yet. History also imports automatically overnight.
                 </p>
                 <Button
                   size="sm"
@@ -782,7 +791,11 @@ export function SearchConsoleWorkspace() {
                         className="h-7 gap-1 text-xs"
                       >
                         <Link
-                          href={`${marketingRoutes.site(site.brand_id, site.id)}/intake`}
+                          href={marketingRoutes.siteSettings(
+                            site.brand_id,
+                            site.id,
+                            "intake",
+                          )}
                         >
                           <Compass className="h-3 w-3" />
                           Start intake interview
@@ -866,7 +879,10 @@ export function SearchConsoleWorkspace() {
                   rangeDisabled={isNavigating}
                   ruleId={state.ruleId}
                   onSelectRule={(ruleId) => applyState({ ...state, ruleId })}
-                  onDrill={(dimension: "query" | "page", row: GscDigResultRow) =>
+                  onDrill={(
+                    dimension: "query" | "page",
+                    row: GscDigResultRow,
+                  ) =>
                     applyState({
                       ...state,
                       tab: dimension === "query" ? "pages" : "queries",

@@ -52,7 +52,7 @@ surfaces; they cannot drift.
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------- |
 | Brands & Websites              | `/marketing/brands`, `/marketing/sites`                                                                                                    | `/marketing/local`                                                    |
 | Strategy & Planning            | `/marketing/content-plan`, `/marketing/initiatives`                                                                                        | `/calendar`, `/audience`                                              |
-| Discovery, Search & Visibility | `/marketing/keyword-research`, `/marketing/discovery/youtube`, `/marketing/ranks`, `/marketing/search-console`, `/marketing/ai-visibility` | —                                                                     |
+| Discovery, Search & Visibility | `/marketing/capabilities`, `/marketing/keyword-research`, `/marketing/discovery/youtube`, `/marketing/ranks`, `/marketing/search-console` | —                                                                     |
 | Content & Channels             | —                                                                                                                                          | `/marketing/content-studio`, `/social`, `/email`, `/ads`, `/outreach` |
 | Market Intelligence            | `/marketing/competitors`                                                                                                                   | `/marketing/monitoring`                                               |
 | Measurement                    | `/marketing/cost`                                                                                                                          | `/marketing/analytics`, `/marketing/reports`                          |
@@ -153,6 +153,12 @@ Agency-scale brand operations. The anchor entity is the **Brand** (`web.brand`) 
 
 - `/marketing/brands` — brand portfolio (the anchor list).
 - `/marketing/brands/[brandId]` — brand cockpit: identity, website properties with connection chips, social properties, confirmed business facts, brand asset library, pending-review count.
+- `/marketing/brands/[brandId]/discovery` — brand-wide review inbox for
+  discovered assets, properties, and business facts. The former site-level
+  `/discovery` URL redirects here.
+- `/marketing/capabilities` — shared SEO measurement catalogue. Its website
+  selector chooses where evidence doors open; it does not render a duplicate
+  site workspace.
 - `/marketing/brands/[brandId]/sites/[siteId]/**` — every registered site mode
   in `MARKETING_SITE_SECTIONS` lives nested under its brand and appears in the
   shared `EntityModeHeader`. `/socials/...` will join as a sibling.
@@ -185,10 +191,9 @@ Agency-scale brand operations. The anchor entity is the **Brand** (`web.brand`) 
   source, target page, and backlink record, and every detected problem has a lifecycle
   action. Entry doors exist in the site directory, backlinks toolbar, enrichment detail,
   and referring-domain opportunity detail.
-- `.../integrations` — verified Google Search Console/GA4 property bindings, reusable Google/YouTube account connections, app-managed PageSpeed, and custom provider bindings.
 - `.../crawls/[crawlId]/snapshots` and `.../links` — run-scoped capture and link evidence.
-- `.../access` — site-root sharing on the canonical permissions system: `SiteAccessWorkspace` composes the canonical sharing tabs (`ShareWithUserTab` / `ShareWithOrgTab` / `PublicAccessTab` / `PermissionsList` / `AccessSummaryPanel`) over `useSharing("web_site", …)`, AgentSharePanel-style. One grant on `web_site` conveys the whole subtree.
-- `.../settings` — the site's control room: identity + lifecycle, the default
+- `.../settings` — the site's one configuration lane: identity + lifecycle,
+  integrations, user/organization/public access, Intake, the default
   crawl policy every crawl inherits, GA4 evidence, the strategy interview, and
   **"Where this site's data comes from"** — one `MatrxDataTable` over every
   collection provider. **Connection, health and schedule are three separate
@@ -543,6 +548,20 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
   retired; there is no surface left to fix and rebuilding one over `batch.provider_batch` remains
   the product decision that commit recorded.
 
+- 2026-08-15 — Codex: **Non-website surfaces left the website without losing
+  their doors.** Discovery now lives at the brand-wide
+  `/marketing/brands/[brandId]/discovery` route and inherits only the brand
+  surface; Capabilities is one shared `/marketing/capabilities` catalogue with
+  a website selector only for evidence links; Access, Integrations, and Intake
+  are six durable Settings sub-views; the duplicate top-level AI Visibility
+  site selector redirects to Sites. The five former site URLs remain explicit
+  redirects. `pendingMoveTo` is gone, every section group remains at five or
+  fewer, and THE NO-LOST-SURFACE GUARD now pins 21 sections + 43 sub-views = 64
+  website destinations (exactly Discovery and Capabilities moved out; the
+  configuration fold lost zero). Media is unchanged pending Arman's placement
+  decision. The live `ui.ui_surface` mirror for Marketing Discovery now uses
+  the brand URL/parent with zero stale site-inherited values.
+
 - 2026-08-14 — **"Edit in CMS" from the page workspace (cms-page-hub W3).** The measured page
   now opens where it is EDITED: the workspace header shows an "Edit in CMS" door (new tab)
   whenever the push lane resolves a concrete CMS page. It rides the SAME react-query entry and
@@ -550,7 +569,7 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
   `client_pages.web_page_id` id join first, route key as fallback), so no second data path
   appeared; the hook is nullable-page so it can be called above the workspace's load gate.
 
-- 2026-08-13 — Claude: **A website's 26 sections got a parent/child structure, and Marketing became a sidebar mode.** The header could never render more than icons for 26 modes (`RouteModeNav` degrades full → icons → menu by measured width), and opening a site hid the pillar nav entirely. Marketing now registers in `features/shell/constants/route-menu-registry.ts` — the fifth Large Route, after agent runs, administration, chat, code — rendering `components/shell/MarketingSidebarMenu.tsx`: pillars outside a site, seven grouped section categories inside one, both read from the SAME declarations as the hub and the global flyout so they cannot drift. Section icons moved out of `MarketingSiteLayoutClient` to `lib/site-section-icons.ts` (two surfaces, one glyph per section). **The second level is now declared**: `lib/site-subviews.ts` holds all 39 sub-views that previously existed only as local consts across twelve components on five different mechanisms, and `site-subviews.test.ts` counts every destination (26 + 39 = 65) so the rebuild cannot silently lose a surface — proven by deleting one and watching it fail. Recorded, not yet fixed: `access`, `authority`, `changes`, and `structure` keep the active view in component state, so those views have no URL and cannot be linked, restored, or opened by an agent; `changes` also hides a whole level (tracked/untracked) plus six detail tabs. `pendingMoveTo` marks the two sections whose data is not site-scoped at all — `discovery` filters on `brand_id` only (two sites under one brand render identical inboxes) and `capabilities` is a static catalogue. Work order: `docs/handoffs/marketing-navigation-hierarchy.md`.
+- 2026-08-13 — Claude: **A website's 26 sections got a parent/child structure, and Marketing became a sidebar mode.** The header could never render more than icons for 26 modes (`RouteModeNav` degrades full → icons → menu by measured width), and opening a site hid the pillar nav entirely. Marketing now registers in `features/shell/constants/route-menu-registry.ts` — the fifth Large Route, after agent runs, administration, chat, code — rendering `components/shell/MarketingSidebarMenu.tsx`: pillars outside a site, seven grouped section categories inside one, both read from the SAME declarations as the hub and the global flyout so they cannot drift. Section icons moved out of `MarketingSiteLayoutClient` to `lib/site-section-icons.ts` (two surfaces, one glyph per section). **The second level is now declared**: `lib/site-subviews.ts` holds all 39 sub-views that previously existed only as local consts across twelve components on five different mechanisms, and `site-subviews.test.ts` counts every destination (26 + 39 = 65) so the rebuild cannot silently lose a surface — proven by deleting one and watching it fail. The follow-up moved Discovery and Capabilities out of the website and completed the URL-backed sub-view migration; see the 2026-08-15 entry and `docs/handoffs/marketing-navigation-hierarchy.md`.
 - 2026-08-13 — Claude: **"Campaign" retired as a name here; the reserved channel container is `/marketing/initiatives`.** Arman ruled the word ambiguous platform-wide, and the evidence backed a sharper rule than allow/deny: 13 table names already repeat across schemas, and of the 8 that are real evidence (the other 5 pair a live schema with `graveyard`, where sharing a role is trivial) **every one means the same ROLE in each schema** — `definition` in five, `work_item` in three, `provider`, `finding`, `analysis_result`, `template`, `idempotency`. The schema says whose, the table says what. So a repeat is legitimate only for a shared role, and `crm.campaign` (a worked outreach list: `campaign_kind` list/email/call/mixed, members carrying `status` + `next_attempt_at`) is a different concept from marketing's goal/budget/timeline/attribution container. Standard written as §1a of `common-docs/systems/db-rules/FEATURE.md`, with the corollary that a **bare table name is never a key** (the D158 media-durability guard keyed on bare names and silently protected nothing after the reorg). The unbuilt side took the distinct name because it costs nothing: `marketing.campaigns` → `marketing.initiatives` across `marketing-nav.ts`, `routes.ts` (`marketingRoutes.initiatives()`), `route-metadata.ts`, the coming-soon registry, the route dir, the admin map, and the hub manifest prose; `/marketing/campaigns` 308s in `next.config.js`. Because this moved a reserved URL, the never-move-a-reserved-URL law was **amended in the same change rather than argued around** (marketing-module handoff gotcha 2): it is absolute after ship, and pre-ship allows a rename only when the shown promise text is unchanged, a permanent 308 keeps the old path working, and every generated surface moves in lockstep — the law protects a destination a user was given, not a string. `crm.campaign` is recorded as the one known deviation (target `outreach_list`) in db-rules §12 and chipped, deliberately not done as a drive-by.
 
 - 2026-08-13 — Codex: **Handled Marketing access denials stopped masquerading as red Clear Errors.** The site shell now gives AccessGate both failed parallel reads, so the site and brand independently resolve their own access state even when only the site denial surface is visible. The same captured Error Inspector rows reconcile from `unknown` to `denied` and the handled denials remain inspectable in the yellow Silent tier; missing/deleted/signed-out outcomes and resolver failures stay red.

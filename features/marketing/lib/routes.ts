@@ -13,6 +13,22 @@
  * hierarchy can't drift per call site.
  */
 
+export type MarketingSiteSettingsView =
+  | "site"
+  | "integrations"
+  | "access-users"
+  | "access-organizations"
+  | "access-public"
+  | "intake";
+
+export function marketingSiteSettingsHref(
+  sitePath: string,
+  view: MarketingSiteSettingsView = "site",
+): string {
+  const base = `${sitePath}/settings`;
+  return view === "site" ? base : `${base}?view=${view}`;
+}
+
 export const marketingRoutes = {
   home: () => "/marketing",
   brands: () => "/marketing/brands",
@@ -54,7 +70,6 @@ export const marketingRoutes = {
   audience: () => "/marketing/audience",
   local: () => "/marketing/local",
   ranks: () => "/marketing/ranks",
-  aiVisibility: () => "/marketing/ai-visibility",
   contentStudio: () => "/marketing/content-studio",
   social: () => "/marketing/social",
   email: () => "/marketing/email",
@@ -67,8 +82,7 @@ export const marketingRoutes = {
   automations: () => "/marketing/automations",
   brand: (brandId: string) => `/marketing/brands/${brandId}`,
   /** Brand-wide review inbox for discovered assets, properties, and facts. */
-  brandDiscovery: (brandId: string) =>
-    `/marketing/brands/${brandId}/discovery`,
+  brandDiscovery: (brandId: string) => `/marketing/brands/${brandId}/discovery`,
   sites: () => "/marketing/sites",
   /** Pass a brandId to pre-bind the new site to that brand (`?brand=`). */
   newSite: (brandId?: string) =>
@@ -89,16 +103,10 @@ export const marketingRoutes = {
   siteSettings: (
     brandId: string | null | undefined,
     siteId: string,
-    view:
-      | "site"
-      | "integrations"
-      | "access-users"
-      | "access-organizations"
-      | "access-public"
-      | "intake" = "site",
+    view: MarketingSiteSettingsView = "site",
   ) => {
-    const base = marketingRoutes.site(brandId, siteId, "/settings");
-    return view === "site" ? base : `${base}?view=${view}`;
+    const sitePath = marketingRoutes.site(brandId, siteId);
+    return marketingSiteSettingsHref(sitePath, view);
   },
   /** Site-wide internal authority flow: backlinks → crawl graph → priority pages. */
   siteAuthority: (brandId: string | null | undefined, siteId: string) =>

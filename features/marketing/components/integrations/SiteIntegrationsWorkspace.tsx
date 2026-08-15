@@ -294,7 +294,7 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
     ).catch(() => undefined);
     toast.success("Search Console history import started", {
       description:
-        "The full ~16-month import is running server-side. Open the Intake tab to run the site interview while it fills in.",
+        "The full ~16-month import is running server-side. Open Intake in Settings to run the site interview while it fills in.",
     });
   };
 

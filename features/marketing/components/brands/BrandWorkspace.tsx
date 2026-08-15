@@ -501,7 +501,10 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
       ["Industry", current.industry],
       ["Status", current.status],
       ["Description", current.description],
-      ["Websites", websiteSites.map((site) => site.domain).join(", ") || "none"],
+      [
+        "Websites",
+        websiteSites.map((site) => site.domain).join(", ") || "none",
+      ],
       ["Social properties", socialProperties.length],
       ["Business facts", factRows.length],
       ["Brand assets", assetRows.length],
@@ -519,9 +522,10 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
     lines: [
       ["Brand", current.name],
       ["Websites", websiteSites.length],
-      ...websiteSites.map(
-        (site): [string, string] => [site.name, `${site.domain} · ${site.status}`],
-      ),
+      ...websiteSites.map((site): [string, string] => [
+        site.name,
+        `${site.domain} · ${site.status}`,
+      ]),
     ],
     attributes: { brand_id: current.id, count: websiteSites.length },
   });
@@ -536,12 +540,10 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
     lines: [
       ["Brand", current.name],
       ["Properties", socialProperties.length],
-      ...socialProperties.map(
-        (property): [string, string] => [
-          property.kind.replace(/_/g, " "),
-          property.url || property.handle || property.display_name || "—",
-        ],
-      ),
+      ...socialProperties.map((property): [string, string] => [
+        property.kind.replace(/_/g, " "),
+        property.url || property.handle || property.display_name || "—",
+      ]),
     ],
     attributes: { brand_id: current.id, count: socialProperties.length },
   });
@@ -556,12 +558,10 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
     lines: [
       ["Brand", current.name],
       ["Facts", factRows.length],
-      ...factRows.map(
-        (fact): [string, string] => [
-          fact.label || fact.kind.replace(/_/g, " "),
-          factValueText(fact),
-        ],
-      ),
+      ...factRows.map((fact): [string, string] => [
+        fact.label || fact.kind.replace(/_/g, " "),
+        factValueText(fact),
+      ]),
     ],
     attributes: { brand_id: current.id, count: factRows.length },
   });
@@ -576,12 +576,10 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
     lines: [
       ["Brand", current.name],
       ["Assets", assetRows.length],
-      ...assetRows.map(
-        (asset): [string, string] => [
-          `${asset.kind.replace(/_/g, " ")}${asset.title ? ` · ${asset.title}` : ""}`,
-          asset.source_url ?? "no source URL",
-        ],
-      ),
+      ...assetRows.map((asset): [string, string] => [
+        `${asset.kind.replace(/_/g, " ")}${asset.title ? ` · ${asset.title}` : ""}`,
+        asset.source_url ?? "no source URL",
+      ]),
     ],
     attributes: { brand_id: current.id, count: assetRows.length },
   });
@@ -752,7 +750,10 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
           <SectionCard
             title="Websites"
             copy={websitesCopy}
-            action={{ label: "Add site", href: marketingRoutes.newSite(brandId) }}
+            action={{
+              label: "Add site",
+              href: marketingRoutes.newSite(brandId),
+            }}
           >
             {websiteSites.length === 0 ? (
               <p className="p-4 text-xs text-muted-foreground">
@@ -858,82 +859,84 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                       ? `@${property.handle.replace(/^@/, "")}`
                       : null;
                     return (
-                    <li
-                      key={property.id}
-                      className={
-                        href
-                          ? "flex cursor-pointer items-center gap-3 px-3 py-2 transition-colors hover:bg-muted/30"
-                          : "flex items-center gap-3 px-3 py-2"
-                      }
-                      onClick={() => {
-                        if (href) window.open(href, "_blank", "noreferrer");
-                      }}
-                    >
-                      <PropertyKindMark kind={property.kind} size={32} />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-foreground">
-                          {property.display_name ||
-                            PROPERTY_KIND_LABELS[toPropertyKind(property.kind)]}
-                          {property.display_name && handle ? (
-                            <span className="ml-1.5 text-xs font-normal text-muted-foreground">
-                              {handle}
-                            </span>
-                          ) : null}
-                        </p>
-                        <p className="truncate text-xs text-muted-foreground">
-                          {(!property.display_name && handle) ||
-                            (href
-                              ? href.replace(/^https?:\/\/(www\.)?/, "")
-                              : "—")}
-                        </p>
-                      </div>
-                      {href ? (
-                        <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
-                      ) : null}
-                      <div className="flex shrink-0 items-center gap-0.5">
-                        <CopyButtons
-                          size="icon"
-                          {...webCopy({
-                            kind: "web-brand-property",
-                            label:
-                              property.display_name ||
-                              property.kind.replace(/_/g, " "),
-                            description:
-                              "One non-website brand property (social profile or other presence).",
-                            surface: `Social profiles — ${current.name}`,
-                            data: property,
-                            lines: [
-                              ["Kind", property.kind.replace(/_/g, " ")],
-                              ["Name", property.display_name],
-                              ["Handle", handle],
-                              ["URL", href],
-                              ["Status", property.status],
-                            ],
-                            attributes: {
-                              brand_id: current.id,
-                              property_id: property.id,
-                              kind: property.kind,
-                            },
-                          })}
-                          json={() => property}
-                        />
-                        <RowActionButton
-                          title="Edit property"
-                          onClick={() =>
-                            setPropertyEditor({ open: true, property })
-                          }
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </RowActionButton>
-                        <RowActionButton
-                          title="Delete property"
-                          destructive
-                          onClick={() => setDeletingProperty(property)}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </RowActionButton>
-                      </div>
-                    </li>
+                      <li
+                        key={property.id}
+                        className={
+                          href
+                            ? "flex cursor-pointer items-center gap-3 px-3 py-2 transition-colors hover:bg-muted/30"
+                            : "flex items-center gap-3 px-3 py-2"
+                        }
+                        onClick={() => {
+                          if (href) window.open(href, "_blank", "noreferrer");
+                        }}
+                      >
+                        <PropertyKindMark kind={property.kind} size={32} />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-foreground">
+                            {property.display_name ||
+                              PROPERTY_KIND_LABELS[
+                                toPropertyKind(property.kind)
+                              ]}
+                            {property.display_name && handle ? (
+                              <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+                                {handle}
+                              </span>
+                            ) : null}
+                          </p>
+                          <p className="truncate text-xs text-muted-foreground">
+                            {(!property.display_name && handle) ||
+                              (href
+                                ? href.replace(/^https?:\/\/(www\.)?/, "")
+                                : "—")}
+                          </p>
+                        </div>
+                        {href ? (
+                          <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
+                        ) : null}
+                        <div className="flex shrink-0 items-center gap-0.5">
+                          <CopyButtons
+                            size="icon"
+                            {...webCopy({
+                              kind: "web-brand-property",
+                              label:
+                                property.display_name ||
+                                property.kind.replace(/_/g, " "),
+                              description:
+                                "One non-website brand property (social profile or other presence).",
+                              surface: `Social profiles — ${current.name}`,
+                              data: property,
+                              lines: [
+                                ["Kind", property.kind.replace(/_/g, " ")],
+                                ["Name", property.display_name],
+                                ["Handle", handle],
+                                ["URL", href],
+                                ["Status", property.status],
+                              ],
+                              attributes: {
+                                brand_id: current.id,
+                                property_id: property.id,
+                                kind: property.kind,
+                              },
+                            })}
+                            json={() => property}
+                          />
+                          <RowActionButton
+                            title="Edit property"
+                            onClick={() =>
+                              setPropertyEditor({ open: true, property })
+                            }
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </RowActionButton>
+                          <RowActionButton
+                            title="Delete property"
+                            destructive
+                            onClick={() => setDeletingProperty(property)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </RowActionButton>
+                        </div>
+                      </li>
                     );
                   })}
                 </ul>
@@ -1150,7 +1153,9 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                           />
                           <RowActionButton
                             title="Edit asset"
-                            onClick={() => setAssetEditor({ open: true, asset })}
+                            onClick={() =>
+                              setAssetEditor({ open: true, asset })
+                            }
                           >
                             <Pencil className="h-3.5 w-3.5" />
                           </RowActionButton>

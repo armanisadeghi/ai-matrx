@@ -22,7 +22,10 @@ import {
   SearchCheck,
 } from "lucide-react";
 
-import { marketingRoutes } from "@/features/marketing/lib/routes";
+import {
+  marketingRoutes,
+  marketingSiteSettingsHref,
+} from "@/features/marketing/lib/routes";
 
 /** Keys are `seo.collection_run.provider` values — never invent a new spelling. */
 export type CollectionProviderKey =
@@ -86,7 +89,7 @@ export const COLLECTION_PROVIDERS: CollectionProviderSpec[] = [
     runnable: true,
     fix: ({ sitePath }) => ({
       label: "Connect Search Console",
-      href: `${sitePath}/integrations`,
+      href: marketingSiteSettingsHref(sitePath, "integrations"),
     }),
     data: ({ siteId }) => ({
       label: "Open search data",
@@ -122,7 +125,7 @@ export const COLLECTION_PROVIDERS: CollectionProviderSpec[] = [
     runnable: true,
     fix: ({ sitePath }) => ({
       label: "Connect Analytics",
-      href: `${sitePath}/integrations`,
+      href: marketingSiteSettingsHref(sitePath, "integrations"),
     }),
     data: () => null,
   },
@@ -136,7 +139,7 @@ export const COLLECTION_PROVIDERS: CollectionProviderSpec[] = [
     runnable: false,
     fix: ({ sitePath }) => ({
       label: "Connect page speed",
-      href: `${sitePath}/integrations`,
+      href: marketingSiteSettingsHref(sitePath, "integrations"),
     }),
     data: ({ sitePath }) => ({
       label: "Open speed report",
@@ -153,7 +156,7 @@ export const COLLECTION_PROVIDERS: CollectionProviderSpec[] = [
     runnable: false,
     fix: ({ sitePath }) => ({
       label: "Set up backlink refresh",
-      href: `${sitePath}/integrations`,
+      href: marketingSiteSettingsHref(sitePath, "integrations"),
     }),
     data: ({ sitePath }) => ({
       label: "Open backlinks",

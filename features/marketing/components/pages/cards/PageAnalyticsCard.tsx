@@ -189,10 +189,10 @@ export function PageAnalyticsCard({ page }: { page: MarketingPage }) {
             </p>
             <Link
               className="mt-2 inline-flex text-xs font-medium text-primary underline"
-              href={marketingRoutes.site(
+              href={marketingRoutes.siteSettings(
                 site.brand_id,
                 site.id,
-                "/integrations",
+                "integrations",
               )}
             >
               Open Analytics setup

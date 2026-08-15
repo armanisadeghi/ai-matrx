@@ -272,10 +272,10 @@ function SiteAnalyticsCardContent({ site }: { site: MarketingSite }) {
             </p>
             <Button asChild size="sm" variant="outline">
               <Link
-                href={marketingRoutes.site(
+                href={marketingRoutes.siteSettings(
                   site.brand_id,
                   site.id,
-                  "/integrations",
+                  "integrations",
                 )}
               >
                 <RefreshCw className="mr-1.5 h-3.5 w-3.5" />

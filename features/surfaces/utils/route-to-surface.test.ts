@@ -20,9 +20,7 @@ describe("surfaceFromPathname — marketing tree", () => {
     expect(surfaceFromPathname("/marketing/connections/google")).toBe(
       "matrx-user/marketing",
     );
-    expect(surfaceFromPathname("/marketing/cost")).toBe(
-      "matrx-user/marketing",
-    );
+    expect(surfaceFromPathname("/marketing/cost")).toBe("matrx-user/marketing");
   });
 
   it("resolves the brand cockpit", () => {
@@ -85,7 +83,14 @@ describe("surfaceFromPathname — marketing tree", () => {
     expect(surfaceFromPathname(`${SITE}/crawls/${P}`)).toBe(
       "matrx-user/marketing-crawl",
     );
-    for (const tail of ["urls", "logs", "snapshots", "links", "reports", "reports/page-titles"]) {
+    for (const tail of [
+      "urls",
+      "logs",
+      "snapshots",
+      "links",
+      "reports",
+      "reports/page-titles",
+    ]) {
       expect(surfaceFromPathname(`${SITE}/crawls/${P}/${tail}`)).toBe(
         "matrx-user/marketing-crawl",
       );
@@ -227,9 +232,9 @@ describe("Admin surface resolution (post catch-all removal)", () => {
     expect(
       surfaceFromPathname("/administration/automation/scheduling/runs"),
     ).toBe("matrx-admin/scheduling");
-    expect(
-      surfaceFromPathname("/administration/ui/official-components"),
-    ).toBe("matrx-admin/official-components");
+    expect(surfaceFromPathname("/administration/ui/official-components")).toBe(
+      "matrx-admin/official-components",
+    );
   });
 
   it("users children win over the users hub", () => {
@@ -256,9 +261,9 @@ describe("Admin surface resolution (post catch-all removal)", () => {
   });
 
   it("batch-3 families resolve, growth-loop wins over knowledge, utilities below kind-registry", () => {
-    expect(
-      surfaceFromPathname("/administration/knowledge/growth-loop"),
-    ).toBe("matrx-admin/growth-loop");
+    expect(surfaceFromPathname("/administration/knowledge/growth-loop")).toBe(
+      "matrx-admin/growth-loop",
+    );
     expect(surfaceFromPathname("/administration/knowledge/kg-inspector")).toBe(
       "matrx-admin/knowledge",
     );
@@ -356,15 +361,25 @@ describe("Education tool-family resolution", () => {
 describe("Images family (studio tools)", () => {
   it("resolves the library and each studio tool to its own surface", () => {
     expect(surfaceFromPathname("/images/my-cloud")).toBe("matrx-user/images");
-    expect(surfaceFromPathname("/images/convert")).toBe("matrx-user/image-studio");
-    expect(surfaceFromPathname("/images/studio")).toBe("matrx-user/image-studio");
-    expect(surfaceFromPathname("/images/generate")).toBe("matrx-user/image-generate");
-    expect(surfaceFromPathname("/images/ai-generate")).toBe("matrx-user/image-generate");
+    expect(surfaceFromPathname("/images/convert")).toBe(
+      "matrx-user/image-studio",
+    );
+    expect(surfaceFromPathname("/images/studio")).toBe(
+      "matrx-user/image-studio",
+    );
+    expect(surfaceFromPathname("/images/generate")).toBe(
+      "matrx-user/image-generate",
+    );
+    expect(surfaceFromPathname("/images/ai-generate")).toBe(
+      "matrx-user/image-generate",
+    );
     expect(surfaceFromPathname("/images/edit")).toBe("matrx-user/image-edit");
     expect(
       surfaceFromPathname("/images/edit/02648d08-93bd-4c2e-b5cf-54c9c7828475"),
     ).toBe("matrx-user/image-edit");
-    expect(surfaceFromPathname("/images/annotate")).toBe("matrx-user/image-annotate");
+    expect(surfaceFromPathname("/images/annotate")).toBe(
+      "matrx-user/image-annotate",
+    );
   });
 
   it("does not leak the studio prefix onto its sibling library routes", () => {

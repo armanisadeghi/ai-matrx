@@ -10,7 +10,10 @@ export default async function MarketingSiteAccessPage({
   params: Promise<{ brandId: string; siteId: string }>;
   searchParams: Promise<SearchParams>;
 }) {
-  const [{ brandId, siteId }, query] = await Promise.all([params, searchParams]);
+  const [{ brandId, siteId }, query] = await Promise.all([
+    params,
+    searchParams,
+  ]);
   const raw = query.view ?? query.tab;
   const legacyView = Array.isArray(raw) ? raw[0] : raw;
   const view =

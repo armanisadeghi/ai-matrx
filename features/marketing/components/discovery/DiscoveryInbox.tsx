@@ -117,17 +117,15 @@ const STATUS_TABS: Array<{ value: DiscoveredItemStatus; label: string }> = [
 const PAGE_SIZE_OPTIONS = [50, 100, 250] as const;
 const DEFAULT_PAGE_SIZE = 100;
 
-const CATEGORY_META: Record<
-  string,
-  { label: string; icon: typeof ImageIcon }
-> = {
-  media: { label: "Media & imagery", icon: ImageIcon },
-  identity: { label: "Identity", icon: Type },
-  social: { label: "Social profiles", icon: Share2 },
-  fact: { label: "Business facts", icon: Phone },
-  link: { label: "Notable links", icon: Link2 },
-  other: { label: "Other", icon: FileQuestion },
-};
+const CATEGORY_META: Record<string, { label: string; icon: typeof ImageIcon }> =
+  {
+    media: { label: "Media & imagery", icon: ImageIcon },
+    identity: { label: "Identity", icon: Type },
+    social: { label: "Social profiles", icon: Share2 },
+    fact: { label: "Business facts", icon: Phone },
+    link: { label: "Notable links", icon: Link2 },
+    other: { label: "Other", icon: FileQuestion },
+  };
 
 const SOCIAL_ICONS: Partial<Record<PropertyKind, LucideIcon>> = {
   instagram: Instagram,
@@ -226,7 +224,8 @@ export function DiscoveryInbox({ brandId }: { brandId: string }) {
 
   const effectiveKind = (item: DiscoveredItem) =>
     kindOverrides[item.id] ?? defaultKind(item);
-  const effectiveLabel = (item: DiscoveredItem) => labelOverrides[item.id] ?? "";
+  const effectiveLabel = (item: DiscoveredItem) =>
+    labelOverrides[item.id] ?? "";
 
   // Selection is only meaningful against the rows actually on screen —
   // refetches can move ids out from under a stale selection.
@@ -239,8 +238,7 @@ export function DiscoveryInbox({ brandId }: { brandId: string }) {
     () => new Set(selectedItems.map((item) => kindPoolOf(item.category))),
     [selectedItems],
   );
-  const bulkTypePool =
-    selectedPools.size === 1 ? [...selectedPools][0] : null;
+  const bulkTypePool = selectedPools.size === 1 ? [...selectedPools][0] : null;
 
   const toggleSelected = (itemId: string, next: boolean) => {
     setSelected((current) => {
@@ -404,12 +402,10 @@ export function DiscoveryInbox({ brandId }: { brandId: string }) {
       ["Total items", total],
       ["Loaded on this page", rows.length],
       ["Page", `${currentPage} of ${pageCount}`],
-      ...grouped.map(
-        ([category, categoryItems]): [string, string] => [
-          (CATEGORY_META[category] ?? CATEGORY_META.other).label,
-          `${categoryItems.length} item${categoryItems.length === 1 ? "" : "s"}`,
-        ],
-      ),
+      ...grouped.map(([category, categoryItems]): [string, string] => [
+        (CATEGORY_META[category] ?? CATEGORY_META.other).label,
+        `${categoryItems.length} item${categoryItems.length === 1 ? "" : "s"}`,
+      ]),
     ],
     attributes: {
       brand_id: brandId,
@@ -486,7 +482,9 @@ export function DiscoveryInbox({ brandId }: { brandId: string }) {
           : `loaded ids are: ${rows
               .slice(0, 10)
               .map((row) => row.id)
-              .join(", ")}${rows.length > 10 ? ` (+${rows.length - 10} more)` : ""}`;
+              .join(
+                ", ",
+              )}${rows.length > 10 ? ` (+${rows.length - 10} more)` : ""}`;
 
       // Validate EVERY entry BEFORE any state moves, so a rejected entry can
       // never leave a half-applied triage staged on the page.
@@ -495,7 +493,9 @@ export function DiscoveryInbox({ brandId }: { brandId: string }) {
       value.forEach((entry, index) => {
         const at = `item_classifications[${index}]`;
         if (typeof entry !== "object" || entry === null || Array.isArray(entry))
-          throw new Error(`${at} expects an object: { item_id, kind, label? }.`);
+          throw new Error(
+            `${at} expects an object: { item_id, kind, label? }.`,
+          );
         const patch = entry as Record<string, unknown>;
         const accepted = ["item_id", "kind", "label"];
         const unsupported = Object.keys(patch).filter(
@@ -588,7 +588,7 @@ export function DiscoveryInbox({ brandId }: { brandId: string }) {
           brand_id: brandId,
           brand_name: currentBrand.name,
           brand_context: brandContext,
-          brand_profile: parseBrandProfile(currentBrand.profile),
+          brand_profile: { ...parseBrandProfile(currentBrand.profile) },
           pending_review_count: pendingCount.data,
           active_status: status,
           loaded_count: rows.length,
@@ -621,352 +621,352 @@ export function DiscoveryInbox({ brandId }: { brandId: string }) {
         });
       }}
     >
-    <RouteHeader
-      left={
-        <div className="flex min-w-0 items-center gap-2">
-          <ChevronLeftTapButton
-            href={marketingRoutes.brand(brandId)}
-            ariaLabel={`Back to ${currentBrand.name}`}
-          />
-          <h1 className="truncate text-sm font-medium text-foreground">
-            {currentBrand.name} · Discovery
-          </h1>
-        </div>
-      }
-    />
-    <main className="h-full overflow-y-auto bg-textured p-3 pt-[calc(var(--shell-header-h)+0.5rem)] sm:p-4 sm:pt-[calc(var(--shell-header-h)+0.75rem)]">
-      <div className="grid w-full gap-3">
-        <header className="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <h1 className="flex items-center gap-2 text-base font-semibold text-foreground">
-              Discovery inbox
-              <span className="text-xs font-normal tabular-nums text-muted-foreground">
-                {total}
-              </span>
+      <RouteHeader
+        left={
+          <div className="flex min-w-0 items-center gap-2">
+            <ChevronLeftTapButton
+              href={marketingRoutes.brand(brandId)}
+              ariaLabel={`Back to ${currentBrand.name}`}
+            />
+            <h1 className="truncate text-sm font-medium text-foreground">
+              {currentBrand.name} · Discovery
             </h1>
-            <p className="text-xs text-muted-foreground">
-              Everything found for this brand that needs a human to say what
-              it is. Confirming promotes an item to confirmed assets, facts,
-              and properties.
-            </p>
           </div>
-          <div className="flex items-center gap-1.5">
-          {rows.length > 0 ? (
-            <CopyButtons
-              size="icon"
-              {...inboxCopy}
-              // Everything must be a superset of the graded variants — build
-              // it from the same groomer sections, not from inboxCopy's
-              // rows-only payload.
-              agent={() =>
-                buildGroomerPresetPayload(groomerConfig(), "everything")
-              }
-              json={() => rows}
-              aiVariants={groomerPresetVariants(groomerConfig)}
-            />
-          ) : null}
-          {rows.length > 0 ? (
-            <ExportMenu
-              label={`discovery-inbox-${currentBrand.name}-${status}`}
-              items={[
-                jsonExportItem(() => rows, "JSON (loaded items, raw)"),
-                {
-                  id: "csv",
-                  label: "CSV (loaded items)",
-                  build: () => ({
-                    content: rowsToCsv(
-                      rows as unknown as Array<Record<string, unknown>>,
-                    ),
-                    extension: "csv",
-                    mime: "text/csv",
-                  }),
-                },
-              ]}
-            />
-          ) : null}
-          <AgentCopyGroomerLauncher config={groomerConfig} />
-          <div className="flex items-center gap-1 rounded-md border border-border bg-card p-0.5">
-            {STATUS_TABS.map((tab) => (
-              <button
-                key={tab.value}
-                type="button"
-                onClick={() => setStatus(tab.value)}
-                className={cn(
-                  "rounded px-2.5 py-1 text-xs font-medium transition-colors",
-                  status === tab.value
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-          </div>
-        </header>
-
-        {selectable && rows.length > 0 ? (
-          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">
-            <label className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Checkbox
-                checked={
-                  selectedItems.length === 0
-                    ? false
-                    : selectedItems.length === rows.length
-                      ? true
-                      : "indeterminate"
-                }
-                onCheckedChange={(next) =>
-                  setManySelected(
-                    rows.map((item) => item.id),
-                    next === true,
-                  )
-                }
-                aria-label="Select all items on this page"
-              />
-              {selectedItems.length > 0 ? (
-                <span className="font-medium text-foreground tabular-nums">
-                  {selectedItems.length} selected
+        }
+      />
+      <main className="h-full overflow-y-auto bg-textured p-3 pt-[calc(var(--shell-header-h)+0.5rem)] sm:p-4 sm:pt-[calc(var(--shell-header-h)+0.75rem)]">
+        <div className="grid w-full gap-3">
+          <header className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h1 className="flex items-center gap-2 text-base font-semibold text-foreground">
+                Discovery inbox
+                <span className="text-xs font-normal tabular-nums text-muted-foreground">
+                  {total}
                 </span>
-              ) : (
-                <span>Select all on page</span>
-              )}
-            </label>
-            {selectedItems.length > 0 ? (
-              <div className="flex flex-wrap items-center gap-1.5">
-                {status === "pending" ? (
-                  <>
-                    <Select
-                      // Reset per selection so a fresh pick always fires.
-                      key={selectedItems.map((i) => i.id).join(",")}
-                      onValueChange={assignBulkKind}
-                      disabled={!bulkTypePool || bulkBusy}
-                    >
-                      <SelectTrigger className="h-7 w-40 text-xs">
-                        <SelectValue
-                          placeholder={
-                            bulkTypePool
-                              ? "Set type for selected"
-                              : "Mixed categories"
-                          }
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {(bulkTypePool
-                          ? kindOptionsFor(bulkTypePool)
-                          : []
-                        ).map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      size="sm"
-                      className="h-7 gap-1"
-                      disabled={bulkBusy}
-                      onClick={() => void runBulkConfirm()}
-                    >
-                      <Check className="h-3.5 w-3.5" />
-                      Confirm {selectedItems.length}
-                    </Button>
+              </h1>
+              <p className="text-xs text-muted-foreground">
+                Everything found for this brand that needs a human to say what
+                it is. Confirming promotes an item to confirmed assets, facts,
+                and properties.
+              </p>
+            </div>
+            <div className="flex items-center gap-1.5">
+              {rows.length > 0 ? (
+                <CopyButtons
+                  size="icon"
+                  {...inboxCopy}
+                  // Everything must be a superset of the graded variants — build
+                  // it from the same groomer sections, not from inboxCopy's
+                  // rows-only payload.
+                  agent={() =>
+                    buildGroomerPresetPayload(groomerConfig(), "everything")
+                  }
+                  json={() => rows}
+                  aiVariants={groomerPresetVariants(groomerConfig)}
+                />
+              ) : null}
+              {rows.length > 0 ? (
+                <ExportMenu
+                  label={`discovery-inbox-${currentBrand.name}-${status}`}
+                  items={[
+                    jsonExportItem(() => rows, "JSON (loaded items, raw)"),
+                    {
+                      id: "csv",
+                      label: "CSV (loaded items)",
+                      build: () => ({
+                        content: rowsToCsv(
+                          rows as unknown as Array<Record<string, unknown>>,
+                        ),
+                        extension: "csv",
+                        mime: "text/csv",
+                      }),
+                    },
+                  ]}
+                />
+              ) : null}
+              <AgentCopyGroomerLauncher config={groomerConfig} />
+              <div className="flex items-center gap-1 rounded-md border border-border bg-card p-0.5">
+                {STATUS_TABS.map((tab) => (
+                  <button
+                    key={tab.value}
+                    type="button"
+                    onClick={() => setStatus(tab.value)}
+                    className={cn(
+                      "rounded px-2.5 py-1 text-xs font-medium transition-colors",
+                      status === tab.value
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </header>
+
+          {selectable && rows.length > 0 ? (
+            <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">
+              <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Checkbox
+                  checked={
+                    selectedItems.length === 0
+                      ? false
+                      : selectedItems.length === rows.length
+                        ? true
+                        : "indeterminate"
+                  }
+                  onCheckedChange={(next) =>
+                    setManySelected(
+                      rows.map((item) => item.id),
+                      next === true,
+                    )
+                  }
+                  aria-label="Select all items on this page"
+                />
+                {selectedItems.length > 0 ? (
+                  <span className="font-medium text-foreground tabular-nums">
+                    {selectedItems.length} selected
+                  </span>
+                ) : (
+                  <span>Select all on page</span>
+                )}
+              </label>
+              {selectedItems.length > 0 ? (
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {status === "pending" ? (
+                    <>
+                      <Select
+                        // Reset per selection so a fresh pick always fires.
+                        key={selectedItems.map((i) => i.id).join(",")}
+                        onValueChange={assignBulkKind}
+                        disabled={!bulkTypePool || bulkBusy}
+                      >
+                        <SelectTrigger className="h-7 w-40 text-xs">
+                          <SelectValue
+                            placeholder={
+                              bulkTypePool
+                                ? "Set type for selected"
+                                : "Mixed categories"
+                            }
+                          />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(bulkTypePool
+                            ? kindOptionsFor(bulkTypePool)
+                            : []
+                          ).map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        size="sm"
+                        className="h-7 gap-1"
+                        disabled={bulkBusy}
+                        onClick={() => void runBulkConfirm()}
+                      >
+                        <Check className="h-3.5 w-3.5" />
+                        Confirm {selectedItems.length}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 gap-1 text-muted-foreground"
+                        disabled={bulkBusy}
+                        onClick={() => void runBulkDismiss()}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                        Dismiss
+                      </Button>
+                    </>
+                  ) : (
                     <Button
                       size="sm"
                       variant="ghost"
                       className="h-7 gap-1 text-muted-foreground"
                       disabled={bulkBusy}
-                      onClick={() => void runBulkDismiss()}
+                      onClick={() => void runBulkRestore()}
                     >
-                      <X className="h-3.5 w-3.5" />
-                      Dismiss
+                      <Undo2 className="h-3.5 w-3.5" />
+                      Restore
                     </Button>
-                  </>
-                ) : (
+                  )}
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="h-7 gap-1 text-muted-foreground"
+                    className="h-7 gap-1 text-muted-foreground hover:text-destructive"
                     disabled={bulkBusy}
-                    onClick={() => void runBulkRestore()}
+                    onClick={() => setConfirmingBulkDelete(true)}
                   >
-                    <Undo2 className="h-3.5 w-3.5" />
-                    Restore
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Delete
                   </Button>
-                )}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-muted-foreground"
+                    disabled={bulkBusy}
+                    onClick={() => setSelected(new Set())}
+                  >
+                    Clear
+                  </Button>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
+          {grouped.length === 0 ? (
+            <div className="flex min-h-56 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-card/50 p-6 text-center">
+              <FileQuestion className="h-8 w-8 text-muted-foreground" />
+              <p className="text-sm font-medium text-foreground">
+                {status === "pending"
+                  ? "No discoveries waiting"
+                  : `No ${status} items`}
+              </p>
+              <p className="max-w-sm text-xs text-muted-foreground">
+                {status === "pending"
+                  ? "Initialize or re-initialize the site to sweep the homepage for logos, imagery, social profiles, and contact details."
+                  : "Items you review will appear here."}
+              </p>
+            </div>
+          ) : (
+            grouped.map(([category, categoryItems]) => {
+              const meta = CATEGORY_META[category] ?? CATEGORY_META.other;
+              const Icon = meta.icon;
+              const categorySelected = categoryItems.filter((item) =>
+                selected.has(item.id),
+              ).length;
+              return (
+                <section
+                  key={category}
+                  className="overflow-hidden rounded-lg border border-border bg-card"
+                >
+                  <header className="flex items-center gap-2 border-b border-border px-3 py-2">
+                    {selectable ? (
+                      <Checkbox
+                        checked={
+                          categorySelected === 0
+                            ? false
+                            : categorySelected === categoryItems.length
+                              ? true
+                              : "indeterminate"
+                        }
+                        onCheckedChange={(next) =>
+                          setManySelected(
+                            categoryItems.map((item) => item.id),
+                            next === true,
+                          )
+                        }
+                        aria-label={`Select all ${meta.label} items`}
+                      />
+                    ) : null}
+                    <Icon className="h-4 w-4 text-muted-foreground" />
+                    <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      {meta.label}
+                    </h2>
+                    <span className="text-[11px] tabular-nums text-muted-foreground">
+                      {categoryItems.length}
+                    </span>
+                  </header>
+                  <ul className="divide-y divide-border">
+                    {categoryItems.map((item) => (
+                      <DiscoveryRow
+                        key={item.id}
+                        item={item}
+                        readOnly={status !== "pending"}
+                        kind={effectiveKind(item)}
+                        onKindChange={(kind) =>
+                          setKindOverrides((current) => ({
+                            ...current,
+                            [item.id]: kind,
+                          }))
+                        }
+                        label={effectiveLabel(item)}
+                        onLabelChange={(label) =>
+                          setLabelOverrides((current) => ({
+                            ...current,
+                            [item.id]: label,
+                          }))
+                        }
+                        selectable={selectable}
+                        selected={selected.has(item.id)}
+                        onSelectedChange={(next) =>
+                          toggleSelected(item.id, next)
+                        }
+                      />
+                    ))}
+                  </ul>
+                </section>
+              );
+            })
+          )}
+
+          {total > 0 ? (
+            <footer className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-card px-3 py-2">
+              <span className="text-xs tabular-nums text-muted-foreground">
+                Showing {rangeStart}–{rangeEnd} of {total}
+              </span>
+              <div className="flex items-center gap-1.5">
+                <Select
+                  value={String(pageSize)}
+                  onValueChange={(value) => {
+                    setPageSize(Number(value));
+                    goToPage(1);
+                  }}
+                >
+                  <SelectTrigger className="h-7 w-24 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PAGE_SIZE_OPTIONS.map((size) => (
+                      <SelectItem key={size} value={String(size)}>
+                        {size} / page
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Button
                   size="sm"
-                  variant="ghost"
-                  className="h-7 gap-1 text-muted-foreground hover:text-destructive"
-                  disabled={bulkBusy}
-                  onClick={() => setConfirmingBulkDelete(true)}
+                  variant="outline"
+                  className="h-7 gap-1"
+                  disabled={currentPage <= 1 || items.isFetching}
+                  onClick={() => goToPage(currentPage - 1)}
                 >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  Delete
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                  Prev
                 </Button>
+                <span className="text-xs tabular-nums text-muted-foreground">
+                  {currentPage} / {pageCount}
+                </span>
                 <Button
                   size="sm"
-                  variant="ghost"
-                  className="h-7 text-muted-foreground"
-                  disabled={bulkBusy}
-                  onClick={() => setSelected(new Set())}
+                  variant="outline"
+                  className="h-7 gap-1"
+                  disabled={currentPage >= pageCount || items.isFetching}
+                  onClick={() => goToPage(currentPage + 1)}
                 >
-                  Clear
+                  Next
+                  <ChevronRight className="h-3.5 w-3.5" />
                 </Button>
               </div>
-            ) : null}
-          </div>
-        ) : null}
+            </footer>
+          ) : null}
+        </div>
 
-        {grouped.length === 0 ? (
-          <div className="flex min-h-56 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-card/50 p-6 text-center">
-            <FileQuestion className="h-8 w-8 text-muted-foreground" />
-            <p className="text-sm font-medium text-foreground">
-              {status === "pending"
-                ? "No discoveries waiting"
-                : `No ${status} items`}
-            </p>
-            <p className="max-w-sm text-xs text-muted-foreground">
-              {status === "pending"
-                ? "Initialize or re-initialize the site to sweep the homepage for logos, imagery, social profiles, and contact details."
-                : "Items you review will appear here."}
-            </p>
-          </div>
-        ) : (
-          grouped.map(([category, categoryItems]) => {
-            const meta = CATEGORY_META[category] ?? CATEGORY_META.other;
-            const Icon = meta.icon;
-            const categorySelected = categoryItems.filter((item) =>
-              selected.has(item.id),
-            ).length;
-            return (
-              <section
-                key={category}
-                className="overflow-hidden rounded-lg border border-border bg-card"
-              >
-                <header className="flex items-center gap-2 border-b border-border px-3 py-2">
-                  {selectable ? (
-                    <Checkbox
-                      checked={
-                        categorySelected === 0
-                          ? false
-                          : categorySelected === categoryItems.length
-                            ? true
-                            : "indeterminate"
-                      }
-                      onCheckedChange={(next) =>
-                        setManySelected(
-                          categoryItems.map((item) => item.id),
-                          next === true,
-                        )
-                      }
-                      aria-label={`Select all ${meta.label} items`}
-                    />
-                  ) : null}
-                  <Icon className="h-4 w-4 text-muted-foreground" />
-                  <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    {meta.label}
-                  </h2>
-                  <span className="text-[11px] tabular-nums text-muted-foreground">
-                    {categoryItems.length}
-                  </span>
-                </header>
-                <ul className="divide-y divide-border">
-                  {categoryItems.map((item) => (
-                    <DiscoveryRow
-                      key={item.id}
-                      item={item}
-                      readOnly={status !== "pending"}
-                      kind={effectiveKind(item)}
-                      onKindChange={(kind) =>
-                        setKindOverrides((current) => ({
-                          ...current,
-                          [item.id]: kind,
-                        }))
-                      }
-                      label={effectiveLabel(item)}
-                      onLabelChange={(label) =>
-                        setLabelOverrides((current) => ({
-                          ...current,
-                          [item.id]: label,
-                        }))
-                      }
-                      selectable={selectable}
-                      selected={selected.has(item.id)}
-                      onSelectedChange={(next) =>
-                        toggleSelected(item.id, next)
-                      }
-                    />
-                  ))}
-                </ul>
-              </section>
-            );
-          })
-        )}
-
-        {total > 0 ? (
-          <footer className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-card px-3 py-2">
-            <span className="text-xs tabular-nums text-muted-foreground">
-              Showing {rangeStart}–{rangeEnd} of {total}
-            </span>
-            <div className="flex items-center gap-1.5">
-              <Select
-                value={String(pageSize)}
-                onValueChange={(value) => {
-                  setPageSize(Number(value));
-                  goToPage(1);
-                }}
-              >
-                <SelectTrigger className="h-7 w-24 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PAGE_SIZE_OPTIONS.map((size) => (
-                    <SelectItem key={size} value={String(size)}>
-                      {size} / page
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 gap-1"
-                disabled={currentPage <= 1 || items.isFetching}
-                onClick={() => goToPage(currentPage - 1)}
-              >
-                <ChevronLeft className="h-3.5 w-3.5" />
-                Prev
-              </Button>
-              <span className="text-xs tabular-nums text-muted-foreground">
-                {currentPage} / {pageCount}
-              </span>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 gap-1"
-                disabled={currentPage >= pageCount || items.isFetching}
-                onClick={() => goToPage(currentPage + 1)}
-              >
-                Next
-                <ChevronRight className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-          </footer>
-        ) : null}
-      </div>
-
-      <ConfirmDialog
-        open={confirmingBulkDelete}
-        onOpenChange={setConfirmingBulkDelete}
-        title={`Delete ${selectedItems.length} discoveries?`}
-        description="The candidates move to trash. If the crawler finds the same values again they will not reappear."
-        variant="destructive"
-        confirmLabel="Delete"
-        busy={bulkDelete.isPending}
-        onConfirm={() => void runBulkDelete()}
-      />
-    </main>
+        <ConfirmDialog
+          open={confirmingBulkDelete}
+          onOpenChange={setConfirmingBulkDelete}
+          title={`Delete ${selectedItems.length} discoveries?`}
+          description="The candidates move to trash. If the crawler finds the same values again they will not reappear."
+          variant="destructive"
+          confirmLabel="Delete"
+          busy={bulkDelete.isPending}
+          onConfirm={() => void runBulkDelete()}
+        />
+      </main>
     </SurfaceRuntimeProvider>
   );
 }
@@ -1021,7 +1021,7 @@ function DiscoveryRow({
     kind: "web-discovered-item",
     label: "Discovered item",
     description:
-      "One machine-discovered brand candidate from the site discovery inbox.",
+      "One machine-discovered brand candidate from the brand discovery inbox.",
     surface: `Discovery inbox — ${display}`,
     data: item,
     lines: [
@@ -1037,7 +1037,11 @@ function DiscoveryRow({
       ["Context", context],
       ["Status", item.status],
     ],
-    attributes: { item_id: item.id, category: item.category, status: item.status },
+    attributes: {
+      item_id: item.id,
+      category: item.category,
+      status: item.status,
+    },
   });
   const previewUrl =
     media && item.url && /\.(png|jpe?g|webp|gif|svg|ico)(\?|$)/i.test(item.url)
@@ -1276,7 +1280,11 @@ function DiscoveryRow({
             value={label}
             onChange={(event) => onLabelChange(event.target.value)}
             className="h-8 w-40 text-xs"
-            placeholder={customLabelRequired ? "Custom label (required)" : "Label (optional)"}
+            placeholder={
+              customLabelRequired
+                ? "Custom label (required)"
+                : "Label (optional)"
+            }
             aria-label={
               media ? "Asset label" : social ? "Property label" : "Fact label"
             }

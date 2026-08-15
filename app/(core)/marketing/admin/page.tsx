@@ -106,12 +106,20 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       filePath: "app/(core)/marketing/search-console/page.tsx",
     },
     {
-      url: "/marketing/ai-visibility",
-      label: "AI Visibility",
+      url: "/marketing/capabilities",
+      label: "SEO Capabilities",
       description:
-        "RESERVED — renders <MarketingComingSoon>. Declared in features/marketing/lib/marketing-nav.ts and tracked in lib/coming-soon/registry.ts. The URL is permanent; it will not move when the feature ships.",
+        "Shared SEO measurement catalogue with a website selector for opening evidence destinations.",
+      filePath: "app/(core)/marketing/capabilities/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/marketing/ai-visibility",
+      label: "AI Visibility legacy redirect",
+      description:
+        "Redirects the removed duplicate site selector to the site inventory; AI Visibility lives inside each website.",
       filePath: "app/(core)/marketing/ai-visibility/page.tsx",
-      status: "Coming soon",
+      status: "Live",
     },
     {
       url: "/marketing/content-studio",
@@ -426,11 +434,11 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
-      url: "/marketing/sites/[siteId]/integrations",
-      label: "Site integrations",
+      url: "/marketing/brands/[brandId]/discovery",
+      label: "Brand discovery",
       description:
-        "Reference-only GSC, GA4, PageSpeed, and custom provider bindings.",
-      filePath: "app/(core)/marketing/sites/[siteId]/integrations/page.tsx",
+        "Brand-wide review inbox for machine-discovered assets, properties, and business facts.",
+      filePath: "app/(core)/marketing/brands/[brandId]/discovery/page.tsx",
       status: "Live",
     },
     {
@@ -452,17 +460,12 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
-      url: "/marketing/sites/[siteId]/access",
-      label: "Site access",
-      description: "Organization and user grants at the site access root.",
-      filePath: "app/(core)/marketing/sites/[siteId]/access/page.tsx",
-      status: "Live",
-    },
-    {
-      url: "/marketing/sites/[siteId]/settings",
+      url: "/marketing/brands/[brandId]/sites/[siteId]/settings",
       label: "Site settings",
-      description: "Identity, visibility, lifecycle, and crawl defaults.",
-      filePath: "app/(core)/marketing/sites/[siteId]/settings/page.tsx",
+      description:
+        "Identity, crawl defaults, integrations, user/org/public access, and intake as six linkable Settings views.",
+      filePath:
+        "app/(core)/marketing/brands/[brandId]/sites/[siteId]/settings/page.tsx",
       status: "Live",
     },
     {

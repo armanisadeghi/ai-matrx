@@ -104,7 +104,11 @@ export function SearchConsolePortfolio({
     const hasBinding = siteHasGscBinding(site);
     const needsAction = stale || site.gsc_latest_date === null;
     const dashboardHref = marketingRoutes.searchConsole(site.id);
-    const integrationsHref = `${marketingRoutes.site(site.brand_id, site.id)}/integrations`;
+    const integrationsHref = marketingRoutes.siteSettings(
+      site.brand_id,
+      site.id,
+      "integrations",
+    );
     const siteLabel = site.name ?? site.domain ?? site.id;
     return (
       <div
@@ -254,9 +258,9 @@ export function SearchConsolePortfolio({
                 No sites yet
               </p>
               <p className="mt-1 max-w-md text-xs text-muted-foreground">
-                Add a website under Marketing → Websites, connect Google in
-                Data Connections, and bind its Search Console property to
-                start collecting search data.
+                Add a website under Marketing → Websites, connect Google in Data
+                Connections, and bind its Search Console property to start
+                collecting search data.
               </p>
             </div>
             <div className="flex gap-2">

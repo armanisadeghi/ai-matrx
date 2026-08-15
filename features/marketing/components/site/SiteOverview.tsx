@@ -87,6 +87,10 @@ import { createMarketingSiteScope } from "@/features/surfaces/manifests/marketin
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import { buildSiteContextXml } from "@/features/marketing/lib/surface-context";
 import {
+  marketingRoutes,
+  marketingSiteSettingsHref,
+} from "@/features/marketing/lib/routes";
+import {
   parseInitialization,
   siteConnectionStatuses,
   type SiteConnectionState,
@@ -108,7 +112,7 @@ const stateDotClass: Record<SiteConnectionState, string> = {
 };
 
 export function SiteOverview() {
-  const { site, sitePath } = useMarketingSite();
+  const { site, sitePath, brandId } = useMarketingSite();
   const overview = useSiteOverview(site.id);
   const hero = useSiteHeroScreenshot(
     site.id,
@@ -549,6 +553,7 @@ export function SiteOverview() {
               metrics={metrics}
               pendingDiscovered={pendingDiscovered.data ?? 0}
               sitePath={sitePath}
+              discoveryHref={marketingRoutes.brandDiscovery(brandId)}
               gscConnected={gscConnected}
             />
 
@@ -568,6 +573,7 @@ export function SiteOverview() {
                 pendingDiscovered={pendingDiscovered.data ?? 0}
                 statuses={statuses}
                 sitePath={sitePath}
+                discoveryHref={marketingRoutes.brandDiscovery(brandId)}
                 domain={site.domain}
               />
               <QuickWorkCard
@@ -577,7 +583,11 @@ export function SiteOverview() {
               />
             </div>
 
-            <WorkspaceDirectory metrics={metrics} sitePath={sitePath} />
+            <WorkspaceDirectory
+              metrics={metrics}
+              sitePath={sitePath}
+              siteId={site.id}
+            />
 
             <ConnectionsStrip
               statuses={statuses}
@@ -762,7 +772,7 @@ function SiteHero({
                   href={`${sitePath}/crawls/new`}
                 />
                 <Link
-                  href={`${sitePath}/integrations`}
+                  href={marketingSiteSettingsHref(sitePath, "integrations")}
                   className="inline-flex items-center gap-1.5 transition-colors hover:text-primary"
                 >
                   <Plug className="h-3.5 w-3.5" />
@@ -798,11 +808,13 @@ function KpiGrid({
   metrics,
   pendingDiscovered,
   sitePath,
+  discoveryHref,
   gscConnected,
 }: {
   metrics: SiteOverviewMetrics;
   pendingDiscovered: number;
   sitePath: string;
+  discoveryHref: string;
   gscConnected: boolean;
 }) {
   return (
@@ -856,7 +868,7 @@ function KpiGrid({
         value={pendingDiscovered.toLocaleString()}
         detail={pendingDiscovered ? "Candidates waiting" : "Inbox is clear"}
         tone={pendingDiscovered ? "warning" : "good"}
-        href={`${sitePath}/discovery`}
+        href={discoveryHref}
       />
       <MetricCell
         variant="card"
@@ -893,7 +905,7 @@ function KpiGrid({
           label="In Google"
           value="—"
           detail="Connect Search Console"
-          href={`${sitePath}/integrations`}
+          href={marketingSiteSettingsHref(sitePath, "integrations")}
         />
       )}
     </section>
@@ -913,12 +925,14 @@ function AttentionCard({
   pendingDiscovered,
   statuses,
   sitePath,
+  discoveryHref,
   domain,
 }: {
   metrics: SiteOverviewMetrics;
   pendingDiscovered: number;
   statuses: SiteConnectionStatus[];
   sitePath: string;
+  discoveryHref: string;
   domain: string;
 }) {
   const pagesWithoutKeyword = Math.max(
@@ -934,7 +948,7 @@ function AttentionCard({
             key: "discovery",
             count: pendingDiscovered,
             label: `discovery ${plural(pendingDiscovered, "candidate awaits", "candidates await")} review`,
-            href: `${sitePath}/discovery`,
+            href: discoveryHref,
             icon: <Camera className="h-3.5 w-3.5" />,
           },
         ]
@@ -990,7 +1004,9 @@ function AttentionCard({
         count: null,
         label: `${status.name}: ${status.detail}`,
         href:
-          status.key === "initialized" ? sitePath : `${sitePath}/integrations`,
+          status.key === "initialized"
+            ? sitePath
+            : marketingSiteSettingsHref(sitePath, "integrations"),
         icon: <Plug className="h-3.5 w-3.5" />,
       })),
   ];
@@ -1097,7 +1113,7 @@ function QuickWorkCard({
           </Link>
         </Button>
         <Button asChild variant="outline" className="h-9 justify-start gap-2">
-          <Link href={`${sitePath}/integrations`}>
+          <Link href={marketingSiteSettingsHref(sitePath, "integrations")}>
             <Plug className="h-4 w-4" />
             Manage integrations
           </Link>
@@ -1138,15 +1154,17 @@ interface DirectoryEntry {
 function WorkspaceDirectory({
   metrics,
   sitePath,
+  siteId,
 }: {
   metrics: SiteOverviewMetrics;
   sitePath: string;
+  siteId: string;
 }) {
   const entries: DirectoryEntry[] = [
     {
       name: "SEO capabilities",
       detail: "Every check system, provider, result, and run control",
-      href: `${sitePath}/capabilities`,
+      href: marketingRoutes.capabilities(siteId),
       icon: <ListChecks className="h-4 w-4" />,
     },
     {
@@ -1215,13 +1233,13 @@ function WorkspaceDirectory({
     {
       name: "Access",
       detail: "Sharing & permissions",
-      href: `${sitePath}/access`,
+      href: marketingSiteSettingsHref(sitePath, "access-users"),
       icon: <ShieldCheck className="h-4 w-4" />,
     },
     {
       name: "Settings",
       detail: "Crawl policy & site configuration",
-      href: `${sitePath}/settings`,
+      href: marketingSiteSettingsHref(sitePath),
       icon: <Settings className="h-4 w-4" />,
     },
   ];
@@ -1293,7 +1311,10 @@ function ConnectionsStrip({
           ) : null}
         </>
       }
-      action={{ label: "Manage", href: `${sitePath}/integrations` }}
+      action={{
+        label: "Manage",
+        href: marketingSiteSettingsHref(sitePath, "integrations"),
+      }}
     >
       <div className="flex flex-wrap gap-2 p-3">
         {statuses.map((status) => {
@@ -1327,7 +1348,7 @@ function ConnectionsStrip({
           return (
             <Link
               key={status.key}
-              href={`${sitePath}/integrations`}
+              href={marketingSiteSettingsHref(sitePath, "integrations")}
               className="inline-flex items-center gap-2 rounded-md border border-border/70 px-2.5 py-1.5 text-xs transition-colors hover:border-primary/50 hover:bg-muted/40"
               title={status.detail}
             >

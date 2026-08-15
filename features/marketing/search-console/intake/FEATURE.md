@@ -1,6 +1,6 @@
 # Site Intake Wizard — the first-run GSC interview
 
-**Status:** Live (2026-08-08). **Route:** `/marketing/brands/[brandId]/sites/[siteId]/intake` ("Intake" tab in the site layout nav). **Server:** `aidream/services/seo/site_intake.py` (`POST /seo/sites/{site_id}/intake/run` + `/intake/apply`). **Design of record:** aidream `docs/handoffs/content-ir-agent-slots.md` item 7 + `common-docs/systems/agent-slots/FEATURE.md`.
+**Status:** Live (2026-08-08). **Route:** `/marketing/brands/[brandId]/sites/[siteId]/settings?view=intake` (the old `/intake` URL redirects here). **Server:** `aidream/services/seo/site_intake.py` (`POST /seo/sites/{site_id}/intake/run` + `/intake/apply`). **Design of record:** aidream `docs/handoffs/content-ir-agent-slots.md` item 7 + `common-docs/systems/agent-slots/FEATURE.md`.
 
 The platform vision in miniature: the SEO expert's doctrine lives in the
 intake agent (`seo.site_intake` agent slot, content-ir kinds
@@ -15,8 +15,8 @@ durable business truth — never chat-only.
 |---|---|
 | Wizard | `SiteIntakeWizard.tsx` (steps: Connect → Import → Interview → Apply → Done) |
 | Compute calls + stream shapes | `intake-service.ts` (`runSiteIntake` / `applySiteIntake` / stage labels) |
-| Route page | `app/(core)/marketing/brands/[brandId]/sites/[siteId]/intake/page.tsx` |
-| Nav entry | `MarketingSiteLayoutClient.tsx` ("Intake", Compass icon) |
+| Route host | site `settings/page.tsx` → `SiteConfigurationWorkspace`; legacy `intake/page.tsx` redirects |
+| Nav entry | `lib/site-subviews.ts` (`settings:intake`, Compass icon) |
 | Dashboard entry | `SearchConsoleWorkspace.tsx` empty state — "Start intake interview" |
 | On-bind auto-import | `SiteIntegrationsWorkspace.tsx` `kickGscFirstImport` |
 
@@ -61,6 +61,8 @@ durable business truth — never chat-only.
 
 ## Change log
 
+- 2026-08-15 — Folded into the site's Settings section as the durable
+  `?view=intake` sub-view; the former `/intake` route remains a redirect.
 - 2026-08-08 — Created: wizard + service + nav + on-bind auto-import,
   verified end-to-end against datadestruction.com (16 rulings, 6 valuations,
   2 aliases through the live product flow).

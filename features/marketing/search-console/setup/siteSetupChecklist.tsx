@@ -41,7 +41,7 @@ export interface SiteSetupContext {
 }
 
 const integrationsHref = (site: MarketingSite) =>
-  `${marketingRoutes.site(site.brand_id, site.id)}/integrations`;
+  marketingRoutes.siteSettings(site.brand_id, site.id, "integrations");
 
 /** The Search Console property this site is bound to, if any. */
 function gscProperty(site: MarketingSite): string | null {
@@ -128,7 +128,8 @@ export const siteSetupChecklist = registerChecklist<SiteSetupContext>({
       description:
         "Google only keeps about 16 months. We pull all of it the moment we can — days we never pull are gone for good.",
       dependsOn: ["search_console"],
-      runningLabel: "Bringing in your history — this keeps running if you leave.",
+      runningLabel:
+        "Bringing in your history — this keeps running if you leave.",
       check: async ({ site }): Promise<CheckResult> => {
         const [rows, backfill] = await Promise.all([
           getGscFreshness(site.id),
@@ -161,9 +162,14 @@ export const siteSetupChecklist = registerChecklist<SiteSetupContext>({
       },
       run: async ({ site, dispatch }) => {
         // Detached server work — leaving the page never stops it.
-        await syncGscSearchPerformance(dispatch, site.id, site.organization_id, {
-          mode: "backfill",
-        });
+        await syncGscSearchPerformance(
+          dispatch,
+          site.id,
+          site.organization_id,
+          {
+            mode: "backfill",
+          },
+        );
         await syncGscSearchPerformance(
           dispatch,
           site.id,

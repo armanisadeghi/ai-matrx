@@ -33,7 +33,11 @@ import {
 } from "@/features/marketing/search-console/data-insights";
 import { resolvePeriods } from "@/features/marketing/search-console/lib/url-state";
 import { formatGscWindow } from "@/features/marketing/search-console/lib/format";
-import { formatCtr, formatPosition } from "@/features/marketing/search-console/types";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
+import {
+  formatCtr,
+  formatPosition,
+} from "@/features/marketing/search-console/types";
 import type {
   GscClassMoverRow,
   GscClassSummaryRow,
@@ -165,7 +169,10 @@ function ctrGapCandidate(
 ): EmitAssistInput | null {
   const hit = rows.find((r) => r.missed_clicks >= CTR_GAP_MIN_MISSED_CLICKS);
   if (!hit) return null;
-  const singlePeriod: GscResolvedPeriods = { current: periods.current, compare: null };
+  const singlePeriod: GscResolvedPeriods = {
+    current: periods.current,
+    compare: null,
+  };
   return {
     sourceKey: `${SOURCE_PREFIX}.ctr_gap`,
     title: `~${Math.round(hit.missed_clicks)} missed clicks: ${shortPath(hit.key)}`,
@@ -176,7 +183,8 @@ function ctrGapCandidate(
       agentName: "SEO Page Analyzer",
       draftText: composePageFindingIntent({
         siteLabel,
-        finding: "a page is underperforming its own site's CTR-by-position curve",
+        finding:
+          "a page is underperforming its own site's CTR-by-position curve",
         pageUrl: hit.key,
         periods: singlePeriod,
         lines: [
@@ -226,7 +234,7 @@ function classifyCandidate(
     action: {
       kind: "navigate",
       href: severe
-        ? `/marketing/sites/${siteId}/intake`
+        ? marketingRoutes.siteSettings(null, siteId, "intake")
         : `/marketing/sites/${siteId}/keywords?view=classification&f_traffic_class=select:unclassified`,
     },
     surfaceName: GSC_ASSIST_SURFACE,
@@ -292,7 +300,10 @@ export async function produceGscInsightAssists(args: {
     const c = classifyCandidate(classSummary.value, siteId, expiresAt);
     if (c) candidates.push(c);
   } else {
-    console.error("[gsc-assists] class summary read failed:", classSummary.reason);
+    console.error(
+      "[gsc-assists] class summary read failed:",
+      classSummary.reason,
+    );
   }
   if (candidates.length === 0) return;
 

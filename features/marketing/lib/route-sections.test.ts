@@ -128,7 +128,9 @@ describe("marketing route section registries", () => {
       "integrations",
       "intake",
     ]);
-    const visible = new Set(MARKETING_SITE_SECTIONS.map((item) => item.slug));
+    const visible = new Set<string>(
+      MARKETING_SITE_SECTIONS.map((item) => item.slug),
+    );
     for (const legacy of MARKETING_SITE_LEGACY_REDIRECTS) {
       expect(visible.has(legacy)).toBe(false);
     }

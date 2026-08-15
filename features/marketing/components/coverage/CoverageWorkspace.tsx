@@ -15,6 +15,7 @@ import type {
 import { PAGE_PROVENANCES } from "@/features/marketing/data/service";
 import { COVERAGE_FILTER_COPY } from "@/features/marketing/lib/coverage";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
+import { marketingSiteSettingsHref } from "@/features/marketing/lib/routes";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { jsonExportItem } from "@/components/agent-copy/export";
@@ -468,7 +469,7 @@ export function CoverageWorkspace() {
                     pages Google never reports.
                   </p>
                   <Link
-                    href={`${sitePath}/integrations`}
+                    href={marketingSiteSettingsHref(sitePath, "integrations")}
                     className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary"
                   >
                     Open Integrations

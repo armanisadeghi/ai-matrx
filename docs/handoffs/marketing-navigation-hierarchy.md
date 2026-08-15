@@ -9,12 +9,11 @@ vision:
   ]
 ---
 
-# Marketing navigation — the moves that are still owed
+# Marketing navigation — Media placement and sidebar polish
 
-**The navigation rebuild is DONE and live.** The sidebar, the grouped sections,
-the header demotion, and the sub-view registry all shipped (see Done). What this
-doc still owns is the second half of Arman's ruling: surfaces that sit under a
-WEBSITE but are not website data, and still need to move.
+**The navigation rebuild and the ruled non-website moves are DONE and live.**
+What this doc still owns is the one placement decision Arman deliberately left
+open — Media — plus the shared sidebar-primitive polish.
 
 Sibling docs: [marketing-module.md](marketing-module.md) owns the module SHAPE
 (pillars, reserved routes, landing). This doc owns navigation and placement
@@ -44,12 +43,12 @@ below the pillar level.
 ## Resources
 
 - **The registries — one declaration each, everything reads them.**
-  `lib/route-sections.ts` (26 sections + the 7 groups) ·
-  `lib/site-subviews.ts` (40 sub-views, query- or path-style hrefs) ·
+  `lib/route-sections.ts` (21 sections + the 7 groups) ·
+  `lib/site-subviews.ts` (43 sub-views, query- or path-style hrefs) ·
   `lib/site-section-icons.ts` · `lib/site-subview-icons.ts`
 - **The guards.** `lib/site-subviews.test.ts` counts every destination
-  (26 + 40 = **66**) and fails when one disappears · `lib/site-subnav.test.ts`
-  pins what the header renders on all 26 sections · `lib/route-sections.test.ts`
+  (21 + 43 = **64**) and fails when one disappears · `lib/site-subnav.test.ts`
+  pins what the header renders on all 21 sections · `lib/route-sections.test.ts`
   diffs the registry against the App Router filesystem.
 - **The surfaces.** `components/shell/MarketingSidebarMenu.tsx` (registered in
   `features/shell/constants/route-menu-registry.ts`) ·
@@ -64,38 +63,28 @@ below the pillar level.
 
 ## Remaining work
 
-1. **Execute the ruled moves** (spun off as its own task). Arman approved this
-   list; the query-scope evidence for each verdict is in Decisions below.
-   `pendingMoveTo` in `route-sections.ts` marks two of them so they cannot be
-   forgotten — delete the field as each lands.
-   **Every move changes the destination counts in `site-subviews.test.ts` and
-   MUST update them in the same commit, naming which surface went where.** That
-   is what separates a deliberate move from a surface that quietly went dark.
+1. **Decide Media placement with Arman** (details below). Do not split or relabel
+   it by inference.
 2. **Finish the sidebar-primitive polish** (spun off): the switch button loses
    its label when the sidebar is collapsed (`styles/shell.css:1008-1027`), and
    `NAV_ITEM_CLASS` / `ICON_SIZE` / `ICON_STROKE` are copied into all five
    consumer menus.
 
-## Decisions — RULED 2026-08-13, not yet executed
-
-Arman approved both. They are recorded here because the moves are still owed.
+## Decision needed — Media placement
 
 **The grouping** (live): Command · Content · Collection · Health & Fixes ·
 Search · Links & Reputation · Configuration. No group larger than five. Group
 names deliberately avoid colliding with a section name and avoid SEO jargon.
 
-**What stops being a "website" section** — the evidence is the query scope each
-surface actually uses:
+**Situation.** Only Crawled and Videos filter by `site_id`. Library is
+`brand_id`, Research is `organization_id`, Sources combines brand + org, and
+Generate is brand-scoped. The current seven-view section is therefore a
+brand/org asset manager with two website views attached.
 
-| Section | Actually filters by | Ruled | Evidence |
-| --- | --- | --- | --- |
-| **Discovery** | `brand_id` only | → brand | `DiscoveryInbox.tsx` passes `site.brand_id`, never `site.id`; `service.ts` filters `discovered_item` on `brand_id`. Two sites under one brand render byte-identical inboxes, and every confirm writes brand-keyed rows. The brand cockpit already shows the same count. |
-| **Media** | 2 of 7 views by `site_id` | → split | Crawled + Videos are the site. Library is `brand_id`, Research is `organization_id`, Sources is brand+org, Generate is brand. A brand/org asset manager with two site tabs bolted on. |
-| **Capabilities** | ~nothing | → marketing level | A hardcoded catalogue plus two live per-site numbers. Renders identically for every site in the org. |
-| **Intake** | site + **brand writes** | → into Settings | Applies `seo.site_topic_value` (site) **and** `web.brand.profile.brand_aliases` (brand). The brand write is additive so nothing is clobbered, but a site-level wizard silently edits state the sibling sites share. |
-| **Access, Integrations** | site | → into Settings | Access is the generic `iam.permissions` sharing system; Integrations edits one `site.integrations` JSONB column while `/marketing/connections` owns the real connection objects. Three slots, one job. |
-| **`/marketing/ai-visibility`** | — | collapse | Not a cross-site aggregate — a site `<Select>` feeding the identical per-site workspace. |
-| Ranks, Keywords, Reputation, Backlinks | site | stay | Genuinely per-site. Ranks and Keywords are site views over org-level libraries and have real cross-site twins. |
+**Decision needed.** Should Library, Research, Sources, and Generate move into
+the brand cockpit (leaving a smaller site Media section), or should Media stay
+together and be renamed/described honestly as a mixed-scope asset workspace?
+Arman must choose; no implementation should guess.
 
 **Not twins despite looking like them** (do not "collapse" these):
 `/marketing/changes/[changeId]` and `/marketing/pages/[pageId]` are server
@@ -104,6 +93,15 @@ and `/marketing/sites/[siteId]/[...rest]` are client redirect shims;
 `/marketing/discovery/youtube` is an unrelated feature.
 
 ## Done
+
+- **Non-website surfaces moved (2026-08-15).** Discovery is now
+  `/marketing/brands/[brandId]/discovery`; Capabilities is the shared
+  `/marketing/capabilities` catalogue; Access, Integrations, and Intake are six
+  linkable Settings views; the duplicate `/marketing/ai-visibility` selector
+  redirects to Sites. All five old site URLs remain explicit redirects.
+- **The no-lost-surface guard records the move.** Website inventory is now 21
+  sections + 43 sub-views = 64 destinations. The two-destination reduction is
+  exactly Discovery + Capabilities; folding configuration lost nothing.
 
 - **The 26 sections have a parent/child structure** — seven groups on `MARKETING_SITE_SECTIONS`, priority-ordered within each.
 - **Marketing is a sidebar mode** — `MarketingSidebarMenu` + one `route-menu-registry` entry (the fifth Large Route). Pillars outside a site, grouped sections inside, both from the same declarations as the hub and the global flyout.
