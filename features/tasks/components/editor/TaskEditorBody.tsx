@@ -64,6 +64,7 @@ import { TaskStatusPicker } from "../TaskStatusPicker";
 import { TaskRecurrencePicker } from "../TaskRecurrencePicker";
 import { TaskProvenanceChip } from "../TaskProvenanceChip";
 import { TaskSnoozeButton } from "../TaskSnoozeButton";
+import { TaskSmsReminderButton } from "../TaskSmsReminderButton";
 import { useOpenTaskEditorWindow } from "@/features/overlays/openers/taskEditorWindow";
 import { formatDateOnly } from "@/utils/dateOnly";
 import { cn } from "@/utils/cn";
@@ -415,6 +416,7 @@ export function TaskEditorBody({
                 sourceLabel={task.source_label ?? null}
               />
               <TaskSnoozeButton taskId={taskId} />
+              <TaskSmsReminderButton taskId={taskId} />
               {effective.priority && (
                 <span
                   className={cn(

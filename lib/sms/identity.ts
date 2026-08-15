@@ -2,6 +2,8 @@ import { normalizeMediumValue } from "@/features/crm/normalize";
 
 export type SmsProvider = "twilio";
 
+const SMS_COMMAND_CANDIDATE_ALIASES = new Set(["DONE"]);
+
 export interface SmsInboundContextInput {
   provider: SmsProvider;
   providerAccountId: string;
@@ -75,6 +77,15 @@ export type SmsPreferenceBindingSelection<T> =
 /** Normalize a transport endpoint with the same E.164 rules as CRM contact media. */
 export function normalizeSmsEndpoint(raw: string): string {
   return normalizeMediumValue("phone", raw).valueKey;
+}
+
+/**
+ * Admit only a deliberately tiny command candidate before assistant readiness.
+ * The durable DB claim still proves one exact correlated offer before execution.
+ */
+export function isSmsCommandCandidate(raw: string): boolean {
+  const alias = raw.trim().replace(/\s+/g, " ").toUpperCase();
+  return SMS_COMMAND_CANDIDATE_ALIASES.has(alias);
 }
 
 /** Stable provider-scoped idempotency key for one inbound Twilio message. */

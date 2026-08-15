@@ -656,6 +656,21 @@ interface ProcessInboundSmsOptions {
   context: ResolvedSmsInboundContext;
   aiProcessingStatus: 'pending' | 'skipped';
   skipReason?: string;
+  commandCandidate?: boolean;
+}
+
+async function admitInboundSmsCommandCandidate(
+  supabase: ReturnType<typeof createAdminClient>,
+  inboundMessageId: string,
+): Promise<void> {
+  const { error } = await supabase
+    .schema('communication')
+    .rpc('admit_pending_sms_command_turn', {
+      p_inbound_message_id: inboundMessageId,
+    });
+  if (error) {
+    throw new Error(`Failed to verify inbound SMS command offer: ${error.message}`);
+  }
 }
 
 /**
@@ -728,6 +743,9 @@ export async function processInboundSms(
     if (existingMessageError || !existingMessage) {
       throw new Error(`Failed to recover idempotent inbound SMS: ${existingMessageError?.message ?? 'not found'}`);
     }
+    if (options.commandCandidate) {
+      await admitInboundSmsCommandCandidate(supabase, existingMessage.id);
+    }
     await completeInboundSmsReceipt(options.receipt.receiptId, existingMessage.id);
     return {
       messageId: existingMessage.id,
@@ -757,6 +775,10 @@ export async function processInboundSms(
     if (mediaError) {
       console.error('Failed to store media records:', mediaError);
     }
+  }
+
+  if (options?.commandCandidate) {
+    await admitInboundSmsCommandCandidate(supabase, message.id);
   }
 
   if (options) {

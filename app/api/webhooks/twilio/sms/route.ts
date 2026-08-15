@@ -19,6 +19,7 @@ import {
   releaseInboundSmsReceipt,
   resolveSmsInboundContext,
 } from '@/lib/sms/receive';
+import { isSmsCommandCandidate } from '@/lib/sms/identity';
 
 const WEBHOOK_PATH = '/api/webhooks/twilio/sms';
 
@@ -81,11 +82,17 @@ export async function POST(request: Request) {
 
     const assistantReady =
       context.assistantEnabled && context.agentMessagesEnabled && Boolean(context.agentId);
+    const commandCandidate = isSmsCommandCandidate(payload.Body);
     await processInboundSms(payload, {
       receipt,
       context,
-      aiProcessingStatus: assistantReady ? 'pending' : 'skipped',
-      skipReason: assistantReady ? undefined : 'assistant_not_configured_or_paused',
+      aiProcessingStatus: commandCandidate ? 'skipped' : assistantReady ? 'pending' : 'skipped',
+      skipReason: commandCandidate
+        ? 'sms_command_offer_unverified'
+        : assistantReady
+          ? undefined
+          : 'assistant_not_configured_or_paused',
+      commandCandidate,
     });
 
     // For AI agent conversations, we don't send an immediate auto-reply

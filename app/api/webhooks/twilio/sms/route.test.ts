@@ -130,7 +130,7 @@ describe("POST /api/webhooks/twilio/sms with shared Twilio validation", () => {
     );
     expect(processInboundSms).toHaveBeenCalledWith(
       expect.objectContaining({ MessageSid: payload.MessageSid }),
-      { receipt, context, aiProcessingStatus: "pending" },
+      { receipt, context, aiProcessingStatus: "pending", commandCandidate: false },
     );
   });
 
@@ -166,6 +166,37 @@ describe("POST /api/webhooks/twilio/sms with shared Twilio validation", () => {
         context: userPausedContext,
         aiProcessingStatus: "skipped",
         skipReason: "assistant_not_configured_or_paused",
+        commandCandidate: false,
+      },
+    );
+  });
+
+  test("queues exact DONE for command correlation without an assistant binding", async () => {
+    const noAgentContext = {
+      ...context,
+      assistantEnabled: false,
+      agentMessagesEnabled: false,
+      agentId: null,
+    };
+    jest.mocked(resolveSmsInboundContext).mockResolvedValue(noAgentContext);
+    jest.mocked(parseInboundSmsPayload).mockReturnValue({
+      ...payload,
+      Body: "  done  ",
+      NumSegments: "1",
+      SmsStatus: "received",
+    });
+
+    const response = await POST(signedRequest());
+
+    expect(response.status).toBe(200);
+    expect(processInboundSms).toHaveBeenCalledWith(
+      expect.objectContaining({ Body: "  done  " }),
+      {
+        receipt,
+        context: noAgentContext,
+        aiProcessingStatus: "skipped",
+        skipReason: "sms_command_offer_unverified",
+        commandCandidate: true,
       },
     );
   });

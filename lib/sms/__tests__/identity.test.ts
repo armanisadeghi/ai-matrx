@@ -1,4 +1,5 @@
 import {
+  isSmsCommandCandidate,
   normalizeSmsEndpoint,
   selectSingleSmsPreferenceBinding,
   smsInboundProviderEventKey,
@@ -9,6 +10,12 @@ describe("SMS identity contract", () => {
   test("normalizes endpoints through the canonical CRM normalizer", () => {
     expect(normalizeSmsEndpoint("(415) 555-1234")).toBe("+14155551234");
     expect(normalizeSmsEndpoint("+44 20 7946 0958")).toBe("+442079460958");
+  });
+
+  test("admits only the exact DONE command candidate before agent readiness", () => {
+    expect(isSmsCommandCandidate("  done  ")).toBe(true);
+    expect(isSmsCommandCandidate("DONE task one")).toBe(false);
+    expect(isSmsCommandCandidate("hello")).toBe(false);
   });
 
   test("scopes inbound idempotency to provider account and message", () => {

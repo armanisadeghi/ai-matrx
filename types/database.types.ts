@@ -9383,7 +9383,29 @@ export type Database = {
         }
         Returns: undefined
       }
+      admit_pending_sms_command_turn: {
+        Args: { p_inbound_message_id: string }
+        Returns: string
+      }
       claim_pending_sms_agent_turns: {
+        Args: {
+          p_lease_seconds?: number
+          p_limit?: number
+          p_worker_id: string
+        }
+        Returns: {
+          agent_id: string
+          agent_version_id: string
+          chat_conversation_id: string
+          chat_conversation_is_new: boolean
+          inbound_message_id: string
+          organization_id: string
+          sms_conversation_id: string
+          text: string
+          user_id: string
+        }[]
+      }
+      claim_pending_sms_command_turns: {
         Args: {
           p_lease_seconds?: number
           p_limit?: number
@@ -9512,6 +9534,18 @@ export type Database = {
         }
         Returns: string
       }
+      enqueue_my_task_sms_reminder: {
+        Args: { p_program_key?: string; p_task_id: string }
+        Returns: {
+          assist_id: string
+          blocked_reason: string
+          duplicate: boolean
+          notification_id: string
+          outbound_message_id: string
+          outcome: string
+          sms_conversation_id: string
+        }[]
+      }
       enqueue_sms_assistant_test: {
         Args: {
           p_body: string
@@ -9568,6 +9602,10 @@ export type Database = {
           user_assistant_enabled: boolean
           verified_user_phone: string
         }[]
+      }
+      has_exact_sms_task_done_offer: {
+        Args: { p_inbound_message_id: string }
+        Returns: boolean
       }
     }
     Enums: {

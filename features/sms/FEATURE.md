@@ -24,6 +24,7 @@ Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/commu
 - `features/settings/tabs/MessagingTab.tsx` — production enrollment, opt-out, and personal text-assistant binding.
 - `features/sms/components/SmsAssistantSettingsSection.tsx` — saved-agent selection, per-user pause/disconnect, readiness, and safe-test controls.
 - `features/sms/hooks/useSmsAssistantProgram.ts` — direct authenticated RPC adapter for the selected assistant program.
+- `features/sms/task-reminder.ts` — typed direct-RPC adapter for one policy-gated task reminder.
 - `app/(dev)/demos/tests/sms/` — internal testing and diagnostics.
 - `app/api/sms/verify/route.ts` — Twilio Verify plus verified-consent persistence.
 - `app/api/sms/preferences/route.ts` — preference reads/writes; enabling requires existing verified consent.
@@ -78,6 +79,14 @@ All SMS tables live in the `communication` schema. The enrollment contract prima
 5. Aidream runs the canonical agent against the reserved canonical chat conversation with tools disabled, atomically enqueues the reply, and delivers it through the durable outbound worker.
 6. Pause preserves the binding. Disconnect clears it. Both leave ordinary SMS-notification enrollment unchanged.
 
+### Actionable task reminder
+
+1. From the canonical task editor, the user confirms **Text reminder**.
+2. The authenticated `communication.enqueue_my_task_sms_reminder` RPC checks task access, non-recurring/open status, explicit task-notification enrollment, verified consent, quiet hours, source suppression, and hourly/daily caps.
+3. One transaction creates the notification, durable queued outbound message, and one `platform.assists` offer whose only SMS alias is `DONE`; duplicate clicks return the same durable identities.
+4. An inbound `DONE` is initially stored as skipped/unverified. The service-role admission RPC promotes it only when exactly one well-formed offer matches the same user, organization, conversation, and outbound message. Missing, malformed, or ambiguous offers remain terminally skipped.
+5. Aidream drains expired command recovery first, then fresh exact commands, then ordinary agent turns. Command execution does not require or fabricate a saved-agent binding; generic text still does.
+
 ---
 
 ## Invariants
@@ -92,6 +101,7 @@ All SMS tables live in the `communication` schema. The enrollment contract prima
 - **Phone number alone is not authorization.** Assistant execution requires the exact verified user/program binding returned by the canonical resolver; ambiguous or missing identity executes nothing.
 - **Global and user stops are distinct.** `sms_phone_numbers.assistant_enabled` is read-only health on user surfaces; `sms_notification_preferences.ai_agent_messages` is the user's pause/resume switch.
 - **Consequential tools stay disabled in the owner beta.** The SMS worker invokes the canonical agent with an empty replacement tool set.
+- **A word is never authority.** `DONE` executes only through one exact durable offer; zero, malformed, or ambiguous offers never enter the worker queue.
 - A worker crash must not mint a second chat turn or Twilio send. Expired processing/sending claims become explicit stuck/uncertain work for repair, never automatic retries.
 - Twilio accepting an API request is not proof of delivery; delivery status comes from the status webhook.
 - Message reads page newest-first, but conversation surfaces render each page oldest-to-newest.
@@ -99,16 +109,17 @@ All SMS tables live in the `communication` schema. The enrollment contract prima
 ## Production gaps verified 2026-08-15
 
 - Legacy `lib/sms/send.ts` calls the provider before durable local intent/claim creation; assistant/test delivery already uses the durable outbox.
-- `max_messages_per_day` is stored but only the hourly cap is enforced.
+- The canonical task-reminder producer enforces both hourly and timezone-local daily caps; legacy notification senders have not all converged on that producer contract.
 - The broad `system` category bypasses consent and quiet hours and needs a closed, allowlisted definition.
-- Notification rows are written with `message_id = null` after sending.
+- Legacy notification senders can still write notification rows with `message_id = null`; the canonical task-reminder transaction links the message before commit.
 - SMS consent has not converged on the canonical CRM contact-medium eligibility authority.
-- The reply-action processor, tenant messaging, and PSTN voice layers remain roadmap work in the cross-repo plan.
+- Recurring-task/SNOOZE actions, tenant messaging, and the dynamic PSTN voice layer remain roadmap work in the cross-repo plan.
 
 ---
 
 ## Change log
 
+- `2026-08-15` — Added the first canonical actionable notification: the task editor queues a branded, consent/quiet-hours/rate-limited non-recurring task reminder through a direct authenticated RPC, with exact `DONE` offer correlation, command-first no-agent admission, crash recovery, and fail-closed zero/malformed/ambiguous handling.
 - `2026-08-15` — Aligned the inbound webhook test with the canonical `www.aimatrx.com` signing host and current processor result contract; the route now accepts the standard `Request` surface it actually consumes.
 - `2026-08-15` — Added the production personal text-assistant binding to Messaging settings using direct authenticated, program-scoped RPCs; added durable provider-event claims, exact identity/conversation resolution, policy-keyword precedence, canonical agent execution with tools disabled, durable agent/outbound workers, crash fences, early status-callback correlation, and separate global/user kill switches.
 - `2026-08-15` — Moved the canonical Twilio signature validator to the shared communications
