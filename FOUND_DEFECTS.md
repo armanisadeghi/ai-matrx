@@ -116,7 +116,24 @@ select policy first, verified as a non-owner, then the schema exposure — and n
 writing a bad schema name into `pgrst.db_schemas` takes the WHOLE API down (project memory
 `project_postgrest_schema_cache_outage`).
 
-### D182 — Component-RLS remainder (2026-08-13; **re-measured live + partly fixed 2026-08-14**)
+### D184 — 6 registered tables are protected only by a MISSING GRANT, not by RLS (2026-08-14)
+
+Found by the guard rail Arman required before folding GRANTs into `iam.apply_rls` (see D182). These are holes, **not closed doors** — a table with RLS off or zero policies is one migration (or one grant) away from wide open, and two of them are already open.
+
+| Table | Variant | State | `authenticated` grants |
+|---|---|---|---|
+| **`ui.ui_surface`** | entity | **RLS DISABLED**, 0 policies | **`SIUD`** — ⚠️ **live hole**: any logged-in user can insert/update/delete the surface registry |
+| **`agent.card`** | component | **RLS DISABLED**, 0 policies | `S---` — every agent card readable regardless of visibility |
+| `batch.cost_event` | entity | RLS on, **0 policies** | `SIUD` |
+| `public.system_error` | entity | RLS on, **0 policies** | `SIUD` |
+| `public.system_write_failure` | entity | RLS on, **0 policies** | `SIUD` |
+| `runtime.global_origin` | entity | RLS on, **0 policies** | `----` |
+
+The four "RLS on, 0 policies" tables are currently closed (no policy = no rows for `authenticated`) but grant-wide, so the first policy anyone adds opens them fully.
+
+**Deliberately NOT auto-swept.** `iam.apply_table_grants` refuses to grant on any of them, so the v3 backfill skipped them safely. Fixing each needs a judgement about *intended* openness — `ui.ui_surface` is a registry that probably should be broadly readable but never client-writable; `agent.card` is a deliberate sharing surface. That is an openness call (db-rules §6 security philosophy), so it is Arman's, not an agent's. **Do not "fix" these by granting; give them real policies.**
+
+### D182 — Component-RLS remainder (2026-08-13; **re-measured live + largely fixed 2026-08-14**)
 
 **The 2026-08-13 numbers in the original entry were wrong in both directions and its prescribed fix was dangerous. Re-measured against the live DB 2026-08-14; adversarially verified by a second agent.** Applied: `migrations/iam_component_d182_parent_select_and_stamp_actor.sql` (ledgered, `pgrst` reloaded, verified live).
 
@@ -126,9 +143,19 @@ writing a bad schema name into `pgrst.db_schemas` takes the WHOLE API down (proj
 
 **OPEN — (1) remainder, and the original prescription is a trap.** 22 component tables have `created_by` but **no `updated_by`** column (15 of them `created_by NOT NULL` with no default, so a client insert fails **23502**, not 42501). ⚠️ **Do NOT "attach the canonical trigger trio" to them** — `platform._stamp_actor()` assigns `NEW.updated_by` *unconditionally*, so attaching it to a table without that column raises **42703 `record "new" has no field "updated_by"` on every insert and update**, breaking the service_role pipelines that are those tables' only writers. Verified empirically. Correct order: base-contract column retrofit (`updated_by`) **first**, then the trigger.
 
-**OPEN — table GRANTs are owned by no canonical generator.** Neither `iam.apply_rls` nor `platform.create_entity_table` issues a single `GRANT`, so privileges are ad-hoc and incoherent across the 162 active component tables: 101 `SIUD`, **40 SELECT-only**, **9 with no privileges at all** (incl. `runtime.global_execution`, `runtime.work_item`), 4 `SU`, 3 `SI`, 3 `SIU`, 1 `SD`, and **`files.file_versions` is DELETE-only — unreadable by the very role its `std_select` targets**. This is the *first* gate: RLS is never reached, so the trigger/policy work above cannot make any of these client-writable on its own. Deciding which roles get which privileges is an openness call — **Arman's, not an agent's** (db-rules §6 security philosophy).
+**FIXED — table GRANTs now come from the generator.** Neither `iam.apply_rls` nor `platform.create_entity_table` issued a single `GRANT`, so privileges were ad-hoc across the 162 active component tables: 101 `SIUD`, **40 SELECT-only**, **9 with none**, 4 `SU`, 3 `SI`, 3 `SIU`, 1 `SD`, and **`files.file_versions` DELETE-only — unreadable by the very role its `std_select` targets**. GRANTs are the *first* gate: where missing, RLS is never reached. Now owned by `iam.apply_table_grants(schema, table, variant)`, called by `apply_rls` — `entity`/`component`/`system`/`restricted` → `SIUD`, `ledger` → `SELECT` only; `anon` untouched. Openness is decided by RLS, not grants. Safety rail: it **refuses** to grant on a table with RLS off or zero policies → **D184**.
 
-**OPEN — (3) product call for Arman.** `platform._stamp_actor` uses `COALESCE(NEW.created_by, uid)` — it never forces `auth.uid()` — and the component `std_insert` parent-editor arm places no constraint on `created_by`, while `std_select` leads with `created_by = auth.uid()`. So a parent-editor can stamp **another** user as creator and thereby convey that user owner-read. The `entity` variant DOES force it. Broader than first recorded: **56** active component tables have INSERT granted to `authenticated` plus both halves of this shape — including `chat.message`, `chat.request`, `chat.tool_call`, `chat.media`, all `research.rs_*`, `agent.definition_version`, `content_ir.kind_*`, `workflow.*`. Should component match entity?
+**FIXED — (3) the created_by conveyance hole. Arman's ruling: THE COMPONENT OWNERSHIP LAW.** `created_by` does two different jobs and they only coincide on an **entity** (creator = owner). On a **component** the actor and the owner come apart — the owner is the parent — so the column cannot be an access key. The component `std_insert` parent-editor arm never constrained `created_by` while `std_select` led with `created_by = auth.uid()`, so a parent-editor could stamp another user as creator and hand that user owner-read; **56** component tables carried both halves (`chat.message`, `chat.request`, `chat.tool_call`, all `research.rs_*`, `workflow.*`, `content_ir.kind_*`). The fix is **not** to force `auth.uid()` (that is the entity fix) — it is that `apply_rls(…,'component')` **never emits a `created_by` clause at all**. Nothing is lost: `history.row_versions` already records the real actor. Verified live: **0** component policies reference `created_by`. Canon: db-rules §6d-1.
+
+**OPEN — follow-ups to the ownership law** (safe, non-urgent — the column now grants nothing):
+1. **Neutralize the surviving `created_by` values** on component tables with a parent-derived trigger (a component's `created_by` derived from its *parent's*, re-derived on reparent) so any code still reading the column gets a correct, non-spoofable value. **Not** `auth.uid()`.
+2. **Then clean up:** drop `created_by` where it carries no domain meaning; where "who acted" is genuinely meaningful (a message sender) rename it to an explicit `sender_id`/`author_role` that never appears in a policy.
+3. **Conformance check** that fails any component policy referencing `created_by`, and any active table whose GRANTs don't match its variant. Not yet written — the law is currently enforced only by the generator.
+4. **`platform.create_entity_table` should call `iam.apply_table_grants`** so the create path and the repair path agree. Not yet wired.
+
+**OPEN — (1) remainder, and the original prescription is a trap.** 22 component tables have `created_by` but **no `updated_by`** column (15 of them `created_by NOT NULL` with no default, so a client insert fails **23502**). ⚠️ **Do NOT "attach the canonical trigger trio" to them** — `platform._stamp_actor()` assigns `NEW.updated_by` *unconditionally*, so attaching it to a table without that column raises **42703 `record "new" has no field "updated_by"` on every insert and update**, breaking the service_role pipelines that are those tables' only writers. Verified empirically. Note this is now *lower* priority: under the ownership law those component `created_by` columns are slated for removal (follow-up 2), so most of these tables should lose the column rather than gain a stamp.
+
+**OPEN — `rag.kg_sweep_state` fails the base contract** (entity variant, no `created_by`), so it is the 1 table of 290 the v3 backfill could not regenerate.
 
 ### D180 — Hydration mismatch + "script tag while rendering" on every `(core)` marketing route (2026-08-13)
 
