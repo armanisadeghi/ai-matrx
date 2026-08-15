@@ -129,10 +129,11 @@ export function BingConnectionsWorkspace() {
   const matchingProperty = selectedSite
     ? findMatchingProperty(selectedSite, resourcesForConnection)
     : undefined;
-  const selectedResourceRef = resourceRef || matchingProperty?.resource_ref || "";
+  const selectedResourceRef =
+    resourceRef || matchingProperty?.resource_ref || "";
   const alreadyBound = Boolean(
     currentBinding?.enabled &&
-      currentBinding.resource_ref === selectedResourceRef,
+    currentBinding.resource_ref === selectedResourceRef,
   );
   const showConnectionForm =
     !inventory.isLoading && (!usableConnections.length || showAddConnection);
@@ -381,8 +382,8 @@ export function BingConnectionsWorkspace() {
                   {organizations.activeOrgId ? (
                     <p className="mt-2 text-[10px] text-muted-foreground">
                       Recommended: connect for{" "}
-                      {organizations.activeOrgName ?? "your organization"}
-                      so teammates can use the same verified properties.
+                      {organizations.activeOrgName ?? "your organization"} so
+                      teammates can use the same verified properties.
                     </p>
                   ) : null}
                 </div>
@@ -491,7 +492,7 @@ export function BingConnectionsWorkspace() {
                   <div>
                     <Label className="text-xs">Bing connection</Label>
                     <Select
-                      value={connectionId || undefined}
+                      value={selectedConnectionId || undefined}
                       onValueChange={(value) => {
                         setConnectionId(value);
                         setResourceRef("");
@@ -513,7 +514,7 @@ export function BingConnectionsWorkspace() {
                   </div>
                 ) : null}
 
-                {selectedSite && connectionId ? (
+                {selectedSite && selectedConnectionId ? (
                   resourcesForConnection.length ? (
                     <div className="space-y-2">
                       {matchingProperty ? (
@@ -534,7 +535,7 @@ export function BingConnectionsWorkspace() {
                             Verified Bing property
                           </Label>
                           <Select
-                            value={resourceRef || undefined}
+                            value={selectedResourceRef || undefined}
                             onValueChange={setResourceRef}
                           >
                             <SelectTrigger
@@ -565,7 +566,7 @@ export function BingConnectionsWorkspace() {
                         size="sm"
                         className="h-8 gap-1.5"
                         disabled={
-                          !resourceRef || bind.isPending || alreadyBound
+                          !selectedResourceRef || bind.isPending || alreadyBound
                         }
                         onClick={() => void runBind()}
                       >

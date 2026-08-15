@@ -4,10 +4,8 @@ import Link from "next/link";
 import { ArrowRight, Gauge, Globe2, SearchCheck } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 import { Badge } from "@/components/ui/badge";
-import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingScope } from "@/features/surfaces/manifests/marketing.manifest";
-import { MarketingWorkspaceNav } from "@/features/marketing/components/shared/MarketingWorkspaceNav";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { useSiteOptions } from "@/features/marketing/data/hooks";
 import { parseSiteIntegrations } from "@/features/marketing/data/integrations-schema";
@@ -52,8 +50,7 @@ export function MarketingConnectionsCatalog() {
           loading: inventory.isLoading,
           unavailable: inventory.isError,
           connected_accounts: connectedAccounts.length,
-          search_console_properties_available:
-            searchConsoleProperties.length,
+          search_console_properties_available: searchConsoleProperties.length,
           search_console_sites_configured: searchConsoleSites.length,
           pagespeed_sites_enabled: pageSpeedSites.length,
         },
@@ -77,14 +74,6 @@ export function MarketingConnectionsCatalog() {
       surfaceName="matrx-user/marketing"
       getScope={getHubScope}
     >
-      <RouteHeader
-        left={
-          <h1 className="ml-2 truncate text-sm font-medium text-foreground">
-            Connections
-          </h1>
-        }
-        center={<MarketingWorkspaceNav />}
-      />
       <main className="h-full overflow-y-auto bg-textured px-3 pb-4 pt-[calc(var(--shell-header-h)+0.5rem)] sm:px-4">
         <div className="grid max-w-5xl gap-3 md:grid-cols-2">
           <Link
