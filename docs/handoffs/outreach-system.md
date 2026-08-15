@@ -109,7 +109,7 @@ More than you would expect. The parts that exist are good; they are simply not c
 | Reputation cases with verdict, priority, confidence, evidence, **`pitch_angle`**, `backlink_id` | `seo.reputation_case`; UI `features/marketing/components/reputation/` | Live |
 | Canonical contact records + dedup + merge lineage | `crm.party` (+ resolver, aidream `services/crm/`) | Live |
 | **Domain is already a resolver natural key** | `party.primary_domain`; `resolve_party` | Live — this IS the domain→org bridge |
-| **SEO domain → party fold (G1)** | aidream `services/crm/seo_domains.py`; `POST /api/seo/sites/{id}/crm/{referring-domains,reputation-outlets}` | **Live 2026-08-14** — no frontend caller yet |
+| **SEO domain → party fold (G1)** | aidream `services/crm/seo_domains.py`; `POST /seo/sites/{id}/crm/{referring-domains,reputation-outlets}` (bare prefix — no `/api`) | **Live 2026-08-14** — no frontend caller yet |
 | Suppression / DNC / opt-out per channel value | `crm.contact_medium`, `party_contact_point` | Live, enforced by the dialer |
 | Activity log | `crm.interaction` | Live |
 | **Sequence data model** — `current_step`, `next_attempt_at`, `contact_point_id`, `attempt_count`, claim lock | `crm.outreach_list_member` | **Live and UNUSED — built for cadences, only the manual dialer consumes it** |
@@ -135,7 +135,14 @@ Server-side: `aidream/aidream/services/crm/seo_domains.py` folds
 into canonical `crm.party` organizations through `resolve_party` — domain was already one of
 its natural keys, so it is a call site, not a new system. Routes (site-scoped, canonical
 editor gate, org from the SITE):
-`POST /api/seo/sites/{site_id}/crm/referring-domains` · `POST /api/seo/sites/{site_id}/crm/reputation-outlets`.
+`POST /seo/sites/{site_id}/crm/referring-domains` · `POST /seo/sites/{site_id}/crm/reputation-outlets`
+(plus `POST /seo/sites/{site_id}/crm/link-gap-domains`).
+🚨 **These prefixes are BARE — there is no `/api` segment.** This doc said `/api/...`
+until 2026-08-15 and it was wrong; aidream router prefixes are bare, so an `/api/...`
+path is unreachable at runtime while still appearing in `/openapi.json`. Verified
+against `types/python-generated/api-types.ts` and live. Call them through
+`@/lib/api/typed-client` so a wrong path is a compile error rather than a 404 nobody
+notices.
 Every folded org carries a provenance edge (`link_prospect` / `outreach_target`) whose payload
 holds the verdict, priority, source URL and pitch angle — the answer to "why is this org in my
 CRM". Idempotent on the domain key (refold creates nothing); a domain already in the CRM is
@@ -146,7 +153,7 @@ skipped WITH the reason. Contract + earned traps: `aidream/aidream/services/crm/
 backlinks/competitors collection or a reputation run COMPLETES — data only changes then, so
 a timer would poll unchanged data and still be late. Per-site setting on
 `web.site.settings->'crm_fold'` (`auto` default · `manual` button-only · `off`, where the
-button refuses too), read/written at `GET|PUT /api/seo/sites/{site_id}/crm/fold-settings`
+button refuses too), read/written at `GET|PUT /seo/sites/{site_id}/crm/fold-settings`
 and meant to render BOTH on the site-settings surface and beside the prospect list — one
 record, two renders.
 
