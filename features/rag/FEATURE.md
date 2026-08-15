@@ -130,6 +130,8 @@ Curated, system-owned RAG content (canonical example: the **AMA Guides 5th Editi
 
 **Three-tier audience = one primitive** (`rag.data_store_grants`): `global` | `industry` (→ orgs in that [industry](../industries/FEATURE.md)) | `organization` (a direct grant or self-service opt-in on a `discoverable` store). Grants attach to the container, so they cover every member source's chunks.
 
+**Issuance RPC gate:** `rag.library_grant_publish` / `_revoke` resolve session identity first (`COALESCE(auth.uid(), p_actor)`) and call `public._library_assert_admin`; every platform-admin tier passes. The deliberately deleted `_library_assert_super_admin` name must never return. `audit.function_runtime_probe` executes publish's pre-write invalid-store path on every `audit.refresh()`.
+
 **Open path = platform reachability (not FE exceptions):** industry/org/global grants on a library `data_store` cascade through `platform.associations` → `platform.reachability` → `iam.has_access` / `public.has_access_as`:
 
 | Edge                                         | Conveys |
@@ -168,6 +170,7 @@ Migrations: [`library_store_file_reachability_cascade.sql`](../../migrations/lib
 
 ## Change log
 
+- **2026-08-15 — Shared Knowledge publishing executes again.** `rag.library_grant_publish` now calls the intended any-admin helper (`public._library_assert_admin`) while preserving its live pre-check body, and a read-only runtime probe exercises the authorization path on every broken-function audit refresh.
 - **2026-08-15 — Gemini embeddings gained an honest RAG surface.** Added the
   `/rag/embeddings` lab and linked it from both RAG navigation surfaces. It
   targets the dedicated `google_embeddings`/`embedContent` contract, supports
