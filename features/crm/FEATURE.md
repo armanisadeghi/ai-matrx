@@ -480,6 +480,16 @@ not an expert) and `ExpertStatusCard` on the record page.
 
 ## Change log
 
+- 2026-08-15 — **`PartyNotes` stopped reporting a failed load as an empty record.**
+  A `cmt_list` failure left `comments` at `[]`, so the panel rendered a calm
+  `0` count and "No notes yet" over a record that may have many notes — the
+  failure existed only in the console. It now tracks the error, renders
+  "Couldn't load notes — \<real message\>" with a Retry that re-runs `load()`,
+  and suppresses the count entirely while failing (an authoritative `0` is the
+  same lie as the empty state). The message is finally specific because the
+  shared mapper stopped discarding it — see `features/scopes/FEATURE.md`
+  (2026-08-15). **A failed read is not an empty list**; any other CRM section
+  that swallows its error the same way owes the user the same treatment.
 - 2026-08-14 — **`record_class`: platform-discovered parties stop drowning the CRM.**
   New `crm.party.record_class` column + backfill of 1,181 rows, default list predicate,
   the Record facet, and `crm_list_scope_counts(p_record_class)`. Server half (every
