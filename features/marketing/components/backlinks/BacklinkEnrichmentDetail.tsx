@@ -186,7 +186,7 @@ export function BacklinkEnrichmentDetail({
     : null;
   const lastErrorMessage = jsonText(lastError.message);
   const referringDomainHref = row.source_domain
-    ? `${sitePath}/backlinks?tab=domains&search=${encodeURIComponent(row.source_domain)}`
+    ? `${sitePath}/backlinks?view=domains&search=${encodeURIComponent(row.source_domain)}`
     : null;
   const recordSurface = `Backlink from ${row.source_domain ?? sourceOrigin(row.source_url)}`;
   const displayRow: BacklinkObservationRow = {

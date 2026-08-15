@@ -129,16 +129,6 @@ describe("marketing site sub-view registry", () => {
    * Each block is deleted when its section is migrated to consume the registry.
    */
   describe("legacy local copies still match the registry", () => {
-    it("backlinks", () => {
-      const source = sourceOf(
-        "features/marketing/components/backlinks/lib/vocab.ts",
-      );
-      for (const view of listMarketingSubViews("backlinks")) {
-        expect(source).toContain(`key: "${view.id}"`);
-        expect(source).toContain(`label: "${view.label}"`);
-      }
-    });
-
     it("ai-visibility", () => {
       const source = sourceOf(
         "features/marketing/seo/ai-visibility/evidence-views.ts",

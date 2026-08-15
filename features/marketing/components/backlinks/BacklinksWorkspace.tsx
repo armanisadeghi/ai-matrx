@@ -1,10 +1,13 @@
 "use client";
 
 /**
- * `/marketing/brands/[brandId]/sites/[siteId]/backlinks` — the tabbed
- * backlink intelligence workspace, modeled on the Search Console workspace
- * (SearchConsoleWorkspace): tab pills + toolbar in one slim top row, tab in
- * the URL (`?tab=`), each tab body owning its own scroll region.
+ * `/marketing/brands/[brandId]/sites/[siteId]/backlinks` — the backlink
+ * intelligence workspace: a toolbar row, then one body per view, each owning
+ * its own scroll region.
+ *
+ * The seven views are declared in `lib/site-subviews.ts` and rendered by the
+ * SITE HEADER, which owns switching (it writes `?view=`). This file only reads
+ * which one is active, so every view stays linkable and shareable.
  *
  * This file is the inside of the route's single dynamic edge
  * (BacklinksGate) — recharts and every sub-component import statically here
@@ -68,6 +71,7 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 import { createMarketingBacklinksScope } from "@/features/surfaces/manifests/marketing-backlinks.manifest";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { useMarketingSubView } from "@/features/marketing/lib/useMarketingSubView";
 import {
   useBacklinkTrend,
   useBacklinkWorkspace,
@@ -85,13 +89,10 @@ import { BacklinksAssistStrip } from "@/features/marketing/components/backlinks/
 import { ReferringDomainIntelligenceTable } from "@/features/marketing/components/backlinks/ReferringDomainIntelligenceTable";
 import {
   BACKLINK_REFRESH_PROFILES,
-  BACKLINK_TABS,
   backlinkEmptyHint,
   backlinkRefreshProfileLabel,
   DOMAIN_RANK_EXPLAINER,
-  isBacklinkTabKey,
   spamTone,
-  type BacklinkTabKey,
 } from "@/features/marketing/components/backlinks/lib/vocab";
 import { parseDimensionExtras } from "@/features/marketing/components/backlinks/lib/extras";
 import type {
@@ -175,7 +176,7 @@ function isDomainViewKey(value: string | null): value is DomainViewKey {
   return DOMAIN_VIEWS.some((view) => view.key === value);
 }
 
-function isDimensionTab(tab: BacklinkTabKey): tab is DimensionTabKey {
+function isDimensionTab(tab: string): tab is DimensionTabKey {
   return tab in DIMENSION_KIND_BY_TAB;
 }
 
@@ -457,21 +458,18 @@ export function BacklinksWorkspace() {
     if (updated.version >= siteRef.current.version) siteRef.current = updated;
   };
 
-  const tabParam = searchParams.get("tab");
-  const tab: BacklinkTabKey = isBacklinkTabKey(tabParam)
-    ? tabParam
-    : "overview";
+  const tab = useMarketingSubView("backlinks");
   const domainViewParam = searchParams.get(DOMAIN_VIEW_PARAM);
   const domainView: DomainViewKey = isDomainViewKey(domainViewParam)
     ? domainViewParam
     : "ours";
-  const tabHref = (
-    next: BacklinkTabKey,
-    extra?: Record<string, string>,
-  ): string => {
+  const tabHref = (next: string, extra?: Record<string, string>): string => {
     const params = new URLSearchParams(searchParams.toString());
-    if (next === "overview") params.delete("tab");
-    else params.set("tab", next);
+    if (next === "overview") params.delete("view");
+    else params.set("view", next);
+    // `?tab=` is only a READ alias for links shared before the header owned
+    // this. Drop it here or a stale one would win back on the default view.
+    params.delete("tab");
     params.delete(DOMAIN_VIEW_PARAM);
     for (const [key, value] of Object.entries(extra ?? {})) {
       params.set(key, value);
@@ -483,12 +481,6 @@ export function BacklinksWorkspace() {
     const query = params.toString();
     return query ? `${pathname}?${query}` : pathname;
   };
-  const setTab = (next: BacklinkTabKey) => {
-    startNavigation(() => {
-      router.replace(tabHref(next), { scroll: false });
-    });
-  };
-
   const setDomainView = (next: DomainViewKey) => {
     if (next === domainView) return;
     startNavigation(() => {
@@ -677,7 +669,7 @@ export function BacklinksWorkspace() {
    * promises (the Links tab honors `f_enrichment_status` server-side).
    */
   const linksStatusHref = (statuses?: string[]) =>
-    `${sitePath}/backlinks?tab=links${
+    `${sitePath}/backlinks?view=links${
       statuses
         ? `&f_enrichment_status=${encodeURIComponent(`select:${statuses.join("|")}`)}`
         : ""
@@ -713,12 +705,12 @@ export function BacklinksWorkspace() {
     {
       label: "Needs your attention",
       value: data?.enrichment.highPriority ?? 0,
-      href: `${sitePath}/backlinks?tab=insights&insight=actionable`,
+      href: `${sitePath}/backlinks?view=insights&insight=actionable`,
     },
     {
       label: "You can probably edit",
       value: data?.enrichment.controllable ?? 0,
-      href: `${sitePath}/backlinks?tab=insights&insight=controllable`,
+      href: `${sitePath}/backlinks?view=insights&insight=controllable`,
     },
   ];
 
@@ -1040,29 +1032,8 @@ export function BacklinksWorkspace() {
       })}
     >
       <main className="flex h-full min-h-0 flex-col overflow-hidden bg-textured">
-        {/* One slim top row: tab pills left, toolbar right. */}
+        {/* One slim top row. The view switcher lives in the SITE HEADER. */}
         <div className="flex shrink-0 flex-wrap items-center gap-x-2 gap-y-1.5 border-b border-border px-3 py-1.5 sm:px-4">
-          <div className="min-w-0 max-w-full overflow-x-auto">
-            <div className="flex w-max items-center gap-0.5 rounded-md border border-border bg-card p-0.5">
-              {BACKLINK_TABS.map((entry) => (
-                <button
-                  key={entry.key}
-                  type="button"
-                  title={entry.description}
-                  disabled={isNavigating}
-                  className={cn(
-                    "shrink-0 whitespace-nowrap rounded px-2 py-1 text-xs transition-colors",
-                    tab === entry.key
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:bg-accent hover:text-foreground",
-                  )}
-                  onClick={() => setTab(entry.key)}
-                >
-                  {entry.label}
-                </button>
-              ))}
-            </div>
-          </div>
           <div className="ml-auto flex flex-wrap items-center gap-1.5">
             <AuthorityRouterDoor sitePath={sitePath} compact />
             <Button asChild size="sm" variant="outline" className="gap-1.5">

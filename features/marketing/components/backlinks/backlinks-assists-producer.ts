@@ -321,7 +321,7 @@ function reviewBacklogCandidate(
     return null;
   }
   const requestKey = `${eventKey(state)}-${state.enrichment.awaiting}`;
-  const href = `${state.sitePath}/backlinks?tab=links&reviewBatch=${REVIEW_BATCH_SIZE}&reviewRequest=${encodeURIComponent(requestKey)}`;
+  const href = `${state.sitePath}/backlinks?view=links&reviewBatch=${REVIEW_BATCH_SIZE}&reviewRequest=${encodeURIComponent(requestKey)}`;
   return {
     sourceKey: `${SOURCE_PREFIX}.review_backlog`,
     title: `${state.enrichment.awaiting.toLocaleString()} linking pages are waiting for review`,

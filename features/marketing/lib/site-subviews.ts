@@ -104,7 +104,6 @@ export const MARKETING_SITE_SUBVIEWS = [
       { id: "competitors", label: "Competitors" },
       { id: "insights", label: "Insights" },
     ],
-    legacyMechanism: "tab-param",
   },
   {
     // The six tabs BELOW these (Overview, Theories, Implementation, Live

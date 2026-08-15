@@ -1,6 +1,9 @@
 /**
- * Backlink workspace vocabulary — tabs, views, anchor groups, tones, and every
- * label a human reads on this surface.
+ * Backlink workspace vocabulary — views, anchor groups, tones, and every label
+ * a human reads on this surface.
+ *
+ * The workspace's seven top-level views are NOT here: they live in
+ * `features/marketing/lib/site-subviews.ts` and the site header renders them.
  *
  * Follows the GSC vocabulary-as-const-array pattern
  * (features/marketing/search-console/types.ts): every tab/view/group is one
@@ -17,58 +20,6 @@
  */
 
 import { humanizeAssessmentValue } from "@/features/marketing/components/backlinks/lib/enrichment";
-
-export const BACKLINK_TABS = [
-  {
-    key: "overview",
-    label: "Overview",
-    description:
-      "How your links are doing overall — totals, growth, and the biggest names.",
-  },
-  {
-    key: "links",
-    label: "Backlinks",
-    description:
-      "Every link we know about, what we found on the page it comes from, and what to do about it.",
-  },
-  {
-    key: "domains",
-    label: "Referring domains",
-    description:
-      "Every website that links to you, what its pages are like, and what we think of it.",
-  },
-  {
-    key: "anchors",
-    label: "Anchors",
-    description:
-      "The words other sites use when they link to you, and whether any one phrase is over-used.",
-  },
-  {
-    key: "pages",
-    label: "Top pages",
-    description: "Which of your pages earn links.",
-  },
-  {
-    key: "competitors",
-    label: "Competitors",
-    description:
-      "Sites that link to your competitors too — good places to ask for a link of your own.",
-  },
-  {
-    key: "insights",
-    label: "Insights",
-    description:
-      "Ready-made views of your links: the strongest, the lost, the broken, the risky, and the ones worth acting on.",
-  },
-] as const;
-
-export type BacklinkTabKey = (typeof BACKLINK_TABS)[number]["key"];
-
-export function isBacklinkTabKey(
-  value: string | null,
-): value is BacklinkTabKey {
-  return BACKLINK_TABS.some((tab) => tab.key === value);
-}
 
 /**
  * Insight views — each is a server-filtered slice of the backlink table. The

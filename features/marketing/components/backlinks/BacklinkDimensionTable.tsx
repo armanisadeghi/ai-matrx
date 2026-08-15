@@ -110,12 +110,12 @@ const EMPTY_ICON: Record<BacklinkDimensionKind, typeof Globe> = {
 
 /** Links tab, searched by this dimension's domain — the rows it stands for. */
 function domainLinksHref(sitePath: string, label: string): string {
-  return `${sitePath}/backlinks?tab=links&q=${encodeURIComponent(label)}`;
+  return `${sitePath}/backlinks?view=links&q=${encodeURIComponent(label)}`;
 }
 
 /** Broken links FROM this domain: the broken lens, narrowed to that domain. */
 function domainBrokenHref(sitePath: string, label: string): string {
-  return `${sitePath}/backlinks?tab=insights&insight=broken&q=${encodeURIComponent(label)}`;
+  return `${sitePath}/backlinks?view=insights&insight=broken&q=${encodeURIComponent(label)}`;
 }
 
 /** Our own page, opened in AI Matrx (dimension rows carry no `page_id`). */

@@ -51,7 +51,7 @@ export function BacklinkKpiBand({
   location: string;
 }) {
   const lensHref = (insight: string) =>
-    `${sitePath}/backlinks?tab=insights&insight=${insight}`;
+    `${sitePath}/backlinks?view=insights&insight=${insight}`;
   if (!summary) {
     return (
       <div className="rounded-md border border-dashed border-border bg-card/60 p-4">
