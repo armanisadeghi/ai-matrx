@@ -2,6 +2,7 @@
 
 import {
   CircleDollarSign,
+  FileChartColumn,
   Globe2,
   Landmark,
   Plug,
@@ -18,6 +19,7 @@ export const MARKETING_WORKSPACE_ROUTES = [
   { name: "Ranks", href: marketingRoutes.ranks(), icon: TrendingUp },
   { name: "Connections", href: marketingRoutes.connections(), icon: Plug },
   { name: "Cost", href: marketingRoutes.cost(), icon: CircleDollarSign },
+  { name: "Reports", href: marketingRoutes.reports(), icon: FileChartColumn },
 ];
 
 export function MarketingWorkspaceNav() {

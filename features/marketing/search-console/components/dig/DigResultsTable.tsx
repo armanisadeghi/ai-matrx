@@ -32,7 +32,7 @@ import { gscScopeAttributes } from "@/features/marketing/search-console/lib/copy
 import { describeGscWindow } from "@/features/marketing/search-console/lib/format";
 import { panelDrillFor } from "@/features/marketing/search-console/lib/drills";
 import { useRowWatch } from "@/features/marketing/search-console/hooks/useWatchState";
-import { ClassChip } from "@/features/marketing/search-console/components/insights/ClassInsights";
+import { ClassChip } from "@/features/marketing/search-console/components/insights/ClassChip";
 import { WatchButton } from "@/features/marketing/search-console/components/watch/WatchButton";
 import type {
   GscBreakdownRow,

@@ -189,9 +189,9 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       url: "/marketing/reports",
       label: "Reports",
       description:
-        "RESERVED — renders <MarketingComingSoon>. Declared in features/marketing/lib/marketing-nav.ts and tracked in lib/coming-soon/registry.ts. The URL is permanent; it will not move when the feature ships.",
+        "Live, printable 28-day client Search Console report with plain-language findings, period comparison, canonical traffic classes, and openable site/page/keyword evidence.",
       filePath: "app/(core)/marketing/reports/page.tsx",
-      status: "Coming soon",
+      status: "Live",
     },
     {
       url: "/marketing/automations",
@@ -532,6 +532,13 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
     },
   ],
   components: [
+    {
+      name: "MarketingReportsWorkspace",
+      filePath: "features/marketing/reports/MarketingReportsWorkspace.tsx",
+      description:
+        "Client-ready report composition over the canonical seo.gsc_perf_* reads, including GscPortfolioClassBar, site/page GscClassBar rollups, and EntityRef doors.",
+      tier: "internal",
+    },
     {
       name: "SiteKpiPeeks (GscMetricPeek / PagesPeek / MiniTrendChart / TrendDelta)",
       filePath: "features/marketing/components/sites/SiteKpiPeeks.tsx",
