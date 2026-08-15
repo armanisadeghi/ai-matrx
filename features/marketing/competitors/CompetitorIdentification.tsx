@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -38,19 +39,37 @@ import {
   lookupCompetitor,
   saveCompetitorClassification,
 } from "./data";
+import { axesOf, buildRuling } from "./groundTruth";
 
 const BUSINESS = ["direct", "adjacent", "none"] as const;
 const MARKET = ["same_market", "different_market", "market_agnostic"] as const;
+/**
+ * The live vocabulary — mirrors `seo.competitor.competitor_entity_role_valid`.
+ * Widened 2026-08-15 from the original 8 after real SERP evidence turned up
+ * roles the first taxonomy had no name for: manufacturers and retail channels
+ * outrank contractors on their own informational terms, insurers rank on
+ * "what to do after a car accident", and live PBN spam shows up in the top 20.
+ */
 const ROLE = [
   "business",
+  "manufacturer",
+  "retail_channel",
   "marketplace",
+  "adversary",
   "publisher",
-  "reference",
+  "professional_body",
   "community",
+  "complementary_vendor",
+  "reference",
   "supplier",
   "partner",
   "own_brand",
+  "irrelevant",
+  "spam",
 ] as const;
+/** Axis 5 — independent of every other axis. The national chain you build
+ *  toward is not a head-to-head rival however close its nearest branch is. */
+const PEER_SCALE = ["smaller", "similar", "larger", "category_leader"] as const;
 const POSTURE = [
   "compete",
   "copy",
@@ -60,6 +79,24 @@ const POSTURE = [
   "ignore",
 ] as const;
 
+export const COMPETITOR_AXIS_CHOICES = {
+  business_overlap: BUSINESS,
+  market_overlap: MARKET,
+  entity_role: ROLE,
+  peer_scale: PEER_SCALE,
+  posture: POSTURE,
+} as const;
+
+/** Plain-language axis prompts. The user is a brilliant non-technical expert:
+ *  "Business overlap" means nothing to them, "Do they take your revenue?" does. */
+export const COMPETITOR_AXIS_QUESTIONS: Record<string, string> = {
+  business_overlap: "Do they take your revenue?",
+  market_overlap: "Can they actually serve your customer?",
+  entity_role: "What kind of organization is this, to you?",
+  peer_scale: "Are they in your league?",
+  posture: "What should you do about them?",
+};
+
 export function derivedCompetitorLabel(
   row: Pick<
     CompetitorRow,
@@ -67,15 +104,38 @@ export function derivedCompetitorLabel(
     | "market_overlap"
     | "entity_role"
     | "search_overlap_band"
-  >,
+  > & { peer_scale?: string | null },
 ): string {
-  if (row.entity_role === "marketplace") return "Marketplace / lead broker";
-  if (row.entity_role === "publisher") return "Publisher";
-  if (row.entity_role === "reference") return "Reference site";
-  if (row.entity_role === "community") return "Community site";
-  if (row.entity_role === "supplier") return "Supplier";
-  if (row.entity_role === "partner") return "Partner";
-  if (row.entity_role === "own_brand") return "Your own brand";
+  // Roles that ARE the answer: what the thing is matters more than any overlap
+  // it happens to have. FEATURE.md §4.
+  const roleLabels: Record<string, string> = {
+    manufacturer: "Manufacturer / brand",
+    retail_channel: "Retail channel",
+    marketplace: "Marketplace / lead broker",
+    adversary: "Opposing interest",
+    publisher: "Publisher",
+    professional_body: "Industry body",
+    community: "Community site",
+    complementary_vendor: "Complementary vendor",
+    reference: "Reference site",
+    supplier: "Supplier",
+    partner: "Partner",
+    own_brand: "Your own brand",
+    irrelevant: "Ranks by accident",
+    spam: "Spam / link farm",
+  };
+  if (row.entity_role && roleLabels[row.entity_role])
+    return roleLabels[row.entity_role];
+
+  // `category_leader` outranks market overlap: "the national chain you build
+  // toward" is more useful than "technically in or out of my market".
+  if (
+    row.peer_scale === "category_leader" &&
+    row.entity_role === "business" &&
+    (row.business_overlap === "direct" || row.business_overlap === "adjacent")
+  )
+    return "Aspirational model";
+
   if (row.business_overlap === "none")
     return row.search_overlap_band && row.search_overlap_band !== "none"
       ? "Search-only competitor"
@@ -223,12 +283,16 @@ export function ManualCompetitorAdd({
 export function CompetitorClassificationEditor({
   row,
   onSaved,
+  source = "competitor_workspace",
 }: {
   row: CompetitorRow;
   onSaved: () => Promise<void>;
+  source?: string;
 }) {
   const [draft, setDraft] = useState(row);
   const [labels, setLabels] = useState(row.custom_labels);
+  // THE TRAINING SIGNAL (FEATURE.md §10). Free text, never a dropdown.
+  const [why, setWhy] = useState("");
   const [organizationLabels, setOrganizationLabels] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const reasons = useMemo(() => {
@@ -275,11 +339,22 @@ export function CompetitorClassificationEditor({
           business_overlap: draft.business_overlap,
           market_overlap: draft.market_overlap,
           entity_role: draft.entity_role,
+          peer_scale: draft.peer_scale,
           posture: draft.posture,
           use_for_link_gap: draft.use_for_link_gap,
           custom_labels: labels,
         },
         confirm,
+        confirm
+          ? buildRuling({
+              row,
+              ruling: axesOf(draft),
+              why,
+              labelWouldHaveUsed: labels.join(", "),
+              source,
+              labelOf: derivedCompetitorLabel,
+            })
+          : undefined,
       );
       await onSaved();
       toast.success(confirm ? "Competitor confirmed" : "Classification saved");
@@ -297,7 +372,7 @@ export function CompetitorClassificationEditor({
     label: string,
     value: string | null,
     values: readonly string[],
-    key: "business_overlap" | "market_overlap" | "entity_role" | "posture",
+    key: "business_overlap" | "market_overlap" | "entity_role" | "peer_scale" | "posture",
   ) => (
     <div className="space-y-1.5">
       <Label>{label}</Label>
@@ -345,6 +420,7 @@ export function CompetitorClassificationEditor({
         )}
         {axis("Market overlap", draft.market_overlap, MARKET, "market_overlap")}
         {axis("Entity role", draft.entity_role, ROLE, "entity_role")}
+        {axis("Are they in your league?", draft.peer_scale, PEER_SCALE, "peer_scale")}
         {axis("What should we do?", draft.posture, POSTURE, "posture")}
       </div>
       <div className="space-y-1.5">
@@ -388,6 +464,18 @@ export function CompetitorClassificationEditor({
         <Label htmlFor={`gap-${row.id}`} className="font-normal">
           Use as a link-gap seed after confirmation
         </Label>
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor={`why-${row.id}`}>
+          Why? (in your own words)
+        </Label>
+        <Textarea
+          id={`why-${row.id}`}
+          value={why}
+          onChange={(event) => setWhy(event.target.value)}
+          rows={2}
+          placeholder="What made this obvious to you? Anything you say here teaches every future run."
+        />
       </div>
       {reasons?.uncertainty ? (
         <div className="rounded-lg bg-muted/50 p-3">

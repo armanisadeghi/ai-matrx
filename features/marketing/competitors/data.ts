@@ -6,6 +6,7 @@ import type {
   CompetitorTrackingStatus,
   OpportunityStatus,
 } from "./autopsy-controls";
+import type { CompetitorRuling } from "./groundTruth";
 
 export type CompetitorRow = Database["seo"]["Tables"]["competitor"]["Row"];
 export type CompetitorOpportunityRow =
@@ -102,14 +103,26 @@ export async function classifyCompetitor(siteId: string, competitorId: string, d
 }
 
 export type CompetitorClassificationPatch = Pick<CompetitorRow,
-  "business_overlap" | "market_overlap" | "entity_role" | "posture" |
-  "use_for_link_gap" | "custom_labels"
+  "business_overlap" | "market_overlap" | "entity_role" | "peer_scale" |
+  "posture" | "use_for_link_gap" | "custom_labels"
 >;
 
+/**
+ * Persist a human decision.
+ *
+ * `ruling` is the GROUND TRUTH record (see `groundTruth.ts`) and it lands in
+ * `human_ruling`, the provenance bucket that always wins. Passing it is what
+ * makes a confirmation worth something later: without the frozen proposal and
+ * the human's own words, all we ever learn from a click is that somebody
+ * clicked. Confirming with no ruling is still allowed — an "I agree" that
+ * records only agreement is better than an unreviewed row — but every surface
+ * we ship should be asking for the why.
+ */
 export async function saveCompetitorClassification(
   competitorId: string,
   patch: CompetitorClassificationPatch,
   confirm: boolean,
+  ruling?: CompetitorRuling,
 ): Promise<void> {
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) throw new Error("Sign in to classify a competitor.");
@@ -119,7 +132,10 @@ export async function saveCompetitorClassification(
     classification_status: confirm ? "confirmed" : "proposed",
     classification_confirmed_at: confirm ? now : null,
     classification_confirmed_by: confirm ? auth.user.id : null,
-    human_ruling: { source: "competitor_workspace", confirmed: confirm, decided_at: now },
+    human_ruling: ruling
+      ? { ...ruling, decided_by: auth.user.id, confirmed: confirm }
+      : { source: "competitor_workspace", confirmed: confirm, decided_at: now },
+    human_reviewed_at: now,
     updated_at: now,
   }).eq("id", competitorId);
   if (error) throw error;

@@ -64,6 +64,9 @@ import {
   ManualCompetitorAdd,
   derivedCompetitorLabel,
 } from "./CompetitorIdentification";
+import { GroundTruthQueue } from "./GroundTruthQueue";
+import { LandscapeBriefCard } from "./LandscapeBriefCard";
+import { discoverCompetitors } from "./landscapeBrief";
 
 type Artifact = {
   executive_verdict?: string;
@@ -182,7 +185,15 @@ export default function CompetitorAutopsyWorkspace() {
     () => data?.competitors.filter((item) => item.classification_status === "proposed") ?? [],
     [data?.competitors],
   );
+  const unruled = useMemo(
+    () =>
+      data?.competitors.filter(
+        (item) => item.classification_status !== "confirmed",
+      ) ?? [],
+    [data?.competitors],
+  );
   const selectedSite = sites.data?.find((site) => site.id === resolvedSiteId) ?? null;
+  const [discovering, setDiscovering] = useState(false);
 
   useEffect(() => {
     if (!resolvedSiteId || !proposed.length) return;
@@ -222,6 +233,28 @@ export default function CompetitorAutopsyWorkspace() {
     await queryClient.invalidateQueries({
       queryKey: ["marketing", "competitors", resolvedSiteId],
     });
+  };
+
+  /** Find rivals and classify them — the cheap half of the autopsy, no page
+   *  crawl. Every row lands proposed and queues up for a ruling. */
+  const findCompetitors = async () => {
+    if (!resolvedSiteId) return;
+    setDiscovering(true);
+    try {
+      const count = await discoverCompetitors(resolvedSiteId, dispatch);
+      await refresh();
+      toast.success(
+        count
+          ? `Found ${count} to look at. Every one is a proposal until you rule.`
+          : "Nothing new came back this time.",
+      );
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Could not find competitors",
+      );
+    } finally {
+      setDiscovering(false);
+    }
   };
 
   // ── The ONE write path per entity ────────────────────────────────────────
@@ -363,6 +396,9 @@ export default function CompetitorAutopsyWorkspace() {
         business_overlap: String(write.business_overlap) as CompetitorRow["business_overlap"],
         market_overlap: String(write.market_overlap) as CompetitorRow["market_overlap"],
         entity_role: String(write.entity_role) as CompetitorRow["entity_role"],
+        peer_scale: typeof write.peer_scale === "string"
+          ? (write.peer_scale as CompetitorRow["peer_scale"])
+          : row.peer_scale,
         posture: String(write.posture) as CompetitorRow["posture"],
         use_for_link_gap: write.use_for_link_gap === true,
         custom_labels: Array.isArray(write.custom_labels) ? write.custom_labels.map(String) : [],
@@ -803,6 +839,12 @@ export default function CompetitorAutopsyWorkspace() {
         <Tabs defaultValue="competitors" className="min-w-0">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <TabsList>
+              <TabsTrigger value="ground-truth">
+                Review{" "}
+                <Badge variant="secondary" className="ml-2">
+                  {unruled.length}
+                </Badge>
+              </TabsTrigger>
               <TabsTrigger value="opportunities">
                 Opportunities{" "}
                 <Badge variant="secondary" className="ml-2">
@@ -828,6 +870,37 @@ export default function CompetitorAutopsyWorkspace() {
               Refresh
             </Button>
           </div>
+
+          {/* THE STAGED-CONFIDENCE PATTERN, in the real product: establish the
+              facts, then rule on the proposals built from them. His rulings ARE
+              the ground truth, collected as a side effect of using the tool. */}
+          <TabsContent value="ground-truth" className="mt-4 space-y-4">
+            <LandscapeBriefCard site={selectedSite} onGuidanceSaved={refresh} />
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                disabled={!selectedSite || discovering}
+                onClick={() => void findCompetitors()}
+              >
+                {discovering ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <ScanSearch className="size-3.5" />
+                )}
+                Find my competitors
+              </Button>
+              <span className="text-xs text-muted-foreground">
+                Pulls real rivals out of your own search results and proposes what
+                each one is. Nothing counts until you say so.
+              </span>
+            </div>
+            <GroundTruthQueue
+              competitors={data?.competitors ?? []}
+              onSaved={refresh}
+            />
+          </TabsContent>
 
           <TabsContent value="opportunities" className="mt-4">
             <MatrxDataTable
