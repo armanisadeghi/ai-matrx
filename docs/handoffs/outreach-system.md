@@ -18,10 +18,12 @@ forces out a set of canonical primitives the platform is missing and did not kno
 > Do not build a parallel contact store, a parallel suppression list, or a parallel activity log.
 >
 > **And read §5 before writing a single line that sends an email.** The sending architecture is
-> decided and it is the safety design of the whole business: **our customers send from their own
-> verified, warmed mailboxes on their own domains — we never relay customer outreach through AI
-> Matrx infrastructure.** That is what keeps one careless customer from destroying deliverability
-> for everyone, including us.
+> decided and it is the safety design of the whole business: **TWO LANES that must never blend.**
+> Lane A (opt-in marketing) we send on the customer's behalf, copying Klaviyo/Mailchimp/SendGrid
+> policy end to end. Lane B (cold outreach — backlinks, media) sends only from the customer's own
+> verified, warmed mailbox on their own domain, copying Pitchbox/Instantly/Smartlead. **Cold never
+> touches our infrastructure; opt-in never sends without recorded consent.** That wall is what
+> keeps one careless customer from destroying deliverability for everyone, including us.
 
 ---
 
@@ -190,49 +192,84 @@ generic, and wanted by several features that are already built.
 4. **Sending identity registry** (G5) — which mailbox/number/domain speaks for an org, with rate
    and warmup state. Wanted by: email, SMS, and every future channel.
 5. **One consent & suppression authority** (G7) — already ruled; make it real and make it
-   unbypassable by construction.
+   unbypassable by construction. Consent is not paperwork: it is the **eligibility key** that
+   decides whether a contact is reachable in lane A at all (§5.1).
 6. **Outcome attribution** (G8) — did the thing we wanted actually happen in the world?
+7. **Persistent guided checklist** (§5.3b) — a resumable checklist mixing machine-verified steps
+   with human-confirmed ones, that re-verifies on return. **The most reusable thing in this
+   document.** Wanted by: DNS/domain setup, mailbox warmup, Search Console connection, CMS site
+   launch, org onboarding, payment setup — every one of which is currently a hand-rolled worse
+   version or a dead-end error. Build it generic in `lib/`; outreach is merely its first consumer.
+8. **Entitlement/tier gate** (§5.6) — "is this org allowed to do this?" as one authority every
+   surface asks, rather than each feature inventing a check.
 
 ---
 
-# 5. Sending identity + platform protection — DECIDED 2026-08-14
+# 5. Sending architecture — DECIDED 2026-08-14 (Arman)
 
-Arman delegated this decision with one hard constraint: *"one client doing stupid spammy stuff
-must not destroy our entire app,"* and one instruction: *do it the way the best companies do it.*
-That constraint has exactly one architecture behind it, and it is the industry answer.
+Arman's constraint: *"one client doing stupid spammy stuff must not destroy our entire app."*
+Arman's instruction: *do it exactly the way the best companies in each category do it.*
 
-## 5.1 THE LAW: our customers send from THEIR OWN mailboxes, on THEIR OWN domains. We never send customer outreach from our infrastructure.
+## 5.1 THE TWO-LANE LAW — this is the vision, capture it exactly
 
-This is the single most load-bearing decision in this document. **Cold/prospecting outreach and
-bulk marketing email are two different industries with two different architectures, and we are in
-the first one:**
+**We offer BOTH models, because our customers legitimately need both. They are two different
+industries with two different risk models, and they must NEVER blend.** Arman, 2026-08-14:
 
-| | Bulk marketing ESP (Klaviyo, Mailchimp, SendGrid) | **Cold outreach (Pitchbox, Instantly, Smartlead, Lemlist, Outreach.io) ← US** |
+> *"Our CRM should have a way to have things that we can send on their behalf, but those would be
+> those opt-in-only emails we'd handle exactly as Klaviyo/Mailchimp/SendGrid do — and in fact we
+> would duplicate their policies end to end. For the cold stuff, we would absolutely duplicate what
+> Pitchbox, Instantly, Smartlead, Lemlist, Outreach.io do."*
+
+| | **LANE A — Opt-in marketing** | **LANE B — Cold outreach** |
 |---|---|---|
-| Who sends | The platform, from platform IPs | **The customer's own mailbox**, via OAuth (Google/Microsoft) or SMTP/IMAP |
-| Whose reputation is at risk | **The platform's** | **The customer's own domain** |
-| Audience | Opt-in lists (existing customers) | Cold prospects — which is what link building and media pitching ARE |
-| Purchased/cold lists | Banned by the ESP's own terms | The core use case, so the guardrails must be structural |
+| What it is | Email to people who **asked to hear from them** — customers, subscribers, form fills | Backlink outreach, media pitching — a **stranger with a legitimate reason to be contacted** |
+| Copy the policies of | **Klaviyo, Mailchimp, SendGrid** — end to end | **Pitchbox, Instantly, Smartlead, Lemlist, Outreach.io** |
+| Who sends | **WE do, on the customer's behalf**, from our sending infrastructure | **The customer's own mailbox**, OAuth (Google/Microsoft) or SMTP/IMAP |
+| Whose reputation is at risk | **OURS** — so the entry bar is proof of consent | **The customer's own domain** — so the entry bar is proof of identity + warmup |
+| Entry requirement | Provable opt-in per recipient: source, timestamp, basis | Verified domain ownership + authenticated DNS + a warmed mailbox |
+| The list may contain | ONLY people with recorded consent | Cold prospects, with a legitimate-interest basis and instant opt-out |
+| Purchased lists | **Banned. Never. Account-terminating** | Also banned — cold ≠ purchased |
+| Volume shape | Bulk (thousands) | Low and human-paced (tens per mailbox per day) |
 
-**Why this answers Arman's fear directly:** in the connected-mailbox model, a spammy customer burns
-*their own* domain and *their own* mailbox. The blast radius is contained **by architecture**, not
-by our vigilance. If we instead relayed everyone's cold email through shared AI Matrx
-infrastructure, one bad actor would poison deliverability for every other customer and for us —
-that is precisely the trap this decision avoids. This is why the entire cold-outreach category
-converged on BYO-mailbox; it is not an implementation detail, it is the business model's safety
-design.
+### The wall between the lanes IS the safety design
 
-### The corollary that is easy to miss and expensive to get wrong
+**A cold campaign may never touch our sending infrastructure. An opt-in campaign may never send to
+a contact without recorded consent.** Both halves of that sentence are load-bearing:
 
-**Transactional email and customer outreach NEVER share infrastructure, domain, IP, or provider
-account.**
+- **Cold through our infrastructure** would make one aggressive customer poison deliverability for
+  every other customer *and* for us. This is exactly the failure Arman named, and it is why the
+  entire cold-outreach category converged on BYO-mailbox. It is not an implementation detail — it
+  is the business model's safety design.
+- **Opt-in without consent proof** is how an ESP gets its own IPs blocklisted. Klaviyo and Mailchimp
+  survive by policing consent aggressively, and if we send on a customer's behalf we inherit
+  exactly that obligation — so we inherit their policies too.
 
-- **Our transactional mail** (password resets, invites, notifications, receipts) → our own domain,
-  a transactional provider (Mailgun is already declared), our reputation, our care.
-- **Customer outreach** → the customer's connected mailbox. Always.
+**Enforce the wall in the data, not in a code review.** A campaign declares its lane; the lane
+decides which sending path is even reachable and which contacts are eligible. A lane mismatch is a
+refused send, not a warning. **Do not build a single "send" function with a boolean.**
 
-Blend them and a customer's spam complaints degrade the deliverability of our own password-reset
-emails — users stop being able to log in because someone else's campaign was aggressive. Keep them
+### What this means for a contact record
+
+Consent state stops being paperwork and becomes an eligibility key: **lane A eligibility must be
+provable per recipient** (basis, source, timestamp, and the jurisdiction it was captured under —
+already required by §5.4). A contact with no recorded consent is invisible to lane A and always
+will be. This is why §5.4 insists on capturing consent from day one: it is not compliance
+overhead, it is the field that decides what a customer is allowed to do.
+
+### There are actually THREE streams, and all three are separate
+
+Lane A and lane B are the customer's mail. Ours is a third, and it is the one whose breakage is
+most invisible until it is catastrophic:
+
+| Stream | From | On whose reputation | Provider account |
+|---|---|---|---|
+| **Lane A** — opt-in marketing | Our sending infrastructure, on the customer's authenticated domain | Ours (shared) | Bulk ESP |
+| **Lane B** — cold outreach | The customer's own connected mailbox | The customer's own domain | None of ours |
+| **Transactional** — password resets, invites, receipts | Our domain | **Ours alone** | Separate transactional account |
+
+**Transactional never shares infrastructure, domain, IP, or provider account with either customer
+lane.** Blend them and a customer's spam complaints degrade the deliverability of our own
+password-reset emails — users cannot log in because someone else's campaign was aggressive. Keep them
 physically separate: different provider accounts, different domains, different code paths.
 
 ### We are our own customer — with one declared exception
@@ -296,6 +333,35 @@ these close the rest:
   before throughput. Tier it — verified domain for basic sending, verified business identity for
   higher volume. Build the tiers now even if only the first is enforced at launch.
 
+## 5.3b We do it FOR them, or we teach them to do it — never "here's an error, good luck"
+
+Arman's ruling, 2026-08-14, and it applies to every gate in §5.2:
+
+> *"We want to guide our users to make smart decisions… anything we can do on their behalf we'll do
+> on their behalf, and anything we can't, we'll teach them how to do it. If there are things they
+> have to do themselves, we create a checklist for them that has persistence… if there are things
+> we can programmatically check, we check it for them."*
+
+This is THE USER doctrine applied to the most technical surface in the product. DNS records,
+DMARC policy, mailbox warmup and domain verification are exactly the kind of thing our
+brilliant, non-technical SME will never do unaided — and a red "SPF not found" with no next step
+is a dead end that ends their outreach career on day one.
+
+So every gate in §5.2 ships as a **guided step**, in this order of preference:
+
+1. **Do it for them** wherever we technically can (generate the exact DNS record values, run the
+   verification, watch for propagation, warm the mailbox automatically).
+2. **Machine-check what they did** and show a live pass/fail with the reason (SPF/DKIM/DMARC
+   lookups, MX checks, warmup progress) — never make a human self-report something we can verify.
+3. **Guide + confirm** only where we genuinely cannot act or check: exact copy-paste values, the
+   registrar-specific how-to, and an explicit "I've done this" the user checks off.
+
+**The primitive this forces out (see §4.7): a persistent, resumable guided checklist** that mixes
+machine-verified steps with human-confirmed steps, remembers where the user is, and re-verifies on
+return. **This is NOT an outreach-local wizard** — DNS setup, Search Console connection, CMS site
+launch, org onboarding and payment setup all want the same thing, and each has been hand-rolling a
+worse version. Build it generic in `lib/`, consume it here.
+
 ## 5.4 Compliance posture — US first, rest of world documented (Arman, 2026-08-14)
 
 Build for the US, but **do not design anything that makes non-US support a rewrite.** Concretely:
@@ -321,6 +387,30 @@ and an agency's managed client is its own org. This falls straight out of the CR
 party and every contact is org-scoped) and it means an agency connects one identity per client
 org — which is also the correct deliverability answer, since a client's mail should come from the
 client's own domain.
+
+## 5.6 Tier gating — outreach is the platform's FIRST gated feature (Arman, 2026-08-14)
+
+**Outreach volume sits behind a paid tier. The free tier does not include it.** Not as monetization
+— as the cheapest abuse filter that exists. Free accounts are what attract the exact behavior that
+gets sending infrastructure blocklisted, which is why every serious platform in this category
+requires an identified, paying account before a stranger's inbox is reachable.
+
+**This forces a feature we have been deferring: the platform has no real tier concept yet.** Arman:
+*"We've been holding off on that feature because it hasn't been something we've absolutely needed
+just yet. But guess what? You just came up with the first reason why we absolutely do need it."*
+
+Two rules govern that build, and the second matters more than the first:
+
+1. **Outreach is the first genuinely gated capability** — the reference implementation for how any
+   surface asks "is this org allowed to do this?"
+2. 🚨 **THE NO-REGRESSION RULE.** Introducing tiers must **take nothing away from anyone.** Err
+   toward permitting: a capability is restricted ONLY when the restriction is 100% confirmed and
+   written down. Anything ambiguous stays open. A silent capability loss during this transition is
+   far worse than a free user briefly keeping something they might not be entitled to — the first
+   breaks trust with real users who are already working, the second costs nothing.
+
+**Guest accounts are REAL accounts** (Arman) — they are not a lesser class to be locked out by
+default; they carry a tier like everyone else.
 
 ---
 
@@ -387,3 +477,10 @@ a customer spam strangers from their real mailbox."
 - **Never let a mailbox skip warmup or domain verification because a customer is in a hurry.** The
   gates are the product, not friction to be waived. An override that exists will be used.
 - **Do not send to an unverified address.** Hard bounces are the fastest way to burn a domain.
+- **Do not build one `send()` with a lane boolean.** The lane decides which sending path is
+  reachable and which contacts are eligible; enforce it in the data, refuse on mismatch (§5.1).
+- **Do not blend the lanes "just for now".** A cold list on our infrastructure, or an opt-in send to
+  an unconsented contact, is the incident this whole architecture exists to prevent.
+- **Do not show a technical gate as a bare error.** DNS, DMARC and warmup are guided steps — do it
+  for them, machine-check it, or teach them (§5.3b). Our user is a non-technical expert.
+- **Do not take a capability away from an existing user while introducing tiers** (§5.6).
